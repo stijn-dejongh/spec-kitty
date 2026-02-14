@@ -5,7 +5,7 @@
 
 ## Summary
 
-Implement `DoctrineGovernancePlugin` — a concrete `GovernancePlugin` (Feature 042) that loads Agentic Doctrine artifacts from a `doctrine/` subtree at the project root, evaluates relevant directives against lifecycle state, and resolves precedence between guidelines, constitution, and directives. Supports opt-in blocking mode via `--enforce-governance`. Falls back to `NullGovernancePlugin` when no `doctrine/` directory is present.
+Implement `DoctrineGovernancePlugin` — a concrete `GovernancePlugin` (Feature 042) that loads governance artifacts from a `doctrine/` subtree at the project root, evaluates relevant directives against lifecycle state, and resolves precedence between guidelines, constitution, and directives. Supports opt-in blocking mode via `--enforce-governance`. Falls back to `NullGovernancePlugin` when no `doctrine/` directory is present.
 
 ## Technical Context
 
@@ -224,7 +224,7 @@ class DoctrineLoader:
 # --- plugin.py ---
 
 class DoctrineGovernancePlugin(GovernancePlugin):
-    """Concrete governance plugin backed by Agentic Doctrine artifacts."""
+    """Concrete governance plugin backed by Doctrine governance artifacts."""
 
     def __init__(self, repo_root: Path):
         self.loader = DoctrineLoader(repo_root)
@@ -347,7 +347,7 @@ primer_matrix:
 This agent handles all code implementation tasks...
 ```
 
-**Tool-to-agent mapping**: SK tools (e.g., `"claude"`, `"opencode"`) are mapped to Doctrine agent profiles in `.doctrine-config/config.yaml`:
+**Tool-to-agent mapping**: Tools (e.g., `"claude"`, `"opencode"`) are mapped to agent profiles in `.doctrine-config/config.yaml`:
 
 ```yaml
 agent_profiles:
@@ -360,7 +360,7 @@ If no explicit mapping exists, the loader attempts to match by checking if the t
 
 ### Lazy Loading Strategy
 
-Only directives tagged for the current phase are loaded. For a typical Doctrine tree with 20 directives:
+Only directives tagged for the current phase are loaded. For a typical governance tree with 20 directives:
 
 | Phase | Typical tags | Loaded count |
 |-------|-------------|-------------|

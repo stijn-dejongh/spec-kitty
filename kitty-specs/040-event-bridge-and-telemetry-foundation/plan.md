@@ -5,7 +5,7 @@
 
 ## Summary
 
-Add structured event emission to Spec Kitty's lifecycle. An `EventBridge` abstraction emits events at key workflow points (lane transitions, validations, agent executions). A `NullEventBridge` ensures zero impact for users who don't enable telemetry. A JSONL file writer in `src/specify_cli/telemetry/` provides the first concrete consumer. Pydantic BaseModel is used for event schema, giving schema validation and `model_dump_json()` for serialization.
+Add structured event emission to Spec Kitty's lifecycle. An `EventBridge` abstraction emits events at key workflow points (lane transitions, validations, tool executions). A `NullEventBridge` ensures zero impact for users who don't enable telemetry. A JSONL file writer in `src/specify_cli/telemetry/` provides the first concrete consumer. Pydantic BaseModel is used for event schema, giving schema validation and `model_dump_json()` for serialization.
 
 ## Technical Context
 
@@ -130,7 +130,8 @@ class LaneTransitionEvent(BaseEvent):
     work_package_id: str
     from_lane: str
     to_lane: str
-    agent: str | None = None
+    tool_id: str | None = None           # Which tool triggered this (e.g., "claude")
+    agent_profile_id: str | None = None  # Agent identity (e.g., "python-pedro")
     commit_sha: str | None = None
 
 class ValidationEvent(BaseEvent):
@@ -143,7 +144,9 @@ class ValidationEvent(BaseEvent):
 class ExecutionEvent(BaseEvent):
     type: Literal["execution"] = "execution"
     work_package_id: str
-    agent: str
+    tool_id: str                          # Which tool executed (e.g., "claude", "opencode")
+    agent_profile_id: str | None = None   # Agent identity if assigned
+    agent_role: str | None = None         # Role: "implementer", "reviewer", etc.
     model: str
     input_tokens: int = 0
     output_tokens: int = 0
@@ -216,7 +219,7 @@ class JsonlEventWriter:
 **`src/specify_cli/cli/commands/agent/tasks.py`** — `move_task`:
 - After line ~646 (where `set_scalar(wp.frontmatter, "lane", target_lane)` succeeds):
   - Call `event_bridge.emit_lane_transition(LaneTransitionEvent(...))`
-  - Construct event from `old_lane`, `target_lane`, `task_id`, `agent`, current git HEAD
+  - Construct event from `old_lane`, `target_lane`, `task_id`, `tool_id`, current git HEAD
 
 **`src/specify_cli/orchestrator/integration.py`** — `run_orchestration_loop`:
 - Load event bridge at entry: `event_bridge = load_event_bridge(repo_root)`

@@ -9,7 +9,7 @@
 
 ### User Story 1 - Doctrine Directives Evaluated at Lifecycle Boundaries (Priority: P1)
 
-As a team using Agentic Doctrine, when I move through spec-kitty's lifecycle, relevant directives are loaded and evaluated against the current work state, and I see advisory or blocking feedback referencing specific directive numbers.
+As a team using Doctrine, when I move through spec-kitty's lifecycle, relevant directives are loaded and evaluated against the current work state, and I see advisory or blocking feedback referencing specific directive numbers.
 
 **Why this priority**: This is the core value — connecting Doctrine's behavioral governance to Spec Kitty's workflow.
 
@@ -119,6 +119,6 @@ As a developer, the governance plugin only loads directives relevant to the curr
 
 - Depends on Feature 042 (GovernancePlugin ABC and hook callsites).
 - Depends on Feature 040 (EventBridge for ValidationEvent emission).
-- Doctrine artifacts follow the Agentic Doctrine directory structure (doctrine/guidelines/, doctrine/directives/, doctrine/approaches/, doctrine/agents/).
+- Doctrine artifacts follow the Doctrine directory structure (doctrine/guidelines/, doctrine/directives/, doctrine/approaches/, doctrine/agents/).
 - Directive files include metadata (front matter or structured comments) indicating which lifecycle phases they apply to.
 - The `spec-kitty init --doctrine` flag for bootstrapping is deferred to Feature 050 (docs and migration).

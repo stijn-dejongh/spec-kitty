@@ -96,4 +96,4 @@ As the DoctrineGovernancePlugin (Feature 043), when I load .doctrine-config/, th
 - Depends on Feature 043 (DoctrineGovernancePlugin that consumes .doctrine-config/).
 - The Constitution format follows spec-kitty's existing template (sections for Testing, Code Quality, Branch Strategy, etc.).
 - Sync is one-way only: Constitution -> .doctrine-config/. Changes to .doctrine-config/ are overwritten on next sync.
-- The generated .doctrine-config/ structure follows the Agentic Doctrine convention.
+- The generated .doctrine-config/ structure follows the Doctrine convention.
