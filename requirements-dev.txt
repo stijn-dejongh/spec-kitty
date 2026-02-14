@@ -1,0 +1,8 @@
+# Development dependencies for spec-kitty-cli
+# Install: pip install -r requirements-dev.txt
+# Requires: Python >=3.11
+-r requirements.txt
+pytest>=7.4
+pytest-asyncio>=0.21.0
+build>=1.0.0
+ruff>=0.4.0

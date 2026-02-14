@@ -1,0 +1,16 @@
+# Runtime dependencies for spec-kitty-cli 0.15.2
+# Install: pip install -r requirements.txt
+# Requires: Python >=3.11
+typer>=0.23.0
+rich>=14.0.0
+httpx[socks]>=0.28.0
+platformdirs>=4.0.0
+readchar>=4.0.0
+truststore>=0.10.4
+pyyaml>=6.0
+ruamel.yaml>=0.18.0
+pydantic>=2.0
+packaging>=23.0
+psutil>=5.9.0
+python-ulid>=1.1.0
+spec-kitty-events==0.4.0a0
