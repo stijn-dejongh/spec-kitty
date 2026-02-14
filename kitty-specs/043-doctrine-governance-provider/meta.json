@@ -1,0 +1,10 @@
+{
+  "feature_number": "043",
+  "slug": "043-doctrine-governance-provider",
+  "friendly_name": "Doctrine Governance Provider",
+  "mission": "software-dev",
+  "source_description": "DoctrineGovernancePlugin: loads Doctrine artifacts from doctrine/ subtree, evaluates directives against lifecycle state, resolves precedence (guidelines > constitution > directives). Opt-in blocking mode via --enforce-governance.",
+  "created_at": "2026-02-14T23:00:00+01:00",
+  "target_branch": "main",
+  "vcs": "git"
+}

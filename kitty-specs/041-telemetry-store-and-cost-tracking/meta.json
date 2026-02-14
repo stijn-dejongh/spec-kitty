@@ -1,0 +1,10 @@
+{
+  "feature_number": "041",
+  "slug": "041-telemetry-store-and-cost-tracking",
+  "friendly_name": "Telemetry Store and Cost Tracking",
+  "mission": "software-dev",
+  "source_description": "Lightweight read-only query layer over JSONL event log with basic LLM cost tracking. Pricing table as YAML config. Query API for dashboards and CLI.",
+  "created_at": "2026-02-14T22:30:00+01:00",
+  "target_branch": "main",
+  "vcs": "git"
+}

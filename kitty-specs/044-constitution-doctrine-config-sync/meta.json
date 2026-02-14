@@ -1,0 +1,10 @@
+{
+  "feature_number": "044",
+  "slug": "044-constitution-doctrine-config-sync",
+  "friendly_name": "Constitution to Doctrine Config Sync",
+  "mission": "software-dev",
+  "source_description": "One-way sync: parse Constitution markdown and generate .doctrine-config/ YAML. Re-sync when Constitution is amended. Constitution is the source of truth.",
+  "created_at": "2026-02-14T23:15:00+01:00",
+  "target_branch": "main",
+  "vcs": "git"
+}
