@@ -91,13 +91,18 @@ As a developer, the governance plugin only loads directives relevant to the curr
 - **FR-008**: System MUST fall back to NullGovernancePlugin behavior when doctrine/ is not present.
 - **FR-009**: Each validation result MUST include directive_refs identifying which directives triggered the result.
 - **FR-010**: The plugin MUST be configurable in `.kittify/config.yaml` under `governance.provider: doctrine`.
+- **FR-011**: The plugin MUST load agent profiles from `doctrine/agents/*.agent.md` when present.
+- **FR-012**: When an agent profile is loaded for the assigned agent, the plugin MUST filter directives to the profile's `required_directives` and validate that the agent's `capabilities` match the task requirements.
+- **FR-013**: Agent-to-profile mapping MUST be configurable in `.doctrine-config/config.yaml` under `agent_profiles:` (mapping SK agent keys to doctrine profile IDs).
+- **FR-014**: When no agent profile matches the assigned agent, the plugin MUST proceed with all applicable directives (graceful degradation).
 
 ### Key Entities
 
 - **DoctrineGovernancePlugin**: Concrete GovernancePlugin that loads and evaluates Doctrine artifacts.
-- **DoctrineLoader**: Reads doctrine/ directory structure, parses guidelines, directives, and approaches.
+- **DoctrineLoader**: Reads doctrine/ directory structure, parses guidelines, directives, approaches, and agent profiles.
 - **PrecedenceResolver**: Resolves conflicts between governance layers per the Doctrine hierarchy.
 - **DirectiveEvaluator**: Evaluates individual directives against lifecycle context.
+- **AgentProfile**: Parsed agent profile defining role identity, capabilities, required directives, and handoff patterns.
 
 ## Success Criteria
 
@@ -114,6 +119,6 @@ As a developer, the governance plugin only loads directives relevant to the curr
 
 - Depends on Feature 042 (GovernancePlugin ABC and hook callsites).
 - Depends on Feature 040 (EventBridge for ValidationEvent emission).
-- Doctrine artifacts follow the Agentic Doctrine directory structure (doctrine/guidelines/, doctrine/directives/, doctrine/approaches/).
+- Doctrine artifacts follow the Agentic Doctrine directory structure (doctrine/guidelines/, doctrine/directives/, doctrine/approaches/, doctrine/agents/).
 - Directive files include metadata (front matter or structured comments) indicating which lifecycle phases they apply to.
 - The `spec-kitty init --doctrine` flag for bootstrapping is deferred to Feature 050 (docs and migration).

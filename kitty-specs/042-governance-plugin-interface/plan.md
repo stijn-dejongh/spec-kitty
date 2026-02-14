@@ -149,6 +149,7 @@ class GovernanceContext(BaseModel):
     phase: str                              # plan | implement | review | accept
     feature_slug: str
     work_package_id: str | None = None      # None for pre_plan (feature-level)
+    agent_key: str | None = None            # SK agent key (e.g., "claude") for profile lookup
     spec_content: str | None = None         # Spec markdown (for pre_plan)
     task_content: str | None = None         # WP markdown (for pre_implement)
     review_comments: str | None = None      # Review output (for pre_accept)

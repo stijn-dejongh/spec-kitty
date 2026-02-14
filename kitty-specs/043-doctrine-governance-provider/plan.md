@@ -47,10 +47,12 @@ tests/specify_cli/
         ├── test_loader.py                 # DoctrineLoader parsing tests
         ├── test_evaluator.py              # DirectiveEvaluator evaluation tests
         ├── test_precedence.py             # PrecedenceResolver conflict tests
+        ├── test_agent_profiles.py         # Agent profile loading + capability validation tests
         └── fixtures/                      # Test doctrine/ trees
             ├── minimal/                   # Minimal doctrine with 1 directive
-            ├── full/                      # Full doctrine with guidelines + directives
-            └── constitution_override/     # Constitution narrowing a directive
+            ├── full/                      # Full doctrine with guidelines + directives + agents
+            ├── constitution_override/     # Constitution narrowing a directive
+            └── agent_profiles/            # Agent profiles with capability mismatches
 ```
 
 ## Architecture
@@ -67,6 +69,10 @@ doctrine/                            # Git subtree at project root
 ├── directives/
 │   ├── 017-tdd-required.md          # Individual directives with front matter
 │   ├── 023-conventional-commits.md
+│   └── ...
+├── agents/                          # Agent profiles (role identity + capabilities)
+│   ├── implementer.agent.md         # Agent profile with front matter
+│   ├── reviewer.agent.md
 │   └── ...
 ├── approaches/                      # Tactical approaches (lowest precedence)
 │   └── *.md
@@ -91,6 +97,13 @@ DoctrineGovernancePlugin.validate_pre_implement(context)
     │       ├── Lazy: skip directives not tagged for current phase
     │       └── Return list[Directive]
     │
+    ├── DoctrineLoader.load_agent_profiles()
+    │       │
+    │       ├── Scan doctrine/agents/*.agent.md
+    │       ├── Parse front matter: id, specialization, capabilities, required_directives
+    │       ├── Match assigned agent (from context) to profile by agent key
+    │       └── Return AgentProfile | None
+    │
     ├── Load overrides
     │       ├── .doctrine-config/config.yaml (structured overrides)
     │       └── .kittify/memory/constitution.md (narrative overrides)
@@ -102,9 +115,16 @@ DoctrineGovernancePlugin.validate_pre_implement(context)
     │       ├── Detect contradictions: Constitution vs Guidelines → warn
     │       └── Return resolved list[ResolvedDirective]
     │
-    └── DirectiveEvaluator.evaluate(resolved_directives, context)
+    ├── Agent profile validation (if profile loaded)
+    │       │
+    │       ├── Filter resolved directives to profile's required_directives
+    │       ├── Check agent capabilities match task requirements
+    │       └── Warn if assigned agent lacks required capabilities
+    │
+    └── DirectiveEvaluator.evaluate(resolved_directives, context, agent_profile)
             │
             ├── For each directive: check rule against context
+            ├── If agent profile: also validate capability fit
             ├── Aggregate: any "block" → block, any "warn" → warn, else pass
             └── Return ValidationResult with directive_refs
 ```
@@ -132,6 +152,18 @@ class Guideline:
     content: str
     level: str                      # "general" | "operational"
     rules: dict[str, Any]
+    source_path: Path
+
+@dataclass
+class AgentProfile:
+    """A parsed agent profile from doctrine/agents/."""
+    id: str                             # e.g., "implementer", "reviewer"
+    name: str                           # Human-readable name
+    specialization: str                 # e.g., "architect", "implementer", "reviewer"
+    capabilities: frozenset[str]        # e.g., {"write-tests", "design-apis", "refactor"}
+    required_directives: list[int]      # Directive numbers this agent must follow
+    handoff_patterns: dict[str, str]    # Direction → target agent (loaded for future routing)
+    primer_matrix: dict[str, list[str]] # Task type → required context primers
     source_path: Path
 
 @dataclass
@@ -173,6 +205,19 @@ class DoctrineLoader:
     def load_doctrine_config(self) -> dict[str, Any]:
         """Load .doctrine-config/config.yaml overrides."""
         ...
+
+    def load_agent_profiles(self) -> list[AgentProfile]:
+        """Load all agent profiles from doctrine/agents/*.agent.md."""
+        ...
+
+    def get_agent_profile(self, agent_key: str) -> AgentProfile | None:
+        """Find the agent profile matching a spec-kitty agent key.
+
+        Maps SK agent keys (e.g., "claude") to doctrine profile IDs
+        (e.g., "implementer") via specialization or explicit mapping
+        in .doctrine-config/config.yaml.
+        """
+        ...
 ```
 
 ```python
@@ -200,8 +245,21 @@ class DoctrineGovernancePlugin(GovernancePlugin):
         guidelines = self.loader.load_guidelines()
         overrides = self.loader.load_constitution_overrides()
 
+        # Load agent profile for the assigned agent (if available)
+        agent_profile = None
+        if context.agent_key:
+            agent_profile = self.loader.get_agent_profile(context.agent_key)
+
         resolved = self.resolver.resolve(directives, guidelines, overrides)
-        return self.evaluator.evaluate(resolved, context)
+
+        # If agent profile loaded, filter to profile's required_directives
+        if agent_profile:
+            resolved = [
+                r for r in resolved
+                if r.directive.number in agent_profile.required_directives
+            ] or resolved  # Fall back to all if profile has no directive filter
+
+        return self.evaluator.evaluate(resolved, context, agent_profile)
 
     # Similar pattern for validate_pre_plan, validate_pre_review, validate_pre_accept
 ```
@@ -260,6 +318,44 @@ rules:
 
 All implementation work packages must include tests...
 ```
+
+### Agent Profile Front Matter Format
+
+Agent profiles in `doctrine/agents/` have YAML front matter defining role identity:
+
+```markdown
+---
+id: implementer
+name: Implementation Specialist
+specialization: implementer
+capabilities:
+  - write-code
+  - write-tests
+  - refactor
+  - debug
+required_directives: [17, 23, 31]
+handoff_patterns:
+  after_implement: reviewer
+  on_rejection: implementer
+primer_matrix:
+  implement: [spec, plan, architecture]
+  fix: [spec, review-comments, test-output]
+---
+
+# Implementation Specialist
+
+This agent handles all code implementation tasks...
+```
+
+**Agent key mapping**: SK uses flat keys like `"claude"`, `"opencode"`. The mapping from SK key to doctrine profile is configured in `.doctrine-config/config.yaml`:
+
+```yaml
+agent_profiles:
+  claude: implementer       # claude uses the "implementer" profile
+  opencode: reviewer        # opencode uses the "reviewer" profile
+```
+
+If no explicit mapping exists, the loader attempts to match by checking if the SK agent key appears in the profile's `id` or `name` field. If no profile matches, governance proceeds without profile-specific filtering (all directives apply).
 
 ### Lazy Loading Strategy
 
