@@ -93,7 +93,7 @@ As a developer, the governance plugin only loads directives relevant to the curr
 - **FR-010**: The plugin MUST be configurable in `.kittify/config.yaml` under `governance.provider: doctrine`.
 - **FR-011**: The plugin MUST load agent profiles from `doctrine/agents/*.agent.md` when present.
 - **FR-012**: When an agent profile is loaded for the assigned agent, the plugin MUST filter directives to the profile's `required_directives` and validate that the agent's `capabilities` match the task requirements.
-- **FR-013**: Agent-to-profile mapping MUST be configurable in `.doctrine-config/config.yaml` under `agent_profiles:` (mapping SK agent keys to doctrine profile IDs).
+- **FR-013**: Tool-to-agent-profile mapping MUST be configurable in `.doctrine-config/config.yaml` under `agent_profiles:` (mapping tool IDs like `"claude"` to doctrine agent profile IDs like `"python-pedro"`).
 - **FR-014**: When no agent profile matches the assigned agent, the plugin MUST proceed with all applicable directives (graceful degradation).
 
 ### Key Entities

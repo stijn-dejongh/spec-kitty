@@ -95,7 +95,7 @@ As a developer in a tight iteration loop, I can skip governance checks with a fl
 - **ValidationResult**: Structured output from governance checks (status, reasons, directive_refs, suggested_actions).
 - **ValidationStatus**: Enum with values: pass, warn, block.
 - **NullGovernancePlugin**: Default no-op implementation.
-- **GovernanceContext**: Context objects passed to validation hooks (SpecContext, TaskContext, WorkPackageContext, ReviewContext).
+- **GovernanceContext**: Context passed to validation hooks — includes phase, feature_slug, work_package_id, tool_id (which tool is executing), agent_profile_id (Doctrine agent identity), agent_role (implementer/reviewer).
 
 ## Success Criteria
 

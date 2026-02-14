@@ -149,7 +149,9 @@ class GovernanceContext(BaseModel):
     phase: str                              # plan | implement | review | accept
     feature_slug: str
     work_package_id: str | None = None      # None for pre_plan (feature-level)
-    agent_key: str | None = None            # SK agent key (e.g., "claude") for profile lookup
+    tool_id: str | None = None              # Which tool runs this (e.g., "claude", "opencode")
+    agent_profile_id: str | None = None     # Doctrine agent profile (e.g., "python-pedro")
+    agent_role: str | None = None           # Role: "implementer", "reviewer", etc.
     spec_content: str | None = None         # Spec markdown (for pre_plan)
     task_content: str | None = None         # WP markdown (for pre_implement)
     review_comments: str | None = None      # Review output (for pre_accept)
@@ -266,21 +268,25 @@ governance:
 Insert governance hooks at two natural boundaries in `process_wp()` (line 806 and 849):
 
 ```python
-# Before implementation (line ~806, after agent selection, before throttle):
+# Before implementation (line ~806, after tool selection, before throttle):
 if governance_runner:
     gov_context = GovernanceContext(
         phase="implement",
         feature_slug=state.feature_slug,
         work_package_id=wp_id,
+        tool_id=impl_tool,           # Which tool is assigned (e.g., "claude")
+        agent_role="implementer",
     )
     governance_runner.run_check("implement", gov_context)
 
-# Before review (line ~849, before review agent selection):
+# Before review (line ~849, before review tool selection):
 if governance_runner:
     gov_context = GovernanceContext(
         phase="review",
         feature_slug=state.feature_slug,
         work_package_id=wp_id,
+        tool_id=review_tool,         # Which tool is assigned
+        agent_role="reviewer",
     )
     governance_runner.run_check("review", gov_context)
 ```

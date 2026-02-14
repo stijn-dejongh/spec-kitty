@@ -101,7 +101,7 @@ DoctrineGovernancePlugin.validate_pre_implement(context)
     │       │
     │       ├── Scan doctrine/agents/*.agent.md
     │       ├── Parse front matter: id, specialization, capabilities, required_directives
-    │       ├── Match assigned agent (from context) to profile by agent key
+    │       ├── Match tool_id (from context) to agent profile via config mapping
     │       └── Return AgentProfile | None
     │
     ├── Load overrides
@@ -210,12 +210,12 @@ class DoctrineLoader:
         """Load all agent profiles from doctrine/agents/*.agent.md."""
         ...
 
-    def get_agent_profile(self, agent_key: str) -> AgentProfile | None:
-        """Find the agent profile matching a spec-kitty agent key.
+    def get_agent_profile_for_tool(self, tool_id: str) -> AgentProfile | None:
+        """Find the agent profile mapped to a tool.
 
-        Maps SK agent keys (e.g., "claude") to doctrine profile IDs
-        (e.g., "implementer") via specialization or explicit mapping
-        in .doctrine-config/config.yaml.
+        Maps tool IDs (e.g., "claude") to doctrine agent profile IDs
+        (e.g., "python-pedro") via explicit mapping in
+        .doctrine-config/config.yaml under agent_profiles.
         """
         ...
 ```
@@ -245,10 +245,10 @@ class DoctrineGovernancePlugin(GovernancePlugin):
         guidelines = self.loader.load_guidelines()
         overrides = self.loader.load_constitution_overrides()
 
-        # Load agent profile for the assigned agent (if available)
+        # Load agent profile for the assigned tool (if available)
         agent_profile = None
-        if context.agent_key:
-            agent_profile = self.loader.get_agent_profile(context.agent_key)
+        if context.tool_id:
+            agent_profile = self.loader.get_agent_profile_for_tool(context.tool_id)
 
         resolved = self.resolver.resolve(directives, guidelines, overrides)
 
@@ -347,15 +347,16 @@ primer_matrix:
 This agent handles all code implementation tasks...
 ```
 
-**Agent key mapping**: SK uses flat keys like `"claude"`, `"opencode"`. The mapping from SK key to doctrine profile is configured in `.doctrine-config/config.yaml`:
+**Tool-to-agent mapping**: SK tools (e.g., `"claude"`, `"opencode"`) are mapped to Doctrine agent profiles in `.doctrine-config/config.yaml`:
 
 ```yaml
 agent_profiles:
-  claude: implementer       # claude uses the "implementer" profile
-  opencode: reviewer        # opencode uses the "reviewer" profile
+  # tool_id → agent_profile_id
+  claude: python-pedro       # claude tool runs the "python pedro" agent
+  opencode: review-rachel    # opencode tool runs the "review rachel" agent
 ```
 
-If no explicit mapping exists, the loader attempts to match by checking if the SK agent key appears in the profile's `id` or `name` field. If no profile matches, governance proceeds without profile-specific filtering (all directives apply).
+If no explicit mapping exists, the loader attempts to match by checking if the tool ID appears in the profile's `id` or `name` field. If no profile matches, governance proceeds without profile-specific filtering (all directives apply).
 
 ### Lazy Loading Strategy
 
