@@ -280,6 +280,20 @@ Terms describing spec-kitty's workflow engine and lifecycle management.
 
 ---
 
+### User Journey
+
+| | |
+|---|---|
+| **Definition** | A structured, end-to-end description of how actors (human, AI, system) interact with spec-kitty across phases, system boundaries, and coordination concerns. Unlike a User Story (single slice of value in `spec.md`), a User Journey maps the full flow including actors, events, coordination rules, and acceptance scenarios. User Journeys are architectural design artifacts that drive system evolution. |
+| **Context** | Orchestration |
+| **Status** | canonical |
+| **Location** | `architecture/journeys/*.md` |
+| **Related terms** | [Feature](#feature), [Phase](#phase), [Mission](#mission) |
+| **Template** | `tmp/design-mission/templates/user-journey-template.md` |
+| **Distinction** | User Stories live in `spec.md` and describe *what value to deliver*. User Journeys live in `architecture/journeys/` and describe *how actors interact with the system end-to-end*. |
+
+---
+
 ## Context: Governance
 
 Terms describing behavioral governance — rules, validation, and compliance.
@@ -325,12 +339,13 @@ Terms describing behavioral governance — rules, validation, and compliance.
 
 | | |
 |---|---|
-| **Definition** | A mental model and domain-specific philosophical framework within the governance stack. Approaches define *how to think* about a domain or problem type — distinct from step-by-step tactics. |
+| **Definition** | A mental model and domain-specific philosophical framework within the governance stack. Approaches define *how to think* about a domain or problem type — distinct from step-by-step [Tactics](#tactic). Approaches are **user-selectable**: during [Bootstrap](#bootstrap), users choose which approaches their specialist agents should follow (e.g., "use TDD", "use test-first bug fixing", "use locality-of-change"). Selected approaches are stored as project-level preferences in the [Constitution](#constitution) and shape agent behavior for all features. |
 | **Context** | Governance |
 | **Status** | canonical |
 | **Location** | `doctrine/approaches/*.md` |
-| **Related terms** | [Tactic](#tactic), [Mission](#mission) |
-| **Examples** | Living Glossary Practice, Language-First Architecture, Decision-First Development |
+| **Related terms** | [Tactic](#tactic), [Mission](#mission), [Constitution](#constitution), [Bootstrap](#bootstrap) |
+| **Examples** | TDD (Test-Driven Development), Test-First Bug Fixing, Locality of Change, Decision-First Development, Living Glossary Practice |
+| **Distinction** | Users select approaches during bootstrap. Agents consume the associated tactics during execution. |
 
 ---
 
@@ -338,11 +353,12 @@ Terms describing behavioral governance — rules, validation, and compliance.
 
 | | |
 |---|---|
-| **Definition** | A step-by-step execution pattern within the governance stack — concrete procedures for performing specific activities. Together with Templates, they form the lowest precedence governance layer. |
+| **Definition** | A step-by-step execution pattern within the governance stack — concrete procedures for performing specific activities. Together with Templates, they form the lowest precedence governance layer. Tactics are **agent-facing**: agents pull in the specific tactic files they need during execution. Users do not select tactics directly — they select [Approaches](#approach) (e.g., "use TDD"), and the relevant tactics follow as implementation details. |
 | **Context** | Governance |
 | **Status** | canonical |
 | **Location** | `doctrine/tactics/*.tactic.md` |
 | **Related terms** | [Approach](#approach), [Template (Doctrine)](#template-doctrine), [Slash Command](#slash-command) |
+| **Distinction** | Approaches define *how to think* (user-selectable). Tactics define *how to execute* (agent-consumed). |
 
 ---
 
@@ -675,6 +691,33 @@ Terms describing cross-cutting development practices and principles aligned with
 
 ## Context: Configuration & Project Structure
 
+### Vision
+
+| | |
+|---|---|
+| **Definition** | A project-level intent document capturing the repository's purpose, desired outcomes, scope boundaries, and stakeholder overview. Created during [Bootstrap](#bootstrap) as the first interactive step. Provides persistent context for all subsequent `/spec-kitty.specify` discovery interviews — agents reference it to align feature proposals with project intent. Deliberately purpose-first (not problem-first) to accommodate non-solution repositories (creative writing, exploration, research). |
+| **Context** | Configuration |
+| **Status** | candidate |
+| **Location** | `.kittify/memory/vision.md` |
+| **Related terms** | [Bootstrap](#bootstrap), [Constitution](#constitution), [Feature](#feature) |
+| **Distinction** | Vision captures *what/why* (project intent). Constitution captures *how* (technical standards and governance). Different lifecycles, different audiences. |
+
+---
+
+### Bootstrap
+
+| | |
+|---|---|
+| **Definition** | The interactive onboarding command (`/spec-kitty.bootstrap`) that captures project-level intent and governance in a single guided flow. Replaces the standalone `/spec-kitty.constitution` command. Produces two artifacts: `vision.md` (purpose, outcomes, scope) and `constitution.md` (technical standards, quality gates, governance). Also offers users the opportunity to customize how specialist agents work — users select which [Approaches](#approach) their agents should follow (e.g., TDD, test-first bug fixing), choosing from defaults, available approaches, or defining their own. |
+| **Context** | Configuration |
+| **Status** | candidate |
+| **Location** | Proposed — `/spec-kitty.bootstrap` slash command |
+| **Related terms** | [Vision](#vision), [Constitution](#constitution), [Approach](#approach), [Agent Profile](#agent-profile) |
+| **Journey** | [001-project-onboarding-bootstrap](../architecture/journeys/001-project-onboarding-bootstrap.md) |
+| **Phases** | 1. Vision (required) → 2. Agent Customization (recommended) → 3. Technical Standards → 4. Code Quality (optional) → 5. Tribal Knowledge (optional) → 6. Governance (optional) |
+
+---
+
 ### `.kittify/`
 
 | | |
@@ -743,7 +786,7 @@ Terms from pre-integration origins that may appear in older documentation. Use t
 | Iteration (batch execution) | *(no equivalent)* | Spec Kitty uses continuous lane progression per WP, not batch grouping |
 | Cycle (TDD RED→GREEN→REFACTOR) | [Phase](#phase) | Related but different granularity |
 | Run Container (ADR-048) | [Worktree](#worktree) | Same concept, different name |
-| Bootstrap Protocol | *(initialization)* | Handled by `spec-kitty init` |
+| Bootstrap Protocol | [Bootstrap](#bootstrap) | Evolved from `spec-kitty init` post-step to full onboarding command wrapping vision + constitution + agent customization |
 
 ---
 

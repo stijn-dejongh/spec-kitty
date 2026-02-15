@@ -61,7 +61,15 @@ mission-agnostic. The mission is selected later, per-feature, during `/spec-kitt
   │   ├── "Who are the stakeholders?" (lightweight — not full personas)
   │   └── → .kittify/memory/vision.md
   │
-  ├── Phase 2: Technical Standards (from constitution Phase 1)
+  ├── Phase 2: Agent Customization (NEW)
+  │   ├── Present available approaches from doctrine/approaches/
+  │   ├── Three paths: accept defaults / pick-and-choose / define custom
+  │   ├── Example: "Use TDD" → agents follow RED-GREEN-REFACTOR cycle
+  │   ├── Example: "Use test-first bug fixing" → agents write failing test before fixing
+  │   ├── Selected approaches recorded in constitution.md "Agent Practices" section
+  │   └── → .kittify/memory/constitution.md (agent practices section)
+  │
+  ├── Phase 3: Technical Standards (from constitution Phase 1)
   │   ├── Languages, frameworks, testing requirements
   │   ├── Performance targets, deployment constraints
   │   └── → .kittify/memory/constitution.md (technical section)
