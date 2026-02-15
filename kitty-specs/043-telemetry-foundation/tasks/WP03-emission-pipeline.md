@@ -1,29 +1,32 @@
 ---
-work_package_id: "WP03"
+work_package_id: WP03
+title: Emission Pipeline and Orchestrator Integration
+lane: "doing"
+dependencies: [WP01]
+base_branch: feature/doctrine-kitty-2x
+base_commit: a3505ae86accdeb8991e664f58da7942909cc00f
+created_at: '2026-02-15T20:23:42.008223+00:00'
 subtasks:
-  - "T011"
-  - "T012"
-  - "T013"
-  - "T014"
-  - "T015"
-  - "T016"
-  - "T017"
-  - "T018"
-title: "Emission Pipeline and Orchestrator Integration"
-phase: "Phase 2 - Core Integration"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
-dependencies: ["WP01"]
+- T011
+- T012
+- T013
+- T014
+- T015
+- T016
+- T017
+- T018
+phase: Phase 2 - Core Integration
+assignee: ''
+agent: ''
+shell_pid: "503502"
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-15T19:43:21Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-15T19:43:21Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP03 – Emission Pipeline and Orchestrator Integration
