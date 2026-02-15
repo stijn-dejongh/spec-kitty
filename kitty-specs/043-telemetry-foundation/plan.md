@@ -1,108 +1,110 @@
-# Implementation Plan: [FEATURE]
-*Path: [templates/plan-template.md](templates/plan-template.md)*
+# Implementation Plan: Telemetry Foundation and Cost Tracking
 
-
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/kitty-specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/spec-kitty.plan` command. See `src/specify_cli/missions/software-dev/command-templates/plan.md` for the execution workflow.
-
-The planner will not begin until all planning questions have been answered—capture those answers in this document before progressing to later phases.
+**Branch**: `043-telemetry-foundation` | **Date**: 2026-02-15 | **Spec**: [spec.md](spec.md)
+**Input**: Feature specification from `kitty-specs/043-telemetry-foundation/spec.md`
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+Extend the 2.x event system with execution telemetry by building on the vendored `spec_kitty_events` library. Add a `SimpleJsonStore` (JSONL file-backed `EventStore` implementation), an emission pipeline for recording agent invocations, a query layer with stream-parsing, cost aggregation with a shipping pricing table, and CLI reporting commands. ExecutionEvents are stored in per-feature `execution.events.jsonl` files, separate from the status event pipeline.
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: Python 3.11+ (existing spec-kitty codebase)
+**Primary Dependencies**: `spec_kitty_events` (vendored Pydantic event model, Lamport clocks, EventStore ABC), `typer` (CLI), `rich` (console output), `ruamel.yaml` (pricing table parsing)
+**Storage**: Per-feature JSONL files (`kitty-specs/<feature>/execution.events.jsonl`) — append-only, stream-parsed
+**Testing**: pytest, 90%+ coverage for new code, mypy --strict
+**Target Platform**: Linux, macOS, Windows 10+ (cross-platform)
+**Project Type**: Single project — extends existing `src/specify_cli/` package
+**Performance Goals**: Query 10,000-line JSONL in <2 seconds (FR spec SC-003)
+**Constraints**: Emission must never block orchestrator pipeline; failures swallowed with warning
+**Scale/Scope**: Typical project: 10-50 features, 100-500 execution events per feature
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+| Requirement | Status | Notes |
+|-------------|--------|-------|
+| Python 3.11+ | PASS | All new code targets 3.11+ |
+| 90%+ test coverage | PASS | Planned: unit + integration tests for all modules |
+| mypy --strict | PASS | Full type annotations planned |
+| CLI < 2 seconds | PASS | Stream-parsing + lazy loading ensure fast queries |
+| Cross-platform | PASS | Uses pathlib, no platform-specific code |
+| spec-kitty-events via Git dep | PASS | Uses vendored `spec_kitty_events` already in repo |
+
+**Post-design re-check**: No new violations. `SimpleJsonStore` is pure Python with no platform dependencies. Pricing YAML loaded via `Path(__file__).parent`, no pyproject.toml changes needed.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```
-kitty-specs/[###-feature]/
-├── plan.md              # This file (/spec-kitty.plan command output)
-├── research.md          # Phase 0 output (/spec-kitty.plan command)
-├── data-model.md        # Phase 1 output (/spec-kitty.plan command)
-├── quickstart.md        # Phase 1 output (/spec-kitty.plan command)
-├── contracts/           # Phase 1 output (/spec-kitty.plan command)
-└── tasks.md             # Phase 2 output (/spec-kitty.tasks command - NOT created by /spec-kitty.plan)
+kitty-specs/043-telemetry-foundation/
+├── plan.md              # This file
+├── research.md          # Phase 0 output — 7 research decisions
+├── data-model.md        # Phase 1 output — entities and relationships
+├── quickstart.md        # Phase 1 output — usage examples
+└── tasks.md             # Phase 2 output (generated by /spec-kitty.tasks)
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 
 ```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+src/specify_cli/
+├── telemetry/                    # NEW package
+│   ├── __init__.py               # Public API: emit, query, cost_summary
+│   ├── store.py                  # SimpleJsonStore (EventStore ABC impl)
+│   ├── emit.py                   # emit_execution_event() — fire-and-forget
+│   ├── query.py                  # query_execution_events(), query_project_events()
+│   ├── cost.py                   # cost_summary(), PricingTable loader
+│   └── _pricing.yaml             # Default model pricing table
+│
+├── spec_kitty_events/            # EXISTING — no changes needed
+│   ├── models.py                 # Event Pydantic model (used as-is)
+│   └── storage.py                # EventStore ABC (implemented by SimpleJsonStore)
+│
+├── orchestrator/
+│   ├── agents/base.py            # MODIFY — add telemetry fields to InvocationResult
+│   └── integration.py            # MODIFY — emit ExecutionEvent after invocations
+│
+└── cli/commands/agent/
+    ├── __init__.py               # MODIFY — register telemetry sub-command
+    └── telemetry.py              # NEW — `spec-kitty agent telemetry cost` command
 
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+tests/specify_cli/
+├── telemetry/                    # NEW test package
+│   ├── test_store.py             # SimpleJsonStore unit tests
+│   ├── test_emit.py              # Emission pipeline tests
+│   ├── test_query.py             # Query layer tests
+│   └── test_cost.py              # Cost aggregation + pricing tests
+└── cli/commands/
+    └── test_telemetry_cli.py     # CLI integration tests
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: New `telemetry/` package under `src/specify_cli/` — follows the established pattern of domain-specific sub-packages (`status/`, `merge/`, `sync/`). `SimpleJsonStore` lives in `telemetry/store.py` implementing the `spec_kitty_events.EventStore` ABC. Orchestrator files modified minimally (add optional fields + emit hook). CLI command registered under the existing `agent` command group.
+
+## Key Architecture Decisions
+
+### AD-1: Build on `spec_kitty_events.Event`, not new model
+
+Use the existing Pydantic `Event` model with `event_type="ExecutionEvent"` and structured `payload` dict. This gives us Lamport clocks, causal chains, and Pydantic validation for free. See [research.md#R1](research.md).
+
+### AD-2: Separate JSONL file per feature
+
+`execution.events.jsonl` alongside `status.events.jsonl` — no changes to the status pipeline. Future aggregation is easier than categorizing mixed event types. See [research.md#R3](research.md).
+
+### AD-3: `SimpleJsonStore` as `EventStore` implementation
+
+Completes the missing file-backed storage adapter that was planned but never implemented. Append-only writes, stream-parsed reads, idempotent by `event_id`. See [research.md#R2](research.md).
+
+### AD-4: Enrich `InvocationResult` with optional telemetry fields
+
+Add `model`, `input_tokens`, `output_tokens`, `cost_usd` as optional fields (defaulting to `None`). Non-breaking — existing code doesn't reference these fields. See [research.md#R4](research.md).
+
+### AD-5: Fire-and-forget emission pattern
+
+Telemetry emission wraps in try/except with `logger.warning`. Follows the established pattern from `emit_wp_assigned()` in the orchestrator. Never blocks, never raises. See [research.md#R4](research.md).
 
 ## Complexity Tracking
 
-*Fill ONLY if Constitution Check has violations that must be justified*
-
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+No constitution violations — no complexity justification needed.
