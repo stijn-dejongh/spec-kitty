@@ -9,12 +9,12 @@ subtasks:
   - "T012"
 title: "JSONL Writer & Factory"
 phase: "Phase 1 - Foundation"
-lane: "planned"
+lane: "done"
 assignee: ""
 agent: ""
 shell_pid: ""
-review_status: ""
-reviewed_by: ""
+review_status: "approved"
+reviewed_by: "Stijn Dejongh"
 dependencies: ["WP01"]
 history:
   - timestamp: "2026-02-15T00:24:27Z"
@@ -386,3 +386,4 @@ from .factory import load_event_bridge
 ## Activity Log
 
 - 2026-02-15T00:24:27Z – system – lane=planned – Prompt created.
+- 2026-02-15T00:57:48Z – unknown – lane=done – Moved to done
