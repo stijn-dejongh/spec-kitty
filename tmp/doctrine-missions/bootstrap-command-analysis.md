@@ -21,7 +21,7 @@
 
 ## 2. The Core Insight
 
-Bootstrap Bill's value is **the opening question**: "What is this repository trying to achieve?"
+Bootstrap Bill's value is **the opening question**: "What is the purpose of this repository?"
 
 Spec-kitty currently skips straight from scaffolding (`init`) to optional governance (`constitution`)
 to per-feature work (`specify`). The project-level *why* is never explicitly captured.
@@ -30,6 +30,23 @@ This means:
 - Each `/spec-kitty.specify` discovery interview lacks project context
 - The constitution captures *how we build* but not *what we're building or for whom*
 - Agents entering a project have no single artifact explaining purpose and scope
+
+### Future Mission Horizons
+
+The purpose-first framing is deliberate — spec-kitty's mission system should expand beyond
+engineering. Anticipated future missions include:
+
+| Mission | Domain | Example Projects |
+|---------|--------|-----------------|
+| `software-dev` | Engineering | APIs, CLIs, web apps |
+| `research` | Investigation | Feasibility studies, literature reviews |
+| `documentation` | Knowledge capture | User guides, API docs, tutorials |
+| `design` | Architecture | ADRs, trade-off analysis, system design |
+| `creative-writing` | Creative | Fiction, poetry, worldbuilding, scripts |
+| `exploration` | Discovery | Prototyping, spikes, concept validation |
+
+Bootstrap must not assume any particular mission — `vision.md` captures intent that is
+mission-agnostic. The mission is selected later, per-feature, during `/spec-kitty.specify`.
 
 ## 3. Proposed `/spec-kitty.bootstrap` Flow
 

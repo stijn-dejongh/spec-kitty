@@ -176,6 +176,8 @@ and constitution into a single guided onboarding, replacing the standalone
 | Constitution command deprecated, not removed | Backward compatibility; existing projects may have workflows depending on it | pending |
 | Phase 2 (Vision) is required, Phases 3-6 optional | A project without stated intent is more harmful than a project without governance rules | pending |
 | Events emitted via EventBridge (Feature 040) | Bootstrap is a lane transition-equivalent lifecycle event; use existing infrastructure | pending |
+| Opening question is purpose-first, not problem-first | "What is the purpose of this repository?" accommodates non-solution repos (creative writing, exploration, research, worldbuilding) — problem statement is a conditional follow-up only when purpose implies solving something | pending |
+| Vision questions are mission-agnostic | Bootstrap must not assume software development — future missions include creative writing, exploration, design, and other non-engineering endeavours | pending |
 
 ---
 
