@@ -47,7 +47,7 @@ and constitution into a single guided onboarding, replacing the standalone
 | Phase | Actor(s) | System | Key Events |
 |-------|----------|--------|------------|
 | 1. Init | Project Owner | CLI scaffolds `.kittify/`, agent dirs, git repo, context files | `ProjectInitialized`, `AgentConfigured` |
-| 2. Vision Discovery | Project Owner ↔ AI Agent | AI conducts interview: problem, outcomes, scope, stakeholders | `VisionInterviewStarted`, `VisionCaptured` |
+| 2. Vision Discovery | Project Owner ↔ AI Agent | AI conducts interview: purpose, outcomes, scope, stakeholders | `VisionInterviewStarted`, `VisionCaptured` |
 | 3. Technical Standards | Project Owner ↔ AI Agent | AI asks about languages, testing, performance, deployment | `ConstitutionPhaseCompleted` |
 | 4. Code Quality (optional) | Project Owner ↔ AI Agent | AI asks about PR requirements, review gates, documentation standards | `ConstitutionPhaseCompleted` |
 | 5. Tribal Knowledge (optional) | Project Owner ↔ AI Agent | AI asks about team conventions, lessons learned, known pitfalls | `ConstitutionPhaseCompleted` |
@@ -95,7 +95,9 @@ and constitution into a single guided onboarding, replacing the standalone
 ### In Scope
 
 1. **Vision capture**:
-   - Problem statement, desired outcomes, scope boundaries
+   - Purpose statement ("What is the purpose of this repository?")
+   - Problem statement (optional follow-up — only when purpose implies solving something)
+   - Desired outcomes, scope boundaries
    - Lightweight stakeholder identification (names and roles, not full personas)
    - Role of AI agents in this project
 

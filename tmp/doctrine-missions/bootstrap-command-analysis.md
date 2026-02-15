@@ -37,7 +37,8 @@ This means:
 /spec-kitty.bootstrap
   │
   ├── Phase 1: Vision (NEW — from Bootstrap Bill)
-  │   ├── "What problem does this project solve?"
+  │   ├── "What is the purpose of this repository?"
+  │   ├── "What problem does it address?" (optional — only if purpose implies solving something)
   │   ├── "What does success look like?"
   │   ├── "What's in scope / out of scope?"
   │   ├── "Who are the stakeholders?" (lightweight — not full personas)
