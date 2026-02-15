@@ -1,7 +1,7 @@
 ---
 work_package_id: WP01
 title: SimpleJsonStore — File-Backed EventStore
-lane: "for_review"
+lane: "doing"
 dependencies: []
 base_branch: 043-telemetry-foundation
 base_commit: b7331a9d47b04013dcbdbae3c2a70a7cef0b0f74
@@ -15,8 +15,8 @@ subtasks:
 - T006
 phase: Phase 1 - Foundation
 assignee: ''
-agent: claude-opus
-shell_pid: '497135'
+agent: "copilot"
+shell_pid: "501650"
 review_status: ''
 reviewed_by: ''
 history:
@@ -210,3 +210,4 @@ No dependencies — branches directly from target branch.
 - 2026-02-15T19:43:21Z – system – lane=planned – Prompt created.
 - 2026-02-15T20:04:52Z – claude-opus – shell_pid=497135 – lane=doing – Assigned agent via workflow command
 - 2026-02-15T20:12:21Z – claude-opus – shell_pid=497135 – lane=for_review – Ready for review: SimpleJsonStore with 15 tests, 90% coverage, mypy/ruff clean
+- 2026-02-15T20:17:37Z – copilot – shell_pid=501650 – lane=doing – Started review via workflow command

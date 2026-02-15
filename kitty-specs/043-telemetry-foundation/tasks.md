@@ -248,3 +248,8 @@ WP01 (SimpleJsonStore)
 | T026 | Add Rich-formatted table output | WP05 | P1 | No |
 | T027 | Register telemetry sub-command | WP05 | P1 | No |
 | T028 | CLI integration tests | WP05 | P1 | No |
+
+<!-- status-model:start -->
+## Canonical Status (Generated)
+- WP01: for_review
+<!-- status-model:end -->
