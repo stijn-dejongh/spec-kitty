@@ -13,7 +13,7 @@ subtasks:
 - T010
 phase: Phase 1 - Foundation
 assignee: ''
-agent: ''
+agent: "copilot"
 shell_pid: "503425"
 review_status: ''
 reviewed_by: ''
@@ -175,3 +175,4 @@ Depends on WP01 (SimpleJsonStore).
 ## Activity Log
 
 - 2026-02-15T19:43:21Z – system – lane=planned – Prompt created.
+- 2026-02-15T20:23:35Z – copilot – shell_pid=503425 – lane=doing – Assigned agent via workflow command
