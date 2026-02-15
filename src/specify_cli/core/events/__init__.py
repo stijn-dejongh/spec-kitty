@@ -1,6 +1,7 @@
 """Structured event emission for Spec Kitty lifecycle."""
 
 from .bridge import CompositeEventBridge, EventBridge, NullEventBridge
+from .factory import load_event_bridge
 from .models import (
     BaseEvent,
     ExecutionEvent,
@@ -16,4 +17,5 @@ __all__ = [
     "LaneTransitionEvent",
     "NullEventBridge",
     "ValidationEvent",
+    "load_event_bridge",
 ]
