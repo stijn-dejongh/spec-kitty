@@ -9,12 +9,12 @@ subtasks:
   - "T006"
 title: "Event Models & Bridge ABC"
 phase: "Phase 1 - Foundation"
-lane: "planned"
+lane: "done"
 assignee: ""
 agent: ""
 shell_pid: ""
-review_status: ""
-reviewed_by: ""
+review_status: "approved"
+reviewed_by: "Stijn Dejongh"
 dependencies: []
 history:
   - timestamp: "2026-02-15T00:24:27Z"
@@ -424,3 +424,4 @@ class CompositeEventBridge(EventBridge):
 ## Activity Log
 
 - 2026-02-15T00:24:27Z – system – lane=planned – Prompt created.
+- 2026-02-15T00:55:53Z – unknown – lane=done – Moved to done
