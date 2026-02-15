@@ -1,9 +1,12 @@
 ---
 work_package_id: WP04
 title: Cost Tracking and Pricing Table
-lane: planned
+lane: "doing"
 dependencies:
 - WP01
+base_branch: feature/doctrine-kitty-2x
+base_commit: a3505ae86accdeb8991e664f58da7942909cc00f
+created_at: '2026-02-15T20:23:50.129546+00:00'
 subtasks:
 - T019
 - T020
@@ -13,7 +16,7 @@ subtasks:
 phase: Phase 2 - Core Integration
 assignee: ''
 agent: ''
-shell_pid: ''
+shell_pid: "503611"
 review_status: ''
 reviewed_by: ''
 history:
