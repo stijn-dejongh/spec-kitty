@@ -71,3 +71,4 @@ Terms describing Doctrine agent identities — *who* performs work and *what rul
 | **Example**       | `implement: [spec, plan, architecture]`, `fix: [spec, review-comments, test-output]`                                                                       |
 
 ---
+

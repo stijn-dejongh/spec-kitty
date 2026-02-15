@@ -50,27 +50,27 @@ Terms describing spec-kitty's workflow engine and lifecycle management.
 
 ### Research
 
-|                   |                                                                                                                                                                                                                          |
-|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Definition**    | Phase-0 discovery and evidence artifacts associated with a feature. Captures unresolved questions, source references, trade-off analysis, and rationale that inform specification and planning decisions.               |
-| **Context**       | Orchestration                                                                                                                                                                                                            |
-| **Status**        | canonical                                                                                                                                                                                                                |
-| **Location**      | `kitty-specs/<feature>/research.md` and/or `kitty-specs/<feature>/research/`                                                                                                                                            |
-| **Related terms** | [Feature](#feature), [Spec-Driven Development (SDD)](#spec-driven-development-sdd), [Contracts](#contracts)                                                                                                            |
-| **Distinction**   | Research explains *why and based on what evidence* decisions are made; [Specification](#feature) defines *what change is requested*.                                                                                   |
+|                   |                                                                                                                                                                                                           |
+|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Definition**    | Phase-0 discovery and evidence artifacts associated with a feature. Captures unresolved questions, source references, trade-off analysis, and rationale that inform specification and planning decisions. |
+| **Context**       | Orchestration                                                                                                                                                                                             |
+| **Status**        | canonical                                                                                                                                                                                                 |
+| **Location**      | `kitty-specs/<feature>/research.md` and/or `kitty-specs/<feature>/research/`                                                                                                                              |
+| **Related terms** | [Feature](#feature), [Spec-Driven Development (SDD)](#spec-driven-development-sdd), [Contracts](#contracts)                                                                                               |
+| **Distinction**   | Research explains *why and based on what evidence* decisions are made; [Specification](#feature) defines *what change is requested*.                                                                      |
 
 ---
 
 ### Contracts
 
-|                   |                                                                                                                                                                                                                          |
-|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Definition**    | Formal boundary definitions for a feature, typically API/event/schema/interface contracts that implementation must satisfy. Used to make cross-component expectations explicit before and during implementation.          |
-| **Context**       | Orchestration                                                                                                                                                                                                            |
-| **Status**        | canonical                                                                                                                                                                                                                |
-| **Location**      | `kitty-specs/<feature>/contracts/`                                                                                                                                                                                       |
-| **Related terms** | [Feature](#feature), [Research](#research), [Work Package (WP)](#work-package-wp)                                                                                                                                      |
-| **Distinction**   | Contracts define *shape and compatibility constraints* at boundaries; [Plan](#phase) and tasks define *execution sequencing*.                                                                                           |
+|                   |                                                                                                                                                                                                                  |
+|-------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Definition**    | Formal boundary definitions for a feature, typically API/event/schema/interface contracts that implementation must satisfy. Used to make cross-component expectations explicit before and during implementation. |
+| **Context**       | Orchestration                                                                                                                                                                                                    |
+| **Status**        | canonical                                                                                                                                                                                                        |
+| **Location**      | `kitty-specs/<feature>/contracts/`                                                                                                                                                                               |
+| **Related terms** | [Feature](#feature), [Research](#research), [Work Package (WP)](#work-package-wp)                                                                                                                                |
+| **Distinction**   | Contracts define *shape and compatibility constraints* at boundaries; [Plan](#phase) and tasks define *execution sequencing*.                                                                                    |
 
 ---
 
@@ -153,14 +153,14 @@ Terms describing spec-kitty's workflow engine and lifecycle management.
 
 ### Mission
 
-|                   |                                                                                                                                                      |
-|-------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Definition**    | A versioned orchestration recipe for a domain. A mission defines workflow states, transitions, guards, and required artifacts. |
-| **Context**       | Orchestration                                                                                                                                        |
-| **Status**        | canonical                                                                                                                                            |
-| **In code**       | `src/doctrine/missions/*/mission.yaml` (v2); compatibility assets still exist under `src/specify_cli/missions/`                                      |
-| **Related terms** | [Phase](#phase), [Slash Command](#slash-command), [Constitution](#constitution), [Tool](#tool) |
-| **Distinction**   | Mission defines orchestration (*what runs and when*). Constitution selects and narrows active governance assets for the project.                      |
+|                   |                                                                                                                                  |
+|-------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| **Definition**    | A versioned orchestration recipe for a domain. A mission defines workflow states, transitions, guards, and required artifacts.   |
+| **Context**       | Orchestration                                                                                                                    |
+| **Status**        | canonical                                                                                                                        |
+| **In code**       | `src/doctrine/missions/*/mission.yaml` (v2); compatibility assets still exist under `src/specify_cli/missions/`                  |
+| **Related terms** | [Phase](#phase), [Slash Command](#slash-command), [Constitution](#constitution), [Tool](#tool)                                   |
+| **Distinction**   | Mission defines orchestration (*what runs and when*). Constitution selects and narrows active governance assets for the project. |
 
 ---
 
@@ -186,7 +186,7 @@ Terms describing spec-kitty's workflow engine and lifecycle management.
 | **Status**        | canonical                                                                                                                                                                                                                                                                                                                                                                                                      |
 | **Location**      | `architecture/journeys/*.md`                                                                                                                                                                                                                                                                                                                                                                                   |
 | **Related terms** | [Feature](#feature), [Phase](#phase), [Mission](#mission)                                                                                                                                                                                                                                                                                                                                                      |
-| **Template**      | `src/doctrine/templates/architecture/user-journey-template.md`                                                                                                                                                                                                                                                                                                                                                  |
+| **Template**      | `src/doctrine/templates/architecture/user-journey-template.md`                                                                                                                                                                                                                                                                                                                                                 |
 | **Distinction**   | User Stories live in `spec.md` and describe *what value to deliver*. User Journeys live in `architecture/journeys/` and describe *how actors interact with the system end-to-end*.                                                                                                                                                                                                                             |
 
 ---
