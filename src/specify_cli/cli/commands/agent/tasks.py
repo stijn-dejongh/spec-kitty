@@ -798,6 +798,21 @@ def move_task(
             f"[green]✓[/green] Moved {task_id} from {old_lane} to {target_lane}"
         )
 
+        # Emit lane transition event (telemetry)
+        try:
+            from specify_cli.core.events import LaneTransitionEvent, load_event_bridge
+
+            event_bridge = load_event_bridge(repo_root)
+            event = LaneTransitionEvent(
+                timestamp=datetime.now(timezone.utc),
+                work_package_id=task_id,
+                from_lane=old_lane,
+                to_lane=target_lane,
+            )
+            event_bridge.emit_lane_transition(event)
+        except Exception:
+            pass  # Event emission must never crash the workflow
+
         # Check for dependent WP warnings when moving to for_review (T083)
         _check_dependent_warnings(repo_root, feature_slug, task_id, target_lane, json_output)
 

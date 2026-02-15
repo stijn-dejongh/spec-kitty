@@ -14,11 +14,12 @@ import asyncio
 import logging
 import time
 from asyncio.subprocess import Process
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from specify_cli.core.events import EventBridge, NullEventBridge
 from specify_cli.orchestrator.agents.base import AgentInvoker, BaseInvoker, InvocationResult
 
 if TYPE_CHECKING:
@@ -531,6 +532,7 @@ class ExecutionContext:
     timeout_seconds: int
     repo_root: Path
     working_dir: Path | None = None  # Set after worktree creation
+    event_bridge: EventBridge = field(default_factory=NullEventBridge)
 
 
 async def execute_wp(
