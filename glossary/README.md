@@ -468,7 +468,7 @@ Terms describing the event emission and telemetry infrastructure.
 | **Definition** | An ABC for structured event emission at workflow points. All cross-cutting concerns (telemetry, work logs, cost tracking) register as consumers. `NullEventBridge` discards events (default). `CompositeEventBridge` fans out to registered listeners with error isolation. |
 | **Context** | Events & Telemetry |
 | **Status** | canonical |
-| **In code** | `EventBridge` (ABC), `NullEventBridge`, `CompositeEventBridge` |
+| **In code** | `EventBridge` (ABC), `NullEventBridge`, `CompositeEventBridge` in `src/specify_cli/core/events/bridge.py` |
 | **Related terms** | [Lane Transition Event](#lane-transition-event), [Validation Event](#validation-event), [Execution Event](#execution-event) |
 | **Architecture** | Unified Event Spine — all lifecycle events flow through a single bridge |
 
@@ -481,7 +481,7 @@ Terms describing the event emission and telemetry infrastructure.
 | **Definition** | Emitted when a work package moves between lanes. The primary unit of progress tracking. |
 | **Context** | Events & Telemetry |
 | **Status** | canonical |
-| **In code** | `LaneTransitionEvent` (Pydantic BaseModel, frozen) |
+| **In code** | `LaneTransitionEvent` (Pydantic BaseModel, frozen) in `src/specify_cli/core/events/models.py` |
 | **Fields** | `timestamp`, `work_package_id`, `from_lane`, `to_lane`, `agent`, `commit_sha` |
 | **Related terms** | [Lane](#lane), [EventBridge](#eventbridge) |
 
@@ -494,7 +494,7 @@ Terms describing the event emission and telemetry infrastructure.
 | **Definition** | Emitted when a governance check runs. Makes governance compliance auditable. |
 | **Context** | Events & Telemetry |
 | **Status** | canonical |
-| **In code** | `ValidationEvent` (Pydantic BaseModel, frozen) |
+| **In code** | `ValidationEvent` (Pydantic BaseModel, frozen) in `src/specify_cli/core/events/models.py` |
 | **Fields** | `timestamp`, `validation_type`, `status`, `directive_refs`, `duration_ms` |
 | **Related terms** | [Validation Result](#validation-result), [EventBridge](#eventbridge) |
 
@@ -507,9 +507,169 @@ Terms describing the event emission and telemetry infrastructure.
 | **Definition** | Emitted when a tool executes work. Captures token usage, cost, duration, and success/failure. |
 | **Context** | Events & Telemetry |
 | **Status** | canonical |
-| **In code** | `ExecutionEvent` (Pydantic BaseModel, frozen) |
+| **In code** | `ExecutionEvent` (Pydantic BaseModel, frozen) in `src/specify_cli/core/events/models.py` |
 | **Fields** | `timestamp`, `work_package_id`, `agent`, `model`, `input_tokens`, `output_tokens`, `cost_usd`, `duration_ms`, `success`, `error` |
 | **Related terms** | [EventBridge](#eventbridge), [Invocation Result](#invocation-result) |
+
+---
+
+### JsonlEventWriter
+
+| | |
+|---|---|
+| **Definition** | JSONL file appender that serializes Pydantic event models as one JSON object per line. Handles write failures gracefully (logs warning, does not crash workflow). |
+| **Context** | Events & Telemetry |
+| **Status** | canonical |
+| **In code** | `JsonlEventWriter` in `src/specify_cli/telemetry/jsonl_writer.py` |
+| **Related terms** | [EventBridge](#eventbridge), [CompositeEventBridge](#compositeventbridge) |
+
+---
+
+### Event Bridge Factory
+
+| | |
+|---|---|
+| **Definition** | Factory function `load_event_bridge(repo_root)` that reads `.kittify/config.yaml` telemetry settings and returns the appropriate EventBridge. Returns NullEventBridge when telemetry is disabled or config is missing/malformed. |
+| **Context** | Events & Telemetry |
+| **Status** | canonical |
+| **In code** | `load_event_bridge()` in `src/specify_cli/core/events/factory.py` |
+| **Related terms** | [EventBridge](#eventbridge), [NullEventBridge](#nulleventbridge), [JsonlEventWriter](#jsonleventwriter) |
+
+---
+
+## Context: Practices & Principles
+
+Terms describing cross-cutting development practices and principles aligned with the Agentic Doctrine.
+
+### Human In Charge
+
+| | |
+|---|---|
+| **Definition** | The foundational governance principle that humans retain authority over all critical decisions. Agents may operate autonomously within defined decision boundaries but must escalate architectural changes, breaking changes, security modifications, and ambiguous requirements. The `work/human-in-charge/` directory structure provides escalation channels (decision requests, blockers, problem reports). |
+| **Context** | Practices & Principles |
+| **Status** | canonical |
+| **Related terms** | [Decision Boundary](#decision-boundary), [Escalation](#escalation), [Human Review Loop](#human-review-loop), [AFK Mode](#afk-mode) |
+
+---
+
+### Human Review Loop
+
+| | |
+|---|---|
+| **Definition** | A checkpoint in the workflow where a human reviews agent-produced work before it advances. In Spec Kitty, the `for_review` lane and `/spec-kitty.review` command embody this pattern. Ensures quality gates remain under human authority. |
+| **Context** | Practices & Principles |
+| **Status** | canonical |
+| **Related terms** | [Human In Charge](#human-in-charge), [Lane](#lane), [Phase Checkpoint Protocol](#phase-checkpoint-protocol) |
+
+---
+
+### Escalation
+
+| | |
+|---|---|
+| **Definition** | The act of an agent pausing autonomous work and requesting human guidance. Triggered by blockers, critical decisions, ambiguous requirements, or unexpected results. Escalation artifacts are placed in `work/human-in-charge/` subdirectories. |
+| **Context** | Practices & Principles |
+| **Status** | canonical |
+| **Related terms** | [Human In Charge](#human-in-charge), [Decision Boundary](#decision-boundary), [Stopping Condition](#stopping-condition) |
+
+---
+
+### Decision Boundary
+
+| | |
+|---|---|
+| **Definition** | The classification of decisions into minor (agent-autonomous) and critical (requires human approval). Minor: file naming, code style, test data, documentation phrasing. Critical: architectural changes, breaking APIs, schema modifications, dependency changes, security policy changes. |
+| **Context** | Practices & Principles |
+| **Status** | canonical |
+| **Related terms** | [Human In Charge](#human-in-charge), [AFK Mode](#afk-mode), [Escalation](#escalation) |
+
+---
+
+### Collaboration Contract
+
+| | |
+|---|---|
+| **Definition** | The behavioral commitments defined in an agent profile — what the agent will do, how it will communicate, when it will escalate, and what quality standards it upholds. Each Doctrine agent profile (`doctrine/agents/*.agent.md`) embodies a collaboration contract. |
+| **Context** | Practices & Principles |
+| **Status** | canonical |
+| **Related terms** | [Agent Profile](#agent-profile), [Decision Boundary](#decision-boundary), [Human In Charge](#human-in-charge) |
+
+---
+
+### Phase Authority
+
+| | |
+|---|---|
+| **Definition** | The designation of who owns each phase of the Spec-Driven Development lifecycle. Different phases may have different authority levels — e.g., specification is human-owned, implementation may be agent-delegated, review requires human sign-off. |
+| **Context** | Practices & Principles |
+| **Status** | canonical |
+| **Related terms** | [Phase](#phase), [Human In Charge](#human-in-charge), [Phase Checkpoint Protocol](#phase-checkpoint-protocol) |
+
+---
+
+### Phase Checkpoint Protocol
+
+| | |
+|---|---|
+| **Definition** | End-of-phase verification ensuring deliverables meet quality gates before proceeding. Each SDD phase has defined exit criteria. Checkpoints may be automated (tests pass, lint clean) or human-gated (review approval). |
+| **Context** | Practices & Principles |
+| **Status** | canonical |
+| **Related terms** | [Phase Authority](#phase-authority), [Human Review Loop](#human-review-loop), [Validation Result](#validation-result) |
+
+---
+
+### Living Glossary
+
+| | |
+|---|---|
+| **Definition** | A glossary that evolves with the codebase — terms are added, refined, or deprecated as the domain understanding deepens. This very document is a living glossary. Terminology decisions are treated as architectural decisions. |
+| **Context** | Practices & Principles |
+| **Status** | canonical |
+| **Related terms** | [Living Specification](#living-specification) |
+
+---
+
+### Living Specification
+
+| | |
+|---|---|
+| **Definition** | A specification that evolves during discovery and planning phases, then freezes at implementation start. In Spec Kitty, `spec.md` is living during `/spec-kitty.specify` and `/spec-kitty.clarify`, then becomes the frozen contract that `plan.md` and `tasks.md` implement against. |
+| **Context** | Practices & Principles |
+| **Status** | canonical |
+| **Related terms** | [Living Glossary](#living-glossary), [Spec-Driven Development](#spec-driven-development) |
+
+---
+
+### Stopping Condition
+
+| | |
+|---|---|
+| **Definition** | A predefined criterion that tells an agent when to halt pursuit of a goal. Prevents unbounded iteration. Examples: test suite passes, lint clean, reviewer approves, maximum retry count reached, or an escalation condition is triggered. |
+| **Context** | Practices & Principles |
+| **Status** | canonical |
+| **Related terms** | [Escalation](#escalation), [Decision Boundary](#decision-boundary) |
+
+---
+
+### File-Based Orchestration
+
+| | |
+|---|---|
+| **Definition** | The coordination pattern where workflow state is stored in files (YAML frontmatter, markdown, JSON) rather than a database or API. Spec Kitty uses file-based orchestration — lane status lives in WP frontmatter, config in `.kittify/config.yaml`, events in JSONL files. Enables git-native versioning and multi-agent coordination without shared infrastructure. |
+| **Context** | Practices & Principles |
+| **Status** | canonical |
+| **Related terms** | [Lane](#lane), [Work Package](#work-package), [EventBridge](#eventbridge) |
+
+---
+
+### AFK Mode
+
+| | |
+|---|---|
+| **Definition** | Away From Keyboard — a session management protocol granting agents extended autonomy with defined boundaries. When activated: commit after each logical unit, push permission granted, minor decisions autonomous, critical decisions trigger escalation. Deactivated when human returns or agent encounters a critical decision. |
+| **Context** | Practices & Principles |
+| **Status** | canonical |
+| **Related terms** | [Human In Charge](#human-in-charge), [Decision Boundary](#decision-boundary), [Escalation](#escalation) |
 
 ---
 
