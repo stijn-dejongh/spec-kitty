@@ -15,7 +15,7 @@ subtasks:
 - T006
 phase: Phase 1 - Foundation
 assignee: ''
-agent: ''
+agent: "claude-opus"
 shell_pid: "497135"
 review_status: ''
 reviewed_by: ''
@@ -208,3 +208,4 @@ No dependencies — branches directly from target branch.
 ## Activity Log
 
 - 2026-02-15T19:43:21Z – system – lane=planned – Prompt created.
+- 2026-02-15T20:04:52Z – claude-opus – shell_pid=497135 – lane=doing – Assigned agent via workflow command
