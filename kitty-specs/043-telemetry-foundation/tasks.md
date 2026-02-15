@@ -29,12 +29,12 @@
 **Estimated size**: ~400 lines
 
 ### Included Subtasks
-- [ ] T001 Create `src/specify_cli/telemetry/__init__.py` with public API exports
-- [ ] T002 Implement `SimpleJsonStore` in `src/specify_cli/telemetry/store.py` (EventStore ABC: `save_event`, `load_events`, `load_all_events`)
-- [ ] T003 Add stream-parsing for large JSONL reads (line-by-line, no full-file load)
-- [ ] T004 Add idempotent write semantics (dedup by `event_id` on save)
-- [ ] T005 Add malformed-line tolerance (skip with warning, continue parsing)
-- [ ] T006 Write unit tests in `tests/specify_cli/telemetry/test_store.py`
+- [x] T001 Create `src/specify_cli/telemetry/__init__.py` with public API exports
+- [x] T002 Implement `SimpleJsonStore` in `src/specify_cli/telemetry/store.py` (EventStore ABC: `save_event`, `load_events`, `load_all_events`)
+- [x] T003 Add stream-parsing for large JSONL reads (line-by-line, no full-file load)
+- [x] T004 Add idempotent write semantics (dedup by `event_id` on save)
+- [x] T005 Add malformed-line tolerance (skip with warning, continue parsing)
+- [x] T006 Write unit tests in `tests/specify_cli/telemetry/test_store.py`
 
 ### Implementation Notes
 - `SimpleJsonStore.__init__(file_path: Path)` — single JSONL file per store instance
