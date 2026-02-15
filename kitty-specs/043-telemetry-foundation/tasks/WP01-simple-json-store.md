@@ -1,27 +1,30 @@
 ---
-work_package_id: "WP01"
-subtasks:
-  - "T001"
-  - "T002"
-  - "T003"
-  - "T004"
-  - "T005"
-  - "T006"
-title: "SimpleJsonStore — File-Backed EventStore"
-phase: "Phase 1 - Foundation"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
+work_package_id: WP01
+title: SimpleJsonStore — File-Backed EventStore
+lane: "doing"
 dependencies: []
+base_branch: 043-telemetry-foundation
+base_commit: b7331a9d47b04013dcbdbae3c2a70a7cef0b0f74
+created_at: '2026-02-15T20:04:50.279505+00:00'
+subtasks:
+- T001
+- T002
+- T003
+- T004
+- T005
+- T006
+phase: Phase 1 - Foundation
+assignee: ''
+agent: ''
+shell_pid: "497135"
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-15T19:43:21Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-15T19:43:21Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP01 – SimpleJsonStore — File-Backed EventStore
