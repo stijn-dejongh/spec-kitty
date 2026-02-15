@@ -1,7 +1,7 @@
 ---
 work_package_id: WP03
 title: Orchestrator & CLI Wiring
-lane: planned
+lane: "done"
 dependencies:
 - WP01
 subtasks:
@@ -14,8 +14,8 @@ phase: Phase 2 - Integration
 assignee: ''
 agent: ''
 shell_pid: ''
-review_status: ''
-reviewed_by: ''
+review_status: "approved"
+reviewed_by: "Stijn Dejongh"
 history:
 - timestamp: '2026-02-15T00:24:27Z'
   lane: planned
@@ -284,3 +284,4 @@ import yaml
 ## Activity Log
 
 - 2026-02-15T00:24:27Z – system – lane=planned – Prompt created.
+- 2026-02-15T01:00:59Z – unknown – lane=done – Moved to done
