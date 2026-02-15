@@ -17,7 +17,7 @@ subtasks:
 - T018
 phase: Phase 2 - Core Integration
 assignee: ''
-agent: ''
+agent: "copilot"
 shell_pid: "503502"
 review_status: ''
 reviewed_by: ''
@@ -337,3 +337,4 @@ Depends on WP01 (SimpleJsonStore).
 ## Activity Log
 
 - 2026-02-15T19:43:21Z – system – lane=planned – Prompt created.
+- 2026-02-15T20:23:42Z – copilot – shell_pid=503502 – lane=doing – Assigned agent via workflow command
