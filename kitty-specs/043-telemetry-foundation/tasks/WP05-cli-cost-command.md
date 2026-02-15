@@ -4,6 +4,7 @@ title: CLI Cost Command
 lane: planned
 dependencies:
 - WP02
+- WP04
 subtasks:
 - T024
 - T025

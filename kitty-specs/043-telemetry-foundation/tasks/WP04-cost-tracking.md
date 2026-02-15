@@ -4,7 +4,6 @@ title: Cost Tracking and Pricing Table
 lane: planned
 dependencies:
 - WP01
-- WP03
 subtasks:
 - T019
 - T020
@@ -197,8 +196,9 @@ Depends on WP01 (SimpleJsonStore). Can run in parallel with WP02 and WP03.
      ```python
      cost = event.payload.get("cost_usd")
      estimated = 0.0
-     if cost is None or cost == 0.0:
-         # Estimate from pricing table
+     if cost is None:
+         # None = not reported by agent → estimate from pricing table
+         # Note: 0.0 means "explicitly free" and is NOT estimated
          model = event.payload.get("model")
          input_tokens = event.payload.get("input_tokens") or 0
          output_tokens = event.payload.get("output_tokens") or 0
@@ -229,6 +229,7 @@ Depends on WP01 (SimpleJsonStore). Can run in parallel with WP02 and WP03.
      - **test_cost_summary_by_feature**: Events from different features (different `aggregate_id`), verify feature grouping
      - **test_explicit_cost_used**: Event with `cost_usd=0.15`, verify 0.15 used (not estimated)
      - **test_estimated_cost_from_pricing**: Event with tokens but `cost_usd=None`, verify estimate matches manual calculation
+     - **test_zero_cost_not_estimated**: Event with `cost_usd=0.0` (explicitly free), verify 0.0 used (not estimated from pricing table)
      - **test_unknown_model_zero_cost**: Event with unknown model, verify cost=0.0
      - **test_empty_events**: Empty event list, verify empty summary
      - **test_none_tokens_treated_as_zero**: Event with `input_tokens=None`, verify treated as 0
