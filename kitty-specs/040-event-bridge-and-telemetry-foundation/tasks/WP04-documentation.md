@@ -1,7 +1,7 @@
 ---
 work_package_id: WP04
 title: Documentation
-lane: planned
+lane: "done"
 dependencies:
 - WP01
 subtasks:
@@ -11,8 +11,8 @@ phase: Phase 3 - Polish
 assignee: ''
 agent: ''
 shell_pid: ''
-review_status: ''
-reviewed_by: ''
+review_status: "approved"
+reviewed_by: "Stijn Dejongh"
 history:
 - timestamp: '2026-02-15T00:24:27Z'
   lane: planned
@@ -142,3 +142,4 @@ Can run in parallel with WP03.
 ## Activity Log
 
 - 2026-02-15T00:24:27Z – system – lane=planned – Prompt created.
+- 2026-02-15T01:03:14Z – unknown – lane=done – Moved to done
