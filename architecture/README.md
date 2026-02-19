@@ -59,6 +59,12 @@ ADR template (canonical):
 src/doctrine/templates/architecture/adr-template.md
 ```
 
+ADR template (canonical):
+
+```
+src/doctrine/templates/architecture/adr-template.md
+```
+
 **Note:** Implementation details are documented in code, tests, and docstrings. ADRs focus on decisions and link directly to code.
 
 ## Naming Conventions
