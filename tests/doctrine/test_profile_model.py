@@ -12,7 +12,6 @@ Follows ATDD approach with ZOMBIES ordering:
 """
 
 import warnings
-from typing import Any
 
 import pytest
 from pydantic import ValidationError

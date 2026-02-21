@@ -44,7 +44,8 @@ def _coerce_role(value: Any) -> Role | str:
                 stacklevel=2,
             )
             return value
-    return value
+    # Fallback for unexpected types - return as string
+    return str(value)
 
 
 # Value Objects (Section components)
