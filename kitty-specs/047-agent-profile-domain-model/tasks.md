@@ -67,11 +67,11 @@
 
 ### Included Subtasks
 
-- [ ] T016 Expand `src/doctrine/schemas/agent-profile.schema.yaml` with all 6-section fields
-- [ ] T017 Add schema validation utility function
-- [ ] T018 Create valid and invalid fixture YAML files
-- [ ] T018b Test schema utility rejects non-.agent.yaml files (file extension validation)
-- [ ] T019 Write schema validation tests in `tests/doctrine/test_profile_schema_validation.py`
+- [x] T016 Expand `src/doctrine/schemas/agent-profile.schema.yaml` with all 6-section fields
+- [x] T017 Add schema validation utility function
+- [x] T018 Create valid and invalid fixture YAML files
+- [x] T018b Test schema utility rejects non-.agent.yaml files (file extension validation)
+- [x] T019 Write schema validation tests in `tests/doctrine/test_profile_schema_validation.py`
 
 ### Dependencies
 
@@ -303,4 +303,5 @@ Wave 3 (documentation):
 <!-- status-model:start -->
 ## Canonical Status (Generated)
 - WP01: for_review
+- WP02: for_review
 <!-- status-model:end -->
