@@ -82,6 +82,7 @@ test = [
     "pytest-asyncio>=0.21.0",  # Required for async tests
     "build>=1.0.0",  # Required for distribution tests (wheel building)
     "mypy>=1.0",  # Static type checking (constitution: mypy --strict)
+    "types-PyYAML>=6.0",  # Type stubs for PyYAML
     "ruff>=0.1.0",  # Linting (constitution: ruff check)
     "bandit>=1.7",  # Python SAST -- OWASP security scanning (all tiers)
     "pip-audit>=2.6",  # CVE scanning of installed dependencies

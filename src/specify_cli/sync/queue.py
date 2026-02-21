@@ -151,8 +151,8 @@ class OfflineQueue:
 
         conn = sqlite3.connect(self.db_path)
         try:
-            placeholders = ','.join('?' * len(event_ids))
-            conn.execute(f'DELETE FROM queue WHERE event_id IN ({placeholders})', event_ids)
+            placeholders = ",".join("?" * len(event_ids))
+            conn.execute(f"DELETE FROM queue WHERE event_id IN ({placeholders})", event_ids)  # nosec B608
             conn.commit()
         finally:
             conn.close()
@@ -169,10 +169,10 @@ class OfflineQueue:
 
         conn = sqlite3.connect(self.db_path)
         try:
-            placeholders = ','.join('?' * len(event_ids))
+            placeholders = ",".join("?" * len(event_ids))
             conn.execute(
-                f'UPDATE queue SET retry_count = retry_count + 1 WHERE event_id IN ({placeholders})',
-                event_ids
+                f"UPDATE queue SET retry_count = retry_count + 1 WHERE event_id IN ({placeholders})",
+                event_ids,  # nosec B608
             )
             conn.commit()
         finally:
@@ -228,13 +228,13 @@ class OfflineQueue:
             if synced_or_duplicate:
                 placeholders = ",".join("?" * len(synced_or_duplicate))
                 conn.execute(
-                    f"DELETE FROM queue WHERE event_id IN ({placeholders})",
+                    f"DELETE FROM queue WHERE event_id IN ({placeholders})",  # nosec B608
                     synced_or_duplicate,
                 )
             if rejected:
                 placeholders = ",".join("?" * len(rejected))
                 conn.execute(
-                    f"UPDATE queue SET retry_count = retry_count + 1 WHERE event_id IN ({placeholders})",
+                    f"UPDATE queue SET retry_count = retry_count + 1 WHERE event_id IN ({placeholders})",  # nosec B608
                     rejected,
                 )
             conn.commit()

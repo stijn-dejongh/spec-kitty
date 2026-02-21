@@ -141,7 +141,8 @@ def _is_spec_kitty_dashboard(port: int, timeout: float = 0.3) -> bool:
     """
     health_url = f"http://127.0.0.1:{port}/api/health"
     try:
-        with urllib.request.urlopen(health_url, timeout=timeout) as response:
+        # Safe: URL is localhost-only, no user input
+        with urllib.request.urlopen(health_url, timeout=timeout) as response:  # nosec B310
             if response.status != 200:
                 return False
             payload = response.read()
@@ -226,7 +227,8 @@ def _check_dashboard_health(
     """Verify that the dashboard on the port belongs to the provided project."""
     health_url = f"http://127.0.0.1:{port}/api/health"
     try:
-        with urllib.request.urlopen(health_url, timeout=timeout) as response:
+        # Safe: URL is localhost-only, no user input
+        with urllib.request.urlopen(health_url, timeout=timeout) as response:  # nosec B310
             if response.status != 200:
                 return False
             payload = response.read()
@@ -455,7 +457,8 @@ def stop_dashboard(project_dir: Path, timeout: float = 5.0) -> Tuple[bool, str]:
         query = urllib.parse.urlencode(params)
         request_url = f"{shutdown_url}?{query}" if query else shutdown_url
         try:
-            urllib.request.urlopen(request_url, timeout=1)
+            # Safe: URL is localhost-only, no user input
+            urllib.request.urlopen(request_url, timeout=1)  # nosec B310
             return True, None
         except urllib.error.HTTPError as exc:
             if exc.code == 403:
@@ -477,7 +480,8 @@ def stop_dashboard(project_dir: Path, timeout: float = 5.0) -> Tuple[bool, str]:
             method='POST',
         )
         try:
-            urllib.request.urlopen(request, timeout=1)
+            # Safe: URL is localhost-only, no user input
+            urllib.request.urlopen(request, timeout=1)  # nosec B310
             return True, None
         except urllib.error.HTTPError as exc:
             if exc.code == 403:
