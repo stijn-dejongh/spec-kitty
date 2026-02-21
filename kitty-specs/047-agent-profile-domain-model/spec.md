@@ -46,20 +46,17 @@ The doctrine reference repository (`doctrine_ref/`) provides the canonical desig
 src/
 ├── doctrine/                          # NEW: Separate top-level package
 │   ├── __init__.py
-│   ├── agents/                        # Reference agent profiles (shipped)
-│   │   ├── architect.agent.yaml
-│   │   ├── implementer.agent.yaml
-│   │   ├── reviewer.agent.yaml
-│   │   ├── planner.agent.yaml
-│   │   └── ...
-│   ├── model/                         # Domain model
-│   │   ├── __init__.py
+│   ├── agent-profiles/                # Reference agent profiles (shipped)
+│   │   ├── __init__.py                # Public API exports
 │   │   ├── profile.py                 # AgentProfile entity, value objects
-│   │   ├── hierarchy.py               # SpecializationHierarchy, parent-child
-│   │   └── capabilities.py            # RoleCapabilities, canonical verbs
-│   ├── repository/                    # Repository services
-│   │   ├── __init__.py
-│   │   └── profile_repository.py      # AgentProfileRepository
+│   │   ├── capabilities.py            # RoleCapabilities, canonical verbs
+│   │   ├── repository.py              # AgentProfileRepository
+│   │   └── shipped/                   # Shipped reference profiles
+│   │       ├── architect.agent.yaml
+│   │       ├── implementer.agent.yaml
+│   │       ├── reviewer.agent.yaml
+│   │       ├── planner.agent.yaml
+│   │       └── ...
 │   └── tactics/                       # Reference tactics (future)
 │       └── ...
 ├── specify_cli/
@@ -128,7 +125,7 @@ As a spec-kitty developer, I want a well-defined AgentProfile domain entity with
   - **Section 6 — Initialization Declaration**: Template text for agent startup acknowledgment
 - **FR-2.2**: `SpecializationContext` SHALL be a value object with optional fields: `languages` (list), `frameworks` (list), `file_patterns` (list of glob patterns), `domain_keywords` (list), `writing_style` (list), `complexity_preference` (list of low/medium/high).
 - **FR-2.3**: Required fields SHALL be: `profile_id`, `name`, `purpose`, `specialization` (at minimum `primary_focus`). All other fields SHALL have sensible defaults.
-- **FR-2.4**: The `AgentProfile` entity SHALL be a dataclass (or Pydantic model) in `src/doctrine/model/profile.py`.
+- **FR-2.4**: The `AgentProfile` entity SHALL be a Pydantic model in `src/doctrine/agent-profiles/profile.py`.
 - **FR-2.5**: Profiles SHALL support a `role` field with values from a controlled vocabulary: `implementer`, `reviewer`, `architect`, `planner`, `researcher`, `curator`, `manager`, or custom roles.
 - **FR-2.6**: The profile schema SHALL be versioned (field `schema_version` in frontmatter) to support future migrations.
 
@@ -153,7 +150,7 @@ As the spec-kitty orchestrator, when selecting an agent for a task, I want to tr
 #### Functional Requirements
 
 - **FR-3.1**: The `SpecializationHierarchy` SHALL model parent-child relationships between profiles, derived from the `specializes_from` field.
-- **FR-3.2**: Child profiles SHALL inherit their parent's collaboration contract, mode defaults, and context sources. Child-level values override inherited values per field.
+- **FR-3.2**: Child profiles SHALL merge their parent's collaboration contract, mode defaults, and context sources at load time. Child-level values override parent values per field.
 - **FR-3.3**: The hierarchy SHALL support `find_best_match(task_context)` using weighted context matching: language 40%, framework 20%, file patterns 20%, domain keywords 10%, exact match 10% (per DDR-011).
 - **FR-3.4**: Routing priority SHALL be a numeric score (0-100): parents default to 50, specialists typically 60-90.
 - **FR-3.5**: Workload awareness SHALL apply penalties: 0-2 active tasks = no penalty, 3-4 = 15% penalty, 5+ = 30% penalty. When a specialist is overloaded, the system falls back to the parent.
@@ -232,7 +229,7 @@ As a spec-kitty user, I want spec-kitty to ship with a catalog of well-crafted r
 
 #### Functional Requirements
 
-- **FR-6.1**: Spec-kitty SHALL ship with reference profiles in `src/doctrine/agents/` covering at minimum: `architect`, `implementer`, `reviewer`, `planner`, `researcher`, `curator`.
+- **FR-6.1**: Spec-kitty SHALL ship with reference profiles in `src/doctrine/agent-profiles/shipped/` covering at minimum: `architect`, `implementer`, `reviewer`, `planner`, `researcher`, `curator`.
 - **FR-6.2**: Each shipped profile SHALL be a valid YAML file following the AgentProfile schema with all 6 sections populated.
 - **FR-6.3**: Shipped profiles SHALL form a coherent specialization hierarchy (e.g., `python-implementer` specializes `implementer`).
 - **FR-6.4**: Shipped profiles SHALL include directive references as a table mapping directive codes to usage rationale (per doctrine pattern).
@@ -246,7 +243,7 @@ As a spec-kitty user, I want spec-kitty to ship with a catalog of well-crafted r
 - What happens when a profile references a directive that doesn't exist in the shipped doctrine? The directive reference is stored as metadata — the profile remains valid. Governance (044) validates directive availability at hook time, not at profile load time.
 - What happens when two custom profiles claim the same `profile_id`? Last-write-wins with a warning. The repository loads files alphabetically; a duplicate ID in a later file overrides the earlier one.
 - What happens when a shipped profile is updated in a new spec-kitty version but the user has a custom override? The custom override wins (field-level merge). If the user wants the new shipped values, they can delete their custom override or use `spec-kitty agents profile reset <id>`.
-- What happens when no profiles exist (clean install, no `src/doctrine/agents/`)? The repository returns an empty set. The system operates in profile-less mode (backward compatible with current behavior). A warning is logged.
+- What happens when no profiles exist (clean install, no `src/doctrine/agent-profiles/shipped/`)? The repository returns an empty set. The system operates in profile-less mode (backward compatible with current behavior). A warning is logged.
 - How does this interact with the existing `config.yaml` agent selection? `ToolConfig` (renamed from AgentConfig) selects which tool stacks are available. `AgentProfile` defines behavioral identity. They are orthogonal — a tool (claude) can operate as any agent profile (architect, implementer). The routing provider (046) maps profiles to tools.
 
 ## Requirements
@@ -257,20 +254,20 @@ As a spec-kitty user, I want spec-kitty to ship with a catalog of well-crafted r
 
 - **FR-001**: The system SHALL provide a new top-level Python package `src/doctrine/` containing the AgentProfile domain model, reference profiles, and repository service.
 - **FR-002**: The `doctrine` package SHALL be importable independently of `specify_cli` (no circular dependencies).
-- **FR-003**: The `AgentProfile` entity SHALL be defined in `src/doctrine/model/profile.py` as a dataclass or Pydantic model.
-- **FR-004**: The `SpecializationHierarchy` SHALL be defined in `src/doctrine/model/hierarchy.py` with tree-building, cycle detection, and context-matching logic.
-- **FR-005**: The `RoleCapabilities` value object SHALL be defined in `src/doctrine/model/capabilities.py` mapping canonical verbs to roles with conflict detection.
-- **FR-006**: The `AgentProfileRepository` SHALL be defined in `src/doctrine/repository/profile_repository.py` with two-source loading (shipped + project).
+- **FR-003**: The `AgentProfile` entity SHALL be defined in `src/doctrine/agent-profiles/profile.py` as a Pydantic model.
+- **FR-004**: The specialization hierarchy logic SHALL be implemented in `src/doctrine/agent-profiles/repository.py` with tree-building, cycle detection, and context-matching logic.
+- **FR-005**: The `RoleCapabilities` value object SHALL be defined in `src/doctrine/agent-profiles/capabilities.py` mapping canonical verbs to roles with conflict detection.
+- **FR-006**: The `AgentProfileRepository` SHALL be defined in `src/doctrine/agent-profiles/repository.py` with two-source loading (shipped + project).
 
 #### Profile Schema
 
 - **FR-007**: Agent profile YAML files SHALL use the extension `.agent.yaml`.
 - **FR-008**: The profile schema SHALL include a `schema_version` field (initial value: "1.0") for future migration support.
-- **FR-009**: The profile schema SHALL be documented in a JSON Schema or equivalent format for validation.
+- **FR-009**: The profile schema SHALL be documented in a YAML schema format for validation.
 
 #### Storage and Loading
 
-- **FR-010**: Shipped reference profiles SHALL be stored in `src/doctrine/agents/` and included in the Python package distribution.
+- **FR-010**: Shipped reference profiles SHALL be stored in `src/doctrine/agent-profiles/shipped/` and included in the Python package distribution.
 - **FR-011**: Project-level profiles SHALL be stored in `.kittify/constitution/agents/`.
 - **FR-012**: The repository SHALL load shipped profiles first, then apply project-level overrides/additions.
 - **FR-013**: Profile loading SHALL be deterministic — same files always produce same loaded state.
@@ -304,7 +301,7 @@ As a spec-kitty user, I want spec-kitty to ship with a catalog of well-crafted r
 
 ### Curation Flow Compatibility
 
-- **FR-017**: The curation pipeline (`src/doctrine/curation/`) SHALL support agent profiles as a target doctrine type. An `ImportCandidate` with `target_type: agent-profile` SHALL be classifiable, adaptable, and adoptable into `src/doctrine/agents/` following the standard curation flow described in `src/doctrine/curation/README.md`.
+- **FR-017**: The curation pipeline (`src/doctrine/curation/`) SHALL support agent profiles as a target doctrine type. An `ImportCandidate` with `target_type: agent-profile` SHALL be classifiable, adaptable, and adoptable into `src/doctrine/agent-profiles/shipped/` following the standard curation flow described in `src/doctrine/curation/README.md`.
 - **FR-018**: Adding a new agent profile via the curation import flow SHALL be a documented and manually testable acceptance path — from candidate creation through classification, adaptation, adoption, and `resulting_artifacts` linkage.
 
 ### Manual Acceptance Test
@@ -312,7 +309,7 @@ As a spec-kitty user, I want spec-kitty to ship with a catalog of well-crafted r
 The feature owner will validate this feature by importing a new agent profile through the curation pipeline end-to-end:
 1. Create an `ImportCandidate` for a new agent persona
 2. Classify it as `target_type: agent-profile`
-3. Curate it into a `.agent.yaml` in `src/doctrine/agents/`
+3. Curate it into a `.agent.yaml` in `src/doctrine/agent-profiles/shipped/`
 4. Verify it loads via `AgentProfileRepository`, passes schema validation, and is queryable by role
 
 ## Scope Boundaries

@@ -48,9 +48,9 @@
 - [ ] T010 Implement `list_all()`, `get()`, `find_by_role()` query methods
 - [ ] T011 Implement hierarchy traversal: `get_children()`, `get_ancestors()`, `get_hierarchy_tree()`
 - [ ] T012 Implement `validate_hierarchy()` — cycle detection, orphaned references, duplicate IDs
-- [ ] T013 Implement `find_best_match(context: TaskContext)` with weighted scoring (DDR-011)
+- [ ] T013 Implement `find_best_match(context: TaskContext)` with weighted scoring (DDR-011). Test scenarios: (1) workload penalties (0-2 tasks=1.0, 3-4=0.85, 5+=0.70), (2) complexity adjustments (low/medium/high multipliers), (3) language/framework/file pattern matching weights
 - [ ] T014 Implement `save()` and `delete()` for project-dir profiles
-- [ ] T015 Write acceptance + unit tests in `tests/doctrine/test_profile_repository.py`
+- [ ] T015 Write acceptance + unit tests in `tests/doctrine/test_profile_repository.py` — include test scenario for zero-profile repository (returns empty list, no crash), test with Architect Alphonso and Python Pedro profiles for hierarchy validation
 
 ### Dependencies
 
@@ -70,6 +70,7 @@
 - [ ] T016 Expand `src/doctrine/schemas/agent-profile.schema.yaml` with all 6-section fields
 - [ ] T017 Add schema validation utility function
 - [ ] T018 Create valid and invalid fixture YAML files
+- [ ] T018b Test schema utility rejects non-.agent.yaml files (file extension validation)
 - [ ] T019 Write schema validation tests in `tests/doctrine/test_profile_schema_validation.py`
 
 ### Dependencies
@@ -161,8 +162,9 @@
 - [ ] T043 [P] Implement `show <profile_id>` subcommand
 - [ ] T044 [P] Implement `create --from-template <profile_id>` subcommand
 - [ ] T045 [P] Implement `hierarchy` subcommand — Rich Tree
-- [ ] T046 Register profile command group in CLI app
-- [ ] T047 Write CLI tests (supporting tier — 55% coverage)
+- [ ] T046 [P] Implement `create --interactive` subcommand — prompt for each profile section (FR-5.5)
+- [ ] T047 Register profile command group in CLI app
+- [ ] T048 Write CLI tests (supporting tier — 55% coverage)
 
 ### Dependencies
 
@@ -181,13 +183,37 @@
 
 - [ ] T048 Verify/update `agent-profile` in import-candidate schema target_type
 - [ ] T049 Create example import candidate fixture for agent profile
-- [ ] T050 Document `.agent.md` → `.agent.yaml` adaptation mapping in curation README
-- [ ] T051 Write end-to-end curation test in `tests/doctrine/test_curation_agent_profile.py`
+- [ ] T050 Document `.agent.md` → `.agent.yaml` adaptation mapping in curation README — include section-to-YAML algorithm
+- [ ] T051 Write end-to-end curation test in `tests/doctrine/test_curation_agent_profile.py`. Test scenarios: (1) round-trip conversion (.md → .yaml → validate → compare content fidelity), (2) ImportCandidate classification, (3) adoption flow
 - [ ] T052 Validate `resulting_artifacts` linkage in test
 
 ### Dependencies
 
 - Depends on WP01 and WP03.
+
+---
+
+## Work Package WP09: User Journey Documentation (Priority: P2)
+
+**Goal**: Create a comprehensive UserJourney document describing the end-to-end flow of adding a new agent profile through the curation pipeline.
+**Independent Test**: Journey document exists, covers all steps from ImportCandidate creation through adoption, includes example with Architect Alphonso or Python Pedro profile.
+**Prompt**: `tasks/WP09-user-journey-curation.md`
+**Estimated Size**: ~200 lines
+
+### Included Subtasks
+
+- [ ] T054 Create `kitty-specs/047-agent-profile-domain-model/user-journey-curation.md` document
+- [ ] T055 Document step 1: Creating ImportCandidate for new agent profile (YAML structure, required fields)
+- [ ] T056 Document step 2: Classification as `target_type: agent-profile` (validation rules, schema checks)
+- [ ] T057 Document step 3: Adaptation from `.agent.md` to `.agent.yaml` (section mapping, field conversion)
+- [ ] T058 Document step 4: Adoption into `src/doctrine/agent-profiles/shipped/` (file placement, naming conventions)
+- [ ] T059 Document step 5: Verification (load via repository, schema validation, queryability)
+- [ ] T060 Include complete example using a concrete profile (e.g., "Security Specialist" or "Data Engineer")
+- [ ] T061 Add troubleshooting section (common errors, validation failures, recovery steps)
+
+### Dependencies
+
+- Depends on WP08 (curation flow must be implemented to document accurately).
 
 ---
 
@@ -207,6 +233,9 @@ Wave 2 (parallel after wave 1):
   WP05 (constitution) ─── depends on WP02
   WP07 (CLI) ─── depends on WP02
   WP08 (curation) ─── depends on WP01, WP03
+
+Wave 3 (documentation):
+  WP09 (user journey) ─── depends on WP08
 ```
 
 **MVP Scope**: WP01 + WP02 + WP03 + WP04
@@ -231,12 +260,13 @@ Wave 2 (parallel after wave 1):
 | T010 | Implement query methods | WP02 | No |
 | T011 | Implement hierarchy traversal | WP02 | No |
 | T012 | Implement hierarchy validation | WP02 | No |
-| T013 | Implement find_best_match | WP02 | No |
+| T013 | Implement find_best_match with test scenarios | WP02 | No |
 | T014 | Implement save/delete | WP02 | No |
-| T015 | Write repository tests | WP02 | No |
+| T015 | Write repository tests (incl. zero-profile, Alphonso/Pedro) | WP02 | No |
 | T016 | Expand YAML schema | WP03 | No |
 | T017 | Add validation utility | WP03 | No |
 | T018 | Create test fixtures | WP03 | Yes |
+| T018b | Test file extension validation (.agent.yaml) | WP03 | No |
 | T019 | Write schema tests | WP03 | No |
 | T020 | Create shipped/ directory | WP04 | No |
 | T021-T026 | Create 7 reference profiles | WP04 | Yes |
@@ -253,10 +283,19 @@ Wave 2 (parallel after wave 1):
 | T040 | Write ToolConfig tests | WP06 | No |
 | T041 | Create CLI profile.py | WP07 | No |
 | T042-T045 | Implement CLI subcommands | WP07 | Yes |
-| T046 | Register command group | WP07 | No |
-| T047 | Write CLI tests | WP07 | No |
-| T048 | Verify agent-profile target_type | WP08 | No |
-| T049 | Create import fixture | WP08 | Yes |
-| T050 | Document adaptation in README | WP08 | Yes |
-| T051 | Write curation e2e test | WP08 | No |
-| T052 | Validate resulting_artifacts | WP08 | No |
+| T046 | Implement create --interactive (FR-5.5) | WP07 | Yes |
+| T047 | Register command group | WP07 | No |
+| T048 | Write CLI tests | WP07 | No |
+| T049 | Verify agent-profile target_type | WP08 | No |
+| T050 | Create import fixture | WP08 | Yes |
+| T051 | Document adaptation in README (with algorithm) | WP08 | Yes |
+| T052 | Write curation e2e test (incl. round-trip) | WP08 | No |
+| T053 | Validate resulting_artifacts | WP08 | No |
+| T054 | Create user-journey-curation.md | WP09 | No |
+| T055 | Document step 1: Creating ImportCandidate | WP09 | Yes |
+| T056 | Document step 2: Classification | WP09 | Yes |
+| T057 | Document step 3: Adaptation (.md → .yaml) | WP09 | Yes |
+| T058 | Document step 4: Adoption into shipped/ | WP09 | Yes |
+| T059 | Document step 5: Verification | WP09 | Yes |
+| T060 | Include complete concrete example | WP09 | Yes |
+| T061 | Add troubleshooting section | WP09 | Yes |
