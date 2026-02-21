@@ -189,6 +189,7 @@ class TaskContext(BaseModel):
     complexity: str = "medium"
     required_role: Annotated[Role | str | None, BeforeValidator(_coerce_role)] = None
     active_tasks: dict[str, int] = Field(default_factory=dict)
+    current_workload: int | None = None
 
     @field_validator("complexity")
     @classmethod
