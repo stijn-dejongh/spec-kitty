@@ -17,6 +17,7 @@ from src.doctrine.agent_profiles.profile import (
     SpecializationContext,
     TaskContext,
 )
+from src.doctrine.agent_profiles.repository import AgentProfileRepository
 
 __all__ = [
     # Main domain model
@@ -35,4 +36,6 @@ __all__ = [
     "RoleCapabilities",
     "DEFAULT_ROLE_CAPABILITIES",
     "get_capabilities",
+    # Repository
+    "AgentProfileRepository",
 ]

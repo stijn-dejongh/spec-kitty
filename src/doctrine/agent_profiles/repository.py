@@ -1,0 +1,521 @@
+"""
+Agent profile repository with two-source loading (shipped + project).
+
+Provides:
+- Two-source YAML loading (shipped package data + project filesystem)
+- Field-level merge semantics for project overrides
+- Query methods (list_all, get, find_by_role)
+- Hierarchy traversal (get_children, get_ancestors, get_hierarchy_tree)
+- Hierarchy validation (cycle detection, orphaned references)
+- Context-based matching with weighted scoring
+- Save/delete for project profiles
+"""
+
+import warnings
+from fnmatch import fnmatch
+from pathlib import Path
+from typing import Any
+
+from importlib.resources import files
+from ruamel.yaml import YAML
+
+from .profile import AgentProfile, Role, TaskContext
+
+
+class AgentProfileRepository:
+    """Repository for loading and managing agent profiles from YAML files."""
+    
+    def __init__(
+        self,
+        shipped_dir: Path | None = None,
+        project_dir: Path | None = None,
+    ):
+        """Initialize repository with shipped and/or project directories.
+        
+        Args:
+            shipped_dir: Directory containing shipped profiles (defaults to package data)
+            project_dir: Directory containing project-specific profiles (optional)
+        """
+        self._profiles: dict[str, AgentProfile] = {}
+        self._shipped_dir = shipped_dir or self._default_shipped_dir()
+        self._project_dir = project_dir
+        self._hierarchy_index: dict[str, list[str]] | None = None
+        self._load()
+    
+    @staticmethod
+    def _default_shipped_dir() -> Path:
+        """Get default shipped profiles directory from package data."""
+        # For now, return a path that doesn't exist - will be implemented
+        # when we add shipped profiles in WP04
+        try:
+            resource = files("doctrine.agent_profiles")
+            if hasattr(resource, "joinpath"):
+                return Path(str(resource.joinpath("shipped")))
+            return Path(str(resource)) / "shipped"
+        except Exception:
+            # Fallback if package not installed
+            return Path(__file__).parent / "shipped"
+    
+    def _load(self) -> None:
+        """Load profiles from shipped and project directories."""
+        yaml = YAML(typ="safe")
+        shipped_profiles: dict[str, AgentProfile] = {}
+        
+        # Load shipped profiles
+        if self._shipped_dir.exists():
+            for yaml_file in self._shipped_dir.glob("*.agent.yaml"):
+                try:
+                    data = yaml.load(yaml_file)
+                    if data is None:
+                        continue
+                    profile = AgentProfile.model_validate(data)
+                    shipped_profiles[profile.profile_id] = profile
+                except Exception as e:
+                    warnings.warn(
+                        f"Skipping invalid shipped profile {yaml_file.name}: {e}",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+        
+        # Start with shipped profiles
+        self._profiles = shipped_profiles.copy()
+        
+        # Load and merge project profiles
+        if self._project_dir and self._project_dir.exists():
+            for yaml_file in self._project_dir.glob("*.agent.yaml"):
+                try:
+                    data = yaml.load(yaml_file)
+                    if data is None:
+                        continue
+                    
+                    profile_id = data.get("profile-id") or data.get("profile_id")
+                    if not profile_id:
+                        warnings.warn(
+                            f"Skipping project profile {yaml_file.name}: no profile-id",
+                            UserWarning,
+                            stacklevel=2,
+                        )
+                        continue
+                    
+                    # Check if this is an override or new profile
+                    if profile_id in shipped_profiles:
+                        # Merge with shipped profile
+                        merged = self._merge_profiles(shipped_profiles[profile_id], data)
+                        self._profiles[profile_id] = merged
+                    else:
+                        # New project-only profile
+                        profile = AgentProfile.model_validate(data)
+                        self._profiles[profile.profile_id] = profile
+                except Exception as e:
+                    warnings.warn(
+                        f"Skipping invalid project profile {yaml_file.name}: {e}",
+                        UserWarning,
+                        stacklevel=2,
+                    )
+    
+    def _merge_profiles(self, shipped: AgentProfile, project_data: dict[str, Any]) -> AgentProfile:
+        """Merge project data into shipped profile at field level.
+        
+        Uses exclude_unset=True to detect explicitly set fields in project data.
+        
+        Args:
+            shipped: Shipped profile to use as base
+            project_data: Project profile data (dict from YAML)
+        
+        Returns:
+            Merged profile with project fields overriding shipped fields
+        """
+        # Get shipped profile as dict (with by_alias to use kebab-case)
+        shipped_dict = shipped.model_dump(by_alias=True)
+        
+        # Normalize project data keys to match YAML format (kebab-case)
+        def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+            """Recursively merge dictionaries at field level."""
+            result = base.copy()
+            for key, value in override.items():
+                if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                    # Recursively merge nested dicts
+                    result[key] = deep_merge(result[key], value)
+                else:
+                    # Override with project value
+                    result[key] = value
+            return result
+        
+        merged_dict = deep_merge(shipped_dict, project_data)
+        
+        return AgentProfile.model_validate(merged_dict)
+    
+    def list_all(self) -> list[AgentProfile]:
+        """Return all loaded profiles sorted by profile_id."""
+        return sorted(self._profiles.values(), key=lambda p: p.profile_id)
+    
+    def get(self, profile_id: str) -> AgentProfile | None:
+        """Get profile by ID or None if not found."""
+        return self._profiles.get(profile_id)
+    
+    def find_by_role(self, role: Role | str) -> list[AgentProfile]:
+        """Find all profiles matching the given role.
+        
+        Args:
+            role: Role enum or string (case-insensitive)
+        
+        Returns:
+            List of profiles with matching role
+        """
+        # Normalize role to string for comparison
+        if isinstance(role, Role):
+            role_str = role.value
+        else:
+            role_str = role.lower()
+        
+        matches = []
+        for profile in self._profiles.values():
+            profile_role = profile.role.value if isinstance(profile.role, Role) else str(profile.role).lower()
+            if profile_role == role_str:
+                matches.append(profile)
+        
+        return matches
+    
+    def _build_hierarchy_index(self) -> None:
+        """Build hierarchy index mapping parent_id -> [child_ids]."""
+        if self._hierarchy_index is not None:
+            return
+        
+        index: dict[str, list[str]] = {}
+        
+        for profile in self._profiles.values():
+            if profile.specializes_from:
+                parent_id = profile.specializes_from
+                if parent_id not in index:
+                    index[parent_id] = []
+                index[parent_id].append(profile.profile_id)
+        
+        self._hierarchy_index = index
+    
+    def get_children(self, profile_id: str) -> list[AgentProfile]:
+        """Get direct children of a profile.
+        
+        Args:
+            profile_id: Parent profile ID
+        
+        Returns:
+            List of profiles that specialize from this profile
+        """
+        self._build_hierarchy_index()
+        
+        if self._hierarchy_index is None:
+            return []
+        
+        child_ids = self._hierarchy_index.get(profile_id, [])
+        return [self._profiles[cid] for cid in child_ids if cid in self._profiles]
+    
+    def get_ancestors(self, profile_id: str) -> list[str]:
+        """Get ancestor chain from profile to root.
+        
+        Args:
+            profile_id: Starting profile ID
+        
+        Returns:
+            Ordered list of ancestor profile IDs (immediate parent first)
+        """
+        ancestors = []
+        current_id = profile_id
+        visited = set()
+        
+        while current_id in self._profiles:
+            profile = self._profiles[current_id]
+            if not profile.specializes_from:
+                break
+            
+            if profile.specializes_from in visited:
+                # Cycle detected - stop
+                break
+            
+            ancestors.append(profile.specializes_from)
+            visited.add(current_id)
+            current_id = profile.specializes_from
+        
+        return ancestors
+    
+    def get_hierarchy_tree(self) -> dict[str, Any]:
+        """Get hierarchy as nested dict suitable for Rich Tree rendering.
+        
+        Returns:
+            Nested dict: {root_id: {"children": {child_id: {...}}}}
+        """
+        self._build_hierarchy_index()
+        
+        # Find roots (profiles with no specializes_from)
+        roots = [
+            p.profile_id
+            for p in self._profiles.values()
+            if not p.specializes_from
+        ]
+        
+        def build_subtree(profile_id: str) -> dict[str, Any]:
+            """Recursively build subtree for a profile."""
+            children_dict = {}
+            for child in self.get_children(profile_id):
+                children_dict[child.profile_id] = build_subtree(child.profile_id)
+            return {"children": children_dict}
+        
+        tree = {}
+        for root_id in roots:
+            tree[root_id] = build_subtree(root_id)
+        
+        return tree
+    
+    def validate_hierarchy(self) -> list[str]:
+        """Validate hierarchy for cycles, orphans, duplicates.
+        
+        Returns:
+            List of error/warning messages (empty if valid)
+        """
+        errors = []
+        
+        # Check for cycles using DFS
+        visited: set[str] = set()
+        in_stack: set[str] = set()
+        
+        def has_cycle(profile_id: str) -> bool:
+            """DFS to detect cycles."""
+            if profile_id in in_stack:
+                return True
+            if profile_id in visited:
+                return False
+            
+            visited.add(profile_id)
+            in_stack.add(profile_id)
+            
+            profile = self._profiles.get(profile_id)
+            if profile and profile.specializes_from:
+                if has_cycle(profile.specializes_from):
+                    return True
+            
+            in_stack.remove(profile_id)
+            return False
+        
+        for profile_id in self._profiles:
+            if profile_id not in visited:
+                if has_cycle(profile_id):
+                    errors.append(f"Cycle detected in hierarchy involving {profile_id}")
+        
+        # Check for orphaned references
+        for profile in self._profiles.values():
+            if profile.specializes_from and profile.specializes_from not in self._profiles:
+                errors.append(
+                    f"Orphaned reference: {profile.profile_id} specializes from "
+                    f"nonexistent {profile.specializes_from}"
+                )
+        
+        return errors
+    
+    def find_best_match(self, context: TaskContext) -> AgentProfile | None:
+        """Find best matching profile for given task context using weighted scoring.
+        
+        Scoring algorithm (DDR-011):
+            score = language_match × 0.40
+                  + framework_match × 0.20
+                  + file_pattern_match × 0.20
+                  + keyword_match × 0.10
+                  + exact_id_match × 0.10
+        
+        Adjustments:
+            - workload_penalty: 0-2=1.0, 3-4=0.85, 5+=0.70
+            - complexity_adjustment: specialist/generalist × complexity
+            - routing_priority / 100
+        
+        Args:
+            context: Task context with language, framework, file_paths, etc.
+        
+        Returns:
+            Profile with highest adjusted score, or None if no profiles
+        """
+        if not self._profiles:
+            return None
+        
+        # Filter by required_role if specified
+        candidates = list(self._profiles.values())
+        if context.required_role:
+            role_str = context.required_role.lower() if isinstance(context.required_role, str) else context.required_role
+            candidates = [
+                p for p in candidates
+                if (isinstance(p.role, Role) and p.role.value == role_str) or
+                   (isinstance(p.role, str) and p.role.lower() == role_str) or
+                   p.profile_id == role_str
+            ]
+        
+        if not candidates:
+            return None
+        
+        def calculate_score(profile: AgentProfile) -> float:
+            """Calculate weighted score for a profile."""
+            # Base match scores (0.0 or 1.0)
+            language_match = 0.0
+            framework_match = 0.0
+            file_pattern_match = 0.0
+            keyword_match = 0.0
+            exact_id_match = 0.0
+            
+            # Check language match
+            if context.language and profile.specialization_context:
+                if context.language.lower() in [
+                    lang.lower() for lang in profile.specialization_context.languages
+                ]:
+                    language_match = 1.0
+            
+            # Check framework match
+            if context.framework and profile.specialization_context:
+                if context.framework.lower() in [
+                    fw.lower() for fw in profile.specialization_context.frameworks
+                ]:
+                    framework_match = 1.0
+            
+            # Check file pattern match
+            if context.file_paths and profile.specialization_context:
+                for file_path in context.file_paths:
+                    for pattern in profile.specialization_context.file_patterns:
+                        if fnmatch(file_path, pattern):
+                            file_pattern_match = 1.0
+                            break
+                    if file_pattern_match == 1.0:
+                        break
+            
+            # Check keyword match
+            if context.keywords and profile.specialization_context:
+                for keyword in context.keywords:
+                    if keyword.lower() in [
+                        kw.lower() for kw in profile.specialization_context.domain_keywords
+                    ]:
+                        keyword_match = 1.0
+                        break
+            
+            # Check exact ID match
+            if context.required_role:
+                req_role = context.required_role.lower() if isinstance(context.required_role, str) else context.required_role
+                if req_role == profile.profile_id or req_role == (
+                    profile.role.value if isinstance(profile.role, Role) else str(profile.role).lower()
+                ):
+                    exact_id_match = 1.0
+            
+            # Weighted score
+            base_score = (
+                language_match * 0.40
+                + framework_match * 0.20
+                + file_pattern_match * 0.20
+                + keyword_match * 0.10
+                + exact_id_match * 0.10
+            )
+            
+            # Workload penalty
+            workload = context.current_workload or 0
+            if workload <= 2:
+                workload_penalty = 1.0
+            elif workload <= 4:
+                workload_penalty = 0.85
+            else:
+                workload_penalty = 0.70
+            
+            # Complexity adjustment
+            is_specialist = profile.specializes_from is not None
+            complexity = context.complexity or "medium"
+            
+            if is_specialist:
+                complexity_adj = {"low": 0.9, "medium": 1.0, "high": 1.1}.get(complexity, 1.0)
+            else:
+                complexity_adj = {"low": 1.0, "medium": 1.0, "high": 0.9}.get(complexity, 1.0)
+            
+            # Routing priority (important when no context matches)
+            priority_factor = profile.routing_priority / 100.0
+            
+            # Final adjusted score
+            # When no context matches, base_score is 0, so priority becomes dominant
+            adjusted_score = (base_score + priority_factor) * workload_penalty * complexity_adj
+            
+            return adjusted_score
+        
+        # Find profile with highest score
+        best_profile = max(candidates, key=calculate_score)
+        return best_profile
+    
+    def save(self, profile: AgentProfile) -> None:
+        """Save profile to project directory.
+        
+        Args:
+            profile: Profile to save
+        
+        Raises:
+            ValueError: If project_dir is not configured
+        """
+        if self._project_dir is None:
+            raise ValueError("Cannot save profile: project_dir not configured")
+        
+        # Ensure project_dir exists
+        self._project_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Write YAML file
+        yaml = YAML()
+        yaml.default_flow_style = False
+        yaml_file = self._project_dir / f"{profile.profile_id}.agent.yaml"
+        
+        # Convert profile to dict, excluding unset fields to keep YAML clean
+        profile_dict = profile.model_dump(mode='json', by_alias=True, exclude_unset=True)
+        
+        with yaml_file.open("w") as f:
+            yaml.dump(profile_dict, f)
+        
+        # Update in-memory profiles
+        self._profiles[profile.profile_id] = profile
+        
+        # Invalidate hierarchy index
+        self._hierarchy_index = None
+    
+    def delete(self, profile_id: str) -> bool:
+        """Delete profile from project directory.
+        
+        Only deletes from project_dir (cannot delete shipped profiles).
+        If profile exists in shipped, reverts to shipped version.
+        
+        Args:
+            profile_id: Profile ID to delete
+        
+        Returns:
+            True if deleted, False if not found
+        
+        Raises:
+            ValueError: If project_dir is not configured
+        """
+        if self._project_dir is None:
+            raise ValueError("Cannot delete profile: project_dir not configured")
+        
+        yaml_file = self._project_dir / f"{profile_id}.agent.yaml"
+        
+        if not yaml_file.exists():
+            return False
+        
+        # Remove file
+        yaml_file.unlink()
+        
+        # Check if profile exists in shipped
+        shipped_profile = None
+        if self._shipped_dir.exists():
+            shipped_yaml = self._shipped_dir / f"{profile_id}.agent.yaml"
+            if shipped_yaml.exists():
+                try:
+                    yaml = YAML(typ="safe")
+                    data = yaml.load(shipped_yaml)
+                    shipped_profile = AgentProfile.model_validate(data)
+                except Exception:
+                    pass
+        
+        if shipped_profile:
+            # Revert to shipped version
+            self._profiles[profile_id] = shipped_profile
+        else:
+            # Remove from profiles (was project-only)
+            self._profiles.pop(profile_id, None)
+        
+        # Invalidate hierarchy index
+        self._hierarchy_index = None
+        
+        return True
