@@ -2,8 +2,6 @@
 Test suite for RoleCapabilities.
 """
 
-import pytest
-
 from src.doctrine.agent_profiles.capabilities import DEFAULT_ROLE_CAPABILITIES, RoleCapabilities, get_capabilities
 from src.doctrine.agent_profiles.profile import Role
 
