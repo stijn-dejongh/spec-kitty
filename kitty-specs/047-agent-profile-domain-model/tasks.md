@@ -1,419 +1,262 @@
 # Work Packages: Agent Profile Domain Model
 
 **Inputs**: Design documents from `kitty-specs/047-agent-profile-domain-model/`
-**Prerequisites**: plan.md (required), spec.md (user stories), research.md, data-model.md, quickstart.md
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, quickstart.md
 
-**Tests**: Test-first development per constitution. ATDD + TDD for all production code.
+**Tests**: Core tier (80% coverage). ATDD/TDD mandatory per `src/doctrine/tactics/`.
 
-**Organization**: Fine-grained subtasks (`Txxx`) roll up into work packages (`WPxx`). Each work package must be independently deliverable and testable.
+**Code Style**: Per `src/doctrine/styleguides/python-implementation.styleguide.yaml`.
 
-**Prompt Files**: Each work package references a matching prompt file in `tasks/`.
+**Organization**: Fine-grained subtasks (`Txxx`) roll up into work packages (`WPxx`). Each work package is independently deliverable and testable.
 
 ---
 
-## Work Package WP01: Package Scaffolding and Import Boundary (Priority: P0)
+## Work Package WP01: AgentProfile Pydantic Model & Value Objects (Priority: P0) MVP
 
-**Goal**: Create the `src/doctrine/` package skeleton with `__init__.py`, `py.typed`, empty subpackages, and a CI-ready import boundary test. Update `pyproject.toml` to include the new package.
-**Independent Test**: `import doctrine` succeeds. The boundary test passes (no `specify_cli` imports in `src/doctrine/`). `pip install -e .` includes both packages.
-**Prompt**: `tasks/WP01-package-scaffolding.md`
+**Goal**: Define the rich `AgentProfile` Pydantic model with all 6-section value objects and `Role` enum in `src/doctrine/agent-profiles/profile.py`. Define `RoleCapabilities` in `capabilities.py`.
+**Independent Test**: Create an `AgentProfile` from a dict, serialize to YAML, deserialize back, verify round-trip fidelity. Required field enforcement rejects incomplete profiles.
+**Prompt**: `tasks/WP01-agent-profile-model.md`
+**Estimated Size**: ~450 lines
 
 ### Included Subtasks
 
-- [ ] T001 Create `src/doctrine/` package directory with `__init__.py` and `py.typed`
-- [ ] T002 Create empty subpackage directories: `model/`, `repository/`, `schema/`, `agents/`
-- [ ] T003 Update `pyproject.toml` to include `src/doctrine` in wheel packages
-- [ ] T004 Create import boundary test `tests/test_doctrine_import_boundary.py`
-- [ ] T005 Create `tests/doctrine/conftest.py` with shared fixtures
-
-### Implementation Notes
-
-- The `__init__.py` files should export nothing yet — just make the packages importable.
-- `py.typed` is an empty marker file for PEP 561 typed package support.
-- The boundary test walks all `.py` files in `src/doctrine/` and asserts none import from `specify_cli`.
-- `pyproject.toml` change: add `"src/doctrine"` to `[tool.hatch.build.targets.wheel] packages`.
-
-### Parallel Opportunities
-
-- T004 and T005 (tests) can be written in parallel with T001-T003 (package structure).
+- [ ] T001 Create `src/doctrine/agent-profiles/__init__.py` with public API exports
+- [ ] T002 Define `Role` StrEnum with controlled vocabulary + custom role support
+- [ ] T003 Define value objects: `Specialization`, `CollaborationContract`, `SpecializationContext`, `ContextSources`, `ModeDefault`, `DirectiveRef`
+- [ ] T004 Define `AgentProfile` Pydantic BaseModel with all fields and validators
+- [ ] T005 Define `TaskContext` Pydantic model (input for matching)
+- [ ] T006 Define `RoleCapabilities` in `src/doctrine/agent-profiles/capabilities.py`
+- [ ] T007 Write acceptance + unit tests in `tests/doctrine/test_profile_model.py` and `test_capabilities.py`
 
 ### Dependencies
 
 - None (starting package).
 
-### Risks & Mitigations
-
-- Package resolution: Ensure `hatchling` correctly discovers both packages. Verify with `pip install -e .` and `python -c "import doctrine"`.
-
 ---
 
-## Work Package WP02: AgentProfile Domain Model (Priority: P0) 🎯 MVP
+## Work Package WP02: AgentProfileRepository (Priority: P0) MVP
 
-**Goal**: Implement the `AgentProfile` frozen dataclass entity and all supporting value objects (`Specialization`, `CollaborationContract`, `ContextSources`, `ModeDefault`, `DirectiveRef`, `SpecializationContext`) in `src/doctrine/model/profile.py`. Implement `Role` enum and `RoleCapabilities` in `src/doctrine/model/capabilities.py`.
-**Independent Test**: Create an `AgentProfile` programmatically, serialize to dict, deserialize back, verify round-trip fidelity. Validate required field enforcement.
-**Prompt**: `tasks/WP02-domain-model.md`
+**Goal**: Implement `AgentProfileRepository` in `src/doctrine/agent-profiles/repository.py` with two-source loading, field-level merge, hierarchy traversal, and weighted context matching.
+**Independent Test**: Load shipped + project profiles, verify merge, query by role, find best match, validate hierarchy (no cycles).
+**Prompt**: `tasks/WP02-profile-repository.md`
+**Estimated Size**: ~500 lines
 
 ### Included Subtasks
 
-- [ ] T006 [P] Implement `Role` StrEnum and `RoleCapabilities` in `src/doctrine/model/capabilities.py`
-- [ ] T007 Implement value objects in `src/doctrine/model/profile.py`: `Specialization`, `CollaborationContract`, `ContextSources`, `ModeDefault`, `DirectiveRef`, `SpecializationContext`
-- [ ] T008 Implement `AgentProfile` frozen dataclass with all 6 sections in `src/doctrine/model/profile.py`
-- [ ] T009 Implement `to_dict()` and `from_dict()` on all dataclasses
-- [ ] T010 Implement `validate()` method on `AgentProfile` (required fields, range checks)
-- [ ] T011 Write unit tests for all value objects and `AgentProfile` in `tests/doctrine/model/test_profile.py`
-- [ ] T012 [P] Write unit tests for `RoleCapabilities` in `tests/doctrine/model/test_capabilities.py`
-
-### Implementation Notes
-
-- Follow the frozen dataclass + manual `to_dict()`/`from_dict()` pattern from `src/specify_cli/status/models.py`.
-- `Role` uses `StrEnum`. Custom roles accepted as plain strings via `Role | str` typing.
-- `validate()` returns a `list[str]` of error messages (empty = valid).
-- Required fields: `profile_id`, `name`, `purpose` (str, non-empty), `specialization.primary_focus`.
-- `routing_priority` range: 0-100, default 50. `max_concurrent_tasks` range: >0, default 5.
-
-### Parallel Opportunities
-
-- T006 (capabilities.py) and T007-T010 (profile.py) work on different files and can proceed in parallel.
-- T011 and T012 (tests) are on different files.
+- [ ] T008 Implement repository class with two-source YAML loading (shipped via `importlib.resources` + project dir)
+- [ ] T009 Implement field-level merge semantics (project overrides shipped)
+- [ ] T010 Implement `list_all()`, `get()`, `find_by_role()` query methods
+- [ ] T011 Implement hierarchy traversal: `get_children()`, `get_ancestors()`, `get_hierarchy_tree()`
+- [ ] T012 Implement `validate_hierarchy()` — cycle detection, orphaned references, duplicate IDs
+- [ ] T013 Implement `find_best_match(context: TaskContext)` with weighted scoring (DDR-011)
+- [ ] T014 Implement `save()` and `delete()` for project-dir profiles
+- [ ] T015 Write acceptance + unit tests in `tests/doctrine/test_profile_repository.py`
 
 ### Dependencies
 
-- Depends on WP01 (package exists and is importable).
-
-### Risks & Mitigations
-
-- Complex nested dataclass serialization: Test round-trip thoroughly with all field combinations.
-- `StrEnum` + custom string union: Ensure `from_dict` correctly handles both known roles and arbitrary strings.
+- Depends on WP01.
 
 ---
 
-## Work Package WP03: Specialization Hierarchy and Context Matching (Priority: P0) 🎯 MVP
+## Work Package WP03: YAML Schema Expansion (Priority: P0)
 
-**Goal**: Implement `SpecializationHierarchy`, `HierarchyNode`, and `TaskContext` in `src/doctrine/model/hierarchy.py` with tree building, cycle detection, weighted context matching (DDR-011 algorithm), workload penalties, and complexity adjustments.
-**Independent Test**: Build a 3-level hierarchy (root → generalist → specialist). Query with a Python/FastAPI context. Verify specialist wins. Overload specialist. Verify fallback to generalist.
-**Prompt**: `tasks/WP03-hierarchy-and-matching.md`
+**Goal**: Expand `src/doctrine/schemas/agent-profile.schema.yaml` to match the rich 6-section model. Add schema validation utility and tests.
+**Independent Test**: Valid profile passes schema. Incomplete profile fails with actionable error.
+**Prompt**: `tasks/WP03-schema-expansion.md`
+**Estimated Size**: ~300 lines
 
 ### Included Subtasks
 
-- [ ] T013 Implement `TaskContext` frozen dataclass (input to matching)
-- [ ] T014 Implement `HierarchyNode` frozen dataclass (profile + parent + children + depth)
-- [ ] T015 Implement `SpecializationHierarchy.build()` class method (tree construction from profile list)
-- [ ] T016 Implement cycle detection and validation in hierarchy builder
-- [ ] T017 Implement `find_best_match(task_context)` with DDR-011 weighted scoring algorithm
-- [ ] T018 Implement workload penalty and complexity adjustment functions
-- [ ] T019 Implement `as_tree()` for Rich Tree rendering
-- [ ] T020 Write comprehensive tests in `tests/doctrine/model/test_hierarchy.py`
-
-### Implementation Notes
-
-- Weighted scoring: language 40%, framework 20%, file_patterns 20%, keywords 10%, exact_id 10%.
-- Workload penalties: 0-2 tasks=1.0, 3-4=0.85, 5+=0.70.
-- Complexity adjustments: low→specialist+10%, medium→neutral, high→parent+10%/specialist-10%.
-- Cycle detection: Track visited nodes during tree construction. If a node is visited twice, raise validation error.
-- `as_tree()` returns a nested dict suitable for `rich.tree.Tree` rendering.
-- Handle edge cases: missing parent (treat as root with warning), duplicate profile_id (last wins with warning).
-
-### Parallel Opportunities
-
-- T013-T014 (dataclasses) can be written before T015-T018 (algorithms).
+- [ ] T016 Expand `src/doctrine/schemas/agent-profile.schema.yaml` with all 6-section fields
+- [ ] T017 Add schema validation utility function
+- [ ] T018 Create valid and invalid fixture YAML files
+- [ ] T019 Write schema validation tests in `tests/doctrine/test_profile_schema_validation.py`
 
 ### Dependencies
 
-- Depends on WP02 (needs `AgentProfile`, `SpecializationContext`, `Role`).
-
-### Risks & Mitigations
-
-- Scoring algorithm correctness: Use the DDR-011 reference test cases (20 scenarios from SC-002).
-- Performance with large hierarchies: 50 profiles is the target; keep O(n*m) matching where n=profiles, m=context fields.
+- Depends on WP01.
 
 ---
 
-## Work Package WP04: AgentProfileRepository with Two-Source Loading (Priority: P1)
+## Work Package WP04: Shipped Reference Profiles (Priority: P1)
 
-**Goal**: Implement `AgentProfileRepository` in `src/doctrine/repository/profile_repository.py` with shipped profile loading (via `importlib.resources`), project-level profile loading, field-level merge semantics, and all query methods.
-**Independent Test**: Create shipped + custom profiles in tmp directories. Load via repository. Verify merge semantics, queries by role, queries by specialization context.
-**Prompt**: `tasks/WP04-repository.md`
+**Goal**: Create 7 shipped reference profiles in `src/doctrine/agent-profiles/shipped/` for core roles.
+**Independent Test**: All shipped profiles load via repository, pass schema validation, form valid hierarchy.
+**Prompt**: `tasks/WP04-reference-profiles.md`
+**Estimated Size**: ~400 lines
 
 ### Included Subtasks
 
-- [ ] T021 Implement YAML loading helpers using `ruamel.yaml` in `src/doctrine/repository/profile_repository.py`
-- [ ] T022 Implement shipped profile loading via `importlib.resources`
-- [ ] T023 Implement project-level profile loading from filesystem path
-- [ ] T024 Implement field-level merge semantics (project overrides shipped, per-field)
-- [ ] T025 Implement query methods: `list_all()`, `get()`, `find_by_role()`, `find_by_specialization()`, `get_hierarchy()`
-- [ ] T026 Implement `save()` and `delete()` for project-level profile management
-- [ ] T027 Write comprehensive tests in `tests/doctrine/repository/test_profile_repository.py`
-
-### Implementation Notes
-
-- Use `importlib.resources.files("doctrine") / "agents"` for shipped profiles.
-- `ruamel.yaml` for YAML I/O (matches codebase convention). `yaml.preserve_quotes = True`.
-- Invalid YAML → log warning, skip profile (FR-1.6).
-- Deterministic loading: sort files alphabetically, apply overrides in order (FR-013).
-- Field-level merge: For nested value objects, recurse into fields. Lists are replaced wholesale, not merged.
-- The `save()` method writes to `project_dir` only. `delete()` removes from `project_dir` only (cannot delete shipped).
-
-### Parallel Opportunities
-
-- T021-T024 (loading) must be sequential. T025-T026 (queries/mutations) can follow once loading works.
+- [ ] T020 Create `src/doctrine/agent-profiles/shipped/` directory
+- [ ] T021 [P] Create `architect.agent.yaml`
+- [ ] T022 [P] Create `designer.agent.yaml`
+- [ ] T023 [P] Create `implementer.agent.yaml`
+- [ ] T024 [P] Create `reviewer.agent.yaml`
+- [ ] T025 [P] Create `planner.agent.yaml`
+- [ ] T026 [P] Create `researcher.agent.yaml` and `curator.agent.yaml`
+- [ ] T027 Write profile catalog integration test
 
 ### Dependencies
 
-- Depends on WP02 (needs AgentProfile and value objects for parsing).
-
-### Risks & Mitigations
-
-- `importlib.resources` path handling: Differs between editable install and wheel. Test both modes.
-- Merge semantics edge cases: Empty list in project profile — should it override shipped list or keep shipped? Decision: empty list = explicit override (project chose to clear it). Only missing/None fields retain shipped values.
+- Depends on WP01 and WP03.
 
 ---
 
-## Work Package WP05: JSON Schema and Validation (Priority: P1)
+## Work Package WP05: Constitution Wiring (Priority: P1)
 
-**Goal**: Create the JSON Schema file for `.agent.yaml` validation and implement schema validation helpers in `src/doctrine/_validation.py`.
-**Independent Test**: Validate a correct profile YAML against the schema (passes). Validate a profile missing required fields (fails with meaningful error). Validate a profile with out-of-range routing_priority (fails).
-**Prompt**: `tasks/WP05-schema-validation.md`
+**Goal**: Move `AgentProfile` out of `specify_cli.constitution.schemas` into doctrine. Update `resolver.py` to consume rich profiles from repository.
+**Independent Test**: `resolve_governance()` returns rich profiles. Shallow `AgentProfile` no longer exists in `schemas.py`.
+**Prompt**: `tasks/WP05-constitution-wiring.md`
+**Estimated Size**: ~350 lines
 
 ### Included Subtasks
 
-- [ ] T028 Author `src/doctrine/schema/agent_profile.schema.json` covering all entity fields
-- [ ] T029 Implement `validate_profile_yaml(data: dict) → list[str]` in `src/doctrine/_validation.py`
-- [ ] T030 Integrate schema validation into repository loader (optional validation on load)
-- [ ] T031 Write tests in `tests/doctrine/test_schema_validation.py`
-
-### Implementation Notes
-
-- JSON Schema uses `jsonschema` library (already a dependency).
-- Schema loaded via `importlib.resources.files("doctrine") / "schema" / "agent_profile.schema.json"`.
-- `validate_profile_yaml()` returns a list of validation error messages (empty = valid).
-- Schema should validate: required properties, type constraints, enum values for `role`, range for `routing_priority` (0-100), positive `max_concurrent_tasks`, `schema_version` pattern.
-- Repository integration: Add an optional `validate=True` parameter to loading. Default `True` for project profiles, `False` for shipped (trusted).
-
-### Parallel Opportunities
-
-- T028 (schema authoring) and T029 (validation code) can proceed in parallel.
+- [ ] T028 Remove `AgentProfile` class from `src/specify_cli/constitution/schemas.py`
+- [ ] T029 Add import of `AgentProfile` from `doctrine.agent_profiles.profile`
+- [ ] T030 Update `resolver.py` to use rich profiles and `profile_id` keying
+- [ ] T031 Update `GovernanceResolution` downstream consumers
+- [ ] T032 Write resolver tests in `tests/unit/specify_cli/constitution/test_resolver_rich_profiles.py`
+- [ ] T033 Write migration test in `tests/unit/specify_cli/constitution/test_schemas_migration.py`
 
 ### Dependencies
 
-- Depends on WP02 (schema must match AgentProfile dataclass fields exactly).
-
-### Risks & Mitigations
-
-- Schema drift from dataclass: Keep schema and dataclass in sync. The test suite validates that all shipped profiles pass the schema.
+- Depends on WP02.
 
 ---
 
-## Work Package WP06: Shipped Reference Profile Catalog (Priority: P1)
+## Work Package WP06: ToolConfig Rename (Priority: P1)
 
-**Goal**: Create the reference profile YAML files in `src/doctrine/agents/` for the 6 core roles (architect, implementer, reviewer, planner, researcher, curator), adapted from the doctrine reference repository.
-**Independent Test**: Load all shipped profiles via repository. Verify each passes schema validation. Build hierarchy — verify valid tree with no orphans or cycles.
-**Prompt**: `tasks/WP06-reference-profiles.md`
+**Goal**: Rename `AgentConfig` → `ToolConfig` with backward-compatible alias.
+**Independent Test**: Both old and new import paths work. Deprecation warning on old path. `config.yaml` with `agents:` key loads.
+**Prompt**: `tasks/WP06-toolconfig-rename.md`
+**Estimated Size**: ~350 lines
 
 ### Included Subtasks
 
-- [ ] T032 [P] Create `architect.agent.yaml` adapted from `doctrine_ref/agents/architect.agent.md`
-- [ ] T033 [P] Create `implementer.agent.yaml` (generalist implementer role)
-- [ ] T034 [P] Create `reviewer.agent.yaml` adapted from doctrine reference
-- [ ] T035 [P] Create `planner.agent.yaml` adapted from doctrine reference
-- [ ] T036 [P] Create `researcher.agent.yaml` adapted from doctrine reference
-- [ ] T037 [P] Create `curator.agent.yaml` adapted from doctrine reference
-- [ ] T038 Write integration test: load all profiles, validate schema, build hierarchy
-
-### Implementation Notes
-
-- Each profile is a full `.agent.yaml` with all 6 sections populated (see data-model.md for format).
-- Adapt Markdown sections to YAML keys: frontmatter → top-level fields, sections → nested objects.
-- Core 6 are root profiles (no `specializes_from`). They form the foundation that users extend with specialists.
-- Directive references adapted to code/name/rationale tuples (see architect example in data-model.md).
-- All profiles get `schema_version: "1.0"`, `routing_priority: 50`, reasonable `max_concurrent_tasks` defaults.
-- Canonical verbs per role (from Directive 009): architect=audit/synthesize/plan, implementer=generate/refine, reviewer=audit/refine, planner=plan/synthesize, researcher=audit/synthesize, curator=audit/translate.
-
-### Parallel Opportunities
-
-- All 6 profiles (T032-T037) can be written in parallel — they're independent files.
+- [ ] T034 Create `src/specify_cli/orchestrator/tool_config.py` with renamed classes
+- [ ] T035 Replace `agent_config.py` content with deprecation alias
+- [ ] T036 Update imports in `agent_utils/directories.py`
+- [ ] T037 [P] Update imports in `orchestrator/scheduler.py`, `monitor.py`, `config.py`
+- [ ] T038 [P] Update imports in `cli/commands/init.py`, `agent/config.py`
+- [ ] T039 [P] Update import in `upgrade/migrations/m_0_14_0_centralized_feature_detection.py`
+- [ ] T040 Write tests in `tests/unit/specify_cli/orchestrator/test_tool_config.py`
 
 ### Dependencies
 
-- Depends on WP04 (repository must be working to load/validate profiles) and WP05 (schema validation).
-
-### Risks & Mitigations
-
-- Content quality: Profiles are adapted from proven doctrine reference, not invented. Review against original `.agent.md` files.
-- Hierarchy coherence: Integration test (T038) validates the full profile set.
+- None (independent — can start anytime).
 
 ---
 
-## Work Package WP07: ToolConfig Rename and Backward Compatibility (Priority: P1)
+## Work Package WP07: CLI Profile Commands (Priority: P2)
 
-**Goal**: Rename `AgentConfig` to `ToolConfig` using alias-first strategy. Create `tool_config.py`, replace `agent_config.py` with deprecation alias, update all 7 importing files, update `config.yaml` reader to support `tools:` key with `agents:` fallback.
-**Independent Test**: Load project with `agents:` key in `config.yaml` — works with deprecation warning. Load project with `tools:` key — works cleanly. Import from `tool_config` — works. Import from `agent_config` — works with deprecation warning.
-**Prompt**: `tasks/WP07-toolconfig-rename.md`
+**Goal**: Implement `spec-kitty agents profile list|show|create|hierarchy` CLI commands.
+**Independent Test**: Each CLI command produces formatted output. Profile creation writes to `.kittify/constitution/agents/`.
+**Prompt**: `tasks/WP07-cli-profile-commands.md`
+**Estimated Size**: ~400 lines
 
 ### Included Subtasks
 
-- [ ] T039 Create `src/specify_cli/orchestrator/tool_config.py` with renamed classes and functions
-- [ ] T040 Replace `agent_config.py` with deprecation alias module
-- [ ] T041 Update `config.yaml` reader to check `tools:` first, fall back to `agents:`
-- [ ] T042 Update import in `src/specify_cli/agent_utils/directories.py`
-- [ ] T043 Update imports in `src/specify_cli/orchestrator/scheduler.py` (2 sites)
-- [ ] T044 [P] Update import in `src/specify_cli/upgrade/migrations/m_0_14_0_centralized_feature_detection.py`
-- [ ] T045 [P] Update imports in `src/specify_cli/cli/commands/init.py` and `agent/config.py`
-- [ ] T046 [P] Update re-exports in `src/specify_cli/orchestrator/__init__.py` and `config.py` and `monitor.py`
-- [ ] T047 Write tests in `tests/specify_cli/orchestrator/test_tool_config.py`
-
-### Implementation Notes
-
-- Step 1: Copy `agent_config.py` → `tool_config.py`, rename all classes/functions inside.
-- Step 2: Replace `agent_config.py` content with deprecation alias imports.
-- Step 3: Update each importing file one by one, running tests after each change.
-- Step 4: Add dual-key logic to `load_tool_config()`: read `tools:` first, fall back to `agents:` with `logger.warning("Deprecation: ...")`.
-- Keep existing test files passing throughout — the alias ensures backward compat.
-
-### Parallel Opportunities
-
-- T044, T045, T046 (import updates in different files) can proceed in parallel after T039-T041 are done.
+- [ ] T041 Create `src/specify_cli/cli/commands/agents/profile.py` with Typer command group
+- [ ] T042 [P] Implement `list` subcommand — Rich table
+- [ ] T043 [P] Implement `show <profile_id>` subcommand
+- [ ] T044 [P] Implement `create --from-template <profile_id>` subcommand
+- [ ] T045 [P] Implement `hierarchy` subcommand — Rich Tree
+- [ ] T046 Register profile command group in CLI app
+- [ ] T047 Write CLI tests (supporting tier — 55% coverage)
 
 ### Dependencies
 
-- Depends on WP01 only (no dependency on doctrine model — this is a specify_cli-only change).
-
-### Risks & Mitigations
-
-- Missed import: Run `grep -r "agent_config" src/` after all changes to verify no leftover direct imports.
-- Test breakage: Run full test suite after each file change. The alias module prevents breakage during transition.
+- Depends on WP02.
 
 ---
 
-## Work Package WP08: CLI Profile Commands (Priority: P2)
+## Work Package WP08: Curation Flow Compatibility (Priority: P1)
 
-**Goal**: Implement `spec-kitty agent profile` subcommand group with `list`, `show`, `create`, `edit`, and `hierarchy` subcommands in `src/specify_cli/cli/commands/agent/profile.py`. Register in `agent/__init__.py`.
-**Independent Test**: Run `spec-kitty agent profile list` — shows shipped profiles in Rich table. Run `spec-kitty agent profile show architect` — displays full profile. Run `spec-kitty agent profile hierarchy` — shows tree visualization.
-**Prompt**: `tasks/WP08-cli-profile-commands.md`
+**Goal**: Validate curation pipeline supports `agent-profile` as target type. Document adaptation flow. Write end-to-end test.
+**Independent Test**: ImportCandidate with `target_type: agent-profile` validates. Resulting artifact links to valid `.agent.yaml`.
+**Prompt**: `tasks/WP08-curation-compatibility.md`
+**Estimated Size**: ~350 lines
 
 ### Included Subtasks
 
-- [ ] T048 Create `src/specify_cli/cli/commands/agent/profile.py` with typer app
-- [ ] T049 Implement `list` subcommand with Rich table output
-- [ ] T050 Implement `show <profile_id>` subcommand with formatted profile display
-- [ ] T051 Implement `create --from-template <profile_id>` subcommand
-- [ ] T052 Implement `edit <profile_id>` subcommand (open YAML file or interactive fields)
-- [ ] T053 Implement `hierarchy` subcommand with Rich Tree visualization
-- [ ] T054 Register profile subcommand in `src/specify_cli/cli/commands/agent/__init__.py`
-- [ ] T055 Write CLI integration tests in `tests/specify_cli/cli/commands/agent/test_profile_cli.py`
-
-### Implementation Notes
-
-- Follow existing CLI patterns: `app = typer.Typer(name="profile", ...)`, `@app.command()` decorators.
-- `list` table columns: ID, Name, Role, Parent, Priority, Source (shipped/custom/override).
-- `show` uses Rich Panel/Markdown for formatted display of all 6 sections.
-- `create --from-template` reads the specified shipped profile and writes a copy to `.kittify/constitution/agents/`.
-- `create --interactive` prompts for: profile_id, name, role, purpose, primary_focus (minimum viable profile).
-- `edit` opens the file path in `$EDITOR` or prints the path if no editor configured.
-- `hierarchy` uses `rich.tree.Tree` for visualization (profile_id [role] priority=N).
-- The profile commands import from `doctrine.repository` (the specify_cli → doctrine direction is allowed).
-
-### Parallel Opportunities
-
-- T049-T053 (individual subcommands) can be implemented in parallel once T048 (skeleton) exists.
+- [ ] T048 Verify/update `agent-profile` in import-candidate schema target_type
+- [ ] T049 Create example import candidate fixture for agent profile
+- [ ] T050 Document `.agent.md` → `.agent.yaml` adaptation mapping in curation README
+- [ ] T051 Write end-to-end curation test in `tests/doctrine/test_curation_agent_profile.py`
+- [ ] T052 Validate `resulting_artifacts` linkage in test
 
 ### Dependencies
 
-- Depends on WP04 (needs AgentProfileRepository for loading/querying profiles).
-
-### Risks & Mitigations
-
-- Rich formatting: Test with `from rich.console import Console; console = Console(record=True)` for snapshot testing.
-- Interactive mode: Use `readchar` or `typer.prompt()` for field-by-field input (both are dependencies).
+- Depends on WP01 and WP03.
 
 ---
 
 ## Dependency & Execution Summary
 
 ```
-Phase 0 (Foundation):
-  WP01 (scaffolding) ─── no dependencies
+Wave 0 (foundation):
+  WP01 (model) ─── no dependencies
+  WP06 (ToolConfig) ─── no dependencies (independent)
 
-Phase 1 (Domain Model — parallelizable after WP01):
-  WP02 (domain model) ─── depends on WP01
-  WP07 (ToolConfig)   ─── depends on WP01 (independent of WP02)
+Wave 1 (parallel after WP01):
+  WP02 (repository) ─── depends on WP01
+  WP03 (schema) ─── depends on WP01
 
-Phase 2 (Services — parallelizable after WP02):
-  WP03 (hierarchy)     ─── depends on WP02
-  WP04 (repository)    ─── depends on WP02
-  WP05 (schema)        ─── depends on WP02
-
-Phase 3 (Integration — after Phase 2):
-  WP06 (ref profiles)  ─── depends on WP04, WP05
-  WP08 (CLI commands)  ─── depends on WP04
+Wave 2 (parallel after wave 1):
+  WP04 (profiles) ─── depends on WP01, WP03
+  WP05 (constitution) ─── depends on WP02
+  WP07 (CLI) ─── depends on WP02
+  WP08 (curation) ─── depends on WP01, WP03
 ```
 
-**Parallelization highlights**:
+**MVP Scope**: WP01 + WP02 + WP03 + WP04
 
-- WP02 + WP07 can run in parallel after WP01 (different packages)
-- WP03 + WP04 + WP05 can run in parallel after WP02 (different modules)
-- WP06 + WP08 can run in parallel after WP04 (different packages)
-
-**MVP Scope**: WP01 + WP02 + WP03 (package + domain model + hierarchy). This provides the core entity and matching algorithm consumable by features 044 and 046.
-
-**Critical path**: WP01 → WP02 → WP04 → WP06 (longest dependency chain).
+**Critical path**: WP01 → WP02 → WP05
 
 ---
 
-## Subtask Index (Reference)
+## Subtask Index
 
-| Subtask ID | Summary | Work Package | Priority | Parallel? |
-|------------|---------|--------------|----------|-----------|
-| T001 | Create `src/doctrine/` package with `__init__.py` and `py.typed` | WP01 | P0 | No |
-| T002 | Create empty subpackage directories | WP01 | P0 | No |
-| T003 | Update `pyproject.toml` packages list | WP01 | P0 | No |
-| T004 | Create import boundary test | WP01 | P0 | Yes |
-| T005 | Create test conftest.py with fixtures | WP01 | P0 | Yes |
-| T006 | Implement `Role` StrEnum and `RoleCapabilities` | WP02 | P0 | Yes |
-| T007 | Implement value objects (Specialization, CollaborationContract, etc.) | WP02 | P0 | No |
-| T008 | Implement `AgentProfile` frozen dataclass | WP02 | P0 | No |
-| T009 | Implement `to_dict()` and `from_dict()` on all dataclasses | WP02 | P0 | No |
-| T010 | Implement `validate()` method | WP02 | P0 | No |
-| T011 | Write profile model unit tests | WP02 | P0 | No |
-| T012 | Write capabilities unit tests | WP02 | P0 | Yes |
-| T013 | Implement `TaskContext` dataclass | WP03 | P0 | No |
-| T014 | Implement `HierarchyNode` dataclass | WP03 | P0 | No |
-| T015 | Implement `SpecializationHierarchy.build()` | WP03 | P0 | No |
-| T016 | Implement cycle detection and validation | WP03 | P0 | No |
-| T017 | Implement `find_best_match()` weighted scoring | WP03 | P0 | No |
-| T018 | Implement workload penalty and complexity adjustment | WP03 | P0 | No |
-| T019 | Implement `as_tree()` for Rich rendering | WP03 | P0 | No |
-| T020 | Write hierarchy tests | WP03 | P0 | No |
-| T021 | Implement YAML loading helpers | WP04 | P1 | No |
-| T022 | Implement shipped profile loading via `importlib.resources` | WP04 | P1 | No |
-| T023 | Implement project-level profile loading | WP04 | P1 | No |
-| T024 | Implement field-level merge semantics | WP04 | P1 | No |
-| T025 | Implement query methods | WP04 | P1 | No |
-| T026 | Implement `save()` and `delete()` | WP04 | P1 | No |
-| T027 | Write repository tests | WP04 | P1 | No |
-| T028 | Author JSON Schema file | WP05 | P1 | Yes |
-| T029 | Implement `validate_profile_yaml()` | WP05 | P1 | Yes |
-| T030 | Integrate schema validation into repository | WP05 | P1 | No |
-| T031 | Write schema validation tests | WP05 | P1 | No |
-| T032 | Create `architect.agent.yaml` | WP06 | P1 | Yes |
-| T033 | Create `implementer.agent.yaml` | WP06 | P1 | Yes |
-| T034 | Create `reviewer.agent.yaml` | WP06 | P1 | Yes |
-| T035 | Create `planner.agent.yaml` | WP06 | P1 | Yes |
-| T036 | Create `researcher.agent.yaml` | WP06 | P1 | Yes |
-| T037 | Create `curator.agent.yaml` | WP06 | P1 | Yes |
-| T038 | Write profile catalog integration test | WP06 | P1 | No |
-| T039 | Create `tool_config.py` with renamed classes | WP07 | P1 | No |
-| T040 | Replace `agent_config.py` with alias module | WP07 | P1 | No |
-| T041 | Update config.yaml reader for `tools:` key | WP07 | P1 | No |
-| T042 | Update import in directories.py | WP07 | P1 | No |
-| T043 | Update imports in scheduler.py | WP07 | P1 | No |
-| T044 | Update import in migration file | WP07 | P1 | Yes |
-| T045 | Update imports in init.py and agent/config.py | WP07 | P1 | Yes |
-| T046 | Update re-exports in orchestrator **init**.py, config.py, monitor.py | WP07 | P1 | Yes |
-| T047 | Write ToolConfig tests | WP07 | P1 | No |
-| T048 | Create profile.py CLI skeleton with typer app | WP08 | P2 | No |
-| T049 | Implement `list` subcommand | WP08 | P2 | Yes |
-| T050 | Implement `show` subcommand | WP08 | P2 | Yes |
-| T051 | Implement `create` subcommand | WP08 | P2 | Yes |
-| T052 | Implement `edit` subcommand | WP08 | P2 | Yes |
-| T053 | Implement `hierarchy` subcommand | WP08 | P2 | Yes |
-| T054 | Register profile subcommand in agent/**init**.py | WP08 | P2 | No |
-| T055 | Write CLI profile integration tests | WP08 | P2 | No |
+| ID | Summary | WP | P? |
+|----|---------|----|----|
+| T001 | Create agent-profiles `__init__.py` | WP01 | No |
+| T002 | Define Role StrEnum | WP01 | No |
+| T003 | Define value objects | WP01 | No |
+| T004 | Define AgentProfile model | WP01 | No |
+| T005 | Define TaskContext model | WP01 | No |
+| T006 | Define RoleCapabilities | WP01 | Yes |
+| T007 | Write model tests | WP01 | No |
+| T008 | Implement repository with loading | WP02 | No |
+| T009 | Implement field-level merge | WP02 | No |
+| T010 | Implement query methods | WP02 | No |
+| T011 | Implement hierarchy traversal | WP02 | No |
+| T012 | Implement hierarchy validation | WP02 | No |
+| T013 | Implement find_best_match | WP02 | No |
+| T014 | Implement save/delete | WP02 | No |
+| T015 | Write repository tests | WP02 | No |
+| T016 | Expand YAML schema | WP03 | No |
+| T017 | Add validation utility | WP03 | No |
+| T018 | Create test fixtures | WP03 | Yes |
+| T019 | Write schema tests | WP03 | No |
+| T020 | Create shipped/ directory | WP04 | No |
+| T021-T026 | Create 7 reference profiles | WP04 | Yes |
+| T027 | Write catalog test | WP04 | No |
+| T028 | Remove AgentProfile from schemas.py | WP05 | No |
+| T029 | Add doctrine import | WP05 | No |
+| T030 | Update resolver.py | WP05 | No |
+| T031 | Update GovernanceResolution | WP05 | No |
+| T032 | Write resolver tests | WP05 | Yes |
+| T033 | Write migration test | WP05 | Yes |
+| T034 | Create tool_config.py | WP06 | No |
+| T035 | Create deprecation alias | WP06 | No |
+| T036-T039 | Update imports (7 files) | WP06 | Yes |
+| T040 | Write ToolConfig tests | WP06 | No |
+| T041 | Create CLI profile.py | WP07 | No |
+| T042-T045 | Implement CLI subcommands | WP07 | Yes |
+| T046 | Register command group | WP07 | No |
+| T047 | Write CLI tests | WP07 | No |
+| T048 | Verify agent-profile target_type | WP08 | No |
+| T049 | Create import fixture | WP08 | Yes |
+| T050 | Document adaptation in README | WP08 | Yes |
+| T051 | Write curation e2e test | WP08 | No |
+| T052 | Validate resulting_artifacts | WP08 | No |

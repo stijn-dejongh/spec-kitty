@@ -1,69 +1,73 @@
 # Data Model: Agent Profile Domain Model
 
 **Feature**: 047-agent-profile-domain-model
-**Date**: 2026-02-16
+**Date**: 2026-02-21 (revised from 2026-02-16)
 
 ## Entity Relationship Diagram
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                   AgentProfile                          │
-│ (frozen dataclass — src/doctrine/model/profile.py)      │
-├─────────────────────────────────────────────────────────┤
-│ profile_id: str              [PK, required]             │
-│ name: str                    [required]                 │
-│ description: str             [default: ""]              │
-│ schema_version: str          [default: "1.0"]           │
-│ role: Role | str             [default: Role.IMPLEMENTER]│
-│ capabilities: list[str]      [default: []]              │
-│ specializes_from: str | None [FK → AgentProfile]        │
-│ routing_priority: int        [0-100, default: 50]       │
-│ max_concurrent_tasks: int    [>0, default: 5]           │
-├─────────────────────────────────────────────────────────┤
-│ context_sources: ContextSources          [section 1]    │
-│ purpose: str                             [section 2]    │
-│ specialization: Specialization           [section 3]    │
-│ collaboration: CollaborationContract     [section 4]    │
-│ mode_defaults: list[ModeDefault]         [section 5]    │
-│ initialization_declaration: str          [section 6]    │
-│ specialization_context: SpecializationContext | None     │
-│ directive_references: list[DirectiveRef] [optional]     │
-├─────────────────────────────────────────────────────────┤
-│ + to_dict() → dict[str, Any]                            │
-│ + from_dict(data) → AgentProfile                        │
-│ + validate() → list[str]  (returns error messages)      │
-└─────────────────────────────────────────────────────────┘
-         │ specializes_from
+┌─────────────────────────────────────────────────────────────┐
+│                      AgentProfile                           │
+│ (Pydantic BaseModel — src/doctrine/agent-profiles/profile.py)│
+├─────────────────────────────────────────────────────────────┤
+│ profile_id: str              [required, PK]                 │
+│ name: str                    [required]                     │
+│ description: str             [default: ""]                  │
+│ schema_version: str          [default: "1.0"]               │
+│ role: Role | str             [default: Role.IMPLEMENTER]    │
+│ capabilities: list[str]      [default: []]                  │
+│ specializes_from: str | None [self-ref → AgentProfile.id]   │
+│ routing_priority: int        [0-100, default: 50]           │
+│ max_concurrent_tasks: int    [>0, default: 5]               │
+├─────────────────────────────────────────────────────────────┤
+│ context_sources: ContextSources          [section 1]        │
+│ purpose: str                             [section 2, req]   │
+│ specialization: Specialization           [section 3, req]   │
+│ collaboration: CollaborationContract     [section 4]        │
+│ mode_defaults: list[ModeDefault]         [section 5]        │
+│ initialization_declaration: str          [section 6]        │
+│ specialization_context: SpecializationContext | None         │
+│ directive_references: list[DirectiveRef] [optional]         │
+└─────────────────────────────────────────────────────────────┘
+         │ specializes_from (self-referential)
+         │ e.g. python-implementer.specializes_from = "implementer"
          ▼
-┌─────────────────────────────────────────────────────────┐
-│            SpecializationHierarchy                       │
-│ (dataclass — src/doctrine/model/hierarchy.py)           │
-├─────────────────────────────────────────────────────────┤
-│ roots: list[HierarchyNode]                              │
-│ _index: dict[str, HierarchyNode]                        │
-├─────────────────────────────────────────────────────────┤
-│ + build(profiles: list[AgentProfile]) → Self            │
-│ + find_best_match(ctx: TaskContext) → AgentProfile|None │
-│ + get_node(profile_id: str) → HierarchyNode | None     │
-│ + get_children(profile_id: str) → list[HierarchyNode]  │
-│ + get_ancestors(profile_id: str) → list[str]            │
-│ + as_tree() → dict  (for Rich Tree rendering)           │
-│ + validate() → list[str]                                │
-└─────────────────────────────────────────────────────────┘
-         │ contains
-         ▼
-┌─────────────────────────────────────────────────────────┐
-│                   HierarchyNode                         │
-│ (frozen dataclass)                                      │
-├─────────────────────────────────────────────────────────┤
-│ profile: AgentProfile                                   │
-│ parent: HierarchyNode | None                            │
-│ children: list[HierarchyNode]                           │
-│ depth: int                                              │
-└─────────────────────────────────────────────────────────┘
+      Same AgentProfile table — hierarchy is emergent from
+      specializes_from references, not a separate entity.
+
+┌─────────────────────────────────────────────────────────────┐
+│                 AgentProfileRepository                       │
+│ (src/doctrine/agent-profiles/repository.py)                 │
+├─────────────────────────────────────────────────────────────┤
+│ _profiles: dict[str, AgentProfile]                          │
+│ _shipped_dir: Path                                          │
+│ _project_dir: Path | None                                   │
+├─────────────────────────────────────────────────────────────┤
+│ + list_all() → list[AgentProfile]                           │
+│ + get(profile_id: str) → AgentProfile | None                │
+│ + find_by_role(role: Role | str) → list[AgentProfile]       │
+│ + find_best_match(ctx: TaskContext) → AgentProfile | None   │
+│ + get_children(profile_id: str) → list[AgentProfile]        │
+│ + get_ancestors(profile_id: str) → list[str]                │
+│ + get_hierarchy_tree() → dict  (for Rich Tree rendering)    │
+│ + validate_hierarchy() → list[str]  (cycle/orphan checks)   │
+│ + save(profile: AgentProfile) → None  # project_dir only    │
+│ + delete(profile_id: str) → bool      # project_dir only    │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-## Value Objects
+### Design Rationale: No Separate Hierarchy Class
+
+The specialization hierarchy is an **emergent property** of the `specializes_from` field on `AgentProfile`, not a separate entity. The `AgentProfileRepository` owns all hierarchy traversal and matching logic because:
+
+1. The repository already holds all loaded profiles — it has the complete graph
+2. Hierarchy queries (children, ancestors, best match) are repository-level concerns
+3. Avoids a separate class that duplicates the profile index
+4. Simplifies the API: callers interact with the repository, not two objects
+
+The repository lazily builds an internal parent-child index from `specializes_from` references on first hierarchy query, and invalidates it on `save()`/`delete()`.
+
+## Value Objects (Pydantic BaseModel)
 
 ### Role (StrEnum)
 
@@ -72,15 +76,17 @@ class Role(StrEnum):
     IMPLEMENTER = "implementer"
     REVIEWER = "reviewer"
     ARCHITECT = "architect"
+    DESIGNER = "designer"
     PLANNER = "planner"
     RESEARCHER = "researcher"
     CURATOR = "curator"
     MANAGER = "manager"
 ```
 
-Custom roles are supported as plain strings where `Role` is typed as `Role | str`.
+Custom roles are supported as plain strings where `role` is typed as `Role | str`.
+Pydantic validator coerces known strings to `Role` enum, passes unknown strings through with a warning.
 
-### Specialization (frozen dataclass)
+### Specialization
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -89,7 +95,7 @@ Custom roles are supported as plain strings where `Role` is typed as `Role | str
 | `avoidance_boundary` | `str` | No | What the agent explicitly avoids |
 | `success_definition` | `str` | No | How success is measured for this agent |
 
-### CollaborationContract (frozen dataclass)
+### CollaborationContract
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -100,7 +106,7 @@ Custom roles are supported as plain strings where `Role` is typed as `Role | str
 | `operating_procedures` | `list[str]` | `[]` | Step-by-step workflow rules |
 | `canonical_verbs` | `list[str]` | `[]` | Allowed action verbs (from Directive 009) |
 
-### SpecializationContext (frozen dataclass)
+### SpecializationContext
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -111,7 +117,7 @@ Custom roles are supported as plain strings where `Role` is typed as `Role | str
 | `writing_style` | `list[str]` | `[]` | Writing style preferences (technical, narrative) |
 | `complexity_preference` | `list[str]` | `[]` | Preferred complexity levels (low, medium, high) |
 
-### ContextSources (frozen dataclass)
+### ContextSources
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -119,7 +125,7 @@ Custom roles are supported as plain strings where `Role` is typed as `Role | str
 | `directives` | `list[str]` | `[]` | Directive codes this agent adheres to |
 | `additional` | `list[str]` | `[]` | Additional context source paths |
 
-### ModeDefault (frozen dataclass)
+### ModeDefault
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -127,7 +133,7 @@ Custom roles are supported as plain strings where `Role` is typed as `Role | str
 | `description` | `str` | Yes | What this mode does |
 | `use_case` | `str` | Yes | When to use this mode |
 
-### DirectiveRef (frozen dataclass)
+### DirectiveRef
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -135,7 +141,7 @@ Custom roles are supported as plain strings where `Role` is typed as `Role | str
 | `name` | `str` | Yes | Directive name |
 | `rationale` | `str` | Yes | Why this agent uses this directive |
 
-### TaskContext (frozen dataclass — input to hierarchy matching)
+### TaskContext (input to repository matching)
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -148,6 +154,8 @@ Custom roles are supported as plain strings where `Role` is typed as `Role | str
 | `active_tasks` | `dict[str, int]` | `{}` | profile_id → current active task count |
 
 ## Weighted Context Matching Algorithm (from DDR-011)
+
+Lives in `AgentProfileRepository.find_best_match()`:
 
 ```
 score(profile, context) =
@@ -189,8 +197,11 @@ AgentProfileRepository
 ├── list_all() → list[AgentProfile]
 ├── get(profile_id: str) → AgentProfile | None
 ├── find_by_role(role: Role | str) → list[AgentProfile]
-├── find_by_specialization(context: TaskContext) → list[AgentProfile]
-├── get_hierarchy() → SpecializationHierarchy
+├── find_best_match(context: TaskContext) → AgentProfile | None
+├── get_children(profile_id: str) → list[AgentProfile]
+├── get_ancestors(profile_id: str) → list[str]
+├── get_hierarchy_tree() → dict  (for Rich Tree rendering)
+├── validate_hierarchy() → list[str]  (cycles, orphans, duplicates)
 ├── save(profile: AgentProfile) → None  # writes to project_dir
 └── delete(profile_id: str) → bool      # removes from project_dir only
 ```
@@ -198,13 +209,13 @@ AgentProfileRepository
 ### Loading Order
 
 1. Scan `shipped_dir` (via `importlib.resources`) for `*.agent.yaml` files
-2. Parse each into `AgentProfile` via `from_dict()`, skip invalid with warning
+2. Parse each into `AgentProfile` via Pydantic `model_validate()`, skip invalid with warning
 3. Scan `project_dir` (filesystem Path) for `*.agent.yaml` files
 4. For each project profile:
    - If `profile_id` matches a shipped profile → field-level merge (project wins)
    - If `profile_id` is new → add to set
-5. Build `SpecializationHierarchy` from merged profile set
-6. Return immutable profile set + hierarchy
+5. Build internal parent-child index from `specializes_from` references
+6. Return immutable profile set
 
 ### Field-Level Merge Semantics
 
@@ -213,8 +224,17 @@ When a project profile overrides a shipped profile:
 - Each top-level field is compared independently
 - If the project profile provides a non-default value, it replaces the shipped value
 - If the project profile omits a field (or provides default/empty), the shipped value is retained
-- Nested value objects (Specialization, CollaborationContract) are merged recursively at field level
+- Nested Pydantic models (Specialization, CollaborationContract) are merged recursively at field level
 - List fields are replaced wholesale (no list merging) — project list replaces shipped list
+
+### Hierarchy Validation (in `validate_hierarchy()`)
+
+The repository validates the hierarchy derived from `specializes_from` references:
+
+1. **No cycles**: A → B → A is rejected
+2. **No orphaned references**: `specializes_from: nonexistent-id` logs warning, profile treated as root
+3. **No duplicate profile_ids**: Last-write-wins with warning
+4. **Tree integrity**: Every profile is reachable (either root or connected to a root via `specializes_from` chain)
 
 ## YAML File Format (.agent.yaml)
 
@@ -222,7 +242,7 @@ When a project profile overrides a shipped profile:
 # architect.agent.yaml
 schema_version: "1.0"
 profile_id: architect
-name: "Architect Alphonso"
+name: "Architect"
 description: "Clarify complex systems with contextual trade-offs."
 role: architect
 capabilities:
@@ -245,8 +265,7 @@ context_sources:
 
 purpose: >
   Clarify and decompose complex socio-technical systems, surfacing trade-offs
-  and decision rationale. Provide architecture patterns and interfaces that
-  improve shared understanding and traceability.
+  and decision rationale.
 
 specialization:
   primary_focus: "System decomposition, design interfaces, ADRs"
@@ -286,7 +305,7 @@ mode_defaults:
     use_case: "Context validation, retrospectives"
 
 initialization_declaration: |
-  Agent "Architect Alphonso" initialized.
+  Agent "Architect" initialized.
   Context layers: Operational, Strategic, Command, Bootstrap.
   Purpose acknowledged: Clarify systems, surface trade-offs.
 
@@ -314,3 +333,18 @@ No schema changes — only naming:
 | `config.yaml` key `agents:` | `tools:` (with `agents:` fallback) |
 
 The class structure, fields, and behavior remain identical.
+
+## Curation Target Type: agent-profile
+
+The curation pipeline (`src/doctrine/curation/`) supports `agent-profile` as a valid `target_type` in `ImportCandidate`. The adaptation flow converts `.agent.md` (human-readable) into `.agent.yaml` (machine-parseable) following this mapping:
+
+| `.agent.md` source | `.agent.yaml` target |
+|---------------------|----------------------|
+| YAML frontmatter fields | Top-level profile fields |
+| `## 1. Context Sources` section | `context_sources:` |
+| `## Directive References` table | `directive_references:` list |
+| `## 2. Purpose` section | `purpose:` scalar |
+| `## 3. Specialization` section | `specialization:` object |
+| `## 4. Collaboration Contract` section | `collaboration:` object |
+| `## 5. Mode Defaults` table | `mode_defaults:` list |
+| `## 6. Initialization Declaration` code block | `initialization_declaration:` scalar |

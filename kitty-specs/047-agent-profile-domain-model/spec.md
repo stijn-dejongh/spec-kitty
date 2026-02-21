@@ -302,6 +302,19 @@ As a spec-kitty user, I want spec-kitty to ship with a catalog of well-crafted r
 - **SC-005**: A new project can list, inspect, and create custom profiles using only CLI commands within 2 minutes.
 - **SC-006**: Profile override merge semantics are deterministic — loading the same shipped + custom files always produces identical repository state.
 
+### Curation Flow Compatibility
+
+- **FR-017**: The curation pipeline (`src/doctrine/curation/`) SHALL support agent profiles as a target doctrine type. An `ImportCandidate` with `target_type: agent-profile` SHALL be classifiable, adaptable, and adoptable into `src/doctrine/agents/` following the standard curation flow described in `src/doctrine/curation/README.md`.
+- **FR-018**: Adding a new agent profile via the curation import flow SHALL be a documented and manually testable acceptance path — from candidate creation through classification, adaptation, adoption, and `resulting_artifacts` linkage.
+
+### Manual Acceptance Test
+
+The feature owner will validate this feature by importing a new agent profile through the curation pipeline end-to-end:
+1. Create an `ImportCandidate` for a new agent persona
+2. Classify it as `target_type: agent-profile`
+3. Curate it into a `.agent.yaml` in `src/doctrine/agents/`
+4. Verify it loads via `AgentProfileRepository`, passes schema validation, and is queryable by role
+
 ## Scope Boundaries
 
 ### In Scope
