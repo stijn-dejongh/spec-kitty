@@ -43,14 +43,14 @@
 
 ### Included Subtasks
 
-- [ ] T008 Implement repository class with two-source YAML loading (shipped via `importlib.resources` + project dir)
-- [ ] T009 Implement field-level merge semantics (project overrides shipped)
-- [ ] T010 Implement `list_all()`, `get()`, `find_by_role()` query methods
-- [ ] T011 Implement hierarchy traversal: `get_children()`, `get_ancestors()`, `get_hierarchy_tree()`
-- [ ] T012 Implement `validate_hierarchy()` — cycle detection, orphaned references, duplicate IDs
-- [ ] T013 Implement `find_best_match(context: TaskContext)` with weighted scoring (DDR-011). Test scenarios: (1) workload penalties (0-2 tasks=1.0, 3-4=0.85, 5+=0.70), (2) complexity adjustments (low/medium/high multipliers), (3) language/framework/file pattern matching weights
-- [ ] T014 Implement `save()` and `delete()` for project-dir profiles
-- [ ] T015 Write acceptance + unit tests in `tests/doctrine/test_profile_repository.py` — include test scenario for zero-profile repository (returns empty list, no crash), test with Architect Alphonso and Python Pedro profiles for hierarchy validation
+- [x] T008 Implement repository class with two-source YAML loading (shipped via `importlib.resources` + project dir)
+- [x] T009 Implement field-level merge semantics (project overrides shipped)
+- [x] T010 Implement `list_all()`, `get()`, `find_by_role()` query methods
+- [x] T011 Implement hierarchy traversal: `get_children()`, `get_ancestors()`, `get_hierarchy_tree()`
+- [x] T012 Implement `validate_hierarchy()` — cycle detection, orphaned references, duplicate IDs
+- [x] T013 Implement `find_best_match(context: TaskContext)` with weighted scoring (DDR-011). Test scenarios: (1) workload penalties (0-2 tasks=1.0, 3-4=0.85, 5+=0.70), (2) complexity adjustments (low/medium/high multipliers), (3) language/framework/file pattern matching weights
+- [x] T014 Implement `save()` and `delete()` for project-dir profiles
+- [x] T015 Write acceptance + unit tests in `tests/doctrine/test_profile_repository.py` — include test scenario for zero-profile repository (returns empty list, no crash), test with Architect Alphonso and Python Pedro profiles for hierarchy validation
 
 ### Dependencies
 
@@ -299,3 +299,8 @@ Wave 3 (documentation):
 | T059 | Document step 5: Verification | WP09 | Yes |
 | T060 | Include complete concrete example | WP09 | Yes |
 | T061 | Add troubleshooting section | WP09 | Yes |
+
+<!-- status-model:start -->
+## Canonical Status (Generated)
+- WP01: for_review
+<!-- status-model:end -->
