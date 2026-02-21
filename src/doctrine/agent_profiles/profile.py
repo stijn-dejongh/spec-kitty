@@ -1,0 +1,198 @@
+"""
+AgentProfile domain model and value objects.
+
+This module defines the rich AgentProfile Pydantic model with all 6-section
+structure per the doctrine framework. Profiles define WHO an agent IS:
+purpose, specialization boundaries, collaboration contracts, reasoning modes,
+and directive adherence.
+"""
+
+import warnings
+from enum import StrEnum
+from typing import Annotated, Any
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic.functional_validators import BeforeValidator
+
+
+class Role(StrEnum):
+    """Controlled vocabulary for agent roles with custom role support."""
+
+    IMPLEMENTER = "implementer"
+    REVIEWER = "reviewer"
+    ARCHITECT = "architect"
+    DESIGNER = "designer"
+    PLANNER = "planner"
+    RESEARCHER = "researcher"
+    CURATOR = "curator"
+    MANAGER = "manager"
+
+
+def _coerce_role(value: Any) -> Role | str:
+    """Coerce known role strings to Role enum, pass custom roles through."""
+    if isinstance(value, Role):
+        return value
+    if isinstance(value, str):
+        # Try case-insensitive match
+        try:
+            return Role(value.lower())
+        except ValueError:
+            warnings.warn(
+                f"Custom role '{value}' not in controlled vocabulary. "
+                f"Known roles: {', '.join(r.value for r in Role)}",
+                UserWarning,
+                stacklevel=2,
+            )
+            return value
+    return value
+
+
+# Value Objects (Section components)
+
+
+class Specialization(BaseModel):
+    """Agent specialization definition - what it focuses on and avoids."""
+
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    primary_focus: str = Field(alias="primary-focus")
+    secondary_awareness: str = Field(default="", alias="secondary-awareness")
+    avoidance_boundary: str = Field(default="", alias="avoidance-boundary")
+    success_definition: str = Field(default="", alias="success-definition")
+
+
+class CollaborationContract(BaseModel):
+    """Agent collaboration patterns and outputs."""
+
+    model_config = ConfigDict(frozen=True)
+
+    handoff_to: list[str] = Field(default_factory=list)
+    handoff_from: list[str] = Field(default_factory=list)
+    works_with: list[str] = Field(default_factory=list)
+    output_artifacts: list[str] = Field(default_factory=list)
+    operating_procedures: list[str] = Field(default_factory=list)
+    canonical_verbs: list[str] = Field(default_factory=list)
+
+
+class SpecializationContext(BaseModel):
+    """Declarative conditions defining when a specialist is preferred."""
+
+    model_config = ConfigDict(frozen=True)
+
+    languages: list[str] = Field(default_factory=list)
+    frameworks: list[str] = Field(default_factory=list)
+    file_patterns: list[str] = Field(default_factory=list)
+    domain_keywords: list[str] = Field(default_factory=list)
+    writing_style: list[str] = Field(default_factory=list)
+    complexity_preference: list[str] = Field(default_factory=list)
+
+
+class ContextSources(BaseModel):
+    """Doctrine context sources this agent loads."""
+
+    model_config = ConfigDict(frozen=True)
+
+    doctrine_layers: list[str] = Field(default_factory=list)
+    directives: list[str] = Field(default_factory=list)
+    additional: list[str] = Field(default_factory=list)
+
+
+class ModeDefault(BaseModel):
+    """Available reasoning mode with description."""
+
+    model_config = ConfigDict(frozen=True)
+
+    mode: str
+    description: str
+    use_case: str
+
+
+class DirectiveRef(BaseModel):
+    """Reference to a directive with usage rationale."""
+
+    model_config = ConfigDict(frozen=True)
+
+    code: str
+    name: str
+    rationale: str
+
+
+# Main Domain Model
+
+
+class AgentProfile(BaseModel):
+    """
+    Rich agent behavioral identity.
+
+    Defines WHO an agent IS through 6-section structure:
+    1. Context Sources - doctrine layers/directives
+    2. Purpose - mandate (what it does/doesn't do)
+    3. Specialization - focus, awareness, boundaries
+    4. Collaboration Contract - handoffs, outputs, verbs
+    5. Mode Defaults - available reasoning modes
+    6. Initialization Declaration - startup acknowledgment
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    # Frontmatter fields
+    profile_id: str = Field(alias="profile-id")
+    name: str
+    description: str = ""
+    schema_version: str = Field(default="1.0", alias="schema-version")
+    role: Annotated[Role | str, BeforeValidator(_coerce_role)] = Role.IMPLEMENTER
+    capabilities: list[str] = Field(default_factory=list)
+    specializes_from: str | None = Field(default=None, alias="specializes-from")
+    routing_priority: int = Field(default=50, ge=0, le=100, alias="routing-priority")
+    max_concurrent_tasks: int = Field(default=5, gt=0, alias="max-concurrent-tasks")
+
+    # 6 sections
+    context_sources: ContextSources = Field(default_factory=ContextSources, alias="context-sources")
+    purpose: str
+    specialization: Specialization
+    collaboration: CollaborationContract = Field(default_factory=CollaborationContract)
+    mode_defaults: list[ModeDefault] = Field(default_factory=list, alias="mode-defaults")
+    initialization_declaration: str = Field(default="", alias="initialization-declaration")
+
+    # Optional fields
+    specialization_context: SpecializationContext | None = Field(default=None, alias="specialization-context")
+    directive_references: list[DirectiveRef] = Field(default_factory=list, alias="directive-references")
+
+    @field_validator("routing_priority")
+    @classmethod
+    def validate_routing_priority(cls, v: int) -> int:
+        """Ensure routing_priority is between 0 and 100."""
+        if not 0 <= v <= 100:
+            raise ValueError("routing_priority must be between 0 and 100")
+        return v
+
+    @field_validator("max_concurrent_tasks")
+    @classmethod
+    def validate_max_concurrent_tasks(cls, v: int) -> int:
+        """Ensure max_concurrent_tasks is positive."""
+        if v <= 0:
+            raise ValueError("max_concurrent_tasks must be greater than 0")
+        return v
+
+
+# Task Context (input for matching)
+
+
+class TaskContext(BaseModel):
+    """Task context for weighted agent matching."""
+
+    language: str | None = None
+    framework: str | None = None
+    file_paths: list[str] = Field(default_factory=list)
+    keywords: list[str] = Field(default_factory=list)
+    complexity: str = "medium"
+    required_role: Annotated[Role | str | None, BeforeValidator(_coerce_role)] = None
+    active_tasks: dict[str, int] = Field(default_factory=dict)
+
+    @field_validator("complexity")
+    @classmethod
+    def validate_complexity(cls, v: str) -> str:
+        """Ensure complexity is low/medium/high."""
+        if v not in {"low", "medium", "high"}:
+            raise ValueError("complexity must be 'low', 'medium', or 'high'")
+        return v
