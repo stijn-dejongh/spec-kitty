@@ -5,12 +5,6 @@ These tests verify the execution context correctly handles:
 - Glossary enablement decisions (metadata precedence rules)
 - Strictness resolution (step vs mission level)
 - Token aliasing (backward compatibility)
-
-The PrimitiveExecutionContext is the data carrier for mission primitives.
-It flows through the glossary middleware pipeline, accumulating state
-(extracted_terms, conflicts) at each stage. See:
-- src/doctrine/missions/primitives.py for data model
-- src/specify_cli/glossary/attachment.py for pipeline integration
 """
 
 from doctrine.missions.primitives import PrimitiveExecutionContext
@@ -32,11 +26,7 @@ def _make_context(**overrides):
 
 
 class TestGlossaryEnablementContract:
-    """Verify glossary enablement decision rules.
-
-    FR-020: Glossary checks enabled by default for all mission steps.
-    Step metadata has precedence over mission config (allows per-step override).
-    """
+    """Verify glossary enablement decision rules (FR-020)."""
 
     def test_enabled_by_default(self):
         """Given: no config or metadata
@@ -78,13 +68,7 @@ class TestGlossaryEnablementContract:
 
 
 class TestStrictnessResolution:
-    """Verify strictness extraction from config and metadata.
-
-    Strictness levels (from specify_cli.glossary.strictness):
-    - OFF: No validation (development mode)
-    - MEDIUM: Warn on conflicts (default production)
-    - MAX: Block on unresolved conflicts (strict production)
-    """
+    """Verify strictness extraction from config and metadata."""
 
     def test_mission_strictness_extracted_from_config(self):
         """Given: config with glossary.strictness = max
@@ -124,12 +108,7 @@ class TestStrictnessResolution:
 
 
 class TestTokenAliasing:
-    """Verify backward-compatible token aliasing.
-
-    Historical context: checkpoint_token was the original field name.
-    retry_token introduced later for clarity. Both maintained for
-    compatibility with legacy mission configs and checkpoints.
-    """
+    """Verify backward-compatible token aliasing."""
 
     def test_retry_token_populates_checkpoint_token(self):
         """Given: retry_token set
