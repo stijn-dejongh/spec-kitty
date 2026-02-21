@@ -20,13 +20,13 @@
 
 ### Included Subtasks
 
-- [ ] T001 Create `src/doctrine/agent-profiles/__init__.py` with public API exports
-- [ ] T002 Define `Role` StrEnum with controlled vocabulary + custom role support
-- [ ] T003 Define value objects: `Specialization`, `CollaborationContract`, `SpecializationContext`, `ContextSources`, `ModeDefault`, `DirectiveRef`
-- [ ] T004 Define `AgentProfile` Pydantic BaseModel with all fields and validators
-- [ ] T005 Define `TaskContext` Pydantic model (input for matching)
-- [ ] T006 Define `RoleCapabilities` in `src/doctrine/agent-profiles/capabilities.py`
-- [ ] T007 Write acceptance + unit tests in `tests/doctrine/test_profile_model.py` and `test_capabilities.py`
+- [x] T001 Create `src/doctrine/agent-profiles/__init__.py` with public API exports
+- [x] T002 Define `Role` StrEnum with controlled vocabulary + custom role support
+- [x] T003 Define value objects: `Specialization`, `CollaborationContract`, `SpecializationContext`, `ContextSources`, `ModeDefault`, `DirectiveRef`
+- [x] T004 Define `AgentProfile` Pydantic BaseModel with all fields and validators
+- [x] T005 Define `TaskContext` Pydantic model (input for matching)
+- [x] T006 Define `RoleCapabilities` in `src/doctrine/agent-profiles/capabilities.py`
+- [x] T007 Write acceptance + unit tests in `tests/doctrine/test_profile_model.py` and `test_capabilities.py`
 
 ### Dependencies
 

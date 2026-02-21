@@ -2,11 +2,9 @@ vcs:
   type: git
 agents:
   available:
+  - codex
   - copilot
   - claude
-  - gemini
-  - cursor
-  - codex
   selection:
     strategy: preferred
     preferred_implementer: copilot
