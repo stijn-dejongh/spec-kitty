@@ -2,7 +2,7 @@
 
 import typer
 
-from . import config, feature, tasks, context, release, workflow, status, telemetry
+from . import config, feature, tasks, context, profile, release, workflow, status, telemetry
 
 app = typer.Typer(
     name="agent", help="Commands for AI agents to execute spec-kitty workflows programmatically", no_args_is_help=True
@@ -13,6 +13,7 @@ app.add_typer(config.app, name="config")
 app.add_typer(feature.app, name="feature")
 app.add_typer(tasks.app, name="tasks")
 app.add_typer(context.app, name="context")
+app.add_typer(profile.app, name="profile")
 app.add_typer(release.app, name="release")
 app.add_typer(workflow.app, name="workflow")
 app.add_typer(status.app, name="status")
