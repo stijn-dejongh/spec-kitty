@@ -1,0 +1,18 @@
+schema_version: "1.0"
+id: DOCUMENTATION_AND_CONTEXT_FILES
+title: Documentation and Context Files
+intent: Require use of authoritative documentation and context files before changing behavior, structure, or governance artifacts.
+enforcement: advisory
+paradigm_refs:
+- spec-driven-development
+styleguide_refs:
+- python-implementation
+fetch_policy:
+  strategy: lazy_fetch
+  token_discipline: on_demand
+  fetch_order:
+  - paradigms
+  - tactics
+  - toolguides
+  - styleguides
+  note: Load only the minimum required entrypoints for the current task context.

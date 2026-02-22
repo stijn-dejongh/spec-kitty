@@ -1,0 +1,9 @@
+schema_version: "1.0"
+id: DEFENSIVE_REVIEW
+title: Defensive Review
+intent: Review with hard policy checks first.
+fetch_policy:
+  strategy: lazy_fetch
+  token_discipline: on_demand
+  fetch_order: [paradigms, tactics]
+enforcement: required

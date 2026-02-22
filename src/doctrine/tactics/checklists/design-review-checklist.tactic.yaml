@@ -1,0 +1,11 @@
+schema_version: "1.0"
+id: design-review-checklist
+name: Design Review Checklist
+purpose: Review interaction and visual design artifacts for clarity, accessibility, and consistency.
+steps:
+  - title: Verify user intent coverage
+    description: Confirm critical user goals and scenarios are represented.
+  - title: Check consistency and accessibility
+    description: Validate design conventions, states, and accessibility expectations.
+  - title: Confirm implementation handoff readiness
+    description: Ensure design outputs are specific enough for reliable implementation.

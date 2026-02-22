@@ -4,15 +4,177 @@ contexts:
     meta:
       Generated from: src/doctrine/**/*
     terms:
-      - name: Test-First Development
-        definition: Require test-first behavior across acceptance and implementation layers, 
-          selecting tactics based on scope and risk.
+      - name: Acceptance Test Driven Development
+        definition: Require test-first behavior for user-visible acceptance scope before 
+          implementation details are developed.
         meta:
-          id: TEST_FIRST
-          description: Require test-first behavior across acceptance and implementation layers, 
-            selecting tactics based on scope and risk.
+          id: ACCEPTANCE_TEST_DRIVEN_DEVELOPMENT
+          description: Require test-first behavior for user-visible acceptance scope before 
+            implementation details are developed.
           artifact_type: directive
-          source: src/doctrine/directives/test-first.directive.yaml
+          source: src/doctrine/directives/016-acceptance-test-driven-development.directive.yaml
+      - name: Agent Declaration
+        definition: Require explicit acknowledgment of scope, authority, and constraints before 
+          high-impact execution.
+        meta:
+          id: AGENT_DECLARATION
+          description: Require explicit acknowledgment of scope, authority, and constraints before 
+            high-impact execution.
+          artifact_type: directive
+          source: src/doctrine/directives/007-agent-declaration.directive.yaml
+      - name: Agent Profiles
+        definition: Define consistent structure and usage for agent profiles so specialization, 
+          boundaries, and handoff expectations remain explicit.
+        meta:
+          id: AGENT_PROFILES
+          description: Define consistent structure and usage for agent profiles so specialization, 
+            boundaries, and handoff expectations remain explicit.
+          artifact_type: directive
+          source: src/doctrine/directives/005-agent-profiles.directive.yaml
+      - name: Artifact Templates
+        definition: Use canonical templates for recurring artifacts to reduce drift and ensure 
+          predictable structure.
+        meta:
+          id: ARTIFACT_TEMPLATES
+          description: Use canonical templates for recurring artifacts to reduce drift and ensure 
+            predictable structure.
+          artifact_type: directive
+          source: src/doctrine/directives/008-artifact-templates.directive.yaml
+      - name: CLI and Shell Tooling
+        definition: Standardize reliable CLI and shell command usage, including fallback behavior 
+          when preferred tooling is unavailable.
+        meta:
+          id: CLI_SHELL_TOOLING
+          description: Standardize reliable CLI and shell command usage, including fallback behavior
+            when preferred tooling is unavailable.
+          artifact_type: directive
+          source: src/doctrine/directives/001-cli-shell-tooling.directive.yaml
+      - name: Common Operating Procedures
+        definition: Centralize recurring operating behaviors while preserving their explicit 
+          presence in specialized profiles.
+        meta:
+          id: COMMON_OPERATING_PROCEDURES
+          description: Centralize recurring operating behaviors while preserving their explicit 
+            presence in specialized profiles.
+          artifact_type: directive
+          source: src/doctrine/directives/012-common-operating-procedures.directive.yaml
+      - name: Context Notes
+        definition: Capture and maintain concise context notes so decisions, constraints, and 
+          ambiguities are visible during execution.
+        meta:
+          id: CONTEXT_NOTES
+          description: Capture and maintain concise context notes so decisions, constraints, and 
+            ambiguities are visible during execution.
+          artifact_type: directive
+          source: src/doctrine/directives/002-context-notes.directive.yaml
+      - name: Documentation and Context Files
+        definition: Require use of authoritative documentation and context files before changing 
+          behavior, structure, or governance artifacts.
+        meta:
+          id: DOCUMENTATION_AND_CONTEXT_FILES
+          description: Require use of authoritative documentation and context files before changing 
+            behavior, structure, or governance artifacts.
+          artifact_type: directive
+          source: src/doctrine/directives/004-documentation-and-context-files.directive.yaml
+      - name: File-Based Collaboration Framework
+        definition: Coordinate asynchronous multi-agent workflows through explicit, file-based state
+          and artifact updates.
+        meta:
+          id: FILE_BASED_COLLABORATION_FRAMEWORK
+          description: Coordinate asynchronous multi-agent workflows through explicit, file-based 
+            state and artifact updates.
+          artifact_type: directive
+          source: src/doctrine/directives/019-file-based-collaboration-framework.directive.yaml
+      - name: Mode Protocol
+        definition: Standardize mode transitions so reasoning and execution behavior remain 
+          traceable and consistent.
+        meta:
+          id: MODE_PROTOCOL
+          description: Standardize mode transitions so reasoning and execution behavior remain 
+            traceable and consistent.
+          artifact_type: directive
+          source: src/doctrine/directives/010-mode-protocol.directive.yaml
+      - name: Repository Quick Reference
+        definition: Maintain repository topology awareness so contributors can reliably locate 
+          canonical paths, artifacts, and ownership boundaries.
+        meta:
+          id: REPOSITORY_QUICK_REFERENCE
+          description: Maintain repository topology awareness so contributors can reliably locate 
+            canonical paths, artifacts, and ownership boundaries.
+          artifact_type: directive
+          source: src/doctrine/directives/003-repository-quick-reference.directive.yaml
+      - name: Risk and Escalation
+        definition: Surface risk signals early and escalate critical uncertainty before avoidable 
+          downstream failures occur.
+        meta:
+          id: RISK_AND_ESCALATION
+          description: Surface risk signals early and escalate critical uncertainty before avoidable
+            downstream failures occur.
+          artifact_type: directive
+          source: src/doctrine/directives/011-risk-and-escalation.directive.yaml
+      - name: Role Capabilities
+        definition: Keep role-specific capabilities and action boundaries explicit to avoid overlap,
+          ambiguity, and scope creep.
+        meta:
+          id: ROLE_CAPABILITIES
+          description: Keep role-specific capabilities and action boundaries explicit to avoid 
+            overlap, ambiguity, and scope creep.
+          artifact_type: directive
+          source: src/doctrine/directives/009-role-capabilities.directive.yaml
+      - name: Store Prompts
+        definition: Optionally retain original task prompts and reflections to improve prompt 
+          quality over time.
+        meta:
+          id: STORE_PROMPTS
+          description: Optionally retain original task prompts and reflections to improve prompt 
+            quality over time.
+          artifact_type: directive
+          source: src/doctrine/directives/015-store-prompts.directive.yaml
+      - name: Test Driven Development
+        definition: Require implementation-level test-first behavior with scope/risk-appropriate 
+          Red-Green-Refactor tactics.
+        meta:
+          id: TEST_DRIVEN_DEVELOPMENT
+          description: Require implementation-level test-first behavior with scope/risk-appropriate 
+            Red-Green-Refactor tactics.
+          artifact_type: directive
+          source: src/doctrine/directives/017-test-driven-development.directive.yaml
+      - name: Tooling Setup and Fallbacks
+        definition: Define core tooling baselines and fallback strategies so workflows remain 
+          executable across environments.
+        meta:
+          id: TOOLING_SETUP_AND_FALLBACKS
+          description: Define core tooling baselines and fallback strategies so workflows remain 
+            executable across environments.
+          artifact_type: directive
+          source: src/doctrine/directives/013-tooling-setup-and-fallbacks.directive.yaml
+      - name: Traceable Decisions
+        definition: Capture architectural and governance decisions with sufficient rationale and 
+          references to preserve long-term understanding.
+        meta:
+          id: TRACEABLE_DECISIONS
+          description: Capture architectural and governance decisions with sufficient rationale and 
+            references to preserve long-term understanding.
+          artifact_type: directive
+          source: src/doctrine/directives/018-traceable-decisions.directive.yaml
+      - name: Version Governance
+        definition: Track and honor versioned governance layers to keep execution aligned with the 
+          intended framework revision.
+        meta:
+          id: VERSION_GOVERNANCE
+          description: Track and honor versioned governance layers to keep execution aligned with 
+            the intended framework revision.
+          artifact_type: directive
+          source: src/doctrine/directives/006-version-governance.directive.yaml
+      - name: Work Log Creation
+        definition: Record execution context, approach, and outcomes in work logs to support 
+          traceability and framework learning.
+        meta:
+          id: WORK_LOG_CREATION
+          description: Record execution context, approach, and outcomes in work logs to support 
+            traceability and framework learning.
+          artifact_type: directive
+          source: src/doctrine/directives/014-work-log-creation.directive.yaml
       - name: Acceptance Test Driven Development (ATDD)
         definition: Anchor implementation work in externally observable behavior before internal 
           coding begins.
@@ -22,6 +184,115 @@ contexts:
             coding begins.
           artifact_type: tactic
           source: src/doctrine/tactics/acceptance-test-first.tactic.yaml
+      - name: Accessibility Audit Process
+        definition: Detect and prioritize accessibility issues before release.
+        meta:
+          id: accessibility-audit-process
+          description: Detect and prioritize accessibility issues before release.
+          artifact_type: tactic
+          source: src/doctrine/tactics/accessibility-audit-process.tactic.yaml
+      - name: ADR Template Workflow
+        definition: Produce decision records with context, alternatives, and consequences.
+        meta:
+          id: adr-template
+          description: Produce decision records with context, alternatives, and consequences.
+          artifact_type: tactic
+          source: src/doctrine/tactics/adr-template.tactic.yaml
+      - name: Architecture Review Checklist
+        definition: Review architecture proposals for intent, risk, and boundary alignment before 
+          implementation starts.
+        meta:
+          id: architecture-review-checklist
+          description: Review architecture proposals for intent, risk, and boundary alignment before
+            implementation starts.
+          artifact_type: tactic
+          source: src/doctrine/tactics/checklists/architecture-review-checklist.tactic.yaml
+      - name: Capacity Estimation Guide
+        definition: Estimate realistic work throughput using scope, uncertainty, and team 
+          constraints.
+        meta:
+          id: capacity-estimation-guide
+          description: Estimate realistic work throughput using scope, uncertainty, and team 
+            constraints.
+          artifact_type: tactic
+          source: src/doctrine/tactics/capacity-estimation-guide.tactic.yaml
+      - name: Code Review Checklist
+        definition: Review code changes incrementally with emphasis on correctness, maintainability,
+          and risk.
+        meta:
+          id: code-review-checklist
+          description: Review code changes incrementally with emphasis on correctness, 
+            maintainability, and risk.
+          artifact_type: tactic
+          source: src/doctrine/tactics/checklists/code-review-checklist.tactic.yaml
+      - name: Dependency Validation Process
+        definition: Validate dependency declarations and execution ordering before implementation 
+          begins.
+        meta:
+          id: dependency-validation-process
+          description: Validate dependency declarations and execution ordering before implementation
+            begins.
+          artifact_type: tactic
+          source: src/doctrine/tactics/dependency-validation-process.tactic.yaml
+      - name: Design Review Checklist
+        definition: Review interaction and visual design artifacts for clarity, accessibility, and 
+          consistency.
+        meta:
+          id: design-review-checklist
+          description: Review interaction and visual design artifacts for clarity, accessibility, 
+            and consistency.
+          artifact_type: tactic
+          source: src/doctrine/tactics/checklists/design-review-checklist.tactic.yaml
+      - name: Doctrine Update Workflow
+        definition: Apply governance updates in a traceable sequence across doctrine artifacts.
+        meta:
+          id: doctrine-update-workflow
+          description: Apply governance updates in a traceable sequence across doctrine artifacts.
+          artifact_type: tactic
+          source: src/doctrine/tactics/doctrine-update-workflow.tactic.yaml
+      - name: Glossary Review Process
+        definition: Keep terminology consistent and current by regularly reviewing glossary 
+          coverage.
+        meta:
+          id: glossary-review-process
+          description: Keep terminology consistent and current by regularly reviewing glossary 
+            coverage.
+          artifact_type: tactic
+          source: src/doctrine/tactics/glossary-review-process.tactic.yaml
+      - name: Research Template Workflow
+        definition: Structure research outputs so findings are evidence-based, comparable, and 
+          actionable.
+        meta:
+          id: research-template
+          description: Structure research outputs so findings are evidence-based, comparable, and 
+            actionable.
+          artifact_type: tactic
+          source: src/doctrine/tactics/research-template.tactic.yaml
+      - name: Security Review Process
+        definition: Assess security risk and mitigation quality for sensitive changes.
+        meta:
+          id: security-review-process
+          description: Assess security risk and mitigation quality for sensitive changes.
+          artifact_type: tactic
+          source: src/doctrine/tactics/security-review-process.tactic.yaml
+      - name: Spike Timebox Policy
+        definition: Bound exploratory spikes to preserve delivery flow while still reducing 
+          uncertainty.
+        meta:
+          id: spike-timebox-policy
+          description: Bound exploratory spikes to preserve delivery flow while still reducing 
+            uncertainty.
+          artifact_type: tactic
+          source: src/doctrine/tactics/spike-timebox-policy.tactic.yaml
+      - name: Test Coverage Requirement
+        definition: Choose test levels proportionate to risk and impact, with explicit coverage 
+          rationale.
+        meta:
+          id: test-coverage-requirement
+          description: Choose test levels proportionate to risk and impact, with explicit coverage 
+            rationale.
+          artifact_type: tactic
+          source: src/doctrine/tactics/test-coverage-requirement.tactic.yaml
       - name: Test Driven Development (TDD)
         definition: Enforce short, verifiable coding loops that improve design while keeping 
           behavior safe.

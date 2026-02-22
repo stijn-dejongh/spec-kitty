@@ -9,6 +9,7 @@ Verifies that all 7 shipped reference profiles:
 - Have non-empty purpose and specialization.primary_focus
 """
 
+import re
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,11 @@ from doctrine.agent_profiles.repository import AgentProfileRepository
 from doctrine.agent_profiles.validation import validate_agent_profile_yaml
 
 SHIPPED_DIR = Path(__file__).parent.parent.parent / "src" / "doctrine" / "agent_profiles" / "shipped"
+REPO_ROOT = Path(__file__).parent.parent.parent
+DOCTRINE_ROOT = REPO_ROOT / "src" / "doctrine"
+DIRECTIVES_DIR = DOCTRINE_ROOT / "directives"
+TACTICS_DIR = DOCTRINE_ROOT / "tactics"
+PARADIGMS_DIR = DOCTRINE_ROOT / "paradigms"
 
 EXPECTED_PROFILE_IDS = {
     "architect",
@@ -29,6 +35,48 @@ EXPECTED_PROFILE_IDS = {
     "researcher",
     "curator",
 }
+
+
+def _is_placeholder(path: Path) -> bool:
+    return path.name == ".gitkeep"
+
+
+def _has_non_placeholder_entries(directory: Path) -> bool:
+    return any(not _is_placeholder(entry) for entry in directory.iterdir())
+
+
+def _load_directive_catalog_by_code() -> dict[str, tuple[str, Path]]:
+    """Load numbered directive files from src/doctrine/directives/."""
+    yaml = YAML(typ="safe")
+    catalog: dict[str, tuple[str, Path]] = {}
+    pattern = re.compile(r"^(?P<code>\d{3})[-_].*\.directive\.yaml$")
+
+    for directive_file in DIRECTIVES_DIR.glob("*.directive.yaml"):
+        match = pattern.match(directive_file.name)
+        if not match:
+            continue
+        code = match.group("code")
+        with directive_file.open() as handle:
+            payload = yaml.load(handle) or {}
+        title = str(payload.get("title", "")).strip()
+        catalog[code] = (title, directive_file)
+
+    return catalog
+
+
+def _load_tactic_ids() -> set[str]:
+    """Load tactic IDs from src/doctrine/tactics/**/*.tactic.yaml."""
+    yaml = YAML(typ="safe")
+    ids: set[str] = set()
+
+    for tactic_file in TACTICS_DIR.rglob("*.tactic.yaml"):
+        with tactic_file.open() as handle:
+            payload = yaml.load(handle) or {}
+        tactic_id = str(payload.get("id", "")).strip()
+        if tactic_id:
+            ids.add(tactic_id)
+
+    return ids
 
 
 @pytest.fixture(scope="module")
@@ -312,4 +360,116 @@ class TestShippedProfilesContextSources:
         assert profile is not None
         assert len(profile.directive_references) > 0, (
             f"Profile '{profile_id}' has no directive references"
+        )
+
+
+class TestShippedProfilesReferenceIntegrity:
+    """Verify shipped profile references resolve to concrete doctrine artifacts."""
+
+    def test_collaboration_agent_links_resolve(self, all_profiles: list[AgentProfile]):
+        """handoff/works-with references must point to shipped profile IDs."""
+        known_ids = {p.profile_id for p in all_profiles}
+
+        for profile in all_profiles:
+            for relation, references in [
+                ("handoff-to", profile.collaboration.handoff_to),
+                ("handoff-from", profile.collaboration.handoff_from),
+                ("works-with", profile.collaboration.works_with),
+            ]:
+                missing = sorted(set(references) - known_ids)
+                assert missing == [], (
+                    f"Profile '{profile.profile_id}' has unresolved {relation}: {missing}"
+                )
+
+    @pytest.mark.parametrize("layer", ["directives", "paradigms", "tactics"])
+    def test_doctrine_layer_has_curated_artifacts(self, layer: str):
+        """Referenced doctrine layer directories must exist and be non-empty."""
+        layer_dir = DOCTRINE_ROOT / layer
+        assert layer_dir.exists(), f"Doctrine layer directory missing: {layer_dir}"
+        assert layer_dir.is_dir(), f"Doctrine layer path is not a directory: {layer_dir}"
+        assert _has_non_placeholder_entries(layer_dir), (
+            f"Doctrine layer '{layer}' has no curated artifacts"
+        )
+
+    @pytest.mark.parametrize("profile_id", sorted(EXPECTED_PROFILE_IDS))
+    def test_context_source_paths_exist(
+        self, repo: AgentProfileRepository, profile_id: str
+    ):
+        """context-sources.additional must be concrete repository paths."""
+        profile = repo.get(profile_id)
+        assert profile is not None
+
+        missing_paths = [
+            path_ref
+            for path_ref in profile.context_sources.additional
+            if not (REPO_ROOT / path_ref).exists()
+        ]
+        assert missing_paths == [], (
+            f"Profile '{profile_id}' has missing context-sources.additional paths: {missing_paths}"
+        )
+
+    @pytest.mark.parametrize("profile_id", sorted(EXPECTED_PROFILE_IDS))
+    def test_directive_codes_resolve_to_catalog(
+        self, repo: AgentProfileRepository, profile_id: str
+    ):
+        """Referenced directive codes must resolve to local numbered directives."""
+        profile = repo.get(profile_id)
+        assert profile is not None
+
+        catalog = _load_directive_catalog_by_code()
+        missing = sorted(code for code in profile.context_sources.directives if code not in catalog)
+        assert missing == [], (
+            f"Profile '{profile_id}' references missing directive codes: {missing}"
+        )
+
+    @pytest.mark.parametrize("profile_id", sorted(EXPECTED_PROFILE_IDS))
+    def test_directive_reference_titles_match_catalog(
+        self, repo: AgentProfileRepository, profile_id: str
+    ):
+        """directive-references name must match curated directive title."""
+        profile = repo.get(profile_id)
+        assert profile is not None
+
+        catalog = _load_directive_catalog_by_code()
+        for directive_ref in profile.directive_references:
+            assert directive_ref.code in catalog, (
+                f"Profile '{profile_id}' references unknown directive code '{directive_ref.code}'"
+            )
+            title, directive_path = catalog[directive_ref.code]
+            assert directive_ref.name == title, (
+                f"Profile '{profile_id}' directive '{directive_ref.code}' name mismatch: "
+                f"'{directive_ref.name}' != '{title}' ({directive_path})"
+            )
+
+    @pytest.mark.parametrize("profile_id", sorted(EXPECTED_PROFILE_IDS))
+    def test_operating_procedures_resolve_to_tactics(
+        self, repo: AgentProfileRepository, profile_id: str
+    ):
+        """collaboration.operating-procedures must point to tactic IDs."""
+        profile = repo.get(profile_id)
+        assert profile is not None
+
+        tactic_ids = _load_tactic_ids()
+        missing = sorted(
+            op for op in profile.collaboration.operating_procedures if op not in tactic_ids
+        )
+        assert missing == [], (
+            f"Profile '{profile_id}' references missing operating procedures/tactics: {missing}"
+        )
+
+    def test_directive_tactic_refs_resolve(self):
+        """Every tactic_refs entry in local directives resolves to a tactic file ID."""
+        yaml = YAML(typ="safe")
+        tactic_ids = _load_tactic_ids()
+
+        unresolved: list[str] = []
+        for directive_file in DIRECTIVES_DIR.glob("*.directive.yaml"):
+            with directive_file.open() as handle:
+                payload = yaml.load(handle) or {}
+            for tactic_ref in payload.get("tactic_refs", []):
+                if tactic_ref not in tactic_ids:
+                    unresolved.append(f"{directive_file.name}:{tactic_ref}")
+
+        assert unresolved == [], (
+            "Unresolved directive tactic_refs:\n" + "\n".join(f"  - {entry}" for entry in unresolved)
         )

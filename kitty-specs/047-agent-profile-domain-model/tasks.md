@@ -88,14 +88,14 @@
 
 ### Included Subtasks
 
-- [ ] T020 Create `src/doctrine/agent-profiles/shipped/` directory
-- [ ] T021 [P] Create `architect.agent.yaml`
-- [ ] T022 [P] Create `designer.agent.yaml`
-- [ ] T023 [P] Create `implementer.agent.yaml`
-- [ ] T024 [P] Create `reviewer.agent.yaml`
-- [ ] T025 [P] Create `planner.agent.yaml`
-- [ ] T026 [P] Create `researcher.agent.yaml` and `curator.agent.yaml`
-- [ ] T027 Write profile catalog integration test
+- [x] T020 Create `src/doctrine/agent-profiles/shipped/` directory
+- [x] T021 [P] Create `architect.agent.yaml`
+- [x] T022 [P] Create `designer.agent.yaml`
+- [x] T023 [P] Create `implementer.agent.yaml`
+- [x] T024 [P] Create `reviewer.agent.yaml`
+- [x] T025 [P] Create `planner.agent.yaml`
+- [x] T026 [P] Create `researcher.agent.yaml` and `curator.agent.yaml`
+- [x] T027 Write profile catalog integration test
 
 ### Dependencies
 
@@ -112,12 +112,12 @@
 
 ### Included Subtasks
 
-- [ ] T028 Remove `AgentProfile` class from `src/specify_cli/constitution/schemas.py`
-- [ ] T029 Add import of `AgentProfile` from `doctrine.agent_profiles.profile`
-- [ ] T030 Update `resolver.py` to use rich profiles and `profile_id` keying
-- [ ] T031 Update `GovernanceResolution` downstream consumers
-- [ ] T032 Write resolver tests in `tests/unit/specify_cli/constitution/test_resolver_rich_profiles.py`
-- [ ] T033 Write migration test in `tests/unit/specify_cli/constitution/test_schemas_migration.py`
+- [x] T028 Remove `AgentProfile` class from `src/specify_cli/constitution/schemas.py`
+- [x] T029 Add import of `AgentProfile` from `doctrine.agent_profiles.profile`
+- [x] T030 Update `resolver.py` to use rich profiles and `profile_id` keying
+- [x] T031 Update `GovernanceResolution` downstream consumers
+- [x] T032 Write resolver tests in `tests/unit/specify_cli/constitution/test_resolver_rich_profiles.py`
+- [x] T033 Write migration test in `tests/unit/specify_cli/constitution/test_schemas_migration.py`
 
 ### Dependencies
 
@@ -134,13 +134,13 @@
 
 ### Included Subtasks
 
-- [ ] T034 Create `src/specify_cli/orchestrator/tool_config.py` with renamed classes
-- [ ] T035 Replace `agent_config.py` content with deprecation alias
-- [ ] T036 Update imports in `agent_utils/directories.py`
-- [ ] T037 [P] Update imports in `orchestrator/scheduler.py`, `monitor.py`, `config.py`
-- [ ] T038 [P] Update imports in `cli/commands/init.py`, `agent/config.py`
-- [ ] T039 [P] Update import in `upgrade/migrations/m_0_14_0_centralized_feature_detection.py`
-- [ ] T040 Write tests in `tests/unit/specify_cli/orchestrator/test_tool_config.py`
+- [x] T034 Create `src/specify_cli/orchestrator/tool_config.py` with renamed classes
+- [x] T035 Replace `agent_config.py` content with deprecation alias
+- [x] T036 Update imports in `agent_utils/directories.py`
+- [x] T037 [P] Update imports in `orchestrator/scheduler.py`, `monitor.py`, `config.py`
+- [x] T038 [P] Update imports in `cli/commands/init.py`, `agent/config.py`
+- [x] T039 [P] Update import in `upgrade/migrations/m_0_14_0_centralized_feature_detection.py`
+- [x] T040 Write tests in `tests/unit/specify_cli/orchestrator/test_tool_config.py`
 
 ### Dependencies
 
@@ -164,7 +164,7 @@
 - [ ] T045 [P] Implement `hierarchy` subcommand — Rich Tree
 - [ ] T046 [P] Implement `create --interactive` subcommand — prompt for each profile section (FR-5.5)
 - [ ] T047 Register profile command group in CLI app
-- [ ] T048 Write CLI tests (supporting tier — 55% coverage)
+- [x] T048 Write CLI tests (supporting tier — 55% coverage)
 
 ### Dependencies
 
@@ -182,10 +182,10 @@
 ### Included Subtasks
 
 - [ ] T048 Verify/update `agent-profile` in import-candidate schema target_type
-- [ ] T049 Create example import candidate fixture for agent profile
-- [ ] T050 Document `.agent.md` → `.agent.yaml` adaptation mapping in curation README — include section-to-YAML algorithm
-- [ ] T051 Write end-to-end curation test in `tests/doctrine/test_curation_agent_profile.py`. Test scenarios: (1) round-trip conversion (.md → .yaml → validate → compare content fidelity), (2) ImportCandidate classification, (3) adoption flow
-- [ ] T052 Validate `resulting_artifacts` linkage in test
+- [x] T049 Create example import candidate fixture for agent profile
+- [x] T050 Document `.agent.md` → `.agent.yaml` adaptation mapping in curation README — include section-to-YAML algorithm
+- [x] T051 Write end-to-end curation test in `tests/doctrine/test_curation_agent_profile.py`. Test scenarios: (1) round-trip conversion (.md → .yaml → validate → compare content fidelity), (2) ImportCandidate classification, (3) adoption flow
+- [x] T052 Validate `resulting_artifacts` linkage in test
 
 ### Dependencies
 
@@ -217,6 +217,30 @@
 
 ---
 
+## Work Package WP10: Doctrine Browseability & Docs Alignment (Priority: P1)
+
+**Goal**: Improve doctrine browseability and architecture/reference alignment by adding navigation surfaces, doctrine reference docs, and constitution-path consistency updates while treating glossary domains as conceptual SSOT.
+**Independent Test**: Doctrine has root/subtree navigation docs, reference docs expose doctrine as a first-class concept, and targeted architecture/reference files no longer point to deprecated constitution paths.
+**Prompt**: `tasks/WP10-doctrine-browseability-docs-alignment.md`
+**Estimated Size**: ~260 lines
+
+### Included Subtasks
+
+- [ ] T062 Create `src/doctrine/README.md` as a navigation/index entrypoint that references `glossary/` and compiled `glossary::doctrine` artifacts as conceptual SSOT
+- [ ] T063 Add concise README/index files to doctrine subtrees: `directives/`, `tactics/`, `tactics/checklists/`, `paradigms/`, and `schemas/`
+- [ ] T064 Add `docs/reference/doctrine.md` and register it in `docs/reference/toc.yml`
+- [ ] T065 Update reference docs with constitution path consistency (`.kittify/constitution/constitution.md`) in `docs/reference/configuration.md`, `docs/reference/slash-commands.md`, and related references
+- [ ] T066 Update architecture journey/ADR references that still use deprecated constitution paths where applicable
+- [ ] T067 Add/update a focused docs consistency check (or test) that guards against reintroducing deprecated constitution path references in touched docs
+- [ ] T068 Define a follow-up implementation note for machine-readable doctrine catalog generation (ID/title/path) to be executed in a later WP if scope pressure remains
+- [ ] T069 Define a follow-up implementation note for orphan doctrine artifact detection (unreferenced directives/tactics/profiles) for later CI enforcement
+
+### Dependencies
+
+- Depends on WP04 and WP08 (doctrine artifact baseline and curation guidance must be in place).
+
+---
+
 ## Dependency & Execution Summary
 
 ```
@@ -236,6 +260,7 @@ Wave 2 (parallel after wave 1):
 
 Wave 3 (documentation):
   WP09 (user journey) ─── depends on WP08
+  WP10 (browseability/docs alignment) ─── depends on WP04, WP08
 ```
 
 **MVP Scope**: WP01 + WP02 + WP03 + WP04
@@ -299,10 +324,22 @@ Wave 3 (documentation):
 | T059 | Document step 5: Verification | WP09 | Yes |
 | T060 | Include complete concrete example | WP09 | Yes |
 | T061 | Add troubleshooting section | WP09 | Yes |
+| T062 | Create doctrine root README with glossary SSOT references | WP10 | No |
+| T063 | Add doctrine subtree READMEs (directives/tactics/paradigms/schemas/checklists) | WP10 | No |
+| T064 | Add docs/reference/doctrine.md and TOC entry | WP10 | No |
+| T065 | Update reference docs to canonical constitution path | WP10 | No |
+| T066 | Update architecture docs to canonical constitution path | WP10 | No |
+| T067 | Add docs consistency guard for deprecated constitution path references | WP10 | No |
+| T068 | Add follow-up note for doctrine catalog generation | WP10 | No |
+| T069 | Add follow-up note for orphan artifact CI check | WP10 | No |
 
 <!-- status-model:start -->
 ## Canonical Status (Generated)
 - WP01: done
 - WP02: done
 - WP03: done
+- WP04: for_review
+- WP05: for_review
+- WP06: for_review
+- WP08: for_review
 <!-- status-model:end -->

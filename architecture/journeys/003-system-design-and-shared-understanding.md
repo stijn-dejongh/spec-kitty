@@ -1,10 +1,12 @@
 # User Journey: System Design & Shared Understanding
 
-**Status**: DRAFT
-**Date**: 2026-02-15
-**Primary Contexts**: Architecture, Domain Modeling, Shared Understanding
-**Supporting Contexts**: Governance, Feature Specification
-**Related Spec**: N/A (proposed — `/spec-kitty.design` command)
+| Field | Value |
+|---|---|
+| **Status** | DRAFT |
+| **Date** | 2026-02-15 |
+| **Primary Contexts** | Architecture, Domain Modeling, Shared Understanding |
+| **Supporting Contexts** | Governance, Feature Specification |
+| **Related Spec / ADR** | N/A (proposed — `/spec-kitty.design` command) |
 
 ---
 

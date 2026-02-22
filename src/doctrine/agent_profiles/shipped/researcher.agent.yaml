@@ -21,9 +21,9 @@ context-sources:
     - "015"
     - "016"
   additional:
-    - external-documentation
-    - research-databases
-    - existing-codebase
+    - research/
+    - docs/
+    - kitty-specs/
 
 purpose: >
   Investigate unknowns, synthesize domain knowledge, evaluate technology options, and
@@ -109,8 +109,8 @@ specialization-context:
 
 directive-references:
   - code: "015"
-    name: Research Time-boxing Requirement
+    name: Store Prompts
     rationale: Research spikes must have a defined timebox to prevent open-ended investigation from blocking delivery
   - code: "016"
-    name: Finding Documentation Standard
+    name: Acceptance Test Driven Development
     rationale: All research findings must be documented in structured format with sources cited for traceability

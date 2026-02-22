@@ -23,9 +23,9 @@ context-sources:
     - "008"
     - "011"
   additional:
-    - review-checklist
-    - security-guidelines
-    - performance-benchmarks
+    - src/
+    - tests/
+    - src/doctrine/styleguides/
 
 purpose: >
   Evaluate code, designs, and specifications for correctness, quality, security,
@@ -123,14 +123,14 @@ specialization-context:
 
 directive-references:
   - code: "004"
-    name: Test-Driven Implementation Standard
+    name: Documentation and Context Files
     rationale: Reviews must verify adequate test coverage for all non-trivial logic
   - code: "006"
-    name: Coding Standards Adherence
+    name: Version Governance
     rationale: Code must be checked against project style guides and linting rules
   - code: "008"
-    name: Security Review Protocol
+    name: Artifact Templates
     rationale: Sensitive changes must be evaluated for injection, data exposure, and privilege escalation risks
   - code: "011"
-    name: Feedback Clarity Standard
+    name: Risk and Escalation
     rationale: Review feedback must be specific, actionable, and reference the relevant standard or principle

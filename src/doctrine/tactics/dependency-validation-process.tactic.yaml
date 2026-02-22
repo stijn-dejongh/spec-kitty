@@ -1,0 +1,11 @@
+schema_version: "1.0"
+id: dependency-validation-process
+name: Dependency Validation Process
+purpose: Validate dependency declarations and execution ordering before implementation begins.
+steps:
+  - title: Enumerate dependencies
+    description: List declared upstream and downstream relationships for the work package.
+  - title: Verify ordering assumptions
+    description: Confirm execution sequence supports required prerequisites and handoffs.
+  - title: Flag and resolve graph issues
+    description: Escalate cycles, missing dependencies, or ambiguous ownership.

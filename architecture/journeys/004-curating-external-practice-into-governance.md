@@ -1,10 +1,12 @@
 # User Journey: Curating External Practice into Governance
 
-**Status**: DRAFT
-**Date**: 2026-02-17
-**Primary Contexts**: Governance, Curation, Constitution
-**Supporting Contexts**: Orchestration, Agent Profiles, Tool Selection
-**Related ADR**: [2026-02-17-1-explicit-governance-layer-model](../adrs/2026-02-17-1-explicit-governance-layer-model.md)
+| Field | Value |
+|---|---|
+| **Status** | DRAFT |
+| **Date** | 2026-02-17 |
+| **Primary Contexts** | Governance, Curation, Constitution |
+| **Supporting Contexts** | Orchestration, Agent Profiles, Tool Selection |
+| **Related Spec / ADR** | [2026-02-17-1-explicit-governance-layer-model](../adrs/2026-02-17-1-explicit-governance-layer-model.md) |
 
 ---
 
@@ -23,11 +25,11 @@ The system should support this as a pull-based flow:
 
 ## Actors
 
-| # | Actor | Type | Role in Journey |
-|---|-------|------|-----------------|
-| 1 | Lead Developer | `human` | Identifies external practice and approves adoption |
-| 2 | AI Agent | `llm` | Performs curation analysis and proposes doctrine mapping |
-| 3 | Spec-Kitty CLI | `system` | Stores curation artifacts, updates governance artifacts, validates schemas |
+| # | Actor | Type | Persona | Role in Journey |
+|---|-------|------|---------|-----------------|
+| 1 | Lead Developer | `human` | N/A | Identifies external practice and approves adoption |
+| 2 | AI Agent | `llm` | N/A | Performs curation analysis and proposes doctrine mapping |
+| 3 | Spec-Kitty CLI | `system` | N/A | Stores curation artifacts, updates governance artifacts, validates schemas |
 
 ---
 

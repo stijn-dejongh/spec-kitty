@@ -1,0 +1,11 @@
+schema_version: "1.0"
+id: accessibility-audit-process
+name: Accessibility Audit Process
+purpose: Detect and prioritize accessibility issues before release.
+steps:
+  - title: Evaluate core interaction paths
+    description: Assess primary workflows for keyboard, contrast, and semantic accessibility concerns.
+  - title: Record defects with severity
+    description: Capture user impact, repro details, and severity for each issue.
+  - title: Track remediation and verification
+    description: Re-check resolved items and close only when acceptance criteria are satisfied.

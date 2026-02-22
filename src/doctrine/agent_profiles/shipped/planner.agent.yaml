@@ -21,9 +21,9 @@ context-sources:
     - "013"
     - "014"
   additional:
-    - project-backlog
-    - team-capacity-data
-    - dependency-graph
+    - kitty-specs/
+    - work/
+    - src/specify_cli/core/
 
 purpose: >
   Decompose features and goals into actionable work packages, sequence them for
@@ -49,7 +49,7 @@ collaboration:
     - researcher
   works-with:
     - architect
-    - manager
+    - reviewer
     - researcher
   output-artifacts:
     - task-breakdown
@@ -111,11 +111,11 @@ specialization-context:
 
 directive-references:
   - code: "012"
-    name: Work Package Granularity Standard
+    name: Common Operating Procedures
     rationale: Work packages must be sized to be completable within one session without becoming too fine-grained to track
   - code: "013"
-    name: Dependency Validation Requirement
+    name: Tooling Setup and Fallbacks
     rationale: All inter-task dependencies must be explicitly declared and validated to form a DAG with no cycles
   - code: "014"
-    name: Acceptance Criteria Completeness
+    name: Work Log Creation
     rationale: Every work package must define clear, verifiable acceptance criteria before implementation begins

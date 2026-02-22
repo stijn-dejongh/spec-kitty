@@ -21,8 +21,9 @@ context-sources:
     - "006"
     - "010"
   additional:
-    - coding-standards
-    - test-strategy
+    - src/
+    - tests/
+    - src/doctrine/tactics/
 
 purpose: >
   Implement software features, fix bugs, and write tests according to specifications
@@ -122,11 +123,11 @@ specialization-context:
 
 directive-references:
   - code: "004"
-    name: Test-Driven Implementation Standard
+    name: Documentation and Context Files
     rationale: All new code should be accompanied by unit tests covering the primary logic paths
   - code: "006"
-    name: Coding Standards Adherence
+    name: Version Governance
     rationale: Code must follow project linting rules, naming conventions, and style guides
   - code: "010"
-    name: Specification Fidelity Requirement
+    name: Mode Protocol
     rationale: Implementations must faithfully reflect the design specifications without unauthorized deviations

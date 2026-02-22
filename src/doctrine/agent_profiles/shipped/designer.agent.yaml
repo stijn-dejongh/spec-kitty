@@ -21,9 +21,9 @@ context-sources:
     - "005"
     - "009"
   additional:
-    - design-system-tokens
-    - accessibility-guidelines
-    - brand-guidelines
+    - docs/
+    - src/doctrine/styleguides/
+    - src/doctrine/templates/
 
 purpose: >
   Create user-centered interface designs and interaction patterns that are accessible,
@@ -114,11 +114,11 @@ specialization-context:
 
 directive-references:
   - code: "002"
-    name: Accessibility First Principle
+    name: Context Notes
     rationale: All designs must meet WCAG 2.1 AA standards as a baseline
   - code: "005"
-    name: Design System Consistency Standard
+    name: Agent Profiles
     rationale: Components must reference and extend the established design system tokens
   - code: "009"
-    name: User-Centered Validation Requirement
+    name: Role Capabilities
     rationale: Designs should be validated against actual user needs and tested with representative users

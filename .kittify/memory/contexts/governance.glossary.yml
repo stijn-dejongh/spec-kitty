@@ -13,6 +13,71 @@ contexts:
           Status: canonical
           Reference: 'Doctrine domain glossary: `glossary/contexts/doctrine.md`'
           Related terms: Constitution, Precedence Hierarchy, Doctrine Domain
+      - name: Guideline
+        definition: 'A high-level, immutable governance rule from the governance stack. Two levels: **general**
+          (highest precedence, non-negotiable framework values) and **operational** (day-to-day behavioral
+          norms). No project-level override may contradict them.'
+        meta:
+          Context: Governance
+          Status: canonical
+          Location: '`doctrine/guidelines/general/`, `doctrine/guidelines/operational/`'
+          Related terms: Precedence Hierarchy, Directive, Constitution
+      - name: Directive
+        definition: A numbered, cross-cutting behavioral constraint from the governance stack. 
+          Directives have phase tags (indicating when they apply), severity (advisory/required), and
+          structured rules. They can be narrowed by the Constitution but not removed.
+        examples:
+          - Directive 017 (TDD Required)
+          - Directive 023 (Conventional Commits)
+          - Directive 034 (Spec-Driven Development)
+        meta:
+          Context: Governance
+          Status: canonical
+          Location: '`doctrine/directives/*.md` (YAML front matter + markdown body)'
+          In code: '`Directive` (dataclass), referenced by integer ID (`directive_refs`)'
+          Related terms: Guideline, Precedence Hierarchy, Agent Profile
+      - name: Approach
+        definition: 'A mental model and domain-specific philosophical framework within the governance
+          stack. Approaches define *how to think* about a domain or problem type — distinct from step-by-step
+          Tactics. Approaches are **user-selectable**: during Bootstrap, users choose which approaches
+          their specialist agents should follow (e.g., "use TDD", "use test-first bug fixing", "use locality-of-change").
+          Selected approaches are stored as project-level preferences in the Constitution and shape agent
+          behavior for all features.'
+        examples:
+          - TDD (Test-Driven Development)
+          - Test-First Bug Fixing
+          - Locality of Change
+          - Decision-First Development
+          - Living Glossary Practice
+        meta:
+          Context: Governance
+          Status: canonical
+          Location: '`doctrine/approaches/*.md`'
+          Related terms: Tactic, Mission, Constitution, Bootstrap
+          Distinction: Users select approaches during bootstrap. Agents consume the associated 
+            tactics during execution.
+      - name: Tactic
+        definition: 'A step-by-step execution pattern within the governance stack — concrete procedures
+          for performing specific activities. Together with Templates, they form the lowest precedence
+          governance layer. Tactics are **agent-facing**: agents pull in the specific tactic files they
+          need during execution. Users do not select tactics directly — they select Approaches (e.g.,
+          "use TDD"), and the relevant tactics follow as implementation details.'
+        meta:
+          Context: Governance
+          Status: canonical
+          Location: '`doctrine/tactics/*.tactic.md`'
+          Related terms: Approach, Template (Doctrine), Slash Command
+          Distinction: Approaches define *how to think* (user-selectable). Tactics define *how to 
+            execute* (agent-consumed).
+      - name: Template (Doctrine)
+        definition: An output contract and artifact scaffold within the governance stack — the 
+          structured format that Tactics produce. Not to be confused with spec-kitty's slash command
+          templates.
+        meta:
+          Context: Governance
+          Status: canonical
+          Location: '`doctrine/templates/`'
+          Related terms: Tactic
       - name: Constitution
         definition: A project-level governance document that narrows or extends Doctrine rules for a
           specific repository. It is the execution-time selector layer for active paradigms, 

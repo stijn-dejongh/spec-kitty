@@ -1,0 +1,18 @@
+schema_version: "1.0"
+id: ARTIFACT_TEMPLATES
+title: Artifact Templates
+intent: Use canonical templates for recurring artifacts to reduce drift and ensure predictable structure.
+enforcement: advisory
+paradigm_refs:
+- spec-driven-development
+tactic_refs:
+- doctrine-update-workflow
+fetch_policy:
+  strategy: lazy_fetch
+  token_discipline: on_demand
+  fetch_order:
+  - paradigms
+  - tactics
+  - toolguides
+  - styleguides
+  note: Load only the minimum required entrypoints for the current task context.

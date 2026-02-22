@@ -1,0 +1,11 @@
+schema_version: "1.0"
+id: research-template
+name: Research Template Workflow
+purpose: Structure research outputs so findings are evidence-based, comparable, and actionable.
+steps:
+  - title: Define investigation question
+    description: Frame the unknown and expected decision impact before data collection.
+  - title: Gather and classify evidence
+    description: Capture source quality, claims, and limitations explicitly.
+  - title: Synthesize findings and recommendations
+    description: Produce a concise recommendation with trade-offs and follow-up actions.

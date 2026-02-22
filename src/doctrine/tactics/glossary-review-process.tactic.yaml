@@ -1,0 +1,11 @@
+schema_version: "1.0"
+id: glossary-review-process
+name: Glossary Review Process
+purpose: Keep terminology consistent and current by regularly reviewing glossary coverage.
+steps:
+  - title: Triage candidate terms
+    description: Review proposed terms, conflicts, and obsolete wording.
+  - title: Resolve canonical wording
+    description: Approve canonical definitions and deprecate conflicting variants.
+  - title: Propagate updates
+    description: Update affected documentation and profile references.

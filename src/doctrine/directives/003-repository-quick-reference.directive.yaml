@@ -1,0 +1,16 @@
+schema_version: "1.0"
+id: REPOSITORY_QUICK_REFERENCE
+title: Repository Quick Reference
+intent: Maintain repository topology awareness so contributors can reliably locate canonical paths, artifacts, and ownership boundaries.
+enforcement: advisory
+paradigm_refs:
+- spec-driven-development
+fetch_policy:
+  strategy: lazy_fetch
+  token_discipline: on_demand
+  fetch_order:
+  - paradigms
+  - tactics
+  - toolguides
+  - styleguides
+  note: Load only the minimum required entrypoints for the current task context.

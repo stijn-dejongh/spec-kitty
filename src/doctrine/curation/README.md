@@ -17,8 +17,8 @@ validated, project-aligned guidance.
 5. Add `external_references` for attribution when needed. Mark these as attribution-only (`extraction_action: none`) because they do not drive doctrine extraction directly.
 6. Classify each candidate to doctrine targets (`tactic`, `directive`, etc.) and document rationale.
 7. Record adaptation notes that translate source language into Spec Kitty terminology and constraints.
-8. Curate the concept into doctrine artifacts (for example `src/doctrine/tactics/*.tactic.yaml`).
-9. Update related directives to link curated tactics (for example `tactic_refs` in `TEST_FIRST`).
+8. Curate the concept into doctrine artifacts (for example `src/doctrine/tactics/**/*.tactic.yaml`).
+9. Update related directives to link curated tactics (for example `tactic_refs` in `ACCEPTANCE_TEST_DRIVEN_DEVELOPMENT` or `TEST_DRIVEN_DEVELOPMENT`).
 10. Mark candidate status through review to `adopted`, and ensure `resulting_artifacts` points to created doctrine files.
 11. Re-run schema and curation validation to confirm the import is machine-valid.
 
@@ -66,6 +66,6 @@ it by default.
 3. Add adaptation notes (terminology + constraints).
 4. Add source references for every extracted idea.
 5. Mark candidate `adopted` after review.
-6. Add resulting artifact links (for example `src/doctrine/tactics/...`).
+6. Add resulting artifact links (for example `src/doctrine/tactics/...`, including `src/doctrine/tactics/checklists/...` for checklist tactics).
 
 Adoption without resulting artifact links is invalid.

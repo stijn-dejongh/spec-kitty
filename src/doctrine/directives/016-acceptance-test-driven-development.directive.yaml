@@ -1,0 +1,18 @@
+schema_version: "1.0"
+id: ACCEPTANCE_TEST_DRIVEN_DEVELOPMENT
+title: Acceptance Test Driven Development
+intent: Require test-first behavior for user-visible acceptance scope before implementation details are developed.
+tactic_refs:
+- acceptance-test-first
+enforcement: required
+paradigm_refs:
+- spec-driven-development
+fetch_policy:
+  strategy: lazy_fetch
+  token_discipline: on_demand
+  fetch_order:
+  - paradigms
+  - tactics
+  - toolguides
+  - styleguides
+  note: Load only the minimum required entrypoints for the current task context.

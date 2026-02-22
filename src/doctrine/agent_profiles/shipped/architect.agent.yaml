@@ -21,8 +21,9 @@ context-sources:
     - "003"
     - "007"
   additional:
-    - architecture-decision-records
-    - design-pattern-catalog
+    - architecture/
+    - src/doctrine/templates/architecture/
+    - docs/
 
 purpose: >
   Design and validate system architectures for scalability, maintainability, and correctness.
@@ -113,11 +114,11 @@ specialization-context:
 
 directive-references:
   - code: "001"
-    name: Architectural Integrity Standard
+    name: CLI and Shell Tooling
     rationale: Ensures all designs maintain separation of concerns and clear component boundaries
   - code: "003"
-    name: Decision Documentation Requirement
+    name: Repository Quick Reference
     rationale: All architectural decisions must be documented with context, options, and rationale
   - code: "007"
-    name: Scalability Assessment Protocol
+    name: Agent Declaration
     rationale: Every design must be evaluated for scalability under projected load

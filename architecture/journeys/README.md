@@ -48,6 +48,7 @@ which captures:
 | [System Architecture Design](002-system-architecture-design.md) | DRAFT | Architectural structure and boundary design after bootstrap |
 | [System Design & Shared Understanding](003-system-design-and-shared-understanding.md) | DRAFT | Design mission flow for glossary, journeys, and ADR alignment |
 | [Curating External Practice into Governance](004-curating-external-practice-into-governance.md) | DRAFT | Pull-based adoption flow for external practices (e.g., ZOMBIES TDD) via curation + constitution activation |
+| [Governance Mission Creation and Constitution Operations](005-governance-mission-constitution-operations.md) | DRAFT | Bootstrap flow for governance mission: curation, constitution review/alter/sync, and directive-compliant traceability |
 
 ## Relationship to Other Architecture Artifacts
 

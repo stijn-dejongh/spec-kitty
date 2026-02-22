@@ -71,3 +71,166 @@ Terms describing Doctrine agent identities — *who* performs work and *what rul
 | **Example**       | `implement: [spec, plan, architecture]`, `fix: [spec, review-comments, test-output]`                                                                       |
 
 ---
+
+### Agent Profile Controlled Vocabulary
+
+|                   |                                                                                                                                |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| **Definition**    | Canonical controlled-vocabulary values used in shipped `AgentProfile` fields for specialization and collaboration semantics.   |
+| **Context**       | Identity                                                                                                                       |
+| **Status**        | canonical                                                                                                                      |
+| **Location**      | `src/doctrine/agent_profiles/shipped/*.agent.yaml`                                                                            |
+| **Related terms** | [Agent Profile](#agent-profile), [Doctrine Domain](./doctrine.md), [Living Glossary](./practices-principles.md#living-glossary) |
+
+**Domain Keywords**:
+
+- accessibility
+- analysis
+- architecture
+- backlog
+- bug fix
+- classification
+- comparison
+- compliance
+- components
+- consistency
+- correctness
+- decomposition
+- dependency
+- design patterns
+- design system
+- doctrine
+- documentation
+- estimation
+- evaluation
+- feature
+- glossary
+- implementation
+- interfaces
+- investigation
+- knowledge base
+- mockup
+- planning
+- quality
+- refactor
+- research
+- review
+- scalability
+- security
+- spike
+- sprint
+- standards
+- system design
+- taxonomy
+- test
+- trade-offs
+- ui
+- unit test
+- ux
+- wcag
+- wireframe
+- work package
+
+**Writing Style**:
+
+- analytical
+- annotated
+- concise
+- constructive
+- diagram-heavy
+- documented
+- encyclopedic
+- evidence-based
+- formal
+- pragmatic
+- precise
+- structured
+- tabular
+- visual
+
+**Canonical Verbs**:
+
+- approve
+- assess
+- audit
+- catalog
+- classify
+- compare
+- debug
+- decide
+- decompose
+- design
+- estimate
+- evaluate
+- fix
+- flag
+- implement
+- investigate
+- iterate
+- maintain
+- model
+- organize
+- plan
+- prioritize
+- prototype
+- recommend
+- refactor
+- reject
+- review
+- sequence
+- specify
+- synthesize
+- test
+
+**Operating Procedures**:
+
+- accessibility-audit-process
+- adr-template
+- architecture-review-checklist
+- capacity-estimation-guide
+- code-review-checklist
+- dependency-validation-process
+- design-review-checklist
+- doctrine-update-workflow
+- glossary-review-process
+- research-template
+- security-review-process
+- spike-timebox-policy
+- test-coverage-requirement
+
+**Output Artifacts**:
+
+- accessibility-audit
+- approval-record
+- architecture-decision-record
+- component-design
+- component-diagram
+- dependency-graph
+- design-document
+- design-specification
+- doctrine-update
+- documentation-gap-report
+- glossary-entry
+- implementation-notes
+- inline-comments
+- integration-tests
+- interface-specification
+- knowledge-base-entry
+- mockup
+- pull-request
+- recommendation-summary
+- research-report
+- review-report
+- risk-register
+- security-findings
+- source-code
+- spike-findings
+- sprint-plan
+- task-breakdown
+- taxonomy-revision
+- technology-comparison
+- unit-tests
+- wireframe
+- work-package-spec
+
+---

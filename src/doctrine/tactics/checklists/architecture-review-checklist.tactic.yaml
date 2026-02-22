@@ -1,0 +1,11 @@
+schema_version: "1.0"
+id: architecture-review-checklist
+name: Architecture Review Checklist
+purpose: Review architecture proposals for intent, risk, and boundary alignment before implementation starts.
+steps:
+  - title: Confirm intent and scope
+    description: Restate the architectural intent and ensure scope boundaries are explicit.
+  - title: Evaluate systemic risks
+    description: Check coupling, scaling, and failure-mode implications of the proposed design.
+  - title: Validate downstream handoff quality
+    description: Ensure implementers receive actionable decisions and clear constraints.

@@ -1,0 +1,18 @@
+schema_version: "1.0"
+id: prompt-documentation-template-usage
+name: Prompt Documentation Template Usage
+purpose: Capture prompt-quality feedback in a reusable format for iterative prompt improvement.
+steps:
+  - title: Load the doctrine prompt documentation template
+    description: Open `src/doctrine/templates/generic/prompt-documentation-template.md` when documenting prompt quality.
+    examples:
+      - "Start from the template before writing SWOT findings to keep documentation comparable."
+  - title: Preserve prompt and analyze quality
+    description: Paste the original prompt verbatim, then complete the SWOT section with evidence from execution.
+    examples:
+      - "Record missing constraints under Weaknesses when they caused clarification loops."
+  - title: Produce an improved prompt draft
+    description: Add a concrete revised prompt and actionable improvement list that can be applied in future tasks.
+    examples:
+      - "Provide three explicit, measurable edits in Actionable Improvements."
+

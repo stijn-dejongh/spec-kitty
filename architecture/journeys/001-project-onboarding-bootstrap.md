@@ -1,10 +1,12 @@
 # User Journey: Project Onboarding & Bootstrap
 
-**Status**: DRAFT
-**Date**: 2026-02-15
-**Primary Contexts**: Project Initialization, Governance
-**Supporting Contexts**: Mission Selection, Feature Specification
-**Related Spec**: N/A (proposed new feature — would become kitty-specs/04X-bootstrap-command)
+| Field | Value |
+|---|---|
+| **Status** | DRAFT |
+| **Date** | 2026-02-15 |
+| **Primary Contexts** | Project Initialization, Governance |
+| **Supporting Contexts** | Mission Selection, Feature Specification |
+| **Related Spec / ADR** | N/A (proposed new feature — would become `kitty-specs/04X-bootstrap-command/`) |
 
 ---
 

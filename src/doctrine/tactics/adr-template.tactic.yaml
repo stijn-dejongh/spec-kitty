@@ -1,0 +1,11 @@
+schema_version: "1.0"
+id: adr-template
+name: ADR Template Workflow
+purpose: Produce decision records with context, alternatives, and consequences.
+steps:
+  - title: Capture context and decision drivers
+    description: Document why the decision is needed and what constraints shape it.
+  - title: Compare alternatives
+    description: Record at least one rejected option with rationale.
+  - title: Record consequences and follow-ups
+    description: Document expected trade-offs and validation actions.

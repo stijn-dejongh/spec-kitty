@@ -1,10 +1,12 @@
 # User Journey: System Architecture Design
 
-**Status**: DRAFT
-**Date**: 2026-02-15
-**Primary Contexts**: Architecture, Design Decision-Making
-**Supporting Contexts**: Governance, Feature Specification, Research
-**Related Spec**: N/A (proposed new command — `/spec-kitty.design`)
+| Field | Value |
+|---|---|
+| **Status** | DRAFT |
+| **Date** | 2026-02-15 |
+| **Primary Contexts** | Architecture, Design Decision-Making |
+| **Supporting Contexts** | Governance, Feature Specification, Research |
+| **Related Spec / ADR** | N/A (proposed new command — `/spec-kitty.design`) |
 
 ---
 

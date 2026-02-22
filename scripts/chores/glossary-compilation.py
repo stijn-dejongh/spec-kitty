@@ -92,7 +92,10 @@ class DoctrineArtifactTerm:
 
 TERM_HEADING_RE = re.compile(r"^###\s+(.+?)\s*$", re.MULTILINE)
 ROW_RE = re.compile(r"^\|\s*\*\*(.+?)\*\*\s*\|\s*(.*?)\s*\|\s*$")
-BULLET_RE = re.compile(r"^-\s+`?([^`\s]+(?:\s+[^`\s]+)*)`?\s*[—-]\s*(.+)$")
+# Field-description bullets must use an explicit separator with surrounding
+# whitespace (e.g., "- `id` — description"). This avoids mis-parsing
+# hyphenated terms such as "diagram-heavy" as "diagram: heavy".
+BULLET_RE = re.compile(r"^-\s+`?([^`\s]+(?:\s+[^`\s]+)*)`?\s+(?:—|-)\s+(.+)$")
 BLOCK_HEADING_RE = re.compile(r"^\*\*(.+?)\*\*:\s*$")
 
 
@@ -289,7 +292,7 @@ def _extract_doctrine_terms(doctrine_root: Path) -> list[DoctrineArtifactTerm]:
         if not artifact_dir.exists():
             continue
 
-        for path in sorted(artifact_dir.glob("*.yaml")):
+        for path in sorted(artifact_dir.rglob("*.yaml")):
             data = _safe_load_yaml_mapping(path)
             artifact_id = _first_non_empty(data, ("id",))
             name = _first_non_empty(data, name_keys)

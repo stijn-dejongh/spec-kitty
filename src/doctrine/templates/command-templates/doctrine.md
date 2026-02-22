@@ -27,7 +27,7 @@ You **MUST** consider the user input before proceeding (if not empty).
 6. Add `external_references` for attribution-only inputs with `extraction_action: none`.
 7. Classify each candidate to doctrine targets (`tactic`, `directive`, etc.) with rationale.
 8. Add adaptation notes translating source language into Spec Kitty doctrine terms.
-9. Materialize resulting doctrine artifacts (for example `src/doctrine/tactics/*.tactic.yaml`, `src/doctrine/directives/*.directive.yaml`).
+9. Materialize resulting doctrine artifacts (for example `src/doctrine/tactics/**/*.tactic.yaml`, `src/doctrine/directives/*.directive.yaml`).
 10. Update directive links (`tactic_refs`) so curated tactics are active in governance behavior.
 11. Mark candidate status through review to `adopted` and ensure `resulting_artifacts` is complete.
 12. Run validation:
@@ -38,5 +38,5 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 - Report created/updated files with concrete paths.
 - State how each imported concept maps to doctrine artifacts.
-- Confirm directive linkage updates (for example `TEST_FIRST` references).
+- Confirm directive linkage updates (for example `ACCEPTANCE_TEST_DRIVEN_DEVELOPMENT` and `TEST_DRIVEN_DEVELOPMENT` references).
 - Report validation results and any remaining follow-up items.

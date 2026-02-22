@@ -1,0 +1,11 @@
+schema_version: "1.0"
+id: security-review-process
+name: Security Review Process
+purpose: Assess security risk and mitigation quality for sensitive changes.
+steps:
+  - title: Identify attack surfaces
+    description: Analyze entry points, trust boundaries, and sensitive data paths.
+  - title: Validate defensive controls
+    description: Confirm controls for input validation, authorization, and data protection.
+  - title: Report prioritized findings
+    description: Document risks with severity, exploitability, and remediation guidance.
