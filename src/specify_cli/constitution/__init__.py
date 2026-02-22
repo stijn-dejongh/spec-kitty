@@ -9,31 +9,16 @@ This subpackage provides tools for:
 Provides:
 - sync(): Parse constitution.md → structured YAML files
 - load_governance_config(): Load governance rules for hook evaluation
+- load_agents_config(): Load agent profiles for routing
 - post_save_hook(): Auto-trigger sync after CLI writes
 """
 
-from .catalog import DoctrineCatalog, load_doctrine_catalog
-from .compiler import (
-    CompiledConstitution,
-    ConstitutionReference,
-    WriteBundleResult,
-    compile_constitution,
-    write_compiled_constitution,
-)
-from .context import ConstitutionContextResult, build_constitution_context
-from .generator import ConstitutionDraft, build_constitution_draft, write_constitution
-from .interview import (
-    ConstitutionInterview,
-    MINIMAL_QUESTION_ORDER,
-    QUESTION_ORDER,
-    QUESTION_PROMPTS,
-    apply_answer_overrides,
-    default_interview,
-    read_interview_answers,
-    write_interview_answers,
-)
 from .parser import ConstitutionParser, ConstitutionSection
 from .schemas import (
+    AgentEntry,
+    AgentProfile,
+    AgentsConfig,
+    AgentSelectionConfig,
     BranchStrategyConfig,
     CommitConfig,
     DoctrineSelectionConfig,
@@ -49,6 +34,7 @@ from .schemas import (
 )
 from .sync import (
     SyncResult,
+    load_agents_config,
     load_directives_config,
     load_governance_config,
     post_save_hook,
@@ -62,28 +48,12 @@ from .resolver import (
 )
 
 __all__ = [
-    "DoctrineCatalog",
-    "load_doctrine_catalog",
-    "CompiledConstitution",
-    "ConstitutionReference",
-    "WriteBundleResult",
-    "compile_constitution",
-    "write_compiled_constitution",
-    "ConstitutionContextResult",
-    "build_constitution_context",
-    "ConstitutionDraft",
-    "build_constitution_draft",
-    "write_constitution",
-    "ConstitutionInterview",
-    "QUESTION_ORDER",
-    "MINIMAL_QUESTION_ORDER",
-    "QUESTION_PROMPTS",
-    "default_interview",
-    "read_interview_answers",
-    "write_interview_answers",
-    "apply_answer_overrides",
     "ConstitutionParser",
     "ConstitutionSection",
+    "AgentEntry",
+    "AgentProfile",
+    "AgentsConfig",
+    "AgentSelectionConfig",
     "BranchStrategyConfig",
     "CommitConfig",
     "DoctrineSelectionConfig",
@@ -97,6 +67,7 @@ __all__ = [
     "ConstitutionTestingConfig",
     "emit_yaml",
     "SyncResult",
+    "load_agents_config",
     "load_directives_config",
     "load_governance_config",
     "post_save_hook",

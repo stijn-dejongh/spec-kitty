@@ -2,14 +2,27 @@
 
 Defines the output schema for:
 - governance.yaml (testing, quality, performance, branch strategy)
+- agents.yaml (agent profiles and selection strategy)
 - directives.yaml (numbered rules and enforcement)
 - metadata.yaml (extraction provenance and statistics)
+
+Note on AgentProfile:
+    The name ``AgentProfile`` in this module refers to the RICH doctrine model
+    (``doctrine.agent_profiles.profile.AgentProfile``).  It is re-exported here
+    so that callers can import it from a single place.
+
+    For the lightweight per-entry config loaded from ``agents.yaml``, use
+    ``AgentEntry``.  ``AgentsConfig.profiles`` is a ``list[AgentEntry]``.
 """
 
 from pathlib import Path
 
 from pydantic import BaseModel, Field
 from ruamel.yaml import YAML
+
+# Re-export the canonical rich domain model so callers can do:
+#   from specify_cli.constitution.schemas import AgentProfile
+from doctrine.agent_profiles.profile import AgentProfile  # noqa: F401
 
 # Header comment for all emitted YAML files
 YAML_HEADER = (
@@ -61,6 +74,7 @@ class DoctrineSelectionConfig(BaseModel):
 
     selected_paradigms: list[str] = Field(default_factory=list)
     selected_directives: list[str] = Field(default_factory=list)
+    selected_agent_profiles: list[str] = Field(default_factory=list)
     available_tools: list[str] = Field(default_factory=list)
     template_set: str | None = None
 
@@ -75,6 +89,45 @@ class GovernanceConfig(BaseModel):
     branch_strategy: BranchStrategyConfig = Field(default_factory=BranchStrategyConfig)
     doctrine: DoctrineSelectionConfig = Field(default_factory=DoctrineSelectionConfig)
     enforcement: dict[str, str] = Field(default_factory=dict)
+
+
+class AgentEntry(BaseModel):
+    """Lightweight per-agent configuration loaded from agents.yaml.
+
+    This is the shallow config model used in agents.yaml.  It maps one-to-one
+    with the YAML structure produced by ``spec-kitty constitution sync``.
+
+    For the rich behavioral identity model (6-section structure, specialization,
+    collaboration contracts, etc.) use ``AgentProfile`` from
+    ``doctrine.agent_profiles.profile``, which is also re-exported from this
+    module as ``AgentProfile``.
+    """
+
+    agent_key: str
+    role: str = "implementer"
+    preferred_model: str | None = None
+    capabilities: list[str] = Field(default_factory=list)
+
+
+class AgentSelectionConfig(BaseModel):
+    """Strategy for selecting agents for tasks."""
+
+    strategy: str = "preferred"
+    preferred_implementer: str | None = None
+    preferred_reviewer: str | None = None
+
+
+class AgentsConfig(BaseModel):
+    """Agent profiles and selection configuration.
+
+    ``profiles`` holds ``AgentEntry`` instances – the lightweight config entries
+    read from agents.yaml.  These are distinct from the rich doctrine
+    ``AgentProfile`` objects (re-exported in this module) which carry full
+    behavioural identity information.
+    """
+
+    profiles: list[AgentEntry] = Field(default_factory=list)
+    selection: AgentSelectionConfig = Field(default_factory=AgentSelectionConfig)
 
 
 class Directive(BaseModel):
