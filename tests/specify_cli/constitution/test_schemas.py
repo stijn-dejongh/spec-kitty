@@ -5,6 +5,7 @@ from pathlib import Path
 
 
 from specify_cli.constitution.schemas import (
+    AgentEntry,
     AgentProfile,
     AgentsConfig,
     AgentSelectionConfig,
@@ -134,25 +135,25 @@ class TestGovernanceConfig:
         assert config.enforcement["testing"] == "strict"
 
 
-class TestAgentProfile:
-    """Tests for AgentProfile schema."""
+class TestAgentEntry:
+    """Tests for AgentEntry schema (lightweight agents.yaml config)."""
 
     def test_required_field(self):
-        """T038: AgentProfile requires agent_key."""
-        profile = AgentProfile(agent_key="claude")
-        assert profile.agent_key == "claude"
-        assert profile.role == "implementer"
+        """T038: AgentEntry requires agent_key."""
+        entry = AgentEntry(agent_key="claude")
+        assert entry.agent_key == "claude"
+        assert entry.role == "implementer"
 
     def test_custom_values(self):
-        """T039: AgentProfile accepts custom values."""
-        profile = AgentProfile(
+        """T039: AgentEntry accepts custom values."""
+        entry = AgentEntry(
             agent_key="claude",
             role="reviewer",
             preferred_model="claude-3.5",
             capabilities=["python", "typescript"],
         )
-        assert profile.role == "reviewer"
-        assert len(profile.capabilities) == 2
+        assert entry.role == "reviewer"
+        assert len(entry.capabilities) == 2
 
 
 class TestAgentsConfig:
@@ -165,14 +166,40 @@ class TestAgentsConfig:
         assert isinstance(config.selection, AgentSelectionConfig)
 
     def test_with_profiles(self):
-        """T041: AgentsConfig can contain multiple profiles."""
+        """T041: AgentsConfig can contain multiple AgentEntry items."""
         config = AgentsConfig(
             profiles=[
-                AgentProfile(agent_key="claude", role="implementer"),
-                AgentProfile(agent_key="codex", role="reviewer"),
+                AgentEntry(agent_key="claude", role="implementer"),
+                AgentEntry(agent_key="codex", role="reviewer"),
             ]
         )
         assert len(config.profiles) == 2
+
+
+class TestAgentProfileReExport:
+    """AgentProfile imported from schemas is the rich doctrine model."""
+
+    def test_agent_profile_is_doctrine_model(self):
+        """T038b: AgentProfile re-exported from schemas IS the doctrine model."""
+        from doctrine.agent_profiles.profile import AgentProfile as DoctrineAgentProfile
+
+        assert AgentProfile is DoctrineAgentProfile
+
+    def test_agent_profile_has_profile_id_not_agent_key(self):
+        """T038c: Re-exported AgentProfile uses profile_id (rich model field)."""
+        # The rich model requires profile_id, name, purpose, and specialization.
+        from doctrine.agent_profiles.profile import Specialization
+
+        profile = AgentProfile(
+            **{
+                "profile-id": "test-agent",
+                "name": "Test Agent",
+                "purpose": "Testing purposes",
+                "specialization": {"primary-focus": "Testing"},
+            }
+        )
+        assert profile.profile_id == "test-agent"
+        assert not hasattr(profile, "agent_key")
 
 
 class TestDirective:

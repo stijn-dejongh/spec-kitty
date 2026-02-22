@@ -16,7 +16,7 @@ from typing import Any
 from specify_cli.constitution.hasher import hash_content
 from specify_cli.constitution.parser import ConstitutionParser, ConstitutionSection
 from specify_cli.constitution.schemas import (
-    AgentProfile,
+    AgentEntry,
     AgentSelectionConfig,
     AgentsConfig,
     BranchStrategyConfig,
@@ -281,7 +281,7 @@ class Extractor:
         Returns:
             AgentsConfig with profiles and selection strategy
         """
-        profiles: list[AgentProfile] = []
+        profiles: list[AgentEntry] = []
         selection = AgentSelectionConfig()
 
         for section in sections:
@@ -304,7 +304,7 @@ class Extractor:
                 model = table_row.get("model") or table_row.get("preferred_model")
 
                 if agent_key:
-                    profile = AgentProfile(
+                    profile = AgentEntry(
                         agent_key=agent_key,
                         role=role,
                         preferred_model=model,

@@ -15,6 +15,7 @@ Provides:
 
 from .parser import ConstitutionParser, ConstitutionSection
 from .schemas import (
+    AgentEntry,
     AgentProfile,
     AgentsConfig,
     AgentSelectionConfig,
@@ -49,6 +50,7 @@ from .resolver import (
 __all__ = [
     "ConstitutionParser",
     "ConstitutionSection",
+    "AgentEntry",
     "AgentProfile",
     "AgentsConfig",
     "AgentSelectionConfig",
