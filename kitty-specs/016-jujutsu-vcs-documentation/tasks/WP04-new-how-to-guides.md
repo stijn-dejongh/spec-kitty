@@ -41,7 +41,6 @@ history:
 
 **Issue 1** (Sync troubleshooting still implies fetch): The sync guide still uses “Failed to fetch: network error,” but `spec-kitty sync` doesn’t fetch; it rebases the base branch (git) or runs `jj workspace update-stale` + auto-rebase. Update the troubleshooting heading/text to avoid fetch semantics (e.g., “Failed to sync/update base”). (`docs/how-to/sync-workspaces.md`)
 
-
 ## Objectives & Success Criteria
 
 - Create three task-oriented how-to guides for jj-specific operations

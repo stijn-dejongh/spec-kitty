@@ -1389,9 +1389,9 @@ For each documentation file, verify it follows principles for its declared type:
    ```bash
    ./build-docs.sh
    ```
-   - Check for build errors/warnings
-   - Navigate to docs in browser
-   - Test links, images, navigation
+- Check for build errors/warnings
+- Navigate to docs in browser
+- Test links, images, navigation
 
 4. **Test tutorials** (if present):
    - Follow tutorial steps exactly

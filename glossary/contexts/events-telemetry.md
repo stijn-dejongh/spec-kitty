@@ -65,4 +65,3 @@ Terms describing Spec Kitty's append-only event model and replay behavior.
 | **Context** | Events & Telemetry |
 | **Status** | candidate |
 | **Note** | Not required for glossary semantic integrity in this 2.x adoption slice |
-

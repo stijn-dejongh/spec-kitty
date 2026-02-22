@@ -27,6 +27,7 @@ spec-kitty mission switch research  # Activate Deep Research Kitty
 ## Complete Research Workflow
 
 ### 1. Initialize Project (One-time)
+
 ```bash
 spec-kitty init auth-research --mission research --ai claude
 cd auth-research
@@ -34,6 +35,7 @@ claude
 ```
 
 ### 2. Define Research Question
+
 ```text
 /spec-kitty.specify
 
@@ -50,6 +52,7 @@ Compare solutions for AWS Lambda, Vercel Edge, and Cloudflare Workers.
 **Result:** Creates `kitty-specs/001-serverless-auth-study/spec.md` with research objectives
 
 ### 3. Research Plan
+
 ```text
 /spec-kitty.plan
 
@@ -70,6 +73,7 @@ Focus areas:
 **Result:** Creates research methodology in `plan.md`
 
 ### 4. Evidence Collection Phase
+
 ```text
 /spec-kitty.research
 ```
@@ -99,6 +103,7 @@ timestamp,source_type,citation,key_finding,confidence,notes
 ```
 
 ### 6. Generate Research Tasks
+
 ```text
 /spec-kitty.tasks
 ```
@@ -129,6 +134,7 @@ Example tasks:
 ```
 
 ### 7. Execute Research
+
 ```text
 /spec-kitty.implement
 ```
@@ -141,6 +147,7 @@ Example tasks:
 5. Moves to "for_review" when complete
 
 ### 8. Synthesize Findings
+
 ```text
 /spec-kitty.review
 ```
@@ -152,6 +159,7 @@ Review research outputs for:
 - Actionable recommendations
 
 ### 9. Finalize Research
+
 ```text
 /spec-kitty.accept
 ```
@@ -165,30 +173,35 @@ Validates:
 ## Research Artifacts Explained
 
 ### spec.md (Research Objectives)
+
 - Research questions
 - Hypothesis (if applicable)
 - Success criteria for research
 - Scope boundaries
 
 ### plan.md (Methodology)
+
 - Information sources to consult
 - Analysis framework
 - Comparison criteria
 - Quality standards for evidence
 
 ### research.md (Findings)
+
 - Key discoveries organized by theme
 - Evidence synthesis
 - Comparison results
 - Recommendations with rationale
 
 ### data-model.md (Concepts)
+
 - Key terms and definitions
 - Relationships between concepts
 - Mental models and frameworks
 - Taxonomies and categorizations
 
 ### evidence-log.csv (Sources)
+
 - Timestamp of collection
 - Source type (paper, docs, blog, etc.)
 - Full citation

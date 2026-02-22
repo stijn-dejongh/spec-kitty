@@ -91,31 +91,37 @@ ADRs should be **concise decision records** (1-2 pages). Put detailed implementa
 Create an ADR for every **architecturally significant decision**, including:
 
 ### Structure Decisions
+
 - Choosing architectural patterns (microservices, monolith, layered architecture)
 - Deciding on module/package organization
 - Selecting component interaction patterns
 
 ### Technology Decisions
+
 - Choosing frameworks or libraries (React vs Vue, SQLite vs PostgreSQL)
 - Selecting build tools or development environments
 - Adopting new programming languages or paradigms
 
 ### Non-Functional Requirements
+
 - Security approaches (authentication methods, encryption strategies)
 - Performance optimizations (caching strategies, database indexing)
 - Scalability patterns (horizontal vs vertical scaling)
 
 ### Integration Decisions
+
 - API design choices (REST vs GraphQL, versioning strategy)
 - External service integrations
 - Data exchange formats
 
 ### Process Decisions
+
 - Development workflows (git branching strategy, release process)
 - Testing strategies (unit vs integration test ratios, mocking approaches)
 - Deployment approaches (CI/CD pipeline design)
 
 ### When NOT to Create an ADR
+
 - Implementation details that don't affect architecture
 - Temporary workarounds or tactical decisions
 - Routine bug fixes or minor refactorings
@@ -320,11 +326,13 @@ Create ADRs for **architecturally significant decisions** including:
 ## Quick Links
 
 ### For Contributors
+
 - **"How do I create an ADR?"** → See [How to Create a New ADR](#how-to-create-a-new-adr) above
 - **"What's the difference between ADR and spec?"** → See [ARCHITECTURE_DOCS_GUIDE.md](ARCHITECTURE_DOCS_GUIDE.md)
 - **"When should I create an ADR?"** → See [When to Create an ADR](#when-to-create-an-adr) above
 
 ### For Readers
+
 - **"Why was this decision made?"** → Read the relevant ADR in `adrs/`
 - **"How does this feature work?"** → Read the spec in `specs/`
 - **"What's the complete picture?"** → Read spec overview + related ADRs

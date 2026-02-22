@@ -440,7 +440,7 @@ git branch --show-current  # Must output: 2.x
 
 **Edge Cases**:
 - Not in git repository: RuntimeError with clear message
-- EventStore initialization fails (library missing): Propagates error from EventStore.__init__
+- EventStore initialization fails (library missing): Propagates error from EventStore.**init**
 - Multiple decorators: Order matters (`@with_error_storage @with_event_store` injects both)
 
 **Parallel?**: Yes - Can implement in parallel with T013-T014

@@ -721,7 +721,7 @@ echo "✓ Best-effort test passed (operation continued despite log failure)"
 
 1. **T036 - ErrorEvent Schema**:
    - ✓ All 7 fields match data-model.md
-   - ✓ Validation in __post_init__
+   - ✓ Validation in **post_init**
 
 2. **T037 - ErrorStorage**:
    - ✓ Daily file rotation (YYYY-MM-DD.jsonl)

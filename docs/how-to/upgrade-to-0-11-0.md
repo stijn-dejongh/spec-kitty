@@ -533,13 +533,16 @@ After upgrading, you'll benefit from:
 Welcome to Spec Kitty 0.11.0! 🎉
 
 ## Command Reference
+
 - [`spec-kitty upgrade`](../reference/cli-commands.md#spec-kitty-upgrade)
 - [`spec-kitty list-legacy-features`](../reference/cli-commands.md#spec-kitty-list-legacy-features)
 
 ## See Also
+
 - [Install Spec Kitty](install-spec-kitty.md)
 - [Non-Interactive Init](non-interactive-init.md)
 
 ## Background
+
 - [Workspace-per-WP Model](../explanation/workspace-per-wp.md)
 - [Git Worktrees](../explanation/git-worktrees.md)

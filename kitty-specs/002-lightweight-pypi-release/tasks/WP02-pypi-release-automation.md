@@ -18,7 +18,6 @@ subtasks:
 ---
 *Path: [kitty-specs/002-lightweight-pypi-release/tasks/planned/WP02-pypi-release-automation.md](kitty-specs/002-lightweight-pypi-release/tasks/planned/WP02-pypi-release-automation.md)*
 
-
 # Work Package Prompt: WP02 – PyPI Release Automation
 
 ## Objectives & Success Criteria
@@ -37,6 +36,7 @@ subtasks:
 ## Subtasks & Detailed Guidance
 
 ### Subtask T003 – Update packaging metadata
+
 - **Purpose**: Ensure PyPI presentation is complete and `twine check` passes.
 - **Steps**:
   1. Edit `pyproject.toml`:
@@ -55,6 +55,7 @@ subtasks:
   - Keep version unchanged until feature release; rely on future tag to bump.
 
 ### Subtask T004 – Author release workflow
+
 - **Purpose**: Automate build, validation, and publication on semantic tags.
 - **Steps**:
   1. Create `.github/workflows/release.yml`.

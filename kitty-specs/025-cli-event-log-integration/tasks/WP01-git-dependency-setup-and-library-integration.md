@@ -60,11 +60,10 @@ history:
 
 Then update WP metadata base commit to match the new base.
 
-
 ## Markdown Formatting
 
 Wrap HTML/XML tags in backticks: `` `<div>` ``, `` `<script>` ``
-Use language identifiers in code blocks: ````python`, ````bash`
+Use language identifiers in code blocks: ````python`,````bash`
 
 ---
 
@@ -540,7 +539,7 @@ git branch --show-current  # Must output: 2.x
            )
    ```
 
-3. **Create adapter __init__.py**:
+3. **Create adapter **init**.py**:
    ```python
    # src/specify_cli/events/__init__.py
    """Event log integration package."""

@@ -623,6 +623,7 @@ AGENT_DIRS = [
    | Just shipped new feature | Feature-Specific | Document just the new feature |
    | Users report confusion | Gap-Filling | Audit finds gaps, prioritizes by impact |
    | Annual doc review | Gap-Filling | Check for outdated docs, fill gaps |
+
    ```
 
 **Files**: `docs/documentation-mission.md` (modified)

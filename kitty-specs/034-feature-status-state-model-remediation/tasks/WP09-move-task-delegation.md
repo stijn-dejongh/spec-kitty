@@ -49,7 +49,7 @@ history:
 **Success Criteria**:
 1. `spec-kitty agent tasks move-task WP01 --to doing` works IDENTICALLY to pre-refactor behavior from the user's perspective.
 2. After move-task, BOTH `status.events.jsonl` AND WP frontmatter are updated (dual-write via the emit pipeline).
-3. All existing pre-validation checks (_check_unchecked_subtasks, _check_ready_for_review, _check_dependent_warnings) are preserved EXACTLY.
+3. All existing pre-validation checks (_check_unchecked_subtasks,_check_ready_for_review,_check_dependent_warnings) are preserved EXACTLY.
 4. The `--no-commit` flag is still respected.
 5. All existing tests in `tests/specify_cli/test_cli/test_agent_feature.py` and `tests/specify_cli/cli/commands/test_event_emission.py` continue to pass.
 6. New integration tests verify the delegation produces canonical events.

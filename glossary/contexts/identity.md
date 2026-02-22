@@ -41,4 +41,3 @@ Terms describing who performs work and who owns semantic decisions.
 | **Context** | Identity |
 | **Status** | canonical |
 | **Rule** | Tie-break only after normal participant resolution fails |
-

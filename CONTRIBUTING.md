@@ -314,10 +314,12 @@ git push origin vX.Y.Z
 ```
 
 #### Version already exists on PyPI
+
 - You attempted to release a version that's already published
 - Bump to the next version number and retry
 
 #### Changelog validation fails
+
 - Ensure CHANGELOG.md has a section matching the version in pyproject.toml
 - Check the date format is `YYYY-MM-DD`
 - Verify the version number is monotonically increasing

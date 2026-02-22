@@ -156,11 +156,14 @@ spec-kitty implement WP08 --base WP07
        """Create WP prompt file with frontmatter."""
        wp_file = feature_dir / "tasks" / f"{wp_id}-test.md"
        frontmatter = f"""---
+
 work_package_id: {wp_id}
 dependencies: {dependencies}
 lane: planned
 ---
+
 # {wp_id} Content
+
 """
        wp_file.write_text(frontmatter)
        return wp_file

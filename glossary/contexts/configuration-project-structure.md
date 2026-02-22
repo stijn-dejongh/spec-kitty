@@ -55,4 +55,3 @@ Terms describing where policy, runtime configuration, and mission artifacts live
 | **Context** | Configuration & Project Structure |
 | **Status** | candidate |
 | **Related terms** | [Constitution](./governance.md#constitution), [Mission](./orchestration.md#mission) |
-

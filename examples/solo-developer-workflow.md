@@ -3,6 +3,7 @@
 Quick iteration for individual developers using Spec Kitty with a single AI agent.
 
 ## Context
+
 - **Developer:** Solo full-stack engineer
 - **Agent:** Claude Code (or Cursor, Gemini, etc.)
 - **Pattern:** Fast iteration with systematic tracking
@@ -11,6 +12,7 @@ Quick iteration for individual developers using Spec Kitty with a single AI agen
 ## Complete Workflow
 
 ### 0. Install & Initialize (One-time)
+
 ```bash
 # Install CLI
 pip install spec-kitty-cli
@@ -23,6 +25,7 @@ cd my-saas-app
 ```
 
 ### 1. Project Setup (One-time)
+
 Start your AI agent:
 ```bash
 claude
@@ -40,6 +43,7 @@ Create principles focused on:
 ```
 
 ### 2. Start First Feature
+
 Define what to build:
 ```text
 /spec-kitty.specify
@@ -57,6 +61,7 @@ claude  # Restart agent in feature worktree
 ```
 
 ### 3. Technical Planning
+
 Define how to build it:
 ```text
 /spec-kitty.plan
@@ -67,6 +72,7 @@ SendGrid for email delivery, Redis for rate limiting.
 ```
 
 ### 4. Optional: Research
+
 If you need to investigate technical decisions:
 ```text
 /spec-kitty.research
@@ -76,6 +82,7 @@ and rate limiting strategies for authentication endpoints.
 ```
 
 ### 5. Break Down Into Tasks
+
 Generate work packages:
 ```text
 /spec-kitty.tasks
@@ -90,6 +97,7 @@ open http://localhost:3000
 You'll see your tasks organized in the "Planned" lane!
 
 ### 6. Implement Feature
+
 Execute implementation:
 ```text
 /spec-kitty.implement
@@ -105,6 +113,7 @@ The command will:
 **Monitor progress:** Keep dashboard open in browser to see tasks moving through lanes.
 
 ### 7. Self-Review
+
 Review your completed work:
 ```text
 /spec-kitty.review
@@ -113,6 +122,7 @@ Review your completed work:
 This helps catch issues before considering the feature complete.
 
 ### 8. Validate & Ship
+
 Final validation:
 ```text
 /spec-kitty.accept
@@ -126,6 +136,7 @@ Merge to main:
 **Result:** Feature complete, worktree cleaned up, back in main repo!
 
 ### 9. Start Next Feature
+
 ```bash
 cd ~/my-saas-app  # Back to main repo
 claude

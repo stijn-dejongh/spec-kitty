@@ -572,6 +572,7 @@ This feature itself was built using the NEW workspace-per-WP model as a dogfoodi
 ```
 
 ### Implementation Phase (worktrees created)
+
 ```bash
 # WP01 - Foundation
 spec-kitty implement WP01
@@ -632,14 +633,14 @@ spec-kitty implement WP06               # Independent, parallel!
    spec-kitty implement WP02 --base WP01  # Branches from WP01
    ```
 
-   ### Testing Requirements
+### Testing Requirements
 
    **For workspace-per-WP features:**
-   - Write migration tests for template updates (parametrized across agents)
-   - Write integration tests for full workflow (specify → implement → merge)
-   - Write dependency graph tests (cycle detection, validation)
+- Write migration tests for template updates (parametrized across agents)
+- Write integration tests for full workflow (specify → implement → merge)
+- Write dependency graph tests (cycle detection, validation)
 
-   ### Agent Template Updates
+### Agent Template Updates
 
    **When modifying workflow commands, update ALL 12 agents:**
    [List AGENT_DIRS]

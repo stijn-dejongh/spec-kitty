@@ -179,7 +179,7 @@ def get_vcs(
 
 ---
 
-### Subtask T008 – Add detection exports to __init__.py
+### Subtask T008 – Add detection exports to **init**.py
 
 **Purpose**: Export detection functions in public API.
 
@@ -261,7 +261,7 @@ def test_get_vcs_with_explicit_git():
 
 - [ ] T006: detection.py with is_jj_available, is_git_available, version functions
 - [ ] T007: get_vcs() factory function with meta.json lookup
-- [ ] T008: Detection functions exported from __init__.py
+- [ ] T008: Detection functions exported from **init**.py
 - [ ] T009: Tests for detection and factory
 - [ ] `is_git_available()` returns True in dev environment
 - [ ] `get_vcs()` returns appropriate backend based on availability
@@ -283,12 +283,12 @@ def test_get_vcs_with_explicit_git():
 - 2026-01-17T11:32:57Z – test-debug – shell_pid=36104 – lane=planned – Resetting after test
 - 2026-01-17T11:48:23Z – claude-code – shell_pid=40451 – lane=doing – Started implementation via workflow command
 - 2026-01-17T11:52:51Z – claude-code – shell_pid=40451 – lane=for_review – Ready for review: Detection and factory functions implemented with 29 passing tests
-- 2026-01-17T11:53:35Z – __AGENT__ – shell_pid=38749 – lane=doing – Started review via workflow command
-- 2026-01-17T11:54:51Z – __AGENT__ – shell_pid=38749 – lane=planned – Moved to planned
+- 2026-01-17T11:53:35Z – **AGENT** – shell_pid=38749 – lane=doing – Started review via workflow command
+- 2026-01-17T11:54:51Z – **AGENT** – shell_pid=38749 – lane=planned – Moved to planned
 - 2026-01-17T11:55:22Z – claude-opus – shell_pid=42463 – lane=doing – Started implementation via workflow command
 - 2026-01-17T11:58:03Z – claude-opus – shell_pid=42463 – lane=for_review – Ready for review: Fixed _get_locked_vcs_from_feature() to only read meta.json for containing feature, added 6 new tests for locked VCS behavior
-- 2026-01-17T11:58:59Z – __AGENT__ – shell_pid=38749 – lane=doing – Started review via workflow command
-- 2026-01-17T11:59:34Z – __AGENT__ – shell_pid=38749 – lane=done – Review passed: locked VCS lookup scoped to feature, tests added
+- 2026-01-17T11:58:59Z – **AGENT** – shell_pid=38749 – lane=doing – Started review via workflow command
+- 2026-01-17T11:59:34Z – **AGENT** – shell_pid=38749 – lane=done – Review passed: locked VCS lookup scoped to feature, tests added
 
 ## Review Feedback
 
@@ -299,4 +299,3 @@ def test_get_vcs_with_explicit_git():
 **Issue 1**: `_get_locked_vcs_from_feature()` scans all feature directories under `kitty-specs/` and returns the first `meta.json` with a `vcs` field, even when the provided `path` is not inside that feature. This can cause `get_vcs()` to incorrectly lock to an unrelated feature when called from the repo root or other paths. Update the logic to only read `meta.json` for the feature that actually contains `path` (or the feature indicated by the worktree name), and return `None` when `path` is not inside a feature.
 
 **Issue 2**: Tests do not verify the required “locked VCS” behavior. The current meta.json tests accept either backend, so they won't fail even if the lock isn't respected. Add a test where `path` is inside a specific feature directory (or worktree path) and assert that `get_vcs()` returns the locked backend (and mismatched explicit backend raises `VCSBackendMismatchError`).
-

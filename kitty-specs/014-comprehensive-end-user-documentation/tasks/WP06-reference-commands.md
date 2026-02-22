@@ -52,6 +52,7 @@ history:
 - **Divio Type**: Reference = information-oriented, complete
 
 ### Reference Principles (from Divio)
+
 - Reference docs are **information-oriented**
 - Describe the machinery (not explain concepts)
 - Be accurate and complete
@@ -59,13 +60,15 @@ history:
 - Consistency is key
 
 ### Commands to Document
+
 - **14 slash commands**: /spec-kitty.specify, .plan, .tasks, .implement, .review, .accept, .merge, .status, .dashboard, .constitution, .clarify, .research, .checklist, .analyze
 - **CLI commands**: init, upgrade, implement, accept, merge, dashboard, research, mission, validate-encoding, validate-tasks, verify-setup, list-legacy-features, repair
-- **Agent subcommands**: agent feature *, agent tasks *, agent context *, agent workflow *, agent release *
+- **Agent subcommands**: agent feature *, agent tasks*, agent context *, agent workflow*, agent release *
 
 ## Subtasks & Detailed Guidance
 
 ### Subtask T023 – Create cli-commands.md
+
 - **Purpose**: Complete reference for all spec-kitty CLI commands
 - **Steps**:
   1. Run `spec-kitty --help` to get command list
@@ -109,6 +112,7 @@ history:
      ---
 
      ## spec-kitty upgrade
+
      [Continue for all commands...]
      ```
 - **Files**: `docs/reference/cli-commands.md`
@@ -116,6 +120,7 @@ history:
 - **Notes**: Use `spec-kitty <cmd> --help` to get accurate info
 
 ### Subtask T024 – Create slash-commands.md
+
 - **Purpose**: Complete reference for all /spec-kitty.* slash commands
 - **Steps**:
   1. List all slash commands from `.claude/commands/` (or equivalent agent directories)
@@ -167,6 +172,7 @@ history:
 - **Notes**: Read actual command files from .claude/commands/ for accuracy
 
 ### Subtask T025 – Create agent-subcommands.md
+
 - **Purpose**: Complete reference for spec-kitty agent * subcommands
 - **Steps**:
   1. Run `spec-kitty agent --help` and each subcommand's --help
@@ -204,6 +210,7 @@ history:
      ## agent tasks
 
      ### agent tasks move-task
+
      [Continue for all subcommands...]
      ```
 - **Files**: `docs/reference/agent-subcommands.md`
@@ -235,7 +242,7 @@ history:
 ## Activity Log
 
 - 2026-01-16T16:16:58Z – system – lane=planned – Prompt generated via /spec-kitty.tasks
-- 2026-01-16T16:31:20Z – __AGENT__ – shell_pid=28468 – lane=doing – Started implementation via workflow command
-- 2026-01-16T16:39:28Z – __AGENT__ – shell_pid=28468 – lane=for_review – Ready for review: added CLI, slash, and agent command reference docs
+- 2026-01-16T16:31:20Z – **AGENT** – shell_pid=28468 – lane=doing – Started implementation via workflow command
+- 2026-01-16T16:39:28Z – **AGENT** – shell_pid=28468 – lane=for_review – Ready for review: added CLI, slash, and agent command reference docs
 - 2026-01-16T17:50:21Z – claude – shell_pid=58964 – lane=doing – Started review via workflow command
 - 2026-01-16T17:50:30Z – claude – shell_pid=58964 – lane=done – Review passed: All 3 command reference docs created (CLI, slash, agent subcommands)

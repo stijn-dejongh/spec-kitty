@@ -48,6 +48,7 @@ url = "https://spec-kitty-dev.fly.dev"  # Server URL at time of auth
 - **Source**: SaaS `/api/v1/token/` or `/api/v1/token/refresh/`
 
 **Attributes**:
+
 | Field | Type | Description |
 |-------|------|-------------|
 | value | string | JWT token string |
@@ -71,6 +72,7 @@ url = "https://spec-kitty-dev.fly.dev"  # Server URL at time of auth
 - **Rotation**: New refresh token issued on each use (old one invalidated)
 
 **Attributes**:
+
 | Field | Type | Description |
 |-------|------|-------------|
 | value | string | JWT token string |
@@ -94,6 +96,7 @@ url = "https://spec-kitty-dev.fly.dev"  # Server URL at time of auth
 - **Storage**: NOT stored locally (obtained on-demand)
 
 **Attributes**:
+
 | Field | Type | Description |
 |-------|------|-------------|
 | ws_token | string | UUID token string |

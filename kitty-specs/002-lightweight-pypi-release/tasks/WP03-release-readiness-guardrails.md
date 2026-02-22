@@ -18,7 +18,6 @@ subtasks:
 ---
 *Path: [kitty-specs/002-lightweight-pypi-release/tasks/planned/WP03-release-readiness-guardrails.md](kitty-specs/002-lightweight-pypi-release/tasks/planned/WP03-release-readiness-guardrails.md)*
 
-
 # Work Package Prompt: WP03 – Release Readiness Guardrails
 
 ## Objectives & Success Criteria
@@ -37,6 +36,7 @@ subtasks:
 ## Subtasks & Detailed Guidance
 
 ### Subtask T005 – Release readiness workflow
+
 - **Purpose**: Automate pre-merge verification and provide maintainers immediate feedback.
 - **Steps**:
   1. Create `.github/workflows/release-readiness.yml`.
@@ -58,6 +58,7 @@ subtasks:
   - Consider caching pip packages for faster feedback.
 
 ### Subtask T006 – Protect main branch workflow
+
 - **Purpose**: Detect and block direct pushes to `main`, guiding maintainers to branch protection rules.
 - **Steps**:
   1. Create `.github/workflows/protect-main.yml`.

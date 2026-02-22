@@ -328,7 +328,7 @@ python -m pytest tests/specify_cli/cli/commands/test_status_cli.py -x -q
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Circular import at agent/__init__.py registration | CLI fails to start | Use lazy imports inside command functions, not at module level |
+| Circular import at agent/**init**.py registration | CLI fails to start | Use lazy imports inside command functions, not at module level |
 | Feature auto-detection fails in worktree context | User must always pass --feature | Reuse existing `detect_feature_slug()` which handles worktrees |
 | JSON evidence parsing errors are opaque | User cannot debug evidence format | Catch JSONDecodeError explicitly and print the parsing error with guidance |
 | typer CliRunner does not capture Rich output correctly | Test assertions fail on output format | Use `rich_markup=False` in test runner or assert on plain text content |

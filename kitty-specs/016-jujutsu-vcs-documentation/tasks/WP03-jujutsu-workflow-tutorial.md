@@ -52,7 +52,6 @@ history:
 
 **Issue 4**: Conflict resolution guidance uses `jj squash`, which is not a clear or correct way to resolve conflicts. Please replace with an accurate jj conflict-resolution step (e.g., edit conflicts then `jj resolve` or note that editing the files resolves conflicts and you can continue/commit), consistent with jj docs.
 
-
 ## Objectives & Success Criteria
 
 - Create comprehensive tutorial at `docs/tutorials/jujutsu-workflow.md`

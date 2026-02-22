@@ -1,6 +1,7 @@
 # Agent: Roo Code (formerly Roo Cline)
 
 ## Basic Info
+
 - **Directory**: `.roo/`
 - **Primary Interface**: IDE (VS Code extension) - CLI support in development
 - **Vendor**: Roo Code, Inc. (roocode.com)
@@ -9,6 +10,7 @@
 ## CLI Availability
 
 ### Current Status
+
 **CLI is in active development but not yet officially released.**
 
 As of May 2025, GitHub Issue #3835 requested CLI/headless execution support. The issue was closed as "COMPLETED" with the following solutions:
@@ -16,6 +18,7 @@ As of May 2025, GitHub Issue #3835 requested CLI/headless execution support. The
 2. An IPC server can be enabled for CLI integration via the `roo-cli` tool
 
 ### Official npm Packages (No CLI Yet)
+
 ```bash
 # Type definitions (for CLI support infrastructure)
 npm info @roo-code/types
@@ -59,6 +62,7 @@ pnpm install:vsix
 ```
 
 ### Verification
+
 ```bash
 # No official CLI installed
 $ which roo roo-cline roo-code
@@ -66,6 +70,7 @@ $ which roo roo-cline roo-code
 ```
 
 ### Local Test Results
+
 ```bash
 $ npm search roo-code --json | head -20
 # Found @roo-code/types, @roo-code/cloud - no CLI package yet
@@ -79,6 +84,7 @@ $ which cline
 Roo Code is a fork of Cline (previously "Claude Dev"). Cline has its own CLI:
 
 ### Cline CLI
+
 - **Documentation**: https://docs.cline.bot/cline-cli/overview
 - **Supports**: macOS, Linux (Windows coming soon)
 - **Authentication**: `cline auth` command
@@ -107,6 +113,7 @@ git diff | cline "Review these changes"
 ## Task Specification
 
 ### How to Pass Instructions (via IPC or fork)
+
 - [x] Command line argument (with third-party tools)
 - [x] Stdin (with Cline CLI)
 - [ ] File path (--file, -f)
@@ -114,6 +121,7 @@ git diff | cline "Review these changes"
 - [ ] Environment variable
 
 ### Example Invocation
+
 ```bash
 # Using roo-ipc (requires VS Code running)
 ROO_CODE_IPC_SOCKET_PATH=/tmp/roo-code.sock code
@@ -127,6 +135,7 @@ cline "Fix the TypeScript errors"
 ```
 
 ### Context Handling
+
 - Model-agnostic: Supports OpenAI, Anthropic, Gemini, Ollama (BYOK)
 - MCP (Model Context Protocol) integration
 - Multiple modes: Code, Architect, Ask, Debug, Custom
@@ -137,6 +146,7 @@ cline "Fix the TypeScript errors"
 ## Completion Detection
 
 ### Exit Codes
+
 | Code | Meaning |
 |------|---------|
 | 0 | Success |
@@ -144,6 +154,7 @@ cline "Fix the TypeScript errors"
 (Exact codes depend on CLI implementation used)
 
 ### Output Format
+
 - [ ] Stdout (plain text) - limited official support
 - [ ] Stdout (JSON) - via third-party tools
 - [x] Structured logs - via IPC messages
@@ -152,14 +163,17 @@ cline "Fix the TypeScript errors"
 ## Parallel Execution
 
 ### Rate Limits
+
 Depends on underlying LLM provider (user provides API keys - BYOK model).
 
 ### Concurrent Sessions
+
 - Official: Limited - VS Code extension is single-session
 - With roo-ipc: Multiple IPC connections possible
 - With Cline CLI: Multi-instance parallelization supported
 
 ### Resource Requirements
+
 - VS Code required for official extension
 - Node.js for third-party CLI tools
 - Docker for `@roo-code/evals` headless execution
@@ -167,6 +181,7 @@ Depends on underlying LLM provider (user provides API keys - BYOK model).
 ## Orchestration Assessment
 
 ### Can participate in autonomous workflow?
+
 [ ] Yes / [ ] No / [x] Partial
 
 **Partial** because:
@@ -176,12 +191,14 @@ Depends on underlying LLM provider (user provides API keys - BYOK model).
 - Cline CLI (parent) offers better headless support
 
 ### Limitations
+
 - No official standalone CLI package
 - Requires VS Code or fork/third-party tool
 - IPC solution requires VS Code process running
 - Documentation for headless use is limited
 
 ### Integration Complexity
+
 **High** - Currently requires:
 1. Running VS Code with IPC socket, OR
 2. Using third-party fork (Roo-Code-CLI), OR
@@ -191,6 +208,7 @@ Depends on underlying LLM provider (user provides API keys - BYOK model).
 ## VS Code Extension Patterns
 
 ### Standard Extension Limitations
+
 VS Code extensions typically require the VS Code UI. However, several patterns enable headless operation:
 
 **1. IPC Server Approach (Used by Roo Code)**
@@ -219,6 +237,7 @@ VS Code extensions typically require the VS Code UI. However, several patterns e
 - Useful for CI/CD and testing
 
 ### Headless Workarounds for Roo Code
+
 1. **roo-ipc**: Unix socket IPC to running VS Code
 2. **Roo-Code-CLI**: Terminal fork with pnpm
 3. **Docker evals**: `@roo-code/evals` package
@@ -235,6 +254,7 @@ VS Code extensions typically require the VS Code UI. However, several patterns e
 | Installation count | 50,000+ | 4M+ |
 
 ## Sources
+
 - [Roo Code VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=RooVeterinaryInc.roo-cline)
 - [Roo Code Documentation](https://docs.roocode.com/)
 - [GitHub: RooCodeInc/Roo-Code](https://github.com/RooCodeInc/Roo-Code)

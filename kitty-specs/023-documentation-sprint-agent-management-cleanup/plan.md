@@ -337,11 +337,13 @@ Add new section:
    ```
 
 ### Why This Change
+
 - Previous behavior: Manually deleted directories recreated on upgrade
 - New behavior: config.yaml tracks user intent, migrations respect it
 - See ADR #6 for architectural details
 
 ### Troubleshooting
+
 - "Orphaned directories found": Run `spec-kitty agent config sync`
 - "Agent directory missing": Run `spec-kitty agent config sync --create-missing`
 ```

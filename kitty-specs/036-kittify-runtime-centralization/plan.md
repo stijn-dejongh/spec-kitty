@@ -1,4 +1,5 @@
 # Implementation Plan: ~/.kittify Runtime Centralization
+
 *Path: kitty-specs/036-kittify-runtime-centralization/plan.md*
 
 **Branch**: `2.x` (backport to `main`) | **Date**: 2026-02-09 | **Spec**: [spec.md](spec.md)

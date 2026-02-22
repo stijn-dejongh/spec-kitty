@@ -64,4 +64,3 @@ Terms describing tool invocation and semantic safety gates during generation.
 | **Context** | Execution |
 | **Status** | canonical |
 | **Block condition** | Unresolved high-severity semantic conflict |
-

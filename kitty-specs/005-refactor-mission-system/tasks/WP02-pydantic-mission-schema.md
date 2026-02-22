@@ -350,7 +350,7 @@ If user types `validaton:` instead of `validation:`, checks silently return `[]`
 
 ---
 
-### Subtask T014 – Update Mission.__init__ with Pydantic validation
+### Subtask T014 – Update Mission.**init** with Pydantic validation
 
 **Purpose**: Replace dict-based config loading with Pydantic validation.
 

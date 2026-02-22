@@ -186,6 +186,7 @@ This path will:
 ## Project Structure
 
 ### Sprint Planning Artifacts (in kitty-specs/)
+
 ```
 kitty-specs/026-agent-directory-centralization-architecture-research/
 ├── spec.md                        # Research question and scope
@@ -200,6 +201,7 @@ kitty-specs/026-agent-directory-centralization-architecture-research/
 ```
 
 ### Research Deliverables (in deliverables_path)
+
 ```
 docs/research/026-agent-directory-centralization/
 ├── decision-framework.md          # WP11 synthesis output
@@ -308,6 +310,7 @@ docs/research/026-agent-directory-centralization/
 ## Quality Gates
 
 ### Before Data Gathering (Phase 0 - WP01)
+
 - [x] Research question is clear and focused
 - [x] Methodology is documented and reproducible
 - [x] Data sources identified and accessible
@@ -315,6 +318,7 @@ docs/research/026-agent-directory-centralization/
 - [x] Evidence tracking files prepared (source-register.csv, evidence-log.csv)
 
 ### During Data Gathering (Phase 0 - WP01)
+
 - [ ] All codebase sources documented in source-register.csv (AGENT_DIRS, agent_config.py, init.py, template.py, dashboard/)
 - [ ] All 14 agent discovery mechanisms documented from cross-agent doc
 - [ ] User pain points quantified (installation time, .gitignore entries, template count, worktree sparse paths)
@@ -322,6 +326,7 @@ docs/research/026-agent-directory-centralization/
 - [ ] Quality threshold maintained (HIGH confidence for codebase facts, MEDIUM for inferred patterns)
 
 ### During Workflow Analysis (Phase 1 - WP02-WP07)
+
 - [ ] All 6 workflow patterns analyzed with specific trade-offs (not generic)
 - [ ] Adversarial debate conducted for each pattern (pros vs cons)
 - [ ] Impact quantified on setup time, version control, collaboration, contributor experience, multi-project management
@@ -329,6 +334,7 @@ docs/research/026-agent-directory-centralization/
 - [ ] Trade-off matrices populated per pattern
 
 ### During Agent Compatibility Audit (Phase 2 - WP08)
+
 - [ ] All 14 agents reviewed (Claude, Copilot, Gemini, Cursor, Qwen, OpenCode, Windsurf, Codex, Kilocode, Augment, Roo, Q, Kimi, Mistral)
 - [ ] Discovery mechanisms mapped (file-based, MCP, skills) to centralization scenarios
 - [ ] Compatibility matrix populated (14 agents × centralization viability)
@@ -336,6 +342,7 @@ docs/research/026-agent-directory-centralization/
 - [ ] Findings support architecture design phase
 
 ### During Architecture Design (Phase 3 - WP09)
+
 - [ ] Centralized directory structure designed
 - [ ] Project registration protocol specified
 - [ ] Backwards compatibility mechanism defined (not just "maintain compatibility")
@@ -344,6 +351,7 @@ docs/research/026-agent-directory-centralization/
 - [ ] All 14 agents addressed in design
 
 ### During Feasibility Assessment (Phase 4 - WP10)
+
 - [ ] Migration risks identified with severity ratings (CRITICAL/HIGH/MEDIUM/LOW)
 - [ ] Conflict scenarios documented (project-local vs user-global precedence)
 - [ ] Edge cases identified (mid-flight worktrees, legacy projects, custom commands)
@@ -352,6 +360,7 @@ docs/research/026-agent-directory-centralization/
 - [ ] Findings support feasibility study synthesis
 
 ### Before Synthesis (Phase 5 - WP11-WP14)
+
 - [ ] All workflow analyses complete (WP02-WP07)
 - [ ] Agent compatibility audit complete (WP08)
 - [ ] Architecture design complete (WP09)
@@ -360,6 +369,7 @@ docs/research/026-agent-directory-centralization/
 - [ ] Source-register.csv contains all sources with review status
 
 ### Before Publication (Phase 5 - WP14)
+
 - [ ] Research question answered in recommendation.md
 - [ ] All claims cited with evidence IDs (e.g., [EV-042])
 - [ ] Methodology clear and reproducible

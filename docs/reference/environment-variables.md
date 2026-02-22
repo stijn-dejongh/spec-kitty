@@ -184,8 +184,10 @@ spec-kitty init my-project --ai codex --non-interactive
 - [Non-Interactive Init](../how-to/non-interactive-init.md) — Common automation patterns
 
 ## Getting Started
+
 - [Claude Code Workflow](../tutorials/claude-code-workflow.md)
 
 ## Practical Usage
+
 - [Non-Interactive Init](../how-to/non-interactive-init.md)
 - [Install Spec Kitty](../how-to/install-spec-kitty.md)

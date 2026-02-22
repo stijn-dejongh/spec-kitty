@@ -138,12 +138,15 @@ class ProtectionResult:
 ## Troubleshooting
 
 ### Q: Directories not being added to .gitignore?
+
 **A:** Check file permissions and ensure you're in a git repository root.
 
 ### Q: Can I exclude certain directories from protection?
+
 **A:** Currently, all directories are protected. Future versions will support exclusion.
 
 ### Q: What about custom agent directories?
+
 **A:** Currently supports known agents only. Custom directories can be added manually.
 
 ## Next Steps

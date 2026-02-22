@@ -46,7 +46,6 @@ history:
 
 **Issue 2**: Merge strategy documentation is inconsistent. `docs/how-to/merge-feature.md` states rebase is not supported, but the Command Reference table lists `rebase`, and `docs/how-to/accept-and-merge.md` includes `--strategy rebase` in the Merge Strategies list. Please align these sections to avoid contradictory guidance (remove rebase or clearly mark it unsupported).
 
-
 ## ⚠️ Dependency Rebase Guidance
 
 **This WP depends on**: WP01, WP02, WP03
@@ -83,6 +82,7 @@ Integrate new documentation into the site structure and add cross-references bet
 ## Subtasks & Detailed Guidance
 
 ### Subtask T025 – Update toc.yml
+
 - **Purpose**: Add new pages to site navigation
 - **Steps**:
   1. Read `docs/toc.yml` to understand structure
@@ -99,6 +99,7 @@ Integrate new documentation into the site structure and add cross-references bet
 - **Parallel?**: Yes
 
 ### Subtask T026 – Add cross-references to merge-feature.md
+
 - **Purpose**: Connect merge guide to related docs
 - **Steps**:
   1. Add "Troubleshooting" section with link to troubleshoot-merge.md
@@ -111,6 +112,7 @@ Integrate new documentation into the site structure and add cross-references bet
 - **Parallel?**: Yes
 
 ### Subtask T027 – Add cross-references to troubleshoot-merge.md
+
 - **Purpose**: Connect troubleshooting guide to related docs
 - **Steps**:
   1. Add standard footer sections:
@@ -123,6 +125,7 @@ Integrate new documentation into the site structure and add cross-references bet
 - **Parallel?**: Yes
 
 ### Subtask T028 – Update accept-and-merge.md links
+
 - **Purpose**: Connect existing doc to new guides
 - **Steps**:
   1. Read `docs/how-to/accept-and-merge.md`
@@ -133,6 +136,7 @@ Integrate new documentation into the site structure and add cross-references bet
 - **Parallel?**: Yes
 
 ### Subtask T029 – Verify command examples
+
 - **Purpose**: Ensure all examples work
 - **Steps**:
   1. Extract all code blocks from merge-feature.md and troubleshoot-merge.md
@@ -149,6 +153,7 @@ Integrate new documentation into the site structure and add cross-references bet
 - **Parallel?**: No (needs WP01, WP02 content complete)
 
 ### Subtask T030 – Final style consistency check
+
 - **Purpose**: Ensure uniform documentation style
 - **Steps**:
   1. Compare each new doc section against accept-and-merge.md

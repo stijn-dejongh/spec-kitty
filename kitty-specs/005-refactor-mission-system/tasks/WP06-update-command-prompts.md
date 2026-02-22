@@ -129,9 +129,9 @@ This validates you're on a feature branch in a worktree, not on main.
    ```
 
    **What this validates**:
-   - Current branch is a feature branch (pattern: `###-feature-name`)
-   - Not running from `main` branch
-   - Provides navigation instructions if validation fails
+- Current branch is a feature branch (pattern: `###-feature-name`)
+- Not running from `main` branch
+- Provides navigation instructions if validation fails
 
    **Path reference rule:** When you mention directories or files, provide either the absolute path or a path relative to the project root (for example, `kitty-specs/<feature>/tasks/`). Never refer to a folder by name alone.
    ```

@@ -147,7 +147,7 @@ def ensure_identity(config_path: Path) -> ProjectIdentity:
 **Decision**: Inject `project_uuid` and `project_slug` in `EventEmitter._emit()`.
 
 **Rationale**:
-- Single point of injection (all emit_* methods go through _emit)
+- Single point of injection (all emit_* methods go through_emit)
 - Validation before WebSocket send (queue-only if missing)
 - Consistent across all event types
 

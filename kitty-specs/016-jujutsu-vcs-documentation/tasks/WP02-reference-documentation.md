@@ -46,7 +46,6 @@ history:
 
 **Issue 1**: `spec-kitty init` VCS detection order is still inaccurate and contradictory. The section says “When `--vcs` is not specified” but lists `--vcs` as step 1 and omits the mismatch error behavior. Please align this with the actual rules (explicit backend first; conflicting `--vcs` vs feature lock errors; then feature `meta.json`, then tool availability). Update `docs/reference/cli-commands.md:72` to match the configuration docs.
 
-
 ## Objectives & Success Criteria
 
 - Add complete reference documentation for `spec-kitty sync` and `spec-kitty ops` commands

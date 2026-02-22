@@ -267,6 +267,7 @@ Future jj integration will auto-rebase dependent workspaces.
            return ""
 
        warning = f"""
+
 ## ⚠️ Dependency Warning
 
 {', '.join(in_progress)} depend on this WP ({wp_id}).

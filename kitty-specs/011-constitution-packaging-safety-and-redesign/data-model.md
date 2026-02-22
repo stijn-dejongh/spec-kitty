@@ -472,11 +472,13 @@ dependencies = [
 ## Validation Rules
 
 ### Template Files
+
 - All files under `src/specify_cli/templates/` must be valid markdown
 - Command templates must have YAML frontmatter with `description` field
 - Template placeholders must use `[ALL_CAPS]` format
 
 ### Migrations
+
 - `migration_id` must follow pattern `X.Y.Z_description`
 - `target_version` must be valid semver
 - `detect()` must be idempotent (safe to call multiple times)
@@ -484,12 +486,14 @@ dependencies = [
 - `apply()` must succeed even if files already cleaned up (idempotency)
 
 ### Constitution
+
 - Version must follow semver (MAJOR.MINOR.PATCH)
 - Dates must be ISO format (YYYY-MM-DD)
 - Must have at least one Core Principle
 - Must have Governance section
 
 ### Package Configuration
+
 - No paths outside `src/` in force-includes
 - No `.kittify/memory/` in include patterns
 - All dependencies must specify minimum version

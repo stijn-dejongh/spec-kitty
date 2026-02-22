@@ -608,26 +608,31 @@ spec-kitty agent workflow implement WP01
 ## Risk Management
 
 ### Risk 1: Parallel Stream Conflicts
+
 - **Description**: Multiple agents editing related code could create merge conflicts
 - **Mitigation**: Strict module separation (each stream owns different `.py` files), daily integration tests
 - **Severity**: Low (clean module boundaries)
 
 ### Risk 2: Foundation Phase Delays
+
 - **Description**: Phase 1 delays block all parallel work
 - **Mitigation**: Prioritize Phase 1 completion, minimal scope (stubs only)
 - **Severity**: Medium (critical path dependency)
 
 ### Risk 3: Cross-Platform Testing Gaps
+
 - **Description**: Development on macOS may miss Windows-specific issues
 - **Mitigation**: CI runs on all platforms, early testing in Phase 1
 - **Severity**: Low (existing patterns for Windows compatibility)
 
 ### Risk 4: Upgrade Migration Edge Cases
+
 - **Description**: Custom bash modifications may break automated migration
 - **Mitigation**: Migration detects modifications, provides warnings and manual guide
 - **Severity**: Medium (affects subset of users)
 
 ### Risk 5: Integration Test Failures
+
 - **Description**: Parallel streams may integrate incorrectly despite unit tests passing
 - **Mitigation**: Daily integration tests at coordination points, final validation in Phase 7
 - **Severity**: Low (integration points are well-defined)

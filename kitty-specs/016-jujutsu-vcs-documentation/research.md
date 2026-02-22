@@ -21,6 +21,7 @@
 **Usage**: `spec-kitty sync [OPTIONS]`
 
 **Options**:
+
 | Flag | Short | Description |
 |------|-------|-------------|
 | `--repair` | `-r` | Attempt workspace recovery (may lose uncommitted work) |
@@ -49,6 +50,7 @@ spec-kitty sync --repair
 **Purpose**: Operation history and undo
 
 **Subcommands**:
+
 | Subcommand | Description |
 |------------|-------------|
 | `log` | Show operation history |
@@ -64,6 +66,7 @@ spec-kitty sync --repair
 **Usage**: `spec-kitty ops log [OPTIONS]`
 
 **Options**:
+
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
 | `--limit` | `-n` | Number of operations to show | 20 |
@@ -82,6 +85,7 @@ spec-kitty sync --repair
 **Usage**: `spec-kitty ops undo [OPTIONS] [OPERATION_ID]`
 
 **Arguments**:
+
 | Argument | Description |
 |----------|-------------|
 | `operation_id` | Operation ID to undo (defaults to last operation) |
@@ -99,6 +103,7 @@ spec-kitty sync --repair
 **Usage**: `spec-kitty ops restore OPERATION_ID`
 
 **Arguments**:
+
 | Argument | Required | Description |
 |----------|----------|-------------|
 | `operation_id` | Yes | Operation ID to restore to |
@@ -112,6 +117,7 @@ spec-kitty sync --repair
 ### Updated Command: `spec-kitty init`
 
 **New Option**:
+
 | Flag | Description |
 |------|-------------|
 | `--vcs` | VCS to use: 'git' or 'jj'. Defaults to jj if available. |

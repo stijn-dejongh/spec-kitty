@@ -54,6 +54,7 @@ history:
 ## Subtasks & Detailed Guidance
 
 ### Subtask T026 – Create configuration.md
+
 - **Purpose**: Document all configuration files and options
 - **Structure**:
   ```markdown
@@ -78,9 +79,11 @@ history:
   ```
 
   ## .kittify/active-mission (Legacy)
+
   [Note: Deprecated in 0.8.0+]
 
   ## WP Frontmatter
+
   ```yaml
   work_package_id: "WP01"
   lane: "planned"
@@ -92,6 +95,7 @@ history:
 - **Parallel?**: Yes
 
 ### Subtask T027 – Create environment-variables.md
+
 - **Purpose**: Document all environment variables
 - **Structure**:
   ```markdown
@@ -120,6 +124,7 @@ history:
 - **Parallel?**: Yes
 
 ### Subtask T028 – Create file-structure.md
+
 - **Purpose**: Document the complete directory structure
 - **Structure**:
   ```markdown
@@ -180,6 +185,7 @@ history:
 - **Notes**: Critical for understanding the 0.11.0 model
 
 ### Subtask T029 – Create missions.md
+
 - **Purpose**: Complete reference for all three missions
 - **Structure**:
   ```markdown
@@ -210,6 +216,7 @@ history:
 - **Parallel?**: Yes
 
 ### Subtask T030 – Create supported-agents.md
+
 - **Purpose**: Document all 12 supported AI agents
 - **Structure**:
   ```markdown

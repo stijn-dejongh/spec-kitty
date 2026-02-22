@@ -332,7 +332,7 @@ history:
 ## Activity Log
 
 - 2026-01-17T10:38:23Z – system – lane=planned – Prompt generated via /spec-kitty.tasks
-- 2026-01-17T13:09:21Z – __AGENT__ – shell_pid=27357 – lane=doing – Started implementation via workflow command
-- 2026-01-17T13:18:11Z – __AGENT__ – shell_pid=27357 – lane=for_review – Ready for review: ops command with log, undo, restore subcommands. 19 tests passing.
-- 2026-01-17T13:18:51Z – __AGENT__ – shell_pid=28708 – lane=doing – Started review via workflow command
-- 2026-01-17T13:21:30Z – __AGENT__ – shell_pid=28708 – lane=done – Review passed: ops command implemented with log/undo/restore subcommands, capability checking for jj-only features, helpful git alternatives, 19 tests passing
+- 2026-01-17T13:09:21Z – **AGENT** – shell_pid=27357 – lane=doing – Started implementation via workflow command
+- 2026-01-17T13:18:11Z – **AGENT** – shell_pid=27357 – lane=for_review – Ready for review: ops command with log, undo, restore subcommands. 19 tests passing.
+- 2026-01-17T13:18:51Z – **AGENT** – shell_pid=28708 – lane=doing – Started review via workflow command
+- 2026-01-17T13:21:30Z – **AGENT** – shell_pid=28708 – lane=done – Review passed: ops command implemented with log/undo/restore subcommands, capability checking for jj-only features, helpful git alternatives, 19 tests passing

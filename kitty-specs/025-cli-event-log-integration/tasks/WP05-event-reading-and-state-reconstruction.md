@@ -57,7 +57,6 @@ history:
 
 **Dependency check:** WP04 is still not merged to `main` and has review feedback. WP05 should rebase onto the finalized WP04 once it lands.
 
-
 ## Objectives & Success Criteria
 
 **Primary Goal**: Implement event reading with Lamport clock ordering and state reconstruction from event history.

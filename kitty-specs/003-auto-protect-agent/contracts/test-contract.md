@@ -1,11 +1,13 @@
 # API Contract: User Authentication Service
 
 ## Overview
+
 This document defines the contract for the User Authentication Service API.
 
 ## Endpoints
 
 ### POST /auth/login
+
 Authenticates a user and returns access tokens.
 
 **Request Body:**

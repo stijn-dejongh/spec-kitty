@@ -44,7 +44,6 @@ history:
 
 **Issue 1**: Section placement is still wrong. `CLAUDE.md` shows "Merge & Preflight Patterns (0.11.0+)" at line ~438, not immediately after "Workspace-per-Work-Package Development (0.11.0+)" at line ~109. Move the entire section right after the Workspace-per-WP section as specified.
 
-
 ## Objectives & Success Criteria
 
 Add "Merge & Preflight Patterns" section to CLAUDE.md for developers and AI agents contributing to spec-kitty.
@@ -69,6 +68,7 @@ Add "Merge & Preflight Patterns" section to CLAUDE.md for developers and AI agen
 ## Subtasks & Detailed Guidance
 
 ### Subtask T018 – Extract MergeState dataclass fields
+
 - **Purpose**: Document state persistence structure
 - **Steps**:
   1. Read `src/specify_cli/merge/state.py`
@@ -87,6 +87,7 @@ Add "Merge & Preflight Patterns" section to CLAUDE.md for developers and AI agen
 - **Parallel?**: Yes
 
 ### Subtask T019 – Extract PreflightResult structure
+
 - **Purpose**: Document validation result format
 - **Steps**:
   1. Read `src/specify_cli/merge/preflight.py`
@@ -105,6 +106,7 @@ Add "Merge & Preflight Patterns" section to CLAUDE.md for developers and AI agen
 - **Parallel?**: Yes
 
 ### Subtask T020 – Extract key function signatures
+
 - **Purpose**: Document public API
 - **Steps**:
   1. Read `src/specify_cli/merge/__init__.py` for exports
@@ -119,6 +121,7 @@ Add "Merge & Preflight Patterns" section to CLAUDE.md for developers and AI agen
 - **Parallel?**: Yes
 
 ### Subtask T021 – Write CLAUDE.md section structure
+
 - **Purpose**: Establish section skeleton in CLAUDE.md
 - **Steps**:
   1. Find "Workspace-per-Work-Package Development (0.11.0+)" section in CLAUDE.md
@@ -132,6 +135,7 @@ Add "Merge & Preflight Patterns" section to CLAUDE.md for developers and AI agen
 - **Parallel?**: No (must complete before T022-T024)
 
 ### Subtask T022 – Merge state persistence subsection
+
 - **Purpose**: Document state file usage
 - **Steps**:
   1. Add content to "Merge State Persistence" subsection
@@ -159,6 +163,7 @@ Add "Merge & Preflight Patterns" section to CLAUDE.md for developers and AI agen
   ```
 
 ### Subtask T023 – Pre-flight validation subsection
+
 - **Purpose**: Document validation integration
 - **Steps**:
   1. Add content to "Pre-flight Validation" subsection
@@ -171,6 +176,7 @@ Add "Merge & Preflight Patterns" section to CLAUDE.md for developers and AI agen
 - **Parallel?**: Yes (after T021)
 
 ### Subtask T024 – Programmatic access code examples
+
 - **Purpose**: Enable contributors to work with merge state
 - **Steps**:
   1. Add content to "Programmatic Access" subsection
@@ -201,7 +207,7 @@ Add "Merge & Preflight Patterns" section to CLAUDE.md for developers and AI agen
 | Risk | Mitigation |
 |------|------------|
 | Code examples break | Test all examples before committing |
-| Import paths change | Use __init__.py exports, not internal modules |
+| Import paths change | Use **init**.py exports, not internal modules |
 | Section placement wrong | Explicitly anchor to "Workspace-per-WP" section |
 
 ## Definition of Done Checklist

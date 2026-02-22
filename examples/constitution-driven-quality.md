@@ -18,6 +18,7 @@ A project constitution defines non-negotiable principles that guide all developm
 ## Setup Constitution
 
 ### 1. Create Constitution (One-time per project)
+
 ```text
 /spec-kitty.constitution
 
@@ -56,6 +57,7 @@ Create principles for:
 **Result:** Creates `.kittify/memory/constitution.md` that all subsequent commands reference
 
 ### 2. View Constitution
+
 ```bash
 cat .kittify/memory/constitution.md
 ```
@@ -63,6 +65,7 @@ cat .kittify/memory/constitution.md
 ## How Constitution Enforces Quality
 
 ### During Specification (/spec-kitty.specify)
+
 Constitution influences what goes into spec.md:
 
 **Without Constitution:**
@@ -85,6 +88,7 @@ As a user, I want to upload photos
 ```
 
 ### During Planning (/spec-kitty.plan)
+
 Constitution shapes technical decisions:
 
 **Constitution Says:** "80% test coverage required"
@@ -110,6 +114,7 @@ Constitution shapes technical decisions:
 ```
 
 ### During Task Generation (/spec-kitty.tasks)
+
 Constitution auto-generates quality tasks:
 
 **Constitution enforces test coverage:**
@@ -137,6 +142,7 @@ Constitution auto-generates quality tasks:
 **Notice:** Testing and security tasks automatically included!
 
 ### During Implementation (/spec-kitty.implement)
+
 Constitution reminds agents of standards:
 
 **Agent prompt includes:**
@@ -155,6 +161,7 @@ Before moving to review, verify:
 ```
 
 ### During Review (/spec-kitty.review)
+
 Constitution provides review checklist:
 
 ```text
@@ -172,6 +179,7 @@ Constitution Compliance Checklist:
 Agent must verify each before approving work.
 
 ### During Acceptance (/spec-kitty.accept)
+
 Constitution enforces final gates:
 
 ```bash
@@ -212,6 +220,7 @@ Blocking acceptance until resolved.
 ## Example: Test Coverage Principle
 
 ### Constitution Definition
+
 ```markdown
 ## Article III: Test-Driven Development
 
@@ -275,6 +284,7 @@ pytest --cov=app --cov-report=term-missing
 ## Example: Security Validation Principle
 
 ### Constitution Definition
+
 ```markdown
 ## Article V: Security Standards
 
@@ -331,12 +341,14 @@ Approved for done/
 ## Benefits of Constitution
 
 ### 1. Consistency Across Features
+
 Every feature follows same standards automatically:
 - Feature A: 84% coverage, input validation, <200ms
 - Feature B: 87% coverage, input validation, <180ms
 - Feature C: 81% coverage, input validation, <195ms
 
 ### 2. Prevents Shortcuts Under Pressure
+
 Constitution blocks acceptance when standards not met:
 ```text
 /spec-kitty.accept
@@ -346,6 +358,7 @@ Constitution blocks acceptance when standards not met:
 Developer can't skip quality gates even when rushed.
 
 ### 3. Onboarding New Developers
+
 New team members see constitution in every command:
 - Specification shows quality requirements
 - Plan includes testing/security strategy
@@ -353,6 +366,7 @@ New team members see constitution in every command:
 - Review validates compliance
 
 ### 4. Audit Trail
+
 ```bash
 # Show constitution version over time
 git log .kittify/memory/constitution.md
@@ -362,6 +376,7 @@ grep "constitution_version" kitty-specs/*/meta.json
 ```
 
 ### 5. Living Documentation
+
 Constitution documents quality decisions:
 - Why 80% coverage? (Balances thoroughness vs speed)
 - Why 200ms target? (User experience research)
@@ -370,6 +385,7 @@ Constitution documents quality decisions:
 ## Constitution Evolution
 
 ### Updating Constitution
+
 ```text
 /spec-kitty.constitution
 
@@ -382,6 +398,7 @@ Version bump: 1.2.0 → 2.0.0 (breaking change)
 ```
 
 ### Version Tracking
+
 ```json
 // meta.json in each feature
 {
@@ -391,11 +408,13 @@ Version bump: 1.2.0 → 2.0.0 (breaking change)
 ```
 
 ### Grandfather Clause
+
 Features accepted under v1.x don't need to meet v2.x until updated.
 
 ## Advanced: Custom Quality Gates
 
 ### Example: Performance Benchmarking
+
 ```markdown
 ## Article VIII: Performance Standards
 
@@ -408,6 +427,7 @@ ALL API endpoints MUST include performance benchmarks:
 ```
 
 ### Tasks Auto-Generated
+
 ```markdown
 ### WP05: Product Search API
 - [ ] T028: Implement search endpoint
@@ -419,6 +439,7 @@ ALL API endpoints MUST include performance benchmarks:
 ```
 
 ### Accept Command Validates
+
 ```bash
 /spec-kitty.accept
 ✓ Benchmark results found: benchmarks/search.json
@@ -428,12 +449,14 @@ ALL API endpoints MUST include performance benchmarks:
 ## Common Constitution Articles
 
 ### Must-Have Articles
+
 1. **Testing Standards** - Coverage, test types, TDD
 2. **Security Requirements** - Input validation, secrets, auth
 3. **Code Quality** - Linting, complexity, documentation
 4. **Performance Targets** - Response times, bundle sizes
 
 ### Optional Articles
+
 5. **Accessibility** - WCAG compliance, keyboard nav
 6. **Internationalization** - i18n support, localization
 7. **Analytics** - Event tracking, user telemetry

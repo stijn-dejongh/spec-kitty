@@ -51,7 +51,7 @@ These rules apply to **all commands** (specify, plan, research, tasks, implement
 ✅ ASCII arrow: `->` instead of →
 ✅ Lowercase `x` for multiplication
 ✅ `+/-` for plus-minus
-✅ ` degrees` for temperature
+✅ `degrees` for temperature
 ✅ Plain punctuation
 
 ### Safe Characters

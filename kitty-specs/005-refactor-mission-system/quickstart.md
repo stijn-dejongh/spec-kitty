@@ -206,7 +206,7 @@ validation_checks = self.config.validation.checks  # Type-safe, validated
 **Implementation Checklist**:
 - [ ] Add `pydantic>=2.0` dependency
 - [ ] Define Pydantic models (MissionConfig, WorkflowConfig, etc.)
-- [ ] Update Mission.__init__ to use Pydantic validation
+- [ ] Update Mission.**init** to use Pydantic validation
 - [ ] Add helpful error formatting
 - [ ] Write unit tests for valid/invalid configs
 - [ ] Test with intentional typos

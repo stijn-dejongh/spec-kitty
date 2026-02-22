@@ -102,4 +102,3 @@ The design planning should produce:
 - Data model: Document entity relationships and validation rules
 - API contracts: Provide realistic examples of requests and responses
 - Related: Implementation teams will use these artifacts to build the feature
-

@@ -95,4 +95,3 @@ The planning specification should include:
 - Specification format: Use clear section headings and structured bullet points
 - Example: See documentation for specification best practices
 - Related: This specification feeds into the research phase
-

@@ -9,6 +9,7 @@ The `spec-kitty agent` commands are designed for AI agents and automation toolin
 **Description**: Commands for AI agents to execute spec-kitty workflows programmatically.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--help` | Show this message and exit |
@@ -39,6 +40,7 @@ The `spec-kitty agent` commands are designed for AI agents and automation toolin
 - `FEATURE_SLUG`: Feature slug (e.g., `user-auth`) [required]
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--json` | Output JSON format |
@@ -56,6 +58,7 @@ spec-kitty agent feature create-feature "new-dashboard" --json
 **Description**: Validate feature structure and prerequisites.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--json` | Output JSON format |
@@ -76,6 +79,7 @@ spec-kitty agent feature check-prerequisites --paths-only --json
 **Description**: Scaffold implementation plan template in main repository.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--json` | Output JSON format |
@@ -93,6 +97,7 @@ spec-kitty agent feature setup-plan --json
 **Description**: Perform feature acceptance workflow.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--feature TEXT` | Feature directory slug (auto-detected if not specified) |
@@ -116,6 +121,7 @@ spec-kitty agent feature accept --lenient --json
 **Description**: Merge feature branch into target branch.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--feature TEXT` | Feature directory slug (auto-detected if not specified) |
@@ -143,6 +149,7 @@ spec-kitty agent feature merge --keep-worktree --keep-branch
 **Description**: Parse dependencies from tasks.md and update WP frontmatter, then commit to main.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--json` | Output JSON format |
@@ -180,6 +187,7 @@ spec-kitty agent feature finalize-tasks --json
 - `TASK_ID`: Task ID (e.g., `WP01`) [required]
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--to TEXT` | Target lane (planned/doing/for_review/done) [required] |
@@ -212,6 +220,7 @@ spec-kitty agent tasks move-task WP03 --to done --note "Review passed"
 - `TASK_IDS...`: Task ID(s) - space-separated (e.g., `T001 T002 T003`) [required]
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--status TEXT` | Status: `done` or `pending` [required] |
@@ -233,6 +242,7 @@ spec-kitty agent tasks mark-status T001 T002 T003 --status done --json
 **Description**: List tasks with optional lane filtering.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--lane TEXT` | Filter by lane |
@@ -256,6 +266,7 @@ spec-kitty agent tasks list-tasks --lane doing --json
 - `TASK_ID`: Task ID (e.g., `WP01`) [required]
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--note TEXT` | History note [required] |
@@ -277,6 +288,7 @@ spec-kitty agent tasks add-history WP01 --note "Completed implementation" --json
 **Description**: Parse tasks.md and inject dependencies into WP frontmatter.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--feature TEXT` | Feature slug (auto-detected if omitted) |
@@ -299,6 +311,7 @@ spec-kitty agent tasks finalize-tasks --feature 001-my-feature
 - `TASK_ID`: Task ID (e.g., `WP01`) [required]
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--feature TEXT` | Feature slug (auto-detected if omitted) |
@@ -317,6 +330,7 @@ spec-kitty agent tasks validate-workflow WP01 --json
 **Description**: Display kanban status board for all work packages in a feature.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--feature TEXT`, `-f` | Feature slug (auto-detected if omitted) |
@@ -370,6 +384,7 @@ spec-kitty agent tasks status --json
 **Description**: Update agent context file with tech stack from plan.md.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--agent-type TEXT`, `-a` | Agent type to update (default: claude) |
@@ -404,6 +419,7 @@ spec-kitty agent context update-context --agent-type gemini --json
 - `WP_ID`: Work package ID (e.g., `WP01`) - auto-detects first planned if omitted
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--feature TEXT` | Feature slug (auto-detected if omitted) |
@@ -426,6 +442,7 @@ spec-kitty agent workflow implement --agent gemini
 - `WP_ID`: Work package ID (e.g., `WP01`) - auto-detects first for_review if omitted
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--feature TEXT` | Feature slug (auto-detected if omitted) |
@@ -447,6 +464,7 @@ spec-kitty agent workflow review --agent gemini
 **Description**: Release packaging commands for AI agents.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--help` | Show this message and exit |
@@ -455,8 +473,10 @@ spec-kitty agent workflow review --agent gemini
 - No subcommands are currently exposed in v0.11.0.
 
 ## Getting Started
+
 - [Claude Code Workflow](../tutorials/claude-code-workflow.md)
 
 ## Practical Usage
+
 - [Use the Dashboard](../how-to/use-dashboard.md)
 - [Non-Interactive Init](../how-to/non-interactive-init.md)

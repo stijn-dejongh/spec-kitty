@@ -36,10 +36,10 @@ history:
 
 **Issue 1**: Dependency check failed. WP02 depends on WP01, but the WP01 base commit `9803132cccfd6602b0c5e16c535bb105439b00ce` is not contained in `2.x` (only in branch `028-cli-event-emission-sync-WP01`). Please merge WP01 to `2.x` and rebase WP02 onto `2.x` (or the merged WP01) before resubmitting for review.
 
-
 ## Markdown Formatting
+
 Wrap HTML/XML tags in backticks: `` `<div>` ``, `` `<script>` ``
-Use language identifiers in code blocks: ````python`, ````bash`
+Use language identifiers in code blocks: ````python`,````bash`
 
 ---
 
@@ -54,11 +54,13 @@ Use language identifiers in code blocks: ````python`, ````bash`
 ## Context & Constraints
 
 ### Reference Documents
+
 - **Spec**: `kitty-specs/028-cli-event-emission-sync/spec.md` - User stories 1, 3
 - **Plan**: `kitty-specs/028-cli-event-emission-sync/plan.md` - Command integration patterns
 - **Quickstart**: `kitty-specs/028-cli-event-emission-sync/quickstart.md` - Usage examples
 
 ### Functional Requirements
+
 - FR-016: `implement` MUST emit `WPStatusChanged(planned->doing)` after workspace creation
 - FR-017: `merge` MUST emit `WPStatusChanged(doing->for_review)` when WP moves to review
 - FR-018: `accept` MUST emit `WPStatusChanged(for_review->done)` when WP is accepted
@@ -66,6 +68,7 @@ Use language identifiers in code blocks: ````python`, ````bash`
 - FR-030: MUST log event emission failures as warnings
 
 ### Dependencies
+
 - WP01 (Event Factory) must be complete
 - Import `emit_wp_status_changed` from `specify_cli.sync.events`
 

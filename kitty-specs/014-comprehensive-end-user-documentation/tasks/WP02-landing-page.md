@@ -46,7 +46,6 @@ Please shorten the landing page to under 100 lines (e.g., trim the Quick Start b
 - T007 requires verifying `docfx docs/docfx.json` builds without errors (warnings OK). The activity log notes DocFX was not installed and the build was not run.
 Please run the DocFX build and confirm it succeeds, or document any errors and fix them.
 
-
 ## Objectives & Success Criteria
 
 - Rewrite `docs/index.md` as a clean, concise landing page
@@ -62,6 +61,7 @@ Please run the DocFX build and confirm it succeeds, or document any errors and f
 - **Target**: < 100 lines, focused on navigation and value proposition
 
 ### Design Principles
+
 - Landing page should answer: "What is spec-kitty and where do I start?"
 - Clear navigation to all 4 Divio sections
 - Keep dashboard screenshots and logo (they're valuable)
@@ -70,6 +70,7 @@ Please run the DocFX build and confirm it succeeds, or document any errors and f
 ## Subtasks & Detailed Guidance
 
 ### Subtask T005 – Rewrite index.md as Landing Page
+
 - **Purpose**: Create a focused entry point that guides users to the right content
 - **Steps**:
   1. Create new `docs/index.md` with structure:
@@ -113,6 +114,7 @@ Please run the DocFX build and confirm it succeeds, or document any errors and f
 - **Notes**: Links can point to files that don't exist yet (they'll be created in WP03-WP08)
 
 ### Subtask T006 – Update toc.yml for Divio Structure
+
 - **Purpose**: Configure DocFX navigation for 4-type documentation
 - **Steps**:
   1. Rewrite `docs/toc.yml` with structure:
@@ -156,6 +158,7 @@ Please run the DocFX build and confirm it succeeds, or document any errors and f
 - **Notes**: DocFX will warn about missing files but will build
 
 ### Subtask T007 – Verify DocFX Build
+
 - **Purpose**: Ensure the new structure works with DocFX
 - **Steps**:
   1. Install DocFX if not available: `dotnet tool install -g docfx`

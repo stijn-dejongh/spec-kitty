@@ -250,17 +250,20 @@ spec-kitty orchestrate --abort
 ## Testing Strategy
 
 ### Unit Tests
+
 - Scheduler: dependency resolution, agent assignment
 - State: persistence, resume, concurrent writes
 - Config: parsing, validation, defaults
 
 ### Integration Tests
+
 - Mock agent processes (fast exit, specific codes)
 - Full orchestration of 3-WP feature
 - Resume after simulated interruption
 - Fallback strategy execution
 
 ### Manual Testing
+
 - Real agent execution with test feature
 - Cross-agent review verification
 - Parallel execution timing validation

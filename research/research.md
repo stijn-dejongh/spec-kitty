@@ -363,6 +363,7 @@ timeout 300 cursor agent -p --force --output-format json "$(cat tasks/WP01.md)"
 ## Source Index
 
 ### Official Documentation
+
 - [Claude Code CLI](https://code.claude.com/docs/en/headless)
 - [GitHub Copilot CLI](https://github.com/github/copilot-cli)
 - [Google Gemini CLI](https://developers.google.com/gemini-code-assist/docs/gemini-cli)
@@ -377,6 +378,7 @@ timeout 300 cursor agent -p --force --output-format json "$(cat tasks/WP01.md)"
 - [Windsurf](https://docs.windsurf.com)
 
 ### GitHub Repositories
+
 - [google-gemini/gemini-cli](https://github.com/google-gemini/gemini-cli)
 - [QwenLM/qwen-code](https://github.com/QwenLM/qwen-code)
 - [opencode-ai/opencode](https://github.com/opencode-ai/opencode)
@@ -385,6 +387,7 @@ timeout 300 cursor agent -p --force --output-format json "$(cat tasks/WP01.md)"
 - [RooCodeInc/Roo-Code](https://github.com/RooCodeInc/Roo-Code)
 
 ### Package Registries
+
 - npm: `@anthropic-ai/claude-code`
 - npm: `@github/copilot-cli`
 - npm: `@google/gemini-cli`

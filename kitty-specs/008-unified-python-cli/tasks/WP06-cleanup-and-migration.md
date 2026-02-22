@@ -333,16 +333,16 @@ def test_upgrade_migration_removes_bash(tmp_repo):
 - Migration code worked for USER projects ✅
 - But spec-kitty's template directory (used by `spec-kitty init`) was never cleaned ❌
 
-**Impact**: 
+**Impact**:
 - All new users running `spec-kitty init` would get outdated bash-based structure
 - Contradicts the entire purpose of v0.10.0 Python-only migration
 
-**Fix**: 
+**Fix**:
 - Deleted `.kittify/scripts/bash/` directory (16 scripts, 3,016 lines)
 - Deleted `.kittify/scripts/powershell/` directory
 - Committed in a6dce6a
 
-**Verification**: 
+**Verification**:
 ```bash
 $ ls .kittify/scripts/bash/
 ls: .kittify/scripts/bash/: No such file or directory ✅

@@ -576,7 +576,7 @@ git log --oneline --graph -20  # Should see WP01-WP07 merge commits
 - [ ] Version extracted from `spec_kitty_events.__version__`
 
 **Edge Cases**:
-- Library doesn't have __version__: Shows "unknown"
+- Library doesn't have **version**: Shows "unknown"
 - Library not installed: Shows "not installed"
 - Import fails: Exception caught, shows "not installed"
 

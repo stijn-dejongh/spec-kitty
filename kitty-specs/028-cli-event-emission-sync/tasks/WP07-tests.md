@@ -43,10 +43,10 @@ The spec explicitly ties these success criteria to running CLI commands (impleme
 **Issue 2: Coverage target not met (90%+ for new sync code).**
 The commit message reports `clock.py` at 89% and `emitter.py` at 87%, below the required 90%+ line coverage for new code under `src/specify_cli/sync/`. Please add tests to raise coverage and include a `pytest --cov=src/specify_cli/sync` report in your verification notes.
 
-
 ## Markdown Formatting
+
 Wrap HTML/XML tags in backticks: `` `<div>` ``, `` `<script>` ``
-Use language identifiers in code blocks: ````python`, ````bash`
+Use language identifiers in code blocks: ````python`,````bash`
 
 ---
 
@@ -60,16 +60,19 @@ Use language identifiers in code blocks: ````python`, ````bash`
 ## Context & Constraints
 
 ### Reference Documents
+
 - **Spec**: `kitty-specs/028-cli-event-emission-sync/spec.md` - Success criteria, edge cases
 - **Plan**: `kitty-specs/028-cli-event-emission-sync/plan.md` - Test strategy
 - **Contract**: `kitty-specs/028-cli-event-emission-sync/contracts/events.schema.json` - Schema validation
 
 ### Testing Requirements
+
 - pytest with --cov for coverage
 - mypy --strict for type checking
 - All new code must have type hints
 
 ### Dependencies
+
 - All WPs (WP01-WP06) must be complete
 - Mock server for integration tests
 
@@ -406,6 +409,7 @@ Use language identifiers in code blocks: ````python`, ````bash`
 - **Purpose**: Ensure all SC-001 through SC-012 are covered by tests
 - **Steps**:
   1. Create verification matrix:
+
      | SC | Description | Test File | Test Function |
      |----|-------------|-----------|---------------|
      | SC-001 | implement emits WPStatusChanged | test_event_emission.py | test_implement_emits_* |
@@ -420,6 +424,7 @@ Use language identifiers in code blocks: ````python`, ````bash`
      | SC-010 | team_slug included | test_events.py | test_team_slug_* |
      | SC-011 | ErrorLogged emitted on errors | test_event_emission.py | test_error_logged_* |
      | SC-012 | DependencyResolved emitted | test_event_emission.py | test_dependency_resolved_* |
+
   2. Add tests for any missing criteria
   3. Document coverage in test file comments
 - **Files**: All test files

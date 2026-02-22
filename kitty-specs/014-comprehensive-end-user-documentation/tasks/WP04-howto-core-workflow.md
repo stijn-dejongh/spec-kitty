@@ -55,6 +55,7 @@ history:
 - **Divio Type**: How-To = task-oriented, problem-solving
 
 ### How-To Principles (from Divio)
+
 - How-tos are **goal-oriented**
 - Focus on a specific, practical goal
 - Don't explain concepts (link to explanations)
@@ -64,6 +65,7 @@ history:
 ## Subtasks & Detailed Guidance
 
 ### Subtask T012 – Create install-and-upgrade.md
+
 - **Purpose**: How to install spec-kitty and upgrade existing projects
 - **Structure**:
   ```markdown
@@ -88,6 +90,7 @@ history:
 - **Parallel?**: Yes
 
 ### Subtask T013 – Create create-specification.md
+
 - **Purpose**: How to use /spec-kitty.specify
 - **Structure**:
   ```markdown
@@ -102,21 +105,26 @@ history:
   ```
 
   ## The Discovery Interview
+
   [WAITING_FOR_DISCOVERY_INPUT explained]
 
   ## What Gets Created
+
   [kitty-specs/###-feature/spec.md]
 
   ## Example
+
   [Complete walkthrough]
 
   ## Troubleshooting
+
   [Common issues]
   ```
 - **Files**: `docs/how-to/create-specification.md`
 - **Parallel?**: Yes
 
 ### Subtask T014 – Create create-plan.md
+
 - **Purpose**: How to use /spec-kitty.plan
 - **Structure**:
   ```markdown
@@ -131,20 +139,25 @@ history:
   ```
 
   ## The Planning Interview
+
   [WAITING_FOR_PLANNING_INPUT explained]
 
   ## What Gets Created
+
   [plan.md, research.md, etc.]
 
   ## Example
+
   [With tech stack specification]
 
   ## Troubleshooting
+
   ```
 - **Files**: `docs/how-to/create-plan.md`
 - **Parallel?**: Yes
 
 ### Subtask T015 – Create generate-tasks.md
+
 - **Purpose**: How to use /spec-kitty.tasks
 - **Structure**:
   ```markdown
@@ -159,23 +172,28 @@ history:
   ```
 
   ## What Gets Created
+
   - tasks.md (overview)
   - tasks/WP01-xxx.md, tasks/WP02-xxx.md (prompt files)
 
   ## Understanding Work Packages
+
   [WP structure, dependencies]
 
   ## Finalizing Tasks
+
   ```bash
   spec-kitty agent feature finalize-tasks
   ```
 
   ## Example Output
+
   ```
 - **Files**: `docs/how-to/generate-tasks.md`
 - **Parallel?**: Yes
 
 ### Subtask T016 – Create implement-work-package.md
+
 - **Purpose**: How to use spec-kitty implement and /spec-kitty.implement
 - **Structure**:
   ```markdown
@@ -190,22 +208,26 @@ history:
   ```
 
   ## With Dependencies
+
   ```bash
   spec-kitty implement WP02 --base WP01
   ```
 
   ## What Happens
+
   - Creates .worktrees/###-feature-WP01/
   - Creates git branch
   - Moves WP to "doing" lane
 
   ## Working in the Workspace
+
   ```bash
   cd .worktrees/###-feature-WP01
   # Your agent works here
   ```
 
   ## Completing Implementation
+
   [How to move to for_review]
   ```
 - **Files**: `docs/how-to/implement-work-package.md`
@@ -213,6 +235,7 @@ history:
 - **Notes**: Critical - must explain worktree model clearly
 
 ### Subtask T017 – Create review-work-package.md
+
 - **Purpose**: How to use /spec-kitty.review
 - **Structure**:
   ```markdown
@@ -229,21 +252,26 @@ history:
   ```
 
   ## Review Process
+
   [What the reviewer checks]
 
   ## Providing Feedback
+
   [Review Feedback section in WP file]
 
   ## Passing Review
+
   [Move to done lane]
 
   ## Requesting Changes
+
   [Move back to planned with feedback]
   ```
 - **Files**: `docs/how-to/review-work-package.md`
 - **Parallel?**: Yes
 
 ### Subtask T018 – Create accept-and-merge.md
+
 - **Purpose**: How to use /spec-kitty.accept and /spec-kitty.merge
 - **Structure**:
   ```markdown
@@ -260,9 +288,11 @@ history:
   ```
 
   ## What Accept Checks
+
   [Kanban lanes, metadata, activity logs]
 
   ## Merge to Main
+
   ```bash
   /spec-kitty.merge --push
   # or
@@ -270,11 +300,13 @@ history:
   ```
 
   ## Merge Strategies
+
   - Default (merge commit)
   - Squash
   - Keep branch
 
   ## Cleanup
+
   [Worktrees removed, branches deleted]
   ```
 - **Files**: `docs/how-to/accept-and-merge.md`
@@ -309,8 +341,8 @@ history:
 ## Activity Log
 
 - 2026-01-16T16:16:58Z – system – lane=planned – Prompt generated via /spec-kitty.tasks
-- 2026-01-16T16:30:49Z – __AGENT__ – shell_pid=25069 – lane=doing – Started implementation via workflow command
-- 2026-01-16T16:34:56Z – __AGENT__ – shell_pid=25069 – lane=for_review – Ready for review: add core workflow how-to guides
+- 2026-01-16T16:30:49Z – **AGENT** – shell_pid=25069 – lane=doing – Started implementation via workflow command
+- 2026-01-16T16:34:56Z – **AGENT** – shell_pid=25069 – lane=for_review – Ready for review: add core workflow how-to guides
 - 2026-01-16T17:49:51Z – claude – shell_pid=58526 – lane=doing – Started review via workflow command
 - 2026-01-16T17:50:02Z – claude – shell_pid=58526 – lane=done – Review passed: All 7 core workflow how-to guides created
 - 2026-01-16T18:07:00Z – claude – shell_pid=58526 – lane=done – Added how-to links to docs index/README and updated toc

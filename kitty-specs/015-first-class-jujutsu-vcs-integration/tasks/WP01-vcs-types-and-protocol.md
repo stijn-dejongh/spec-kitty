@@ -158,12 +158,12 @@ history:
 **Parallel?**: Yes - can proceed alongside T002, T003 after T001
 
 **Notes**:
-- Keep exceptions simple (no complex __init__ unless needed)
+- Keep exceptions simple (no complex **init** unless needed)
 - Add brief docstrings explaining when each exception is raised
 
 ---
 
-### Subtask T005 – Create __init__.py with public API exports
+### Subtask T005 – Create **init**.py with public API exports
 
 **Purpose**: Define the public API for the vcs package.
 
@@ -196,11 +196,11 @@ history:
 
 ## Definition of Done Checklist
 
-- [ ] T001: vcs/ package directory created with __init__.py
+- [ ] T001: vcs/ package directory created with **init**.py
 - [ ] T002: types.py with all enums and dataclasses
 - [ ] T003: protocol.py with VCSProtocol definition
 - [ ] T004: exceptions.py with exception hierarchy
-- [ ] T005: __init__.py with all public exports
+- [ ] T005: **init**.py with all public exports
 - [ ] All types import without error: `from specify_cli.core.vcs import *`
 - [ ] VCSProtocol is runtime-checkable: `isinstance(obj, VCSProtocol)` works
 - [ ] No circular import issues
@@ -211,16 +211,16 @@ history:
 1. Verify all dataclass fields match data-model.md exactly
 2. Verify VCSProtocol methods match contracts/vcs-protocol.py exactly
 3. Check Python 3.11+ type syntax (not 3.9 style)
-4. Verify __all__ exports match intended public API
+4. Verify **all** exports match intended public API
 5. Test basic import in Python REPL
 
 ## Activity Log
 
 - 2026-01-17T10:38:23Z – system – lane=planned – Prompt generated via /spec-kitty.tasks
 - 2026-01-17T10:54:05Z – claude-code – shell_pid=32403 – lane=doing – Started implementation via workflow command
-- 2026-01-17T11:44:35Z – __AGENT__ – shell_pid=24045 – lane=planned – Moved to planned
-- 2026-01-17T11:48:03Z – __AGENT__ – shell_pid=38749 – lane=doing – Started implementation via workflow command
-- 2026-01-17T11:48:21Z – __AGENT__ – shell_pid=38749 – lane=for_review – Ready for review: align VCSCapabilities with spec
+- 2026-01-17T11:44:35Z – **AGENT** – shell_pid=24045 – lane=planned – Moved to planned
+- 2026-01-17T11:48:03Z – **AGENT** – shell_pid=38749 – lane=doing – Started implementation via workflow command
+- 2026-01-17T11:48:21Z – **AGENT** – shell_pid=38749 – lane=for_review – Ready for review: align VCSCapabilities with spec
 - 2026-01-17T11:49:50Z – claude-opus – shell_pid=40761 – lane=doing – Started review via workflow command
 - 2026-01-17T11:51:14Z – claude-opus – shell_pid=40761 – lane=done – Review passed: All types, protocol, and exceptions match spec exactly. Previous feedback about supports_operation_undo addressed. Imports verified working.
 
@@ -231,4 +231,3 @@ history:
 **Date**: 2026-01-17
 
 **Issue 1**: `VCSCapabilities` includes an extra `supports_operation_undo` field in `src/specify_cli/core/vcs/types.py`, but this field is not in `data-model.md` or `contracts/vcs-protocol.py`. This breaks the “match spec exactly” requirement and forces extra constructor args. Remove the field and its usage in `GIT_CAPABILITIES`/`JJ_CAPABILITIES`, or update the spec/contract if the field is truly required.
-

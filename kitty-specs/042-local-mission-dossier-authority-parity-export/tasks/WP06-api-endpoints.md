@@ -406,6 +406,7 @@ Phase 2 brings dossier system online: API endpoints expose indexing/snapshot res
 4. Test route dispatch
 
 **Route Table**:
+
 | Method | Path | Handler |
 |--------|------|---------|
 | GET | /api/dossier/overview | handle_dossier_overview |

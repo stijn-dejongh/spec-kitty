@@ -60,8 +60,9 @@ Look for WP01 and WP02 in "done" lane. If not complete, wait or coordinate with 
 ---
 
 ## Markdown Formatting
+
 Wrap HTML/XML tags in backticks: `` `<div>` ``, `` `<script>` ``
-Use language identifiers in code blocks: ````python`, ````bash`
+Use language identifiers in code blocks: ````python`,````bash`
 
 ---
 

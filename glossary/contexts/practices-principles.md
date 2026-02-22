@@ -49,4 +49,3 @@ Terms describing operating principles for glossary-semantic-integrity execution.
 | **Definition** | Generation is blocked only when high-severity semantic conflicts remain unresolved. |
 | **Context** | Practices & Principles |
 | **Status** | canonical |
-

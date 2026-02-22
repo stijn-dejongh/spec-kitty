@@ -34,6 +34,7 @@ review_status: "approved"
 ## Subtask Breakdown
 
 ### Subtask T001: Study Existing Patterns
+
 **Duration**: 20-30 minutes
 **Goal**: Understand the mission runtime schema by examining successful examples.
 
@@ -75,6 +76,7 @@ review_status: "approved"
 ---
 
 ### Subtask T002: Create mission-runtime.yaml
+
 **Duration**: 30-45 minutes
 **Goal**: Create the mission-runtime.yaml file for the plan mission.
 
@@ -159,6 +161,7 @@ mission:
 ---
 
 ### Subtask T003: Validate Against Runtime Bridge
+
 **Duration**: 15-20 minutes
 **Goal**: Ensure the schema will work with the existing runtime bridge.
 
@@ -218,6 +221,7 @@ mission:
 ---
 
 ### Subtask T016: Create Directory Structure
+
 **Duration**: 5-10 minutes
 **Goal**: Create the directories needed for command templates and content templates.
 

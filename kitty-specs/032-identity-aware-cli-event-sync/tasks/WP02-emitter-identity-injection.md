@@ -287,4 +287,4 @@ pytest tests/sync/test_event_emission.py -v
 - 2026-02-07T07:29:43Z – claude-opus – shell_pid=37166 – lane=doing – Assigned agent via workflow command
 - 2026-02-07T07:34:39Z – claude-opus – shell_pid=37166 – lane=for_review – Ready for review: Added identity injection in _emit(), queue-only for missing identity, all tests pass
 - 2026-02-07T07:35:11Z – codex – shell_pid=25757 – lane=doing – Started review via workflow command
-- 2026-02-07T07:36:30Z – codex – shell_pid=25757 – lane=done – Review passed: Identity injection in _emit, queue-only on missing project_uuid, tests updated/passing
+- 2026-02-07T07:36:30Z – codex – shell_pid=25757 – lane=done – Review passed: Identity injection in_emit, queue-only on missing project_uuid, tests updated/passing

@@ -415,10 +415,10 @@ history:
 ## Activity Log
 
 - 2026-01-17T10:38:23Z – system – lane=planned – Prompt generated via /spec-kitty.tasks
-- 2026-01-17T13:19:13Z – __AGENT__ – shell_pid=28786 – lane=doing – Started implementation via workflow command
-- 2026-01-17T13:34:12Z – __AGENT__ – shell_pid=28786 – lane=for_review – Moved to for_review
-- 2026-01-17T13:37:34Z – __AGENT__ – shell_pid=35958 – lane=doing – Started review via workflow command
-- 2026-01-17T13:40:41Z – __AGENT__ – shell_pid=35958 – lane=planned – Moved to planned
-- 2026-01-17T13:52:47Z – __AGENT__ – shell_pid=9401 – lane=doing – Started implementation via workflow command
-- 2026-01-17T13:58:01Z – __AGENT__ – shell_pid=9401 – lane=for_review – Ready for review: add legacy git deprecation warnings for implement/merge
-- 2026-01-17T14:11:08Z – __AGENT__ – shell_pid=9401 – lane=done – Tests passed: added legacy git deprecation warnings for implement/merge
+- 2026-01-17T13:19:13Z – **AGENT** – shell_pid=28786 – lane=doing – Started implementation via workflow command
+- 2026-01-17T13:34:12Z – **AGENT** – shell_pid=28786 – lane=for_review – Moved to for_review
+- 2026-01-17T13:37:34Z – **AGENT** – shell_pid=35958 – lane=doing – Started review via workflow command
+- 2026-01-17T13:40:41Z – **AGENT** – shell_pid=35958 – lane=planned – Moved to planned
+- 2026-01-17T13:52:47Z – **AGENT** – shell_pid=9401 – lane=doing – Started implementation via workflow command
+- 2026-01-17T13:58:01Z – **AGENT** – shell_pid=9401 – lane=for_review – Ready for review: add legacy git deprecation warnings for implement/merge
+- 2026-01-17T14:11:08Z – **AGENT** – shell_pid=9401 – lane=done – Tests passed: added legacy git deprecation warnings for implement/merge

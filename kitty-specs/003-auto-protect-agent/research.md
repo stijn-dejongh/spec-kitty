@@ -24,9 +24,9 @@ This research documents the technical decisions for implementing comprehensive g
 - B) Keep separate functions for each agent - Rejected: Would lead to code duplication and maintenance burden
 
 **Evidence**:
-- Current codebase analysis shows `ensure_gitignore_entries()` at src/specify_cli/__init__.py:689
-- Existing `handle_codex_security()` at src/specify_cli/__init__.py:729 only handles .codex/
-- Agent directory map at src/specify_cli/__init__.py:1835-1848 lists all known agents
+- Current codebase analysis shows `ensure_gitignore_entries()` at src/specify_cli/**init**.py:689
+- Existing `handle_codex_security()` at src/specify_cli/**init**.py:729 only handles .codex/
+- Agent directory map at src/specify_cli/**init**.py:1835-1848 lists all known agents
 
 ### 2. Implementation Strategy
 

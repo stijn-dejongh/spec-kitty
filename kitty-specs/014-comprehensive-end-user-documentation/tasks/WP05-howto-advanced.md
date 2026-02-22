@@ -54,6 +54,7 @@ history:
 ## Subtasks & Detailed Guidance
 
 ### Subtask T019 – Create handle-dependencies.md
+
 - **Purpose**: How to work with WP dependencies and --base flag
 - **Structure**:
   ```markdown
@@ -68,11 +69,13 @@ history:
   ```
 
   ## Implementing with Dependencies
+
   ```bash
   spec-kitty implement WP02 --base WP01
   ```
 
   ## Multiple Dependencies
+
   ```bash
   spec-kitty implement WP04 --base WP03
   cd .worktrees/###-feature-WP04
@@ -80,12 +83,15 @@ history:
   ```
 
   ## What --base Does
+
   [Branches from parent WP, includes code]
 
   ## Handling Rebase When Parent Changes
+
   [git rebase commands]
 
   ## Common Dependency Patterns
+
   - Linear chain
   - Fan-out
   - Diamond
@@ -95,6 +101,7 @@ history:
 - **Notes**: Include diagrams of dependency patterns
 
 ### Subtask T020 – Create switch-missions.md
+
 - **Purpose**: How to select and work with different missions
 - **Structure**:
   ```markdown
@@ -110,11 +117,13 @@ history:
   ```
 
   ## Listing Available Missions
+
   ```bash
   spec-kitty mission list
   ```
 
   ## Getting Mission Info
+
   ```bash
   spec-kitty mission info research
   ```
@@ -122,18 +131,22 @@ history:
   ## Working with Different Missions
 
   ### Software Dev Mission
+
   [Workflow: specify → plan → tasks → implement]
 
   ### Research Mission
+
   [Workflow: question → methodology → gather → analyze]
 
   ### Documentation Mission
+
   [Workflow: audit → design → generate → validate]
   ```
 - **Files**: `docs/how-to/switch-missions.md`
 - **Parallel?**: Yes
 
 ### Subtask T021 – Create use-dashboard.md
+
 - **Purpose**: How to use the real-time kanban dashboard
 - **Structure**:
   ```markdown
@@ -147,33 +160,40 @@ history:
   ```
 
   ## Dashboard URL
+
   [Default port, accessing in browser]
 
   ## Dashboard Views
 
   ### Kanban Board
+
   [planned → doing → for_review → done]
 
   ### Feature Overview
+
   [Progress metrics, artifacts]
 
   ## Custom Port
+
   ```bash
   spec-kitty dashboard --port 8080
   ```
 
   ## Stopping the Dashboard
+
   ```bash
   spec-kitty dashboard --kill
   ```
 
   ## Dashboard Auto-Start
+
   [Starts with spec-kitty init]
   ```
 - **Files**: `docs/how-to/use-dashboard.md`
 - **Parallel?**: Yes
 
 ### Subtask T022 – Create parallel-development.md
+
 - **Purpose**: How to run multiple agents on multiple WPs simultaneously
 - **Structure**:
   ```markdown
@@ -199,6 +219,7 @@ history:
   ```
 
   ### Terminal 2 - Agent B (simultaneously)
+
   ```bash
   spec-kitty implement WP02
   cd .worktrees/###-feature-WP02
@@ -206,6 +227,7 @@ history:
   ```
 
   ## Example: Fan-Out Pattern
+
   ```
        WP01
       /  |  \
@@ -214,6 +236,7 @@ history:
   [After WP01 completes, 3 agents can work in parallel]
 
   ## Example: Dependent WPs
+
   ```bash
   # Agent A completes WP01
   spec-kitty implement WP01
@@ -224,11 +247,13 @@ history:
   ```
 
   ## Best Practices
+
   - Identify independent WPs before starting
   - Communicate when a base WP is complete
   - Use /spec-kitty.status to monitor progress
 
   ## Monitoring Parallel Work
+
   ```bash
   spec-kitty agent tasks status
   /spec-kitty.status
@@ -263,7 +288,7 @@ history:
 ## Activity Log
 
 - 2026-01-16T16:16:58Z – system – lane=planned – Prompt generated via /spec-kitty.tasks
-- 2026-01-16T16:31:00Z – __AGENT__ – shell_pid=25767 – lane=doing – Started implementation via workflow command
-- 2026-01-16T16:34:00Z – __AGENT__ – shell_pid=25767 – lane=for_review – Ready for review: added advanced how-to guides for dependencies, missions, dashboard, and parallel development
+- 2026-01-16T16:31:00Z – **AGENT** – shell_pid=25767 – lane=doing – Started implementation via workflow command
+- 2026-01-16T16:34:00Z – **AGENT** – shell_pid=25767 – lane=for_review – Ready for review: added advanced how-to guides for dependencies, missions, dashboard, and parallel development
 - 2026-01-16T17:50:07Z – claude – shell_pid=58769 – lane=doing – Started review via workflow command
 - 2026-01-16T17:50:16Z – claude – shell_pid=58769 – lane=done – Review passed: All 4 advanced how-to guides created (dependencies, missions, dashboard, parallel)

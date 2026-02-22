@@ -32,7 +32,7 @@ This feature has clear requirements from the discovery phase. Minimal research n
 
 ### 3. Identity Scope
 
-**Decision**: 
+**Decision**:
 - `project_uuid`: Per project, stable, stored in config.yaml
 - `node_id`: Per machine, stable across sessions, stored in config.yaml
 - `project_slug`: Derived from repo directory name or git remote

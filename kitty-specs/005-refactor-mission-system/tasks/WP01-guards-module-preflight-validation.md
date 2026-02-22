@@ -26,13 +26,13 @@ subtasks:
 ---
 work_package_id: "WP01"
 subtasks:
-  - "T001"
-  - "T002"
-  - "T003"
-  - "T004"
-  - "T005"
-  - "T006"
-  - "T007"
+- "T001"
+- "T002"
+- "T003"
+- "T004"
+- "T005"
+- "T006"
+- "T007"
 title: "Guards Module - Pre-flight Validation"
 phase: "Phase 1 - Foundation"
 lane: "for_review"
@@ -40,11 +40,12 @@ assignee: ""
 agent: "codex"
 shell_pid: "45439"
 history:
-  - timestamp: "2025-01-16T00:00:00Z"
+- timestamp: "2025-01-16T00:00:00Z"
     lane: "planned"
     agent: "system"
     shell_pid: ""
     action: "Prompt generated via /spec-kitty.tasks"
+
 # Work Package Prompt: WP01 – Guards Module - Pre-flight Validation
 
 ## Objectives & Success Criteria

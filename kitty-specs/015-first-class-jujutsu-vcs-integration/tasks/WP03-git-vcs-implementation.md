@@ -348,13 +348,13 @@ def test_create_workspace(self, tmp_path):
 - 2026-01-17T10:38:23Z – system – lane=planned – Prompt generated via /spec-kitty.tasks
 - 2026-01-17T11:54:03Z – claude-code – shell_pid=41909 – lane=doing – Started implementation via workflow command
 - 2026-01-17T12:01:50Z – claude-code – shell_pid=41909 – lane=for_review – Ready for review: Full GitVCS implementation with all VCSProtocol methods, 36 tests passing
-- 2026-01-17T12:02:18Z – __AGENT__ – shell_pid=38749 – lane=doing – Started review via workflow command
-- 2026-01-17T12:04:09Z – __AGENT__ – shell_pid=38749 – lane=planned – Moved to planned
+- 2026-01-17T12:02:18Z – **AGENT** – shell_pid=38749 – lane=doing – Started review via workflow command
+- 2026-01-17T12:04:09Z – **AGENT** – shell_pid=38749 – lane=planned – Moved to planned
 - 2026-01-17T12:08:24Z – claude-opus – shell_pid=67058 – lane=doing – Started implementation via workflow command
 - 2026-01-17T12:15:04Z – claude-opus – shell_pid=67058 – lane=for_review – Fixed all 3 review issues: sparse-checkout in create_workspace, wrapped git_ops.py helpers, implemented _parse_rebase_stats. 68 VCS tests passing.
-- 2026-01-17T12:17:58Z – __AGENT__ – shell_pid=38749 – lane=doing – Started review via workflow command
-- 2026-01-17T12:19:45Z – __AGENT__ – shell_pid=38749 – lane=planned – Moved to planned
-- 2026-01-17T12:24:40Z – __AGENT__ – shell_pid=38749 – lane=done – Review passed - all 3 issues addressed
+- 2026-01-17T12:17:58Z – **AGENT** – shell_pid=38749 – lane=doing – Started review via workflow command
+- 2026-01-17T12:19:45Z – **AGENT** – shell_pid=38749 – lane=planned – Moved to planned
+- 2026-01-17T12:24:40Z – **AGENT** – shell_pid=38749 – lane=done – Review passed - all 3 issues addressed
 
 ## Review Feedback
 
@@ -363,4 +363,3 @@ def test_create_workspace(self, tmp_path):
 **Date**: 2026-01-17
 
 **Issue 1**: `create_workspace()` only applies sparse-checkout when `sparse_exclude` is explicitly passed, but the protocol signature doesn’t expose this argument and the requirements call for always excluding `kitty-specs/`. Apply sparse-checkout by default (e.g., default to `["kitty-specs/"]` or unconditionally apply it) to preserve existing worktree isolation behavior.
-

@@ -1,4 +1,5 @@
 # Feature Specification: Unified Python CLI for Agents
+
 *Path: [kitty-specs/008-unified-python-cli/spec.md](kitty-specs/008-unified-python-cli/spec.md)*
 
 **Feature Branch**: `008-unified-python-cli`

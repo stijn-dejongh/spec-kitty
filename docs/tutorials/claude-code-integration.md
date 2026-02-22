@@ -516,7 +516,7 @@ Encode your team's quality standards once:
 
 ## Tips for Maximum Effectiveness
 
-### ✅ DO:
+### ✅ DO
 
 1. **Answer discovery questions thoroughly**
    - Claude needs good requirements to succeed
@@ -534,7 +534,7 @@ Encode your team's quality standards once:
    - `/spec-kitty.accept` is your quality gate
    - Better to catch issues before main branch
 
-### ❌ DON'T:
+### ❌ DON'T
 
 1. **Skip specification**
    - "Just build it" = context loss + rework
@@ -645,16 +645,19 @@ AI coding agents are pattern-matching machines. Without specs:
 The opinionated workflow isn't arbitrary - it's specifically designed around how AI agents work (and fail) in practice.
 
 ## Related How-To Guides
+
 - [Install Spec Kitty](../how-to/install-spec-kitty.md)
 - [Use the Dashboard](../how-to/use-dashboard.md)
 - [Non-Interactive Init](../how-to/non-interactive-init.md)
 
 ## Reference
+
 - [CLI Commands](../reference/cli-commands.md)
 - [Slash Commands](../reference/slash-commands.md)
 - [Supported Agents](../reference/supported-agents.md)
 
 ## Learn More
+
 - [Spec-Driven Development](../explanation/spec-driven-development.md)
 - [AI Agent Architecture](../explanation/ai-agent-architecture.md)
 - [Kanban Workflow](../explanation/kanban-workflow.md)

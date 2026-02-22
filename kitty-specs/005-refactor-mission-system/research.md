@@ -17,6 +17,7 @@ This research addresses three critical technical decisions for the mission syste
 ## R1: Schema Validation Library Comparison
 
 ### Research Question
+
 Which schema validation library provides the best balance of error messages, zero dependencies, type safety, and Python 3.11+ compatibility for validating mission.yaml?
 
 ### Options Evaluated
@@ -255,11 +256,13 @@ If adding Pydantic is blocked for dependency reasons:
 ## R2: Citation Format Validation
 
 ### Research Question
+
 How should we validate citations in evidence-log.csv and source-register.csv for the research mission?
 
 ### Citation Formats to Support
 
 #### BibTeX Format
+
 ```
 @article{key2025,
   author = {Last, First},
@@ -275,6 +278,7 @@ BIBTEX_PATTERN = r'@\w+\{[\w-]+,[\s\S]+?\}'
 ```
 
 #### APA 7th Edition
+
 ```
 Last, F. (2025). Title of paper. Journal Name, 10(2), 123-145. https://doi.org/...
 ```
@@ -285,6 +289,7 @@ APA_PATTERN = r'^[\w\s,\.]+\(\d{4}\)\.[\s\S]+\.$'
 ```
 
 #### Simple Citation (Fallback)
+
 ```
 Author (Year). Title. Source. URL
 ```
@@ -385,6 +390,7 @@ def validate_citations(evidence_log_path: Path) -> List[str]:
 ## R3: Dashboard Integration for Active Mission Display
 
 ### Research Question
+
 How should the dashboard display and update the active mission?
 
 ### Options Evaluated

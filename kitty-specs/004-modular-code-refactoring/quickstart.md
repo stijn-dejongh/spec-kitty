@@ -1,4 +1,5 @@
 # Quickstart: Modular Code Refactoring
+
 *Path: kitty-specs/004-modular-code-refactoring/quickstart.md*
 
 ## Overview

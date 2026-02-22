@@ -154,6 +154,7 @@ Benefits:
 | 3/12 agents | 12/12 agents |
 
 ### Files: workflow.py (+80), tasks.py (+87), review.md (rewritten: 23 lines), m_0_11_2 (+185)
+
 ### Commits: 28d1422
 
 ---
@@ -184,6 +185,7 @@ shell_pid: "45599"  # In frontmatter
 ```
 
 ### Files: workflow.py (+12 per function)
+
 ### Commits: 35cbba7
 
 ---
@@ -202,6 +204,7 @@ branch_name = re.sub(r'-WP\d+$', '', branch_name)
 ```
 
 ### Files: tasks.py (+3)
+
 ### Commits: 35cbba7
 
 ---

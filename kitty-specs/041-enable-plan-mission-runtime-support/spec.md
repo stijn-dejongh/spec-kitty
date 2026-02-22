@@ -55,6 +55,7 @@ Without these artifacts, the runtime cannot discover or load the plan mission.
 ## Functional Requirements
 
 ### FR1: Runtime Mission Definition
+
 **Requirement**: Add `mission-runtime.yaml` to `src/specify_cli/missions/plan/`
 
 **Semantics**:
@@ -73,6 +74,7 @@ Without these artifacts, the runtime cannot discover or load the plan mission.
 - Compatible with runtime bridge resolver (lines 214, 244, 302)
 
 ### FR2: Mission-Scoped Command Templates
+
 **Requirement**: Add four command templates to `src/specify_cli/missions/plan/command-templates/`
 
 **Files to Create**:
@@ -92,6 +94,7 @@ Without these artifacts, the runtime cannot discover or load the plan mission.
 - Deterministic content (same input = same output)
 
 ### FR3: Mission-Scoped Content Templates (Conditional)
+
 **Requirement**: Add content templates to `src/specify_cli/missions/plan/templates/` (only if referenced by command templates)
 
 **Decision Logic**:
@@ -103,23 +106,24 @@ Without these artifacts, the runtime cannot discover or load the plan mission.
 - 2.x-compatible paths only
 
 ### FR4: Integration Tests
+
 **Requirement**: Add/extend tests proving end-to-end functionality
 
 **Test Coverage**:
 
 a) **Mission Discovery Integration Test**:
-   - Create feature with `mission=plan` via CLI
-   - Verify `next` command recognizes plan mission
-   - Verify non-blocked return status
+- Create feature with `mission=plan` via CLI
+- Verify `next` command recognizes plan mission
+- Verify non-blocked return status
 
 b) **Command Resolution Test**:
-   - Test `resolve_command(..., mission="plan", step="specify")` → resolves to valid template
-   - Test for all four steps (specify, research, plan, review)
-   - Verify no missing file errors
+- Test `resolve_command(..., mission="plan", step="specify")` → resolves to valid template
+- Test for all four steps (specify, research, plan, review)
+- Verify no missing file errors
 
 c) **Regression Tests**:
-   - Ensure `software-dev` and `research` missions still resolve correctly
-   - Existing tests continue to pass
+- Ensure `software-dev` and `research` missions still resolve correctly
+- Existing tests continue to pass
 
 **Constraints**:
 - No external auth/services required
@@ -129,6 +133,7 @@ c) **Regression Tests**:
 ## Architecture & Implementation Approach
 
 ### File Structure (2.x-compatible)
+
 ```
 src/specify_cli/missions/plan/
 ├── mission.yaml                    # Existing: planning mission definition
@@ -194,11 +199,13 @@ Terminal: Feature planning complete
 ## Testing Strategy
 
 ### Unit Tests
+
 - **Mission YAML Parsing**: Verify `mission-runtime.yaml` parses correctly
 - **Template Resolution**: Verify each command template resolves without errors
 - **Schema Validation**: Verify mission definition matches runtime schema expectations
 
 ### Integration Tests
+
 - **End-to-End Specify → Next**:
   - Create feature with `mission=plan`
   - Call `next` command
@@ -208,6 +215,7 @@ Terminal: Feature planning complete
   - Verify each returns valid template
 
 ### Regression Tests
+
 - **Software-Dev Mission**: Existing tests continue to pass
 - **Research Mission**: Existing tests continue to pass
 - **CLI Commands**: `spec-kitty specify`, `spec-kitty next` work for all missions
@@ -223,6 +231,7 @@ Terminal: Feature planning complete
 ## Constraints & Scope Boundaries
 
 ### In Scope
+
 - Add `mission-runtime.yaml` for plan mission
 - Add 4 mission-scoped command templates
 - Add any referenced content templates
@@ -230,6 +239,7 @@ Terminal: Feature planning complete
 - 2.x branch only
 
 ### Out of Scope
+
 - Doctrine path migration (keep 2.x paths as-is)
 - SaaS/API changes
 - Telemetry schema redesign
@@ -258,6 +268,7 @@ Terminal: Feature planning complete
 ## User Scenarios & Testing
 
 ### Scenario 1: Create and Progress Plan Feature
+
 **Actor**: Developer using spec-kitty on 2.x branch
 
 **Flow**:
@@ -273,6 +284,7 @@ Terminal: Feature planning complete
 **Acceptance**: No errors, features created successfully, `next` loop unblocked
 
 ### Scenario 2: Command Template Resolution
+
 **Actor**: Runtime resolver component
 
 **Flow**:
@@ -285,6 +297,7 @@ Terminal: Feature planning complete
 **Acceptance**: All 4 steps resolve without errors
 
 ### Scenario 3: Regression Check
+
 **Actor**: CI pipeline
 
 **Flow**:

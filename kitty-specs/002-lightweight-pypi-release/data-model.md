@@ -1,6 +1,7 @@
 # Data Model
 
 ## FeatureBranch
+
 - **Responsibility**: Tracks release candidate work prior to merging into `main`.
 - **Key Fields**:
   - `name` — short-lived branch name prefixed with issue/feature id (string).
@@ -19,6 +20,7 @@
   - References latest `ManagedSecret` definition for credential guidance.
 
 ## ReleaseTag
+
 - **Responsibility**: Semantic version tag that triggers the publish workflow.
 - **Key Fields**:
   - `name` — string matching regex `^v\d+\.\d+\.\d+$`.
@@ -34,6 +36,7 @@
   - Produces one `PyPIArtifact` bundle.
 
 ## PyPIArtifact
+
 - **Responsibility**: Wheel and sdist published to PyPI.
 - **Key Fields**:
   - `artifact_type` — enum `{wheel, sdist}`.
@@ -49,6 +52,7 @@
   - Depends on `ManagedSecret` to authenticate upload.
 
 ## ManagedSecret
+
 - **Responsibility**: Secure storage reference for credentials.
 - **Key Fields**:
   - `provider` — GitHub Actions.

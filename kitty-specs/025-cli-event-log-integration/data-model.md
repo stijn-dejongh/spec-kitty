@@ -524,6 +524,7 @@ def detect_and_resolve_conflict(event_store: EventStore):
 ## Validation Rules
 
 ### Event Validation (on emit)
+
 - `event_id` must be valid ULID format
 - `event_type` must be registered type (validate against enum)
 - `entity_id` must not be empty
@@ -531,11 +532,13 @@ def detect_and_resolve_conflict(event_store: EventStore):
 - `payload` must be valid JSON (no circular references)
 
 ### State Transition Validation (before emit)
+
 - Valid transitions defined per entity type (e.g., WP: planned → doing → for_review → done)
 - Dependencies checked (Validator pattern from Jira research)
 - Gates checked (e.g., CI must pass before for_review → done)
 
 ### Index Integrity
+
 - All events in JSONL must have corresponding index entry
 - Index rebuild available if mismatch detected: `spec-kitty agent events rebuild-index`
 
@@ -587,6 +590,7 @@ def detect_and_resolve_conflict(event_store: EventStore):
 ## Testing Strategy
 
 ### Unit Tests
+
 - Event serialization/deserialization (JSON round-trip)
 - Lamport clock increment atomicity
 - JSONL append with file locking
@@ -594,12 +598,14 @@ def detect_and_resolve_conflict(event_store: EventStore):
 - Conflict detection logic
 
 ### Integration Tests
+
 - End-to-end: `move_task` command emits event → status reads event → kanban board updated
 - Corruption recovery: Delete clock.json → rebuild from event log
 - Index rebuild: Delete index.db → rebuild from JSONL files
 - Daily rotation: Emit events across simulated day boundary
 
 ### Performance Tests
+
 - Benchmark event write latency (target: <15ms)
 - Benchmark status reconstruction (target: <50ms for 100 events)
 - Benchmark index query (target: <100ms for 1000 events)

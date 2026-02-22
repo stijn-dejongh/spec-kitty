@@ -54,7 +54,6 @@ history:
 
 **Issue 5 (placeholder URL)**: “spec-kitty GitHub Issues” link uses `https://github.com/yourusername/spec-kitty/issues` (line ~602). Replace with the real repo URL (e.g., `https://github.com/Priivacy-ai/spec-kitty/issues`, consistent with other docs).
 
-
 ## ⚠️ Dependency Rebase Guidance
 
 **This WP depends on WP01** (check frontmatter `dependencies:` field).
@@ -74,8 +73,9 @@ Look for WP01 in "done" lane. If not complete, wait for WP01 or coordinate with 
 ---
 
 ## Markdown Formatting
+
 Wrap HTML/XML tags in backticks: `` `<div>` ``, `` `<script>` ``
-Use language identifiers in code blocks: ````python`, ````bash`
+Use language identifiers in code blocks: ````python`,````bash`
 
 ---
 
@@ -158,6 +158,7 @@ Use language identifiers in code blocks: ````python`, ````bash`
    ```
 
 5. **Add "Quick Reference" table** (optional but helpful):
+
    | Command | Purpose |
    |---------|---------|
    | `spec-kitty agent config list` | View configured agents and available options |

@@ -1,4 +1,5 @@
 # Implementation Plan: GitHub Observability Event Metadata
+
 *Path: kitty-specs/033-github-observability-event-metadata/plan.md*
 
 **Branch**: `033-github-observability-event-metadata` | **Date**: 2026-02-07 | **Spec**: [spec.md](spec.md)

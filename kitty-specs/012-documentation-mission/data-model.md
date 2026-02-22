@@ -199,6 +199,7 @@ class DocGenerator(Protocol):
 **Concrete Implementations**:
 
 #### JSDocGenerator
+
 ```python
 @dataclass
 class JSDocGenerator:
@@ -212,6 +213,7 @@ class JSDocGenerator:
 ```
 
 #### SphinxGenerator
+
 ```python
 @dataclass
 class SphinxGenerator:
@@ -226,6 +228,7 @@ class SphinxGenerator:
 ```
 
 #### RustdocGenerator
+
 ```python
 @dataclass
 class RustdocGenerator:

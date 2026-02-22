@@ -151,12 +151,14 @@ pytest tests/specify_cli/test_dependency_graph.py
 ## Metrics: Scope Impact
 
 ### Original Scope
+
 - **Total Subtasks**: 93
 - **WP02**: 8 subtasks
 - **WP07**: 21 subtasks (15 parallel agent updates!)
 - **Files to Update**: 48 agent directory files
 
 ### Corrected Scope
+
 - **Total Subtasks**: 80 (13 subtasks removed)
 - **WP02**: 6 subtasks (removed T014, changed focus to template sources)
 - **WP07**: 10 subtasks (removed T059-T069, update 4 template sources not 48 files)
@@ -193,21 +195,26 @@ pytest tests/specify_cli/test_dependency_graph.py
 ## Files Modified Summary
 
 ### Implementation Files
+
 - ✅ `src/specify_cli/core/dependency_graph.py` - Uses FrontmatterManager, validates filename vs frontmatter
 
 ### Test Files
+
 - ✅ `tests/specify_cli/test_dependency_graph.py` - Created (25 tests, all passing)
 
 ### WP Prompt Files
+
 - ✅ `tasks/WP01-dependency-graph-utilities-tdd-foundation.md` - Fixed test execution path
 - ✅ `tasks/WP02-migration-tests-tdd-agent-template-coverage.md` - Complete rewrite (template sources)
 - ✅ `tasks/WP07-migration-implementation.md` - Complete rewrite (4 templates, not 48 files)
 - ✅ `tasks/WP08-integration-tests-full-workflow-validation.md` - Fixed test execution path
 
 ### Planning Files
+
 - ✅ `tasks.md` - Updated WP02, WP07 descriptions, subtask counts, scope corrections
 
 ### Analysis Files
+
 - ✅ `PROMPT_ANALYSIS.md` - Created (documents test execution issues)
 - ✅ `CORRECTIONS_APPLIED.md` - This file
 

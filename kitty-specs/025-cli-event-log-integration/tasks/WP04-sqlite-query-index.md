@@ -46,7 +46,7 @@ history:
 **Status**: ❌ Changes Requested
 **Date**: 2026-01-30
 
-**Issue 1 (critical): API regression in events __init__ exports**
+**Issue 1 (critical): API regression in events **init** exports**
 
 `src/specify_cli/events/__init__.py` dropped WP03 exports (`EventStore`, `with_event_store`, `generate_ulid`). This breaks public imports and any CLI commands using the decorator. Please restore the prior exports and add `EventIndex` without removing existing symbols.
 
@@ -74,8 +74,7 @@ Please verify imports:
 from specify_cli.events import EventStore, EventIndex, with_event_store, generate_ulid
 ```
 
-
-## Critical Issue: API Regression - Missing Exports in __init__.py
+## Critical Issue: API Regression - Missing Exports in **init**.py
 
 **Problem**: The WP04 commit (83ff47a1) modified `src/specify_cli/events/__init__.py` and **removed** the exports that were added in WP03, breaking the public API.
 
@@ -218,7 +217,6 @@ from specify_cli.events import (
 
 print("✓ All exports available")
 ```
-
 
 ## Objectives & Success Criteria
 
@@ -786,7 +784,7 @@ git branch --show-current  # Must output: 2.x
 - `src/specify_cli/events/store.py` (modify: add EventIndex initialization and update call)
 
 **Validation**:
-- [ ] EventIndex initialized in EventStore.__init__()
+- [ ] EventIndex initialized in EventStore.**init**()
 - [ ] `index.update(event)` called in emit() AFTER JSONL append
 - [ ] Index update wrapped in try/except (warning on failure, doesn't block emit)
 - [ ] Order preserved: JSONL write → index update → clock save
@@ -1017,7 +1015,7 @@ print(f"Full scan ({len(all_events)} events): {elapsed_ms:.2f}ms")
 - [ ] T021: `get_affected_dates()` returns unique dates containing matching events
 - [ ] T022: `rebuild()` method drops tables, recreates schema, scans JSONL files
 - [ ] T022: Graceful degradation on invalid JSON lines
-- [ ] T023: EventIndex integrated into EventStore.__init__()
+- [ ] T023: EventIndex integrated into EventStore.**init**()
 - [ ] T023: `index.update()` called in emit() after JSONL write
 - [ ] T024: `read()` method checks index integrity before use
 - [ ] T024: Automatic rebuild triggers on missing/corrupted index
@@ -1079,7 +1077,7 @@ print(f"Full scan ({len(all_events)} events): {elapsed_ms:.2f}ms")
 - 2026-01-30T13:06:15Z – codex – shell_pid=14744 – lane=doing – Started implementation via workflow command
 - 2026-01-30T13:06:56Z – codex – shell_pid=14744 – lane=for_review – Ready for review: restore events exports and include EventIndex
 - 2026-01-30T13:08:08Z – claude-wp04-final-reviewer – shell_pid=3709 – lane=doing – Started review via workflow command
-- 2026-01-30T13:09:47Z – claude-wp04-final-reviewer – shell_pid=3709 – lane=done – Review passed: EventIndex fully implemented with proper SQLite schema and 3 indices. __init__.py exports restored (all WP03 exports preserved + EventIndex added). EventStore.read() uses index with automatic rebuild and JSONL fallback. Clean architecture.
+- 2026-01-30T13:09:47Z – claude-wp04-final-reviewer – shell_pid=3709 – lane=done – Review passed: EventIndex fully implemented with proper SQLite schema and 3 indices. **init**.py exports restored (all WP03 exports preserved + EventIndex added). EventStore.read() uses index with automatic rebuild and JSONL fallback. Clean architecture.
 
 ## Implementation Command
 

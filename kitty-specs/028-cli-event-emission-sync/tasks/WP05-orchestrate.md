@@ -38,8 +38,9 @@ history:
 ---
 
 ## Markdown Formatting
+
 Wrap HTML/XML tags in backticks: `` `<div>` ``, `` `<script>` ``
-Use language identifiers in code blocks: ````python`, ````bash`
+Use language identifiers in code blocks: ````python`,````bash`
 
 ---
 
@@ -54,14 +55,17 @@ Use language identifiers in code blocks: ````python`, ````bash`
 ## Context & Constraints
 
 ### Reference Documents
+
 - **Spec**: `kitty-specs/028-cli-event-emission-sync/spec.md` - User Story 5
 - **Plan**: `kitty-specs/028-cli-event-emission-sync/plan.md` - Orchestration events
 - **Data Model**: `kitty-specs/028-cli-event-emission-sync/data-model.md` - WPAssigned, FeatureCompleted, DependencyResolved
 
 ### Functional Requirements
+
 - FR-023: `orchestrate` MUST emit `WPAssigned` events when agents are assigned to WPs
 
 ### Dependencies
+
 - WP01 (Event Factory) must be complete
 - Import from `specify_cli.sync.events`
 

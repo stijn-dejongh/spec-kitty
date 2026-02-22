@@ -33,6 +33,7 @@ review_status: "approved"
 ## Subtask Breakdown
 
 ### Subtask T018: Run Finalize-Tasks Command
+
 **Duration**: 15-30 minutes
 **Goal**: Execute finalization and verify all work packages are properly committed.
 

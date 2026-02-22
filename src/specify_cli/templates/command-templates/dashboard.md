@@ -7,7 +7,6 @@ description: Open the Spec Kitty dashboard in your browser.
 
 *Path: [templates/commands/dashboard.md](templates/commands/dashboard.md)*
 
-
 ## Context: Dashboard Overview
 
 **What is the dashboard?**

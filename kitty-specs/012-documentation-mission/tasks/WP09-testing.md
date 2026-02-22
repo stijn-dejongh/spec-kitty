@@ -1566,6 +1566,7 @@ Target 80%+ coverage for:
 ## Definition of Done Checklist
 
 ### Test Files Created
+
 - [ ] `tests/specify_cli/missions/test_documentation_mission.py` created
 - [ ] `tests/specify_cli/missions/test_documentation_templates.py` created
 - [ ] `tests/specify_cli/test_doc_generators.py` created
@@ -1573,6 +1574,7 @@ Target 80%+ coverage for:
 - [ ] `tests/specify_cli/upgrade/migrations/test_m_0_12_0_documentation_mission.py` created
 
 ### Mission Config Tests (test_documentation_mission.py)
+
 - [ ] T054: Test mission loads successfully
 - [ ] T054: Test mission appears in list
 - [ ] T054: Test config passes validation
@@ -1582,6 +1584,7 @@ Target 80%+ coverage for:
 - [ ] T056: Test path conventions define docs/ workspace
 
 ### Template Tests (test_documentation_templates.py)
+
 - [ ] T057: Test core templates exist (spec, plan, tasks)
 - [ ] T058: Test Divio templates have frontmatter (parametrized, 4 templates)
 - [ ] T058: Test frontmatter type field matches expected value
@@ -1594,6 +1597,7 @@ Target 80%+ coverage for:
 - [ ] T060: Test command templates mention Divio types
 
 ### Generator Tests (test_doc_generators.py)
+
 - [ ] T061: Test protocol compliance (all generators implement protocol)
 - [ ] T062: Test JSDoc detects package.json projects
 - [ ] T062: Test JSDoc detects .js files
@@ -1615,6 +1619,7 @@ Target 80%+ coverage for:
 - [ ] T066: [@pytest.mark.integration] Test rustdoc end-to-end generation
 
 ### Gap Analysis Tests (test_gap_analysis.py)
+
 - [ ] T068: Test detect Sphinx framework (conf.py)
 - [ ] T068: Test detect MkDocs framework (mkdocs.yml)
 - [ ] T068: Test detect Docusaurus framework (docusaurus.config.js)
@@ -1638,6 +1643,7 @@ Target 80%+ coverage for:
 - [ ] T071: Test gaps sorted by priority
 
 ### Migration Tests (test_m_0_12_0_documentation_mission.py)
+
 - [ ] T073: Test detect missing mission
 - [ ] T073: Test detect existing mission
 - [ ] T073: Test detect non-kittify project
@@ -1653,6 +1659,7 @@ Target 80%+ coverage for:
 - [ ] T052: Test migration can be loaded and instantiated
 
 ### Test Execution
+
 - [ ] All unit tests pass (100%)
 - [ ] Integration tests pass (if tools installed) or skip gracefully
 - [ ] Code coverage ≥80% for new modules
@@ -1661,12 +1668,14 @@ Target 80%+ coverage for:
 - [ ] Test execution time reasonable (unit <10s total, integration <30s total)
 
 ### Documentation
+
 - [ ] Test files have docstrings explaining what they test
 - [ ] Complex tests have inline comments
 - [ ] Fixtures are documented
 - [ ] Integration test requirements documented (which tools needed)
 
 ### Quality
+
 - [ ] `tasks.md` in feature directory updated with WP09 status
 
 ## Review Guidance

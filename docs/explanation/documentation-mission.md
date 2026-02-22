@@ -257,15 +257,19 @@ pip install authlib
 ```
 
 ### Step 2: Configure Provider
+
 ...
 
 ### Step 3: Implement Login Flow
+
 ...
 
 ## Verification
+
 Test your OAuth flow by...
 
 ## Troubleshooting
+
 - **Error: Invalid redirect URI** - Check your...
 ```
 
@@ -888,12 +892,15 @@ For contributors interested in the implementation:
 These files are in the Spec Kitty source repository.
 
 ## Try It
+
 - [Claude Code Workflow](../tutorials/claude-code-workflow.md)
 
 ## How-To Guides
+
 - [Install Spec Kitty](../how-to/install-spec-kitty.md)
 - [Upgrade to 0.11.0](../how-to/upgrade-to-0-11-0.md)
 
 ## Reference
+
 - [Missions](../reference/missions.md)
 - [Configuration](../reference/configuration.md)

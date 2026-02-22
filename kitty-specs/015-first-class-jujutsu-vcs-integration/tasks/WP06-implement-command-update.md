@@ -295,11 +295,11 @@ history:
 ## Activity Log
 
 - 2026-01-17T10:38:23Z – system – lane=planned – Prompt generated via /spec-kitty.tasks
-- 2026-01-17T12:38:00Z – __AGENT__ – shell_pid=98628 – lane=doing – Started implementation via workflow command
-- 2026-01-17T12:50:08Z – __AGENT__ – shell_pid=98628 – lane=for_review – VCS abstraction integrated into implement command - all 833 tests pass
-- 2026-01-17T12:51:15Z – __AGENT__ – shell_pid=9401 – lane=doing – Started review via workflow command
-- 2026-01-17T12:54:11Z – __AGENT__ – shell_pid=9401 – lane=planned – Moved to planned
-- 2026-01-17T12:56:42Z – __AGENT__ – shell_pid=9401 – lane=doing – Started implementation via workflow command
-- 2026-01-17T12:58:56Z – __AGENT__ – shell_pid=9401 – lane=for_review – Ready for review: fix jj --base revision handling, use VCS validation, restore symlink check, update tests
-- 2026-01-17T13:04:44Z – __AGENT__ – shell_pid=16163 – lane=doing – Started review via workflow command
-- 2026-01-17T13:08:15Z – __AGENT__ – shell_pid=16163 – lane=done – Review passed: VCS abstraction correctly integrated - git backward compatible, jj workspace creation supported, meta.json locking works, --base flag handles both backends, stale detection via VCS abstraction, 24 tests passing
+- 2026-01-17T12:38:00Z – **AGENT** – shell_pid=98628 – lane=doing – Started implementation via workflow command
+- 2026-01-17T12:50:08Z – **AGENT** – shell_pid=98628 – lane=for_review – VCS abstraction integrated into implement command - all 833 tests pass
+- 2026-01-17T12:51:15Z – **AGENT** – shell_pid=9401 – lane=doing – Started review via workflow command
+- 2026-01-17T12:54:11Z – **AGENT** – shell_pid=9401 – lane=planned – Moved to planned
+- 2026-01-17T12:56:42Z – **AGENT** – shell_pid=9401 – lane=doing – Started implementation via workflow command
+- 2026-01-17T12:58:56Z – **AGENT** – shell_pid=9401 – lane=for_review – Ready for review: fix jj --base revision handling, use VCS validation, restore symlink check, update tests
+- 2026-01-17T13:04:44Z – **AGENT** – shell_pid=16163 – lane=doing – Started review via workflow command
+- 2026-01-17T13:08:15Z – **AGENT** – shell_pid=16163 – lane=done – Review passed: VCS abstraction correctly integrated - git backward compatible, jj workspace creation supported, meta.json locking works, --base flag handles both backends, stale detection via VCS abstraction, 24 tests passing

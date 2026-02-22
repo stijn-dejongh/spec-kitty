@@ -135,7 +135,7 @@ From lines 2103-2195:
 - Browser opening logic
 - ~95 lines
 
-### T056: Create cli/commands/__init__.py
+### T056: Create cli/commands/**init**.py
 
 Register all commands:
 ```python
@@ -228,13 +228,13 @@ From `__init__.py`:
 - ✅ Verified: `spec-kitty check --json` now works correctly
 
 **Issue #2: root_callback not registered**
-- ✅ Added `app.callback()(root_callback)` in __init__.py:84
+- ✅ Added `app.callback()(root_callback)` in **init**.py:84
 - ✅ Verified: `spec-kitty` with no args now shows banner
 
-**Issue #3: Module shadowing in cli/commands/__init__.py**
+**Issue #3: Module shadowing in cli/commands/**init**.py**
 - ✅ Changed imports to use module references (e.g., `from . import check as check_module`)
 - ✅ Updated register_commands() to use module.function pattern
-- ✅ Removed function re-exports from __all__
+- ✅ Removed function re-exports from **all**
 - ✅ Verified: 5/7 CLI tests now passing (2 test implementation issues, not regressions)
 
 ## Activity Log

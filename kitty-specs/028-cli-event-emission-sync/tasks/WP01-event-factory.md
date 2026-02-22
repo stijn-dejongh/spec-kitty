@@ -46,10 +46,10 @@ The new `_PAYLOAD_RULES` covers only a subset of schema constraints. Missing val
 - `HistoryAdded.author` should be string when present
 Also the envelope fields `event_id` and `causation_id` must match the ULID pattern. Right now the envelope validation only checks length via the vendored `Event` model and misses schema patterns. Please validate the full schema (either via JSON Schema validation using `contracts/events.schema.json` or by expanding `_PAYLOAD_RULES` + envelope rules to match it exactly).
 
-
 ## Markdown Formatting
+
 Wrap HTML/XML tags in backticks: `` `<div>` ``, `` `<script>` ``
-Use language identifiers in code blocks: ````python`, ````bash`
+Use language identifiers in code blocks: ````python`,````bash`
 
 ---
 
@@ -64,17 +64,20 @@ Use language identifiers in code blocks: ````python`, ````bash`
 ## Context & Constraints
 
 ### Reference Documents
+
 - **Plan**: `kitty-specs/028-cli-event-emission-sync/plan.md` - Architecture and singleton design
 - **Data Model**: `kitty-specs/028-cli-event-emission-sync/data-model.md` - Entity definitions
 - **Contract**: `kitty-specs/028-cli-event-emission-sync/contracts/events.schema.json` - Event schemas
 - **Quickstart**: `kitty-specs/028-cli-event-emission-sync/quickstart.md` - Usage examples
 
 ### Architecture Decisions
+
 - **Singleton pattern**: Use double-checked locking for thread-safe lazy initialization
 - **Non-blocking**: All emission failures must be caught and logged, never raised
 - **Offline-first**: Queue events when WebSocket unavailable or unauthenticated
 
 ### Dependencies
+
 - **spec-kitty-events** library (Feature 003) - Import via Git dependency per ADR-11
 - **AuthClient** from Feature 027 - For team_slug and authentication status
 - **Existing sync module** - OfflineQueue, SyncConfig at `src/specify_cli/sync/`

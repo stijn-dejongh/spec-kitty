@@ -34,6 +34,7 @@ priority: P0
 ## Subtask Breakdown
 
 ### Subtask T013: Implement Mission Discovery Integration Test
+
 **Duration**: 30-40 minutes
 **Goal**: Test that `spec-kitty next` can discover and load the plan mission.
 
@@ -109,6 +110,7 @@ def test_next_command_plan_feature_not_blocked(self, plan_feature):
 ---
 
 ### Subtask T014: Implement Command Resolution Tests
+
 **Duration**: 45-60 minutes
 **Goal**: Test that all 4 step command templates can be resolved.
 
@@ -230,6 +232,7 @@ class TestPlanCommandResolution:
 ---
 
 ### Subtask T015: Implement Regression Tests
+
 **Duration**: 45-60 minutes
 **Goal**: Ensure software-dev and research missions still work.
 
@@ -327,6 +330,7 @@ class TestPlanMissionRegressions:
 ---
 
 ### Subtask T016: Verify Test Coverage and CI Compatibility
+
 **Duration**: 20-30 minutes
 **Goal**: Ensure tests are deterministic, isolated, and CI-ready.
 
@@ -416,6 +420,7 @@ def test_determinism_no_external_dependencies():
 ---
 
 ### Subtask T017: Run Full Test Suite and Verify All Pass
+
 **Duration**: 20-30 minutes
 **Goal**: Execute all tests locally to ensure everything works.
 

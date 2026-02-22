@@ -73,7 +73,8 @@ Create ADRs for **architecturally significant decisions**:
 
 **Ask yourself:** "Is this an architecturally significant DECISION?"
 
-### Create an ADR if:
+### Create an ADR if
+
 - ✅ You're choosing between alternatives (Option A vs Option B)
 - ✅ The decision has significant impact on the codebase
 - ✅ You want to preserve WHY you chose this approach
@@ -84,7 +85,8 @@ Create ADRs for **architecturally significant decisions**:
 **Example:** "Should we use explicit base branch tracking in frontmatter or derive it at runtime?"
 → **Yes, create ADR** (significant architectural choice)
 
-### Don't Create an ADR if:
+### Don't Create an ADR if
+
 - ❌ It's just implementation details (put in code comments/docstrings)
 - ❌ It's a temporary workaround (document in code or issue tracker)
 - ❌ It's easily reversible (no ADR needed)

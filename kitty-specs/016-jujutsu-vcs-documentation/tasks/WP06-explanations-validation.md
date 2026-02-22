@@ -73,7 +73,6 @@ In most cases:
 - `--vcs git` or `--vcs jj` overrides detection
 ```
 
-
 ## Objectives & Success Criteria
 
 - Create conceptual explanation articles for jj design rationale

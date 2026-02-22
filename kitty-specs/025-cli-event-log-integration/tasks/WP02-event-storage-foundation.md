@@ -82,7 +82,7 @@ The integration test fails at file_io.py:36 because `event.to_json()` doesn't ex
 
 Add the missing methods to adapter.py. Here's what needs to be added:
 
-### For Event class (add after `to_lib_event()` method):
+### For Event class (add after `to_lib_event()` method)
 
 ```python
 def to_json(self) -> str:
@@ -110,7 +110,7 @@ def __post_init__(self) -> None:
         raise ValueError(f"lamport_clock must be >= 1, got {self.lamport_clock}")
 ```
 
-### For LamportClock class (add after `update()` method):
+### For LamportClock class (add after `update()` method)
 
 ```python
 def initialize(self) -> int:
@@ -190,7 +190,7 @@ ENDPY
 - ✅ types.py deleted (duplicate removed)
 - ✅ Imports updated to use adapter
 - ✅ generate_ulid() moved to adapter
-- ✅ __init__.py exports correct
+- ✅ **init**.py exports correct
 
 The ONLY issue is that the methods weren't copied over when migrating from types.py to adapter.py.
 
@@ -215,7 +215,6 @@ WP03 depends on WP02. Once this is fixed, ensure WP03 implementers know that:
 - Event has `to_json()`, `from_json()`, `__post_init__()`
 - LamportClock has `initialize()`, `to_dict()`, `from_dict()`, `__post_init__()`
 - All imports should be from `specify_cli.events.adapter`
-
 
 ## Critical Issue: Architectural Violation - Duplicate Event/LamportClock Classes
 
@@ -298,7 +297,6 @@ from specify_cli.events.types import Event as TypesEvent
 - ULID generation produces valid identifiers
 
 Once the architectural issue is resolved, this will be an excellent implementation.
-
 
 ## Objectives & Success Criteria
 
@@ -1294,7 +1292,7 @@ print("✓ Clock recovery test passed")
 - 2026-01-30T10:44:37Z – claude-reviewer-2 – shell_pid=60293 – lane=doing – Started review via workflow command
 - 2026-01-30T10:46:31Z – claude-reviewer-2 – shell_pid=60293 – lane=planned – Moved to planned
 - 2026-01-30T10:47:19Z – claude-implementer – shell_pid=61314 – lane=doing – Started implementation via workflow command
-- 2026-01-30T10:49:03Z – claude-implementer – shell_pid=61314 – lane=for_review – Review feedback addressed: Added all missing methods (to_json, from_json, __post_init__, initialize, to_dict, from_dict) to Event and LamportClock classes in adapter.py. All integration tests pass.
+- 2026-01-30T10:49:03Z – claude-implementer – shell_pid=61314 – lane=for_review – Review feedback addressed: Added all missing methods (to_json, from_json, **post_init**, initialize, to_dict, from_dict) to Event and LamportClock classes in adapter.py. All integration tests pass.
 - 2026-01-30T10:50:37Z – codex – shell_pid=14744 – lane=doing – Started review via workflow command
 - 2026-01-30T10:51:39Z – codex – shell_pid=14744 – lane=done – Review passed: adapter Event/LamportClock now include serialization/validation methods, ULID generator exported, storage/file IO use adapter types; verification snippet passes.
 

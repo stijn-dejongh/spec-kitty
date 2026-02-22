@@ -262,11 +262,13 @@ def emit_wp_status_changed(
 ## Test Strategy
 
 ### Unit Tests (WP07)
+
 - `test_events.py`: EventEmitter methods, event builders, validation
 - `test_clock.py`: LamportClock persistence, tick(), receive()
 - `test_background.py`: Background sync scheduling, exponential backoff
 
 ### Integration Tests (WP07)
+
 - `test_integration.py`: Full flow with mock SaaS server
   - Event emission → queue → batch sync
   - Auth token refresh during sync
@@ -277,6 +279,7 @@ def emit_wp_status_changed(
   - `finalize-tasks` → FeatureCreated + WPCreated batch
 
 ### Coverage Target
+
 - 90%+ line coverage for new code
 - All event types have dedicated test cases
 - Edge cases from spec covered (network failure, queue overflow, clock desync)

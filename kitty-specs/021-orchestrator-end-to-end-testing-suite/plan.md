@@ -133,6 +133,7 @@ class AgentAvailability:
 **Decision**: Parameterized by agent count, not identity
 
 **Paths**:
+
 | Path | Agents | Tests |
 |------|--------|-------|
 | 1-agent | Single agent | Same-agent implementation and review |

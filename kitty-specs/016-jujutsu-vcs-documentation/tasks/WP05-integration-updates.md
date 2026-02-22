@@ -49,7 +49,6 @@ history:
 
 **Issue 2** (Terminology consistency): `docs/how-to/implement-work-package.md` first mentions “jj workspace” without expanding to “jujutsu (jj)”. Update the first mention accordingly.
 
-
 ## Objectives & Success Criteria
 
 - Update existing documentation to mention jj alongside git
@@ -207,11 +206,13 @@ history:
   1. Read `docs/explanation/git-worktrees.md`
   2. Add section: "Comparison with jj Workspaces"
   3. Create comparison table:
+
      | Aspect | git worktrees | jj workspaces |
      |--------|---------------|---------------|
      | Isolation | Separate working trees | Same repo, different commits |
      | Rebase | Manual | Automatic |
      | Conflicts | Blocking | Non-blocking |
+
   4. Explain when each is appropriate
   5. Link to jujutsu-for-multi-agent.md
 - **Files**: `docs/explanation/git-worktrees.md`

@@ -51,7 +51,7 @@ After all modules have been extracted by agents A-F, this work package brings ev
 
 ## Implementation Guidance
 
-### T070-T071: Update main __init__.py
+### T070-T071: Update main **init**.py
 
 **T070**: Update `__init__.py` to use new modules
 ```python
@@ -202,7 +202,7 @@ None - this is the final integration step.
 
 All integration tasks completed successfully:
 
-✅ **T070**: __init__.py updated to use new modules (147 lines - under 150 target)
+✅ **T070**: **init**.py updated to use new modules (147 lines - under 150 target)
 ✅ **T071**: All old monolithic code removed
 ✅ **T072**: No circular imports detected
 ✅ **T073**: All import statements updated to new module paths
@@ -220,7 +220,7 @@ All integration tasks completed successfully:
 - **Total**: 57/57 passing (100%)
 
 **Module Compliance**:
-- __init__.py: 147 lines (target: <150) ✅
+- **init**.py: 147 lines (target: <150) ✅
 - All extracted modules under 200 lines (excluding init/github_client which are complex)
 - Clean imports, no duplication
 

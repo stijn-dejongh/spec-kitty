@@ -40,8 +40,9 @@ history:
 ---
 
 ## Markdown Formatting
+
 Wrap HTML/XML tags in backticks: `` `<div>` ``, `` `<script>` ``
-Use language identifiers in code blocks: ````python`, ````bash`
+Use language identifiers in code blocks: ````python`,````bash`
 
 ---
 
@@ -59,6 +60,7 @@ Use language identifiers in code blocks: ````python`, ````bash`
 ## Subtasks & Detailed Guidance
 
 ### Subtask TXXX – Replace with summary
+
 - **Purpose**: Explain why this subtask exists.
 - **Steps**: Detailed, actionable instructions.
 - **Files**: Canonical paths to update or create.
@@ -66,6 +68,7 @@ Use language identifiers in code blocks: ````python`, ````bash`
 - **Notes**: Edge cases, dependencies, or data requirements.
 
 ### Subtask TYYY – Replace with summary
+
 - Repeat the structure above for every included `Txxx` entry.
 
 ## Test Strategy (include only when tests are required)

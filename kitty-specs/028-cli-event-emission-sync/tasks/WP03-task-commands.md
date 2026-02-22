@@ -37,8 +37,9 @@ history:
 ---
 
 ## Markdown Formatting
+
 Wrap HTML/XML tags in backticks: `` `<div>` ``, `` `<script>` ``
-Use language identifiers in code blocks: ````python`, ````bash`
+Use language identifiers in code blocks: ````python`,````bash`
 
 ---
 
@@ -53,17 +54,20 @@ Use language identifiers in code blocks: ````python`, ````bash`
 ## Context & Constraints
 
 ### Reference Documents
+
 - **Spec**: `kitty-specs/028-cli-event-emission-sync/spec.md` - User Story 3
 - **Plan**: `kitty-specs/028-cli-event-emission-sync/plan.md` - Command integration patterns
 - **Data Model**: `kitty-specs/028-cli-event-emission-sync/data-model.md` - HistoryAdded payload
 
 ### Functional Requirements
+
 - FR-019: `move-task` MUST emit `WPStatusChanged` with correct status transition
 - FR-020: `mark-status` MUST emit `WPStatusChanged` with new status
 - FR-021: `add-history` MUST emit `HistoryAdded` event
 - FR-029: MUST NOT block CLI command execution when event emission fails
 
 ### Dependencies
+
 - WP01 (Event Factory) must be complete
 - Import from `specify_cli.sync.events`
 

@@ -20,36 +20,36 @@ Deterministic design ensures identical artifact content always produces identica
 
 **Language/Version**: Python 3.11+ (existing spec-kitty codebase requirement)
 **Primary Dependencies**:
-  - `hashlib` (SHA256, stdlib) – deterministic content hashing
-  - `pydantic` (data validation, existing spec-kitty dependency) – type-safe models
-  - `rich` (console output, existing) – console UI
-  - `ruamel.yaml` (YAML parsing for mission manifests) – manifest loading + mission.yaml reading
-  - `spec_kitty_events` (sync infrastructure, existing) – event emission + OfflineQueue
-  - `http.server.HTTPServer` (stdlib, existing dashboard server) – HTTP request dispatch
-  - `src/specify_cli/dashboard/handlers/` (existing handler pattern) – dossier API handlers
-  - `src/specify_cli/sync/project_identity.py` (existing) – baseline key identity/scoping
-  - Static JavaScript (existing) – dashboard UI updates (fetch + DOM manipulation, no Vue/SPA framework)
+- `hashlib` (SHA256, stdlib) – deterministic content hashing
+- `pydantic` (data validation, existing spec-kitty dependency) – type-safe models
+- `rich` (console output, existing) – console UI
+- `ruamel.yaml` (YAML parsing for mission manifests) – manifest loading + mission.yaml reading
+- `spec_kitty_events` (sync infrastructure, existing) – event emission + OfflineQueue
+- `http.server.HTTPServer` (stdlib, existing dashboard server) – HTTP request dispatch
+- `src/specify_cli/dashboard/handlers/` (existing handler pattern) – dossier API handlers
+- `src/specify_cli/sync/project_identity.py` (existing) – baseline key identity/scoping
+- Static JavaScript (existing) – dashboard UI updates (fetch + DOM manipulation, no Vue/SPA framework)
 
 **Storage**: Filesystem only (YAML configs, JSON event logs, markdown artifacts)
 **Testing**: `pytest` + `pytest-asyncio` (for async API tests)
 **Target Platform**: Linux/macOS/Windows (CLI + local HTTP server)
 **Project Type**: Single Python package (spec-kitty CLI) + dashboard Vue plugin
 **Performance Goals**:
-  - Artifact indexing: <1s for 30 artifacts
-  - API responses: <500ms for full catalog (SC-001)
-  - Parity hash computation: deterministic, reproducible (SC-006, SC-007)
+- Artifact indexing: <1s for 30 artifacts
+- API responses: <500ms for full catalog (SC-001)
+- Parity hash computation: deterministic, reproducible (SC-006, SC-007)
 
 **Constraints**:
-  - No external service calls during local indexing (offline-capable)
-  - Deterministic hashing (identical content → identical hash across machines/timezones)
-  - UTF-8 robustness (consistent handling of encoding edge cases)
-  - No silent failures (all anomalies explicit in events)
+- No external service calls during local indexing (offline-capable)
+- Deterministic hashing (identical content → identical hash across machines/timezones)
+- UTF-8 robustness (consistent handling of encoding edge cases)
+- No silent failures (all anomalies explicit in events)
 
 **Scale/Scope**:
-  - Support >1000 artifacts per feature (SC-005)
-  - 3 mission types with manifests in v1 (software-dev, research, documentation)
-  - 6 artifact classes (input, workflow, output, evidence, policy, runtime) – deterministic, no fallback
-  - 4 dossier event types (Indexed, Missing, Computed, ParityDrift) – anomaly events conditional
+- Support >1000 artifacts per feature (SC-005)
+- 3 mission types with manifests in v1 (software-dev, research, documentation)
+- 6 artifact classes (input, workflow, output, evidence, policy, runtime) – deterministic, no fallback
+- 4 dossier event types (Indexed, Missing, Computed, ParityDrift) – anomaly events conditional
 
 ## Decision Analysis: Architectural Hardening
 
@@ -329,12 +329,14 @@ tests/
 ## Key Technical Decisions
 
 ### 1. **Deterministic Hashing**
+
 - Use SHA256 (hashlib, stdlib)
 - Hash artifact bytes directly (not relative path or metadata)
 - Order-independent parity: sort hashes before combining, compute combined hash
 - Encoding: Read as binary, fail explicitly if invalid UTF-8 (no silent fallback)
 
 ### 2. **Manifest System**
+
 - YAML per mission type: `src/specify_cli/missions/{mission}/expected-artifacts.yaml`
 - Schema:
   ```yaml
@@ -346,11 +348,13 @@ tests/
 - Extensible: Other missions degrade gracefully (no manifest = no missing detection, only indexing)
 
 ### 3. **Artifact Classification**
+
 - 7 classes: input, workflow, output, evidence, policy, runtime, + extensible
 - Derived from filename patterns or explicit frontmatter (if added to mission templates)
 - Used for filtering in dashboard
 
 ### 4. **Event Emission (Conditional & Deterministic)**
+
 - Integrated with spec_kitty_events contracts
 - **Always Emitted**: MissionDossierArtifactIndexed (one per artifact), MissionDossierSnapshotComputed (after scan completes)
 - **Conditionally Emitted**: MissionDossierArtifactMissing (only if required artifacts missing), MissionDossierParityDriftDetected (only if local hash differs from baseline)
@@ -358,6 +362,7 @@ tests/
 - Each event immutable, timestamped, includes envelope metadata
 
 ### 5. **Local Parity Detection (Robust Namespacing)**
+
 - Baseline: locally cached point-in-time parity hash with identity tuple (stored in `.kittify/dossiers/{feature_slug}/parity-baseline.json`)
 - **Baseline Key**: Hash of identity tuple = `{project_uuid, node_id, feature_slug, target_branch, mission_key, manifest_version}`
   - Prevents false positives: branch switch, manifest version change, multi-user/multi-machine scenarios, manifest updates
@@ -368,12 +373,14 @@ tests/
 - **Deferred**: Cross-org/global baseline reconciliation (see "Deferred Decisions")
 
 ### 6. **Dashboard API Design**
+
 - Stateless endpoints, no session required
 - Filtering by class, wp_id, step_id with stable ordering
 - Detail endpoint returns full text (with truncation notice for >5MB)
 - Export endpoint returns snapshot JSON (importable by SaaS)
 
 ### 7. **Mission-Step-Aware Completeness & Manifest Scoping**
+
 - **No Hardcoded Phases**: Manifest uses mission-defined step names (from mission.yaml state machine), not generic phases
   - software-dev: discover → specify → plan → implement → review → done
   - research: scoping → methodology → gathering → synthesis → output → done
@@ -386,6 +393,7 @@ tests/
 - **Deferred**: Manifest versioning strategy (see "Deferred Decisions")
 
 ### 8. **Error Handling**
+
 - No silent failures: all anomalies explicit in events and API
 - Unreadable artifacts: emit MissionDossierArtifactMissing with reason_code="unreadable"
 - UTF-8 errors: record hash error, include in anomaly event, continue scan
@@ -397,36 +405,42 @@ tests/
 Explicitly deferred to preserve O42 scope and maintain KISS principle:
 
 ### 1. Dashboard Stack Migration
+
 - **Decision**: HTTPServer + handler pattern stays. Future migration path documented in WP06 adapter interface.
 - **Defer Reason**: Scope containment; migration is orthogonal to dossier functionality
 - **Future Feature**: "044-dashboard-modernization" (FastAPI + Vue SPA, global event store, WebSocket subscriptions)
 - **Impact on O42**: None; O42 handlers follow current pattern, adapter interface allows mechanical migration without breaking dossier logic
 
 ### 2. Manifest Versioning & Backward Compatibility
+
 - **Decision**: V1 ships single manifest_version per mission type. No version negotiation or evolution strategy.
 - **Defer Reason**: Single mission type per project (typical use case); complex versioning requires ADR, not O42 scope
 - **Future Feature**: "045-manifest-versioning" (explicit version negotiation, migration strategies, deprecation paths)
 - **Impact on O42**: Manifest key includes manifest_version; future feature adds version resolution logic
 
 ### 3. Cross-Org & Global Canonical Feature Naming
+
 - **Decision**: O42 uses local project_uuid + feature_slug. No global uniqueness strategy or federation protocol.
 - **Defer Reason**: SaaS integration (auth, org boundaries, cross-repo features) is out of scope; local workflows are v1 requirement
 - **Future Feature**: "046-saas-project-federation" (org identifiers, canonical feature naming, cross-project references)
 - **Impact on O42**: Project identity is local-first (from sync/project_identity.py). Global uniqueness is SaaS's responsibility.
 
 ### 4. SaaS Parity Reconciliation & Event Replay
+
 - **Decision**: O42 emits events to offline queue. SaaS receives and validates in separate feature.
 - **Defer Reason**: Parity reconciliation (detecting SaaS misalignment, replay workflows) is SaaS concern, not local sync
 - **Future Feature**: "047-saas-parity-reconciliation" (SaaS parity validation, event replay, conflict resolution)
 - **Impact on O42**: Events are append-only, immutable. SaaS feature will add reconciliation logic.
 
 ### 5. Artifact Content Caching & Full-Text Search
+
 - **Decision**: O42 indexes artifacts but does not cache content (read-on-demand) or enable search.
 - **Defer Reason**: Caching adds complexity; search requires indexing overhead; filtering by class/step is sufficient for v1
 - **Future Feature**: "048-artifact-search" (full-text search, content caching, analytics)
 - **Impact on O42**: API detail endpoints read artifact content on-demand; no caching layer in O42
 
 ### 6. Manifest Evolution & Custom Missions
+
 - **Decision**: V1 ships strict manifests for 3 missions (software-dev, research, documentation). Other missions degrade gracefully (no completeness check).
 - **Defer Reason**: Manifest schema is frozen in O42; custom/extension missions require template system evolution
 - **Future Feature**: "049-custom-mission-manifests" (mission plugins, manifest schema extensibility, dynamic artifact definitions)

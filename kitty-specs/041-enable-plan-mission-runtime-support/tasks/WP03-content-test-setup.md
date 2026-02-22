@@ -35,6 +35,7 @@ priority: P1
 ## Subtask Breakdown
 
 ### Subtask T010: Create Content Templates (if referenced)
+
 **Duration**: 20-30 minutes
 **Goal**: Create any content templates that were identified in WP02 T009.
 
@@ -179,6 +180,7 @@ priority: P1
 ---
 
 ### Subtask T011: Create Test File and Structure
+
 **Duration**: 20-30 minutes
 **Goal**: Create the pytest test file with basic structure and setup.
 
@@ -345,6 +347,7 @@ class TestPlanMissionRegressions:
 ---
 
 ### Subtask T012: Set Up Test Fixtures and Mocks
+
 **Duration**: 20-30 minutes
 **Goal**: Implement the fixtures and mocks so they're ready for WP04 test implementation.
 

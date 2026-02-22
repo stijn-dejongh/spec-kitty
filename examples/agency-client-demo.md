@@ -5,6 +5,7 @@ Use Spec Kitty's dashboard to provide live development visibility to clients wit
 ## Setup
 
 ### 1. Expose Dashboard to Client
+
 ```bash
 # Option A: Ngrok tunnel (recommended for demos)
 ngrok http 3000
@@ -18,6 +19,7 @@ ngrok http 3000
 ```
 
 ### 2. What Client Sees
+
 - **Kanban board** - Tasks moving through lanes in real-time
 - **Feature cards** - Titles and progress percentages
 - **Artifact links** - Access to spec.md (requirements) and plan.md (architecture)

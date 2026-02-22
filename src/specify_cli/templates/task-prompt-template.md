@@ -19,7 +19,6 @@ history:
 ---
 *Path: [templates/task-prompt-template.md](templates/task-prompt-template.md)*
 
-
 # Work Package Prompt: {{work_package_id}} – {{title}}
 
 ## ⚠️ IMPORTANT: Review Feedback Status
@@ -84,6 +83,7 @@ The `spec-kitty implement` command will display warnings when:
 ## Subtasks & Detailed Guidance
 
 ### Subtask TXXX – Replace with summary
+
 - **Purpose**: Explain why this subtask exists.
 - **Steps**: Detailed, actionable instructions.
 - **Files**: Canonical paths to update or create.
@@ -91,6 +91,7 @@ The `spec-kitty implement` command will display warnings when:
 - **Notes**: Edge cases, dependencies, or data requirements.
 
 ### Subtask TYYY – Replace with summary
+
 - Repeat the structure above for every included `Txxx` entry.
 
 ## Test Strategy (include only when tests are required)

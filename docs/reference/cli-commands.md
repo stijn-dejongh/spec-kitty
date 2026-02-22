@@ -9,6 +9,7 @@ This reference lists the user-facing `spec-kitty` CLI commands and their flags e
 **Description**: Spec Kitty CLI entry point.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--version`, `-v` | Show version and exit |
@@ -44,6 +45,7 @@ This reference lists the user-facing `spec-kitty` CLI commands and their flags e
 - `PROJECT_NAME`: Name for your new project directory (optional if using `--here`, or use `.` for current directory)
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--ignore-agent-tools` | Skip checks for AI agent tools like Claude Code |
@@ -82,6 +84,7 @@ spec-kitty init my-project --ai codex --non-interactive
 **Description**: Upgrade a Spec Kitty project to the current version.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--dry-run` | Preview changes without applying |
@@ -111,6 +114,7 @@ spec-kitty upgrade --target 0.6.5
 - `WP_ID`: Work package ID (e.g., `WP01`) [required]
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--base TEXT` | Base WP to branch from (e.g., `WP01`) |
@@ -135,6 +139,7 @@ spec-kitty implement WP01 --json
 **Description**: Validate feature readiness before merging to main.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--feature TEXT` | Feature slug to accept (auto-detected by default) |
@@ -156,6 +161,7 @@ spec-kitty implement WP01 --json
 **Description**: Merge a completed feature branch into the target branch and clean up resources.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--strategy TEXT` | Merge strategy: `merge`, `squash`, or `rebase` (default: `merge`) |
@@ -175,6 +181,7 @@ spec-kitty implement WP01 --json
 **Description**: Open or stop the Spec Kitty dashboard.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--port INTEGER` | Preferred port for the dashboard (falls back to first available port) |
@@ -190,6 +197,7 @@ spec-kitty implement WP01 --json
 **Description**: Execute Phase 0 research workflow to scaffold artifacts.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--feature TEXT` | Feature slug to target (auto-detected when omitted) |
@@ -205,6 +213,7 @@ spec-kitty implement WP01 --json
 **Description**: Synchronize workspace with upstream changes. Updates the current workspace with changes from its base branch or parent using `git rebase <base-branch>`.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--repair`, `-r` | Attempt workspace recovery (may lose uncommitted work) |
@@ -231,6 +240,7 @@ spec-kitty sync --repair
 **Description**: Operation history via git reflog. View recent git operations.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--help` | Show this message and exit |
@@ -245,6 +255,7 @@ spec-kitty sync --repair
 **Description**: Show git reflog entries. Displays recent git operations that have modified the repository state.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--limit`, `-n INTEGER` | Number of operations to show (default: 20) |
@@ -267,6 +278,7 @@ spec-kitty ops log --verbose
 **Description**: View available Spec Kitty missions. Missions are selected per-feature during `/spec-kitty.specify`.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--help` | Show this message and exit |
@@ -278,6 +290,7 @@ spec-kitty ops log --verbose
 **Description**: List all available missions with their source (project/built-in).
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--help` | Show this message and exit |
@@ -289,6 +302,7 @@ spec-kitty ops log --verbose
 **Description**: Show currently active mission.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--help` | Show this message and exit |
@@ -303,6 +317,7 @@ spec-kitty ops log --verbose
 - `MISSION_NAME`: Mission name to display details for [required]
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--help` | Show this message and exit |
@@ -317,6 +332,7 @@ spec-kitty ops log --verbose
 - `MISSION_NAME`: Mission name (no longer supported) [required]
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--force` | (ignored) |
@@ -331,6 +347,7 @@ spec-kitty ops log --verbose
 **Description**: Validate and optionally fix file encoding in feature artifacts.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--feature TEXT` | Feature slug to validate (auto-detected when omitted) |
@@ -348,6 +365,7 @@ spec-kitty ops log --verbose
 **Description**: Validate and optionally fix task metadata inconsistencies.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--feature TEXT` | Feature slug to validate (auto-detected when omitted) |
@@ -366,6 +384,7 @@ spec-kitty ops log --verbose
 **Description**: Verify that the current environment matches Spec Kitty expectations.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--feature TEXT` | Feature slug to verify (auto-detected when omitted) |
@@ -384,6 +403,7 @@ spec-kitty ops log --verbose
 **Description**: List legacy worktrees blocking 0.11.0 upgrade.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--help` | Show this message and exit |
@@ -397,6 +417,7 @@ spec-kitty ops log --verbose
 **Description**: Repair broken templates.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--help` | Show this message and exit |
@@ -408,6 +429,7 @@ spec-kitty ops log --verbose
 **Description**: Repair broken templates caused by v0.10.0-0.10.8 bundling bug.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--project-path PATH`, `-p` | Path to project to repair |
@@ -423,6 +445,7 @@ spec-kitty ops log --verbose
 **Description**: Commands for AI agents to execute spec-kitty workflows programmatically.
 
 **Options**:
+
 | Flag | Description |
 | --- | --- |
 | `--help` | Show this message and exit |
@@ -754,10 +777,12 @@ No changes needed - filesystem matches config
 ---
 
 ## Getting Started
+
 - [Claude Code Integration](../tutorials/claude-code-integration.md)
 - [Claude Code Workflow](../tutorials/claude-code-workflow.md)
 
 ## Practical Usage
+
 - [Install Spec Kitty](../how-to/install-spec-kitty.md)
 - [Use the Dashboard](../how-to/use-dashboard.md)
 - [Upgrade to 0.11.0](../how-to/upgrade-to-0-11-0.md)

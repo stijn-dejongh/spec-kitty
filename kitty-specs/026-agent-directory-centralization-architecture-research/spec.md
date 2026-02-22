@@ -47,6 +47,7 @@
 ## Research Methodology Outline
 
 ### Research Approach
+
 - **Method**: Multi-method study combining:
   - **Systematic Workflow Analysis**: Evaluate 6 workflow patterns against centralization criteria
   - **Architecture Design**: Propose centralized design with backwards compatibility
@@ -72,6 +73,7 @@
   - **Trade-off Analysis**: Weigh benefits (reduced duplication, simplified .gitignore, consistent versioning) against costs (migration complexity, per-project customization loss, potential conflicts)
 
 ### Success Criteria
+
 - All 6 workflow patterns analyzed with specific trade-offs identified (not generic pros/cons)
 - Complete architectural design addressing backwards compatibility, multi-project dashboard, and all 14 agents
 - Migration risks and conflict scenarios documented with mitigation strategies
@@ -81,6 +83,7 @@
 ## Research Requirements
 
 ### Data Collection Requirements
+
 - **DR-001**: Research MUST analyze all 6 workflow patterns individually (solo single-project, solo multi-project, team shared-repo, mono-repo, mixed agents, open source)
 - **DR-002**: Research MUST document agent discovery mechanisms for all 14 agents from `product-ideas/agent-command-discovery-and-skills.md`
 - **DR-003**: Research MUST identify current pain points from user feedback (installation time, .gitignore maintenance, template versioning, worktree sparse checkout complexity)
@@ -89,6 +92,7 @@
 - **DR-006**: All sources MUST be documented in `research/source-register.csv` with file paths, relevance, and status
 
 ### Analysis Requirements
+
 - **AR-001**: Decision framework MUST provide specific criteria for choosing user-level vs project-level based on measurable workflow characteristics
 - **AR-002**: Architecture proposal MUST address backwards compatibility (CRITICAL requirement), multi-project dashboard registration, and all 14 agent compatibility
 - **AR-003**: Feasibility study MUST identify migration risks, conflict scenarios (e.g., project-local customizations vs user-global defaults), and compatibility blockers
@@ -97,6 +101,7 @@
 - **AR-006**: Analysis MUST preserve .kittify/ and kitty-specs/ in project directories (not moving to user-level)
 
 ### Quality Requirements
+
 - **QR-001**: All claims MUST be supported by cited evidence (codebase references, agent documentation, or user pain points)
 - **QR-002**: Confidence levels MUST be assigned to all findings in `research/evidence-log.csv`
 - **QR-003**: Alternative architectures (pure user-level, pure project-level, hybrid) MUST be considered with trade-offs
@@ -127,31 +132,37 @@
 ## Workflow Patterns for Analysis
 
 ### WF-001: Solo Developer, Single Project
+
 - **Characteristics**: One developer, one active Spec Kitty project at a time
 - **Centralization Impact**: Minimal benefit (no duplication across projects), but simpler .gitignore and no sparse checkout complexity
 - **Analysis Focus**: Setup friction vs maintenance burden trade-off
 
 ### WF-002: Solo Developer, Multiple Projects
+
 - **Characteristics**: One developer juggling multiple Spec Kitty projects simultaneously
 - **Centralization Impact**: HIGH benefit - avoid duplicating agent dirs across N projects, enable multi-project dashboard
 - **Analysis Focus**: Template versioning consistency, upgrade workflow simplification, dashboard multi-project features
 
 ### WF-003: Team, Shared Repository
+
 - **Characteristics**: Multiple developers collaborating on same Spec Kitty project
 - **Centralization Impact**: Complex - version control implications, per-developer vs shared configuration
 - **Analysis Focus**: .gitignore management, agent selection coordination, custom command sharing
 
 ### WF-004: Mono-Repo with Multiple Features
+
 - **Characteristics**: One repository with many concurrent feature worktrees
 - **Centralization Impact**: HIGH benefit - eliminate worktree sparse checkout complexity, reduce disk usage
 - **Analysis Focus**: Worktree setup time, sparse checkout overhead, disk space savings
 
 ### WF-005: Mixed Agent Environments
+
 - **Characteristics**: Team members use different AI agents (some Claude Code, some Cursor, some Codex)
 - **Centralization Impact**: Complex - agent selection per developer vs per project
 - **Analysis Focus**: Heterogeneous tooling support, selective agent installation, config conflicts
 
 ### WF-006: Open Source Projects
+
 - **Characteristics**: Public repositories where contributor setup friction matters
 - **Centralization Impact**: Mixed - simpler .gitignore (no agent dirs), but contributors need user-level setup
 - **Analysis Focus**: Contributor onboarding, public repo .gitignore cleanliness, setup documentation burden
@@ -161,12 +172,14 @@
 Each deliverable document must follow this structure:
 
 ### decision-framework.md
+
 - Decision tree or criteria matrix for choosing user-level vs project-level vs hybrid
 - Workflow pattern characteristics (single vs multi-project, solo vs team, homogeneous vs mixed agents)
 - Trade-off analysis for each pattern
 - Recommended approach per workflow pattern
 
 ### architecture-proposal.md
+
 - Centralized directory structure design (~/.spec-kitty/agents/ or alternative)
 - Project registration protocol (how projects register with central location)
 - Backwards compatibility mechanism (fallback to project-level if user-level missing)
@@ -175,6 +188,7 @@ Each deliverable document must follow this structure:
 - Migration strategy (gradual vs big-bang, opt-in vs automatic)
 
 ### feasibility-study.md
+
 - Migration risks (backwards compatibility, data loss, conflicts)
 - Conflict scenarios (project-local customizations vs user-global defaults, version mismatches)
 - Agent compatibility matrix (14 agents × centralization viability)
@@ -183,6 +197,7 @@ Each deliverable document must follow this structure:
 - Blockers and mitigation strategies
 
 ### recommendation.md
+
 - Evidence summary (key findings from analysis)
 - Recommended approach (centralized, hybrid, or status quo) with clear rationale
 - Implementation roadmap (phased approach with milestones)
@@ -193,6 +208,7 @@ Each deliverable document must follow this structure:
 ## Constraints & Assumptions
 
 ### Hard Constraints
+
 - **Backwards Compatibility**: Existing projects MUST continue working (1000% requirement)
 - **All 14 Agents**: Solution MUST work for all documented agents
 - **.worktrees/ Stays in Project**: Workspace-per-WP model not affected by this research
@@ -200,6 +216,7 @@ Each deliverable document must follow this structure:
 - **kitty-specs/ Stays in Project**: Feature specifications remain project-local
 
 ### Assumptions
+
 - Agent directories contain only slash commands/prompts/workflows (no project-specific data)
 - Template versioning across projects is desirable (consistent slash command behavior)
 - Multi-project dashboard is a strategic direction (not just a nice-to-have)
@@ -207,6 +224,7 @@ Each deliverable document must follow this structure:
 - Sparse checkout complexity in worktrees is a real burden
 
 ### Open Questions (To Be Resolved by Research)
+
 - Should user-level be opt-in or default for new projects?
 - How to handle project-specific customizations (if any) in centralized model?
 - What happens when different projects need different agent template versions?

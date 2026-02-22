@@ -421,10 +421,10 @@ def test_sync_with_conflict_succeeds(tmp_path):
 - 2026-01-17T10:38:23Z – system – lane=planned – Prompt generated via /spec-kitty.tasks
 - 2026-01-17T12:02:33Z – claude-code – shell_pid=65174 – lane=doing – Started implementation via workflow command
 - 2026-01-17T12:11:44Z – claude-code – shell_pid=65174 – lane=for_review – Full JujutsuVCS implementation with 36 passing tests. Key jj behaviors implemented: non-blocking conflicts, Change IDs, operation log with undo.
-- 2026-01-17T12:12:41Z – __AGENT__ – shell_pid=38749 – lane=doing – Started review via workflow command
-- 2026-01-17T12:13:26Z – __AGENT__ – shell_pid=38749 – lane=planned – Moved to planned
-- 2026-01-17T12:14:28Z – __AGENT__ – shell_pid=38749 – lane=doing – Started implementation via workflow command
-- 2026-01-17T12:15:19Z – __AGENT__ – shell_pid=38749 – lane=for_review – Ready for review: jj init for non-colocated, tests updated
+- 2026-01-17T12:12:41Z – **AGENT** – shell_pid=38749 – lane=doing – Started review via workflow command
+- 2026-01-17T12:13:26Z – **AGENT** – shell_pid=38749 – lane=planned – Moved to planned
+- 2026-01-17T12:14:28Z – **AGENT** – shell_pid=38749 – lane=doing – Started implementation via workflow command
+- 2026-01-17T12:15:19Z – **AGENT** – shell_pid=38749 – lane=for_review – Ready for review: jj init for non-colocated, tests updated
 - 2026-01-17T12:22:09Z – claude-code – shell_pid=84083 – lane=doing – Started review via workflow command
 - 2026-01-17T12:25:21Z – claude-code – shell_pid=84083 – lane=done – Review passed: Both issues fixed - init_repo() now uses 'jj init' for non-colocated mode, supports_operation_undo assertion removed from tests. All 101 VCS tests pass including 36 JujutsuVCS-specific tests.
 
@@ -437,4 +437,3 @@ def test_sync_with_conflict_succeeds(tmp_path):
 **Issue 1**: `init_repo()` uses `jj git init` even when `colocate=False`. The spec calls for pure jj repos when colocate is false (`jj init`), so this implementation can't create non-colocated repos. Adjust to use `jj init` when `colocate=False` (and `jj git init --colocate` only when colocating).
 
 **Issue 2**: Tests assert a `supports_operation_undo` capability that no longer exists in the data model. This will fail once WP01 removed the field. Update the JJ tests to match the spec-correct `VCSCapabilities` fields and drop the `supports_operation_undo` assertion.
-

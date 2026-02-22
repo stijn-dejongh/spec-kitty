@@ -118,11 +118,11 @@ history:
 
 **Parallel?**: No (prerequisite for T002-T006)
 
-**Notes**: This directory will contain 4 modules (feature, tasks, context, release) plus __init__.py.
+**Notes**: This directory will contain 4 modules (feature, tasks, context, release) plus **init**.py.
 
 ---
 
-### T002 – Create agent __init__.py with Typer sub-app registration
+### T002 – Create agent **init**.py with Typer sub-app registration
 
 **Purpose**: Register agent namespace as Typer sub-app so `spec-kitty agent` works.
 

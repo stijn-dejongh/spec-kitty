@@ -27,6 +27,7 @@ This feature is organized into 5 focused work packages, organized by phase:
 ## Work Package Breakdown
 
 ### WP01: Runtime Schema Foundation
+
 **Priority**: P0 (blocking)
 **Dependencies**: None
 **Estimated Size**: 4 subtasks, ~280 lines
@@ -61,6 +62,7 @@ This feature is organized into 5 focused work packages, organized by phase:
 ---
 
 ### WP02: All Command Templates
+
 **Priority**: P0
 **Dependencies**: WP01 (directories must exist)
 **Estimated Size**: 6 subtasks, ~420 lines
@@ -102,6 +104,7 @@ This feature is organized into 5 focused work packages, organized by phase:
 ---
 
 ### WP03: Content Templates & Test Setup
+
 **Priority**: P1
 **Dependencies**: WP02 (need to know what templates are referenced)
 **Estimated Size**: 3 subtasks, ~260 lines
@@ -138,6 +141,7 @@ This feature is organized into 5 focused work packages, organized by phase:
 ---
 
 ### WP04: Integration & Regression Tests
+
 **Priority**: P0
 **Dependencies**: WP03 (test setup required)
 **Estimated Size**: 5 subtasks, ~380 lines
@@ -205,6 +209,7 @@ This feature is organized into 5 focused work packages, organized by phase:
 ---
 
 ### WP05: Finalization & Commit
+
 **Priority**: P0 (blocking release)
 **Dependencies**: WP04 (all tests must pass)
 **Estimated Size**: 1 subtask, ~50 lines

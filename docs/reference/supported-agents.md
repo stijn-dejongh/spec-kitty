@@ -361,11 +361,14 @@ export CODEX_HOME="$(pwd)/.codex"
 - [Install & Upgrade](../how-to/install-spec-kitty.md) — Installation guide
 
 ## Getting Started
+
 - [Claude Code Integration](../tutorials/claude-code-integration.md)
 
 ## Practical Usage
+
 - [Install Spec Kitty](../how-to/install-spec-kitty.md)
 - [Use the Dashboard](../how-to/use-dashboard.md)
 
 ## Background
+
 - [AI Agent Architecture](../explanation/ai-agent-architecture.md)

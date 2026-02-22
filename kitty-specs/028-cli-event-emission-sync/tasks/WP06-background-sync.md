@@ -42,10 +42,10 @@ history:
 
 **Issue 3 (needs decision)**: `spec-kitty sync now` only syncs a single batch (max 1000). If the queue has >1000 events, it leaves the remainder, which conflicts with “sync now triggers immediate sync of queued events.” Consider looping with `sync_all_queued_events()` (or a custom loop) and enforce the 1 batch / 5s rate limit between batches if required. If the intended behavior is “one batch only,” please update the command help text/spec to be explicit.
 
-
 ## Markdown Formatting
+
 Wrap HTML/XML tags in backticks: `` `<div>` ``, `` `<script>` ``
-Use language identifiers in code blocks: ````python`, ````bash`
+Use language identifiers in code blocks: ````python`,````bash`
 
 ---
 
@@ -60,11 +60,13 @@ Use language identifiers in code blocks: ````python`, ````bash`
 ## Context & Constraints
 
 ### Reference Documents
+
 - **Spec**: `kitty-specs/028-cli-event-emission-sync/spec.md` - User Story 7
 - **Plan**: `kitty-specs/028-cli-event-emission-sync/plan.md` - Background sync design
 - **Research**: `kitty-specs/028-cli-event-emission-sync/research.md` - Sync strategy decisions
 
 ### Functional Requirements
+
 - FR-031: System MUST provide background sync capability
 - FR-032: Background sync MUST use exponential backoff on failures
 - FR-033: Background sync MUST respect rate limits (1000 events/batch, 1 batch/5 sec)
@@ -74,6 +76,7 @@ Use language identifiers in code blocks: ````python`, ````bash`
 - FR-037: Connection status MUST be surfaceable via `spec-kitty sync status`
 
 ### Dependencies
+
 - WP05 (Orchestrate) establishes patterns for long-running operations
 - Existing `batch_sync()` function in `src/specify_cli/sync/batch.py`
 - AuthClient from Feature 027 for token refresh
@@ -409,6 +412,6 @@ To change a work package's lane, either:
 - 2026-02-04T12:41:19Z – codex – shell_pid=25757 – lane=doing – Started review via workflow command
 - 2026-02-04T12:43:47Z – codex – shell_pid=25757 – lane=planned – Moved to planned
 - 2026-02-04T12:46:38Z – codex – shell_pid=25757 – lane=doing – Addressing review feedback: start service, lock sync, drain full queue
-- 2026-02-04T12:47:21Z – codex – shell_pid=25757 – lane=for_review – Review feedback addressed: (1) start() called in singleton, (2) _lock guards _perform_sync, (3) sync_now drains full queue via sync_all_queued_events
+- 2026-02-04T12:47:21Z – codex – shell_pid=25757 – lane=for_review – Review feedback addressed: (1) start() called in singleton, (2) _lock guards_perform_sync, (3) sync_now drains full queue via sync_all_queued_events
 - 2026-02-04T12:48:15Z – claude-opus – shell_pid=56464 – lane=doing – Started review via workflow command
 - 2026-02-04T12:49:51Z – claude-opus – shell_pid=56464 – lane=done – Review passed: All 3 previous review issues addressed (service startup, lock-guarded sync, full queue drain). Thread-safe singleton, exponential backoff, graceful shutdown, CLI commands all meet FR-031 through FR-037.

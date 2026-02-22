@@ -18,7 +18,6 @@ subtasks:
 ---
 *Path: [kitty-specs/002-lightweight-pypi-release/tasks/planned/WP04-documentation-and-secret-hygiene.md](kitty-specs/002-lightweight-pypi-release/tasks/planned/WP04-documentation-and-secret-hygiene.md)*
 
-
 # Work Package Prompt: WP04 – Documentation and Secret Hygiene
 
 ## Objectives & Success Criteria
@@ -36,6 +35,7 @@ subtasks:
 ## Subtasks & Detailed Guidance
 
 ### Subtask T007 – Expand documentation set
+
 - **Purpose**: Provide long-form guidance referenced by workflows and readiness summaries.
 - **Steps**:
   1. Update `docs/index.md` with a new section (e.g., “Automated PyPI Releases”) referencing the readiness checklist and quickstart.
@@ -54,6 +54,7 @@ subtasks:
   - Document rotation cadence and note to record the date in checklist.
 
 ### Subtask T008 – Update README release guidance
+
 - **Purpose**: Provide succinct onboarding for automated releases and secret setup.
 - **Steps**:
   1. Add “Releasing to PyPI” section to `README.md` (or expand existing content) summarizing pipeline flow (branch readiness → merge → tag).

@@ -5,6 +5,7 @@ Develop 3+ features simultaneously without branch switching chaos.
 ## The Problem Without Worktrees
 
 ### Traditional Branch Switching
+
 ```bash
 # Working on Feature A
 git checkout feature-a
@@ -27,6 +28,7 @@ git checkout feature-a
 - Mental overhead tracking current branch
 
 ### Worktree Solution
+
 ```bash
 # All features available simultaneously
 cd .worktrees/001-auth          # Feature A
@@ -60,6 +62,7 @@ cd .worktrees/003-api-v2        # Feature C
 ## Setup: Initial Project
 
 ### 1. Initialize Project (One-time)
+
 ```bash
 spec-kitty init ecommerce-platform --ai claude
 cd ecommerce-platform
@@ -67,6 +70,7 @@ claude
 ```
 
 ### 2. Create Constitution (One-time)
+
 ```text
 /spec-kitty.constitution
 
@@ -79,6 +83,7 @@ Create principles for:
 ## Feature A: User Authentication
 
 ### Terminal 1 (Week 1, Monday)
+
 ```bash
 cd ~/ecommerce-platform
 claude
@@ -119,6 +124,7 @@ SendGrid for email, JWT tokens with refresh rotation.
 ## Feature B: Product Dashboard
 
 ### Terminal 2 (Week 1, Tuesday - While Feature A is in progress)
+
 ```bash
 cd ~/ecommerce-platform  # Back to main repo
 claude  # New agent instance
@@ -158,6 +164,7 @@ TanStack Query for data fetching, Tailwind CSS.
 ## Feature C: Payment Integration
 
 ### Terminal 3 (Week 2, Monday - Both A and B still in progress)
+
 ```bash
 cd ~/ecommerce-platform  # Back to main repo
 claude  # Another new agent instance
@@ -225,6 +232,7 @@ Feature: 003-payment (Progress: 25%)
 ## Working Across Features
 
 ### Switch Context Instantly
+
 ```bash
 # Terminal 1: Working on auth
 cd .worktrees/001-auth
@@ -245,6 +253,7 @@ pytest tests/test_webhooks.py
 **All running at the same time - no git checkout!**
 
 ### Compare Implementations
+
 ```bash
 # Want to see how auth handles errors vs payments?
 diff .worktrees/001-auth/src/errors.py .worktrees/003-payment/api/errors.py
@@ -254,6 +263,7 @@ cp .worktrees/001-auth/tests/conftest.py .worktrees/002-dashboard/tests/
 ```
 
 ### IDE Setup
+
 ```bash
 # VS Code: Open three windows
 code .worktrees/001-auth
@@ -268,6 +278,7 @@ code .worktrees/003-payment
 ## Merge Order: Feature Completion
 
 ### Feature A Completes First (Week 1, Friday)
+
 ```bash
 # Terminal 1
 cd .worktrees/001-auth
@@ -288,6 +299,7 @@ cd .worktrees/001-auth
 **Terminal 1 now free for new work!**
 
 ### Feature B Completes Second (Week 2, Wednesday)
+
 ```bash
 # Terminal 2
 cd .worktrees/002-dashboard
@@ -300,6 +312,7 @@ cd .worktrees/002-dashboard
 ```
 
 ### Feature C Completes Last (Week 2, Friday)
+
 ```bash
 # Terminal 3
 cd .worktrees/003-payment
@@ -316,6 +329,7 @@ cd .worktrees/003-payment
 ## Benefits Realized
 
 ### 1. No Context Switching
+
 **Without Worktrees:**
 ```bash
 git checkout 001-auth      # 5 seconds + mental load
@@ -333,6 +347,7 @@ cd .worktrees/002-dashboard # Instant
 ```
 
 ### 2. Parallel Testing
+
 **Without Worktrees:**
 ```bash
 # Can't test both features simultaneously
@@ -357,6 +372,7 @@ cd .worktrees/003-payment && pytest &
 ```
 
 ### 3. No Branch Confusion
+
 **Without Worktrees:**
 ```bash
 git branch  # Which am I on again?
@@ -374,6 +390,7 @@ git cherry-pick abc123
 ```
 
 ### 4. Side-by-Side Comparison
+
 ```bash
 # Compare auth and payment error handling
 diff .worktrees/001-auth/src/errors.py \
@@ -385,6 +402,7 @@ code --diff .worktrees/001-auth/README.md \
 ```
 
 ### 5. Dashboard Coordination
+
 **One screen shows all features:**
 - PM sees progress on all three
 - Bottlenecks visible (Feature B stuck in review)
@@ -394,6 +412,7 @@ code --diff .worktrees/001-auth/README.md \
 ## Advanced: Shared Code Between Features
 
 ### Problem: Both features need same util
+
 ```bash
 # Feature A creates utility
 cd .worktrees/001-auth
@@ -405,6 +424,7 @@ cd .worktrees/002-dashboard
 ```
 
 ### Solution 1: Merge Feature A First
+
 ```bash
 cd .worktrees/001-auth
 /spec-kitty.accept
@@ -417,6 +437,7 @@ from utils.validation import validate_email  # Use it!
 ```
 
 ### Solution 2: Create Shared Utilities Feature
+
 ```bash
 cd ~/ecommerce-platform
 /spec-kitty.specify
@@ -432,18 +453,21 @@ cd .worktrees/000-shared-utils
 ## Common Patterns
 
 ### Pattern 1: Dependent Features
+
 ```
 Week 1: Feature A (Auth) → Merge
 Week 2: Feature B (Dashboard - needs auth) → Use merged A
 ```
 
 ### Pattern 2: Independent Features
+
 ```
 Week 1-2: Feature A (Auth) || Feature B (Dashboard) → Merge both
          (Developed in parallel, no dependencies)
 ```
 
 ### Pattern 3: Sequential Features
+
 ```
 Feature A → Complete & Merge
 Feature B → Complete & Merge
@@ -484,6 +508,7 @@ Feature C → Complete & Merge
 ## Cleanup
 
 ### Manual Cleanup (if needed)
+
 ```bash
 # List all worktrees
 git worktree list

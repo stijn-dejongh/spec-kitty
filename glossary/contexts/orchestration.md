@@ -61,4 +61,3 @@ Terms describing lifecycle and runtime orchestration semantics.
 | **Definition** | Work package state position (`planned`, `doing`, `for_review`, `done`, etc.). |
 | **Context** | Orchestration |
 | **Status** | canonical |
-

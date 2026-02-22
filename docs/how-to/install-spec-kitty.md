@@ -155,14 +155,17 @@ rm gcm-linux_amd64.2.6.1.deb
 ```
 
 ## Command Reference
+
 - [`spec-kitty init`](../reference/cli-commands.md#spec-kitty-init)
 - [`spec-kitty upgrade`](../reference/cli-commands.md#spec-kitty-upgrade)
 
 ## See Also
+
 - [Non-Interactive Init](non-interactive-init.md)
 - [Upgrade to 0.11.0](upgrade-to-0-11-0.md)
 - [Use the Dashboard](use-dashboard.md)
 
 ## Background
+
 - [Spec-Driven Development](../explanation/spec-driven-development.md)
 - [Mission System](../explanation/mission-system.md)

@@ -1,4 +1,5 @@
 # Implementation Plan: Full-Lifecycle Telemetry Events
+
 *Path: kitty-specs/048-full-lifecycle-telemetry-events/plan.md*
 
 **Branch**: `048-full-lifecycle-telemetry-events` | **Date**: 2026-02-16 | **Spec**: [spec.md](spec.md)

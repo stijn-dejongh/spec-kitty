@@ -108,7 +108,6 @@ WP10 was created from WP02's branch but was not updated to include content from:
 
 The current state cannot be approved because validation was performed on incomplete documentation.
 
-
 ## Objectives & Success Criteria
 
 - Add cross-references between all documentation files
@@ -122,6 +121,7 @@ The current state cannot be approved because validation was performed on incompl
 - **Dependencies**: All content WPs must be complete (WP03-WP08)
 
 ### Cross-Reference Principles
+
 - Each tutorial should link to related how-tos and reference docs
 - Each how-to should link to related reference and explanations
 - Each explanation should link back to tutorials and how-tos
@@ -130,6 +130,7 @@ The current state cannot be approved because validation was performed on incompl
 ## Subtasks & Detailed Guidance
 
 ### Subtask T038 – Add Cross-References to Tutorials
+
 - **Purpose**: Connect tutorials to related practical guides
 - **Steps**:
   1. For each tutorial in `docs/tutorials/`:
@@ -153,6 +154,7 @@ The current state cannot be approved because validation was performed on incompl
 - **Parallel?**: Yes
 
 ### Subtask T039 – Add Cross-References to How-To Guides
+
 - **Purpose**: Connect how-tos to reference and conceptual content
 - **Steps**:
   1. For each how-to in `docs/how-to/`:
@@ -177,6 +179,7 @@ The current state cannot be approved because validation was performed on incompl
 - **Parallel?**: Yes
 
 ### Subtask T040 – Add Cross-References to Reference Docs
+
 - **Purpose**: Connect reference docs to practical usage guides
 - **Steps**:
   1. For each reference doc in `docs/reference/`:
@@ -194,6 +197,7 @@ The current state cannot be approved because validation was performed on incompl
 - **Parallel?**: Yes
 
 ### Subtask T041 – Add Cross-References to Explanations
+
 - **Purpose**: Connect conceptual content to practical guides
 - **Steps**:
   1. For each explanation in `docs/explanation/`:
@@ -216,6 +220,7 @@ The current state cannot be approved because validation was performed on incompl
 - **Parallel?**: Yes
 
 ### Subtask T042 – Verify All Internal Links
+
 - **Purpose**: Ensure no broken links in the documentation
 - **Steps**:
   1. Use a link checker tool or manual verification
@@ -262,13 +267,13 @@ The current state cannot be approved because validation was performed on incompl
 ## Activity Log
 
 - 2026-01-16T16:16:58Z – system – lane=planned – Prompt generated via /spec-kitty.tasks
-- 2026-01-16T17:42:56Z – __AGENT__ – shell_pid=25767 – lane=doing – Started implementation via workflow command
-- 2026-01-16T17:55:04Z – __AGENT__ – shell_pid=25767 – lane=for_review – Ready for review: added cross-references across tutorials/how-to/reference/explanations, fixed broken links, updated toc/index, verified internal links
-- 2026-01-16T18:00:42Z – __AGENT__ – shell_pid=28468 – lane=doing – Started review via workflow command
-- 2026-01-16T18:06:26Z – __AGENT__ – shell_pid=25767 – lane=doing – Started review via workflow command
-- 2026-01-16T18:07:41Z – __AGENT__ – shell_pid=25767 – lane=planned – Changes requested: restore toc/index coverage for existing docs
-- 2026-01-16T18:07:49Z – __AGENT__ – shell_pid=25767 – lane=planned – Moved to planned
-- 2026-01-16T18:07:59Z – __AGENT__ – shell_pid=26746 – lane=doing – Started implementation via workflow command
-- 2026-01-16T18:14:43Z – __AGENT__ – shell_pid=26746 – lane=for_review – Ready for review: rebased WP10 onto WP09 and reran DocFX (warnings only).
+- 2026-01-16T17:42:56Z – **AGENT** – shell_pid=25767 – lane=doing – Started implementation via workflow command
+- 2026-01-16T17:55:04Z – **AGENT** – shell_pid=25767 – lane=for_review – Ready for review: added cross-references across tutorials/how-to/reference/explanations, fixed broken links, updated toc/index, verified internal links
+- 2026-01-16T18:00:42Z – **AGENT** – shell_pid=28468 – lane=doing – Started review via workflow command
+- 2026-01-16T18:06:26Z – **AGENT** – shell_pid=25767 – lane=doing – Started review via workflow command
+- 2026-01-16T18:07:41Z – **AGENT** – shell_pid=25767 – lane=planned – Changes requested: restore toc/index coverage for existing docs
+- 2026-01-16T18:07:49Z – **AGENT** – shell_pid=25767 – lane=planned – Moved to planned
+- 2026-01-16T18:07:59Z – **AGENT** – shell_pid=26746 – lane=doing – Started implementation via workflow command
+- 2026-01-16T18:14:43Z – **AGENT** – shell_pid=26746 – lane=for_review – Ready for review: rebased WP10 onto WP09 and reran DocFX (warnings only).
 - 2026-01-16T18:24:21Z – claude – shell_pid=82691 – lane=doing – Started review via workflow command
 - 2026-01-16T18:26:15Z – claude – shell_pid=82691 – lane=done – Review passed: All cross-references properly added to tutorials, how-tos, reference docs, and explanations. DocFX build succeeds (12 warnings: 6 external file refs acceptable, 6 internal link issues exist but were already fixed in WP10 which incorporates this work). Primary objectives T038-T042 completed.

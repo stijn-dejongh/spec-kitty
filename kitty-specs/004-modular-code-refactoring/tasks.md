@@ -1,4 +1,5 @@
 # Tasks: Modular Code Refactoring
+
 *Path: kitty-specs/004-modular-code-refactoring/tasks.md*
 
 **Feature ID**: 004-modular-code-refactoring
@@ -16,6 +17,7 @@ This task breakdown refactors two monolithic Python files (5,730 total lines) in
 ### Setup Phase
 
 #### WP01: Foundation Layer [Priority: P1] ✅
+
 **Goal**: Create core infrastructure modules that all other packages depend on
 **Prompt**: `tasks/done/WP01-foundation-layer.md`
 **Owner**: codex (shell_pid: 18347)
@@ -31,7 +33,7 @@ This task breakdown refactors two monolithic Python files (5,730 total lines) in
 - [X] T003: Extract shared utility functions to core/utils.py (43 lines)
 - [X] T004: Extract StepTracker class to cli/step_tracker.py (91 lines)
 - [X] T005: Extract menu selection functions to cli/ui.py (192 lines)
-- [X] T006: Create __init__.py files with proper exports for each package
+- [X] T006: Create **init**.py files with proper exports for each package
 - [X] T007: Write unit tests for core/config.py
 - [X] T008: Write unit tests for core/utils.py
 - [X] T009: Write unit tests for cli/ui.py
@@ -45,6 +47,7 @@ This task breakdown refactors two monolithic Python files (5,730 total lines) in
 ### Foundational Phase
 
 #### WP02: Dashboard Infrastructure [Priority: P2] ✅
+
 **Goal**: Extract dashboard static assets and core scanning/diagnostic functions
 **Prompt**: `tasks/done/WP02-dashboard-infrastructure.md`
 **Owner**: codex (shell_pid: 57706)
@@ -67,7 +70,7 @@ This task breakdown refactors two monolithic Python files (5,730 total lines) in
 - [X] T019: Extract server initialization to dashboard/server.py
 - [X] T020: Extract lifecycle management to dashboard/lifecycle.py
 - [X] T021: Extract static assets
-- [X] T022: Update dashboard __init__.py with proper exports
+- [X] T022: Update dashboard **init**.py with proper exports
 - [X] T023: Test static file extraction
 - [X] T024: Test infrastructure modules (including diagnostics)
 - [X] T025: Test import resolution
@@ -77,6 +80,7 @@ This task breakdown refactors two monolithic Python files (5,730 total lines) in
 **Verification**: ✅ Dashboard loads correctly, 13/13 tests passing, all modules compliant
 
 #### WP03: Template System [Priority: P2] ✅
+
 **Goal**: Create template management and rendering infrastructure
 **Prompt**: `tasks/done/WP03-template-system.md`
 **Owner**: codex (shell_pid: 32837)
@@ -95,7 +99,7 @@ This task breakdown refactors two monolithic Python files (5,730 total lines) in
 - [X] T025: Extract render_template() and rewrite_paths() to template/renderer.py (~110 lines)
 - [X] T026: Extract generate_agent_assets() to template/asset_generator.py (~30 lines)
 - [X] T027: Extract render_command_template() to template/asset_generator.py (~100 lines)
-- [X] T028: Create template package __init__.py with exports
+- [X] T028: Create template package **init**.py with exports
 - [X] T029: Write unit tests for template operations
 
 **Dependencies**: WP01 (core/config.py)
@@ -103,6 +107,7 @@ This task breakdown refactors two monolithic Python files (5,730 total lines) in
 **Verification**: ✅ Templates render correctly, assets generate properly, all 9 tests passing
 
 #### WP04: Core Services [Priority: P2] ✅
+
 **Goal**: Extract git operations, project resolution, and tool checking
 **Prompt**: `tasks/done/WP04-core-services.md`
 **Owner**: codex (shell_pid: 33775)
@@ -133,6 +138,7 @@ This task breakdown refactors two monolithic Python files (5,730 total lines) in
 ### Story-Based Development Phase
 
 #### WP05: Dashboard Handlers [Priority: P3] ✅
+
 **Goal**: Refactor HTTP request handling into modular handler classes
 **Prompt**: `tasks/done/WP05-dashboard-handlers.md`
 **Owner**: agent-d
@@ -155,6 +161,7 @@ This task breakdown refactors two monolithic Python files (5,730 total lines) in
 **Verification**: ✅ All dashboard endpoints respond correctly, 13/13 tests passing
 
 #### WP06: CLI Commands Extraction [Priority: P3] [P] ✅
+
 **Goal**: Extract CLI commands (except init) into separate modules
 **Prompt**: `tasks/done/WP06-cli-commands.md`
 **Owner**: codex (shell_pid: multiple)
@@ -171,7 +178,7 @@ This task breakdown refactors two monolithic Python files (5,730 total lines) in
 - [X] T053: Extract merge command to cli/commands/merge.py (~240 lines)
 - [X] T054: Extract verify_setup command to cli/commands/verify.py (~65 lines)
 - [X] T055: Extract dashboard command to cli/commands/dashboard.py (~95 lines)
-- [X] T056: Create cli/commands/__init__.py with command registration
+- [X] T056: Create cli/commands/**init**.py with command registration
 - [X] T057: Extract BannerGroup and helpers to cli/helpers.py (~80 lines)
 - [X] T058: Write integration tests for each command
 - [X] T059: Verify command registration in main app
@@ -181,6 +188,7 @@ This task breakdown refactors two monolithic Python files (5,730 total lines) in
 **Verification**: ✅ All commands work identically to before, tests passing
 
 #### WP07: GitHub Client and Init Command [Priority: P3] [P] ✅
+
 **Goal**: Extract GitHub operations and refactor the complex init command
 **Prompt**: `tasks/done/WP07-github-init.md`
 **Owner**: codex (shell_pid: multiple)
@@ -211,7 +219,8 @@ This task breakdown refactors two monolithic Python files (5,730 total lines) in
 ### Polish Phase
 
 #### WP08: Integration and Cleanup [Priority: P4] ✅
-**Goal**: Update main __init__.py, fix imports, and ensure everything works together
+
+**Goal**: Update main **init**.py, fix imports, and ensure everything works together
 **Prompt**: `tasks/done/WP08-integration-cleanup.md`
 **Owner**: sonnet-4.5 (shell_pid: 50329)
 **Reviewer**: sonnet-4.5
@@ -221,8 +230,8 @@ This task breakdown refactors two monolithic Python files (5,730 total lines) in
 **Summary**: Final integration to ensure all modules work together correctly.
 
 **Subtasks**:
-- [X] T070: Update main __init__.py to import from new modules (~150 lines final)
-- [X] T071: Remove old monolithic code from __init__.py
+- [X] T070: Update main **init**.py to import from new modules (~150 lines final)
+- [X] T071: Remove old monolithic code from **init**.py
 - [X] T072: Fix any circular imports discovered during integration
 - [X] T073: Update all import statements to use new module paths
 - [X] T074: Ensure subprocess imports work (try/except patterns)
@@ -241,6 +250,7 @@ This task breakdown refactors two monolithic Python files (5,730 total lines) in
 ## Parallelization Strategy
 
 ### Execution Timeline
+
 ```
 Day 1: WP01 (Sequential - Foundation)
 Days 2-3: WP02, WP03, WP04 (Parallel - Wave 1)
@@ -249,6 +259,7 @@ Day 6: WP08 (Sequential - Integration)
 ```
 
 ### Agent Assignments
+
 - **Foundation**: Single agent creates base modules
 - **Agent A**: WP02 - Dashboard Infrastructure
 - **Agent B**: WP03 - Template System
@@ -259,6 +270,7 @@ Day 6: WP08 (Sequential - Integration)
 - **Integration**: 1-2 agents for final assembly
 
 ### Coordination Points
+
 - End of Day 1: Foundation complete, all agents pull latest
 - End of Day 3: Wave 1 complete, merge and sync
 - End of Day 5: Wave 2 complete, ready for integration

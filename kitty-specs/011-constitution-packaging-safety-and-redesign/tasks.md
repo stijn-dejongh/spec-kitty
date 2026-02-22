@@ -317,11 +317,13 @@ None required - all design artifacts complete.
 ## Implementation Strategy
 
 ### Phase 1: Foundational (Sequential)
+
 1. **WP01**: Template Relocation (MUST complete first)
    - Moves all templates to `src/specify_cli/`
    - Unblocks WP05 constitution template update
 
 ### Phase 2: Parallel Implementation
+
 **Track 1 (P0)**:
 2. **WP02**: Migration Repairs [P]
 3. **WP03**: Mission Constitution Removal [P] (depends on WP01 for template location)
@@ -331,6 +333,7 @@ None required - all design artifacts complete.
 5. **WP05**: Constitution Redesign (depends on WP01 for template location)
 
 ### Phase 3: Integration (Sequential)
+
 6. **WP06**: Integration Testing & Validation
    - Runs after all implementation complete
    - Gates release

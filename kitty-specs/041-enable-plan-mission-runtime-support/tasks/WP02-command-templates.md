@@ -78,6 +78,7 @@ estimated_duration: "{time estimate}"
 ## Subtask Breakdown
 
 ### Subtask T004: Create specify.md (Step 1)
+
 **Duration**: 30-40 minutes
 **Goal**: Create the entry point template that initiates feature planning.
 
@@ -201,6 +202,7 @@ You are beginning the planning phase for a new software feature. Your role is to
 ---
 
 ### Subtask T005: Create research.md (Step 2)
+
 **Duration**: 30-40 minutes
 **Goal**: Create the research phase template.
 
@@ -240,6 +242,7 @@ You are beginning the planning phase for a new software feature. Your role is to
 ---
 
 ### Subtask T006: Create plan.md (Step 3)
+
 **Duration**: 30-40 minutes
 **Goal**: Create the design/planning phase template.
 
@@ -279,6 +282,7 @@ You are beginning the planning phase for a new software feature. Your role is to
 ---
 
 ### Subtask T007: Create review.md (Step 4)
+
 **Duration**: 30-40 minutes
 **Goal**: Create the final review phase template.
 
@@ -317,6 +321,7 @@ You are beginning the planning phase for a new software feature. Your role is to
 ---
 
 ### Subtask T008: Validate All Templates
+
 **Duration**: 30-40 minutes
 **Goal**: Ensure all 4 templates are complete, consistent, and ready for use.
 
@@ -396,6 +401,7 @@ echo "✓ All templates valid"
 ---
 
 ### Subtask T009: Analyze for Content Template References
+
 **Duration**: 15-20 minutes
 **Goal**: Identify any references to content templates in the command templates.
 
