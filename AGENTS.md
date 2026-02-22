@@ -12,6 +12,24 @@ The toolkit supports multiple AI coding assistants, allowing teams to use their 
 
 ---
 
+## Doctrine Awareness (Interim Authority)
+
+Until constitution-layer finalization is complete, treat `src/doctrine/` as the operational governance source of truth for agent behavior and quality constraints.
+
+Use this read order when executing or reviewing work:
+
+1. `src/doctrine/directives/` (cross-cutting rules and escalation behavior)
+2. `src/doctrine/paradigms/` and `src/doctrine/tactics/` (execution model and procedures)
+3. `src/doctrine/styleguides/` and `src/doctrine/toolguides/` (quality/tool conventions)
+4. `src/doctrine/templates/` (artifact structure contracts)
+
+Notes:
+
+- Constitution outputs and selectors remain important runtime surfaces, but doctrine artifacts under `src/doctrine/` are authoritative while finalization is pending.
+- If constitution guidance and doctrine artifacts diverge, escalate and align to doctrine-first interpretation until resolved.
+
+---
+
 ## Task Lane Management (Work Packages)
 
 **Flat Structure**: All work package (WP) files live in a flat `tasks/` directory. Lane status is tracked **only** in frontmatter - files never move between subdirectories.

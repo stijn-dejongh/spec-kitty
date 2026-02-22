@@ -34,6 +34,23 @@ src/specify_cli/missions/*/command-templates/*.md  (SOURCE - edit here!)
 
 ---
 
+## Doctrine Awareness (Interim Authority)
+
+Until constitution-layer finalization lands, treat `src/doctrine/` as the governance source of truth when implementing, reviewing, or curating behavior.
+
+Read order:
+
+1. `src/doctrine/directives/`
+2. `src/doctrine/paradigms/` and `src/doctrine/tactics/`
+3. `src/doctrine/styleguides/` and `src/doctrine/toolguides/`
+4. `src/doctrine/templates/`
+
+Operational rule:
+
+- If extracted constitution artifacts or legacy documentation conflict with doctrine artifacts, use doctrine-first interpretation and escalate for reconciliation.
+
+---
+
 ## Supported AI Agents
 
 Spec Kitty supports **12 AI agents** with slash commands. When adding features that affect slash commands, migrations, or templates, ensure ALL agents are updated:
@@ -223,6 +240,8 @@ agents:
 - Python 3.11+ (existing spec-kitty codebase) + `spec_kitty_events` (vendored Pydantic event model, Lamport clocks, EventStore ABC), `typer` (CLI), `rich` (console output), `ruamel.yaml` (pricing table parsing) (043-telemetry-foundation)
 - Per-feature JSONL files (`kitty-specs/<feature>/execution.events.jsonl`) — append-only, stream-parsed (043-telemetry-foundation)
 
+- Python 3.12+ (constitution requirement) + Pydantic >=2.0 (model validation/serialization), ruamel.yaml (YAML parsing), Rich (CLI output), Typer (CLI commands), importlib.resources (package data access) (047-agent-profile-domain-model)
+- YAML files — shipped profiles in `src/doctrine/agent-profiles/`, project overrides in `.kittify/constitution/agents/` (047-agent-profile-domain-model)
 ## Project Structure
 
 ```
@@ -273,10 +292,9 @@ pytest tests/ --browser-channel=chromium --headed=false
 Python 3.11+ (existing spec-kitty codebase): Follow standard conventions
 
 ## Recent Changes
-
+- 047-agent-profile-domain-model: Added Python 3.12+ (constitution requirement) + Pydantic >=2.0 (model validation/serialization), ruamel.yaml (YAML parsing), Rich (CLI output), Typer (CLI commands), importlib.resources (package data access)
 - 043-telemetry-foundation: Added Python 3.11+ (existing spec-kitty codebase) + `spec_kitty_events` (vendored Pydantic event model, Lamport clocks, EventStore ABC), `typer` (CLI), `rich` (console output), `ruamel.yaml` (pricing table parsing)
 - 015-first-class-jujutsu-vcs-integration: Adding VCS abstraction layer (Protocol-based), jj as first-class citizen alongside git, new vcs/ subpackage
-- 011-constitution-packaging-safety-and-redesign: Added psutil for cross-platform process management, relocated templates from .kittify/ to src/specify_cli/
 <!-- MANUAL ADDITIONS START -->
 
 ## PyPI Release (Quick Reference)
