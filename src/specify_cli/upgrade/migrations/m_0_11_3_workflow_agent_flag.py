@@ -29,7 +29,9 @@ class WorkflowAgentFlagMigration(BaseMigration):
     def _agent_name(self, agent_root: str) -> str:
         return self.AGENT_NAME_MAP.get(agent_root, agent_root.lstrip("."))
 
-    def _update_workflow_lines(self, path: Path, agent_name: str, dry_run: bool) -> bool:
+    def _update_workflow_lines(
+        self, path: Path, agent_name: str, dry_run: bool
+    ) -> bool:
         if not path.exists():
             return False
 
@@ -73,9 +75,15 @@ class WorkflowAgentFlagMigration(BaseMigration):
                     # Detect __AGENT__ placeholder that needs replacement
                     if "__AGENT__" in line:
                         return True
-                    if "spec-kitty agent workflow implement" in line and "--agent" not in line:
+                    if (
+                        "spec-kitty agent workflow implement" in line
+                        and "--agent" not in line
+                    ):
                         return True
-                    if "spec-kitty agent workflow review" in line and "--agent" not in line:
+                    if (
+                        "spec-kitty agent workflow review" in line
+                        and "--agent" not in line
+                    ):
                         return True
         return False
 
@@ -101,7 +109,9 @@ class WorkflowAgentFlagMigration(BaseMigration):
                 if self._update_workflow_lines(path, agent_name, dry_run):
                     updated_count += 1
             if updated_count:
-                changes.append(f"Updated {updated_count} workflow prompts for {agent_name}")
+                changes.append(
+                    f"Updated {updated_count} workflow prompts for {agent_name}"
+                )
 
         if not changes:
             warnings.append("No workflow prompts required updates")

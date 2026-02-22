@@ -50,7 +50,11 @@ class TestShowOriginLabelsMatchResolution:
 
         # Place plan-template.md at global tier
         global_path = _create_file(
-            global_home / "missions" / "software-dev" / "templates" / "plan-template.md",
+            global_home
+            / "missions"
+            / "software-dev"
+            / "templates"
+            / "plan-template.md",
             content="global",
         )
 
@@ -101,12 +105,15 @@ class TestShowOriginLabelsMatchResolution:
         global_home = tmp_path / "global"
         monkeypatch.setenv("SPEC_KITTY_HOME", str(global_home))
 
-        with patch(
-            "specify_cli.runtime.resolver.get_package_asset_root",
-            side_effect=FileNotFoundError("no pkg"),
-        ), patch(
-            "specify_cli.runtime.show_origin.get_package_asset_root",
-            side_effect=FileNotFoundError("no pkg"),
+        with (
+            patch(
+                "specify_cli.runtime.resolver.get_package_asset_root",
+                side_effect=FileNotFoundError("no pkg"),
+            ),
+            patch(
+                "specify_cli.runtime.show_origin.get_package_asset_root",
+                side_effect=FileNotFoundError("no pkg"),
+            ),
         ):
             entries = collect_origins(project)
 
@@ -190,9 +197,20 @@ class TestShowOriginExtendedAssets:
         pkg_root = tmp_path / "pkg"
         cmd_dir = pkg_root / "software-dev" / "command-templates"
         cmd_dir.mkdir(parents=True)
-        for name in ["specify.md", "plan.md", "tasks.md", "implement.md",
-                      "review.md", "accept.md", "merge.md", "dashboard.md",
-                      "analyze.md", "checklist.md", "clarify.md", "constitution.md"]:
+        for name in [
+            "specify.md",
+            "plan.md",
+            "tasks.md",
+            "implement.md",
+            "review.md",
+            "accept.md",
+            "merge.md",
+            "dashboard.md",
+            "analyze.md",
+            "checklist.md",
+            "clarify.md",
+            "constitution.md",
+        ]:
             (cmd_dir / name).write_text(f"# {name}\n")
 
         with patch(

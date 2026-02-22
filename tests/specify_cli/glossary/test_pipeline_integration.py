@@ -140,8 +140,7 @@ class TestPipelineConflictDetection:
         # With strictness=OFF, pipeline completes (no blocking)
         # but conflicts are still detected
         workspace_conflicts = [
-            c for c in result.conflicts
-            if c.term.surface_text == "workspace"
+            c for c in result.conflicts if c.term.surface_text == "workspace"
         ]
         assert len(workspace_conflicts) >= 1
         assert workspace_conflicts[0].conflict_type == ConflictType.AMBIGUOUS
@@ -465,8 +464,7 @@ class TestPipelineUnknownTerms:
 
         # frobulator not in any seed file -> UNKNOWN
         unknown_conflicts = [
-            c for c in result.conflicts
-            if c.term.surface_text == "frobulator"
+            c for c in result.conflicts if c.term.surface_text == "frobulator"
         ]
         assert len(unknown_conflicts) == 1
         assert unknown_conflicts[0].conflict_type == ConflictType.UNKNOWN
@@ -496,10 +494,7 @@ class TestPipelineSeedFileEdgeCases:
         result = pipeline.process(ctx)
 
         # workspace not found -> UNKNOWN conflict
-        assert any(
-            c.conflict_type == ConflictType.UNKNOWN
-            for c in result.conflicts
-        )
+        assert any(c.conflict_type == ConflictType.UNKNOWN for c in result.conflicts)
 
     def test_malformed_seed_file_skipped(self, tmp_path):
         """Pipeline continues when seed file is malformed YAML."""
@@ -726,8 +721,7 @@ class TestEndToEndSpecifyWithConflict:
         assert result.effective_strictness == Strictness.OFF
         # workspace is ambiguous but we don't block
         workspace_conflicts = [
-            c for c in result.conflicts
-            if c.term.surface_text == "workspace"
+            c for c in result.conflicts if c.term.surface_text == "workspace"
         ]
         assert len(workspace_conflicts) >= 1
 
@@ -996,7 +990,9 @@ class TestClarificationBeforeGate:
             ),
         )
 
-    def test_resolved_conflict_allows_generation_to_proceed(self, tmp_path, monkeypatch):
+    def test_resolved_conflict_allows_generation_to_proceed(
+        self, tmp_path, monkeypatch
+    ):
         """HIGH-severity conflict -> clarification resolves -> gate does NOT block.
 
         This is the key regression test for Issue 2. Under the old ordering
@@ -1038,8 +1034,7 @@ class TestClarificationBeforeGate:
         assert result.effective_strictness == Strictness.MEDIUM
         # The resolved conflict was moved out of context.conflicts
         remaining_workspace = [
-            c for c in result.conflicts
-            if c.term.surface_text == "workspace"
+            c for c in result.conflicts if c.term.surface_text == "workspace"
         ]
         assert len(remaining_workspace) == 0
 
@@ -1048,7 +1043,9 @@ class TestClarificationBeforeGate:
         assert len(resolved) >= 1
         assert resolved[0].term.surface_text == "workspace"
 
-    def test_max_strictness_resolved_conflict_also_proceeds(self, tmp_path, monkeypatch):
+    def test_max_strictness_resolved_conflict_also_proceeds(
+        self, tmp_path, monkeypatch
+    ):
         """Even MAX strictness: if clarification resolves all conflicts,
         the gate allows generation to proceed."""
         self._setup_ambiguous_workspace(tmp_path)
@@ -1245,10 +1242,12 @@ class TestExecuteWithGlossaryEndToEnd:
 
         def my_specify_primitive(context):
             """Simulate a real specify step primitive."""
-            primitive_results.append({
-                "strictness": context.effective_strictness,
-                "remaining_conflicts": len(context.conflicts),
-            })
+            primitive_results.append(
+                {
+                    "strictness": context.effective_strictness,
+                    "remaining_conflicts": len(context.conflicts),
+                }
+            )
             return primitive_results[-1]
 
         ctx = _make_context(

@@ -50,7 +50,9 @@ def init_test_repo(tmp_path: Path) -> Path:
     repo.mkdir()
 
     # Initialize git
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "config", "user.name", "Test User"],
         cwd=repo,
@@ -70,21 +72,19 @@ def init_test_repo(tmp_path: Path) -> Path:
 
     # Create minimal config
     import yaml
+
     config = {
         "vcs": {"type": "git"},
         "agents": {
             "available": ["claude"],
-            "selection": {"preferred_implementer": "claude"}
-        }
+            "selection": {"preferred_implementer": "claude"},
+        },
     }
     (kittify / "config.yaml").write_text(yaml.dump(config))
 
     # Create minimal metadata
     metadata = {
-        "spec_kitty": {
-            "version": "0.13.8",
-            "initialized_at": "2026-01-29T00:00:00Z"
-        }
+        "spec_kitty": {"version": "0.13.8", "initialized_at": "2026-01-29T00:00:00Z"}
     }
     (kittify / "metadata.yaml").write_text(yaml.dump(metadata))
 
@@ -144,7 +144,9 @@ def test_specify_creates_explicit_target_branch(tmp_path):
     assert "target_branch" in loaded_meta, "meta.json MUST have target_branch field"
     assert "vcs" in loaded_meta, "meta.json MUST have vcs field"
 
-    assert loaded_meta["target_branch"] == "main", "Default target_branch should be 'main'"
+    assert loaded_meta["target_branch"] == "main", (
+        "Default target_branch should be 'main'"
+    )
     assert loaded_meta["vcs"] == "git", "Default vcs should be 'git'"
 
 
@@ -269,7 +271,9 @@ def test_specify_all_required_fields_present(tmp_path):
     new_required_fields = ["target_branch", "vcs"]
 
     for field in new_required_fields:
-        assert field in loaded_meta, f"Required field '{field}' missing (explicit defaults)"
+        assert field in loaded_meta, (
+            f"Required field '{field}' missing (explicit defaults)"
+        )
         assert loaded_meta[field] is not None, f"Field '{field}' must not be null"
         assert loaded_meta[field] != "", f"Field '{field}' must not be empty"
 
@@ -463,10 +467,10 @@ def test_json_schema_validation(tmp_path):
     assert isinstance(loaded_meta["vcs"], str)  # NEW
 
     # Value constraints
-    assert loaded_meta["target_branch"] in ("main", "2.x", "custom-branch"), \
+    assert loaded_meta["target_branch"] in ("main", "2.x", "custom-branch"), (
         "target_branch should be a valid branch name"
-    assert loaded_meta["vcs"] in ("git", "jj"), \
-        "vcs should be 'git' or 'jj'"
+    )
+    assert loaded_meta["vcs"] in ("git", "jj"), "vcs should be 'git' or 'jj'"
 
 
 def test_explicit_fields_in_git_history(tmp_path):
@@ -495,7 +499,9 @@ def test_explicit_fields_in_git_history(tmp_path):
     meta_file.write_text(json.dumps(meta, indent=2) + "\n")
 
     # Commit
-    subprocess.run(["git", "add", str(feature_dir)], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", str(feature_dir)], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", "Add feature 010"],
         cwd=repo,
@@ -513,7 +519,9 @@ def test_explicit_fields_in_git_history(tmp_path):
     )
 
     committed_content = result.stdout
-    assert "target_branch" in committed_content, "Explicit field should be in git history"
+    assert "target_branch" in committed_content, (
+        "Explicit field should be in git history"
+    )
     assert "vcs" in committed_content, "Explicit field should be in git history"
     assert '"main"' in committed_content or "'main'" in committed_content
 
@@ -528,14 +536,18 @@ def test_template_fix_applies_to_all_agents(tmp_path):
     - All show same meta.json schema with target_branch and vcs
     """
     # This test verifies the source templates in spec-kitty repo
-    source_template = REPO_ROOT / "src/specify_cli/missions/software-dev/command-templates/specify.md"
+    source_template = (
+        REPO_ROOT / "src/specify_cli/missions/software-dev/command-templates/specify.md"
+    )
 
     assert source_template.exists(), "Source template should exist"
 
     content = source_template.read_text()
 
     # Verify template includes target_branch and vcs in the meta.json example
-    assert '"target_branch":' in content, "Template should include target_branch in meta.json schema"
+    assert '"target_branch":' in content, (
+        "Template should include target_branch in meta.json schema"
+    )
     assert '"vcs":' in content, "Template should include vcs in meta.json schema"
 
     # Verify the instructions mention these fields

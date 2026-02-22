@@ -95,6 +95,7 @@ class SyncRuntime:
 
         # Start background service (use existing singleton)
         from .background import get_sync_service
+
         self.background_service = get_sync_service()
 
         # Connect WebSocket if authenticated
@@ -114,11 +115,13 @@ class SyncRuntime:
         if auth.is_authenticated():
             try:
                 from .client import WebSocketClient
+
                 self.ws_client = WebSocketClient(
                     server_url=config.get_server_url(),
                     auth_client=auth,
                 )
                 import asyncio
+
                 try:
                     asyncio.get_running_loop()
                     # Running event loop available: connect non-blocking.
@@ -168,6 +171,7 @@ class SyncRuntime:
         if self.ws_client:
             try:
                 import asyncio
+
                 try:
                     loop = asyncio.get_running_loop()
                     asyncio.ensure_future(self.ws_client.disconnect())

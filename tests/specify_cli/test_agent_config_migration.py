@@ -41,7 +41,9 @@ def mock_project_with_config(tmp_path):
     # Create mission templates
     missions = kittify / "missions" / "software-dev" / "command-templates"
     missions.mkdir(parents=True)
-    (missions / "implement.md").write_text("# Implement Template\n\nscroll to the BOTTOM")
+    (missions / "implement.md").write_text(
+        "# Implement Template\n\nscroll to the BOTTOM"
+    )
     (missions / "review.md").write_text("# Review Template\n\nscroll to the BOTTOM")
 
     # Create opencode directory (configured)
@@ -103,7 +105,10 @@ class TestMigrationRespectsConfig:
 
         # Create old template for opencode (will be updated)
         opencode_implement = (
-            mock_project_with_config / ".opencode" / "command" / "spec-kitty.implement.md"
+            mock_project_with_config
+            / ".opencode"
+            / "command"
+            / "spec-kitty.implement.md"
         )
         opencode_implement.write_text("# Old implement without scroll warning")
 
@@ -182,8 +187,12 @@ class TestMigrationDetection:
         # Create mission templates (updated)
         missions = kittify / "missions" / "software-dev" / "command-templates"
         missions.mkdir(parents=True)
-        (missions / "implement.md").write_text("# Updated\n\nscroll to the BOTTOM of output")
-        (missions / "review.md").write_text("# Updated\n\nscroll to the BOTTOM of output")
+        (missions / "implement.md").write_text(
+            "# Updated\n\nscroll to the BOTTOM of output"
+        )
+        (missions / "review.md").write_text(
+            "# Updated\n\nscroll to the BOTTOM of output"
+        )
 
         # Create kitty-specs
         (tmp_path / "kitty-specs").mkdir()
@@ -191,8 +200,12 @@ class TestMigrationDetection:
         # Create opencode with updated templates (configured - up to date)
         opencode = tmp_path / ".opencode" / "command"
         opencode.mkdir(parents=True)
-        (opencode / "spec-kitty.implement.md").write_text("# Updated\n\nscroll to the BOTTOM of output")
-        (opencode / "spec-kitty.review.md").write_text("# Updated\n\nscroll to the BOTTOM of output")
+        (opencode / "spec-kitty.implement.md").write_text(
+            "# Updated\n\nscroll to the BOTTOM of output"
+        )
+        (opencode / "spec-kitty.review.md").write_text(
+            "# Updated\n\nscroll to the BOTTOM of output"
+        )
 
         # Create claude with OLD templates (not configured - should be completely ignored)
         claude_dir = tmp_path / ".claude" / "commands"
@@ -210,6 +223,7 @@ class TestMigrationDetection:
         # This is acceptable - the important thing is that claude didn't cause detection
         # So we just verify that if we remove claude, the result stays the same
         import shutil
+
         shutil.rmtree(claude_dir)
 
         result_without_claude = migration.detect(tmp_path)
@@ -237,7 +251,9 @@ class TestAgentDirMapping:
     def test_all_agent_dirs_have_keys(self):
         """Verify all AGENT_DIRS have corresponding keys."""
         for agent_dir, _ in CompleteLaneMigration.AGENT_DIRS:
-            assert agent_dir in AGENT_DIR_TO_KEY, f"{agent_dir} missing from AGENT_DIR_TO_KEY"
+            assert agent_dir in AGENT_DIR_TO_KEY, (
+                f"{agent_dir} missing from AGENT_DIR_TO_KEY"
+            )
 
 
 class TestLegacyProjectSupport:
@@ -287,7 +303,10 @@ class TestDryRunBehavior:
 
         # Create old template for opencode
         opencode_implement = (
-            mock_project_with_config / ".opencode" / "command" / "spec-kitty.implement.md"
+            mock_project_with_config
+            / ".opencode"
+            / "command"
+            / "spec-kitty.implement.md"
         )
         opencode_implement.write_text("# Old implement")
 

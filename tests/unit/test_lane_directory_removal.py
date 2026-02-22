@@ -110,7 +110,9 @@ def test_migration_0_9_0_detects_lane_directories(migration_0_9_0, mock_v0_6_4_p
     assert migration_0_9_0.detect(mock_v0_6_4_project) is True
 
 
-def test_migration_0_9_0_removes_empty_lane_directories(migration_0_9_0, mock_v0_6_4_project):
+def test_migration_0_9_0_removes_empty_lane_directories(
+    migration_0_9_0, mock_v0_6_4_project
+):
     """Test that migration 0.9.0 removes lane directories after moving files.
 
     This is the FAILING test that reproduces Issue #70.
@@ -143,7 +145,9 @@ def test_migration_0_9_0_removes_empty_lane_directories(migration_0_9_0, mock_v0
     )
 
 
-def test_migration_0_9_0_handles_ds_store_files(migration_0_9_0, mock_v0_6_4_project_with_ds_store):
+def test_migration_0_9_0_handles_ds_store_files(
+    migration_0_9_0, mock_v0_6_4_project_with_ds_store
+):
     """Test that migration 0.9.0 removes directories even with .DS_Store files.
 
     This is the ROOT CAUSE test - .DS_Store files prevent directory removal.
@@ -171,7 +175,9 @@ def test_migration_0_9_0_handles_ds_store_files(migration_0_9_0, mock_v0_6_4_pro
     )
 
 
-def test_migration_0_9_0_handles_gitkeep_files(migration_0_9_0, mock_v0_6_4_project_with_gitkeep):
+def test_migration_0_9_0_handles_gitkeep_files(
+    migration_0_9_0, mock_v0_6_4_project_with_gitkeep
+):
     """Test that migration 0.9.0 removes directories with .gitkeep files."""
     # Run migration
     result = migration_0_9_0.apply(mock_v0_6_4_project_with_gitkeep, dry_run=False)
@@ -195,7 +201,9 @@ def test_migration_0_9_0_handles_gitkeep_files(migration_0_9_0, mock_v0_6_4_proj
     )
 
 
-def test_migration_0_9_1_removes_remaining_lane_directories(migration_0_9_1, mock_v0_6_4_project_with_ds_store):
+def test_migration_0_9_1_removes_remaining_lane_directories(
+    migration_0_9_1, mock_v0_6_4_project_with_ds_store
+):
     """Test that migration 0.9.1 cleans up any remaining lane directories.
 
     Migration 0.9.1 is the "catch-all" that should remove ANY remaining
@@ -229,9 +237,7 @@ def test_migration_0_9_1_removes_remaining_lane_directories(migration_0_9_1, moc
 
 
 def test_upgrade_path_0_6_4_to_0_10_x_removes_all_lanes(
-    migration_0_9_0,
-    migration_0_9_1,
-    mock_v0_6_4_project_with_ds_store
+    migration_0_9_0, migration_0_9_1, mock_v0_6_4_project_with_ds_store
 ):
     """Integration test: Full upgrade path from v0.6.4 to v0.10.x.
 
@@ -298,4 +304,6 @@ def test_empty_lane_directories_are_removed(migration_0_9_0, tmp_path):
             if lane_dir.exists():
                 persisting_lanes.append(lane)
 
-        assert not persisting_lanes, f"Empty directories should be removed: {persisting_lanes}"
+        assert not persisting_lanes, (
+            f"Empty directories should be removed: {persisting_lanes}"
+        )

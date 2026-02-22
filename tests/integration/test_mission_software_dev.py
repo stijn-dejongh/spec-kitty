@@ -86,7 +86,9 @@ class TestStateMachineStructure:
 
     def test_all_states_have_display_name(self, software_dev_config: dict) -> None:
         for state in software_dev_config["states"]:
-            assert "display_name" in state, f"State '{state['name']}' missing display_name"
+            assert "display_name" in state, (
+                f"State '{state['name']}' missing display_name"
+            )
 
     def test_all_states_have_on_enter(self, software_dev_config: dict) -> None:
         for state in software_dev_config["states"]:
@@ -214,7 +216,13 @@ class TestGuardsSection:
         assert len(guards) == 5
 
     def test_guard_names(self, software_dev_config: dict) -> None:
-        expected = {"has_spec", "has_plan", "has_tasks", "all_wps_done", "review_passed"}
+        expected = {
+            "has_spec",
+            "has_plan",
+            "has_tasks",
+            "all_wps_done",
+            "review_passed",
+        }
         assert set(software_dev_config["guards"].keys()) == expected
 
     def test_each_guard_has_description_and_check(
@@ -330,9 +338,7 @@ class TestMissionBlock:
 class TestStateReachability:
     """Every state is reachable from the initial state via transitions."""
 
-    def test_all_states_reachable_from_initial(
-        self, software_dev_config: dict
-    ) -> None:
+    def test_all_states_reachable_from_initial(self, software_dev_config: dict) -> None:
         initial = software_dev_config["initial"]
         state_names = {s["name"] for s in software_dev_config["states"]}
         transitions = software_dev_config["transitions"]
@@ -360,13 +366,9 @@ class TestStateReachability:
                 if neighbor not in visited:
                     queue.append(neighbor)
 
-        assert visited == state_names, (
-            f"Unreachable states: {state_names - visited}"
-        )
+        assert visited == state_names, f"Unreachable states: {state_names - visited}"
 
-    def test_triggers_available_from_review(
-        self, software_dev_config: dict
-    ) -> None:
+    def test_triggers_available_from_review(self, software_dev_config: dict) -> None:
         """Review state should have both 'advance' and 'rework' triggers."""
         triggers = set()
         for t in software_dev_config["transitions"]:

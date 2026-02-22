@@ -5,8 +5,14 @@ from pathlib import Path
 from rich.console import Console
 from typing import Optional
 
-from specify_cli.upgrade.migrations.m_0_10_9_repair_templates import RepairTemplatesMigration
-from specify_cli.core.paths import locate_project_root, get_main_repo_root, is_worktree_context
+from specify_cli.upgrade.migrations.m_0_10_9_repair_templates import (
+    RepairTemplatesMigration,
+)
+from specify_cli.core.paths import (
+    locate_project_root,
+    get_main_repo_root,
+    is_worktree_context,
+)
 
 app = typer.Typer()
 console = Console()
@@ -15,16 +21,11 @@ console = Console()
 @app.command()
 def repair(
     project_path: Path = typer.Option(
-        Path.cwd(),
-        "--project-path",
-        "-p",
-        help="Path to project to repair"
+        Path.cwd(), "--project-path", "-p", help="Path to project to repair"
     ),
     dry_run: bool = typer.Option(
-        False,
-        "--dry-run",
-        help="Show what would be changed without making changes"
-    )
+        False, "--dry-run", help="Show what would be changed without making changes"
+    ),
 ):
     """Repair broken templates caused by v0.10.0-0.10.8 bundling bug.
 
@@ -41,7 +42,9 @@ def repair(
     needs_repair = migration.detect(project_path)
 
     if not needs_repair:
-        console.print("[green]✓ No broken templates detected - project is healthy![/green]")
+        console.print(
+            "[green]✓ No broken templates detected - project is healthy![/green]"
+        )
         return
 
     console.print("[yellow]⚠ Broken templates detected[/yellow]")
@@ -75,13 +78,11 @@ def repair(
 @app.command(name="worktree")
 def repair_worktree(
     all_worktrees: bool = typer.Option(
-        False,
-        "--all",
-        help="Check all worktrees in .worktrees/ directory"
+        False, "--all", help="Check all worktrees in .worktrees/ directory"
     ),
     worktree_path: Optional[Path] = typer.Argument(
         None,
-        help="Specific worktree path to check (defaults to current directory if in a worktree)"
+        help="Specific worktree path to check (defaults to current directory if in a worktree)",
     ),
 ):
     """Diagnose worktree kitty-specs/ status.
@@ -126,7 +127,9 @@ def repair_worktree(
         # Use specified path
         worktree_path = worktree_path.resolve()
         if not worktree_path.exists():
-            console.print(f"[red]Error:[/red] Worktree path does not exist: {worktree_path}")
+            console.print(
+                f"[red]Error:[/red] Worktree path does not exist: {worktree_path}"
+            )
             raise typer.Exit(1)
         worktrees_to_check.append(worktree_path)
     else:
@@ -143,7 +146,9 @@ def repair_worktree(
                 console.print("[red]Error:[/red] Could not find worktree root")
                 raise typer.Exit(1)
         else:
-            console.print("[yellow]Not in a worktree. Use --all to check all worktrees.[/yellow]")
+            console.print(
+                "[yellow]Not in a worktree. Use --all to check all worktrees.[/yellow]"
+            )
             return
 
     console.print(f"Found {len(worktrees_to_check)} worktree(s) to check")
@@ -168,8 +173,12 @@ def repair_worktree(
 
     console.print()
     console.print("[bold cyan]How WP operations work:[/bold cyan]")
-    console.print("  • [green]move-task[/green] always updates [bold]main repo's[/bold] kitty-specs/")
+    console.print(
+        "  • [green]move-task[/green] always updates [bold]main repo's[/bold] kitty-specs/"
+    )
     console.print("  • Research artifacts can be added to worktree's kitty-specs/")
-    console.print("  • Stale WP files in worktrees are [dim]ignored[/dim] by lane operations")
+    console.print(
+        "  • Stale WP files in worktrees are [dim]ignored[/dim] by lane operations"
+    )
     console.print()
     console.print("[dim]No repair needed - this is informational only.[/dim]")

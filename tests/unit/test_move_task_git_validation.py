@@ -30,7 +30,9 @@ def git_repo_with_worktree(tmp_path: Path) -> tuple[Path, Path]:
     repo.mkdir()
 
     # Initialize git repo with explicit branch name
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "config", "user.email", "test@example.com"],
         cwd=repo,
@@ -89,7 +91,15 @@ Test content here.
     # Create worktree with branch that has commits beyond main
     worktree_dir = repo / ".worktrees" / "017-test-feature-WP01"
     subprocess.run(
-        ["git", "worktree", "add", "-b", "017-test-feature-WP01", str(worktree_dir), "main"],
+        [
+            "git",
+            "worktree",
+            "add",
+            "-b",
+            "017-test-feature-WP01",
+            str(worktree_dir),
+            "main",
+        ],
         cwd=repo,
         check=True,
         capture_output=True,
@@ -97,7 +107,9 @@ Test content here.
 
     # Add a commit in the worktree (so branch has commits beyond main)
     (worktree_dir / "implementation.txt").write_text("Implementation work\n")
-    subprocess.run(["git", "add", "."], cwd=worktree_dir, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "."], cwd=worktree_dir, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", "Add implementation"],
         cwd=worktree_dir,
@@ -114,7 +126,10 @@ class TestMoveTaskGitValidation:
     @patch("specify_cli.cli.commands.agent.tasks.locate_project_root")
     @patch("specify_cli.cli.commands.agent.tasks._find_feature_slug")
     def test_move_to_done_with_uncommitted_changes_fails(
-        self, mock_slug: Mock, mock_root: Mock, git_repo_with_worktree: tuple[Path, Path]
+        self,
+        mock_slug: Mock,
+        mock_root: Mock,
+        git_repo_with_worktree: tuple[Path, Path],
     ):
         """Should fail when moving to done with uncommitted changes."""
         repo_root, worktree = git_repo_with_worktree
@@ -130,15 +145,21 @@ class TestMoveTaskGitValidation:
         # Verify failure
         assert result.exit_code == 1
         # Parse only the first JSON object (CLI may output multiple)
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert "error" in output
-        assert "uncommitted" in output["error"].lower() or "changes" in output["error"].lower()
+        assert (
+            "uncommitted" in output["error"].lower()
+            or "changes" in output["error"].lower()
+        )
 
     @patch("specify_cli.cli.commands.agent.tasks.locate_project_root")
     @patch("specify_cli.cli.commands.agent.tasks._find_feature_slug")
     def test_move_to_done_with_committed_changes_succeeds(
-        self, mock_slug: Mock, mock_root: Mock, git_repo_with_worktree: tuple[Path, Path]
+        self,
+        mock_slug: Mock,
+        mock_root: Mock,
+        git_repo_with_worktree: tuple[Path, Path],
     ):
         """Should succeed when moving to done with all changes committed."""
         repo_root, worktree = git_repo_with_worktree
@@ -168,7 +189,10 @@ class TestMoveTaskGitValidation:
     @patch("specify_cli.cli.commands.agent.tasks.locate_project_root")
     @patch("specify_cli.cli.commands.agent.tasks._find_feature_slug")
     def test_move_to_done_with_force_bypasses_validation(
-        self, mock_slug: Mock, mock_root: Mock, git_repo_with_worktree: tuple[Path, Path]
+        self,
+        mock_slug: Mock,
+        mock_root: Mock,
+        git_repo_with_worktree: tuple[Path, Path],
     ):
         """Should succeed when using --force flag even with uncommitted changes."""
         repo_root, worktree = git_repo_with_worktree
@@ -192,7 +216,10 @@ class TestMoveTaskGitValidation:
     @patch("specify_cli.cli.commands.agent.tasks.locate_project_root")
     @patch("specify_cli.cli.commands.agent.tasks._find_feature_slug")
     def test_move_to_for_review_still_validates(
-        self, mock_slug: Mock, mock_root: Mock, git_repo_with_worktree: tuple[Path, Path]
+        self,
+        mock_slug: Mock,
+        mock_root: Mock,
+        git_repo_with_worktree: tuple[Path, Path],
     ):
         """Should still validate when moving to for_review (existing behavior)."""
         repo_root, worktree = git_repo_with_worktree
@@ -203,20 +230,28 @@ class TestMoveTaskGitValidation:
         (worktree / "uncommitted.txt").write_text("Uncommitted work\n")
 
         # Try to move to for_review (should fail)
-        result = runner.invoke(app, ["move-task", "WP01", "--to", "for_review", "--json"])
+        result = runner.invoke(
+            app, ["move-task", "WP01", "--to", "for_review", "--json"]
+        )
 
         # Verify failure (existing behavior preserved)
         assert result.exit_code == 1
         # Parse only the first JSON object (CLI may output multiple)
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert "error" in output
-        assert "uncommitted" in output["error"].lower() or "changes" in output["error"].lower()
+        assert (
+            "uncommitted" in output["error"].lower()
+            or "changes" in output["error"].lower()
+        )
 
     @patch("specify_cli.cli.commands.agent.tasks.locate_project_root")
     @patch("specify_cli.cli.commands.agent.tasks._find_feature_slug")
     def test_move_to_done_with_staged_but_uncommitted_fails(
-        self, mock_slug: Mock, mock_root: Mock, git_repo_with_worktree: tuple[Path, Path]
+        self,
+        mock_slug: Mock,
+        mock_root: Mock,
+        git_repo_with_worktree: tuple[Path, Path],
     ):
         """Should fail when moving to done with staged but uncommitted changes."""
         repo_root, worktree = git_repo_with_worktree
@@ -225,7 +260,9 @@ class TestMoveTaskGitValidation:
 
         # Create and stage a file (but don't commit)
         (worktree / "staged.txt").write_text("Staged but not committed\n")
-        subprocess.run(["git", "add", "."], cwd=worktree, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=worktree, check=True, capture_output=True
+        )
 
         # Try to move to done (should fail)
         result = runner.invoke(app, ["move-task", "WP01", "--to", "done", "--json"])
@@ -233,12 +270,18 @@ class TestMoveTaskGitValidation:
         # Verify failure
         assert result.exit_code == 1
         # Parse only the first JSON object (CLI may output multiple)
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert "error" in output
-        assert "uncommitted" in output["error"].lower() or "changes" in output["error"].lower()
+        assert (
+            "uncommitted" in output["error"].lower()
+            or "changes" in output["error"].lower()
+        )
 
-    @patch("specify_cli.cli.commands.agent.tasks.get_feature_mission_key", return_value="software-dev")
+    @patch(
+        "specify_cli.cli.commands.agent.tasks.get_feature_mission_key",
+        return_value="software-dev",
+    )
     def test_review_validation_allows_behind_status_only_commits(
         self, _mock_mission: Mock, git_repo_with_worktree: tuple[Path, Path]
     ):
@@ -247,10 +290,14 @@ class TestMoveTaskGitValidation:
         feature_slug = "017-test-feature"
 
         # Add a status/planning-only commit on main so the worktree is behind.
-        wp_file = repo_root / "kitty-specs" / feature_slug / "tasks" / "WP01-test-task.md"
+        wp_file = (
+            repo_root / "kitty-specs" / feature_slug / "tasks" / "WP01-test-task.md"
+        )
         content = wp_file.read_text(encoding="utf-8")
         wp_file.write_text(content + "\n<!-- status update -->\n", encoding="utf-8")
-        subprocess.run(["git", "add", str(wp_file)], cwd=repo_root, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", str(wp_file)], cwd=repo_root, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "chore: status-only planning update"],
             cwd=repo_root,
@@ -268,7 +315,10 @@ class TestMoveTaskGitValidation:
         assert is_valid is True
         assert guidance == []
 
-    @patch("specify_cli.cli.commands.agent.tasks.get_feature_mission_key", return_value="software-dev")
+    @patch(
+        "specify_cli.cli.commands.agent.tasks.get_feature_mission_key",
+        return_value="software-dev",
+    )
     def test_review_validation_allows_behind_config_and_status_commits(
         self, _mock_mission: Mock, git_repo_with_worktree: tuple[Path, Path]
     ):
@@ -276,11 +326,18 @@ class TestMoveTaskGitValidation:
         repo_root, worktree = git_repo_with_worktree
         feature_slug = "017-test-feature"
 
-        wp_file = repo_root / "kitty-specs" / feature_slug / "tasks" / "WP01-test-task.md"
+        wp_file = (
+            repo_root / "kitty-specs" / feature_slug / "tasks" / "WP01-test-task.md"
+        )
         config_file = repo_root / ".kittify" / "config.yaml"
 
-        wp_file.write_text(wp_file.read_text(encoding="utf-8") + "\n<!-- status update -->\n", encoding="utf-8")
-        config_file.write_text(config_file.read_text(encoding="utf-8") + "sync: true\n", encoding="utf-8")
+        wp_file.write_text(
+            wp_file.read_text(encoding="utf-8") + "\n<!-- status update -->\n",
+            encoding="utf-8",
+        )
+        config_file.write_text(
+            config_file.read_text(encoding="utf-8") + "sync: true\n", encoding="utf-8"
+        )
 
         subprocess.run(
             ["git", "add", str(wp_file), str(config_file)],
@@ -320,7 +377,9 @@ class TestMoveTaskGitValidation:
         mock_slug.return_value = "017-test-feature"
         monkeypatch.chdir(worktree)
 
-        result = runner.invoke(app, ["move-task", "WP01", "--to", "for_review", "--json"])
+        result = runner.invoke(
+            app, ["move-task", "WP01", "--to", "for_review", "--json"]
+        )
 
         assert result.exit_code == 0
         payload = json.loads(result.stdout)

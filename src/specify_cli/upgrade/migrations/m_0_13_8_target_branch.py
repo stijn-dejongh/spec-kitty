@@ -125,7 +125,9 @@ class TargetBranchMigration(BaseMigration):
                         json.dumps(meta, indent=2, ensure_ascii=False) + "\n",
                         encoding="utf-8",
                     )
-                    changes.append(f"Added target_branch={target_branch} to {feature_dir.name}")
+                    changes.append(
+                        f"Added target_branch={target_branch} to {feature_dir.name}"
+                    )
 
             except json.JSONDecodeError as e:
                 errors.append(f"Malformed JSON in {feature_dir.name}/meta.json: {e}")

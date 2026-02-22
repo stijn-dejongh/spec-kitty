@@ -25,7 +25,15 @@ from typing import Dict, List, Optional, Tuple
 from specify_cli.legacy_detector import is_legacy_format
 
 # IMPORTANT: Keep in sync with scripts/tasks/task_helpers.py
-LANES: Tuple[str, ...] = ("planned", "claimed", "in_progress", "for_review", "done", "blocked", "canceled")
+LANES: Tuple[str, ...] = (
+    "planned",
+    "claimed",
+    "in_progress",
+    "for_review",
+    "done",
+    "blocked",
+    "canceled",
+)
 LANE_ALIASES: Dict[str, str] = {"doing": "in_progress"}
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
@@ -83,7 +91,9 @@ def find_repo_root(start: Optional[Path] = None) -> Path:
     raise TaskCliError("Unable to locate repository root (missing .git or .kittify).")
 
 
-def run_git(args: List[str], cwd: Path, check: bool = True) -> subprocess.CompletedProcess:
+def run_git(
+    args: List[str], cwd: Path, check: bool = True
+) -> subprocess.CompletedProcess:
     """Run a git command inside the repository."""
     try:
         return subprocess.run(
@@ -109,7 +119,9 @@ def ensure_lane(value: str) -> str:
     # Resolve aliases (e.g., "doing" -> "in_progress")
     lane = LANE_ALIASES.get(lane, lane)
     if lane not in LANES:
-        raise TaskCliError(f"Invalid lane '{value}'. Expected one of {', '.join(LANES)}.")
+        raise TaskCliError(
+            f"Invalid lane '{value}'. Expected one of {', '.join(LANES)}."
+        )
     return lane
 
 
@@ -323,7 +335,9 @@ def locate_work_package(repo_root: Path, feature: str, wp_id: str) -> WorkPackag
 
     tasks_root = feature_path / "tasks"
     if not tasks_root.exists():
-        raise TaskCliError(f"Feature '{feature}' has no tasks directory at {tasks_root}.")
+        raise TaskCliError(
+            f"Feature '{feature}' has no tasks directory at {tasks_root}."
+        )
 
     # Use exact WP ID matching with word boundary to avoid WP04 matching WP04b
     # Matches: WP04.md, WP04-something.md, WP04_something.md
@@ -353,7 +367,9 @@ def locate_work_package(repo_root: Path, feature: str, wp_id: str) -> WorkPackag
                 candidates.append((lane, path, tasks_root))
 
     if not candidates:
-        raise TaskCliError(f"Work package '{wp_id}' not found under kitty-specs/{feature}/tasks.")
+        raise TaskCliError(
+            f"Work package '{wp_id}' not found under kitty-specs/{feature}/tasks."
+        )
     if len(candidates) > 1:
         joined = "\n".join(str(item[1].relative_to(repo_root)) for item in candidates)
         raise TaskCliError(
@@ -407,6 +423,7 @@ def get_lane_from_frontmatter(wp_path: Path, warn_on_missing: bool = True) -> st
             # Import here to avoid circular dependency issues
             try:
                 from rich.console import Console
+
                 console = Console(stderr=True)
                 console.print(
                     f"[yellow]Warning: {wp_path.name} missing lane field, "
@@ -414,9 +431,10 @@ def get_lane_from_frontmatter(wp_path: Path, warn_on_missing: bool = True) -> st
                 )
             except ImportError:
                 import sys
+
                 print(
                     f"Warning: {wp_path.name} missing lane field, defaulting to 'planned'",
-                    file=sys.stderr
+                    file=sys.stderr,
                 )
         return "planned"
 
@@ -425,8 +443,7 @@ def get_lane_from_frontmatter(wp_path: Path, warn_on_missing: bool = True) -> st
 
     if lane not in LANES:
         raise ValueError(
-            f"Invalid lane '{lane}' in {wp_path.name}. "
-            f"Valid lanes: {', '.join(LANES)}"
+            f"Invalid lane '{lane}' in {wp_path.name}. Valid lanes: {', '.join(LANES)}"
         )
 
     return lane

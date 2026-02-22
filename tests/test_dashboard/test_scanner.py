@@ -21,7 +21,9 @@ agent: codex
 
 Body
 """
-    (feature_dir / "tasks" / "planned" / "WP01-demo.md").write_text(prompt, encoding="utf-8")
+    (feature_dir / "tasks" / "planned" / "WP01-demo.md").write_text(
+        prompt, encoding="utf-8"
+    )
     return feature_dir
 
 

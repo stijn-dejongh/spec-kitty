@@ -93,6 +93,7 @@ class TestPipelineExecution:
             def side_effect(ctx):
                 call_order.append(name)
                 return ctx
+
             return side_effect
 
         mw1 = _MockMiddleware("mw1", side_effect=make_side_effect("mw1"))
@@ -199,10 +200,18 @@ class TestPipelineExceptionPropagation:
             severity=Severity.HIGH,
             confidence=0.9,
             candidate_senses=[
-                MagicMock(surface="workspace", scope="team_domain",
-                          definition="def1", confidence=0.9),
-                MagicMock(surface="workspace", scope="team_domain",
-                          definition="def2", confidence=0.7),
+                MagicMock(
+                    surface="workspace",
+                    scope="team_domain",
+                    definition="def1",
+                    confidence=0.9,
+                ),
+                MagicMock(
+                    surface="workspace",
+                    scope="team_domain",
+                    definition="def2",
+                    confidence=0.7,
+                ),
             ],
         )
 
@@ -329,9 +338,7 @@ class TestCreateStandardPipeline:
 
     def test_runtime_strictness_passed_to_gate(self, tmp_path):
         (tmp_path / ".kittify").mkdir()
-        pipeline = create_standard_pipeline(
-            tmp_path, runtime_strictness=Strictness.OFF
-        )
+        pipeline = create_standard_pipeline(tmp_path, runtime_strictness=Strictness.OFF)
 
         # Gate is at index 3 (after clarification at index 2)
         gate = pipeline.middleware[3]
@@ -361,9 +368,7 @@ class TestCreateStandardPipeline:
 
         # The SemanticCheckMiddleware should have a store with the loaded term
         check_mw = pipeline.middleware[1]
-        results = check_mw.glossary_store.lookup(
-            "workspace", ("team_domain",)
-        )
+        results = check_mw.glossary_store.lookup("workspace", ("team_domain",))
         assert len(results) >= 1
         assert results[0].definition == "A git worktree"
 
@@ -372,9 +377,7 @@ class TestCreateStandardPipeline:
         from specify_cli.glossary.clarification import ClarificationMiddleware
 
         (tmp_path / ".kittify").mkdir()
-        pipeline = create_standard_pipeline(
-            tmp_path, interaction_mode="interactive"
-        )
+        pipeline = create_standard_pipeline(tmp_path, interaction_mode="interactive")
         # Clarification is at index 2 (before gate at index 3)
         clarification = pipeline.middleware[2]
         assert isinstance(clarification, ClarificationMiddleware)
@@ -448,8 +451,7 @@ class TestInteractiveClarificationResolves:
 
         # The remaining conflicts should not include the resolved one
         remaining_workspace = [
-            c for c in result.conflicts
-            if c.term.surface_text == "workspace"
+            c for c in result.conflicts if c.term.surface_text == "workspace"
         ]
         assert len(remaining_workspace) == 0
 

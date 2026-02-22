@@ -57,13 +57,17 @@ class TestNetworkFailureQueuesEvent:
 class TestInvalidSchemaDiscardsEvent:
     """Test that invalid events are discarded with warning."""
 
-    def test_invalid_wp_id_discards(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_invalid_wp_id_discards(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """Invalid WP ID format results in None return and no queue entry."""
         event = emitter.emit_wp_status_changed("BADID", "planned", "in_progress")
         assert event is None
         assert temp_queue.size() == 0
 
-    def test_invalid_event_type_discards(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_invalid_event_type_discards(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """Unknown event type in _emit results in None."""
         event = emitter._emit(
             event_type="NonExistentType",
@@ -74,7 +78,9 @@ class TestInvalidSchemaDiscardsEvent:
         assert event is None
         assert temp_queue.size() == 0
 
-    def test_missing_required_field_discards(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_missing_required_field_discards(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """Missing required payload field results in None."""
         # WPCreated requires wp_id, title, feature_slug - we pass empty title
         event = emitter.emit_wp_created("WP01", "", "028-sync")
@@ -87,7 +93,9 @@ class TestLamportClockDesyncRecovery:
 
     def test_receive_catches_up(self, tmp_path: Path):
         """Client clock reconciles via receive() when server is ahead."""
-        clock = LamportClock(value=5, node_id="client", _storage_path=tmp_path / "c.json")
+        clock = LamportClock(
+            value=5, node_id="client", _storage_path=tmp_path / "c.json"
+        )
         # Server reports clock value of 1000
         new_val = clock.receive(1000)
         assert new_val == 1001
@@ -104,7 +112,9 @@ class TestLamportClockDesyncRecovery:
 
     def test_subsequent_ticks_continue_from_reconciled(self, tmp_path: Path):
         """After receive(), tick() continues from the reconciled value."""
-        clock = LamportClock(value=5, node_id="client", _storage_path=tmp_path / "c.json")
+        clock = LamportClock(
+            value=5, node_id="client", _storage_path=tmp_path / "c.json"
+        )
         clock.receive(1000)
         next_val = clock.tick()
         assert next_val == 1002
@@ -119,21 +129,25 @@ class TestQueueOverflow:
 
         # Fill to capacity
         for i in range(OfflineQueue.MAX_QUEUE_SIZE):
-            result = queue.queue_event({
-                "event_id": f"evt{i:06d}00000000000000000000",
-                "event_type": "WPStatusChanged",
-                "payload": {},
-            })
+            result = queue.queue_event(
+                {
+                    "event_id": f"evt{i:06d}00000000000000000000",
+                    "event_type": "WPStatusChanged",
+                    "payload": {},
+                }
+            )
             assert result is True
 
         assert queue.size() == OfflineQueue.MAX_QUEUE_SIZE
 
         # Next event should be rejected
-        result = queue.queue_event({
-            "event_id": "overflow_event_00000000000000",
-            "event_type": "WPStatusChanged",
-            "payload": {},
-        })
+        result = queue.queue_event(
+            {
+                "event_id": "overflow_event_00000000000000",
+                "event_type": "WPStatusChanged",
+                "payload": {},
+            }
+        )
         assert result is False
         assert queue.size() == OfflineQueue.MAX_QUEUE_SIZE
 
@@ -148,7 +162,9 @@ class TestQueueOverflow:
         auth.is_authenticated.return_value = False
         config = MagicMock()
 
-        em = EventEmitter(clock=clock, config=config, queue=queue, _auth=auth, ws_client=None)
+        em = EventEmitter(
+            clock=clock, config=config, queue=queue, _auth=auth, ws_client=None
+        )
         # Should not raise even though queue is full
         event = em.emit_wp_status_changed("WP01", "planned", "in_progress")
         # Event is still returned (it was valid), but queue rejected it
@@ -167,7 +183,9 @@ class TestConcurrentEmission:
         auth.is_authenticated.return_value = False
         config = MagicMock()
 
-        em = EventEmitter(clock=clock, config=config, queue=queue, _auth=auth, ws_client=None)
+        em = EventEmitter(
+            clock=clock, config=config, queue=queue, _auth=auth, ws_client=None
+        )
 
         errors = []
         count = 50
@@ -200,7 +218,9 @@ class TestConcurrentEmission:
         auth.is_authenticated.return_value = False
         config = MagicMock()
 
-        em = EventEmitter(clock=clock, config=config, queue=queue, _auth=auth, ws_client=None)
+        em = EventEmitter(
+            clock=clock, config=config, queue=queue, _auth=auth, ws_client=None
+        )
 
         results = []
         lock = threading.Lock()
@@ -235,7 +255,9 @@ class TestNonBlockingEmission:
         auth = MagicMock()
         config = MagicMock()
 
-        em = EventEmitter(clock=clock, config=config, queue=queue, _auth=auth, ws_client=None)
+        em = EventEmitter(
+            clock=clock, config=config, queue=queue, _auth=auth, ws_client=None
+        )
 
         # Should not raise
         event = em.emit_wp_status_changed("WP01", "planned", "in_progress")
@@ -252,7 +274,9 @@ class TestNonBlockingEmission:
         auth.is_authenticated.return_value = False
         config = MagicMock()
 
-        em = EventEmitter(clock=clock, config=config, queue=queue, _auth=auth, ws_client=None)
+        em = EventEmitter(
+            clock=clock, config=config, queue=queue, _auth=auth, ws_client=None
+        )
 
         # _route_event catches the exception, so _emit still returns the event
         event = em.emit_wp_status_changed("WP01", "planned", "in_progress")
@@ -268,7 +292,9 @@ class TestNonBlockingEmission:
         auth.is_authenticated.return_value = False
         config = MagicMock()
 
-        em = EventEmitter(clock=clock, config=config, queue=queue, _auth=auth, ws_client=None)
+        em = EventEmitter(
+            clock=clock, config=config, queue=queue, _auth=auth, ws_client=None
+        )
 
         event = em.emit_wp_status_changed("WP01", "planned", "in_progress")
         assert event is not None

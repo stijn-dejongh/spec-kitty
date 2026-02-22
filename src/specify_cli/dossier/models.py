@@ -107,6 +107,7 @@ class ArtifactRef(BaseModel):
             raise ValueError("artifact_key cannot be empty")
         # Allow alphanumeric, dots, underscores, hyphens
         import re
+
         if not re.match(r"^[a-zA-Z0-9._-]+$", v):
             raise ValueError(
                 f"artifact_key must contain only alphanumeric characters, dots, underscores, and hyphens; got '{v}'"
@@ -227,7 +228,9 @@ class MissionDossier(BaseModel):
         description="When dossier was last updated",
     )
 
-    def get_required_artifacts(self, step_id: Optional[str] = None) -> List[ArtifactRef]:
+    def get_required_artifacts(
+        self, step_id: Optional[str] = None
+    ) -> List[ArtifactRef]:
         """Return required artifacts for step (or all required if step_id=None).
 
         Args:

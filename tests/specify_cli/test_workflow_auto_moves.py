@@ -19,7 +19,9 @@ from tests.branch_contract import IS_2X_BRANCH, LEGACY_0X_ONLY_REASON
 pytestmark = pytest.mark.skipif(IS_2X_BRANCH, reason=LEGACY_0X_ONLY_REASON)
 
 
-def write_tasks_md(feature_dir: Path, wp_id: str, subtasks: list[str], done: bool = True) -> None:
+def write_tasks_md(
+    feature_dir: Path, wp_id: str, subtasks: list[str], done: bool = True
+) -> None:
     """Write a minimal tasks.md with checkbox status for a WP."""
     checkbox = "[x]" if done else "[ ]"
     lines = [f"## {wp_id} Test", ""]
@@ -79,7 +81,10 @@ def test_workflow_implement_auto_moves_to_doing(workflow_repo: Path) -> None:
 
     runner = CliRunner()
     # --agent is required for tracking who is implementing
-    result = runner.invoke(workflow.app, ["implement", "WP01", "--feature", feature_slug, "--agent", "test-agent"])
+    result = runner.invoke(
+        workflow.app,
+        ["implement", "WP01", "--feature", feature_slug, "--agent", "test-agent"],
+    )
     assert result.exit_code == 0
 
     content = wp_path.read_text(encoding="utf-8")
@@ -101,7 +106,10 @@ def test_workflow_review_auto_moves_to_doing(workflow_repo: Path) -> None:
 
     runner = CliRunner()
     # --agent is required for tracking who is reviewing
-    result = runner.invoke(workflow.app, ["review", "WP01", "--feature", feature_slug, "--agent", "test-reviewer"])
+    result = runner.invoke(
+        workflow.app,
+        ["review", "WP01", "--feature", feature_slug, "--agent", "test-reviewer"],
+    )
     assert result.exit_code == 0
 
     content = wp_path.read_text(encoding="utf-8")
@@ -110,7 +118,9 @@ def test_workflow_review_auto_moves_to_doing(workflow_repo: Path) -> None:
     assert extract_scalar(frontmatter, "lane") == "doing"
 
 
-def test_workflow_review_with_feedback_still_moves_to_doing(workflow_repo: Path) -> None:
+def test_workflow_review_with_feedback_still_moves_to_doing(
+    workflow_repo: Path,
+) -> None:
     """Review workflow moves to doing even when feedback exists (reviewer makes decision)."""
     feature_slug = "001-test-feature"
     feature_dir = workflow_repo / "kitty-specs" / feature_slug
@@ -123,7 +133,10 @@ def test_workflow_review_with_feedback_still_moves_to_doing(workflow_repo: Path)
 
     runner = CliRunner()
     # --agent is required for tracking who is reviewing
-    result = runner.invoke(workflow.app, ["review", "WP01", "--feature", feature_slug, "--agent", "test-reviewer"])
+    result = runner.invoke(
+        workflow.app,
+        ["review", "WP01", "--feature", feature_slug, "--agent", "test-reviewer"],
+    )
     assert result.exit_code == 0
 
     content = wp_path.read_text(encoding="utf-8")
@@ -144,7 +157,9 @@ def test_workflow_review_tracks_reviewer_agent(workflow_repo: Path) -> None:
     write_wp_file(wp_path, "WP01", lane="for_review")
 
     runner = CliRunner()
-    result = runner.invoke(workflow.app, ["review", "WP01", "--feature", feature_slug, "--agent", "claude"])
+    result = runner.invoke(
+        workflow.app, ["review", "WP01", "--feature", feature_slug, "--agent", "claude"]
+    )
     assert result.exit_code == 0
 
     content = wp_path.read_text(encoding="utf-8")

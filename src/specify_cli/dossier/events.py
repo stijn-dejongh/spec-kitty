@@ -35,9 +35,16 @@ class MissionDossierArtifactIndexedPayload(BaseModel):
     """
 
     feature_slug: str = Field(..., min_length=1, description="Feature identifier")
-    artifact_key: str = Field(..., min_length=1, description="Stable unique key for artifact")
-    artifact_class: str = Field(..., description="Classification (input|workflow|output|evidence|policy|runtime|other)")
-    relative_path: str = Field(..., min_length=1, description="Path relative to feature directory")
+    artifact_key: str = Field(
+        ..., min_length=1, description="Stable unique key for artifact"
+    )
+    artifact_class: str = Field(
+        ...,
+        description="Classification (input|workflow|output|evidence|policy|runtime|other)",
+    )
+    relative_path: str = Field(
+        ..., min_length=1, description="Path relative to feature directory"
+    )
     content_hash_sha256: str = Field(..., description="SHA256 hash of artifact bytes")
     size_bytes: int = Field(..., ge=0, description="File size in bytes")
     wp_id: Optional[str] = Field(None, description="Work package ID if linked")
@@ -56,7 +63,15 @@ class MissionDossierArtifactIndexedPayload(BaseModel):
     @classmethod
     def validate_artifact_class(cls, v: str) -> str:
         """Validate artifact classification."""
-        valid_classes = {"input", "workflow", "output", "evidence", "policy", "runtime", "other"}
+        valid_classes = {
+            "input",
+            "workflow",
+            "output",
+            "evidence",
+            "policy",
+            "runtime",
+            "other",
+        }
         if v not in valid_classes:
             raise ValueError(f"Invalid artifact_class: {v}")
         return v
@@ -78,18 +93,33 @@ class MissionDossierArtifactMissingPayload(BaseModel):
     """
 
     feature_slug: str = Field(..., min_length=1, description="Feature identifier")
-    artifact_key: str = Field(..., min_length=1, description="Stable unique key for artifact")
-    artifact_class: str = Field(..., description="Classification (input|workflow|output|evidence|policy|runtime|other)")
+    artifact_key: str = Field(
+        ..., min_length=1, description="Stable unique key for artifact"
+    )
+    artifact_class: str = Field(
+        ...,
+        description="Classification (input|workflow|output|evidence|policy|runtime|other)",
+    )
     expected_path_pattern: str = Field(..., description="Expected path pattern or glob")
     reason_code: str = Field(..., description="Reason code for absence")
-    reason_detail: Optional[str] = Field(None, description="Additional detail about reason")
+    reason_detail: Optional[str] = Field(
+        None, description="Additional detail about reason"
+    )
     blocking: bool = Field(..., description="True if blocks completeness")
 
     @field_validator("artifact_class")
     @classmethod
     def validate_artifact_class(cls, v: str) -> str:
         """Validate artifact classification."""
-        valid_classes = {"input", "workflow", "output", "evidence", "policy", "runtime", "other"}
+        valid_classes = {
+            "input",
+            "workflow",
+            "output",
+            "evidence",
+            "policy",
+            "runtime",
+            "other",
+        }
         if v not in valid_classes:
             raise ValueError(f"Invalid artifact_class: {v}")
         return v
@@ -98,7 +128,12 @@ class MissionDossierArtifactMissingPayload(BaseModel):
     @classmethod
     def validate_reason_code(cls, v: str) -> str:
         """Validate reason code enum."""
-        valid_codes = {"not_found", "unreadable", "invalid_format", "deleted_after_scan"}
+        valid_codes = {
+            "not_found",
+            "unreadable",
+            "invalid_format",
+            "deleted_after_scan",
+        }
         if v not in valid_codes:
             raise ValueError(f"Invalid reason_code: {v}")
         return v
@@ -123,10 +158,18 @@ class MissionDossierSnapshotComputedPayload(BaseModel):
     """
 
     feature_slug: str = Field(..., min_length=1, description="Feature identifier")
-    parity_hash_sha256: str = Field(..., description="Deterministic hash of entire snapshot")
-    artifact_counts: ArtifactCountsPayload = Field(..., description="Artifact count breakdown")
-    completeness_status: str = Field(..., description="'complete' | 'incomplete' | 'unknown'")
-    snapshot_id: str = Field(..., min_length=1, description="Unique snapshot identifier")
+    parity_hash_sha256: str = Field(
+        ..., description="Deterministic hash of entire snapshot"
+    )
+    artifact_counts: ArtifactCountsPayload = Field(
+        ..., description="Artifact count breakdown"
+    )
+    completeness_status: str = Field(
+        ..., description="'complete' | 'incomplete' | 'unknown'"
+    )
+    snapshot_id: str = Field(
+        ..., min_length=1, description="Unique snapshot identifier"
+    )
 
     @field_validator("parity_hash_sha256")
     @classmethod
@@ -156,8 +199,12 @@ class MissionDossierParityDriftDetectedPayload(BaseModel):
     feature_slug: str = Field(..., min_length=1, description="Feature identifier")
     local_parity_hash: str = Field(..., description="Local snapshot parity hash")
     baseline_parity_hash: str = Field(..., description="Baseline snapshot parity hash")
-    missing_in_local: list[str] = Field(default_factory=list, description="Artifact keys missing in local")
-    missing_in_baseline: list[str] = Field(default_factory=list, description="Artifact keys missing in baseline")
+    missing_in_local: list[str] = Field(
+        default_factory=list, description="Artifact keys missing in local"
+    )
+    missing_in_baseline: list[str] = Field(
+        default_factory=list, description="Artifact keys missing in baseline"
+    )
     severity: str = Field(..., description="'info' | 'warning' | 'error'")
 
     @field_validator("local_parity_hash", "baseline_parity_hash")

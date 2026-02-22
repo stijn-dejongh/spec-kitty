@@ -141,13 +141,17 @@ def _resolve_asset(
     # Tier 1 -- override
     override = kittify / "overrides" / subdir / name
     if override.is_file():
-        return ResolutionResult(path=override, tier=ResolutionTier.OVERRIDE, mission=mission)
+        return ResolutionResult(
+            path=override, tier=ResolutionTier.OVERRIDE, mission=mission
+        )
 
     # Tier 2 -- legacy
     legacy = kittify / subdir / name
     if legacy.is_file():
         _warn_legacy_asset(legacy)
-        return ResolutionResult(path=legacy, tier=ResolutionTier.LEGACY, mission=mission)
+        return ResolutionResult(
+            path=legacy, tier=ResolutionTier.LEGACY, mission=mission
+        )
 
     # Tier 3 -- global mission-specific (~/.kittify/missions/{mission}/...)
     try:
@@ -164,7 +168,9 @@ def _resolve_asset(
         # Tier 4 -- global non-mission (~/.kittify/{subdir}/{name})
         global_path = global_home / subdir / name
         if global_path.is_file():
-            return ResolutionResult(path=global_path, tier=ResolutionTier.GLOBAL, mission=mission)
+            return ResolutionResult(
+                path=global_path, tier=ResolutionTier.GLOBAL, mission=mission
+            )
     except RuntimeError:
         # Cannot determine home directory -- skip tiers 3 and 4
         pass
@@ -280,7 +286,9 @@ def resolve_mission(
     # Tier 1 -- override
     override = kittify / "overrides" / "missions" / name / filename
     if override.is_file():
-        return ResolutionResult(path=override, tier=ResolutionTier.OVERRIDE, mission=name)
+        return ResolutionResult(
+            path=override, tier=ResolutionTier.OVERRIDE, mission=name
+        )
 
     # Tier 2 -- legacy
     legacy = kittify / "missions" / name / filename
@@ -293,7 +301,9 @@ def resolve_mission(
         global_home = get_kittify_home()
         global_path = global_home / "missions" / name / filename
         if global_path.is_file():
-            return ResolutionResult(path=global_path, tier=ResolutionTier.GLOBAL_MISSION, mission=name)
+            return ResolutionResult(
+                path=global_path, tier=ResolutionTier.GLOBAL_MISSION, mission=name
+            )
     except RuntimeError:
         pass
 
@@ -302,8 +312,12 @@ def resolve_mission(
         pkg_missions = get_package_asset_root()
         pkg_path = pkg_missions / name / filename
         if pkg_path.is_file():
-            return ResolutionResult(path=pkg_path, tier=ResolutionTier.PACKAGE_DEFAULT, mission=name)
+            return ResolutionResult(
+                path=pkg_path, tier=ResolutionTier.PACKAGE_DEFAULT, mission=name
+            )
     except FileNotFoundError:
         pass
 
-    raise FileNotFoundError(f"Mission '{name}' config not found in any resolution tier (project={project_dir})")
+    raise FileNotFoundError(
+        f"Mission '{name}' config not found in any resolution tier (project={project_dir})"
+    )

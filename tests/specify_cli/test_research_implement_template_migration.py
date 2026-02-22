@@ -84,7 +84,7 @@ def mock_research_project_one_agent(tmp_path):
 
     # Old research template
     (opencode / "spec-kitty.implement.md").write_text(
-        "## Sprint Planning Artifacts (Separate)\n\n" "Planning artifacts\n",
+        "## Sprint Planning Artifacts (Separate)\n\nPlanning artifacts\n",
         encoding="utf-8",
     )
 
@@ -173,7 +173,9 @@ class TestMigrationApply:
         ALL_AGENTS,
         ids=[agent_key for agent_key, _, _ in ALL_AGENTS],
     )
-    def test_update_all_agents(self, mock_research_project_all_agents, agent_key, agent_dir, subdir):
+    def test_update_all_agents(
+        self, mock_research_project_all_agents, agent_key, agent_dir, subdir
+    ):
         """Test migration updates research templates for all 12 agents."""
         migration = UpdateResearchImplementTemplatesMigration()
         result = migration.apply(mock_research_project_all_agents, dry_run=False)
@@ -183,7 +185,10 @@ class TestMigrationApply:
 
         # Check this agent's template was updated
         template_path = (
-            mock_research_project_all_agents / agent_dir / subdir / "spec-kitty.implement.md"
+            mock_research_project_all_agents
+            / agent_dir
+            / subdir
+            / "spec-kitty.implement.md"
         )
         content = template_path.read_text()
 
@@ -249,15 +254,23 @@ class TestMigrationApply:
 
         # Software-dev templates should NOT have schema section
         claude_content = (
-            mock_software_dev_project / ".claude" / "commands" / "spec-kitty.implement.md"
+            mock_software_dev_project
+            / ".claude"
+            / "commands"
+            / "spec-kitty.implement.md"
         ).read_text()
         opencode_content = (
-            mock_software_dev_project / ".opencode" / "command" / "spec-kitty.implement.md"
+            mock_software_dev_project
+            / ".opencode"
+            / "command"
+            / "spec-kitty.implement.md"
         ).read_text()
 
         assert "Research CSV Schemas" not in claude_content
         assert "Research CSV Schemas" not in opencode_content
-        assert "Implementation Workflow" in claude_content  # Still software-dev template
+        assert (
+            "Implementation Workflow" in claude_content
+        )  # Still software-dev template
 
     def test_update_idempotent(self, mock_research_project_one_agent):
         """Test migration is idempotent (safe to run multiple times)."""

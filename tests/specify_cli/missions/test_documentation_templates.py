@@ -12,12 +12,15 @@ MISSION_DIR = REPO_ROOT / "src" / "specify_cli" / "missions" / "documentation"
 
 
 # T058: Test Divio Template Frontmatter
-@pytest.mark.parametrize("template_name,expected_type", [
-    ("divio/tutorial-template.md", "tutorial"),
-    ("divio/howto-template.md", "how-to"),
-    ("divio/reference-template.md", "reference"),
-    ("divio/explanation-template.md", "explanation"),
-])
+@pytest.mark.parametrize(
+    "template_name,expected_type",
+    [
+        ("divio/tutorial-template.md", "tutorial"),
+        ("divio/howto-template.md", "how-to"),
+        ("divio/reference-template.md", "reference"),
+        ("divio/explanation-template.md", "explanation"),
+    ],
+)
 def test_divio_template_has_frontmatter(template_name, expected_type):
     """Test Divio templates have YAML frontmatter with type field."""
     mission = Mission(MISSION_DIR)
@@ -29,6 +32,7 @@ def test_divio_template_has_frontmatter(template_name, expected_type):
 
     # Parse frontmatter
     from ruamel.yaml import YAML
+
     yaml = YAML()
 
     lines = content.split("\n")
@@ -72,7 +76,11 @@ def test_howto_template_required_sections():
     assert "How-To:" in content or "How to" in content  # Title
     assert "## Goal" in content or "## Prerequisites" in content
     assert "## Detailed Steps" in content or "### 1." in content
-    assert "## Verification" in content or "## Related" in content or "## Troubleshooting" in content
+    assert (
+        "## Verification" in content
+        or "## Related" in content
+        or "## Troubleshooting" in content
+    )
 
 
 def test_reference_template_required_sections():
@@ -83,8 +91,14 @@ def test_reference_template_required_sections():
 
     # Reference should have structured technical info
     assert "# Reference:" in content or "## Overview" in content
-    assert "## Parameters" in content or "### Syntax" in content or "## Examples" in content
-    assert "## Related" in content or "## See Also" in content or "## Overview" in content
+    assert (
+        "## Parameters" in content
+        or "### Syntax" in content
+        or "## Examples" in content
+    )
+    assert (
+        "## Related" in content or "## See Also" in content or "## Overview" in content
+    )
 
 
 def test_explanation_template_required_sections():
@@ -96,7 +110,11 @@ def test_explanation_template_required_sections():
     # Explanations should have conceptual sections
     assert "## Background" in content or "## Overview" in content
     assert "## Concepts" in content or "## How It Works" in content
-    assert "## Design" in content or "## Trade-offs" in content or "## Alternatives" in content
+    assert (
+        "## Design" in content
+        or "## Trade-offs" in content
+        or "## Alternatives" in content
+    )
 
 
 # T060: Test Command Templates

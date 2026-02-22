@@ -111,14 +111,36 @@ def _emit_acceptance_events(feature_slug: str, wp_ids: List[str]) -> None:
 
 
 def accept(
-    feature: Optional[str] = typer.Option(None, "--feature", help="Feature slug to accept (auto-detected by default)"),
-    mode: str = typer.Option("auto", "--mode", case_sensitive=False, help="Acceptance mode: auto, pr, local, or checklist"),
-    actor: Optional[str] = typer.Option(None, "--actor", help="Name to record as the acceptance actor"),
-    test: List[str] = typer.Option([], "--test", help="Validation command executed (repeatable)", show_default=False),
-    json_output: bool = typer.Option(False, "--json", help="Emit JSON instead of formatted text"),
-    lenient: bool = typer.Option(False, "--lenient", help="Skip strict metadata validation"),
-    no_commit: bool = typer.Option(False, "--no-commit", help="Skip auto-commit; report only"),
-    allow_fail: bool = typer.Option(False, "--allow-fail", help="Return checklist even when issues remain"),
+    feature: Optional[str] = typer.Option(
+        None, "--feature", help="Feature slug to accept (auto-detected by default)"
+    ),
+    mode: str = typer.Option(
+        "auto",
+        "--mode",
+        case_sensitive=False,
+        help="Acceptance mode: auto, pr, local, or checklist",
+    ),
+    actor: Optional[str] = typer.Option(
+        None, "--actor", help="Name to record as the acceptance actor"
+    ),
+    test: List[str] = typer.Option(
+        [],
+        "--test",
+        help="Validation command executed (repeatable)",
+        show_default=False,
+    ),
+    json_output: bool = typer.Option(
+        False, "--json", help="Emit JSON instead of formatted text"
+    ),
+    lenient: bool = typer.Option(
+        False, "--lenient", help="Skip strict metadata validation"
+    ),
+    no_commit: bool = typer.Option(
+        False, "--no-commit", help="Skip auto-commit; report only"
+    ),
+    allow_fail: bool = typer.Option(
+        False, "--allow-fail", help="Return checklist even when issues remain"
+    ),
 ) -> None:
     """Validate feature readiness before merging to main."""
 

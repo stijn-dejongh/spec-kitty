@@ -72,33 +72,81 @@ class TestFeatureTopology:
         )
 
     def test_has_stacking_false_when_flat(self):
-        topology = self._make_topology([
-            WPTopologyEntry(wp_id="WP01", branch_name="feat-WP01", base_branch="main", base_wp=None),
-            WPTopologyEntry(wp_id="WP02", branch_name="feat-WP02", base_branch="main", base_wp=None),
-        ])
+        topology = self._make_topology(
+            [
+                WPTopologyEntry(
+                    wp_id="WP01",
+                    branch_name="feat-WP01",
+                    base_branch="main",
+                    base_wp=None,
+                ),
+                WPTopologyEntry(
+                    wp_id="WP02",
+                    branch_name="feat-WP02",
+                    base_branch="main",
+                    base_wp=None,
+                ),
+            ]
+        )
         assert topology.has_stacking is False
 
     def test_has_stacking_true_when_stacked(self):
-        topology = self._make_topology([
-            WPTopologyEntry(wp_id="WP01", branch_name="feat-WP01", base_branch="main", base_wp=None),
-            WPTopologyEntry(wp_id="WP02", branch_name="feat-WP02", base_branch="feat-WP01", base_wp="WP01"),
-        ])
+        topology = self._make_topology(
+            [
+                WPTopologyEntry(
+                    wp_id="WP01",
+                    branch_name="feat-WP01",
+                    base_branch="main",
+                    base_wp=None,
+                ),
+                WPTopologyEntry(
+                    wp_id="WP02",
+                    branch_name="feat-WP02",
+                    base_branch="feat-WP01",
+                    base_wp="WP01",
+                ),
+            ]
+        )
         assert topology.has_stacking is True
 
     def test_get_entry(self):
-        topology = self._make_topology([
-            WPTopologyEntry(wp_id="WP01", branch_name="feat-WP01", base_branch="main", base_wp=None),
-            WPTopologyEntry(wp_id="WP02", branch_name="feat-WP02", base_branch="main", base_wp=None),
-        ])
+        topology = self._make_topology(
+            [
+                WPTopologyEntry(
+                    wp_id="WP01",
+                    branch_name="feat-WP01",
+                    base_branch="main",
+                    base_wp=None,
+                ),
+                WPTopologyEntry(
+                    wp_id="WP02",
+                    branch_name="feat-WP02",
+                    base_branch="main",
+                    base_wp=None,
+                ),
+            ]
+        )
         assert topology.get_entry("WP01").wp_id == "WP01"
         assert topology.get_entry("WP02").wp_id == "WP02"
         assert topology.get_entry("WP99") is None
 
     def test_get_actual_base_for_wp_stacked(self):
-        topology = self._make_topology([
-            WPTopologyEntry(wp_id="WP01", branch_name="feat-WP01", base_branch="main", base_wp=None),
-            WPTopologyEntry(wp_id="WP03", branch_name="feat-WP03", base_branch="feat-WP01", base_wp="WP01"),
-        ])
+        topology = self._make_topology(
+            [
+                WPTopologyEntry(
+                    wp_id="WP01",
+                    branch_name="feat-WP01",
+                    base_branch="main",
+                    base_wp=None,
+                ),
+                WPTopologyEntry(
+                    wp_id="WP03",
+                    branch_name="feat-WP03",
+                    base_branch="feat-WP01",
+                    base_wp="WP01",
+                ),
+            ]
+        )
         assert topology.get_actual_base_for_wp("WP03") == "feat-WP01"
         assert topology.get_actual_base_for_wp("WP01") == "main"
 
@@ -138,24 +186,39 @@ class TestRenderTopologyJson:
             target_branch="main",
             entries=[
                 WPTopologyEntry(
-                    wp_id="WP01", branch_name="002-event-WP01",
-                    base_branch="main", base_wp=None,
-                    lane="done", worktree_exists=True, commits_ahead_of_base=3,
+                    wp_id="WP01",
+                    branch_name="002-event-WP01",
+                    base_branch="main",
+                    base_wp=None,
+                    lane="done",
+                    worktree_exists=True,
+                    commits_ahead_of_base=3,
                 ),
                 WPTopologyEntry(
-                    wp_id="WP02", branch_name="002-event-WP02",
-                    base_branch="main", base_wp=None,
-                    lane="doing", worktree_exists=True, commits_ahead_of_base=5,
+                    wp_id="WP02",
+                    branch_name="002-event-WP02",
+                    base_branch="main",
+                    base_wp=None,
+                    lane="doing",
+                    worktree_exists=True,
+                    commits_ahead_of_base=5,
                 ),
                 WPTopologyEntry(
-                    wp_id="WP03", branch_name="002-event-WP03",
-                    base_branch="002-event-WP01", base_wp="WP01",
-                    lane="doing", worktree_exists=True, commits_ahead_of_base=2,
+                    wp_id="WP03",
+                    branch_name="002-event-WP03",
+                    base_branch="002-event-WP01",
+                    base_wp="WP01",
+                    lane="doing",
+                    worktree_exists=True,
+                    commits_ahead_of_base=2,
                 ),
                 WPTopologyEntry(
-                    wp_id="WP04", branch_name=None,
-                    base_branch=None, base_wp=None,
-                    dependencies=["WP02", "WP03"], lane="planned",
+                    wp_id="WP04",
+                    branch_name=None,
+                    base_branch=None,
+                    base_wp=None,
+                    dependencies=["WP02", "WP03"],
+                    lane="planned",
                 ),
             ],
         )
@@ -218,10 +281,20 @@ class TestRenderTopologyText:
             feature_slug="002-feature",
             target_branch="main",
             entries=[
-                WPTopologyEntry(wp_id="WP01", branch_name="feat-WP01",
-                                base_branch="main", base_wp=None, lane="done"),
-                WPTopologyEntry(wp_id="WP02", branch_name="feat-WP02",
-                                base_branch="feat-WP01", base_wp="WP01", lane="doing"),
+                WPTopologyEntry(
+                    wp_id="WP01",
+                    branch_name="feat-WP01",
+                    base_branch="main",
+                    base_wp=None,
+                    lane="done",
+                ),
+                WPTopologyEntry(
+                    wp_id="WP02",
+                    branch_name="feat-WP02",
+                    base_branch="feat-WP01",
+                    base_wp="WP01",
+                    lane="doing",
+                ),
             ],
         )
         lines = render_topology_text(topology, "WP02")
@@ -234,10 +307,20 @@ class TestRenderTopologyText:
             feature_slug="002-feature",
             target_branch="main",
             entries=[
-                WPTopologyEntry(wp_id="WP01", branch_name="feat-WP01",
-                                base_branch="main", base_wp=None, lane="done"),
-                WPTopologyEntry(wp_id="WP02", branch_name="feat-WP02",
-                                base_branch="feat-WP01", base_wp="WP01", lane="doing"),
+                WPTopologyEntry(
+                    wp_id="WP01",
+                    branch_name="feat-WP01",
+                    base_branch="main",
+                    base_wp=None,
+                    lane="done",
+                ),
+                WPTopologyEntry(
+                    wp_id="WP02",
+                    branch_name="feat-WP02",
+                    base_branch="feat-WP01",
+                    base_wp="WP01",
+                    lane="doing",
+                ),
             ],
         )
         lines = render_topology_text(topology, "WP02")
@@ -249,10 +332,20 @@ class TestRenderTopologyText:
             feature_slug="002-feature",
             target_branch="main",
             entries=[
-                WPTopologyEntry(wp_id="WP01", branch_name="feat-WP01",
-                                base_branch="main", base_wp=None, lane="done"),
-                WPTopologyEntry(wp_id="WP02", branch_name="feat-WP02",
-                                base_branch="feat-WP01", base_wp="WP01", lane="doing"),
+                WPTopologyEntry(
+                    wp_id="WP01",
+                    branch_name="feat-WP01",
+                    base_branch="main",
+                    base_wp=None,
+                    lane="done",
+                ),
+                WPTopologyEntry(
+                    wp_id="WP02",
+                    branch_name="feat-WP02",
+                    base_branch="feat-WP01",
+                    base_wp="WP01",
+                    lane="doing",
+                ),
             ],
         )
         lines = render_topology_text(topology, "WP02")
@@ -279,8 +372,14 @@ class TestMaterializeWorktreeTopology:
     @patch("specify_cli.core.worktree_topology.get_main_repo_root")
     @patch("specify_cli.core.worktree_topology.read_frontmatter")
     def test_flat_feature_no_stacking(
-        self, mock_read_fm, mock_main_root, mock_target, mock_topo,
-        mock_dep_graph, mock_list_ctx, tmp_path,
+        self,
+        mock_read_fm,
+        mock_main_root,
+        mock_target,
+        mock_topo,
+        mock_dep_graph,
+        mock_list_ctx,
+        tmp_path,
     ):
         """Flat feature where all WPs branch from main."""
         repo_root = tmp_path / "repo"
@@ -289,8 +388,12 @@ class TestMaterializeWorktreeTopology:
         feature_dir.mkdir(parents=True)
 
         # Create WP files
-        (feature_dir / "WP01-setup.md").write_text("---\nwork_package_id: WP01\nlane: done\n---\n")
-        (feature_dir / "WP02-impl.md").write_text("---\nwork_package_id: WP02\nlane: doing\n---\n")
+        (feature_dir / "WP01-setup.md").write_text(
+            "---\nwork_package_id: WP01\nlane: done\n---\n"
+        )
+        (feature_dir / "WP02-impl.md").write_text(
+            "---\nwork_package_id: WP02\nlane: doing\n---\n"
+        )
 
         mock_main_root.return_value = repo_root
         mock_target.return_value = "main"
@@ -334,8 +437,14 @@ class TestMaterializeWorktreeTopology:
     @patch("specify_cli.core.worktree_topology.get_main_repo_root")
     @patch("specify_cli.core.worktree_topology.read_frontmatter")
     def test_linear_chain_stacking(
-        self, mock_read_fm, mock_main_root, mock_target, mock_topo,
-        mock_dep_graph, mock_list_ctx, tmp_path,
+        self,
+        mock_read_fm,
+        mock_main_root,
+        mock_target,
+        mock_topo,
+        mock_dep_graph,
+        mock_list_ctx,
+        tmp_path,
     ):
         """Linear chain: WP01 → WP02 → WP03 (each branches from previous)."""
         repo_root = tmp_path / "repo"
@@ -344,19 +453,33 @@ class TestMaterializeWorktreeTopology:
         feature_dir.mkdir(parents=True)
 
         for wp in ["WP01", "WP02", "WP03"]:
-            (feature_dir / f"{wp}.md").write_text(f"---\nwork_package_id: {wp}\nlane: doing\n---\n")
+            (feature_dir / f"{wp}.md").write_text(
+                f"---\nwork_package_id: {wp}\nlane: doing\n---\n"
+            )
 
         mock_main_root.return_value = repo_root
         mock_target.return_value = "main"
         mock_dep_graph.return_value = {"WP01": [], "WP02": ["WP01"], "WP03": ["WP02"]}
         mock_topo.return_value = ["WP01", "WP02", "WP03"]
 
-        ctx1 = MagicMock(wp_id="WP01", feature_slug="002-feature",
-                         branch_name="002-WP01", base_branch="main")
-        ctx2 = MagicMock(wp_id="WP02", feature_slug="002-feature",
-                         branch_name="002-WP02", base_branch="002-WP01")
-        ctx3 = MagicMock(wp_id="WP03", feature_slug="002-feature",
-                         branch_name="002-WP03", base_branch="002-WP02")
+        ctx1 = MagicMock(
+            wp_id="WP01",
+            feature_slug="002-feature",
+            branch_name="002-WP01",
+            base_branch="main",
+        )
+        ctx2 = MagicMock(
+            wp_id="WP02",
+            feature_slug="002-feature",
+            branch_name="002-WP02",
+            base_branch="002-WP01",
+        )
+        ctx3 = MagicMock(
+            wp_id="WP03",
+            feature_slug="002-feature",
+            branch_name="002-WP03",
+            base_branch="002-WP02",
+        )
         mock_list_ctx.return_value = [ctx1, ctx2, ctx3]
 
         def fake_read_fm(path):
@@ -386,8 +509,14 @@ class TestMaterializeWorktreeTopology:
     @patch("specify_cli.core.worktree_topology.get_main_repo_root")
     @patch("specify_cli.core.worktree_topology.read_frontmatter")
     def test_diamond_pattern(
-        self, mock_read_fm, mock_main_root, mock_target, mock_topo,
-        mock_dep_graph, mock_list_ctx, tmp_path,
+        self,
+        mock_read_fm,
+        mock_main_root,
+        mock_target,
+        mock_topo,
+        mock_dep_graph,
+        mock_list_ctx,
+        tmp_path,
     ):
         """Diamond: WP01 → WP02 and WP03, both → WP04."""
         repo_root = tmp_path / "repo"
@@ -396,24 +525,45 @@ class TestMaterializeWorktreeTopology:
         feature_dir.mkdir(parents=True)
 
         for wp in ["WP01", "WP02", "WP03", "WP04"]:
-            (feature_dir / f"{wp}.md").write_text(f"---\nwork_package_id: {wp}\nlane: doing\n---\n")
+            (feature_dir / f"{wp}.md").write_text(
+                f"---\nwork_package_id: {wp}\nlane: doing\n---\n"
+            )
 
         mock_main_root.return_value = repo_root
         mock_target.return_value = "main"
         mock_dep_graph.return_value = {
-            "WP01": [], "WP02": ["WP01"], "WP03": ["WP01"], "WP04": ["WP02", "WP03"],
+            "WP01": [],
+            "WP02": ["WP01"],
+            "WP03": ["WP01"],
+            "WP04": ["WP02", "WP03"],
         }
         mock_topo.return_value = ["WP01", "WP02", "WP03", "WP04"]
 
-        ctx1 = MagicMock(wp_id="WP01", feature_slug="002-feature",
-                         branch_name="002-WP01", base_branch="main")
-        ctx2 = MagicMock(wp_id="WP02", feature_slug="002-feature",
-                         branch_name="002-WP02", base_branch="002-WP01")
-        ctx3 = MagicMock(wp_id="WP03", feature_slug="002-feature",
-                         branch_name="002-WP03", base_branch="002-WP01")
+        ctx1 = MagicMock(
+            wp_id="WP01",
+            feature_slug="002-feature",
+            branch_name="002-WP01",
+            base_branch="main",
+        )
+        ctx2 = MagicMock(
+            wp_id="WP02",
+            feature_slug="002-feature",
+            branch_name="002-WP02",
+            base_branch="002-WP01",
+        )
+        ctx3 = MagicMock(
+            wp_id="WP03",
+            feature_slug="002-feature",
+            branch_name="002-WP03",
+            base_branch="002-WP01",
+        )
         # WP04 bases on WP03 (one of its two deps)
-        ctx4 = MagicMock(wp_id="WP04", feature_slug="002-feature",
-                         branch_name="002-WP04", base_branch="002-WP03")
+        ctx4 = MagicMock(
+            wp_id="WP04",
+            feature_slug="002-feature",
+            branch_name="002-WP04",
+            base_branch="002-WP03",
+        )
         mock_list_ctx.return_value = [ctx1, ctx2, ctx3, ctx4]
 
         def fake_read_fm(path):
@@ -443,15 +593,23 @@ class TestMaterializeWorktreeTopology:
     @patch("specify_cli.core.worktree_topology.get_main_repo_root")
     @patch("specify_cli.core.worktree_topology.read_frontmatter")
     def test_wp_without_context_gets_none_base(
-        self, mock_read_fm, mock_main_root, mock_target, mock_topo,
-        mock_dep_graph, mock_list_ctx, tmp_path,
+        self,
+        mock_read_fm,
+        mock_main_root,
+        mock_target,
+        mock_topo,
+        mock_dep_graph,
+        mock_list_ctx,
+        tmp_path,
     ):
         """WP with no workspace context (not yet implemented) gets None for base."""
         repo_root = tmp_path / "repo"
         repo_root.mkdir()
         feature_dir = repo_root / "kitty-specs" / "002-feature" / "tasks"
         feature_dir.mkdir(parents=True)
-        (feature_dir / "WP01.md").write_text("---\nwork_package_id: WP01\nlane: planned\n---\n")
+        (feature_dir / "WP01.md").write_text(
+            "---\nwork_package_id: WP01\nlane: planned\n---\n"
+        )
 
         mock_main_root.return_value = repo_root
         mock_target.return_value = "main"
@@ -486,14 +644,22 @@ class TestRenderTopologyJsonIntegration:
             target_branch="main",
             entries=[
                 WPTopologyEntry(
-                    wp_id="WP01", branch_name="002-WP01",
-                    base_branch="main", base_wp=None,
-                    lane="done", worktree_exists=True, commits_ahead_of_base=10,
+                    wp_id="WP01",
+                    branch_name="002-WP01",
+                    base_branch="main",
+                    base_wp=None,
+                    lane="done",
+                    worktree_exists=True,
+                    commits_ahead_of_base=10,
                 ),
                 WPTopologyEntry(
-                    wp_id="WP03", branch_name="002-WP03",
-                    base_branch="002-WP01", base_wp="WP01",
-                    lane="doing", worktree_exists=True, commits_ahead_of_base=2,
+                    wp_id="WP03",
+                    branch_name="002-WP03",
+                    base_branch="002-WP01",
+                    base_wp="WP01",
+                    lane="doing",
+                    worktree_exists=True,
+                    commits_ahead_of_base=2,
                 ),
             ],
         )
@@ -512,19 +678,31 @@ class TestRenderTopologyJsonIntegration:
             target_branch="main",
             entries=[
                 WPTopologyEntry(
-                    wp_id="WP01", branch_name="002-WP01",
-                    base_branch="main", base_wp=None, lane="done",
-                    worktree_exists=True, commits_ahead_of_base=10,
+                    wp_id="WP01",
+                    branch_name="002-WP01",
+                    base_branch="main",
+                    base_wp=None,
+                    lane="done",
+                    worktree_exists=True,
+                    commits_ahead_of_base=10,
                 ),
                 WPTopologyEntry(
-                    wp_id="WP02", branch_name="002-WP02",
-                    base_branch="main", base_wp=None, lane="doing",
-                    worktree_exists=True, commits_ahead_of_base=5,
+                    wp_id="WP02",
+                    branch_name="002-WP02",
+                    base_branch="main",
+                    base_wp=None,
+                    lane="doing",
+                    worktree_exists=True,
+                    commits_ahead_of_base=5,
                 ),
                 WPTopologyEntry(
-                    wp_id="WP03", branch_name="002-WP03",
-                    base_branch="002-WP01", base_wp="WP01", lane="doing",
-                    worktree_exists=True, commits_ahead_of_base=2,
+                    wp_id="WP03",
+                    branch_name="002-WP03",
+                    base_branch="002-WP01",
+                    base_wp="WP01",
+                    lane="doing",
+                    worktree_exists=True,
+                    commits_ahead_of_base=2,
                 ),
             ],
         )

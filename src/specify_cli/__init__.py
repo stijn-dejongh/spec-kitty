@@ -30,6 +30,7 @@ if os.environ.get("SPEC_KITTY_TEST_MODE") == "1":
     __version__ = os.environ.get("SPEC_KITTY_CLI_VERSION", "0.5.0-dev")
 else:
     from specify_cli.version_utils import get_version
+
     __version__ = get_version()
 
 from specify_cli.mission import MissionNotFoundError
@@ -44,7 +45,10 @@ from specify_cli.cli.commands import register_commands
 from specify_cli.cli.commands.init import register_init_command
 from specify_cli.core.project_resolver import locate_project_root
 
-def activate_mission(project_path: Path, mission_key: str, mission_display: str, console: Console) -> str:
+
+def activate_mission(
+    project_path: Path, mission_key: str, mission_display: str, console: Console
+) -> str:
     """
     DEPRECATED: No-op function for backwards compatibility.
 
@@ -82,10 +86,18 @@ app = typer.Typer(
     cls=BannerGroup,
 )
 
+
 @app.callback()
 def main_callback(
     ctx: typer.Context,
-    version: bool = typer.Option(None, "--version", "-v", callback=version_callback, is_eager=True, help="Show version and exit")
+    version: bool = typer.Option(
+        None,
+        "--version",
+        "-v",
+        callback=version_callback,
+        is_eager=True,
+        help="Show version and exit",
+    ),
 ) -> None:
     """Main callback for root CLI setup."""
     root_callback(ctx)
@@ -102,7 +114,9 @@ def main_callback(
         check_version_pin(project_root)
 
 
-def ensure_executable_scripts(project_path: Path, tracker: StepTracker | None = None) -> None:
+def ensure_executable_scripts(
+    project_path: Path, tracker: StepTracker | None = None
+) -> None:
     """Ensure POSIX .sh scripts under .kittify/scripts (recursively) have execute bits (no-op on Windows)."""
     if os.name == "nt":
         return  # Windows: skip silently
@@ -121,13 +135,17 @@ def ensure_executable_scripts(project_path: Path, tracker: StepTracker | None = 
                         continue
             except Exception:
                 continue
-            st = script.stat(); mode = st.st_mode
+            st = script.stat()
+            mode = st.st_mode
             if mode & 0o111:
                 continue
             new_mode = mode
-            if mode & 0o400: new_mode |= 0o100
-            if mode & 0o040: new_mode |= 0o010
-            if mode & 0o004: new_mode |= 0o001
+            if mode & 0o400:
+                new_mode |= 0o100
+            if mode & 0o040:
+                new_mode |= 0o010
+            if mode & 0o004:
+                new_mode |= 0o001
             if not (new_mode & 0o100):
                 new_mode |= 0o100
             os.chmod(script, new_mode)
@@ -135,12 +153,16 @@ def ensure_executable_scripts(project_path: Path, tracker: StepTracker | None = 
         except Exception as e:
             failures.append(f"{script.relative_to(scripts_root)}: {e}")
     if tracker:
-        detail = f"{updated} updated" + (f", {len(failures)} failed" if failures else "")
+        detail = f"{updated} updated" + (
+            f", {len(failures)} failed" if failures else ""
+        )
         tracker.add("chmod", "Set script permissions recursively")
         (tracker.error if failures else tracker.complete)("chmod", detail)
     else:
         if updated:
-            console.print(f"[cyan]Updated execute permissions on {updated} script(s) recursively[/cyan]")
+            console.print(
+                f"[cyan]Updated execute permissions on {updated} script(s) recursively[/cyan]"
+            )
         if failures:
             console.print("[yellow]Some scripts could not be updated:[/yellow]")
             for f in failures:
@@ -158,25 +180,29 @@ register_init_command(
 
 register_commands(app)
 
+
 def main():
     import sys
+
     # Ensure UTF-8 encoding on Windows to handle Unicode characters in git output
     # Fixes: https://github.com/Priivacy-ai/spec-kitty/issues/66
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         try:
-            sys.stdout.reconfigure(encoding='utf-8')
-            sys.stderr.reconfigure(encoding='utf-8')
+            sys.stdout.reconfigure(encoding="utf-8")
+            sys.stderr.reconfigure(encoding="utf-8")
         except (AttributeError, OSError):
             # Python < 3.7 or reconfigure not available
             pass
 
     # Check for spec-kitty-events library availability (required for 2.x branch)
     from specify_cli.events.adapter import EventAdapter
+
     if not EventAdapter.check_library_available():
         console.print(f"[red]{EventAdapter.get_missing_library_error()}[/red]")
         raise typer.Exit(1)
 
     app()
+
 
 __all__ = ["main", "app", "__version__"]
 

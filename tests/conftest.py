@@ -195,7 +195,7 @@ def mock_worktree(tmp_path: Path) -> dict[str, Path]:
     return {
         "repo_root": repo_root,
         "worktree_path": worktree,
-        "feature_dir": feature_dir
+        "feature_dir": feature_dir,
     }
 
 
@@ -280,7 +280,9 @@ dependencies: []
         (worktree_dir / "shared.txt").write_text(f"{wp_id} changes\n", encoding="utf-8")
 
         # Also modify WP-specific file (no conflict)
-        (worktree_dir / f"{wp_id}.txt").write_text(f"{wp_id} specific\n", encoding="utf-8")
+        (worktree_dir / f"{wp_id}.txt").write_text(
+            f"{wp_id} specific\n", encoding="utf-8"
+        )
 
         run(["git", "add", "."], cwd=worktree_dir)
         run(["git", "commit", "-m", f"Add {wp_id} changes"], cwd=worktree_dir)

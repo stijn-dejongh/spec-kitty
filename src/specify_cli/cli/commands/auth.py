@@ -47,7 +47,11 @@ def _handle_auth_error(message: str, server_url: str) -> None:
     if "invalid username or password" in lowered or "no active account" in lowered:
         console.print("❌ Invalid username or password")
         console.print("   Please check your credentials and try again.")
-    elif "cannot reach server" in lowered or "timeout" in lowered or "timed out" in lowered:
+    elif (
+        "cannot reach server" in lowered
+        or "timeout" in lowered
+        or "timed out" in lowered
+    ):
         console.print("❌ Cannot reach server. Check your connection.")
         console.print(f"   Server: {server_url}")
     elif "server error" in lowered or "temporarily unavailable" in lowered:
@@ -61,7 +65,9 @@ def _handle_auth_error(message: str, server_url: str) -> None:
 
 @app.command()
 def login(
-    username: str = typer.Option(None, "--username", "-u", prompt=True, help="Your username or email"),
+    username: str = typer.Option(
+        None, "--username", "-u", prompt=True, help="Your username or email"
+    ),
     password: str = typer.Option(
         None,
         "--password",
@@ -70,13 +76,17 @@ def login(
         hide_input=True,
         help="Your password",
     ),
-    force: bool = typer.Option(False, "--force", "-f", help="Re-authenticate even if already logged in"),
+    force: bool = typer.Option(
+        False, "--force", "-f", help="Re-authenticate even if already logged in"
+    ),
 ) -> None:
     """Log in to the sync service."""
     try:
         from specify_cli.sync.auth import AuthClient, AuthenticationError
     except ImportError:
-        console.print("[red]Error:[/red] Authentication module unavailable. Please upgrade spec-kitty.")
+        console.print(
+            "[red]Error:[/red] Authentication module unavailable. Please upgrade spec-kitty."
+        )
         raise typer.Exit(1)
 
     client = AuthClient()
@@ -112,7 +122,9 @@ def logout() -> None:
     try:
         from specify_cli.sync.auth import AuthClient
     except ImportError:
-        console.print("[red]Error:[/red] Authentication module unavailable. Please upgrade spec-kitty.")
+        console.print(
+            "[red]Error:[/red] Authentication module unavailable. Please upgrade spec-kitty."
+        )
         raise typer.Exit(1)
 
     client = AuthClient()
@@ -142,7 +154,9 @@ def status() -> None:
     try:
         from specify_cli.sync.auth import AuthClient
     except ImportError:
-        console.print("[red]Error:[/red] Authentication module unavailable. Please upgrade spec-kitty.")
+        console.print(
+            "[red]Error:[/red] Authentication module unavailable. Please upgrade spec-kitty."
+        )
         raise typer.Exit(1)
 
     client = AuthClient()
@@ -167,7 +181,9 @@ def status() -> None:
         if access_exp:
             if now < access_exp:
                 remaining = access_exp - now
-                console.print(f"   Access token: valid ({_format_duration(remaining)} remaining)")
+                console.print(
+                    f"   Access token: valid ({_format_duration(remaining)} remaining)"
+                )
             else:
                 console.print("   Access token: expired (will refresh automatically)")
         else:
@@ -177,7 +193,9 @@ def status() -> None:
         if refresh_exp:
             if now < refresh_exp:
                 remaining = refresh_exp - now
-                console.print(f"   Refresh token: valid ({_format_duration(remaining)} remaining)")
+                console.print(
+                    f"   Refresh token: valid ({_format_duration(remaining)} remaining)"
+                )
             else:
                 console.print("   Refresh token: expired (re-login required)")
         else:

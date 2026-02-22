@@ -109,7 +109,8 @@ class LamportClock:
 
         return cls(
             value=lib_clock.value,
-            last_updated=lib_clock.last_updated or datetime.now(timezone.utc).isoformat(),
+            last_updated=lib_clock.last_updated
+            or datetime.now(timezone.utc).isoformat(),
         )
 
     def to_lib_clock(self) -> Any:

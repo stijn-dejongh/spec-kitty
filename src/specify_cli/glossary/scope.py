@@ -14,6 +14,7 @@ from .models import Provenance, SenseStatus, TermSense, TermSurface
 
 class GlossaryScope(Enum):
     """Glossary scope levels in the hierarchy."""
+
     MISSION_LOCAL = "mission_local"
     TEAM_DOMAIN = "team_domain"
     AUDIENCE_DOMAIN = "audience_domain"
@@ -46,7 +47,9 @@ def get_scope_precedence(scope: GlossaryScope) -> int:
         return len(SCOPE_RESOLUTION_ORDER)
 
 
-def should_use_scope(scope: GlossaryScope, configured_scopes: List[GlossaryScope]) -> bool:
+def should_use_scope(
+    scope: GlossaryScope, configured_scopes: List[GlossaryScope]
+) -> bool:
     """
     Check if a scope should be used in resolution.
 

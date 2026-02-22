@@ -242,7 +242,9 @@ class TestGetFeatureMissionKey:
         """Should extract mission key from meta.json."""
         assert get_feature_mission_key(feature_with_mission) == "software-dev"
 
-    def test_returns_research_mission(self, feature_with_research_mission: Path) -> None:
+    def test_returns_research_mission(
+        self, feature_with_research_mission: Path
+    ) -> None:
         """Should extract research mission key."""
         assert get_feature_mission_key(feature_with_research_mission) == "research"
 

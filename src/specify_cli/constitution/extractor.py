@@ -92,7 +92,9 @@ class Extractor:
             metadata=metadata,
         )
 
-    def _extract_governance(self, sections: list[ConstitutionSection]) -> GovernanceConfig:
+    def _extract_governance(
+        self, sections: list[ConstitutionSection]
+    ) -> GovernanceConfig:
         """Extract governance configuration from classified sections.
 
         Args:
@@ -192,7 +194,9 @@ class Extractor:
             doctrine=doctrine,
         )
 
-    def _merge_doctrine_selection(self, section: ConstitutionSection, doctrine: DoctrineSelectionConfig) -> None:
+    def _merge_doctrine_selection(
+        self, section: ConstitutionSection, doctrine: DoctrineSelectionConfig
+    ) -> None:
         """Merge doctrine selection hints from a section into doctrine config."""
         tables = section.structured_data.get("tables", [])
         yaml_blocks = section.structured_data.get("yaml_blocks", [])
@@ -204,23 +208,33 @@ class Extractor:
             if isinstance(block, dict):
                 self._apply_selection_row(block, doctrine)
 
-    def _apply_selection_row(self, row: dict[str, Any], doctrine: DoctrineSelectionConfig) -> None:
+    def _apply_selection_row(
+        self, row: dict[str, Any], doctrine: DoctrineSelectionConfig
+    ) -> None:
         """Apply one table/yaml row that may contain doctrine selection keys."""
         normalized = {str(k).strip().lower(): v for k, v in row.items()}
 
-        paradigms = self._get_list_value(normalized, ("selected_paradigms", "paradigms"))
+        paradigms = self._get_list_value(
+            normalized, ("selected_paradigms", "paradigms")
+        )
         if paradigms:
             doctrine.selected_paradigms = paradigms
 
-        directives = self._get_list_value(normalized, ("selected_directives", "directives"))
+        directives = self._get_list_value(
+            normalized, ("selected_directives", "directives")
+        )
         if directives:
             doctrine.selected_directives = directives
 
-        tools = self._get_list_value(normalized, ("available_tools", "tools", "selected_tools"))
+        tools = self._get_list_value(
+            normalized, ("available_tools", "tools", "selected_tools")
+        )
         if tools:
             doctrine.available_tools = tools
 
-        template_set = self._get_scalar_value(normalized, ("template_set", "templateset"))
+        template_set = self._get_scalar_value(
+            normalized, ("template_set", "templateset")
+        )
         if template_set:
             doctrine.template_set = template_set
 
@@ -253,7 +267,9 @@ class Extractor:
                     return value
         return None
 
-    def _extract_directives(self, sections: list[ConstitutionSection]) -> DirectivesConfig:
+    def _extract_directives(
+        self, sections: list[ConstitutionSection]
+    ) -> DirectivesConfig:
         """Extract numbered directives from classified sections.
 
         Args:
@@ -291,7 +307,9 @@ class Extractor:
 
         return DirectivesConfig(directives=directives_list)
 
-    def _build_metadata(self, content: str, sections: list[ConstitutionSection]) -> ExtractionMetadata:
+    def _build_metadata(
+        self, content: str, sections: list[ConstitutionSection]
+    ) -> ExtractionMetadata:
         """Build extraction metadata with provenance info.
 
         Args:
@@ -368,7 +386,10 @@ def extract_with_ai(
         Extracted data as dict matching schema hint (empty dict if AI unavailable)
     """
     # Check if AI agent is available (stub for now)
-    logger.info("AI extraction not yet implemented - skipping %d prose sections", len(prose_sections))
+    logger.info(
+        "AI extraction not yet implemented - skipping %d prose sections",
+        len(prose_sections),
+    )
 
     # Return empty dict (graceful fallback)
     return {}

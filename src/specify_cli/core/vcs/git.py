@@ -128,7 +128,9 @@ class GitVCS:
 
             # Apply sparse-checkout if exclusions specified
             if sparse_exclude:
-                sparse_error = self._apply_sparse_checkout(workspace_path, sparse_exclude)
+                sparse_error = self._apply_sparse_checkout(
+                    workspace_path, sparse_exclude
+                )
                 if sparse_error:
                     # Non-fatal: workspace created but sparse-checkout failed
                     # Log warning but continue
@@ -220,7 +222,9 @@ class GitVCS:
 
             # Write sparse-checkout patterns
             sparse_checkout_file.parent.mkdir(parents=True, exist_ok=True)
-            sparse_checkout_file.write_text("\n".join(patterns) + "\n", encoding="utf-8")
+            sparse_checkout_file.write_text(
+                "\n".join(patterns) + "\n", encoding="utf-8"
+            )
 
             # Apply sparse-checkout (updates working tree)
             apply_result = subprocess.run(
@@ -252,11 +256,15 @@ class GitVCS:
                     normalized = path.rstrip("/")
                     pattern = f"{normalized}/"
                     if pattern not in existing_exclude:
-                        exclude_entries.append(f"# Excluded via sparse-checkout\n{pattern}\n")
+                        exclude_entries.append(
+                            f"# Excluded via sparse-checkout\n{pattern}\n"
+                        )
 
                 if exclude_entries:
                     # Append new entries to existing content
-                    new_content = existing_exclude.rstrip() + "\n" + "".join(exclude_entries)
+                    new_content = (
+                        existing_exclude.rstrip() + "\n" + "".join(exclude_entries)
+                    )
                     exclude_file.write_text(new_content.lstrip(), encoding="utf-8")
 
             return None
@@ -727,7 +735,14 @@ class GitVCS:
         try:
             # Get list of conflicted files
             result = subprocess.run(
-                ["git", "-C", str(workspace_path), "diff", "--name-only", "--diff-filter=U"],
+                [
+                    "git",
+                    "-C",
+                    str(workspace_path),
+                    "diff",
+                    "--name-only",
+                    "--diff-filter=U",
+                ],
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
@@ -814,7 +829,14 @@ class GitVCS:
         """
         try:
             result = subprocess.run(
-                ["git", "-C", str(workspace_path), "diff", "--name-only", "--diff-filter=U"],
+                [
+                    "git",
+                    "-C",
+                    str(workspace_path),
+                    "diff",
+                    "--name-only",
+                    "--diff-filter=U",
+                ],
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
@@ -1362,7 +1384,7 @@ def git_get_reflog(repo_path: Path, limit: int = 20) -> list[OperationInfo]:
                         heads=[commit_id],
                         working_copy_commit=commit_id,
                         is_undoable=False,  # Git reflog entries aren't truly undoable
-                        parent_operation=f"reflog-{i+1}" if i < limit - 1 else None,
+                        parent_operation=f"reflog-{i + 1}" if i < limit - 1 else None,
                     )
                 )
             except (ValueError, IndexError):

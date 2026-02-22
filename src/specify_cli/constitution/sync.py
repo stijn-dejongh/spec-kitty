@@ -62,7 +62,9 @@ def sync(
         content = constitution_path.read_text("utf-8")
 
         # Check staleness using the content (eliminates TOCTOU race)
-        stale, current_hash, stored_hash = is_stale(None, metadata_path, content=content)
+        stale, current_hash, stored_hash = is_stale(
+            None, metadata_path, content=content
+        )
 
         # Skip if not stale and not forced
         if not stale and not force:
@@ -88,7 +90,9 @@ def sync(
             "metadata.yaml",
         ]
 
-        logger.info(f"Constitution synced successfully (mode: {result.metadata.extraction_mode})")
+        logger.info(
+            f"Constitution synced successfully (mode: {result.metadata.extraction_mode})"
+        )
 
         return SyncResult(
             synced=True,
@@ -160,7 +164,9 @@ def load_governance_config(repo_root: Path) -> GovernanceConfig:
     if constitution_path.exists() and metadata_path.exists():
         stale, _, _ = is_stale(constitution_path, metadata_path)
         if stale:
-            logger.warning("Constitution changed since last sync. Run 'spec-kitty constitution sync' to update.")
+            logger.warning(
+                "Constitution changed since last sync. Run 'spec-kitty constitution sync' to update."
+            )
 
     # Load and validate
     yaml = YAML()
@@ -192,7 +198,9 @@ def load_directives_config(repo_root: Path) -> DirectivesConfig:
     if constitution_path.exists() and metadata_path.exists():
         stale, _, _ = is_stale(constitution_path, metadata_path)
         if stale:
-            logger.warning("Constitution changed since last sync. Run 'spec-kitty constitution sync' to update.")
+            logger.warning(
+                "Constitution changed since last sync. Run 'spec-kitty constitution sync' to update."
+            )
 
     yaml = YAML()
     data = yaml.load(directives_path)

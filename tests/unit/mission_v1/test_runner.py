@@ -302,7 +302,9 @@ class TestGuardStripping:
         mission = StateMachineMission(guarded_config)
         assert mission.state == "draft"
 
-    def test_guarded_transitions_work_without_guards(self, guarded_config: dict) -> None:
+    def test_guarded_transitions_work_without_guards(
+        self, guarded_config: dict
+    ) -> None:
         mission = StateMachineMission(guarded_config)
         mission.trigger("submit")  # conditions stripped, so transition fires
         assert mission.state == "reviewed"

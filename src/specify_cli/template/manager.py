@@ -27,7 +27,9 @@ def _resource_exists(resource: Traversable) -> bool:
     return resource.is_file() or resource.is_dir()
 
 
-def _copy_constitution_toolguide_from_resource(resource: Traversable, project_path: Path) -> bool:
+def _copy_constitution_toolguide_from_resource(
+    resource: Traversable, project_path: Path
+) -> bool:
     """Copy a package resource toolguide into .kittify/memory/templates/."""
     if not _resource_exists(resource):
         return False
@@ -39,21 +41,27 @@ def _copy_constitution_toolguide_from_resource(resource: Traversable, project_pa
     return True
 
 
-def copy_constitution_templates(project_path: Path, repo_root: Path | None = None) -> None:
+def copy_constitution_templates(
+    project_path: Path, repo_root: Path | None = None
+) -> None:
     """Install constitution-scoped template assets (toolguides).
 
     Currently installs the PowerShell syntax guide to:
     ``.kittify/memory/templates/POWERSHELL_SYNTAX.md``.
     """
     if repo_root is not None:
-        local_toolguide = repo_root / "src" / "doctrine" / "toolguides" / "POWERSHELL_SYNTAX.md"
+        local_toolguide = (
+            repo_root / "src" / "doctrine" / "toolguides" / "POWERSHELL_SYNTAX.md"
+        )
         if _copy_constitution_toolguide_from_path(local_toolguide, project_path):
             return
 
     # Package-first source for installed distributions
     try:
         doctrine_root = files("doctrine")
-        doctrine_toolguide = doctrine_root.joinpath("toolguides", "POWERSHELL_SYNTAX.md")
+        doctrine_toolguide = doctrine_root.joinpath(
+            "toolguides", "POWERSHELL_SYNTAX.md"
+        )
         if _copy_constitution_toolguide_from_resource(doctrine_toolguide, project_path):
             return
     except ModuleNotFoundError:
@@ -93,7 +101,9 @@ def get_local_repo_root(override_path: str | None = None) -> Path | None:
     env_root = os.environ.get("SPEC_KITTY_TEMPLATE_ROOT")
     if env_root:
         root_path = Path(env_root).expanduser().resolve()
-        if (root_path / "src" / "doctrine" / "templates" / "command-templates").exists():
+        if (
+            root_path / "src" / "doctrine" / "templates" / "command-templates"
+        ).exists():
             return root_path
         # Legacy fallback for old template structure
         if (root_path / ".kittify" / "templates" / "command-templates").exists():
@@ -112,7 +122,9 @@ def get_local_repo_root(override_path: str | None = None) -> Path | None:
     return None
 
 
-def copy_specify_base_from_local(repo_root: Path, project_path: Path, script_type: str) -> Path:
+def copy_specify_base_from_local(
+    repo_root: Path, project_path: Path, script_type: str
+) -> Path:
     """Copy the embedded .kittify assets from a local repository checkout."""
     specify_root = project_path / ".kittify"
     specify_root.mkdir(parents=True, exist_ok=True)
@@ -213,7 +225,10 @@ def copy_specify_base_from_package(project_path: Path, script_type: str) -> Path
             copy_package_tree(tasks_resource, scripts_dest / "tasks")
         for resource_file in scripts_resource.iterdir():
             if resource_file.is_file():
-                with resource_file.open("rb") as src, open(scripts_dest / resource_file.name, "wb") as dst:
+                with (
+                    resource_file.open("rb") as src,
+                    open(scripts_dest / resource_file.name, "wb") as dst,
+                ):
                     shutil.copyfileobj(src, dst)
 
     templates_resource = data_root.joinpath("templates")
@@ -222,7 +237,10 @@ def copy_specify_base_from_package(project_path: Path, script_type: str) -> Path
         copy_package_tree(templates_resource, templates_dest)
         agents_template = templates_resource.joinpath("AGENTS.md")
         if _resource_exists(agents_template):
-            with agents_template.open("rb") as src, open(specify_root / "AGENTS.md", "wb") as dst:
+            with (
+                agents_template.open("rb") as src,
+                open(specify_root / "AGENTS.md", "wb") as dst,
+            ):
                 shutil.copyfileobj(src, dst)
 
     missions_resource_candidates = [

@@ -61,7 +61,9 @@ class WorktreeValidationResult:
         return "\n".join(output)
 
 
-def validate_worktree_location(project_root: Optional[Path] = None) -> WorktreeValidationResult:
+def validate_worktree_location(
+    project_root: Optional[Path] = None,
+) -> WorktreeValidationResult:
     """Validate that commands run from a feature worktree."""
     project_root = Path(project_root) if project_root is not None else Path.cwd()
 

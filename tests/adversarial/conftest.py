@@ -1,4 +1,5 @@
 """Shared fixtures for adversarial tests."""
+
 from __future__ import annotations
 
 import os
@@ -32,20 +33,36 @@ class AttackVector:
 PATH_ATTACK_VECTORS = [
     # Directory traversal
     AttackVector(
-        "traversal_parent", "../kitty-specs/", "path", "reject", "Parent directory escape"
+        "traversal_parent",
+        "../kitty-specs/",
+        "path",
+        "reject",
+        "Parent directory escape",
     ),
     AttackVector(
         "traversal_deep", "../../../etc/passwd", "path", "reject", "Deep traversal"
     ),
     AttackVector(
-        "traversal_dot_slash", "./kitty-specs/", "path", "reject", "Dot-slash to kitty-specs"
+        "traversal_dot_slash",
+        "./kitty-specs/",
+        "path",
+        "reject",
+        "Dot-slash to kitty-specs",
     ),
     AttackVector(
-        "traversal_nested", "docs/../../kitty-specs/", "path", "reject", "Nested traversal"
+        "traversal_nested",
+        "docs/../../kitty-specs/",
+        "path",
+        "reject",
+        "Nested traversal",
     ),
     # Case sensitivity bypass (macOS HFS+/APFS)
-    AttackVector("case_upper", "KITTY-SPECS/test/", "path", "reject", "Uppercase bypass"),
-    AttackVector("case_mixed", "Kitty-Specs/test/", "path", "reject", "Mixed case bypass"),
+    AttackVector(
+        "case_upper", "KITTY-SPECS/test/", "path", "reject", "Uppercase bypass"
+    ),
+    AttackVector(
+        "case_mixed", "Kitty-Specs/test/", "path", "reject", "Mixed case bypass"
+    ),
     AttackVector(
         "case_alternating", "KiTtY-SpEcS/test/", "path", "reject", "Alternating case"
     ),
@@ -55,7 +72,9 @@ PATH_ATTACK_VECTORS = [
     AttackVector("slashes_only", "///", "path", "reject", "Slashes normalize to empty"),
     AttackVector("tab_whitespace", "\t\t", "path", "reject", "Tab characters"),
     # Special paths
-    AttackVector("home_tilde", "~/research/", "path", "reject", "Home directory reference"),
+    AttackVector(
+        "home_tilde", "~/research/", "path", "reject", "Home directory reference"
+    ),
     AttackVector("absolute_path", "/tmp/research/", "path", "reject", "Absolute path"),
     AttackVector(
         "null_byte", "docs/research/\x00evil/", "path", "reject", "Null byte injection"
@@ -65,7 +84,9 @@ PATH_ATTACK_VECTORS = [
     AttackVector(
         "unicode_rtl", "docs/\u202e/test/", "path", "reject", "RTL override character"
     ),
-    AttackVector("unicode_bidi", "docs/a\u202eb\u202c/", "path", "reject", "BiDi override"),
+    AttackVector(
+        "unicode_bidi", "docs/a\u202eb\u202c/", "path", "reject", "BiDi override"
+    ),
 ]
 
 
@@ -111,26 +132,42 @@ CSV_ATTACK_VECTORS = [
         "handle",
         "UTF-16 with BOM",
     ),
-    AttackVector("null_bytes", b"col1,col2\x00,col3", "csv", "handle", "Null bytes in content"),
+    AttackVector(
+        "null_bytes", b"col1,col2\x00,col3", "csv", "handle", "Null bytes in content"
+    ),
     # Schema violations
     AttackVector(
         "duplicate_columns", "col1,col1,col2", "csv", "reject", "Duplicate column names"
     ),
     AttackVector(
-        "extra_columns", "a,b,c,d,e,f,g,h,i,j", "csv", "reject", "Extra columns beyond schema"
+        "extra_columns",
+        "a,b,c,d,e,f,g,h,i,j",
+        "csv",
+        "reject",
+        "Extra columns beyond schema",
     ),
     AttackVector("missing_columns", "a,b", "csv", "reject", "Missing required columns"),
     AttackVector(
-        "whitespace_columns", " col1 , col2 ", "csv", "handle", "Whitespace in column names"
+        "whitespace_columns",
+        " col1 , col2 ",
+        "csv",
+        "handle",
+        "Whitespace in column names",
     ),
     # Empty/malformed
     AttackVector("empty_file", "", "csv", "handle", "Empty CSV file"),
-    AttackVector("headers_only", "col1,col2,col3\n", "csv", "handle", "Headers without data rows"),
+    AttackVector(
+        "headers_only", "col1,col2,col3\n", "csv", "handle", "Headers without data rows"
+    ),
     AttackVector(
         "mixed_line_endings", "a,b\r\nc,d\ne,f\r", "csv", "handle", "Mixed CRLF/LF/CR"
     ),
     AttackVector(
-        "unquoted_comma", "a,b,c with, comma,d", "csv", "handle", "Unquoted field with comma"
+        "unquoted_comma",
+        "a,b,c with, comma,d",
+        "csv",
+        "handle",
+        "Unquoted field with comma",
     ),
 ]
 

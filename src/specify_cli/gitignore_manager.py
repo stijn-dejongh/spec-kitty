@@ -65,7 +65,9 @@ AGENT_DIRECTORIES = [
     AgentDirectory("auggie", ".augment/", False, "Auggie"),
     AgentDirectory("roo", ".roo/", False, "Roo Coder"),
     AgentDirectory("amazonq", ".amazonq/", False, "Amazon Q"),
-    AgentDirectory("copilot", ".github/copilot/", True, "GitHub Copilot (user settings)"),
+    AgentDirectory(
+        "copilot", ".github/copilot/", True, "GitHub Copilot (user settings)"
+    ),
 ]
 
 # Runtime/generated artifacts that should never be tracked.
@@ -171,10 +173,10 @@ class GitignoreManager:
         Returns:
             Line ending string ('\r\n' for Windows, '\n' for Unix/Mac)
         """
-        if '\r\n' in content:
-            return '\r\n'
+        if "\r\n" in content:
+            return "\r\n"
         else:
-            return '\n'
+            return "\n"
 
     @classmethod
     def get_agent_directories(cls) -> List[AgentDirectory]:
@@ -213,7 +215,6 @@ class GitignoreManager:
             if self.gitignore_path.exists():
                 content = self.gitignore_path.read_text(encoding="utf-8-sig")
                 existing_before = set(content.splitlines())
-
 
             # Attempt to add all directories
             modified = self.ensure_entries(all_directories)

@@ -147,9 +147,7 @@ def materialize_worktree_topology(
     # Build WP branch map from workspace contexts
     contexts = list_contexts(main_repo_root)
     feature_contexts = {
-        ctx.wp_id: ctx
-        for ctx in contexts
-        if ctx.feature_slug == feature_slug
+        ctx.wp_id: ctx for ctx in contexts if ctx.feature_slug == feature_slug
     }
 
     # Map WP ID -> branch name for base resolution
@@ -190,16 +188,18 @@ def materialize_worktree_topology(
         if worktree_exists and base_branch:
             commits_ahead = _count_commits_ahead(worktree_path, base_branch)
 
-        entries.append(WPTopologyEntry(
-            wp_id=wp_id,
-            branch_name=branch_name,
-            base_branch=base_branch,
-            base_wp=base_wp,
-            dependencies=dependencies,
-            lane=lane,
-            worktree_exists=worktree_exists,
-            commits_ahead_of_base=commits_ahead,
-        ))
+        entries.append(
+            WPTopologyEntry(
+                wp_id=wp_id,
+                branch_name=branch_name,
+                base_branch=base_branch,
+                base_wp=base_wp,
+                dependencies=dependencies,
+                lane=lane,
+                worktree_exists=worktree_exists,
+                commits_ahead_of_base=commits_ahead,
+            )
+        )
 
     return FeatureTopology(
         feature_slug=feature_slug,
@@ -261,8 +261,8 @@ def render_topology_json(
         "diff_command": diff_command,
         "stacked": True,
         "note": f"Your branch stacks on {current_entry.base_wp}, NOT {topology.target_branch}. Do not worry about being 'behind {topology.target_branch}'."
-            if current_entry and current_entry.base_wp
-            else f"Your branch is based on {topology.target_branch}. Other WPs in this feature use stacking.",
+        if current_entry and current_entry.base_wp
+        else f"Your branch is based on {topology.target_branch}. Other WPs in this feature use stacking.",
         "entries": entries_json,
     }
 
@@ -303,7 +303,9 @@ def render_topology_text(
         branch_label = entry.branch_name or "(not created)"
         status = entry.lane
 
-        line_text = f"{marker} {entry.wp_id} [{status}] base={base_label} branch={branch_label}"
+        line_text = (
+            f"{marker} {entry.wp_id} [{status}] base={base_label} branch={branch_label}"
+        )
         if entry.worktree_exists and entry.commits_ahead_of_base > 0:
             line_text += f" (+{entry.commits_ahead_of_base})"
 

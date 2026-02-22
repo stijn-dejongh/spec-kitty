@@ -80,7 +80,9 @@ def run_command(
     except subprocess.CalledProcessError as exc:
         if check_return:
             resolved_console = _resolve_console(console)
-            resolved_console.print(f"[red]Error running command:[/red] {cmd if isinstance(cmd, str) else ' '.join(cmd)}")
+            resolved_console.print(
+                f"[red]Error running command:[/red] {cmd if isinstance(cmd, str) else ' '.join(cmd)}"
+            )
             resolved_console.print(f"[red]Exit code:[/red] {exc.returncode}")
             if exc.stderr:
                 resolved_console.print(f"[red]Error output:[/red] {exc.stderr.strip()}")
@@ -104,7 +106,9 @@ def is_git_repo(path: Path | None = None) -> bool:
         return False
 
 
-def init_git_repo(project_path: Path, quiet: bool = False, console: ConsoleType = None) -> bool:
+def init_git_repo(
+    project_path: Path, quiet: bool = False, console: ConsoleType = None
+) -> bool:
     """Initialize a git repository with an initial commit."""
     resolved_console = _resolve_console(console)
     original_cwd = Path.cwd()
@@ -124,7 +128,9 @@ def init_git_repo(project_path: Path, quiet: bool = False, console: ConsoleType 
         return True
     except subprocess.CalledProcessError as exc:
         if not quiet:
-            resolved_console.print(f"[red]Error initializing git repository:[/red] {exc}")
+            resolved_console.print(
+                f"[red]Error initializing git repository:[/red] {exc}"
+            )
         return False
     finally:
         os.chdir(original_cwd)

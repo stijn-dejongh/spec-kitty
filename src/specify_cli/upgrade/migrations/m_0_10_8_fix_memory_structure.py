@@ -103,7 +103,9 @@ class FixMemoryStructureMigration(BaseMigration):
             if kittify_memory.is_symlink():
                 # Remove broken symlink
                 if dry_run:
-                    changes_made.append(f"Would remove broken symlink: {kittify_memory}")
+                    changes_made.append(
+                        f"Would remove broken symlink: {kittify_memory}"
+                    )
                 else:
                     kittify_memory.unlink()
                     changes_made.append(f"Removed broken symlink: {kittify_memory}")
@@ -122,17 +124,23 @@ class FixMemoryStructureMigration(BaseMigration):
                         # If move fails, try copy
                         try:
                             shutil.copytree(root_memory, kittify_memory)
-                            changes_made.append(f"Copied {root_memory} -> {kittify_memory} (move failed: {e})")
+                            changes_made.append(
+                                f"Copied {root_memory} -> {kittify_memory} (move failed: {e})"
+                            )
                             warnings.append(f"Could not move (copied instead): {e}")
                         except Exception as copy_error:
                             return MigrationResult(
                                 success=False,
                                 changes_made=changes_made,
                                 warnings=warnings,
-                                errors=[f"Failed to move or copy memory/: {copy_error}"]
+                                errors=[
+                                    f"Failed to move or copy memory/: {copy_error}"
+                                ],
                             )
             else:
-                warnings.append(f"{kittify_memory} already exists, skipping root memory/ migration")
+                warnings.append(
+                    f"{kittify_memory} already exists, skipping root memory/ migration"
+                )
 
         # Step 3: Create .kittify/memory/ from template if missing
         if not kittify_memory.exists():
@@ -143,7 +151,12 @@ class FixMemoryStructureMigration(BaseMigration):
                 # Look for constitution template in command templates
                 template_path = missions_dir / "command-templates" / "constitution.md"
                 if not template_path.exists():
-                    template_path = kittify_dir / "templates" / "command-templates" / "constitution.md"
+                    template_path = (
+                        kittify_dir
+                        / "templates"
+                        / "command-templates"
+                        / "constitution.md"
+                    )
                 if template_path.exists():
                     template_constitution = template_path
 
@@ -171,10 +184,14 @@ class FixMemoryStructureMigration(BaseMigration):
         if not kittify_agents.exists() or kittify_agents.is_symlink():
             if templates_agents.exists():
                 if dry_run:
-                    changes_made.append(f"Would copy {templates_agents} -> {kittify_agents}")
+                    changes_made.append(
+                        f"Would copy {templates_agents} -> {kittify_agents}"
+                    )
                 else:
                     shutil.copy2(templates_agents, kittify_agents)
-                    changes_made.append(f"Copied {templates_agents} -> {kittify_agents}")
+                    changes_made.append(
+                        f"Copied {templates_agents} -> {kittify_agents}"
+                    )
             else:
                 warnings.append(f"No AGENTS.md template found at {templates_agents}")
 
@@ -198,28 +215,42 @@ class FixMemoryStructureMigration(BaseMigration):
                         resolved = wt_memory.resolve()
                         if not resolved.exists() or resolved == wt_memory:
                             if dry_run:
-                                changes_made.append(f"Would remove broken worktree symlink: {wt_memory}")
+                                changes_made.append(
+                                    f"Would remove broken worktree symlink: {wt_memory}"
+                                )
                             else:
                                 wt_memory.unlink()
-                                changes_made.append(f"Removed broken worktree symlink: {wt_memory}")
+                                changes_made.append(
+                                    f"Removed broken worktree symlink: {wt_memory}"
+                                )
                     except (OSError, RuntimeError):
                         if not dry_run:
                             wt_memory.unlink()
-                            changes_made.append(f"Removed broken worktree symlink: {wt_memory}")
+                            changes_made.append(
+                                f"Removed broken worktree symlink: {wt_memory}"
+                            )
 
                 # Recreate worktree symlink to point to main repo's .kittify/memory
                 if not wt_memory.exists() and kittify_memory.exists():
                     relative_path = Path("../../../.kittify/memory")
                     if dry_run:
-                        changes_made.append(f"Would create worktree symlink: {wt_memory} -> {relative_path}")
+                        changes_made.append(
+                            f"Would create worktree symlink: {wt_memory} -> {relative_path}"
+                        )
                     else:
                         try:
-                            wt_memory.symlink_to(relative_path, target_is_directory=True)
-                            changes_made.append(f"Created worktree symlink: {wt_memory} -> {relative_path}")
+                            wt_memory.symlink_to(
+                                relative_path, target_is_directory=True
+                            )
+                            changes_made.append(
+                                f"Created worktree symlink: {wt_memory} -> {relative_path}"
+                            )
                         except OSError:
                             # Fallback: copy instead of symlink
                             shutil.copytree(kittify_memory, wt_memory)
-                            changes_made.append(f"Copied to worktree (symlink failed): {wt_memory}")
+                            changes_made.append(
+                                f"Copied to worktree (symlink failed): {wt_memory}"
+                            )
 
                 # Fix AGENTS.md in worktree
                 if wt_agents.is_symlink():
@@ -235,18 +266,21 @@ class FixMemoryStructureMigration(BaseMigration):
                 if not wt_agents.exists() and kittify_agents.exists():
                     relative_path = Path("../../../.kittify/AGENTS.md")
                     if dry_run:
-                        changes_made.append(f"Would create worktree symlink: {wt_agents} -> {relative_path}")
+                        changes_made.append(
+                            f"Would create worktree symlink: {wt_agents} -> {relative_path}"
+                        )
                     else:
                         try:
                             wt_agents.symlink_to(relative_path)
-                            changes_made.append(f"Created worktree symlink: {wt_agents} -> {relative_path}")
+                            changes_made.append(
+                                f"Created worktree symlink: {wt_agents} -> {relative_path}"
+                            )
                         except OSError:
                             shutil.copy2(kittify_agents, wt_agents)
-                            changes_made.append(f"Copied to worktree (symlink failed): {wt_agents}")
+                            changes_made.append(
+                                f"Copied to worktree (symlink failed): {wt_agents}"
+                            )
 
         return MigrationResult(
-            success=True,
-            changes_made=changes_made,
-            warnings=warnings,
-            errors=[]
+            success=True, changes_made=changes_made, warnings=warnings, errors=[]
         )

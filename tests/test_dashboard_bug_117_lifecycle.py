@@ -31,12 +31,17 @@ class TestProcessDetectionWithHealthTimeout:
         mock_pid = 12345
         mock_port = 9237
 
-        with patch("specify_cli.dashboard.lifecycle.start_dashboard") as mock_start, \
-             patch("specify_cli.dashboard.lifecycle._check_dashboard_health") as mock_health, \
-             patch("specify_cli.dashboard.lifecycle._is_process_alive") as mock_alive, \
-             patch("specify_cli.dashboard.lifecycle._write_dashboard_file") as mock_write, \
-             patch("specify_cli.dashboard.lifecycle.psutil.Process") as mock_proc:
-
+        with (
+            patch("specify_cli.dashboard.lifecycle.start_dashboard") as mock_start,
+            patch(
+                "specify_cli.dashboard.lifecycle._check_dashboard_health"
+            ) as mock_health,
+            patch("specify_cli.dashboard.lifecycle._is_process_alive") as mock_alive,
+            patch(
+                "specify_cli.dashboard.lifecycle._write_dashboard_file"
+            ) as mock_write,
+            patch("specify_cli.dashboard.lifecycle.psutil.Process") as mock_proc,
+        ):
             # Setup: Process starts successfully
             mock_start.return_value = (mock_port, mock_pid)
 
@@ -47,7 +52,9 @@ class TestProcessDetectionWithHealthTimeout:
             mock_alive.return_value = True
 
             # This should NOT raise RuntimeError anymore
-            url, port, started = ensure_dashboard_running(project_dir, preferred_port=mock_port)
+            url, port, started = ensure_dashboard_running(
+                project_dir, preferred_port=mock_port
+            )
 
             # Verify: Should return success
             assert url == f"http://127.0.0.1:{mock_port}"
@@ -68,7 +75,9 @@ class TestSpecificErrorMessages:
 
         with patch("specify_cli.dashboard.lifecycle.start_dashboard") as mock_start:
             # Simulate missing .kittify directory error
-            mock_start.side_effect = FileNotFoundError("No such file or directory: '.kittify'")
+            mock_start.side_effect = FileNotFoundError(
+                "No such file or directory: '.kittify'"
+            )
 
             with pytest.raises(FileNotFoundError) as exc_info:
                 ensure_dashboard_running(project_dir)
@@ -108,17 +117,17 @@ class TestKillAfterStartupFallback:
 
         # Simulate dashboard running with fallback detection
         # (process alive but health check was slow)
-        dashboard_file.write_text(
-            "http://127.0.0.1:9237\n"
-            "9237\n"
-            "abc123token\n"
-            "12345\n"
-        )
+        dashboard_file.write_text("http://127.0.0.1:9237\n9237\nabc123token\n12345\n")
 
-        with patch("specify_cli.dashboard.lifecycle._check_dashboard_health") as mock_health, \
-             patch("specify_cli.dashboard.lifecycle.urllib.request.urlopen") as mock_urlopen, \
-             patch("specify_cli.dashboard.lifecycle._is_process_alive") as mock_alive:
-
+        with (
+            patch(
+                "specify_cli.dashboard.lifecycle._check_dashboard_health"
+            ) as mock_health,
+            patch(
+                "specify_cli.dashboard.lifecycle.urllib.request.urlopen"
+            ) as mock_urlopen,
+            patch("specify_cli.dashboard.lifecycle._is_process_alive") as mock_alive,
+        ):
             # Dashboard is healthy for stop check
             mock_health.return_value = True
             mock_alive.return_value = True
@@ -132,7 +141,9 @@ class TestKillAfterStartupFallback:
 
             assert stopped is True
             # Message should indicate success (stopped, shutdown, or ended)
-            assert any(word in message.lower() for word in ["stopped", "shutdown", "ended"])
+            assert any(
+                word in message.lower() for word in ["stopped", "shutdown", "ended"]
+            )
 
 
 class TestDashboardLifecycleImprovement:
@@ -147,11 +158,14 @@ class TestDashboardLifecycleImprovement:
         mock_pid = 12345
         mock_port = 9237
 
-        with patch("specify_cli.dashboard.lifecycle.start_dashboard") as mock_start, \
-             patch("specify_cli.dashboard.lifecycle._check_dashboard_health") as mock_health, \
-             patch("specify_cli.dashboard.lifecycle._is_process_alive") as mock_alive, \
-             patch("specify_cli.dashboard.lifecycle.psutil.Process") as mock_proc:
-
+        with (
+            patch("specify_cli.dashboard.lifecycle.start_dashboard") as mock_start,
+            patch(
+                "specify_cli.dashboard.lifecycle._check_dashboard_health"
+            ) as mock_health,
+            patch("specify_cli.dashboard.lifecycle._is_process_alive") as mock_alive,
+            patch("specify_cli.dashboard.lifecycle.psutil.Process") as mock_proc,
+        ):
             mock_start.return_value = (mock_port, mock_pid)
             mock_health.return_value = False
 

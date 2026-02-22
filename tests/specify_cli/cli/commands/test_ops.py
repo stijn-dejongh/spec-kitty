@@ -120,10 +120,16 @@ def sample_operations():
 class TestOpsLog:
     """Tests for ops log subcommand."""
 
-    @pytest.mark.parametrize("backend", [
-        "git",
-        pytest.param("jj", marks=pytest.mark.xfail(reason="jj not installed in CI environment")),
-    ])
+    @pytest.mark.parametrize(
+        "backend",
+        [
+            "git",
+            pytest.param(
+                "jj",
+                marks=pytest.mark.xfail(reason="jj not installed in CI environment"),
+            ),
+        ],
+    )
     def test_ops_log_shows_history(self, runner, backend, sample_operations, tmp_path):
         """ops log should show operation history for both backends."""
         # Import here to allow patching
@@ -177,7 +183,11 @@ class TestOpsLog:
         def mock_reflog(path, limit=20):
             nonlocal captured_limit
             captured_limit = limit
-            return sample_operations[:limit] if limit < len(sample_operations) else sample_operations
+            return (
+                sample_operations[:limit]
+                if limit < len(sample_operations)
+                else sample_operations
+            )
 
         with patch.object(ops_module, "get_vcs", return_value=mock_vcs):
             with patch(
@@ -395,7 +405,9 @@ class TestVCSDetection:
         """ops log should handle VCS detection errors gracefully."""
         from specify_cli.cli.commands import ops as ops_module
 
-        with patch.object(ops_module, "get_vcs", side_effect=Exception("Not a VCS repo")):
+        with patch.object(
+            ops_module, "get_vcs", side_effect=Exception("Not a VCS repo")
+        ):
             with patch("os.getcwd", return_value=str(tmp_path)):
                 result = runner.invoke(ops_module.app, ["log"])
 

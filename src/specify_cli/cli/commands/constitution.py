@@ -10,8 +10,14 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from specify_cli.constitution.compiler import compile_constitution, write_compiled_constitution
-from specify_cli.constitution.context import BOOTSTRAP_ACTIONS, build_constitution_context
+from specify_cli.constitution.compiler import (
+    compile_constitution,
+    write_compiled_constitution,
+)
+from specify_cli.constitution.context import (
+    BOOTSTRAP_ACTIONS,
+    build_constitution_context,
+)
 from specify_cli.constitution.hasher import is_stale
 from specify_cli.constitution.interview import (
     MINIMAL_QUESTION_ORDER,
@@ -44,7 +50,9 @@ def _resolve_constitution_path(repo_root: Path) -> Path:
     if legacy_path.exists():
         return legacy_path
 
-    raise TaskCliError(f"Constitution not found. Expected:\n  - {new_path}\n  - {legacy_path} (legacy)")
+    raise TaskCliError(
+        f"Constitution not found. Expected:\n  - {new_path}\n  - {legacy_path} (legacy)"
+    )
 
 
 def _parse_csv_option(raw: Optional[str]) -> list[str] | None:
@@ -61,9 +69,15 @@ def _interview_path(repo_root: Path) -> Path:
 
 @app.command()
 def interview(
-    mission: str = typer.Option("software-dev", "--mission", help="Mission key for constitution defaults"),
-    profile: str = typer.Option("minimal", "--profile", help="Interview profile: minimal or comprehensive"),
-    use_defaults: bool = typer.Option(False, "--defaults", help="Use deterministic defaults without prompts"),
+    mission: str = typer.Option(
+        "software-dev", "--mission", help="Mission key for constitution defaults"
+    ),
+    profile: str = typer.Option(
+        "minimal", "--profile", help="Interview profile: minimal or comprehensive"
+    ),
+    use_defaults: bool = typer.Option(
+        False, "--defaults", help="Use deterministic defaults without prompts"
+    ),
     selected_paradigms: Optional[str] = typer.Option(
         None,
         "--selected-paradigms",
@@ -91,12 +105,20 @@ def interview(
         interview_data = default_interview(mission=mission, profile=normalized_profile)
 
         if not use_defaults:
-            question_order = MINIMAL_QUESTION_ORDER if normalized_profile == "minimal" else QUESTION_ORDER
+            question_order = (
+                MINIMAL_QUESTION_ORDER
+                if normalized_profile == "minimal"
+                else QUESTION_ORDER
+            )
             answers_override: dict[str, str] = {}
             for question_id in question_order:
-                prompt = QUESTION_PROMPTS.get(question_id, question_id.replace("_", " ").title())
+                prompt = QUESTION_PROMPTS.get(
+                    question_id, question_id.replace("_", " ").title()
+                )
                 default_value = interview_data.answers.get(question_id, "")
-                answers_override[question_id] = typer.prompt(prompt, default=default_value)
+                answers_override[question_id] = typer.prompt(
+                    prompt, default=default_value
+                )
 
             paradigms_default = ", ".join(interview_data.selected_paradigms)
             directives_default = ", ".join(interview_data.selected_directives)
@@ -165,15 +187,25 @@ def interview(
 
 @app.command()
 def generate(
-    mission: Optional[str] = typer.Option(None, "--mission", help="Mission key for template-set defaults"),
+    mission: Optional[str] = typer.Option(
+        None, "--mission", help="Mission key for template-set defaults"
+    ),
     template_set: Optional[str] = typer.Option(
         None,
         "--template-set",
         help="Override doctrine template set (must exist in packaged doctrine missions)",
     ),
-    from_interview: bool = typer.Option(True, "--from-interview/--no-from-interview", help="Load interview answers if present"),
-    profile: str = typer.Option("minimal", "--profile", help="Default profile when no interview is available"),
-    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing constitution bundle"),
+    from_interview: bool = typer.Option(
+        True,
+        "--from-interview/--no-from-interview",
+        help="Load interview answers if present",
+    ),
+    profile: str = typer.Option(
+        "minimal", "--profile", help="Default profile when no interview is available"
+    ),
+    force: bool = typer.Option(
+        False, "--force", "-f", help="Overwrite existing constitution bundle"
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output JSON"),
 ) -> None:
     """Generate constitution bundle from interview answers + doctrine references."""
@@ -182,7 +214,9 @@ def generate(
         constitution_dir = repo_root / ".kittify" / "constitution"
         answers_path = _interview_path(repo_root)
 
-        interview_data = read_interview_answers(answers_path) if from_interview else None
+        interview_data = (
+            read_interview_answers(answers_path) if from_interview else None
+        )
         if interview_data is None:
             resolved_mission = mission or "software-dev"
             interview_data = default_interview(
@@ -200,7 +234,9 @@ def generate(
             interview=interview_data,
             template_set=template_set,
         )
-        bundle_result = write_compiled_constitution(constitution_dir, compiled, force=force)
+        bundle_result = write_compiled_constitution(
+            constitution_dir, compiled, force=force
+        )
 
         constitution_path = constitution_dir / "constitution.md"
         sync_result = sync_constitution(constitution_path, constitution_dir, force=True)
@@ -218,7 +254,9 @@ def generate(
                 json.dumps(
                     {
                         "success": True,
-                        "constitution_path": str(constitution_path.relative_to(repo_root)),
+                        "constitution_path": str(
+                            constitution_path.relative_to(repo_root)
+                        ),
                         "interview_source": interview_source,
                         "mission": compiled.mission,
                         "template_set": compiled.template_set,
@@ -259,14 +297,20 @@ def generate(
 
 @app.command()
 def context(
-    action: str = typer.Option(..., "--action", help="Workflow action (specify|plan|implement|review)"),
-    mark_loaded: bool = typer.Option(True, "--mark-loaded/--no-mark-loaded", help="Persist first-load state"),
+    action: str = typer.Option(
+        ..., "--action", help="Workflow action (specify|plan|implement|review)"
+    ),
+    mark_loaded: bool = typer.Option(
+        True, "--mark-loaded/--no-mark-loaded", help="Persist first-load state"
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output JSON"),
 ) -> None:
     """Render constitution context for a specific workflow action."""
     try:
         repo_root = find_repo_root()
-        result = build_constitution_context(repo_root, action=action, mark_loaded=mark_loaded)
+        result = build_constitution_context(
+            repo_root, action=action, mark_loaded=mark_loaded
+        )
 
         if json_output:
             print(
@@ -298,7 +342,9 @@ def context(
 
 @app.command()
 def sync(
-    force: bool = typer.Option(False, "--force", "-f", help="Force sync even if not stale"),
+    force: bool = typer.Option(
+        False, "--force", "-f", help="Force sync even if not stale"
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output JSON"),
 ) -> None:
     """Sync constitution.md to structured YAML config files."""
@@ -331,7 +377,9 @@ def sync(
             for filename in result.files_written:
                 console.print(f"  ✓ {filename}")
         else:
-            console.print("[blue]ℹ️  Constitution already in sync[/blue] (use --force to re-extract)")
+            console.print(
+                "[blue]ℹ️  Constitution already in sync[/blue] (use --force to re-extract)"
+            )
 
     except TaskCliError as e:
         console.print(f"[red]Error:[/red] {e}")
@@ -355,16 +403,27 @@ def status(
         stale, current_hash, stored_hash = is_stale(constitution_path, metadata_path)
 
         files_info: list[dict[str, str | bool | float]] = []
-        for filename in ["governance.yaml", "directives.yaml", "metadata.yaml", "references.yaml"]:
+        for filename in [
+            "governance.yaml",
+            "directives.yaml",
+            "metadata.yaml",
+            "references.yaml",
+        ]:
             file_path = output_dir / filename
             if file_path.exists():
                 size = file_path.stat().st_size
                 size_kb = size / 1024
-                files_info.append({"name": filename, "exists": True, "size_kb": size_kb})
+                files_info.append(
+                    {"name": filename, "exists": True, "size_kb": size_kb}
+                )
             else:
                 files_info.append({"name": filename, "exists": False, "size_kb": 0.0})
 
-        library_count = len(list((output_dir / "library").glob("*.md"))) if (output_dir / "library").exists() else 0
+        library_count = (
+            len(list((output_dir / "library").glob("*.md")))
+            if (output_dir / "library").exists()
+            else 0
+        )
 
         last_sync = None
         if metadata_path.exists():
@@ -373,7 +432,9 @@ def status(
             yaml = YAML(typ="safe")
             metadata = yaml.load(metadata_path.read_text(encoding="utf-8")) or {}
             if isinstance(metadata, dict):
-                last_sync = metadata.get("timestamp_utc") or metadata.get("extracted_at")
+                last_sync = metadata.get("timestamp_utc") or metadata.get(
+                    "extracted_at"
+                )
 
         if json_output:
             data = {
@@ -391,7 +452,9 @@ def status(
         console.print(f"Constitution: {constitution_path.relative_to(repo_root)}")
 
         if stale:
-            console.print("Status: [yellow]⚠️  STALE[/yellow] (modified since last sync)")
+            console.print(
+                "Status: [yellow]⚠️  STALE[/yellow] (modified since last sync)"
+            )
             if stored_hash:
                 console.print(f"Expected hash: {stored_hash}")
             console.print(f"Current hash:  {current_hash}")

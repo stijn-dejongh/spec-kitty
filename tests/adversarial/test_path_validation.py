@@ -10,6 +10,7 @@ Tests for validate_deliverables_path() to ensure:
 
 Target: src/specify_cli/mission.py:608-637
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -24,25 +25,32 @@ pytestmark = [pytest.mark.adversarial]
 class TestDirectoryTraversal:
     """Test directory traversal attack prevention."""
 
-    @pytest.mark.parametrize("malicious_path,description", [
-        ("../kitty-specs/", "Parent directory to kitty-specs"),
-        ("../../../etc/passwd", "Deep traversal to system files"),
-        ("./kitty-specs/", "Dot-slash to kitty-specs"),
-        ("docs/../../kitty-specs/", "Nested traversal"),
-        ("docs/../../../", "Traversal to root"),
-        ("a/b/c/../../../../kitty-specs/", "Deep nested traversal"),
-    ])
+    @pytest.mark.parametrize(
+        "malicious_path,description",
+        [
+            ("../kitty-specs/", "Parent directory to kitty-specs"),
+            ("../../../etc/passwd", "Deep traversal to system files"),
+            ("./kitty-specs/", "Dot-slash to kitty-specs"),
+            ("docs/../../kitty-specs/", "Nested traversal"),
+            ("docs/../../../", "Traversal to root"),
+            ("a/b/c/../../../../kitty-specs/", "Deep nested traversal"),
+        ],
+    )
     def test_traversal_rejected(self, malicious_path: str, description: str):
         """Directory traversal paths must be rejected."""
         is_valid, error = validate_deliverables_path(malicious_path)
 
         if is_valid:
             pytest.xfail("Traversal not blocked in current implementation")
-        assert not is_valid, f"Path '{malicious_path}' should be rejected ({description})"
+        assert not is_valid, (
+            f"Path '{malicious_path}' should be rejected ({description})"
+        )
         assert error, f"Should provide error message for: {description}"
         # Error should mention traversal or invalid path
-        assert any(keyword in error.lower() for keyword in ["traversal", "invalid", "not allowed", "kitty-specs"]), \
-            f"Error message should explain rejection: {error}"
+        assert any(
+            keyword in error.lower()
+            for keyword in ["traversal", "invalid", "not allowed", "kitty-specs"]
+        ), f"Error message should explain rejection: {error}"
 
     def test_valid_nested_path_allowed(self):
         """Valid nested paths without traversal should be allowed."""
@@ -55,23 +63,30 @@ class TestDirectoryTraversal:
 class TestCaseSensitivityBypass:
     """Test case-sensitivity bypass prevention (macOS/Windows)."""
 
-    @pytest.mark.parametrize("case_variant", [
-        "KITTY-SPECS/test/",
-        "Kitty-Specs/test/",
-        "KiTtY-SpEcS/test/",
-        "kitty-SPECS/test/",
-        "KITTY-specs/test/",
-    ])
+    @pytest.mark.parametrize(
+        "case_variant",
+        [
+            "KITTY-SPECS/test/",
+            "Kitty-Specs/test/",
+            "KiTtY-SpEcS/test/",
+            "kitty-SPECS/test/",
+            "KITTY-specs/test/",
+        ],
+    )
     def test_case_variants_rejected(self, case_variant: str, case_insensitive_fs: bool):
         """Case variants of kitty-specs should be rejected on case-insensitive FS."""
         if not case_insensitive_fs:
-            pytest.skip("Case-sensitivity test only runs on case-insensitive filesystems")
+            pytest.skip(
+                "Case-sensitivity test only runs on case-insensitive filesystems"
+            )
 
         is_valid, error = validate_deliverables_path(case_variant)
 
         if is_valid:
             pytest.xfail("Case-variant bypass not blocked in current implementation")
-        assert not is_valid, f"Case variant '{case_variant}' should be rejected on case-insensitive FS"
+        assert not is_valid, (
+            f"Case variant '{case_variant}' should be rejected on case-insensitive FS"
+        )
         assert error, "Should provide error message"
 
     def test_case_sensitivity_check_documented(self):
@@ -88,14 +103,17 @@ class TestCaseSensitivityBypass:
 class TestEmptyPaths:
     """Test empty and whitespace path handling."""
 
-    @pytest.mark.parametrize("empty_path,description", [
-        ("", "Empty string"),
-        ("   ", "Whitespace only"),
-        ("\t\t", "Tabs only"),
-        ("\n", "Newline only"),
-        ("///", "Slashes that normalize to empty"),
-        ("/", "Single slash (root)"),
-    ])
+    @pytest.mark.parametrize(
+        "empty_path,description",
+        [
+            ("", "Empty string"),
+            ("   ", "Whitespace only"),
+            ("\t\t", "Tabs only"),
+            ("\n", "Newline only"),
+            ("///", "Slashes that normalize to empty"),
+            ("/", "Single slash (root)"),
+        ],
+    )
     def test_empty_rejected(self, empty_path: str, description: str):
         """Empty/whitespace paths must be rejected with clear error."""
         is_valid, error = validate_deliverables_path(empty_path)
@@ -152,7 +170,9 @@ class TestSymlinkAttacks:
         # Current implementation may not check symlinks - document behavior
         # If validation passes, this is a bug that should be fixed
         if is_valid:
-            pytest.xfail("validate_deliverables_path does not resolve symlinks - security gap")
+            pytest.xfail(
+                "validate_deliverables_path does not resolve symlinks - security gap"
+            )
 
     @pytest.mark.requires_symlinks
     def test_symlink_chain_resolved(self, tmp_path: Path, symlink_factory):
@@ -180,12 +200,19 @@ class TestSpecialPaths:
         for home_path in ["~/research/", "~user/research/", "~/", "~"]:
             is_valid, error = validate_deliverables_path(home_path)
             if is_valid:
-                pytest.xfail("Home directory paths not blocked in current implementation")
+                pytest.xfail(
+                    "Home directory paths not blocked in current implementation"
+                )
             assert not is_valid, f"Home path '{home_path}' should be rejected"
 
     def test_absolute_path_rejected(self):
         """Absolute paths should be rejected."""
-        for abs_path in ["/tmp/research/", "/etc/passwd", "/home/user/", "C:\\Users\\test\\"]:
+        for abs_path in [
+            "/tmp/research/",
+            "/etc/passwd",
+            "/home/user/",
+            "C:\\Users\\test\\",
+        ]:
             is_valid, error = validate_deliverables_path(abs_path)
             if is_valid:
                 pytest.xfail("Absolute paths not blocked in current implementation")

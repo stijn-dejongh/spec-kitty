@@ -4,7 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from specify_cli.constitution.compiler import compile_constitution, write_compiled_constitution
+from specify_cli.constitution.compiler import (
+    compile_constitution,
+    write_compiled_constitution,
+)
 from specify_cli.constitution.interview import default_interview
 
 
@@ -35,7 +38,9 @@ def test_write_compiled_constitution_writes_bundle(tmp_path: Path) -> None:
     assert library_files
 
 
-def test_write_compiled_constitution_requires_force_when_existing(tmp_path: Path) -> None:
+def test_write_compiled_constitution_requires_force_when_existing(
+    tmp_path: Path,
+) -> None:
     interview = default_interview(mission="software-dev", profile="minimal")
     compiled = compile_constitution(mission="software-dev", interview=interview)
 

@@ -89,9 +89,7 @@ def _should_apply_event(
                 if ev.event_id == current_event_id:
                     current_setter = ev
                     break
-            if current_setter is not None and not _is_rollback_event(
-                current_setter
-            ):
+            if current_setter is not None and not _is_rollback_event(current_setter):
                 return True  # Rollback beats forward
 
         # If the current state was set by a rollback, don't let a
@@ -102,9 +100,7 @@ def _should_apply_event(
                 if ev.event_id == current_event_id:
                     current_setter = ev
                     break
-            if current_setter is not None and _is_rollback_event(
-                current_setter
-            ):
+            if current_setter is not None and _is_rollback_event(current_setter):
                 if not _is_rollback_event(new_event):
                     return False  # Forward does not beat rollback
 

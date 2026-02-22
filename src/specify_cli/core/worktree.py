@@ -127,9 +127,7 @@ def get_next_feature_number(repo_root: Path) -> int:
 
 
 def create_feature_worktree(
-    repo_root: Path,
-    feature_slug: str,
-    feature_number: Optional[int] = None
+    repo_root: Path, feature_slug: str, feature_number: Optional[int] = None
 ) -> Tuple[Path, Path]:
     """Create workspace (git worktree or jj workspace) for feature development.
 
@@ -223,7 +221,7 @@ def create_feature_worktree(
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
-                errors="replace"
+                errors="replace",
             )
         except subprocess.CalledProcessError as git_error:
             raise RuntimeError(
@@ -244,7 +242,7 @@ def setup_feature_directory(
     feature_dir: Path,
     worktree_path: Path,
     repo_root: Path,
-    create_symlinks: bool = True
+    create_symlinks: bool = True,
 ) -> None:
     """Setup standard feature directory structure.
 
@@ -279,7 +277,7 @@ def setup_feature_directory(
     (tasks_dir / ".gitkeep").touch()
 
     # Create tasks/README.md with frontmatter format reference
-    tasks_readme_content = '''# Tasks Directory
+    tasks_readme_content = """# Tasks Directory
 
 This directory contains work package (WP) prompt files with lane status in frontmatter.
 
@@ -348,8 +346,8 @@ spec-kitty agent tasks move-task WP01 --to doing
 
 - Format: `WP01-kebab-case-slug.md`
 - Examples: `WP01-setup-infrastructure.md`, `WP02-user-auth.md`
-'''
-    (tasks_dir / "README.md").write_text(tasks_readme_content, encoding='utf-8')
+"""
+    (tasks_dir / "README.md").write_text(tasks_readme_content, encoding="utf-8")
 
     # Create worktree .kittify directory if it doesn't exist
     worktree_kittify = worktree_path / ".kittify"
@@ -429,10 +427,7 @@ spec-kitty agent tasks move-task WP01 --to doing
             spec_file.touch()
 
 
-def validate_feature_structure(
-    feature_dir: Path,
-    check_tasks: bool = False
-) -> dict:
+def validate_feature_structure(feature_dir: Path, check_tasks: bool = False) -> dict:
     """Validate feature directory structure and required files.
 
     Checks for:
@@ -466,12 +461,7 @@ def validate_feature_structure(
     # Check if feature directory exists
     if not feature_dir.exists():
         errors.append(f"Feature directory not found: {feature_dir}")
-        return {
-            "valid": False,
-            "errors": errors,
-            "warnings": warnings,
-            "paths": paths
-        }
+        return {"valid": False, "errors": errors, "warnings": warnings, "paths": paths}
 
     # Check required files exist
     spec_file = feature_dir / "spec.md"
@@ -504,5 +494,5 @@ def validate_feature_structure(
         "valid": len(errors) == 0,
         "errors": errors,
         "warnings": warnings,
-        "paths": paths
+        "paths": paths,
     }

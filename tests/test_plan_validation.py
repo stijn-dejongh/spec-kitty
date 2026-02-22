@@ -108,7 +108,9 @@ ACTION REQUIRED: Replace the content
         )
 
         with pytest.raises(PlanValidationError) as exc_info:
-            validate_plan_filled(plan_path, feature_slug="001-test-feature", strict=True)
+            validate_plan_filled(
+                plan_path, feature_slug="001-test-feature", strict=True
+            )
 
         assert "appears to be unfilled" in str(exc_info.value)
         assert "template markers" in str(exc_info.value)

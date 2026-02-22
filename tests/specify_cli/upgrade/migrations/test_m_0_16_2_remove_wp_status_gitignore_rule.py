@@ -65,7 +65,10 @@ class TestFindWpStatusEntries:
 
         entries = find_wp_status_entries(gitignore)
         assert entries == [
-            (2, "# Block WP status files (managed in main repo, prevents merge conflicts)"),
+            (
+                2,
+                "# Block WP status files (managed in main repo, prevents merge conflicts)",
+            ),
             (3, "# Research artifacts in kitty-specs/**/research/ are allowed"),
             (4, "kitty-specs/**/tasks/*.md"),
         ]
@@ -102,7 +105,9 @@ class TestRemoveWpStatusEntries:
         assert "node_modules/" in content
         assert "kitty-specs/**/tasks/*.md" not in content
         assert "Block WP status files" not in content
-        assert "Research artifacts in kitty-specs/**/research/ are allowed" not in content
+        assert (
+            "Research artifacts in kitty-specs/**/research/ are allowed" not in content
+        )
 
     def test_dry_run_does_not_modify_file(self, tmp_path: Path) -> None:
         gitignore = tmp_path / ".gitignore"

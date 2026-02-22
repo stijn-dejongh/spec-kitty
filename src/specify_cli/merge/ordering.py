@@ -15,7 +15,12 @@ from specify_cli.core.dependency_graph import (
     topological_sort,
 )
 
-__all__ = ["get_merge_order", "MergeOrderError", "has_dependency_info", "display_merge_order"]
+__all__ = [
+    "get_merge_order",
+    "MergeOrderError",
+    "has_dependency_info",
+    "display_merge_order",
+]
 
 logger = logging.getLogger(__name__)
 

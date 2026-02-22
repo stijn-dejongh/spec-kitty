@@ -21,7 +21,9 @@ class TestConstitutionDirectoryMigration:
         # Run migration
         migration = Migration()
         with patch("specify_cli.constitution.sync.sync") as mock_sync:
-            mock_sync.return_value = Mock(synced=True, files_written=["governance.yaml"], error=None)
+            mock_sync.return_value = Mock(
+                synced=True, files_written=["governance.yaml"], error=None
+            )
             changes = migration.apply(tmp_path, dry_run=False)
 
         # Verify file was moved
@@ -73,7 +75,9 @@ class TestConstitutionDirectoryMigration:
         assert new_path.exists()
 
         # Verify changes reported
-        assert any("already at" in change and "old copy" in change for change in changes)
+        assert any(
+            "already at" in change and "old copy" in change for change in changes
+        )
 
     def test_scenario_3_new_exists_old_doesnt(self, tmp_path: Path):
         """Scenario 3: New exists, old doesn't → skip (already migrated)."""
@@ -131,7 +135,9 @@ class TestConstitutionDirectoryMigration:
             mock_sync.assert_called_once_with(new_path, force=True)
 
         # Verify extraction reported
-        assert any("Initial extraction: 2 YAML files created" in change for change in changes)
+        assert any(
+            "Initial extraction: 2 YAML files created" in change for change in changes
+        )
 
     def test_initial_sync_failure_graceful(self, tmp_path: Path):
         """Initial sync failure should not block migration."""
@@ -143,7 +149,9 @@ class TestConstitutionDirectoryMigration:
         # Run migration with sync failure
         migration = Migration()
         with patch("specify_cli.constitution.sync.sync") as mock_sync:
-            mock_sync.return_value = Mock(synced=False, files_written=[], error="AI unavailable")
+            mock_sync.return_value = Mock(
+                synced=False, files_written=[], error="AI unavailable"
+            )
             changes = migration.apply(tmp_path, dry_run=False)
 
         # Verify file was still moved
@@ -171,7 +179,9 @@ class TestConstitutionDirectoryMigration:
         assert new_path.exists()
 
         # Verify warning reported
-        assert any("Warning: Initial extraction skipped" in change for change in changes)
+        assert any(
+            "Warning: Initial extraction skipped" in change for change in changes
+        )
 
     def test_idempotency(self, tmp_path: Path):
         """Running migration twice should be safe (idempotent)."""
@@ -255,6 +265,7 @@ class TestConstitutionDirectoryMigration:
 
         # Verify relative paths used
         assert any(
-            ".kittify/memory/constitution.md" in change and ".kittify/constitution/constitution.md" in change
+            ".kittify/memory/constitution.md" in change
+            and ".kittify/constitution/constitution.md" in change
             for change in changes
         )

@@ -21,7 +21,11 @@ def test_mission_list_shows_available_missions(clean_project: Path, run_cli) -> 
     result = run_cli(clean_project, "mission", "list")
     assert result.returncode == 0
     # Rich table may wrap names across lines, so check key words individually
-    assert "Software" in result.stdout and "Dev" in result.stdout and "Kitty" in result.stdout
+    assert (
+        "Software" in result.stdout
+        and "Dev" in result.stdout
+        and "Kitty" in result.stdout
+    )
     assert "Deep" in result.stdout and "Research" in result.stdout
 
 

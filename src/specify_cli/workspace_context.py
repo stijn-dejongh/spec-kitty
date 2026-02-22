@@ -33,11 +33,15 @@ class WorkspaceContext:
     feature_slug: str  # e.g., "010-workspace-per-wp"
 
     # Paths
-    worktree_path: str  # Relative path from repo root (e.g., ".worktrees/010-feature-WP02")
+    worktree_path: (
+        str  # Relative path from repo root (e.g., ".worktrees/010-feature-WP02")
+    )
     branch_name: str  # Git branch name (e.g., "010-feature-WP02")
 
     # Base tracking
-    base_branch: str  # Branch this was created from (e.g., "010-feature-WP01" or "main")
+    base_branch: (
+        str  # Branch this was created from (e.g., "010-feature-WP01" or "main")
+    )
     base_commit: str  # Git SHA this was created from
 
     # Dependencies
@@ -101,8 +105,7 @@ def save_context(repo_root: Path, context: WorkspaceContext) -> Path:
 
     # Write JSON with pretty formatting
     context_path.write_text(
-        json.dumps(context.to_dict(), indent=2) + "\n",
-        encoding="utf-8"
+        json.dumps(context.to_dict(), indent=2) + "\n", encoding="utf-8"
     )
 
     return context_path

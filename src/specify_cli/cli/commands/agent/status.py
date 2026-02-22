@@ -62,9 +62,7 @@ def _find_feature_slug(explicit_feature: str | None = None) -> str:
         )
     except FeatureDetectionError as e:
         console.print(f"[red]Error:[/red] {e}")
-        console.print(
-            "\n[dim]Hint: Use --feature <slug> to specify explicitly[/dim]"
-        )
+        console.print("\n[dim]Hint: Use --feature <slug> to specify explicitly[/dim]")
         raise typer.Exit(1)
 
 
@@ -112,18 +110,62 @@ def _resolve_feature_dir(
 @app.command()
 def emit(
     wp_id: Annotated[str, typer.Argument(help="Work package ID (e.g., WP01)")],
-    to: Annotated[str, typer.Option("--to", help="Target lane (e.g., claimed, in_progress, for_review, done)")] = ...,
-    actor: Annotated[str, typer.Option("--actor", help="Who is making this transition")] = ...,
-    feature: Annotated[Optional[str], typer.Option("--feature", help="Feature slug (auto-detected if omitted)")] = None,
-    force: Annotated[bool, typer.Option("--force", help="Force transition bypassing guards")] = False,
-    reason: Annotated[Optional[str], typer.Option("--reason", help="Reason for forced transition")] = None,
-    evidence_json: Annotated[Optional[str], typer.Option("--evidence-json", help="JSON string with done evidence")] = None,
-    review_ref: Annotated[Optional[str], typer.Option("--review-ref", help="Review feedback reference")] = None,
-    workspace_context: Annotated[Optional[str], typer.Option("--workspace-context", help="Workspace context identifier for claimed->in_progress")] = None,
-    subtasks_complete: Annotated[Optional[bool], typer.Option("--subtasks-complete", help="Whether required subtasks are complete for in_progress->for_review")] = None,
-    implementation_evidence_present: Annotated[Optional[bool], typer.Option("--implementation-evidence-present", help="Whether implementation evidence exists for in_progress->for_review")] = None,
-    execution_mode: Annotated[str, typer.Option("--execution-mode", help="Execution mode (worktree or direct_repo)")] = "worktree",
-    json_output: Annotated[bool, typer.Option("--json", help="Machine-readable JSON output")] = False,
+    to: Annotated[
+        str,
+        typer.Option(
+            "--to", help="Target lane (e.g., claimed, in_progress, for_review, done)"
+        ),
+    ] = ...,
+    actor: Annotated[
+        str, typer.Option("--actor", help="Who is making this transition")
+    ] = ...,
+    feature: Annotated[
+        Optional[str],
+        typer.Option("--feature", help="Feature slug (auto-detected if omitted)"),
+    ] = None,
+    force: Annotated[
+        bool, typer.Option("--force", help="Force transition bypassing guards")
+    ] = False,
+    reason: Annotated[
+        Optional[str], typer.Option("--reason", help="Reason for forced transition")
+    ] = None,
+    evidence_json: Annotated[
+        Optional[str],
+        typer.Option("--evidence-json", help="JSON string with done evidence"),
+    ] = None,
+    review_ref: Annotated[
+        Optional[str], typer.Option("--review-ref", help="Review feedback reference")
+    ] = None,
+    workspace_context: Annotated[
+        Optional[str],
+        typer.Option(
+            "--workspace-context",
+            help="Workspace context identifier for claimed->in_progress",
+        ),
+    ] = None,
+    subtasks_complete: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--subtasks-complete",
+            help="Whether required subtasks are complete for in_progress->for_review",
+        ),
+    ] = None,
+    implementation_evidence_present: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--implementation-evidence-present",
+            help="Whether implementation evidence exists for in_progress->for_review",
+        ),
+    ] = None,
+    execution_mode: Annotated[
+        str,
+        typer.Option(
+            "--execution-mode", help="Execution mode (worktree or direct_repo)"
+        ),
+    ] = "worktree",
+    json_output: Annotated[
+        bool, typer.Option("--json", help="Machine-readable JSON output")
+    ] = False,
 ) -> None:
     """Emit a status transition event for a work package.
 
@@ -212,6 +254,7 @@ def emit(
         # Check if it's a TransitionError (imported lazily above)
         try:
             from specify_cli.status.emit import TransitionError
+
             if isinstance(exc, TransitionError):
                 _output_error(json_output, str(exc))
                 raise typer.Exit(1)
@@ -223,8 +266,13 @@ def emit(
 
 @app.command()
 def materialize(
-    feature: Annotated[Optional[str], typer.Option("--feature", help="Feature slug (auto-detected if omitted)")] = None,
-    json_output: Annotated[bool, typer.Option("--json", help="Machine-readable JSON output")] = False,
+    feature: Annotated[
+        Optional[str],
+        typer.Option("--feature", help="Feature slug (auto-detected if omitted)"),
+    ] = None,
+    json_output: Annotated[
+        bool, typer.Option("--json", help="Machine-readable JSON output")
+    ] = False,
 ) -> None:
     """Rebuild status.json from the canonical event log.
 
@@ -274,6 +322,7 @@ def materialize(
         # Update legacy views (try/except -- don't block on legacy bridge)
         try:
             from specify_cli.status.legacy_bridge import update_all_views
+
             update_all_views(feature_dir, snapshot)
         except ImportError:
             pass  # Legacy bridge not yet available (WP06 not merged)
@@ -324,9 +373,7 @@ def doctor(
     ] = None,
     stale_claimed: Annotated[
         int,
-        typer.Option(
-            "--stale-claimed-days", help="Threshold for stale claims (days)"
-        ),
+        typer.Option("--stale-claimed-days", help="Threshold for stale claims (days)"),
     ] = 7,
     stale_in_progress: Annotated[
         int,
@@ -371,9 +418,7 @@ def doctor(
         )
     except FileNotFoundError as e:
         if json_output:
-            console.print_json(
-                json.dumps({"error": str(e), "healthy": False})
-            )
+            console.print_json(json.dumps({"error": str(e), "healthy": False}))
         else:
             console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1)
@@ -423,13 +468,9 @@ def doctor(
         # Project-specific section
         console.print(f"\n[bold]Feature Status: {result.feature_slug}[/bold]")
         if result.is_healthy:
-            console.print(
-                f"  [green]Healthy[/green]"
-            )
+            console.print(f"  [green]Healthy[/green]")
         else:
-            console.print(
-                f"  [yellow]Issues found[/yellow]"
-            )
+            console.print(f"  [yellow]Issues found[/yellow]")
             table = Table(title="Doctor Findings")
             table.add_column("Severity", style="bold")
             table.add_column("Category")
@@ -437,9 +478,7 @@ def doctor(
             table.add_column("Message")
             table.add_column("Action")
             for f in result.findings:
-                severity_style = (
-                    "red" if f.severity == "error" else "yellow"
-                )
+                severity_style = "red" if f.severity == "error" else "yellow"
                 table.add_row(
                     f"[{severity_style}]{f.severity}[/{severity_style}]",
                     str(f.category),
@@ -595,7 +634,8 @@ def migrate(
         feature_dirs = [feature_dir]
     else:
         feature_dirs = sorted(
-            d for d in kitty_specs.iterdir()
+            d
+            for d in kitty_specs.iterdir()
             if d.is_dir() and not d.name.startswith(".")
         )
         if not feature_dirs:
@@ -624,10 +664,7 @@ def migrate(
             result.total_failed += 1
 
     result.aliases_resolved = sum(
-        1
-        for f in result.features
-        for wp in f.wp_details
-        if wp.alias_resolved
+        1 for f in result.features for wp in f.wp_details if wp.alias_resolved
     )
 
     if json_output:
@@ -823,7 +860,9 @@ def reconcile(
     ] = None,
     dry_run: Annotated[
         bool,
-        typer.Option("--dry-run/--apply", help="Preview vs persist reconciliation events"),
+        typer.Option(
+            "--dry-run/--apply", help="Preview vs persist reconciliation events"
+        ),
     ] = True,
     target_repo: Annotated[
         Optional[list[Path]],

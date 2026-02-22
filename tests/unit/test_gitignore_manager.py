@@ -15,7 +15,11 @@ import sys
 # Add the src directory to the path so we can import the module
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from specify_cli.gitignore_manager import GitignoreManager, ProtectionResult, AgentDirectory  # noqa: E402
+from specify_cli.gitignore_manager import (
+    GitignoreManager,
+    ProtectionResult,
+    AgentDirectory,
+)  # noqa: E402
 
 
 class TestGitignoreManager:
@@ -30,7 +34,7 @@ class TestGitignoreManager:
     @pytest.fixture
     def temp_file(self):
         """Create a temporary file for testing."""
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmpfile:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as tmpfile:
             tmpfile.write("test content")
             tmpfile_path = Path(tmpfile.name)
         yield tmpfile_path
@@ -73,7 +77,9 @@ class TestGitignoreManager:
 
         assert result.success
         assert result.modified
-        assert len(result.entries_added) == 14  # All 12 agent directories + runtime entries
+        assert (
+            len(result.entries_added) == 14
+        )  # All 12 agent directories + runtime entries
         assert len(result.entries_skipped) == 0
         assert manager.gitignore_path.exists()
 
@@ -112,9 +118,18 @@ class TestGitignoreManager:
         result = manager.protect_all_agents()
 
         expected_dirs = [
-            ".claude/", ".codex/", ".opencode/", ".windsurf/",
-            ".gemini/", ".cursor/", ".qwen/", ".kilocode/",
-            ".augment/", ".roo/", ".amazonq/", ".github/copilot/"
+            ".claude/",
+            ".codex/",
+            ".opencode/",
+            ".windsurf/",
+            ".gemini/",
+            ".cursor/",
+            ".qwen/",
+            ".kilocode/",
+            ".augment/",
+            ".roo/",
+            ".amazonq/",
+            ".github/copilot/",
         ]
 
         content = manager.gitignore_path.read_text()
@@ -349,18 +364,20 @@ class TestGitignoreManager:
         dirs = GitignoreManager.get_agent_directories()
 
         for agent_dir in dirs:
-            assert agent_dir.directory.endswith("/"), f"{agent_dir.directory} missing trailing slash"
+            assert agent_dir.directory.endswith("/"), (
+                f"{agent_dir.directory} missing trailing slash"
+            )
 
     def test_result_object_structure(self, manager):
         """Test ProtectionResult object has expected structure."""
         result = manager.protect_all_agents()
 
-        assert hasattr(result, 'success')
-        assert hasattr(result, 'modified')
-        assert hasattr(result, 'entries_added')
-        assert hasattr(result, 'entries_skipped')
-        assert hasattr(result, 'errors')
-        assert hasattr(result, 'warnings')
+        assert hasattr(result, "success")
+        assert hasattr(result, "modified")
+        assert hasattr(result, "entries_added")
+        assert hasattr(result, "entries_skipped")
+        assert hasattr(result, "errors")
+        assert hasattr(result, "warnings")
 
         assert isinstance(result.entries_added, list)
         assert isinstance(result.entries_skipped, list)

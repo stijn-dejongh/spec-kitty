@@ -185,9 +185,7 @@ class TestValidateEventSchema:
         assert not any("force=true without reason" in f for f in findings)
 
     def test_review_ref_required_for_for_review_to_in_progress(self):
-        event = _make_event(
-            from_lane="for_review", to_lane="in_progress"
-        )
+        event = _make_event(from_lane="for_review", to_lane="in_progress")
         findings = validate_event_schema(event)
         assert any("for_review->in_progress without review_ref" in f for f in findings)
 
@@ -270,7 +268,7 @@ class TestValidateTransitionLegality:
                 event_id=f"01HXYZ012345678{i:09d}ABCDE",
                 from_lane=f,
                 to_lane=t,
-                at=f"2026-02-08T{12+i:02d}:00:00Z",
+                at=f"2026-02-08T{12 + i:02d}:00:00Z",
             )
             for i, (f, t) in enumerate(legal_pairs)
         ]
@@ -559,7 +557,9 @@ class TestValidateMaterializationDrift:
 
 
 class TestValidateDerivedViews:
-    def _write_wp_file(self, tasks_dir: Path, wp_id: str, lane: str, title: str = "Test WP"):
+    def _write_wp_file(
+        self, tasks_dir: Path, wp_id: str, lane: str, title: str = "Test WP"
+    ):
         """Helper to create a WP markdown file with frontmatter."""
         content = f"""---
 work_package_id: {wp_id}
@@ -692,7 +692,10 @@ lane: {lane}
 
         snapshot_wps = {"WP01": {"lane": "in_progress"}}
         findings = validate_derived_views(tmp_path, snapshot_wps, phase=2)
-        assert any("tasks.md is missing generated canonical status block" in f for f in findings)
+        assert any(
+            "tasks.md is missing generated canonical status block" in f
+            for f in findings
+        )
 
     def test_tasks_md_status_block_matches(self, tmp_path: Path):
         tasks_dir = tmp_path / "tasks"

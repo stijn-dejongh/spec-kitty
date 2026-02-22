@@ -38,7 +38,9 @@ def is_dashboard_accessible(port: int, timeout: float = 2.0) -> bool:
         True if dashboard responds, False otherwise
     """
     try:
-        with urlopen(f"http://127.0.0.1:{port}/api/features", timeout=timeout) as response:
+        with urlopen(
+            f"http://127.0.0.1:{port}/api/features", timeout=timeout
+        ) as response:
             return response.status == 200
     except (URLError, OSError, Exception):
         return False
@@ -67,13 +69,10 @@ def kill_dashboard_process(port: int):
     try:
         # Find process using the port
         result = subprocess.run(
-            ["lsof", "-ti", f":{port}"],
-            capture_output=True,
-            text=True,
-            check=False
+            ["lsof", "-ti", f":{port}"], capture_output=True, text=True, check=False
         )
         if result.stdout.strip():
-            pids = result.stdout.strip().split('\n')
+            pids = result.stdout.strip().split("\n")
             for pid in pids:
                 try:
                     os.kill(int(pid), signal.SIGTERM)
@@ -92,10 +91,10 @@ def kill_all_spec_kitty_dashboards():
             ["pgrep", "-f", "run_dashboard_server"],
             capture_output=True,
             text=True,
-            check=False
+            check=False,
         )
         if result.stdout.strip():
-            pids = result.stdout.strip().split('\n')
+            pids = result.stdout.strip().split("\n")
             for pid in pids:
                 try:
                     os.kill(int(pid), signal.SIGKILL)
@@ -109,7 +108,9 @@ def kill_all_spec_kitty_dashboards():
 class TestDashboardCLIStatusReporting:
     """Test CLI command accurately reports dashboard status."""
 
-    @pytest.mark.xfail(reason="Dashboard process lifecycle tests may fail due to port conflicts or timing")
+    @pytest.mark.xfail(
+        reason="Dashboard process lifecycle tests may fail due to port conflicts or timing"
+    )
     def test_cli_reports_success_when_dashboard_starts(self):
         """CRITICAL: Verify CLI reports success when dashboard actually starts.
 
@@ -132,8 +133,14 @@ class TestDashboardCLIStatusReporting:
 
             # Initialize git (required for spec-kitty)
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
 
             # Use a unique port for this test
             test_port = 9999
@@ -159,29 +166,37 @@ class TestDashboardCLIStatusReporting:
             try:
                 if dashboard_running:
                     # BUG DETECTION: If dashboard is running, CLI should have reported success
-                    assert result.returncode == 0, \
-                        f"CLI should report success (exit 0) when dashboard starts, " \
-                        f"got exit code {result.returncode}.\n" \
-                        f"Dashboard IS accessible on port {test_port}.\n" \
-                        f"CLI output: {result.stdout}\n" \
+                    assert result.returncode == 0, (
+                        f"CLI should report success (exit 0) when dashboard starts, "
+                        f"got exit code {result.returncode}.\n"
+                        f"Dashboard IS accessible on port {test_port}.\n"
+                        f"CLI output: {result.stdout}\n"
                         f"CLI stderr: {result.stderr}"
+                    )
 
                     # Should show success message
                     output = result.stdout + result.stderr
-                    assert "✅" in output or "success" in output.lower() or "running" in output.lower(), \
-                        f"CLI should show success message when dashboard starts.\n" \
-                        f"Dashboard IS accessible on port {test_port}.\n" \
+                    assert (
+                        "✅" in output
+                        or "success" in output.lower()
+                        or "running" in output.lower()
+                    ), (
+                        f"CLI should show success message when dashboard starts.\n"
+                        f"Dashboard IS accessible on port {test_port}.\n"
                         f"Got: {output}"
+                    )
 
                     # Should NOT show error message
-                    assert "❌" not in output and "Unable to start" not in output, \
-                        f"CLI should NOT show error when dashboard is running.\n" \
-                        f"Dashboard IS accessible on port {test_port}.\n" \
+                    assert "❌" not in output and "Unable to start" not in output, (
+                        f"CLI should NOT show error when dashboard is running.\n"
+                        f"Dashboard IS accessible on port {test_port}.\n"
                         f"Got: {output}"
+                    )
                 else:
                     # Dashboard not running - CLI should report error
-                    assert result.returncode != 0, \
+                    assert result.returncode != 0, (
                         f"CLI should report error when dashboard doesn't start"
+                    )
 
             finally:
                 # Cleanup: Kill the dashboard
@@ -202,14 +217,16 @@ class TestDashboardCLIStatusReporting:
             )
 
             # Should report error
-            assert result.returncode != 0, \
+            assert result.returncode != 0, (
                 "CLI should exit with error when project not initialized"
+            )
 
             output = result.stdout + result.stderr
 
             # Should show error message
-            assert "❌" in output or "error" in output.lower() or "Unable" in output, \
+            assert "❌" in output or "error" in output.lower() or "Unable" in output, (
                 f"CLI should show error message when dashboard fails. Got: {output}"
+            )
 
     def test_dashboard_accessibility_matches_cli_status(self):
         """Verify CLI status matches whether dashboard is actually accessible."""
@@ -221,8 +238,14 @@ class TestDashboardCLIStatusReporting:
             (tmpdir / "kitty-specs").mkdir()
 
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
 
             test_port = 9998
             kill_dashboard_process(test_port)
@@ -244,12 +267,13 @@ class TestDashboardCLIStatusReporting:
 
             try:
                 # This is the key assertion - they should match
-                assert is_accessible == cli_reported_success, \
-                    f"CLI status (exit {result.returncode}) should match dashboard accessibility ({is_accessible}).\n" \
-                    f"Dashboard accessible: {is_accessible}\n" \
-                    f"CLI reported success: {cli_reported_success}\n" \
-                    f"CLI output: {result.stdout}\n" \
+                assert is_accessible == cli_reported_success, (
+                    f"CLI status (exit {result.returncode}) should match dashboard accessibility ({is_accessible}).\n"
+                    f"Dashboard accessible: {is_accessible}\n"
+                    f"CLI reported success: {cli_reported_success}\n"
+                    f"CLI output: {result.stdout}\n"
                     f"CLI stderr: {result.stderr}"
+                )
             finally:
                 kill_dashboard_process(test_port)
 
@@ -257,7 +281,9 @@ class TestDashboardCLIStatusReporting:
 class TestDashboardProcessLifecycle:
     """Test dashboard process management and lifecycle."""
 
-    @pytest.mark.xfail(reason="Dashboard process lifecycle tests may fail due to port conflicts or timing")
+    @pytest.mark.xfail(
+        reason="Dashboard process lifecycle tests may fail due to port conflicts or timing"
+    )
     def test_dashboard_process_actually_starts(self):
         """Verify dashboard process is created and running."""
         with TemporaryDirectory() as tmpdir:
@@ -267,8 +293,14 @@ class TestDashboardProcessLifecycle:
             (tmpdir / "kitty-specs").mkdir()
 
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
 
             test_port = 9997
             kill_dashboard_process(test_port)
@@ -286,20 +318,20 @@ class TestDashboardProcessLifecycle:
 
             # Check if process exists
             ps_result = subprocess.run(
-                ["lsof", "-ti", f":{test_port}"],
-                capture_output=True,
-                text=True
+                ["lsof", "-ti", f":{test_port}"], capture_output=True, text=True
             )
 
             try:
                 has_process = bool(ps_result.stdout.strip())
 
-                assert has_process, \
+                assert has_process, (
                     f"Dashboard process should exist on port {test_port} after command runs"
+                )
 
                 # Verify it's accessible
-                assert is_dashboard_accessible(test_port), \
+                assert is_dashboard_accessible(test_port), (
                     f"Dashboard should be accessible on port {test_port}"
+                )
             finally:
                 kill_dashboard_process(test_port)
 
@@ -312,8 +344,14 @@ class TestDashboardProcessLifecycle:
             (tmpdir / "kitty-specs").mkdir()
 
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
 
             test_port = 9996
             kill_dashboard_process(test_port)
@@ -342,13 +380,17 @@ class TestDashboardProcessLifecycle:
 
                 # Should not be accessible anymore
                 still_accessible = is_dashboard_accessible(test_port, timeout=1.0)
-                assert not still_accessible, \
+                assert not still_accessible, (
                     f"Dashboard should be stopped after --kill, but still accessible on {test_port}"
+                )
 
                 # Kill command should report success
                 output = kill_result.stdout + kill_result.stderr
-                assert "✅" in output or "stopped" in output.lower() or "killed" in output.lower(), \
-                    f"--kill should report success. Got: {output}"
+                assert (
+                    "✅" in output
+                    or "stopped" in output.lower()
+                    or "killed" in output.lower()
+                ), f"--kill should report success. Got: {output}"
 
 
 class TestDashboardErrorMessages:
@@ -372,12 +414,16 @@ class TestDashboardErrorMessages:
             output = result.stdout + result.stderr
 
             # Should mention init or project setup
-            assert "init" in output.lower() or "project" in output.lower() or ".kittify" in output.lower(), \
-                f"Error should suggest initialization or mention project. Got: {output}"
+            assert (
+                "init" in output.lower()
+                or "project" in output.lower()
+                or ".kittify" in output.lower()
+            ), f"Error should suggest initialization or mention project. Got: {output}"
 
             # Should mention project or worktree
-            assert "project" in output.lower() or "worktree" in output.lower(), \
+            assert "project" in output.lower() or "worktree" in output.lower(), (
                 f"Error should mention project or worktree. Got: {output}"
+            )
 
 
 class TestDashboardAPIVerification:
@@ -398,8 +444,14 @@ class TestDashboardAPIVerification:
             (feature_dir / "spec.md").write_text("# Test Spec")
 
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
 
             test_port = 9995
             kill_dashboard_process(test_port)
@@ -418,17 +470,22 @@ class TestDashboardAPIVerification:
             try:
                 # Test API endpoint
                 if is_dashboard_accessible(test_port):
-                    with urlopen(f"http://127.0.0.1:{test_port}/api/features", timeout=3.0) as response:
-                        assert response.status == 200, \
+                    with urlopen(
+                        f"http://127.0.0.1:{test_port}/api/features", timeout=3.0
+                    ) as response:
+                        assert response.status == 200, (
                             "API should return 200 when dashboard running"
+                        )
 
                         data = json.loads(response.read().decode())
-                        assert "features" in data, \
+                        assert "features" in data, (
                             f"API should return features list. Got: {data}"
+                        )
 
                         # Should have features array
-                        assert len(data["features"]) >= 0, \
+                        assert len(data["features"]) >= 0, (
                             "Should return features array (may be empty)"
+                        )
             finally:
                 kill_dashboard_process(test_port)
 
@@ -441,8 +498,14 @@ class TestDashboardAPIVerification:
             (tmpdir / "kitty-specs").mkdir()
 
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
 
             test_port = 9994
             kill_dashboard_process(test_port)
@@ -459,13 +522,17 @@ class TestDashboardAPIVerification:
 
             try:
                 if is_dashboard_accessible(test_port):
-                    with urlopen(f"http://127.0.0.1:{test_port}/api/features", timeout=3.0) as response:
+                    with urlopen(
+                        f"http://127.0.0.1:{test_port}/api/features", timeout=3.0
+                    ) as response:
                         data = json.loads(response.read().decode())
 
                         # Should have required fields
                         assert isinstance(data, dict), "Response should be dict"
                         assert "features" in data, "Should have features field"
-                        assert isinstance(data["features"], list), "Features should be list"
+                        assert isinstance(data["features"], list), (
+                            "Features should be list"
+                        )
             finally:
                 kill_dashboard_process(test_port)
 
@@ -490,8 +557,14 @@ class TestDashboardRaceConditions:
                 (feature_dir / "plan.md").write_text(f"# Plan {i}")
 
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
 
             test_port = 9993
             kill_dashboard_process(test_port)
@@ -519,11 +592,12 @@ class TestDashboardRaceConditions:
 
                     # This test will catch race conditions where dashboard starts
                     # but CLI reports error due to timing
-                    assert result.returncode == 0 or "running" in output.lower(), \
-                        f"CLI should indicate success if dashboard is accessible.\n" \
-                        f"Dashboard IS running on port {test_port}.\n" \
-                        f"CLI exit code: {result.returncode}\n" \
+                    assert result.returncode == 0 or "running" in output.lower(), (
+                        f"CLI should indicate success if dashboard is accessible.\n"
+                        f"Dashboard IS running on port {test_port}.\n"
+                        f"CLI exit code: {result.returncode}\n"
                         f"CLI output: {output}"
+                    )
             finally:
                 kill_dashboard_process(test_port)
 
@@ -540,8 +614,14 @@ class TestDashboardCleanup:
             (tmpdir / "kitty-specs").mkdir()
 
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
 
             test_port = 9992
             kill_dashboard_process(test_port)
@@ -559,9 +639,7 @@ class TestDashboardCleanup:
 
             # Get process ID
             ps_before = subprocess.run(
-                ["lsof", "-ti", f":{test_port}"],
-                capture_output=True,
-                text=True
+                ["lsof", "-ti", f":{test_port}"], capture_output=True, text=True
             )
 
             if ps_before.stdout.strip():
@@ -576,18 +654,18 @@ class TestDashboardCleanup:
 
                 # Check process is gone
                 ps_after = subprocess.run(
-                    ["lsof", "-ti", f":{test_port}"],
-                    capture_output=True,
-                    text=True
+                    ["lsof", "-ti", f":{test_port}"], capture_output=True, text=True
                 )
 
-                assert not ps_after.stdout.strip(), \
-                    f"Dashboard process should be terminated after --kill.\n" \
+                assert not ps_after.stdout.strip(), (
+                    f"Dashboard process should be terminated after --kill.\n"
                     f"Process still running: {ps_after.stdout}"
+                )
 
                 # Verify not accessible
-                assert not is_dashboard_accessible(test_port, timeout=1.0), \
+                assert not is_dashboard_accessible(test_port, timeout=1.0), (
                     "Dashboard should not be accessible after --kill"
+                )
 
 
 # Module-level cleanup: Kill ALL orphaned dashboards before and after entire test module
@@ -631,18 +709,20 @@ def test_dashboard_with_symlinked_kitty_specs():
         kittify_dir.mkdir()
 
         # Initialize git repo (required by dashboard)
-        subprocess.run(["git", "init"], cwd=test_project, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "init"], cwd=test_project, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "config", "user.email", "test@example.com"],
             cwd=test_project,
             check=True,
-            capture_output=True
+            capture_output=True,
         )
         subprocess.run(
             ["git", "config", "user.name", "Test User"],
             cwd=test_project,
             check=True,
-            capture_output=True
+            capture_output=True,
         )
 
         # Create a worktree structure
@@ -659,7 +739,9 @@ def test_dashboard_with_symlinked_kitty_specs():
 
         # Create spec.md and plan.md
         (feature_dir / "spec.md").write_text("# Test Feature\n\nA test feature.")
-        (feature_dir / "plan.md").write_text("# Implementation Plan\n\n## Overview\nTest plan.")
+        (feature_dir / "plan.md").write_text(
+            "# Implementation Plan\n\n## Overview\nTest plan."
+        )
 
         # Create symlink to worktree kitty-specs (this is the key test scenario)
         kitty_specs = test_project / "kitty-specs"
@@ -667,8 +749,9 @@ def test_dashboard_with_symlinked_kitty_specs():
 
         # Verify symlink structure
         assert kitty_specs.is_symlink(), "kitty-specs should be a symlink"
-        assert (kitty_specs / "001-test-feature" / "spec.md").exists(), \
+        assert (kitty_specs / "001-test-feature" / "spec.md").exists(), (
             "Should access spec.md through symlink"
+        )
 
         try:
             # Run dashboard command
@@ -686,19 +769,22 @@ def test_dashboard_with_symlinked_kitty_specs():
 
             # Dashboard should start successfully
             if is_dashboard_accessible(test_port):
-                assert result.returncode == 0, \
-                    f"CLI should report success when dashboard accessible.\n" \
-                    f"Exit code: {result.returncode}\n" \
-                    f"Stdout: {result.stdout}\n" \
+                assert result.returncode == 0, (
+                    f"CLI should report success when dashboard accessible.\n"
+                    f"Exit code: {result.returncode}\n"
+                    f"Stdout: {result.stdout}\n"
                     f"Stderr: {result.stderr}"
+                )
 
-                assert "✅" in result.stdout or "started" in result.stdout.lower(), \
-                    f"CLI should show success message when dashboard running.\n" \
+                assert "✅" in result.stdout or "started" in result.stdout.lower(), (
+                    f"CLI should show success message when dashboard running.\n"
                     f"Stdout: {result.stdout}"
+                )
             else:
                 # If dashboard not accessible, error is acceptable
-                assert result.returncode != 0, \
+                assert result.returncode != 0, (
                     "CLI should report error when dashboard not accessible"
+                )
 
         finally:
             # Cleanup

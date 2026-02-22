@@ -11,7 +11,12 @@ from specify_cli.glossary.middleware import (
 )
 from specify_cli.glossary.extraction import ExtractedTerm
 from specify_cli.glossary.models import (
-    TermSurface, TermSense, Provenance, SenseStatus, ConflictType, Severity
+    TermSurface,
+    TermSense,
+    Provenance,
+    SenseStatus,
+    ConflictType,
+    Severity,
 )
 from specify_cli.glossary.scope import GlossaryScope, SCOPE_RESOLUTION_ORDER
 from specify_cli.glossary.store import GlossaryStore
@@ -91,9 +96,7 @@ class TestMiddlewareProcess:
 
     def test_process_extracts_from_step_output(self):
         """Middleware extracts terms from step_output."""
-        middleware = GlossaryCandidateExtractionMiddleware(
-            glossary_fields=["output"]
-        )
+        middleware = GlossaryCandidateExtractionMiddleware(glossary_fields=["output"])
 
         context = MockContext(
             step_output={"output": "The API is an acronym."},
@@ -138,7 +141,9 @@ class TestMiddlewareProcess:
         result = middleware.process(context)
 
         # Should extract metadata hints
-        metadata_terms = [t for t in result.extracted_terms if t.source == "metadata_hint"]
+        metadata_terms = [
+            t for t in result.extracted_terms if t.source == "metadata_hint"
+        ]
         assert len(metadata_terms) == 2
         surfaces = {t.surface for t in metadata_terms}
         assert surfaces == {"mission", "primitive"}
@@ -158,7 +163,9 @@ class TestMiddlewareProcess:
 
         # "workspace" appears in metadata, quoted phrase, and casing pattern
         # Should only appear once (metadata takes precedence)
-        workspace_terms = [t for t in result.extracted_terms if t.surface == "workspace"]
+        workspace_terms = [
+            t for t in result.extracted_terms if t.surface == "workspace"
+        ]
         assert len(workspace_terms) == 1
         assert workspace_terms[0].source == "metadata_hint"
 
@@ -251,7 +258,9 @@ class TestMiddlewareIntegration:
         assert len(result.extracted_terms) > 0
 
         # Check metadata hints present
-        metadata_terms = [t for t in result.extracted_terms if t.source == "metadata_hint"]
+        metadata_terms = [
+            t for t in result.extracted_terms if t.source == "metadata_hint"
+        ]
         surfaces = {t.surface for t in metadata_terms}
         assert "primitive" in surfaces
         assert "work package" in surfaces
@@ -503,9 +512,7 @@ class TestMetadataDrivenFieldSelection:
             step_output={
                 "custom_output": 'The "mission" is in output.',
             },
-            metadata={
-                "glossary_fields": ["custom_input", "custom_output"]
-            },
+            metadata={"glossary_fields": ["custom_input", "custom_output"]},
         )
 
         result = middleware.process(context)
@@ -669,32 +676,38 @@ def semantic_check_store(tmp_path: Path) -> GlossaryStore:
 
     # Add terms for testing different conflict scenarios
     # 1. Single sense (no conflict)
-    store.add_sense(TermSense(
-        surface=TermSurface("feature"),
-        scope=GlossaryScope.SPEC_KITTY_CORE.value,
-        definition="A unit of work with specifications",
-        provenance=provenance,
-        confidence=1.0,
-        status=SenseStatus.ACTIVE,
-    ))
+    store.add_sense(
+        TermSense(
+            surface=TermSurface("feature"),
+            scope=GlossaryScope.SPEC_KITTY_CORE.value,
+            definition="A unit of work with specifications",
+            provenance=provenance,
+            confidence=1.0,
+            status=SenseStatus.ACTIVE,
+        )
+    )
 
     # 2. Multiple senses (ambiguous conflict)
-    store.add_sense(TermSense(
-        surface=TermSurface("workspace"),
-        scope=GlossaryScope.MISSION_LOCAL.value,
-        definition="Git worktree directory",
-        provenance=provenance,
-        confidence=1.0,
-        status=SenseStatus.ACTIVE,
-    ))
-    store.add_sense(TermSense(
-        surface=TermSurface("workspace"),
-        scope=GlossaryScope.TEAM_DOMAIN.value,
-        definition="VS Code workspace file",
-        provenance=provenance,
-        confidence=0.9,
-        status=SenseStatus.ACTIVE,
-    ))
+    store.add_sense(
+        TermSense(
+            surface=TermSurface("workspace"),
+            scope=GlossaryScope.MISSION_LOCAL.value,
+            definition="Git worktree directory",
+            provenance=provenance,
+            confidence=1.0,
+            status=SenseStatus.ACTIVE,
+        )
+    )
+    store.add_sense(
+        TermSense(
+            surface=TermSurface("workspace"),
+            scope=GlossaryScope.TEAM_DOMAIN.value,
+            definition="VS Code workspace file",
+            provenance=provenance,
+            confidence=0.9,
+            status=SenseStatus.ACTIVE,
+        )
+    )
 
     return store
 
@@ -702,7 +715,9 @@ def semantic_check_store(tmp_path: Path) -> GlossaryStore:
 class TestSemanticCheckMiddleware:
     """Tests for SemanticCheckMiddleware (WP04 T019, T020)."""
 
-    def test_middleware_initialization_default(self, semantic_check_store: GlossaryStore):
+    def test_middleware_initialization_default(
+        self, semantic_check_store: GlossaryStore
+    ):
         """SemanticCheckMiddleware initializes with default scope order."""
         middleware = SemanticCheckMiddleware(semantic_check_store)
 
@@ -879,9 +894,7 @@ class TestSemanticCheckMiddleware:
 
         context = MockContext(
             metadata={},
-            extracted_terms=[
-                ExtractedTerm("unknown", "metadata_hint", 1.0, "unknown")
-            ],
+            extracted_terms=[ExtractedTerm("unknown", "metadata_hint", 1.0, "unknown")],
         )
         context.conflicts = []
 
@@ -996,7 +1009,10 @@ class TestSemanticCheckIntegration:
 
         conflict_types = {c.conflict_type for c in context.conflicts}
         # At least one of: AMBIGUOUS (workspace) or UNKNOWN (unknown)
-        assert ConflictType.AMBIGUOUS in conflict_types or ConflictType.UNKNOWN in conflict_types
+        assert (
+            ConflictType.AMBIGUOUS in conflict_types
+            or ConflictType.UNKNOWN in conflict_types
+        )
 
     def test_middleware_detects_unresolved_critical(
         self, semantic_check_store: GlossaryStore
@@ -1030,8 +1046,8 @@ class TestSemanticCheckIntegration:
 
         # LLM output that contradicts the glossary definition
         llm_output_with_contradiction = (
-            'The feature is not a unit of work. '
-            'The feature refers to a plugin or extension module.'
+            "The feature is not a unit of work. "
+            "The feature refers to a plugin or extension module."
         )
 
         context = MockContext(
@@ -1065,8 +1081,8 @@ class TestSemanticCheckIntegration:
 
         # Prepare LLM output with contradiction for "feature"
         llm_output = (
-            'The feature is not a unit of work. '
-            'The feature refers to something else entirely.'
+            "The feature is not a unit of work. "
+            "The feature refers to something else entirely."
         )
 
         context = MockContext(
@@ -1085,7 +1101,9 @@ class TestSemanticCheckIntegration:
                 # UNKNOWN: no match, high confidence
                 ExtractedTerm("unknown_term", "quoted_phrase", 0.9, "unknown_term"),
                 # UNRESOLVED_CRITICAL: no match, low confidence, critical step
-                ExtractedTerm("critical_unknown", "quoted_phrase", 0.3, "critical_unknown"),
+                ExtractedTerm(
+                    "critical_unknown", "quoted_phrase", 0.3, "critical_unknown"
+                ),
             ],
         )
         context.conflicts = []

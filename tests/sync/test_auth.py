@@ -18,7 +18,9 @@ def auth_client(tmp_path):
     cred_dir = tmp_path / ".spec-kitty"
     cred_dir.mkdir()
     client.credential_store.credentials_path = cred_dir / "credentials"
-    client.credential_store.lock_path = client.credential_store.credentials_path.with_suffix(".lock")
+    client.credential_store.lock_path = (
+        client.credential_store.credentials_path.with_suffix(".lock")
+    )
     client.config.get_server_url = lambda: "https://test.example.com"
     return client
 
@@ -60,7 +62,9 @@ class TestObtainTokens:
     def test_obtain_tokens_network_error(self, auth_client):
         """obtain_tokens() should raise on network error."""
         with patch.object(auth_client, "_get_http_client") as mock_client:
-            mock_client.return_value.post.side_effect = httpx.RequestError("Connection failed")
+            mock_client.return_value.post.side_effect = httpx.RequestError(
+                "Connection failed"
+            )
 
             with pytest.raises(AuthenticationError) as exc_info:
                 auth_client.obtain_tokens("user@example.com", "password")

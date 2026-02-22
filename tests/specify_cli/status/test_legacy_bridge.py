@@ -24,7 +24,15 @@ from specify_cli.status.models import StatusSnapshot
 # Helpers
 # ---------------------------------------------------------------------------
 
-def create_wp_file(tasks_dir: Path, wp_id: str, title: str, lane: str, *, extra_fields: dict | None = None) -> Path:
+
+def create_wp_file(
+    tasks_dir: Path,
+    wp_id: str,
+    title: str,
+    lane: str,
+    *,
+    extra_fields: dict | None = None,
+) -> Path:
     """Create a minimal WP markdown file with frontmatter."""
     fm = FrontmatterManager()
     slug = title.lower().replace(" ", "-")
@@ -82,6 +90,7 @@ def create_snapshot(
 # Frontmatter view tests
 # ---------------------------------------------------------------------------
 
+
 class TestUpdateFrontmatterViews:
     """Tests for update_frontmatter_views()."""
 
@@ -114,6 +123,7 @@ class TestUpdateFrontmatterViews:
 
         # Small delay to ensure mtime would differ if file were written
         import time
+
         time.sleep(0.01)
 
         update_frontmatter_views(feature_dir, snapshot)
@@ -131,11 +141,14 @@ class TestUpdateFrontmatterViews:
         create_wp_file(tasks_dir, "WP02", "Second Task", "planned")
         create_wp_file(tasks_dir, "WP03", "Third Task", "in_progress")
 
-        snapshot = create_snapshot("034-test-feature", {
-            "WP01": "for_review",
-            "WP02": "done",
-            "WP03": "blocked",
-        })
+        snapshot = create_snapshot(
+            "034-test-feature",
+            {
+                "WP01": "for_review",
+                "WP02": "done",
+                "WP03": "blocked",
+            },
+        )
 
         update_frontmatter_views(feature_dir, snapshot)
 
@@ -157,10 +170,13 @@ class TestUpdateFrontmatterViews:
 
         create_wp_file(tasks_dir, "WP01", "Test Task", "planned")
 
-        snapshot = create_snapshot("034-test-feature", {
-            "WP01": "for_review",
-            "WP04": "done",
-        })
+        snapshot = create_snapshot(
+            "034-test-feature",
+            {
+                "WP01": "for_review",
+                "WP04": "done",
+            },
+        )
 
         with caplog.at_level("WARNING"):
             update_frontmatter_views(feature_dir, snapshot)
@@ -180,7 +196,10 @@ class TestUpdateFrontmatterViews:
         tasks_dir.mkdir(parents=True)
 
         create_wp_file(
-            tasks_dir, "WP01", "Test Task", "planned",
+            tasks_dir,
+            "WP01",
+            "Test Task",
+            "planned",
             extra_fields={
                 "assignee": "alice",
                 "agent": "claude",
@@ -212,7 +231,9 @@ class TestUpdateFrontmatterViews:
         with caplog.at_level("WARNING"):
             update_frontmatter_views(feature_dir, snapshot)
 
-        assert any("Tasks directory not found" in record.message for record in caplog.records)
+        assert any(
+            "Tasks directory not found" in record.message for record in caplog.records
+        )
 
     def test_update_frontmatter_empty_snapshot(self, tmp_path: Path) -> None:
         """Snapshot with empty work_packages dict, no WPs to update."""
@@ -230,7 +251,9 @@ class TestUpdateFrontmatterViews:
         fm1, _ = fm.read(tasks_dir / "WP01-test-task.md")
         assert fm1["lane"] == "planned"
 
-    def test_update_frontmatter_wp_with_no_lane_in_snapshot(self, tmp_path: Path) -> None:
+    def test_update_frontmatter_wp_with_no_lane_in_snapshot(
+        self, tmp_path: Path
+    ) -> None:
         """WP state in snapshot has no 'lane' key, skip it."""
         feature_dir = tmp_path / "kitty-specs" / "034-test-feature"
         tasks_dir = feature_dir / "tasks"
@@ -276,7 +299,9 @@ class TestUpdateFrontmatterViews:
         fm_result, body = fm.read(wp_file)
         assert fm_result["lane"] == "done"
 
-    def test_update_frontmatter_alias_replaced_by_canonical(self, tmp_path: Path) -> None:
+    def test_update_frontmatter_alias_replaced_by_canonical(
+        self, tmp_path: Path
+    ) -> None:
         """WP file has lane: doing (old alias), update to canonical value from snapshot."""
         feature_dir = tmp_path / "kitty-specs" / "034-test-feature"
         tasks_dir = feature_dir / "tasks"
@@ -296,6 +321,7 @@ class TestUpdateFrontmatterViews:
 # Tasks.md view tests
 # ---------------------------------------------------------------------------
 
+
 class TestUpdateTasksMdViews:
     """Tests for update_tasks_md_views()."""
 
@@ -314,7 +340,9 @@ class TestUpdateTasksMdViews:
         feature_dir.mkdir(parents=True)
 
         tasks_md = feature_dir / "tasks.md"
-        original_content = "# Tasks\n\n## WP01: Do Stuff\n\n- [ ] Subtask 1\n- [x] Subtask 2\n"
+        original_content = (
+            "# Tasks\n\n## WP01: Do Stuff\n\n- [ ] Subtask 1\n- [x] Subtask 2\n"
+        )
         tasks_md.write_text(original_content, encoding="utf-8")
 
         snapshot = create_snapshot("034-test-feature", {"WP01": "done"})
@@ -325,7 +353,9 @@ class TestUpdateTasksMdViews:
         assert "- WP01: done" in updated
         assert "<!-- status-model:end -->" in updated
 
-    def test_update_tasks_md_replaces_existing_generated_block(self, tmp_path: Path) -> None:
+    def test_update_tasks_md_replaces_existing_generated_block(
+        self, tmp_path: Path
+    ) -> None:
         """Existing generated block is replaced, not duplicated."""
         feature_dir = tmp_path / "kitty-specs" / "034-test-feature"
         feature_dir.mkdir(parents=True)
@@ -371,6 +401,7 @@ class TestUpdateTasksMdViews:
 # Phase-aware behavior tests
 # ---------------------------------------------------------------------------
 
+
 class TestPhaseAwareBehavior:
     """Tests for update_all_views() phase-aware routing."""
 
@@ -389,6 +420,7 @@ class TestPhaseAwareBehavior:
         snapshot = create_snapshot("034-test-feature", {"WP01": "for_review"})
 
         import time
+
         time.sleep(0.01)
 
         update_all_views(feature_dir, snapshot, repo_root=tmp_path)
@@ -438,7 +470,9 @@ class TestPhaseAwareBehavior:
         assert fm1["lane"] == "done"
 
     @patch("specify_cli.status.legacy_bridge.resolve_phase")
-    def test_repo_root_derived_from_feature_dir(self, mock_resolve_phase, tmp_path: Path) -> None:
+    def test_repo_root_derived_from_feature_dir(
+        self, mock_resolve_phase, tmp_path: Path
+    ) -> None:
         """When repo_root is None, it is derived from feature_dir."""
         mock_resolve_phase.return_value = (1, "dual-write")
 
@@ -458,7 +492,9 @@ class TestPhaseAwareBehavior:
         mock_resolve_phase.assert_called_once_with(repo_root, "034-test-feature")
 
     @patch("specify_cli.status.legacy_bridge.resolve_phase")
-    def test_resolve_phase_error_propagates(self, mock_resolve_phase, tmp_path: Path) -> None:
+    def test_resolve_phase_error_propagates(
+        self, mock_resolve_phase, tmp_path: Path
+    ) -> None:
         """If resolve_phase() fails, error propagates without catching."""
         mock_resolve_phase.side_effect = RuntimeError("config corrupted")
 
@@ -477,6 +513,7 @@ class TestPhaseAwareBehavior:
 # ---------------------------------------------------------------------------
 # Round-trip consistency tests
 # ---------------------------------------------------------------------------
+
 
 class TestRoundTripConsistency:
     """Tests for round-trip read/write consistency."""
@@ -533,6 +570,7 @@ class TestRoundTripConsistency:
 
         # Record mtime after first update
         import time
+
         time.sleep(0.01)
         mtime_after_first = wp_file.stat().st_mtime_ns
 
@@ -547,6 +585,7 @@ class TestRoundTripConsistency:
 # ---------------------------------------------------------------------------
 # Error handling tests
 # ---------------------------------------------------------------------------
+
 
 class TestErrorHandling:
     """Tests for error propagation and edge cases."""
@@ -580,7 +619,9 @@ class TestErrorHandling:
 
         # Write a malformed WP file (no closing ---)
         wp_file = tasks_dir / "WP01-bad-frontmatter.md"
-        wp_file.write_text("---\nlane: planned\n# No closing delimiter\n", encoding="utf-8")
+        wp_file.write_text(
+            "---\nlane: planned\n# No closing delimiter\n", encoding="utf-8"
+        )
 
         snapshot = create_snapshot("034-test-feature", {"WP01": "done"})
 
@@ -595,7 +636,9 @@ class TestErrorHandling:
         # Should not raise, just log a warning
         update_frontmatter_views(feature_dir, snapshot)
 
-    def test_multiple_wp_files_uses_first_with_warning(self, tmp_path: Path, caplog) -> None:
+    def test_multiple_wp_files_uses_first_with_warning(
+        self, tmp_path: Path, caplog
+    ) -> None:
         """Multiple task files match WP01 glob, uses first, warns about ambiguity."""
         feature_dir = tmp_path / "kitty-specs" / "034-test-feature"
         tasks_dir = feature_dir / "tasks"

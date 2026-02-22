@@ -178,7 +178,9 @@ def display_conflict_forecast(
     auto_count = len(auto_resolvable)
     manual_count = len(manual_required)
 
-    console.print(f"[dim]Found {total} potential conflict(s): {auto_count} auto-resolvable, {manual_count} manual[/dim]\n")
+    console.print(
+        f"[dim]Found {total} potential conflict(s): {auto_count} auto-resolvable, {manual_count} manual[/dim]\n"
+    )
 
     # Create table for conflicts
     if manual_required:

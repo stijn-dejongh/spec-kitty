@@ -84,6 +84,7 @@ def _setup_feature(
         # Materialize snapshot
         if materialize:
             from specify_cli.status.reducer import materialize as do_materialize
+
             do_materialize(feature_dir)
 
     # Write WP files
@@ -384,9 +385,7 @@ class TestValidateCommand:
         mock_detect.return_value = feature_slug
         mock_phase.return_value = (1, "built-in default")
 
-        result = runner.invoke(
-            app, ["validate", "--feature", feature_slug, "--json"]
-        )
+        result = runner.invoke(app, ["validate", "--feature", feature_slug, "--json"])
         assert result.exit_code == 0
 
         data = json.loads(result.output)
@@ -432,9 +431,7 @@ class TestValidateCommand:
         mock_detect.return_value = feature_slug
         mock_phase.return_value = (1, "built-in default")
 
-        result = runner.invoke(
-            app, ["validate", "--feature", feature_slug, "--json"]
-        )
+        result = runner.invoke(app, ["validate", "--feature", feature_slug, "--json"])
         assert result.exit_code == 1
 
         data = json.loads(result.output)
@@ -497,9 +494,7 @@ class TestValidateCommand:
         mock_detect.return_value = feature_slug
         mock_phase.return_value = (1, "built-in default")
 
-        result = runner.invoke(
-            app, ["validate", "--feature", feature_slug, "--json"]
-        )
+        result = runner.invoke(app, ["validate", "--feature", feature_slug, "--json"])
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert data["passed"] is True

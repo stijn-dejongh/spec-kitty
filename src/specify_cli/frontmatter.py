@@ -20,6 +20,7 @@ from ruamel.yaml.comments import CommentedMap
 
 class FrontmatterError(Exception):
     """Error in frontmatter operations."""
+
     pass
 
 
@@ -90,7 +91,9 @@ class FrontmatterManager:
                 break
 
         if closing_idx == -1:
-            raise FrontmatterError(f"Malformed frontmatter (no closing ---): {file_path}")
+            raise FrontmatterError(
+                f"Malformed frontmatter (no closing ---): {file_path}"
+            )
 
         # Parse frontmatter
         frontmatter_text = "\n".join(lines[1:closing_idx])
@@ -106,7 +109,7 @@ class FrontmatterManager:
             frontmatter["dependencies"] = []
 
         # Get body (everything after closing ---)
-        body = "\n".join(lines[closing_idx + 1:])
+        body = "\n".join(lines[closing_idx + 1 :])
 
         return frontmatter, body
 
@@ -123,6 +126,7 @@ class FrontmatterManager:
 
         # Write to string buffer first
         import io
+
         buffer = io.StringIO()
         buffer.write("---\n")
         self.yaml.dump(normalized, buffer)
@@ -174,7 +178,7 @@ class FrontmatterManager:
         file_path: Path,
         action: str,
         agent: Optional[str] = None,
-        note: Optional[str] = None
+        note: Optional[str] = None,
     ) -> None:
         """Add an entry to the history field.
 
@@ -242,17 +246,21 @@ class FrontmatterManager:
         errors = []
 
         if not isinstance(dependencies, list):
-            errors.append(f"dependencies must be a list, got {type(dependencies).__name__}")
+            errors.append(
+                f"dependencies must be a list, got {type(dependencies).__name__}"
+            )
             return errors
 
-        wp_pattern = re.compile(r'^WP\d{2}$')
+        wp_pattern = re.compile(r"^WP\d{2}$")
         seen = set()
 
         for dep in dependencies:
             if not isinstance(dep, str):
                 errors.append(f"Dependency must be string, got {type(dep).__name__}")
             elif not wp_pattern.match(dep):
-                errors.append(f"Invalid WP ID format: {dep} (must be WP## like WP01, WP02)")
+                errors.append(
+                    f"Invalid WP ID format: {dep} (must be WP## like WP01, WP02)"
+                )
             elif dep in seen:
                 errors.append(f"Duplicate dependency: {dep}")
             else:
@@ -286,8 +294,13 @@ class FrontmatterManager:
             # Validate lane value
             if "lane" in frontmatter:
                 valid_lanes = [
-                    "planned", "claimed", "in_progress", "for_review",
-                    "done", "blocked", "canceled",
+                    "planned",
+                    "claimed",
+                    "in_progress",
+                    "for_review",
+                    "done",
+                    "blocked",
+                    "canceled",
                     "doing",  # Accepted alias for in_progress
                 ]
                 if frontmatter["lane"] not in valid_lanes:
@@ -338,7 +351,7 @@ def add_history_entry(
     file_path: Path,
     action: str,
     agent: Optional[str] = None,
-    note: Optional[str] = None
+    note: Optional[str] = None,
 ) -> None:
     """Add an entry to the history field."""
     _manager.add_history_entry(file_path, action, agent, note)

@@ -15,7 +15,14 @@ from specify_cli.template.github_client import (
 
 
 class FakeResponse:
-    def __init__(self, status_code: int, payload: dict[str, object] | None = None, *, text: str = "", headers: dict[str, str] | None = None):
+    def __init__(
+        self,
+        status_code: int,
+        payload: dict[str, object] | None = None,
+        *,
+        text: str = "",
+        headers: dict[str, str] | None = None,
+    ):
         self.status_code = status_code
         self._payload = payload or {}
         self.text = text
@@ -60,7 +67,11 @@ def _make_release_payload(name: str) -> dict[str, object]:
     return {
         "tag_name": "v1.2.3",
         "assets": [
-            {"name": name, "browser_download_url": "https://example.com/download", "size": 4},
+            {
+                "name": name,
+                "browser_download_url": "https://example.com/download",
+                "size": 4,
+            },
         ],
     }
 
@@ -90,7 +101,13 @@ def test_download_template_from_github_writes_zip(tmp_path: Path):
 def test_download_template_from_github_missing_asset(tmp_path: Path):
     payload = {
         "tag_name": "v1",
-        "assets": [{"name": "other.zip", "browser_download_url": "https://example.com", "size": 1}],
+        "assets": [
+            {
+                "name": "other.zip",
+                "browser_download_url": "https://example.com",
+                "size": 1,
+            }
+        ],
     }
     client = FakeHttpClient(payload, [b"data"])
 
@@ -107,7 +124,9 @@ def test_download_template_from_github_missing_asset(tmp_path: Path):
         )
 
 
-def test_download_and_extract_template_flattens_nested_archives(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_download_and_extract_template_flattens_nested_archives(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     project_path = tmp_path / "project"
     zip_path = tmp_path / "archive.zip"
     nested_dir = tmp_path / "repo"
@@ -121,7 +140,11 @@ def test_download_and_extract_template_flattens_nested_archives(tmp_path: Path, 
             zf.write(path, arcname=str(Path("package") / path.relative_to(nested_dir)))
 
     def fake_download(*args, **kwargs):  # noqa: D401
-        return zip_path, {"release": "v1", "size": zip_path.stat().st_size, "filename": zip_path.name}
+        return zip_path, {
+            "release": "v1",
+            "size": zip_path.stat().st_size,
+            "filename": zip_path.name,
+        }
 
     monkeypatch.setattr(github_client, "download_template_from_github", fake_download)
 

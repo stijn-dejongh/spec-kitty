@@ -27,7 +27,9 @@ def cli_app(monkeypatch: pytest.MonkeyPatch) -> tuple[Typer, Console, list[str]]
     def fake_show_banner():  # noqa: D401
         outputs.append("banner")
 
-    def fake_activate(project_path: Path, mission_key: str, mission_display: str, _console: Console) -> str:
+    def fake_activate(
+        project_path: Path, mission_key: str, mission_display: str, _console: Console
+    ) -> str:
         outputs.append(f"activate:{mission_key}")
         return mission_display
 
@@ -41,7 +43,11 @@ def cli_app(monkeypatch: pytest.MonkeyPatch) -> tuple[Typer, Console, list[str]]
         activate_mission=fake_activate,
         ensure_executable_scripts=fake_ensure_scripts,
     )
-    monkeypatch.setattr(init_module, "ensure_dashboard_running", lambda project: ("http://localhost", 1111, True))
+    monkeypatch.setattr(
+        init_module,
+        "ensure_dashboard_running",
+        lambda project: ("http://localhost", 1111, True),
+    )
     monkeypatch.setattr(init_module, "check_tool", lambda *args, **kwargs: True)
     return app, console, outputs
 
@@ -55,7 +61,9 @@ def _invoke(cli: Typer, args: list[str]) -> CliRunner:
 
 
 @pytest.mark.skipif(IS_2X_BRANCH, reason=LEGACY_0X_ONLY_REASON)
-def test_init_local_mode_uses_local_repo(cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_init_local_mode_uses_local_repo(
+    cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
     app, console, outputs = cli_app
     monkeypatch.chdir(tmp_path)
 
@@ -69,7 +77,9 @@ def test_init_local_mode_uses_local_repo(cli_app, monkeypatch: pytest.MonkeyPatc
 
     created_assets: list[Path] = []
 
-    def fake_assets(commands_dir: Path, project_path: Path, agent_key: str, script: str):  # noqa: D401
+    def fake_assets(
+        commands_dir: Path, project_path: Path, agent_key: str, script: str
+    ):  # noqa: D401
         target = project_path / f".{agent_key}" / f"run.{script}"
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(agent_key, encoding="utf-8")
@@ -100,11 +110,15 @@ def test_init_local_mode_uses_local_repo(cli_app, monkeypatch: pytest.MonkeyPatc
     assert "activate:software-dev" in outputs
 
 
-def test_init_package_mode_falls_back_when_no_local(cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_init_package_mode_falls_back_when_no_local(
+    cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
     app, console, _ = cli_app
     monkeypatch.chdir(tmp_path)
 
-    monkeypatch.setattr(init_module, "get_local_repo_root", lambda override_path=None: None)
+    monkeypatch.setattr(
+        init_module, "get_local_repo_root", lambda override_path=None: None
+    )
 
     def fake_copy(project_path: Path, script: str):  # noqa: D401
         pkg_dir = project_path / ".pkg"
@@ -113,7 +127,9 @@ def test_init_package_mode_falls_back_when_no_local(cli_app, monkeypatch: pytest
 
     generated: list[str] = []
 
-    def fake_assets(commands_dir: Path, project_path: Path, agent_key: str, script: str):  # noqa: D401
+    def fake_assets(
+        commands_dir: Path, project_path: Path, agent_key: str, script: str
+    ):  # noqa: D401
         generated.append(agent_key)
 
     monkeypatch.setattr(init_module, "copy_specify_base_from_package", fake_copy)
@@ -136,11 +152,15 @@ def test_init_package_mode_falls_back_when_no_local(cli_app, monkeypatch: pytest
     assert generated == ["gemini"]
 
 
-def test_init_remote_mode_downloads_for_each_agent(cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_init_remote_mode_downloads_for_each_agent(
+    cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
     app, console, _ = cli_app
     monkeypatch.chdir(tmp_path)
 
-    monkeypatch.setattr(init_module, "get_local_repo_root", lambda override_path=None: None)
+    monkeypatch.setattr(
+        init_module, "get_local_repo_root", lambda override_path=None: None
+    )
 
     calls: list[tuple[str, str, bool]] = []
 
@@ -156,8 +176,17 @@ def test_init_remote_mode_downloads_for_each_agent(cli_app, monkeypatch: pytest.
 
     monkeypatch.setattr(init_module, "build_http_client", fake_client)
 
-    def fake_download(project_path: Path, agent_key: str, script: str, is_current_dir: bool, **kwargs):  # noqa: D401
-        calls.append((agent_key, kwargs.get("repo_owner"), kwargs.get("repo_name"), is_current_dir))
+    def fake_download(
+        project_path: Path, agent_key: str, script: str, is_current_dir: bool, **kwargs
+    ):  # noqa: D401
+        calls.append(
+            (
+                agent_key,
+                kwargs.get("repo_owner"),
+                kwargs.get("repo_name"),
+                is_current_dir,
+            )
+        )
         (project_path / f"agent-{agent_key}").mkdir(parents=True, exist_ok=True)
         return project_path
 
@@ -193,7 +222,9 @@ def test_init_remote_mode_downloads_for_each_agent(cli_app, monkeypatch: pytest.
 # =============================================================================
 
 
-def test_init_with_jj_shows_confirmation(cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_init_with_jj_shows_confirmation(
+    cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
     """Init should show 'git detected' message (jj no longer supported)."""
     app, console, outputs = cli_app
     monkeypatch.chdir(tmp_path)
@@ -206,7 +237,9 @@ def test_init_with_jj_shows_confirmation(cli_app, monkeypatch: pytest.MonkeyPatc
         commands_dir.mkdir(parents=True, exist_ok=True)
         return commands_dir
 
-    def fake_assets(commands_dir: Path, project_path: Path, agent_key: str, script: str):
+    def fake_assets(
+        commands_dir: Path, project_path: Path, agent_key: str, script: str
+    ):
         pass
 
     monkeypatch.setattr(init_module, "get_local_repo_root", fake_local_repo)
@@ -236,7 +269,9 @@ def test_init_with_jj_shows_confirmation(cli_app, monkeypatch: pytest.MonkeyPatc
     assert "git detected" in console_output
 
 
-def test_init_without_jj_shows_recommendation(cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_init_without_jj_shows_recommendation(
+    cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
     """Init should work with git (jj no longer supported)."""
     app, console, outputs = cli_app
     monkeypatch.chdir(tmp_path)
@@ -249,7 +284,9 @@ def test_init_without_jj_shows_recommendation(cli_app, monkeypatch: pytest.Monke
         commands_dir.mkdir(parents=True, exist_ok=True)
         return commands_dir
 
-    def fake_assets(commands_dir: Path, project_path: Path, agent_key: str, script: str):
+    def fake_assets(
+        commands_dir: Path, project_path: Path, agent_key: str, script: str
+    ):
         pass
 
     monkeypatch.setattr(init_module, "get_local_repo_root", fake_local_repo)
@@ -279,7 +316,9 @@ def test_init_without_jj_shows_recommendation(cli_app, monkeypatch: pytest.Monke
     assert "git detected" in console_output
 
 
-def test_init_creates_vcs_config(cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_init_creates_vcs_config(
+    cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
     """Init should create config.yaml with git vcs section."""
     app, console, outputs = cli_app
     monkeypatch.chdir(tmp_path)
@@ -292,7 +331,9 @@ def test_init_creates_vcs_config(cli_app, monkeypatch: pytest.MonkeyPatch, tmp_p
         commands_dir.mkdir(parents=True, exist_ok=True)
         return commands_dir
 
-    def fake_assets(commands_dir: Path, project_path: Path, agent_key: str, script: str):
+    def fake_assets(
+        commands_dir: Path, project_path: Path, agent_key: str, script: str
+    ):
         pass
 
     monkeypatch.setattr(init_module, "get_local_repo_root", fake_local_repo)
@@ -327,7 +368,9 @@ def test_init_creates_vcs_config(cli_app, monkeypatch: pytest.MonkeyPatch, tmp_p
     assert config["vcs"]["type"] == "git"
 
 
-def test_init_non_interactive_requires_ai(cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_init_non_interactive_requires_ai(
+    cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
     app, console, _ = cli_app
     monkeypatch.chdir(tmp_path)
     runner = CliRunner()
@@ -344,7 +387,9 @@ def test_init_non_interactive_requires_ai(cli_app, monkeypatch: pytest.MonkeyPat
     assert "--ai is required in non-interactive mode" in console_output
 
 
-def test_init_non_interactive_requires_force_for_nonempty_here(cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_init_non_interactive_requires_force_for_nonempty_here(
+    cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
     app, console, _ = cli_app
     monkeypatch.chdir(tmp_path)
     (tmp_path / "existing.txt").write_text("data", encoding="utf-8")
@@ -367,7 +412,9 @@ def test_init_non_interactive_requires_force_for_nonempty_here(cli_app, monkeypa
     assert "Non-interactive mode requires --force when using --here" in console_output
 
 
-def test_init_non_interactive_env_var(cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_init_non_interactive_env_var(
+    cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
     app, _, _ = cli_app
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("SPEC_KITTY_NON_INTERACTIVE", "1")
@@ -380,8 +427,12 @@ def test_init_non_interactive_env_var(cli_app, monkeypatch: pytest.MonkeyPatch, 
         commands_dir.mkdir(parents=True, exist_ok=True)
         return commands_dir
 
-    def fake_assets(commands_dir: Path, project_path: Path, agent_key: str, script: str):
-        (project_path / f".{agent_key}" / f"run.{script}").parent.mkdir(parents=True, exist_ok=True)
+    def fake_assets(
+        commands_dir: Path, project_path: Path, agent_key: str, script: str
+    ):
+        (project_path / f".{agent_key}" / f"run.{script}").parent.mkdir(
+            parents=True, exist_ok=True
+        )
 
     monkeypatch.setattr(init_module, "get_local_repo_root", fake_local_repo)
     monkeypatch.setattr(init_module, "copy_specify_base_from_local", fake_copy)
@@ -403,7 +454,9 @@ def test_init_non_interactive_env_var(cli_app, monkeypatch: pytest.MonkeyPatch, 
     assert result.exit_code == 0, result.output
 
 
-def test_init_amends_initial_commit_after_cleanup(cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_init_amends_initial_commit_after_cleanup(
+    cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
     """Fresh git init should end in a clean amended initial commit."""
     app, _, _ = cli_app
     monkeypatch.chdir(tmp_path)
@@ -417,8 +470,12 @@ def test_init_amends_initial_commit_after_cleanup(cli_app, monkeypatch: pytest.M
         commands_dir.mkdir(parents=True, exist_ok=True)
         return commands_dir
 
-    def fake_assets(commands_dir: Path, project_path: Path, agent_key: str, script: str):
-        (project_path / f".{agent_key}" / f"run.{script}").parent.mkdir(parents=True, exist_ok=True)
+    def fake_assets(
+        commands_dir: Path, project_path: Path, agent_key: str, script: str
+    ):
+        (project_path / f".{agent_key}" / f"run.{script}").parent.mkdir(
+            parents=True, exist_ok=True
+        )
 
     def fake_init_git_repo(project_path: Path, quiet: bool = False, console=None):
         (project_path / ".git").mkdir(parents=True, exist_ok=True)
@@ -434,7 +491,9 @@ def test_init_amends_initial_commit_after_cleanup(cli_app, monkeypatch: pytest.M
     monkeypatch.setattr(init_module, "copy_specify_base_from_local", fake_copy)
     monkeypatch.setattr(init_module, "generate_agent_assets", fake_assets)
     monkeypatch.setattr(init_module, "init_git_repo", fake_init_git_repo)
-    monkeypatch.setattr(init_module, "is_git_repo", lambda path: (path / ".git").exists())
+    monkeypatch.setattr(
+        init_module, "is_git_repo", lambda path: (path / ".git").exists()
+    )
     monkeypatch.setattr(init_module.subprocess, "run", fake_subprocess_run)
 
     runner = CliRunner()
@@ -451,10 +510,14 @@ def test_init_amends_initial_commit_after_cleanup(cli_app, monkeypatch: pytest.M
         ],
     )
     assert result.exit_code == 0, result.output
-    assert any(call[:4] == ["git", "commit", "--amend", "--no-edit"] for call in git_calls)
+    assert any(
+        call[:4] == ["git", "commit", "--amend", "--no-edit"] for call in git_calls
+    )
 
 
-def test_init_rejects_removed_agent_strategy_option(cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_init_rejects_removed_agent_strategy_option(
+    cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
     app, _, _ = cli_app
     monkeypatch.chdir(tmp_path)
     runner = CliRunner()
@@ -475,7 +538,9 @@ def test_init_rejects_removed_agent_strategy_option(cli_app, monkeypatch: pytest
     assert re.search(r"No such option:\s+-{1,2}agent-strategy", plain_output)
 
 
-def test_init_non_interactive_preferred_agent_not_selected(cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+def test_init_non_interactive_preferred_agent_not_selected(
+    cli_app, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
     app, console, _ = cli_app
     monkeypatch.chdir(tmp_path)
     runner = CliRunner()

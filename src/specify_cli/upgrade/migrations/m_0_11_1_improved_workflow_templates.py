@@ -90,7 +90,13 @@ class ImprovedWorkflowTemplatesMigration(BaseMigration):
         pkg_root = Path(specify_cli.__file__).parent
         pkg_templates = pkg_root / "missions" / "software-dev" / "command-templates"
         if not pkg_templates.exists():
-            pkg_templates = pkg_root / ".kittify" / "missions" / "software-dev" / "command-templates"
+            pkg_templates = (
+                pkg_root
+                / ".kittify"
+                / "missions"
+                / "software-dev"
+                / "command-templates"
+            )
 
         if pkg_templates.exists():
             if not dry_run:
@@ -101,13 +107,19 @@ class ImprovedWorkflowTemplatesMigration(BaseMigration):
                     warnings.append(f"Package template missing: {template_name}")
                     continue
                 if dry_run:
-                    changes.append(f"Would update mission template: software-dev/{template_name}")
+                    changes.append(
+                        f"Would update mission template: software-dev/{template_name}"
+                    )
                 else:
                     try:
                         shutil.copy2(src, software_dev_templates / template_name)
-                        changes.append(f"Updated mission template: software-dev/{template_name}")
+                        changes.append(
+                            f"Updated mission template: software-dev/{template_name}"
+                        )
                     except OSError as e:
-                        warnings.append(f"Failed to copy mission template {template_name}: {e}")
+                        warnings.append(
+                            f"Failed to copy mission template {template_name}: {e}"
+                        )
         else:
             warnings.append(
                 "Mission templates not found in package. "
@@ -147,7 +159,9 @@ class ImprovedWorkflowTemplatesMigration(BaseMigration):
                         )
                         updated_count += 1
                     except OSError as e:
-                        warnings.append(f"Failed to update {agent_root}/{dest_filename}: {e}")
+                        warnings.append(
+                            f"Failed to update {agent_root}/{dest_filename}: {e}"
+                        )
 
             if updated_count > 0:
                 agent_name = agent_root.strip(".")
@@ -155,9 +169,15 @@ class ImprovedWorkflowTemplatesMigration(BaseMigration):
                 total_updated += updated_count
 
         if total_updated > 0:
-            changes.append(f"Total: Updated {total_updated} slash command templates across all agents")
-            changes.append("Templates now warn agents to scroll to bottom of long output")
-            changes.append("Templates emphasize automated file updates (no manual editing)")
+            changes.append(
+                f"Total: Updated {total_updated} slash command templates across all agents"
+            )
+            changes.append(
+                "Templates now warn agents to scroll to bottom of long output"
+            )
+            changes.append(
+                "Templates emphasize automated file updates (no manual editing)"
+            )
             changes.append("Prevents state corruption from incomplete workflows")
         elif not changes:
             warnings.append(

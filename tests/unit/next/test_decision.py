@@ -91,15 +91,29 @@ def _advance_runtime_to_step(
     from spec_kitty_runtime.engine import _read_snapshot
 
     # Keep advancing until the target step is issued
-    step_order = ["discovery", "specify", "plan", "tasks_outline", "tasks_packages", "tasks_finalize", "implement", "review", "accept"]
-    target_idx = step_order.index(target_step_id) if target_step_id in step_order else -1
+    step_order = [
+        "discovery",
+        "specify",
+        "plan",
+        "tasks_outline",
+        "tasks_packages",
+        "tasks_finalize",
+        "implement",
+        "review",
+        "accept",
+    ]
+    target_idx = (
+        step_order.index(target_step_id) if target_step_id in step_order else -1
+    )
 
     for _ in range(target_idx + 2):
         snapshot = _read_snapshot(Path(run_ref.run_dir))
         if snapshot.issued_step_id == target_step_id:
             return
 
-        runtime_next_step(run_ref, agent_id=agent, result="success", emitter=NullEmitter())
+        runtime_next_step(
+            run_ref, agent_id=agent, result="success", emitter=NullEmitter()
+        )
 
         snapshot = _read_snapshot(Path(run_ref.run_dir))
         if snapshot.issued_step_id == target_step_id:
@@ -125,7 +139,10 @@ def _complete_all_steps(
     # There are 9 steps: each needs to be issued + completed
     for _ in range(20):  # generous upper bound
         decision = runtime_next_step(
-            run_ref, agent_id=agent, result="success", emitter=NullEmitter(),
+            run_ref,
+            agent_id=agent,
+            result="success",
+            emitter=NullEmitter(),
         )
         if decision.kind == "terminal":
             return
@@ -250,6 +267,7 @@ class TestEvaluateGuards:
 
     def test_unless_guard_blocks_when_true(self, feature_dir: Path) -> None:
         """Unless guards block advancement when they return True."""
+
         def unless_active(event_data):
             return True  # condition is active -> should block
 
@@ -270,6 +288,7 @@ class TestEvaluateGuards:
 
     def test_unless_guard_passes_when_false(self, feature_dir: Path) -> None:
         """Unless guards pass when they return False."""
+
         def unless_inactive(event_data):
             return False  # condition is inactive -> should pass
 
@@ -289,6 +308,7 @@ class TestEvaluateGuards:
 
     def test_conditions_and_unless_combined(self, feature_dir: Path) -> None:
         """Both conditions and unless must pass for guard to pass."""
+
         def cond_pass(event_data):
             return True
 
@@ -312,6 +332,7 @@ class TestEvaluateGuards:
 
     def test_conditions_pass_but_unless_blocks(self, feature_dir: Path) -> None:
         """If conditions pass but unless is active, overall guard fails."""
+
         def cond_pass(event_data):
             return True
 
@@ -404,7 +425,9 @@ class TestDecideNext:
         assert "failed" in (decision.reason or "").lower()
         assert decision.run_id is not None, "failed decision must include run_id"
 
-    def test_result_failed_after_advance_carries_step_id(self, feature_dir: Path) -> None:
+    def test_result_failed_after_advance_carries_step_id(
+        self, feature_dir: Path
+    ) -> None:
         """After advancing, failed result still carries canonical run metadata."""
         repo_root = feature_dir.parent.parent
         # First call advances to get a step issued
@@ -502,38 +525,55 @@ class TestDecideNext:
 
 
 class TestTaskStepAliases:
-
-    def test_tasks_outline_maps_to_tasks_outline_action(self, feature_dir: Path) -> None:
+    def test_tasks_outline_maps_to_tasks_outline_action(
+        self, feature_dir: Path
+    ) -> None:
         """Verify _state_to_action maps tasks_outline → tasks-outline via alias."""
         from specify_cli.next.decision import _state_to_action
 
         repo_root = feature_dir.parent.parent
         action, wp_id, workspace_path = _state_to_action(
-            "tasks_outline", "042-test-feature", feature_dir, repo_root, "software-dev",
+            "tasks_outline",
+            "042-test-feature",
+            feature_dir,
+            repo_root,
+            "software-dev",
         )
         assert action == "tasks-outline"
         assert wp_id is None
         assert workspace_path is None
 
-    def test_tasks_packages_maps_to_tasks_packages_action(self, feature_dir: Path) -> None:
+    def test_tasks_packages_maps_to_tasks_packages_action(
+        self, feature_dir: Path
+    ) -> None:
         """Verify _state_to_action maps tasks_packages → tasks-packages via alias."""
         from specify_cli.next.decision import _state_to_action
 
         repo_root = feature_dir.parent.parent
         action, wp_id, workspace_path = _state_to_action(
-            "tasks_packages", "042-test-feature", feature_dir, repo_root, "software-dev",
+            "tasks_packages",
+            "042-test-feature",
+            feature_dir,
+            repo_root,
+            "software-dev",
         )
         assert action == "tasks-packages"
         assert wp_id is None
         assert workspace_path is None
 
-    def test_tasks_finalize_maps_to_tasks_finalize_action(self, feature_dir: Path) -> None:
+    def test_tasks_finalize_maps_to_tasks_finalize_action(
+        self, feature_dir: Path
+    ) -> None:
         """Verify _state_to_action maps tasks_finalize → tasks-finalize via alias."""
         from specify_cli.next.decision import _state_to_action
 
         repo_root = feature_dir.parent.parent
         action, wp_id, workspace_path = _state_to_action(
-            "tasks_finalize", "042-test-feature", feature_dir, repo_root, "software-dev",
+            "tasks_finalize",
+            "042-test-feature",
+            feature_dir,
+            repo_root,
+            "software-dev",
         )
         assert action == "tasks-finalize"
         assert wp_id is None
@@ -541,7 +581,6 @@ class TestTaskStepAliases:
 
 
 class TestDecisionQuestionOptions:
-
     def test_decision_has_question_and_options(self) -> None:
         """Decision with question/options exposes them in to_dict()."""
         decision = Decision(

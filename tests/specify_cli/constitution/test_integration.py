@@ -85,7 +85,10 @@ Pre-commit hooks required.
 
         caplog.clear()
         load_governance_config(tmp_path)
-        assert any("Constitution changed since last sync" in record.message for record in caplog.records)
+        assert any(
+            "Constitution changed since last sync" in record.message
+            for record in caplog.records
+        )
 
 
 class TestPostSaveHook:
@@ -101,7 +104,9 @@ class TestPostSaveHook:
         assert (constitution_dir / "directives.yaml").exists()
         assert (constitution_dir / "metadata.yaml").exists()
 
-    def test_post_save_hook_logs_success(self, tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    def test_post_save_hook_logs_success(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
         constitution_dir = tmp_path / ".kittify" / "constitution"
         constitution_dir.mkdir(parents=True)
         constitution_path = constitution_dir / "constitution.md"
@@ -111,9 +116,14 @@ class TestPostSaveHook:
         with caplog.at_level(logging.INFO, logger="specify_cli.constitution.sync"):
             post_save_hook(constitution_path)
 
-        assert any("Constitution synced: 3 YAML files updated" in record.message for record in caplog.records)
+        assert any(
+            "Constitution synced: 3 YAML files updated" in record.message
+            for record in caplog.records
+        )
 
-    def test_post_save_hook_extraction_failure_no_crash(self, tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    def test_post_save_hook_extraction_failure_no_crash(
+        self, tmp_path: Path, caplog: pytest.LogCaptureFixture
+    ) -> None:
         constitution_dir = tmp_path / ".kittify" / "constitution"
         constitution_dir.mkdir(parents=True)
         constitution_path = constitution_dir / "constitution.md"
@@ -124,7 +134,10 @@ class TestPostSaveHook:
 
             caplog.clear()
             post_save_hook(constitution_path)
-            assert any("Constitution auto-sync failed" in record.message for record in caplog.records)
+            assert any(
+                "Constitution auto-sync failed" in record.message
+                for record in caplog.records
+            )
 
 
 class TestLoaderFunctions:
@@ -137,7 +150,9 @@ class TestLoaderFunctions:
         assert isinstance(config, GovernanceConfig)
         assert config.testing.min_coverage == 0
         assert config.testing.tdd_required is False
-        assert any("governance.yaml not found" in record.message for record in caplog.records)
+        assert any(
+            "governance.yaml not found" in record.message for record in caplog.records
+        )
 
     def test_load_directives_config_missing_yaml_returns_empty(
         self, tmp_path: Path, caplog: pytest.LogCaptureFixture
@@ -147,7 +162,9 @@ class TestLoaderFunctions:
 
         assert isinstance(config, DirectivesConfig)
         assert len(config.directives) == 0
-        assert any("directives.yaml not found" in record.message for record in caplog.records)
+        assert any(
+            "directives.yaml not found" in record.message for record in caplog.records
+        )
 
     def test_load_governance_config_with_values(self, tmp_path: Path) -> None:
         constitution_dir = tmp_path / ".kittify" / "constitution"

@@ -113,7 +113,9 @@ class TestBuildDependencyGraph:
         tasks_dir = feature_dir / "tasks"
         tasks_dir.mkdir(parents=True)
 
-        (tasks_dir / "WP01.md").write_text("---\nwork_package_id: WP01\ndependencies: []\n---")
+        (tasks_dir / "WP01.md").write_text(
+            "---\nwork_package_id: WP01\ndependencies: []\n---"
+        )
 
         graph = build_dependency_graph(feature_dir)
         assert graph == {"WP01": []}
@@ -137,9 +139,15 @@ class TestBuildDependencyGraph:
         tasks_dir = feature_dir / "tasks"
         tasks_dir.mkdir(parents=True)
 
-        (tasks_dir / "WP01.md").write_text("---\nwork_package_id: WP01\ndependencies: []\n---")
-        (tasks_dir / "WP02.md").write_text("---\nwork_package_id: WP02\ndependencies: [WP01]\n---")
-        (tasks_dir / "WP03.md").write_text("---\nwork_package_id: WP03\ndependencies: [WP02]\n---")
+        (tasks_dir / "WP01.md").write_text(
+            "---\nwork_package_id: WP01\ndependencies: []\n---"
+        )
+        (tasks_dir / "WP02.md").write_text(
+            "---\nwork_package_id: WP02\ndependencies: [WP01]\n---"
+        )
+        (tasks_dir / "WP03.md").write_text(
+            "---\nwork_package_id: WP03\ndependencies: [WP02]\n---"
+        )
 
         graph = build_dependency_graph(feature_dir)
         assert graph == {"WP01": [], "WP02": ["WP01"], "WP03": ["WP02"]}
@@ -150,17 +158,25 @@ class TestBuildDependencyGraph:
         tasks_dir = feature_dir / "tasks"
         tasks_dir.mkdir(parents=True)
 
-        (tasks_dir / "WP01.md").write_text("---\nwork_package_id: WP01\ndependencies: []\n---")
-        (tasks_dir / "WP02.md").write_text("---\nwork_package_id: WP02\ndependencies: [WP01]\n---")
-        (tasks_dir / "WP03.md").write_text("---\nwork_package_id: WP03\ndependencies: [WP01]\n---")
-        (tasks_dir / "WP04.md").write_text("---\nwork_package_id: WP04\ndependencies: [WP01]\n---")
+        (tasks_dir / "WP01.md").write_text(
+            "---\nwork_package_id: WP01\ndependencies: []\n---"
+        )
+        (tasks_dir / "WP02.md").write_text(
+            "---\nwork_package_id: WP02\ndependencies: [WP01]\n---"
+        )
+        (tasks_dir / "WP03.md").write_text(
+            "---\nwork_package_id: WP03\ndependencies: [WP01]\n---"
+        )
+        (tasks_dir / "WP04.md").write_text(
+            "---\nwork_package_id: WP04\ndependencies: [WP01]\n---"
+        )
 
         graph = build_dependency_graph(feature_dir)
         assert graph == {
             "WP01": [],
             "WP02": ["WP01"],
             "WP03": ["WP01"],
-            "WP04": ["WP01"]
+            "WP04": ["WP01"],
         }
 
     def test_build_graph_complex_dag(self, tmp_path: Path):
@@ -169,17 +185,25 @@ class TestBuildDependencyGraph:
         tasks_dir = feature_dir / "tasks"
         tasks_dir.mkdir(parents=True)
 
-        (tasks_dir / "WP01.md").write_text("---\nwork_package_id: WP01\ndependencies: []\n---")
-        (tasks_dir / "WP02.md").write_text("---\nwork_package_id: WP02\ndependencies: [WP01]\n---")
-        (tasks_dir / "WP03.md").write_text("---\nwork_package_id: WP03\ndependencies: [WP01]\n---")
-        (tasks_dir / "WP04.md").write_text("---\nwork_package_id: WP04\ndependencies: [WP02, WP03]\n---")
+        (tasks_dir / "WP01.md").write_text(
+            "---\nwork_package_id: WP01\ndependencies: []\n---"
+        )
+        (tasks_dir / "WP02.md").write_text(
+            "---\nwork_package_id: WP02\ndependencies: [WP01]\n---"
+        )
+        (tasks_dir / "WP03.md").write_text(
+            "---\nwork_package_id: WP03\ndependencies: [WP01]\n---"
+        )
+        (tasks_dir / "WP04.md").write_text(
+            "---\nwork_package_id: WP04\ndependencies: [WP02, WP03]\n---"
+        )
 
         graph = build_dependency_graph(feature_dir)
         assert graph == {
             "WP01": [],
             "WP02": ["WP01"],
             "WP03": ["WP01"],
-            "WP04": ["WP02", "WP03"]
+            "WP04": ["WP02", "WP03"],
         }
 
 
@@ -214,11 +238,7 @@ class TestDetectCycles:
 
     def test_detect_cycles_complex(self):
         """Test detection of complex cycle (WP01 → WP02 → WP03 → WP01)."""
-        graph = {
-            "WP01": ["WP02"],
-            "WP02": ["WP03"],
-            "WP03": ["WP01"]
-        }
+        graph = {"WP01": ["WP02"], "WP02": ["WP03"], "WP03": ["WP01"]}
         cycles = detect_cycles(graph)
 
         assert cycles is not None
@@ -233,7 +253,7 @@ class TestDetectCycles:
             "WP01": [],
             "WP02": ["WP01"],
             "WP03": ["WP01"],
-            "WP04": ["WP02", "WP03"]
+            "WP04": ["WP02", "WP03"],
         }
         cycles = detect_cycles(graph)
         assert cycles is None
@@ -274,15 +294,21 @@ class TestValidateDependencies:
         is_valid, errors = validate_dependencies("WP01", ["WP02"], graph)
 
         assert is_valid is False
-        assert any("circular" in err.lower() or "cycle" in err.lower() for err in errors)
+        assert any(
+            "circular" in err.lower() or "cycle" in err.lower() for err in errors
+        )
 
     def test_validate_dependencies_invalid_format(self):
         """Test validation catches invalid WP ID format."""
         graph = {"WP01": []}
-        is_valid, errors = validate_dependencies("WP02", ["WP1"], graph)  # Invalid: WP1 not WP01
+        is_valid, errors = validate_dependencies(
+            "WP02", ["WP1"], graph
+        )  # Invalid: WP1 not WP01
 
         assert is_valid is False
-        assert any("format" in err.lower() or "invalid" in err.lower() for err in errors)
+        assert any(
+            "format" in err.lower() or "invalid" in err.lower() for err in errors
+        )
 
 
 # T005: Tests for dependent lookup
@@ -303,12 +329,7 @@ class TestGetDependents:
 
     def test_get_dependents_fan_out(self):
         """Test finding dependents in fan-out pattern."""
-        graph = {
-            "WP01": [],
-            "WP02": ["WP01"],
-            "WP03": ["WP01"],
-            "WP04": ["WP01"]
-        }
+        graph = {"WP01": [], "WP02": ["WP01"], "WP03": ["WP01"], "WP04": ["WP01"]}
         dependents = get_dependents("WP01", graph)
         assert set(dependents) == {"WP02", "WP03", "WP04"}
 
@@ -323,7 +344,7 @@ class TestGetDependents:
         graph = {
             "WP01": [],
             "WP02": ["WP01"],
-            "WP03": ["WP02"]  # WP03 depends on WP02, not directly on WP01
+            "WP03": ["WP02"],  # WP03 depends on WP02, not directly on WP01
         }
         dependents = get_dependents("WP01", graph)
         assert dependents == ["WP02"]  # Only direct dependent

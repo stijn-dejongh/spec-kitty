@@ -97,7 +97,8 @@ def research_feature_with_wrong_source_schema(mock_research_project):
 
     # WRONG source-register.csv schema
     (research_dir / "source-register.csv").write_text(
-        "id,reference,link,date,priority\n" "1,Reference,http://example.com,2025-01-25,high\n",
+        "id,reference,link,date,priority\n"
+        "1,Reference,http://example.com,2025-01-25,high\n",
         encoding="utf-8",
     )
 
@@ -130,12 +131,16 @@ class TestDetection:
         migration = ResearchCSVSchemaCheckMigration()
         assert migration.detect(research_feature_with_correct_schema) is False
 
-    def test_detect_wrong_evidence_schema(self, research_feature_with_wrong_evidence_schema):
+    def test_detect_wrong_evidence_schema(
+        self, research_feature_with_wrong_evidence_schema
+    ):
         """Test detection returns True when evidence-log.csv schema is wrong."""
         migration = ResearchCSVSchemaCheckMigration()
         assert migration.detect(research_feature_with_wrong_evidence_schema) is True
 
-    def test_detect_wrong_source_schema(self, research_feature_with_wrong_source_schema):
+    def test_detect_wrong_source_schema(
+        self, research_feature_with_wrong_source_schema
+    ):
         """Test detection returns True when source-register.csv schema is wrong."""
         migration = ResearchCSVSchemaCheckMigration()
         assert migration.detect(research_feature_with_wrong_source_schema) is True
@@ -172,10 +177,14 @@ class TestMigrationApply:
         captured = capsys.readouterr()
         assert "Schema mismatch" not in captured.out
 
-    def test_apply_wrong_evidence_schema(self, research_feature_with_wrong_evidence_schema, capsys):
+    def test_apply_wrong_evidence_schema(
+        self, research_feature_with_wrong_evidence_schema, capsys
+    ):
         """Test migration reports mismatch for wrong evidence-log.csv schema."""
         migration = ResearchCSVSchemaCheckMigration()
-        result = migration.apply(research_feature_with_wrong_evidence_schema, dry_run=False)
+        result = migration.apply(
+            research_feature_with_wrong_evidence_schema, dry_run=False
+        )
 
         assert result.success is True  # Informational only
         assert len(result.errors) == 0
@@ -187,12 +196,19 @@ class TestMigrationApply:
         assert "evidence-log.csv" in captured.out
         assert "Expected:" in captured.out
         assert "Actual:" in captured.out
-        assert "timestamp,source_type,citation,key_finding,confidence,notes" in captured.out
+        assert (
+            "timestamp,source_type,citation,key_finding,confidence,notes"
+            in captured.out
+        )
 
-    def test_apply_wrong_source_schema(self, research_feature_with_wrong_source_schema, capsys):
+    def test_apply_wrong_source_schema(
+        self, research_feature_with_wrong_source_schema, capsys
+    ):
         """Test migration reports mismatch for wrong source-register.csv schema."""
         migration = ResearchCSVSchemaCheckMigration()
-        result = migration.apply(research_feature_with_wrong_source_schema, dry_run=False)
+        result = migration.apply(
+            research_feature_with_wrong_source_schema, dry_run=False
+        )
 
         assert result.success is True  # Informational only
         assert len(result.errors) == 0
@@ -215,7 +231,9 @@ class TestMigrationApply:
     def test_apply_dry_run(self, research_feature_with_wrong_evidence_schema, capsys):
         """Test dry run mode produces same output."""
         migration = ResearchCSVSchemaCheckMigration()
-        result = migration.apply(research_feature_with_wrong_evidence_schema, dry_run=True)
+        result = migration.apply(
+            research_feature_with_wrong_evidence_schema, dry_run=True
+        )
 
         assert result.success is True
         assert len(result.errors) == 0
@@ -237,7 +255,9 @@ class TestMigrationApply:
         assert "implement.md" in captured.out
         assert "LLM agents can help" in captured.out
 
-    def test_apply_does_not_modify_files(self, research_feature_with_wrong_evidence_schema):
+    def test_apply_does_not_modify_files(
+        self, research_feature_with_wrong_evidence_schema
+    ):
         """Test migration does NOT modify CSV files (informational only)."""
         csv_path = (
             research_feature_with_wrong_evidence_schema

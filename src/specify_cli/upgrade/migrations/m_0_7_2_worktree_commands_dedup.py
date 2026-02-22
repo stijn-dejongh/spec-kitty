@@ -22,7 +22,9 @@ class WorktreeCommandsDedupMigration(BaseMigration):
     """
 
     migration_id = "0.7.2_worktree_commands_dedup"
-    description = "Remove duplicate .claude/commands/ from worktrees (inherit from main repo)"
+    description = (
+        "Remove duplicate .claude/commands/ from worktrees (inherit from main repo)"
+    )
     target_version = "0.7.2"
 
     def detect(self, project_path: Path) -> bool:
@@ -47,7 +49,7 @@ class WorktreeCommandsDedupMigration(BaseMigration):
         if not main_claude_commands.exists():
             return (
                 False,
-                "Main repo .claude/commands/ must exist before removing from worktrees"
+                "Main repo .claude/commands/ must exist before removing from worktrees",
             )
 
         return True, ""

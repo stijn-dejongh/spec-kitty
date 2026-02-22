@@ -40,7 +40,9 @@ def mock_repo(tmp_path: Path) -> Path:
 
 
 def test_sync_command_success(mock_repo: Path) -> None:
-    with patch("specify_cli.cli.commands.constitution.find_repo_root") as mock_find_root:
+    with patch(
+        "specify_cli.cli.commands.constitution.find_repo_root"
+    ) as mock_find_root:
         mock_find_root.return_value = mock_repo
 
         result = runner.invoke(app, ["sync"])
@@ -53,7 +55,9 @@ def test_sync_command_success(mock_repo: Path) -> None:
 
 
 def test_sync_command_already_synced(mock_repo: Path) -> None:
-    with patch("specify_cli.cli.commands.constitution.find_repo_root") as mock_find_root:
+    with patch(
+        "specify_cli.cli.commands.constitution.find_repo_root"
+    ) as mock_find_root:
         mock_find_root.return_value = mock_repo
 
         result1 = runner.invoke(app, ["sync"])
@@ -65,7 +69,9 @@ def test_sync_command_already_synced(mock_repo: Path) -> None:
 
 
 def test_sync_command_json_output(mock_repo: Path) -> None:
-    with patch("specify_cli.cli.commands.constitution.find_repo_root") as mock_find_root:
+    with patch(
+        "specify_cli.cli.commands.constitution.find_repo_root"
+    ) as mock_find_root:
         mock_find_root.return_value = mock_repo
 
         result = runner.invoke(app, ["sync", "--json"])
@@ -80,7 +86,9 @@ def test_sync_command_missing_constitution(tmp_path: Path) -> None:
     repo_root = tmp_path / "no_constitution"
     repo_root.mkdir()
 
-    with patch("specify_cli.cli.commands.constitution.find_repo_root") as mock_find_root:
+    with patch(
+        "specify_cli.cli.commands.constitution.find_repo_root"
+    ) as mock_find_root:
         mock_find_root.return_value = repo_root
 
         result = runner.invoke(app, ["sync"])
@@ -90,7 +98,9 @@ def test_sync_command_missing_constitution(tmp_path: Path) -> None:
 
 
 def test_status_command_synced(mock_repo: Path) -> None:
-    with patch("specify_cli.cli.commands.constitution.find_repo_root") as mock_find_root:
+    with patch(
+        "specify_cli.cli.commands.constitution.find_repo_root"
+    ) as mock_find_root:
         mock_find_root.return_value = mock_repo
 
         runner.invoke(app, ["sync"])
@@ -103,7 +113,9 @@ def test_status_command_synced(mock_repo: Path) -> None:
 
 
 def test_status_command_json_output(mock_repo: Path) -> None:
-    with patch("specify_cli.cli.commands.constitution.find_repo_root") as mock_find_root:
+    with patch(
+        "specify_cli.cli.commands.constitution.find_repo_root"
+    ) as mock_find_root:
         mock_find_root.return_value = mock_repo
 
         runner.invoke(app, ["sync"])
@@ -119,7 +131,9 @@ def test_interview_defaults_writes_answers(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
 
-    with patch("specify_cli.cli.commands.constitution.find_repo_root") as mock_find_root:
+    with patch(
+        "specify_cli.cli.commands.constitution.find_repo_root"
+    ) as mock_find_root:
         mock_find_root.return_value = repo_root
 
         result = runner.invoke(app, ["interview", "--defaults", "--json"])
@@ -136,7 +150,9 @@ def test_generate_command_success(tmp_path: Path) -> None:
     repo_root.mkdir()
     (repo_root / ".kittify" / "constitution").mkdir(parents=True)
 
-    with patch("specify_cli.cli.commands.constitution.find_repo_root") as mock_find_root:
+    with patch(
+        "specify_cli.cli.commands.constitution.find_repo_root"
+    ) as mock_find_root:
         mock_find_root.return_value = repo_root
 
         result = runner.invoke(app, ["generate"])
@@ -155,7 +171,9 @@ def test_generate_command_requires_force_when_existing(tmp_path: Path) -> None:
     constitution_dir.mkdir(parents=True)
     (constitution_dir / "constitution.md").write_text("# Existing", encoding="utf-8")
 
-    with patch("specify_cli.cli.commands.constitution.find_repo_root") as mock_find_root:
+    with patch(
+        "specify_cli.cli.commands.constitution.find_repo_root"
+    ) as mock_find_root:
         mock_find_root.return_value = repo_root
 
         result = runner.invoke(app, ["generate"])
@@ -171,7 +189,9 @@ def test_generate_command_force_overwrites(tmp_path: Path) -> None:
     constitution_file = constitution_dir / "constitution.md"
     constitution_file.write_text("# Existing", encoding="utf-8")
 
-    with patch("specify_cli.cli.commands.constitution.find_repo_root") as mock_find_root:
+    with patch(
+        "specify_cli.cli.commands.constitution.find_repo_root"
+    ) as mock_find_root:
         mock_find_root.return_value = repo_root
 
         result = runner.invoke(app, ["generate", "--force", "--json"])
@@ -189,7 +209,9 @@ def test_context_bootstrap_then_compact(tmp_path: Path) -> None:
     repo_root.mkdir()
     (repo_root / ".kittify" / "constitution").mkdir(parents=True)
 
-    with patch("specify_cli.cli.commands.constitution.find_repo_root") as mock_find_root:
+    with patch(
+        "specify_cli.cli.commands.constitution.find_repo_root"
+    ) as mock_find_root:
         mock_find_root.return_value = repo_root
 
         generate_result = runner.invoke(app, ["generate", "--json"])

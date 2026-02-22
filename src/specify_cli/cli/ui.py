@@ -70,7 +70,9 @@ def select_with_arrows(
                 table.add_row(" ", f"[cyan]{key}[/cyan] [dim]({options[key]})[/dim]")
 
         table.add_row("", "")
-        table.add_row("", "[dim]Use ↑/↓ to navigate, Enter to select, Esc to cancel[/dim]")
+        table.add_row(
+            "", "[dim]Use ↑/↓ to navigate, Enter to select, Esc to cancel[/dim]"
+        )
 
         return Panel(
             table,
@@ -83,7 +85,12 @@ def select_with_arrows(
 
     def run_selection_loop():
         nonlocal selected_key, selected_index
-        with Live(create_selection_panel(), console=console, transient=True, auto_refresh=False) as live:
+        with Live(
+            create_selection_panel(),
+            console=console,
+            transient=True,
+            auto_refresh=False,
+        ) as live:
             while True:
                 try:
                     key = get_key()
@@ -141,7 +148,9 @@ def multi_select_with_arrows(
         for i, key in enumerate(option_keys):
             indicator = "[cyan]☑" if i in selected_indices else "[bright_black]☐"
             pointer = "▶" if i == cursor_index else " "
-            table.add_row(pointer, f"{indicator} [cyan]{key}[/cyan] [dim]({options[key]})[/dim]")
+            table.add_row(
+                pointer, f"{indicator} [cyan]{key}[/cyan] [dim]({options[key]})[/dim]"
+            )
 
         table.add_row("", "")
         table.add_row(
@@ -149,14 +158,23 @@ def multi_select_with_arrows(
             "[dim]Use ↑/↓ to move, Space to toggle, Enter to confirm, Esc to cancel[/dim]",
         )
 
-        return Panel(table, title=f"[bold]{prompt_text}[/bold]", border_style="cyan", padding=(1, 2))
+        return Panel(
+            table,
+            title=f"[bold]{prompt_text}[/bold]",
+            border_style="cyan",
+            padding=(1, 2),
+        )
 
     def normalize_selection() -> List[str]:
-        return [option_keys[i] for i in range(len(option_keys)) if i in selected_indices]
+        return [
+            option_keys[i] for i in range(len(option_keys)) if i in selected_indices
+        ]
 
     console.print()
 
-    with Live(build_panel(), console=console, transient=True, auto_refresh=False) as live:
+    with Live(
+        build_panel(), console=console, transient=True, auto_refresh=False
+    ) as live:
         while True:
             try:
                 key = get_key()

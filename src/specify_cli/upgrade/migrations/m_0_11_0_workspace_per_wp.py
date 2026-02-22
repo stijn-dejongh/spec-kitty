@@ -88,8 +88,17 @@ def _resolve_template_sources() -> Optional[Dict[str, str]]:
     local_repo = get_local_repo_root()
     if local_repo:
         candidates = [
-            local_repo / "src" / "specify_cli" / "missions" / MISSION_NAME / "command-templates",  # 011: New location
-            local_repo / ".kittify" / "missions" / MISSION_NAME / "command-templates",  # Legacy (pre-011)
+            local_repo
+            / "src"
+            / "specify_cli"
+            / "missions"
+            / MISSION_NAME
+            / "command-templates",  # 011: New location
+            local_repo
+            / ".kittify"
+            / "missions"
+            / MISSION_NAME
+            / "command-templates",  # Legacy (pre-011)
         ]
         for candidate in candidates:
             if candidate.exists():
@@ -99,7 +108,9 @@ def _resolve_template_sources() -> Optional[Dict[str, str]]:
 
     # 011: Templates packaged in src/doctrine/missions/
     data_root = files("doctrine")
-    package_candidate = data_root.joinpath("missions", MISSION_NAME, "command-templates")
+    package_candidate = data_root.joinpath(
+        "missions", MISSION_NAME, "command-templates"
+    )
     if _resource_exists(package_candidate):
         contents = _load_template_sources(package_candidate)
         if contents:
@@ -108,12 +119,16 @@ def _resolve_template_sources() -> Optional[Dict[str, str]]:
     return None
 
 
-def update_template_sources(project_root: Path, dry_run: bool = False) -> Tuple[List[str], List[str]]:
+def update_template_sources(
+    project_root: Path, dry_run: bool = False
+) -> Tuple[List[str], List[str]]:
     """Update mission command templates with workspace-per-WP workflow text."""
     changes: List[str] = []
     errors: List[str] = []
 
-    templates_dir = project_root / ".kittify" / "missions" / MISSION_NAME / "command-templates"
+    templates_dir = (
+        project_root / ".kittify" / "missions" / MISSION_NAME / "command-templates"
+    )
     if not templates_dir.exists():
         errors.append(f"Missing mission templates at {templates_dir}")
         return changes, errors
@@ -153,7 +168,9 @@ class WorkspacePerWPMigration(BaseMigration):
 
     def detect(self, project_path: Path) -> bool:
         """Detect if mission templates need workspace-per-WP updates."""
-        templates_dir = project_path / ".kittify" / "missions" / MISSION_NAME / "command-templates"
+        templates_dir = (
+            project_path / ".kittify" / "missions" / MISSION_NAME / "command-templates"
+        )
         if not templates_dir.exists():
             return False
 

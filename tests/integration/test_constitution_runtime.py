@@ -471,7 +471,9 @@ Document in ADR, require 3 approvals, set sunset date for temporary exceptions
         memory_dir.mkdir(parents=True)
 
         constitution_file = memory_dir / "constitution.md"
-        constitution_file.write_text("# Main Constitution\n\nTest content", encoding="utf-8")
+        constitution_file.write_text(
+            "# Main Constitution\n\nTest content", encoding="utf-8"
+        )
 
         # Create initial commit
         (repo / "README.md").write_text("test")

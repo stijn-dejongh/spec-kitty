@@ -92,9 +92,7 @@ class HistoricalStatusMigration(BaseMigration):
         except ImportError as e:
             return False, f"Status module not available: {e}"
 
-    def apply(
-        self, project_path: Path, dry_run: bool = False
-    ) -> MigrationResult:
+    def apply(self, project_path: Path, dry_run: bool = False) -> MigrationResult:
         """Run full-history migration across all features."""
         from specify_cli.status.migrate import migrate_feature
 
@@ -114,20 +112,14 @@ class HistoricalStatusMigration(BaseMigration):
             try:
                 fr = migrate_feature(feature_dir, dry_run=dry_run)
                 if fr.status == "migrated":
-                    wp_count = sum(
-                        1 for wp in fr.wp_details if wp.events_created > 0
-                    )
-                    total_events = sum(
-                        wp.events_created for wp in fr.wp_details
-                    )
+                    wp_count = sum(1 for wp in fr.wp_details if wp.events_created > 0)
+                    total_events = sum(wp.events_created for wp in fr.wp_details)
                     result.changes_made.append(
                         f"{feature_dir.name}: migrated "
                         f"({wp_count} WPs, {total_events} events)"
                     )
                 elif fr.status == "failed":
-                    result.warnings.append(
-                        f"{feature_dir.name}: {fr.error}"
-                    )
+                    result.warnings.append(f"{feature_dir.name}: {fr.error}")
             except Exception as e:
                 result.errors.append(f"{feature_dir.name}: {e}")
 

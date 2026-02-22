@@ -79,13 +79,16 @@ type: tutorial
     assert confidence == 1.0  # High confidence
 
 
-@pytest.mark.parametrize("type_str,expected_type", [
-    ("tutorial", DivioType.TUTORIAL),
-    ("how-to", DivioType.HOWTO),
-    ("howto", DivioType.HOWTO),
-    ("reference", DivioType.REFERENCE),
-    ("explanation", DivioType.EXPLANATION),
-])
+@pytest.mark.parametrize(
+    "type_str,expected_type",
+    [
+        ("tutorial", DivioType.TUTORIAL),
+        ("how-to", DivioType.HOWTO),
+        ("howto", DivioType.HOWTO),
+        ("reference", DivioType.REFERENCE),
+        ("explanation", DivioType.EXPLANATION),
+    ],
+)
 def test_classify_from_frontmatter_types(type_str, expected_type):
     """Test all Divio type values in frontmatter."""
     content = f"""---
@@ -198,7 +201,7 @@ def test_coverage_matrix_initialization():
             ("auth", "tutorial"): Path("docs/tutorials/auth.md"),
             ("auth", "reference"): Path("docs/reference/auth.md"),
             ("api", "reference"): Path("docs/reference/api.md"),
-        }
+        },
     )
 
     assert len(matrix.project_areas) == 2
@@ -214,7 +217,7 @@ def test_coverage_matrix_get_gaps():
             ("auth", "tutorial"): Path("docs/tutorials/auth.md"),
             ("auth", "reference"): Path("docs/reference/auth.md"),
             # Missing: auth/how-to, auth/explanation, api/tutorial, api/how-to, api/reference, api/explanation
-        }
+        },
     )
 
     gaps = matrix.get_gaps()
@@ -233,7 +236,7 @@ def test_coverage_matrix_percentage():
             ("auth", "tutorial"): Path("docs/tutorials/auth.md"),
             ("auth", "reference"): Path("docs/reference/auth.md"),
             ("api", "reference"): Path("docs/reference/api.md"),
-        }
+        },
     )
 
     # 3 filled out of 8 total cells (2 areas × 4 types)
@@ -249,7 +252,7 @@ def test_coverage_matrix_markdown_table():
         cells={
             ("auth", "tutorial"): Path("docs/tutorials/auth.md"),
             ("auth", "reference"): Path("docs/reference/auth.md"),
-        }
+        },
     )
 
     table = matrix.to_markdown_table()
@@ -306,8 +309,8 @@ def test_gaps_sorted_by_priority():
     """Test gaps sorted with HIGH first, then MEDIUM, then LOW."""
     gaps = [
         ("auth", "explanation"),  # LOW
-        ("auth", "tutorial"),     # MEDIUM (auth is core with 3 areas)
-        ("auth", "how-to"),       # MEDIUM
+        ("auth", "tutorial"),  # MEDIUM (auth is core with 3 areas)
+        ("auth", "how-to"),  # MEDIUM
     ]
     project_areas = ["auth", "api", "cli"]  # auth is core (first half)
 
@@ -319,15 +322,17 @@ def test_gaps_sorted_by_priority():
     assert len(prioritized) == 3
     # Just verify they're sorted, not specific priorities
     priorities = [g.priority for g in prioritized]
-    assert sorted(priorities, key=lambda p: {"high": 0, "medium": 1, "low": 2}[p.value]) == priorities
+    assert (
+        sorted(priorities, key=lambda p: {"high": 0, "medium": 1, "low": 2}[p.value])
+        == priorities
+    )
 
 
 # Additional tests for GapAnalysis dataclass
 def test_gap_analysis_dataclass():
     """Test GapAnalysis dataclass construction."""
     matrix = CoverageMatrix(
-        project_areas=["auth"],
-        cells={("auth", "tutorial"): Path("docs/tutorial.md")}
+        project_areas=["auth"], cells={("auth", "tutorial"): Path("docs/tutorial.md")}
     )
 
     analysis = GapAnalysis(
@@ -335,7 +340,7 @@ def test_gap_analysis_dataclass():
         analysis_date=datetime.now(),
         framework=DocFramework.SPHINX,
         coverage_matrix=matrix,
-        gaps=[]
+        gaps=[],
     )
 
     assert analysis.framework == DocFramework.SPHINX

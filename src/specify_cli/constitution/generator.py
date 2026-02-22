@@ -53,6 +53,8 @@ def build_constitution_draft(
 def write_constitution(path: Path, markdown: str, *, force: bool = False) -> None:
     """Write constitution markdown to disk."""
     if path.exists() and not force:
-        raise FileExistsError(f"Constitution already exists at {path}. Use --force to overwrite.")
+        raise FileExistsError(
+            f"Constitution already exists at {path}. Use --force to overwrite."
+        )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(markdown, encoding="utf-8")

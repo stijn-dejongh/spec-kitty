@@ -90,10 +90,28 @@ class TestResolvePrecedence:
         "global_val,mission_val,step_val,runtime_val,expected",
         [
             # Runtime always wins
-            (Strictness.OFF, Strictness.OFF, Strictness.OFF, Strictness.MAX, Strictness.MAX),
-            (Strictness.MAX, Strictness.MAX, Strictness.MAX, Strictness.OFF, Strictness.OFF),
+            (
+                Strictness.OFF,
+                Strictness.OFF,
+                Strictness.OFF,
+                Strictness.MAX,
+                Strictness.MAX,
+            ),
+            (
+                Strictness.MAX,
+                Strictness.MAX,
+                Strictness.MAX,
+                Strictness.OFF,
+                Strictness.OFF,
+            ),
             # Step beats mission and global
-            (Strictness.OFF, Strictness.OFF, Strictness.MEDIUM, None, Strictness.MEDIUM),
+            (
+                Strictness.OFF,
+                Strictness.OFF,
+                Strictness.MEDIUM,
+                None,
+                Strictness.MEDIUM,
+            ),
             (Strictness.MAX, Strictness.MAX, Strictness.OFF, None, Strictness.OFF),
             # Mission beats global
             (Strictness.OFF, Strictness.MAX, None, None, Strictness.MAX),
@@ -222,8 +240,18 @@ class TestShouldBlock:
             severity=Severity.MEDIUM,
             confidence=0.6,
             candidate_senses=[
-                SenseRef(surface="utility", scope="mission", definition="test def 1", confidence=0.8),
-                SenseRef(surface="utility", scope="global", definition="test def 2", confidence=0.7),
+                SenseRef(
+                    surface="utility",
+                    scope="mission",
+                    definition="test def 1",
+                    confidence=0.8,
+                ),
+                SenseRef(
+                    surface="utility",
+                    scope="global",
+                    definition="test def 2",
+                    confidence=0.7,
+                ),
             ],
             context="test context",
         )
@@ -239,8 +267,18 @@ class TestShouldBlock:
             severity=Severity.HIGH,
             confidence=0.9,
             candidate_senses=[
-                SenseRef(surface="workspace", scope="mission", definition="test def 1", confidence=0.9),
-                SenseRef(surface="workspace", scope="global", definition="test def 2", confidence=0.8),
+                SenseRef(
+                    surface="workspace",
+                    scope="mission",
+                    definition="test def 1",
+                    confidence=0.9,
+                ),
+                SenseRef(
+                    surface="workspace",
+                    scope="global",
+                    definition="test def 2",
+                    confidence=0.8,
+                ),
             ],
             context="test context",
         )
@@ -285,9 +323,13 @@ class TestShouldBlock:
         result = should_block(Strictness.MEDIUM, [high_conflict])
         assert result is True
 
-    def test_medium_blocks_mixed_with_high(self, low_conflict, medium_conflict, high_conflict):
+    def test_medium_blocks_mixed_with_high(
+        self, low_conflict, medium_conflict, high_conflict
+    ):
         """MEDIUM mode blocks if ANY conflict is high-severity."""
-        result = should_block(Strictness.MEDIUM, [low_conflict, medium_conflict, high_conflict])
+        result = should_block(
+            Strictness.MEDIUM, [low_conflict, medium_conflict, high_conflict]
+        )
         assert result is True
 
     def test_medium_allows_mixed_without_high(self, low_conflict, medium_conflict):
@@ -417,7 +459,9 @@ class TestCategorizeConflicts:
             severity=Severity.MEDIUM,
             confidence=0.6,
             candidate_senses=[
-                SenseRef(surface="test2", scope="mission", definition="def1", confidence=0.6),
+                SenseRef(
+                    surface="test2", scope="mission", definition="def1", confidence=0.6
+                ),
             ],
             context="test",
         )
@@ -427,7 +471,9 @@ class TestCategorizeConflicts:
             severity=Severity.HIGH,
             confidence=0.9,
             candidate_senses=[
-                SenseRef(surface="test3", scope="mission", definition="def1", confidence=0.9),
+                SenseRef(
+                    surface="test3", scope="mission", definition="def1", confidence=0.9
+                ),
             ],
             context="test",
         )
@@ -514,7 +560,9 @@ class TestUnknownSeverityBlocking:
         object.__setattr__(conflict, "severity", "critical")
 
         result = should_block(Strictness.MEDIUM, [conflict])
-        assert result is True, "Unknown severity must be treated as HIGH and block in MEDIUM mode"
+        assert result is True, (
+            "Unknown severity must be treated as HIGH and block in MEDIUM mode"
+        )
 
     def test_off_does_not_block_unknown_severity(self):
         """OFF mode never blocks, even with unknown severity."""

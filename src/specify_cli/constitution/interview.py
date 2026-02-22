@@ -192,7 +192,9 @@ def apply_answer_overrides(
     )
 
 
-def _normalize_iterable(values: Iterable[str] | None, *, fallback: list[str]) -> list[str]:
+def _normalize_iterable(
+    values: Iterable[str] | None, *, fallback: list[str]
+) -> list[str]:
     if values is None:
         return list(fallback)
     normalized: list[str] = []

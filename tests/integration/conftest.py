@@ -47,7 +47,9 @@ def isolated_env() -> dict[str, str]:
 
 
 @pytest.fixture()
-def run_cli(isolated_env: dict[str, str]) -> Callable[[Path, str], subprocess.CompletedProcess[str]]:
+def run_cli(
+    isolated_env: dict[str, str],
+) -> Callable[[Path, str], subprocess.CompletedProcess[str]]:
     """Return a helper that executes the Spec Kitty CLI within a project.
 
     Uses isolated_env to guarantee tests run against source code, not
@@ -88,8 +90,12 @@ def test_project(tmp_path: Path) -> Path:
     (project / ".gitignore").write_text("__pycache__/\n", encoding="utf-8")
 
     subprocess.run(["git", "init", "-b", "main"], cwd=project, check=True)
-    subprocess.run(["git", "config", "user.email", "ci@example.com"], cwd=project, check=True)
-    subprocess.run(["git", "config", "user.name", "Spec Kitty CI"], cwd=project, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "ci@example.com"], cwd=project, check=True
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Spec Kitty CI"], cwd=project, check=True
+    )
     subprocess.run(["git", "add", "."], cwd=project, check=True)
     subprocess.run(["git", "commit", "-m", "Initial project"], cwd=project, check=True)
 
@@ -167,7 +173,9 @@ def dual_branch_repo(tmp_path: Path) -> Path:
         shutil.copytree(missions_src, missions_dest)
 
     # Initialize git with main branch
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "config", "user.name", "Test User"],
         cwd=repo,
@@ -202,6 +210,7 @@ def dual_branch_repo(tmp_path: Path) -> Path:
             metadata = yaml.safe_load(f) or {}
 
         from tests.test_isolation_helpers import get_installed_version
+
         current_version = get_installed_version()
         if current_version is None:
             with open(REPO_ROOT / "pyproject.toml", "rb") as f:

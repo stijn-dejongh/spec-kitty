@@ -11,7 +11,11 @@ from rich.panel import Panel
 from rich.table import Table
 
 from specify_cli.acceptance import AcceptanceError, detect_feature_slug
-from specify_cli.cli.helpers import check_version_compatibility, console, get_project_root_or_exit
+from specify_cli.cli.helpers import (
+    check_version_compatibility,
+    console,
+    get_project_root_or_exit,
+)
 from specify_cli.core.project_resolver import resolve_worktree_aware_feature_dir
 from specify_cli.task_metadata_validation import (
     detect_lane_mismatch,
@@ -26,10 +30,18 @@ def validate_tasks(
     feature: Optional[str] = typer.Option(
         None, "--feature", help="Feature slug to validate (auto-detected when omitted)"
     ),
-    fix: bool = typer.Option(False, "--fix", help="Automatically repair metadata inconsistencies"),
-    check_all: bool = typer.Option(False, "--all", help="Check all features, not just one"),
-    agent: Optional[str] = typer.Option(None, "--agent", help="Agent name for activity log"),
-    shell_pid: Optional[str] = typer.Option(None, "--shell-pid", help="Shell PID for activity log"),
+    fix: bool = typer.Option(
+        False, "--fix", help="Automatically repair metadata inconsistencies"
+    ),
+    check_all: bool = typer.Option(
+        False, "--all", help="Check all features, not just one"
+    ),
+    agent: Optional[str] = typer.Option(
+        None, "--agent", help="Agent name for activity log"
+    ),
+    shell_pid: Optional[str] = typer.Option(
+        None, "--shell-pid", help="Shell PID for activity log"
+    ),
 ) -> None:
     """Validate and optionally fix task metadata inconsistencies.
 
@@ -68,13 +80,17 @@ def validate_tasks(
                 if wt_dir.is_dir():
                     wt_specs = wt_dir / "kitty-specs"
                     if wt_specs.exists():
-                        feature_dirs.extend([d for d in wt_specs.iterdir() if d.is_dir()])
+                        feature_dirs.extend(
+                            [d for d in wt_specs.iterdir() if d.is_dir()]
+                        )
 
         if not feature_dirs:
             console.print("[yellow]No feature directories found.[/yellow]")
             raise typer.Exit(0)
 
-        console.print(f"[cyan]Checking task metadata for {len(feature_dirs)} features...[/cyan]")
+        console.print(
+            f"[cyan]Checking task metadata for {len(feature_dirs)} features...[/cyan]"
+        )
         console.print()
 
         total_mismatches = 0
@@ -102,12 +118,16 @@ def validate_tasks(
 
     # Validate single feature
     try:
-        feature_slug = (feature or detect_feature_slug(repo_root, cwd=Path.cwd())).strip()
+        feature_slug = (
+            feature or detect_feature_slug(repo_root, cwd=Path.cwd())
+        ).strip()
     except AcceptanceError as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(1)
 
-    feature_dir = resolve_worktree_aware_feature_dir(repo_root, feature_slug, Path.cwd(), console)
+    feature_dir = resolve_worktree_aware_feature_dir(
+        repo_root, feature_slug, Path.cwd(), console
+    )
 
     if not feature_dir.exists():
         console.print(f"[red]Error:[/red] Feature directory not found: {feature_dir}")
@@ -130,7 +150,9 @@ def validate_tasks(
     else:
         console.print()
         console.print(f"[yellow]Found {mismatches} metadata mismatch(es).[/yellow]")
-        console.print("[dim]Run with --fix to automatically repair these mismatches.[/dim]")
+        console.print(
+            "[dim]Run with --fix to automatically repair these mismatches.[/dim]"
+        )
         raise typer.Exit(1)
 
 
@@ -151,7 +173,9 @@ def _validate_feature_tasks(
         return 0, 0
 
     # Display mismatches in a table
-    table = Table(title=f"Task Metadata Mismatches: {feature_dir.name}", show_header=True)
+    table = Table(
+        title=f"Task Metadata Mismatches: {feature_dir.name}", show_header=True
+    )
     table.add_column("File", style="cyan")
     table.add_column("Expected Lane", style="green")
     table.add_column("Actual Lane", style="yellow")
@@ -164,7 +188,11 @@ def _validate_feature_tasks(
         status = "[yellow]Needs Fix[/yellow]"
         if fix:
             was_repaired, error = repair_lane_mismatch(
-                full_path, agent=agent, shell_pid=shell_pid, add_history=True, dry_run=False
+                full_path,
+                agent=agent,
+                shell_pid=shell_pid,
+                add_history=True,
+                dry_run=False,
             )
             if was_repaired:
                 status = "[green]Fixed[/green]"
@@ -178,7 +206,9 @@ def _validate_feature_tasks(
 
     if fix:
         console.print()
-        console.print(f"  [green]Fixed {fixed_count} of {len(mismatches_dict)} mismatches[/green]")
+        console.print(
+            f"  [green]Fixed {fixed_count} of {len(mismatches_dict)} mismatches[/green]"
+        )
 
     return len(mismatches_dict), fixed_count
 

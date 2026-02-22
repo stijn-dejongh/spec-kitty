@@ -21,11 +21,7 @@ console = Console()
 
 
 def validate_and_resolve_base(
-    wp_id: str,
-    wp_file: Path,
-    base: str | None,
-    feature_slug: str,
-    repo_root: Path
+    wp_id: str, wp_file: Path, base: str | None, feature_slug: str, repo_root: Path
 ) -> tuple[str | None, bool]:
     """Validate dependencies and resolve base workspace.
 
@@ -103,9 +99,7 @@ def validate_and_resolve_base(
 
 
 def validate_base_workspace_exists(
-    base: str,
-    feature_slug: str,
-    repo_root: Path
+    base: str, feature_slug: str, repo_root: Path
 ) -> None:
     """Validate that a base workspace exists and is valid.
 
@@ -131,7 +125,7 @@ def validate_base_workspace_exists(
         ["git", "rev-parse", "--git-dir"],
         cwd=base_workspace,
         capture_output=True,
-        check=False
+        check=False,
     )
 
     if result.returncode != 0:

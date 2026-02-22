@@ -24,6 +24,7 @@ non-interactive with those flags.
 
 TODO: File issue about non-interactive init mode and remove xfail markers once fixed.
 """
+
 from __future__ import annotations
 
 import os
@@ -82,7 +83,15 @@ def wheel_path(tmp_path_factory) -> Path:
 
     # Build wheel
     result = subprocess.run(
-        [sys.executable, "-m", "build", "--wheel", "--outdir", str(dist_dir), str(REPO_ROOT)],
+        [
+            sys.executable,
+            "-m",
+            "build",
+            "--wheel",
+            "--outdir",
+            str(dist_dir),
+            str(REPO_ROOT),
+        ],
         capture_output=True,
         text=True,
     )
@@ -188,7 +197,18 @@ class TestInitWithoutTemplateRoot:
         assert "SPEC_KITTY_TEMPLATE_ROOT" not in env
 
         result = subprocess.run(
-            [str(spec_kitty), "init", str(project_dir), "--ai", "claude", "--script", "sh", "--mission", "software-dev", "--no-git"],
+            [
+                str(spec_kitty),
+                "init",
+                str(project_dir),
+                "--ai",
+                "claude",
+                "--script",
+                "sh",
+                "--mission",
+                "software-dev",
+                "--no-git",
+            ],
             capture_output=True,
             text=True,
             env=env,
@@ -215,7 +235,18 @@ class TestInitWithoutTemplateRoot:
         spec_kitty = _venv_spec_kitty(installed_venv)
 
         subprocess.run(
-            [str(spec_kitty), "init", str(project_dir), "--ai", "claude", "--script", "sh", "--mission", "software-dev", "--no-git"],
+            [
+                str(spec_kitty),
+                "init",
+                str(project_dir),
+                "--ai",
+                "claude",
+                "--script",
+                "sh",
+                "--mission",
+                "software-dev",
+                "--no-git",
+            ],
             capture_output=True,
             text=True,
             env=_clean_env(),
@@ -226,7 +257,9 @@ class TestInitWithoutTemplateRoot:
         # Check mission templates exist
         missions_dir = project_dir / ".kittify" / "missions"
         if missions_dir.exists():
-            assert (missions_dir / "software-dev").exists() or True  # May not exist in all versions
+            assert (
+                missions_dir / "software-dev"
+            ).exists() or True  # May not exist in all versions
 
 
 # =============================================================================
@@ -249,7 +282,18 @@ class TestResearchFeatureCreation:
 
         # Initialize spec-kitty (will create directory)
         result = subprocess.run(
-            [str(spec_kitty), "init", str(project_dir), "--ai", "claude", "--script", "sh", "--mission", "research", "--no-git"],
+            [
+                str(spec_kitty),
+                "init",
+                str(project_dir),
+                "--ai",
+                "claude",
+                "--script",
+                "sh",
+                "--mission",
+                "research",
+                "--no-git",
+            ],
             capture_output=True,
             text=True,
             env=_clean_env(),
@@ -259,9 +303,24 @@ class TestResearchFeatureCreation:
         assert result.returncode == 0, f"Init failed: {result.stderr}"
 
         # Initialize git after init (required for features)
-        subprocess.run(["git", "init", "-b", "main"], cwd=project_dir, check=True, capture_output=True)
-        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=project_dir, check=True, capture_output=True)
-        subprocess.run(["git", "config", "user.name", "Test"], cwd=project_dir, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "init", "-b", "main"],
+            cwd=project_dir,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.email", "test@test.com"],
+            cwd=project_dir,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Test"],
+            cwd=project_dir,
+            check=True,
+            capture_output=True,
+        )
 
         # Verify research templates are available
         # (The specific check depends on how templates are bundled)
@@ -294,7 +353,17 @@ class TestUpgradeWithAllMissions:
 
         # Initialize project (will create directory)
         init_result = subprocess.run(
-            [str(spec_kitty), "init", str(project_dir), "--ai", "claude", "--script", "sh", "--mission", "software-dev"],
+            [
+                str(spec_kitty),
+                "init",
+                str(project_dir),
+                "--ai",
+                "claude",
+                "--script",
+                "sh",
+                "--mission",
+                "software-dev",
+            ],
             capture_output=True,
             text=True,
             env=env,
@@ -303,13 +372,35 @@ class TestUpgradeWithAllMissions:
         assert init_result.returncode == 0, f"Init failed: {init_result.stderr}"
 
         # Initialize git after init
-        subprocess.run(["git", "init", "-b", "main"], cwd=project_dir, check=True, capture_output=True)
-        subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=project_dir, check=True, capture_output=True)
-        subprocess.run(["git", "config", "user.name", "Test"], cwd=project_dir, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "init", "-b", "main"],
+            cwd=project_dir,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.email", "test@test.com"],
+            cwd=project_dir,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Test"],
+            cwd=project_dir,
+            check=True,
+            capture_output=True,
+        )
 
         # Initial commit
-        subprocess.run(["git", "add", "."], cwd=project_dir, check=True, capture_output=True)
-        subprocess.run(["git", "commit", "-m", "init"], cwd=project_dir, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=project_dir, check=True, capture_output=True
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "init"],
+            cwd=project_dir,
+            check=True,
+            capture_output=True,
+        )
 
         # Run upgrade
         upgrade_result = subprocess.run(
@@ -321,4 +412,6 @@ class TestUpgradeWithAllMissions:
         )
 
         # Upgrade should complete (may report "already up to date")
-        assert upgrade_result.returncode == 0, f"Upgrade failed: {upgrade_result.stderr}"
+        assert upgrade_result.returncode == 0, (
+            f"Upgrade failed: {upgrade_result.stderr}"
+        )

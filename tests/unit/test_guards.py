@@ -34,7 +34,9 @@ def _make_completed_process(stdout: str = "", returncode: int = 0) -> Mock:
     return proc
 
 
-def test_validate_worktree_on_feature_branch(monkeypatch: pytest.MonkeyPatch, fake_project_root: Path) -> None:
+def test_validate_worktree_on_feature_branch(
+    monkeypatch: pytest.MonkeyPatch, fake_project_root: Path
+) -> None:
     """validate_worktree_location should pass on feature branches."""
 
     def mock_run(cmd: Any, **kwargs: Any) -> Mock:
@@ -52,7 +54,9 @@ def test_validate_worktree_on_feature_branch(monkeypatch: pytest.MonkeyPatch, fa
     assert result.worktree_path == fake_project_root
 
 
-def test_validate_worktree_on_main_branch(monkeypatch: pytest.MonkeyPatch, fake_project_root: Path) -> None:
+def test_validate_worktree_on_main_branch(
+    monkeypatch: pytest.MonkeyPatch, fake_project_root: Path
+) -> None:
     """validate_worktree_location should fail when on main."""
 
     def mock_run(cmd: Any, **kwargs: Any) -> Mock:
@@ -67,7 +71,9 @@ def test_validate_worktree_on_main_branch(monkeypatch: pytest.MonkeyPatch, fake_
     assert "main" in result.format_error()
 
 
-def test_validate_git_clean_with_changes(monkeypatch: pytest.MonkeyPatch, fake_project_root: Path) -> None:
+def test_validate_git_clean_with_changes(
+    monkeypatch: pytest.MonkeyPatch, fake_project_root: Path
+) -> None:
     """validate_git_clean should fail when git status shows changes."""
 
     def mock_run(cmd: Any, **kwargs: Any) -> Mock:
@@ -82,7 +88,9 @@ def test_validate_git_clean_with_changes(monkeypatch: pytest.MonkeyPatch, fake_p
     assert result.errors
 
 
-def test_validate_git_clean_without_changes(monkeypatch: pytest.MonkeyPatch, fake_project_root: Path) -> None:
+def test_validate_git_clean_without_changes(
+    monkeypatch: pytest.MonkeyPatch, fake_project_root: Path
+) -> None:
     """validate_git_clean should pass when git status is clean."""
 
     def mock_run(cmd: Any, **kwargs: Any) -> Mock:
@@ -108,7 +116,9 @@ def test_worktree_is_valid_without_branch() -> None:
     assert result.format_error() == ""
 
 
-def test_validate_worktree_handles_non_git_repo(monkeypatch: pytest.MonkeyPatch, fake_project_root: Path) -> None:
+def test_validate_worktree_handles_non_git_repo(
+    monkeypatch: pytest.MonkeyPatch, fake_project_root: Path
+) -> None:
     """validate_worktree_location should return error when git command fails."""
 
     def mock_run(cmd: Any, **kwargs: Any) -> Mock:
@@ -121,7 +131,9 @@ def test_validate_worktree_handles_non_git_repo(monkeypatch: pytest.MonkeyPatch,
     assert "Not a git repository" in result.errors[0]
 
 
-def test_validate_worktree_handles_missing_branch(monkeypatch: pytest.MonkeyPatch, fake_project_root: Path) -> None:
+def test_validate_worktree_handles_missing_branch(
+    monkeypatch: pytest.MonkeyPatch, fake_project_root: Path
+) -> None:
     """validate_worktree_location should error when branch cannot be determined."""
 
     def mock_run(cmd: Any, **kwargs: Any) -> Mock:
@@ -134,7 +146,9 @@ def test_validate_worktree_handles_missing_branch(monkeypatch: pytest.MonkeyPatc
     assert "Unable to determine" in result.errors[0]
 
 
-def test_validate_worktree_handles_unexpected_branch(monkeypatch: pytest.MonkeyPatch, fake_project_root: Path) -> None:
+def test_validate_worktree_handles_unexpected_branch(
+    monkeypatch: pytest.MonkeyPatch, fake_project_root: Path
+) -> None:
     """validate_worktree_location should error when branch format invalid."""
 
     def mock_run(cmd: Any, **kwargs: Any) -> Mock:
@@ -147,7 +161,9 @@ def test_validate_worktree_handles_unexpected_branch(monkeypatch: pytest.MonkeyP
     assert "Unexpected branch" in result.errors[0]
 
 
-def test_validate_worktree_missing_git_binary(monkeypatch: pytest.MonkeyPatch, fake_project_root: Path) -> None:
+def test_validate_worktree_missing_git_binary(
+    monkeypatch: pytest.MonkeyPatch, fake_project_root: Path
+) -> None:
     """validate_worktree_location should raise when git binary missing."""
 
     def mock_run(cmd: Any, **kwargs: Any) -> Mock:
@@ -159,7 +175,9 @@ def test_validate_worktree_missing_git_binary(monkeypatch: pytest.MonkeyPatch, f
         validate_worktree_location(project_root=fake_project_root)
 
 
-def test_validate_git_clean_handles_git_error(monkeypatch: pytest.MonkeyPatch, fake_project_root: Path) -> None:
+def test_validate_git_clean_handles_git_error(
+    monkeypatch: pytest.MonkeyPatch, fake_project_root: Path
+) -> None:
     """validate_git_clean should return error when git status fails."""
 
     def mock_run(cmd: Any, **kwargs: Any) -> Mock:
@@ -172,7 +190,9 @@ def test_validate_git_clean_handles_git_error(monkeypatch: pytest.MonkeyPatch, f
     assert "Unable to read git status." in result.errors
 
 
-def test_validate_git_clean_missing_git_binary(monkeypatch: pytest.MonkeyPatch, fake_project_root: Path) -> None:
+def test_validate_git_clean_missing_git_binary(
+    monkeypatch: pytest.MonkeyPatch, fake_project_root: Path
+) -> None:
     """validate_git_clean should raise when git binary missing."""
 
     def mock_run(cmd: Any, **kwargs: Any) -> Mock:

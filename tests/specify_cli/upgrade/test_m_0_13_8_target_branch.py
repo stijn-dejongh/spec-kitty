@@ -108,12 +108,16 @@ def test_apply_adds_target_branch_to_legacy_features(repo_with_features: Path):
     assert len(result.changes_made) >= 2  # At least 020 and 024
 
     # Check Feature 020
-    meta_020_file = repo_with_features / "kitty-specs" / "020-legacy-feature" / "meta.json"
+    meta_020_file = (
+        repo_with_features / "kitty-specs" / "020-legacy-feature" / "meta.json"
+    )
     meta_020 = json.loads(meta_020_file.read_text())
     assert meta_020["target_branch"] == "main"
 
     # Check Feature 024
-    meta_024_file = repo_with_features / "kitty-specs" / "024-another-feature" / "meta.json"
+    meta_024_file = (
+        repo_with_features / "kitty-specs" / "024-another-feature" / "meta.json"
+    )
     meta_024 = json.loads(meta_024_file.read_text())
     assert meta_024["target_branch"] == "main"
 
@@ -128,7 +132,10 @@ def test_apply_detects_025_as_2x_target(repo_with_features: Path):
 
     # Check Feature 025
     meta_025_file = (
-        repo_with_features / "kitty-specs" / "025-cli-event-log-integration" / "meta.json"
+        repo_with_features
+        / "kitty-specs"
+        / "025-cli-event-log-integration"
+        / "meta.json"
     )
     meta_025 = json.loads(meta_025_file.read_text())
     assert meta_025["target_branch"] == "2.x"

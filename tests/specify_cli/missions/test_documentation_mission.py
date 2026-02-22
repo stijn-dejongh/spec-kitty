@@ -7,7 +7,7 @@ from specify_cli.mission import (
     Mission,
     MissionError,
     get_mission_by_name,
-    list_available_missions
+    list_available_missions,
 )
 
 
@@ -65,7 +65,7 @@ def test_documentation_mission_workflow_phases():
         "design",
         "generate",
         "validate",
-        "publish"
+        "publish",
     ]
 
 

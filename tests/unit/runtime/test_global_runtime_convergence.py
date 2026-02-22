@@ -102,7 +102,11 @@ class TestGlobalTierResolution:
         global_home = tmp_path / "global_home"
         # Mission-specific
         mission_path = _create_file(
-            global_home / "missions" / "software-dev" / "templates" / "spec-template.md",
+            global_home
+            / "missions"
+            / "software-dev"
+            / "templates"
+            / "spec-template.md",
             content="global mission-specific",
         )
         # Non-mission
@@ -312,7 +316,11 @@ class TestMigrateNudge:
         global_home = tmp_path / "global_home"
         _create_file(global_home / "cache" / "version.lock", "1.0.0")
         _create_file(
-            global_home / "missions" / "software-dev" / "templates" / "spec-template.md",
+            global_home
+            / "missions"
+            / "software-dev"
+            / "templates"
+            / "spec-template.md",
             "global",
         )
 
@@ -397,15 +405,25 @@ class TestFullResolutionChainOrder:
         mission = "software-dev"
 
         # All 5 tiers
-        override_path = _create_file(kittify / "overrides" / "templates" / name, "override")
+        override_path = _create_file(
+            kittify / "overrides" / "templates" / name, "override"
+        )
         _create_file(kittify / "templates" / name, "legacy")
-        _create_file(global_home / "missions" / mission / "templates" / name, "global-mission")
+        _create_file(
+            global_home / "missions" / mission / "templates" / name, "global-mission"
+        )
         _create_file(global_home / "templates" / name, "global")
         _create_file(pkg_root / mission / "templates" / name, "package")
 
         with (
-            patch("specify_cli.runtime.resolver.get_kittify_home", return_value=global_home),
-            patch("specify_cli.runtime.resolver.get_package_asset_root", return_value=pkg_root),
+            patch(
+                "specify_cli.runtime.resolver.get_kittify_home",
+                return_value=global_home,
+            ),
+            patch(
+                "specify_cli.runtime.resolver.get_package_asset_root",
+                return_value=pkg_root,
+            ),
         ):
             result = resolve_template(name, project, mission=mission)
 
@@ -423,13 +441,21 @@ class TestFullResolutionChainOrder:
 
         # Tiers 2-5 (no override)
         legacy_path = _create_file(kittify / "templates" / name, "legacy")
-        _create_file(global_home / "missions" / mission / "templates" / name, "global-mission")
+        _create_file(
+            global_home / "missions" / mission / "templates" / name, "global-mission"
+        )
         _create_file(global_home / "templates" / name, "global")
         _create_file(pkg_root / mission / "templates" / name, "package")
 
         with (
-            patch("specify_cli.runtime.resolver.get_kittify_home", return_value=global_home),
-            patch("specify_cli.runtime.resolver.get_package_asset_root", return_value=pkg_root),
+            patch(
+                "specify_cli.runtime.resolver.get_kittify_home",
+                return_value=global_home,
+            ),
+            patch(
+                "specify_cli.runtime.resolver.get_package_asset_root",
+                return_value=pkg_root,
+            ),
             warnings.catch_warnings(record=True),
         ):
             warnings.simplefilter("always")
@@ -455,8 +481,14 @@ class TestFullResolutionChainOrder:
         _create_file(pkg_root / mission / "templates" / name, "package")
 
         with (
-            patch("specify_cli.runtime.resolver.get_kittify_home", return_value=global_home),
-            patch("specify_cli.runtime.resolver.get_package_asset_root", return_value=pkg_root),
+            patch(
+                "specify_cli.runtime.resolver.get_kittify_home",
+                return_value=global_home,
+            ),
+            patch(
+                "specify_cli.runtime.resolver.get_package_asset_root",
+                return_value=pkg_root,
+            ),
         ):
             result = resolve_template(name, project, mission=mission)
 
@@ -477,8 +509,14 @@ class TestFullResolutionChainOrder:
         _create_file(pkg_root / mission / "templates" / name, "package")
 
         with (
-            patch("specify_cli.runtime.resolver.get_kittify_home", return_value=global_home),
-            patch("specify_cli.runtime.resolver.get_package_asset_root", return_value=pkg_root),
+            patch(
+                "specify_cli.runtime.resolver.get_kittify_home",
+                return_value=global_home,
+            ),
+            patch(
+                "specify_cli.runtime.resolver.get_package_asset_root",
+                return_value=pkg_root,
+            ),
         ):
             result = resolve_template(name, project, mission=mission)
 
@@ -500,7 +538,10 @@ class TestFullResolutionChainOrder:
                 "specify_cli.runtime.resolver.get_kittify_home",
                 return_value=tmp_path / "empty_home",
             ),
-            patch("specify_cli.runtime.resolver.get_package_asset_root", return_value=pkg_root),
+            patch(
+                "specify_cli.runtime.resolver.get_package_asset_root",
+                return_value=pkg_root,
+            ),
         ):
             result = resolve_template(name, project, mission=mission)
 
@@ -525,7 +566,11 @@ class TestProjectResolverGlobalPaths:
 
         global_home = tmp_path / "global_home"
         expected = _create_file(
-            global_home / "missions" / "software-dev" / "templates" / "spec-template.md",
+            global_home
+            / "missions"
+            / "software-dev"
+            / "templates"
+            / "spec-template.md",
             "from global mission",
         )
 
@@ -564,13 +609,22 @@ class TestProjectResolverGlobalPaths:
 
         project = tmp_path / "project"
         expected = _create_file(
-            project / ".kittify" / "missions" / "software-dev" / "templates" / "spec-template.md",
+            project
+            / ".kittify"
+            / "missions"
+            / "software-dev"
+            / "templates"
+            / "spec-template.md",
             "from project mission",
         )
 
         global_home = tmp_path / "global_home"
         _create_file(
-            global_home / "missions" / "software-dev" / "templates" / "spec-template.md",
+            global_home
+            / "missions"
+            / "software-dev"
+            / "templates"
+            / "spec-template.md",
             "from global mission",
         )
 
@@ -611,7 +665,11 @@ class TestProjectResolverGlobalPaths:
 
         global_home = tmp_path / "global_home"
         expected = _create_file(
-            global_home / "missions" / "software-dev" / "templates" / "spec-template.md",
+            global_home
+            / "missions"
+            / "software-dev"
+            / "templates"
+            / "spec-template.md",
             "from global mission",
         )
         _create_file(
@@ -651,12 +709,23 @@ class TestMigrateIdempotency:
         )
 
         with (
-            patch("specify_cli.runtime.home.get_kittify_home", return_value=global_home),
-            patch("specify_cli.runtime.bootstrap.get_kittify_home", return_value=global_home),
-            patch("specify_cli.runtime.bootstrap.get_package_asset_root", return_value=pkg_root),
-            patch("specify_cli.runtime.bootstrap._get_cli_version", return_value="99.0.0"),
+            patch(
+                "specify_cli.runtime.home.get_kittify_home", return_value=global_home
+            ),
+            patch(
+                "specify_cli.runtime.bootstrap.get_kittify_home",
+                return_value=global_home,
+            ),
+            patch(
+                "specify_cli.runtime.bootstrap.get_package_asset_root",
+                return_value=pkg_root,
+            ),
+            patch(
+                "specify_cli.runtime.bootstrap._get_cli_version", return_value="99.0.0"
+            ),
         ):
             from specify_cli.runtime.bootstrap import ensure_runtime
+
             ensure_runtime()
 
         assert (global_home / "cache" / "version.lock").exists()
@@ -676,12 +745,23 @@ class TestMigrateIdempotency:
         )
 
         with (
-            patch("specify_cli.runtime.home.get_kittify_home", return_value=global_home),
-            patch("specify_cli.runtime.bootstrap.get_kittify_home", return_value=global_home),
-            patch("specify_cli.runtime.bootstrap.get_package_asset_root", return_value=pkg_root),
-            patch("specify_cli.runtime.bootstrap._get_cli_version", return_value="99.0.0"),
+            patch(
+                "specify_cli.runtime.home.get_kittify_home", return_value=global_home
+            ),
+            patch(
+                "specify_cli.runtime.bootstrap.get_kittify_home",
+                return_value=global_home,
+            ),
+            patch(
+                "specify_cli.runtime.bootstrap.get_package_asset_root",
+                return_value=pkg_root,
+            ),
+            patch(
+                "specify_cli.runtime.bootstrap._get_cli_version", return_value="99.0.0"
+            ),
         ):
             from specify_cli.runtime.bootstrap import ensure_runtime
+
             ensure_runtime()
 
             # Capture state after first run
@@ -710,7 +790,11 @@ class TestMigrateIdempotency:
         # Set up global runtime as if ensure_runtime ran
         _create_file(global_home / "cache" / "version.lock", "99.0.0")
         _create_file(
-            global_home / "missions" / "software-dev" / "templates" / "spec-template.md",
+            global_home
+            / "missions"
+            / "software-dev"
+            / "templates"
+            / "spec-template.md",
             "global content",
         )
         monkeypatch.setenv("SPEC_KITTY_HOME", str(global_home))
@@ -721,7 +805,9 @@ class TestMigrateIdempotency:
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            result = resolve_template("spec-template.md", project, mission="software-dev")
+            result = resolve_template(
+                "spec-template.md", project, mission="software-dev"
+            )
 
         assert result.tier == ResolutionTier.GLOBAL_MISSION
         deprecation_warnings = [

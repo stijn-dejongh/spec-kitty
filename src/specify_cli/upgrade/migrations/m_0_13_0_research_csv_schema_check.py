@@ -63,12 +63,16 @@ class ResearchCSVSchemaCheckMigration(BaseMigration):
                 source_register = feature_dir / "research" / "source-register.csv"
 
                 if evidence_log.exists():
-                    result = validate_csv_schema(evidence_log, EVIDENCE_REQUIRED_COLUMNS)
+                    result = validate_csv_schema(
+                        evidence_log, EVIDENCE_REQUIRED_COLUMNS
+                    )
                     if not result.schema_valid:
                         return True
 
                 if source_register.exists():
-                    result = validate_csv_schema(source_register, SOURCE_REGISTER_REQUIRED_COLUMNS)
+                    result = validate_csv_schema(
+                        source_register, SOURCE_REGISTER_REQUIRED_COLUMNS
+                    )
                     if not result.schema_valid:
                         return True
 
@@ -97,7 +101,9 @@ class ResearchCSVSchemaCheckMigration(BaseMigration):
                 warnings=warnings,
             )
 
-        mismatches: list[tuple[str, str, str, str]] = []  # (feature, csv_name, expected, actual)
+        mismatches: list[
+            tuple[str, str, str, str]
+        ] = []  # (feature, csv_name, expected, actual)
 
         # Scan all features
         for feature_dir in kitty_specs.iterdir():
@@ -134,7 +140,9 @@ class ResearchCSVSchemaCheckMigration(BaseMigration):
             # Validate source-register.csv
             source_register = feature_dir / "research" / "source-register.csv"
             if source_register.exists():
-                result = validate_csv_schema(source_register, SOURCE_REGISTER_REQUIRED_COLUMNS)
+                result = validate_csv_schema(
+                    source_register, SOURCE_REGISTER_REQUIRED_COLUMNS
+                )
                 if not result.schema_valid:
                     mismatches.append(
                         (
@@ -187,7 +195,9 @@ class ResearchCSVSchemaCheckMigration(BaseMigration):
             for line in report_lines:
                 print(line)
 
-            changes.append(f"Detected {len(mismatches)} schema mismatch(es) - see report above")
+            changes.append(
+                f"Detected {len(mismatches)} schema mismatch(es) - see report above"
+            )
         else:
             changes.append("All research CSV schemas are correct ✅")
 

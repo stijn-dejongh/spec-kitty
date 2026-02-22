@@ -58,9 +58,14 @@ class TestCheckServerConnectionExpiredToken:
         assert "spec-kitty auth login" in note
 
     @patch("httpx.Client")
-    @patch("specify_cli.sync.auth.AuthClient.get_access_token", return_value="refreshed-access-token")
+    @patch(
+        "specify_cli.sync.auth.AuthClient.get_access_token",
+        return_value="refreshed-access-token",
+    )
     @patch("specify_cli.sync.auth.CredentialStore.exists", return_value=True)
-    def test_expired_token_refresh_succeeds(self, mock_exists, mock_get_token, MockClient):
+    def test_expired_token_refresh_succeeds(
+        self, mock_exists, mock_get_token, MockClient
+    ):
         """When access token expired but refresh succeeds, probe with new token."""
         MockClient.return_value = _mock_httpx_client(status_code=200)
 
@@ -91,7 +96,10 @@ class TestCheckServerConnectionValidToken:
     """Test behavior when a valid access token is available."""
 
     @patch("httpx.Client")
-    @patch("specify_cli.sync.auth.AuthClient.get_access_token", return_value="valid-access-token")
+    @patch(
+        "specify_cli.sync.auth.AuthClient.get_access_token",
+        return_value="valid-access-token",
+    )
     @patch("specify_cli.sync.auth.CredentialStore.exists", return_value=True)
     def test_server_returns_200(self, mock_exists, mock_get_token, MockClient):
         """When server returns 200, report connected and auth valid."""
@@ -109,7 +117,9 @@ class TestCheckServerConnectionValidToken:
         assert "Bearer valid-access-token" == auth_header
 
     @patch("httpx.Client")
-    @patch("specify_cli.sync.auth.AuthClient.get_access_token", return_value="stale-token")
+    @patch(
+        "specify_cli.sync.auth.AuthClient.get_access_token", return_value="stale-token"
+    )
     @patch("specify_cli.sync.auth.CredentialStore.exists", return_value=True)
     def test_server_returns_401(self, mock_exists, mock_get_token, MockClient):
         """When server returns 401, report authentication failed."""
@@ -121,7 +131,9 @@ class TestCheckServerConnectionValidToken:
         assert "spec-kitty auth login" in note
 
     @patch("httpx.Client")
-    @patch("specify_cli.sync.auth.AuthClient.get_access_token", return_value="valid-token")
+    @patch(
+        "specify_cli.sync.auth.AuthClient.get_access_token", return_value="valid-token"
+    )
     @patch("specify_cli.sync.auth.CredentialStore.exists", return_value=True)
     def test_server_returns_403(self, mock_exists, mock_get_token, MockClient):
         """When server returns 403, report permission denied."""
@@ -133,9 +145,13 @@ class TestCheckServerConnectionValidToken:
         assert "team membership" in note
 
     @patch("httpx.Client")
-    @patch("specify_cli.sync.auth.AuthClient.get_access_token", return_value="valid-token")
+    @patch(
+        "specify_cli.sync.auth.AuthClient.get_access_token", return_value="valid-token"
+    )
     @patch("specify_cli.sync.auth.CredentialStore.exists", return_value=True)
-    def test_server_returns_unexpected_status(self, mock_exists, mock_get_token, MockClient):
+    def test_server_returns_unexpected_status(
+        self, mock_exists, mock_get_token, MockClient
+    ):
         """When server returns an unexpected status code, report it."""
         MockClient.return_value = _mock_httpx_client(status_code=500)
 
@@ -149,7 +165,9 @@ class TestCheckServerConnectionUnreachable:
     """Test behavior when server is unreachable."""
 
     @patch("httpx.Client")
-    @patch("specify_cli.sync.auth.AuthClient.get_access_token", return_value="valid-token")
+    @patch(
+        "specify_cli.sync.auth.AuthClient.get_access_token", return_value="valid-token"
+    )
     @patch("specify_cli.sync.auth.CredentialStore.exists", return_value=True)
     def test_connection_timeout(self, mock_exists, mock_get_token, MockClient):
         """When server times out, report unreachable."""
@@ -163,7 +181,9 @@ class TestCheckServerConnectionUnreachable:
         assert "queued for later sync" in note
 
     @patch("httpx.Client")
-    @patch("specify_cli.sync.auth.AuthClient.get_access_token", return_value="valid-token")
+    @patch(
+        "specify_cli.sync.auth.AuthClient.get_access_token", return_value="valid-token"
+    )
     @patch("specify_cli.sync.auth.CredentialStore.exists", return_value=True)
     def test_connection_refused(self, mock_exists, mock_get_token, MockClient):
         """When connection is refused, report unreachable."""
@@ -181,7 +201,10 @@ class TestCheckServerConnectionNoHardcodedTokens:
     """Regression tests: ensure no hardcoded test tokens remain."""
 
     @patch("httpx.Client")
-    @patch("specify_cli.sync.auth.AuthClient.get_access_token", return_value="real-user-jwt-token")
+    @patch(
+        "specify_cli.sync.auth.AuthClient.get_access_token",
+        return_value="real-user-jwt-token",
+    )
     @patch("specify_cli.sync.auth.CredentialStore.exists", return_value=True)
     def test_no_test_token_in_request(self, mock_exists, mock_get_token, MockClient):
         """Verify that the probe never sends a hardcoded 'test-token'."""
@@ -197,9 +220,13 @@ class TestCheckServerConnectionNoHardcodedTokens:
         assert "real-user-jwt-token" in auth_header
 
     @patch("httpx.Client")
-    @patch("specify_cli.sync.auth.AuthClient.get_access_token", return_value="valid-token")
+    @patch(
+        "specify_cli.sync.auth.AuthClient.get_access_token", return_value="valid-token"
+    )
     @patch("specify_cli.sync.auth.CredentialStore.exists", return_value=True)
-    def test_probes_batch_endpoint_not_websocket(self, mock_exists, mock_get_token, MockClient):
+    def test_probes_batch_endpoint_not_websocket(
+        self, mock_exists, mock_get_token, MockClient
+    ):
         """Verify probe hits the HTTP batch endpoint, not a WebSocket URL."""
         mock_client = _mock_httpx_client(status_code=200)
         MockClient.return_value = mock_client
@@ -207,7 +234,9 @@ class TestCheckServerConnectionNoHardcodedTokens:
         _check_server_connection(SERVER_URL)
 
         call_args = mock_client.post.call_args
-        probe_url = call_args.args[0] if call_args.args else call_args.kwargs.get("url", "")
+        probe_url = (
+            call_args.args[0] if call_args.args else call_args.kwargs.get("url", "")
+        )
         assert "api/v1/events/batch" in probe_url
         assert "wss://" not in probe_url
         assert "ws://" not in probe_url

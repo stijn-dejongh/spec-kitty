@@ -154,9 +154,7 @@ class GitMetadataResolver:
                 timeout=5,
             )
             branch = (
-                branch_result.stdout.strip()
-                if branch_result.returncode == 0
-                else None
+                branch_result.stdout.strip() if branch_result.returncode == 0 else None
             )
 
             # Get HEAD SHA
@@ -169,11 +167,7 @@ class GitMetadataResolver:
                 errors="replace",
                 timeout=5,
             )
-            sha = (
-                sha_result.stdout.strip()
-                if sha_result.returncode == 0
-                else None
-            )
+            sha = sha_result.stdout.strip() if sha_result.returncode == 0 else None
 
             return branch, sha
         except FileNotFoundError:

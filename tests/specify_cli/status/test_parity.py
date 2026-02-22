@@ -162,9 +162,9 @@ class TestBackportReadiness:
         """Scan all status module source for top-level sync imports."""
         import inspect
 
-        status_pkg_path = Path(inspect.getfile(
-            importlib.import_module("specify_cli.status")
-        )).parent
+        status_pkg_path = Path(
+            inspect.getfile(importlib.import_module("specify_cli.status"))
+        ).parent
 
         for py_file in sorted(status_pkg_path.glob("*.py")):
             content = py_file.read_text(encoding="utf-8")
@@ -613,9 +613,7 @@ class TestReducerDeterminism:
         ]
 
         fixed_time = "2026-02-08T15:00:00+00:00"
-        with patch(
-            "specify_cli.status.reducer._now_utc", return_value=fixed_time
-        ):
+        with patch("specify_cli.status.reducer._now_utc", return_value=fixed_time):
             snapshot = reduce(events)
 
         json_str = materialize_to_json(snapshot)
@@ -631,9 +629,7 @@ class TestReducerDeterminism:
     def test_empty_events_produce_stable_snapshot(self):
         """reduce([]) always produces the same structure."""
         fixed_time = "2026-02-08T15:00:00+00:00"
-        with patch(
-            "specify_cli.status.reducer._now_utc", return_value=fixed_time
-        ):
+        with patch("specify_cli.status.reducer._now_utc", return_value=fixed_time):
             snap_a = reduce([])
             snap_b = reduce([])
 
@@ -843,9 +839,7 @@ class TestFullEventLogParity:
         events = self._build_realistic_event_log()
 
         fixed_time = "2026-02-08T18:00:00+00:00"
-        with patch(
-            "specify_cli.status.reducer._now_utc", return_value=fixed_time
-        ):
+        with patch("specify_cli.status.reducer._now_utc", return_value=fixed_time):
             snap_a = reduce(events)
             snap_b = reduce(events)
 
@@ -859,9 +853,7 @@ class TestFullEventLogParity:
         events = self._build_realistic_event_log()
 
         fixed_time = "2026-02-08T18:00:00+00:00"
-        with patch(
-            "specify_cli.status.reducer._now_utc", return_value=fixed_time
-        ):
+        with patch("specify_cli.status.reducer._now_utc", return_value=fixed_time):
             snap = reduce(events)
 
         json_1 = materialize_to_json(snap)

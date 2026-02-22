@@ -30,7 +30,11 @@ class DummyTracker(StepTracker):
 
 def test_check_tool_for_tracker_reports(monkeypatch):
     tracker = DummyTracker()
-    monkeypatch.setattr(tool_checker.shutil, "which", lambda cmd: "/usr/bin/fake" if cmd == "codex" else None)
+    monkeypatch.setattr(
+        tool_checker.shutil,
+        "which",
+        lambda cmd: "/usr/bin/fake" if cmd == "codex" else None,
+    )
 
     assert check_tool_for_tracker("codex", tracker) is True
     assert check_tool_for_tracker("missing", tracker) is False
@@ -58,6 +62,11 @@ def test_check_all_tools_accepts_custom_requirements(monkeypatch):
         "which",
         lambda cmd: "/usr/bin/python" if cmd == sys.executable else None,
     )
-    results = check_all_tools({"py": (sys.executable, "https://example.com"), "missing": ("nope", "https://example.com")})
+    results = check_all_tools(
+        {
+            "py": (sys.executable, "https://example.com"),
+            "missing": ("nope", "https://example.com"),
+        }
+    )
     assert results["py"][0] is True
     assert results["missing"][0] is False

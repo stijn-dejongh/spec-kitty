@@ -78,9 +78,9 @@ def normalize_entries(history: list[dict[str, Any]]) -> list[NormalizedHistoryEn
             continue
 
         lane = resolve_lane_alias(str(raw_lane).strip())
-        timestamp = str(entry.get("timestamp", "")) or datetime.now(
-            timezone.utc
-        ).isoformat()
+        timestamp = (
+            str(entry.get("timestamp", "")) or datetime.now(timezone.utc).isoformat()
+        )
         actor = str(entry.get("agent", "")) or "migration"
 
         entries.append(
@@ -191,7 +191,9 @@ def gap_fill(
     return result
 
 
-def extract_done_evidence(frontmatter: dict[str, Any], wp_id: str) -> DoneEvidence | None:
+def extract_done_evidence(
+    frontmatter: dict[str, Any], wp_id: str
+) -> DoneEvidence | None:
     """Build DoneEvidence from frontmatter review fields.
 
     Only produces evidence when review_status is "approved" AND

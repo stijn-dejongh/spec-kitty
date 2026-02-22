@@ -221,9 +221,7 @@ def save_baseline(
     logger.info(f"Baseline saved to {baseline_file}")
 
 
-def load_baseline(
-    feature_slug: str, repo_root: Path
-) -> Optional[BaselineSnapshot]:
+def load_baseline(feature_slug: str, repo_root: Path) -> Optional[BaselineSnapshot]:
     """Load baseline from JSON file.
 
     File location: {repo_root}/.kittify/dossiers/{feature_slug}/parity-baseline.json
@@ -235,7 +233,9 @@ def load_baseline(
     Returns:
         BaselineSnapshot if file exists and is valid, None otherwise.
     """
-    baseline_file = repo_root / ".kittify" / "dossiers" / feature_slug / "parity-baseline.json"
+    baseline_file = (
+        repo_root / ".kittify" / "dossiers" / feature_slug / "parity-baseline.json"
+    )
     if not baseline_file.exists():
         logger.debug(f"No baseline file found at {baseline_file}")
         return None
@@ -275,27 +275,15 @@ def accept_baseline(
         if loaded_baseline.baseline_key != current_key:
             # Detailed comparison to find which components differ
             diffs = []
-            if (
-                loaded_baseline.baseline_key.project_uuid
-                != current_key.project_uuid
-            ):
+            if loaded_baseline.baseline_key.project_uuid != current_key.project_uuid:
                 diffs.append("project_uuid")
             if loaded_baseline.baseline_key.node_id != current_key.node_id:
                 diffs.append("node_id")
-            if (
-                loaded_baseline.baseline_key.feature_slug
-                != current_key.feature_slug
-            ):
+            if loaded_baseline.baseline_key.feature_slug != current_key.feature_slug:
                 diffs.append("feature_slug")
-            if (
-                loaded_baseline.baseline_key.target_branch
-                != current_key.target_branch
-            ):
+            if loaded_baseline.baseline_key.target_branch != current_key.target_branch:
                 diffs.append("target_branch")
-            if (
-                loaded_baseline.baseline_key.mission_key
-                != current_key.mission_key
-            ):
+            if loaded_baseline.baseline_key.mission_key != current_key.mission_key:
                 diffs.append("mission_key")
             if (
                 loaded_baseline.baseline_key.manifest_version
@@ -375,10 +363,7 @@ def detect_drift(
 
     # Compute severity based on completeness status changes
     severity = "warning"
-    if (
-        current_snapshot.completeness_status
-        != "unknown"
-    ):
+    if current_snapshot.completeness_status != "unknown":
         # Check if completeness changed
         if stored_baseline.parity_hash_sha256 != current_snapshot.parity_hash_sha256:
             # Could check stored completeness, but we don't have it here

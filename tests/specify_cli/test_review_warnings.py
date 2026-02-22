@@ -13,10 +13,7 @@ from tests.branch_contract import IS_2X_BRANCH, LEGACY_0X_ONLY_REASON
 
 
 def create_wp_file(
-    path: Path,
-    wp_id: str,
-    dependencies: list[str],
-    lane: str = "planned"
+    path: Path, wp_id: str, dependencies: list[str], lane: str = "planned"
 ) -> None:
     """Create a test WP file with frontmatter.
 
@@ -43,9 +40,9 @@ def create_wp_file(
                 "timestamp": "2025-01-01T00:00:00Z",
                 "lane": lane,
                 "agent": "test",
-                "action": "Test"
+                "action": "Test",
             }
-        ]
+        ],
     }
 
     body = f"# Test WP: {wp_id}\n\nTest content."
@@ -173,7 +170,9 @@ def test_in_progress_filter(tmp_path: Path) -> None:
     create_wp_file(tasks_dir / "WP01-base.md", "WP01", [], lane="for_review")
     create_wp_file(tasks_dir / "WP02-planned.md", "WP02", ["WP01"], lane="planned")
     create_wp_file(tasks_dir / "WP03-doing.md", "WP03", ["WP01"], lane="doing")
-    create_wp_file(tasks_dir / "WP04-for-review.md", "WP04", ["WP01"], lane="for_review")
+    create_wp_file(
+        tasks_dir / "WP04-for-review.md", "WP04", ["WP01"], lane="for_review"
+    )
     create_wp_file(tasks_dir / "WP05-done.md", "WP05", ["WP01"], lane="done")
 
     # Build dependency graph
@@ -185,15 +184,14 @@ def test_in_progress_filter(tmp_path: Path) -> None:
 
     # Only WP03 should trigger warnings (doing)
     # Planned/for_review/done are not in progress for warnings
-    in_progress = [
-        dep for dep in dependents
-        if dep == "WP03"
-    ]
+    in_progress = [dep for dep in dependents if dep == "WP03"]
     assert sorted(in_progress) == ["WP03"]
 
 
 @pytest.mark.skipif(IS_2X_BRANCH, reason=LEGACY_0X_ONLY_REASON)
-def test_workflow_review_warns_dependents(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_workflow_review_warns_dependents(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     """Review workflow should warn when dependents are in progress."""
     repo_root = tmp_path
     (repo_root / ".kittify").mkdir()

@@ -56,7 +56,9 @@ def _emit(envelope: dict) -> None:
     print(json.dumps(envelope))
 
 
-def _fail(command: str, error_code: str, message: str, data: dict | None = None) -> None:
+def _fail(
+    command: str, error_code: str, message: str, data: dict | None = None
+) -> None:
     """Print failure envelope and exit non-zero."""
     envelope = make_envelope(
         command=command,
@@ -187,7 +189,9 @@ def contract_version(
 
 @app.command(name="feature-state")
 def feature_state(
-    feature: str = typer.Option(..., "--feature", help="Feature slug (e.g. 034-my-feature)"),
+    feature: str = typer.Option(
+        ..., "--feature", help="Feature slug (e.g. 034-my-feature)"
+    ),
     json_output: bool = typer.Option(True, "--json/--no-json", help="Output as JSON"),
 ) -> None:
     """Return the full state of a feature (all WPs, lanes, dependencies)."""
@@ -218,7 +222,9 @@ def feature_state(
                 if wp_id is not None:
                     task_file_wp_ids.add(wp_id)
 
-    all_wp_ids = task_file_wp_ids | set(dep_graph.keys()) | set(snapshot.work_packages.keys())
+    all_wp_ids = (
+        task_file_wp_ids | set(dep_graph.keys()) | set(snapshot.work_packages.keys())
+    )
 
     work_packages = []
     for wp_id in sorted(all_wp_ids):
@@ -279,8 +285,7 @@ def list_ready(
 
         # Check all dependencies are done
         all_deps_done = all(
-            wp_states.get(dep, {}).get("lane") == "done"
-            for dep in deps
+            wp_states.get(dep, {}).get("lane") == "done" for dep in deps
         )
 
         recommended_base = deps[-1] if deps else None
@@ -316,7 +321,9 @@ def start_implementation(
     feature: str = typer.Option(..., "--feature", help="Feature slug"),
     wp: str = typer.Option(..., "--wp", help="Work package ID (e.g. WP01)"),
     actor: str = typer.Option(..., "--actor", help="Actor identity"),
-    policy: str = typer.Option(None, "--policy", help="Policy metadata JSON (required)"),
+    policy: str = typer.Option(
+        None, "--policy", help="Policy metadata JSON (required)"
+    ),
     json_output: bool = typer.Option(True, "--json/--no-json", help="Output as JSON"),
 ) -> None:
     """Composite transition: planned→claimed→in_progress (idempotent)."""
@@ -324,7 +331,11 @@ def start_implementation(
 
     # Policy required
     if not policy:
-        _fail(cmd, "POLICY_METADATA_REQUIRED", "--policy is required for start-implementation")
+        _fail(
+            cmd,
+            "POLICY_METADATA_REQUIRED",
+            "--policy is required for start-implementation",
+        )
         return
 
     try:
@@ -338,7 +349,9 @@ def start_implementation(
     main_repo_root = _get_main_repo_root()
     feature_dir = _resolve_feature_dir(main_repo_root, feature)
     if feature_dir is None:
-        _fail(cmd, "FEATURE_NOT_FOUND", f"Feature '{feature}' not found in kitty-specs/")
+        _fail(
+            cmd, "FEATURE_NOT_FOUND", f"Feature '{feature}' not found in kitty-specs/"
+        )
         return
 
     wp_path = _resolve_wp_file(feature_dir / "tasks", wp)
@@ -453,8 +466,12 @@ def start_review(
     feature: str = typer.Option(..., "--feature", help="Feature slug"),
     wp: str = typer.Option(..., "--wp", help="Work package ID"),
     actor: str = typer.Option(..., "--actor", help="Actor identity"),
-    policy: str = typer.Option(None, "--policy", help="Policy metadata JSON (required)"),
-    review_ref: str = typer.Option(None, "--review-ref", help="Review feedback reference (required)"),
+    policy: str = typer.Option(
+        None, "--policy", help="Policy metadata JSON (required)"
+    ),
+    review_ref: str = typer.Option(
+        None, "--review-ref", help="Review feedback reference (required)"
+    ),
     json_output: bool = typer.Option(True, "--json/--no-json", help="Output as JSON"),
 ) -> None:
     """Transition a WP from for_review back to in_progress (reviewer rollback)."""
@@ -465,7 +482,11 @@ def start_review(
         return
 
     if not review_ref:
-        _fail(cmd, "TRANSITION_REJECTED", "--review-ref is required for start-review (for_review→in_progress guard)")
+        _fail(
+            cmd,
+            "TRANSITION_REJECTED",
+            "--review-ref is required for start-review (for_review→in_progress guard)",
+        )
         return
 
     try:
@@ -479,7 +500,9 @@ def start_review(
     main_repo_root = _get_main_repo_root()
     feature_dir = _resolve_feature_dir(main_repo_root, feature)
     if feature_dir is None:
-        _fail(cmd, "FEATURE_NOT_FOUND", f"Feature '{feature}' not found in kitty-specs/")
+        _fail(
+            cmd, "FEATURE_NOT_FOUND", f"Feature '{feature}' not found in kitty-specs/"
+        )
         return
 
     wp_path = _resolve_wp_file(feature_dir / "tasks", wp)
@@ -536,7 +559,9 @@ def transition(
     to: str = typer.Option(..., "--to", help="Target lane"),
     actor: str = typer.Option(..., "--actor", help="Actor identity"),
     note: str = typer.Option(None, "--note", help="Reason/note for the transition"),
-    policy: str = typer.Option(None, "--policy", help="Policy metadata JSON (required for run-affecting lanes)"),
+    policy: str = typer.Option(
+        None, "--policy", help="Policy metadata JSON (required for run-affecting lanes)"
+    ),
     force: bool = typer.Option(False, "--force", help="Force the transition"),
     review_ref: str = typer.Option(None, "--review-ref", help="Review reference"),
     json_output: bool = typer.Option(True, "--json/--no-json", help="Output as JSON"),
@@ -576,7 +601,9 @@ def transition(
     main_repo_root = _get_main_repo_root()
     feature_dir = _resolve_feature_dir(main_repo_root, feature)
     if feature_dir is None:
-        _fail(cmd, "FEATURE_NOT_FOUND", f"Feature '{feature}' not found in kitty-specs/")
+        _fail(
+            cmd, "FEATURE_NOT_FOUND", f"Feature '{feature}' not found in kitty-specs/"
+        )
         return
 
     wp_path = _resolve_wp_file(feature_dir / "tasks", wp)
@@ -639,7 +666,9 @@ def append_history(
     main_repo_root = _get_main_repo_root()
     feature_dir = _resolve_feature_dir(main_repo_root, feature)
     if feature_dir is None:
-        _fail(cmd, "FEATURE_NOT_FOUND", f"Feature '{feature}' not found in kitty-specs/")
+        _fail(
+            cmd, "FEATURE_NOT_FOUND", f"Feature '{feature}' not found in kitty-specs/"
+        )
         return
 
     wp_path = _resolve_wp_file(feature_dir / "tasks", wp)
@@ -698,7 +727,9 @@ def accept_feature(
     main_repo_root = _get_main_repo_root()
     feature_dir = _resolve_feature_dir(main_repo_root, feature)
     if feature_dir is None:
-        _fail(cmd, "FEATURE_NOT_FOUND", f"Feature '{feature}' not found in kitty-specs/")
+        _fail(
+            cmd, "FEATURE_NOT_FOUND", f"Feature '{feature}' not found in kitty-specs/"
+        )
         return
 
     from specify_cli.status.reducer import materialize
@@ -759,7 +790,9 @@ def accept_feature(
 def merge_feature(
     feature: str = typer.Option(..., "--feature", help="Feature slug"),
     target: str = typer.Option("main", "--target", help="Target branch to merge into"),
-    strategy: str = typer.Option("merge", "--strategy", help="Merge strategy: merge, squash, or rebase"),
+    strategy: str = typer.Option(
+        "merge", "--strategy", help="Merge strategy: merge, squash, or rebase"
+    ),
     push: bool = typer.Option(False, "--push", help="Push target branch after merge"),
     json_output: bool = typer.Option(True, "--json/--no-json", help="Output as JSON"),
 ) -> None:
@@ -779,7 +812,9 @@ def merge_feature(
     main_repo_root = _get_main_repo_root()
     feature_dir = _resolve_feature_dir(main_repo_root, feature)
     if feature_dir is None:
-        _fail(cmd, "FEATURE_NOT_FOUND", f"Feature '{feature}' not found in kitty-specs/")
+        _fail(
+            cmd, "FEATURE_NOT_FOUND", f"Feature '{feature}' not found in kitty-specs/"
+        )
         return
 
     # Discover worktrees for this feature
@@ -789,7 +824,7 @@ def merge_feature(
         for wt_path in sorted(worktrees_root.iterdir()):
             if wt_path.name.startswith(f"{feature}-") and wt_path.is_dir():
                 # Extract WP ID from directory name: e.g. "034-feature-WP01" → "WP01"
-                suffix = wt_path.name[len(feature) + 1:]
+                suffix = wt_path.name[len(feature) + 1 :]
                 if suffix.startswith("WP"):
                     wp_id = suffix
                     branch_name = wt_path.name
@@ -827,15 +862,26 @@ def merge_feature(
             )
             if strategy == "squash":
                 subprocess.run(
-                    ["git", "-C", str(main_repo_root), "merge", "--squash", branch_name],
+                    [
+                        "git",
+                        "-C",
+                        str(main_repo_root),
+                        "merge",
+                        "--squash",
+                        branch_name,
+                    ],
                     check=True,
                     capture_output=True,
                 )
                 # squash leaves staged changes; commit them
                 subprocess.run(
                     [
-                        "git", "-C", str(main_repo_root), "commit",
-                        "-m", f"squash merge: {feature}/{wp_id} into {target}",
+                        "git",
+                        "-C",
+                        str(main_repo_root),
+                        "commit",
+                        "-m",
+                        f"squash merge: {feature}/{wp_id} into {target}",
                     ],
                     check=True,
                     capture_output=True,
@@ -858,7 +904,14 @@ def merge_feature(
                     capture_output=True,
                 )
                 subprocess.run(
-                    ["git", "-C", str(main_repo_root), "merge", "--ff-only", branch_name],
+                    [
+                        "git",
+                        "-C",
+                        str(main_repo_root),
+                        "merge",
+                        "--ff-only",
+                        branch_name,
+                    ],
                     check=True,
                     capture_output=True,
                 )
@@ -866,9 +919,14 @@ def merge_feature(
                 # Default: --no-ff merge
                 subprocess.run(
                     [
-                        "git", "-C", str(main_repo_root), "merge",
-                        "--no-ff", branch_name,
-                        "-m", f"merge: {feature}/{wp_id} into {target}",
+                        "git",
+                        "-C",
+                        str(main_repo_root),
+                        "merge",
+                        "--no-ff",
+                        branch_name,
+                        "-m",
+                        f"merge: {feature}/{wp_id} into {target}",
                     ],
                     check=True,
                     capture_output=True,

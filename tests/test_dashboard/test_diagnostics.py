@@ -81,12 +81,16 @@ def _configure_common_patches(monkeypatch, worktree_path: Path) -> None:
 
     # Create fake acceptance module for the corrected import path
     fake_acceptance = types.ModuleType("specify_cli.acceptance")
-    fake_acceptance.detect_feature_slug = lambda repo_root, cwd: "004-modular-code-refactoring"  # type: ignore[attr-defined]
+    fake_acceptance.detect_feature_slug = lambda repo_root, cwd: (
+        "004-modular-code-refactoring"
+    )  # type: ignore[attr-defined]
     fake_acceptance.AcceptanceError = _DummyAcceptanceError  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "specify_cli.acceptance", fake_acceptance)
 
 
-def test_run_diagnostics_reports_manifest_and_worktree_state(monkeypatch, tmp_path: Path) -> None:
+def test_run_diagnostics_reports_manifest_and_worktree_state(
+    monkeypatch, tmp_path: Path
+) -> None:
     project_dir = tmp_path / "project"
     project_dir.mkdir()
     (project_dir / ".kittify").mkdir()
@@ -95,11 +99,13 @@ def test_run_diagnostics_reports_manifest_and_worktree_state(monkeypatch, tmp_pa
 
     _configure_common_patches(monkeypatch, worktree_dir)
 
-    def fake_run(args, cwd=None, capture_output=False, text=False, check=False, **kwargs):  # noqa: D401 - pytest helper
+    def fake_run(
+        args, cwd=None, capture_output=False, text=False, check=False, **kwargs
+    ):  # noqa: D401 - pytest helper
         """Return the active branch name for diagnostics."""
-        assert args == ['git', 'branch', '--show-current']
+        assert args == ["git", "branch", "--show-current"]
         assert cwd == project_dir
-        return types.SimpleNamespace(stdout='feature/testing\n', returncode=0)
+        return types.SimpleNamespace(stdout="feature/testing\n", returncode=0)
 
     monkeypatch.setattr(diagnostics.subprocess, "run", fake_run)
 
@@ -124,7 +130,7 @@ def test_run_diagnostics_records_git_branch_errors(monkeypatch, tmp_path: Path) 
     _configure_common_patches(monkeypatch, worktree_dir)
 
     def failing_run(*_args, **_kwargs):
-        raise subprocess.CalledProcessError(1, ['git', 'branch', '--show-current'])
+        raise subprocess.CalledProcessError(1, ["git", "branch", "--show-current"])
 
     monkeypatch.setattr(diagnostics.subprocess, "run", failing_run)
 

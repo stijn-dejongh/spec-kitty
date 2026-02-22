@@ -172,7 +172,7 @@ def sanitize_file(
                 original_text = original_bytes.decode("utf-8", errors="replace")
 
         # Strip UTF-8 BOM if present in the text
-        original_text = original_text.lstrip('\ufeff')
+        original_text = original_text.lstrip("\ufeff")
 
         # Sanitize the text
         sanitized_text = sanitize_markdown_text(original_text)

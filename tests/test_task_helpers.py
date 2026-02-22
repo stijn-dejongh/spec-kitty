@@ -8,12 +8,12 @@ import task_helpers as th
 
 
 def test_set_scalar_inserts_and_updates() -> None:
-    original = "agent: \"system\"\n"
+    original = 'agent: "system"\n'
     updated = th.set_scalar(original, "lane", "planned")
-    assert "lane: \"planned\"" in updated
+    assert 'lane: "planned"' in updated
 
     replaced = th.set_scalar(updated, "lane", "doing")
-    assert "lane: \"doing\"" in replaced
+    assert 'lane: "doing"' in replaced
     assert replaced.count("lane:") == 1
 
 
@@ -31,7 +31,9 @@ def test_append_activity_log_creates_section() -> None:
     assert "## Activity Log" in body
     assert entry in body
 
-    second = th.append_activity_log(body, "- 2025-01-02T00:00:00Z – agent – shell_pid=2 – lane=doing – Moved")
+    second = th.append_activity_log(
+        body, "- 2025-01-02T00:00:00Z – agent – shell_pid=2 – lane=doing – Moved"
+    )
     assert second.count("Activity Log") == 1
     assert "lane=doing" in second
 

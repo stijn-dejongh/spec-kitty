@@ -141,7 +141,9 @@ def work_package_sort_key(task: Dict[str, Any]) -> tuple:
     if not work_id:
         return ((), "")
 
-    number_parts = [int(part.lstrip("0") or "0") for part in re.findall(r"\d+", work_id)]
+    number_parts = [
+        int(part.lstrip("0") or "0") for part in re.findall(r"\d+", work_id)
+    ]
     return (tuple(number_parts), work_id.lower())
 
 
@@ -185,7 +187,12 @@ def get_workflow_status(artifacts: Dict[str, Dict[str, any]]) -> Dict[str, str]:
 
     if not has_spec:
         workflow.update(
-            {"specify": "pending", "plan": "pending", "tasks": "pending", "implement": "pending"}
+            {
+                "specify": "pending",
+                "plan": "pending",
+                "tasks": "pending",
+                "implement": "pending",
+            }
         )
         return workflow
     workflow["specify"] = "complete"
@@ -279,7 +286,11 @@ def _count_wps_by_lane_frontmatter(tasks_dir: Path) -> Dict[str, int]:
             continue
 
         frontmatter, _, _ = parse_frontmatter(content)
-        lane = frontmatter.get("lane", "planned") if isinstance(frontmatter, dict) else "planned"
+        lane = (
+            frontmatter.get("lane", "planned")
+            if isinstance(frontmatter, dict)
+            else "planned"
+        )
         if lane in counts:
             counts[lane] += 1
 
@@ -292,7 +303,9 @@ def scan_all_features(project_dir: Path) -> List[Dict[str, Any]]:
     feature_paths = gather_feature_paths(project_dir)
 
     for feature_id, feature_dir in feature_paths.items():
-        if not (re.match(r"^\d+", feature_dir.name) or (feature_dir / "tasks").exists()):
+        if not (
+            re.match(r"^\d+", feature_dir.name) or (feature_dir / "tasks").exists()
+        ):
             continue
 
         friendly_name = feature_dir.name
@@ -310,7 +323,13 @@ def scan_all_features(project_dir: Path) -> List[Dict[str, Any]]:
         artifacts = get_feature_artifacts(feature_dir)
         workflow = get_workflow_status(artifacts)
 
-        kanban_stats = {"total": 0, "planned": 0, "doing": 0, "for_review": 0, "done": 0}
+        kanban_stats = {
+            "total": 0,
+            "planned": 0,
+            "doing": 0,
+            "for_review": 0,
+            "done": 0,
+        }
         if artifacts["kanban"]:
             tasks_dir = feature_dir / "tasks"
             use_legacy = is_legacy_format(feature_dir)
@@ -402,7 +421,9 @@ def _process_wp_file(
     }
 
 
-def scan_feature_kanban(project_dir: Path, feature_id: str) -> Dict[str, List[Dict[str, Any]]]:
+def scan_feature_kanban(
+    project_dir: Path, feature_id: str
+) -> Dict[str, List[Dict[str, Any]]]:
     """Scan kanban board for a specific feature.
 
     Supports both legacy (directory-based) and new (frontmatter-based) lane formats.
@@ -437,7 +458,9 @@ def scan_feature_kanban(project_dir: Path, feature_id: str) -> Dict[str, List[Di
                     if task_data is not None:
                         lanes[lane].append(task_data)
                 except Exception as exc:
-                    logger.error(f"Unexpected error processing {prompt_file.name}: {exc}")
+                    logger.error(
+                        f"Unexpected error processing {prompt_file.name}: {exc}"
+                    )
                     continue
 
             lanes[lane].sort(key=work_package_sort_key)

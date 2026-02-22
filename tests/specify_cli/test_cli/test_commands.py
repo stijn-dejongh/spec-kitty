@@ -59,7 +59,10 @@ def test_verify_setup_command_runs() -> None:
     # This is expected behavior - when not in a project, it shows helpful error
     result = runner.invoke(cli_app, ["verify-setup"])
     # Should show tool checking results even when not in a project
-    assert "Check Available Tools" in result.stdout or "Checking for installed tools" in result.stdout
+    assert (
+        "Check Available Tools" in result.stdout
+        or "Checking for installed tools" in result.stdout
+    )
 
 
 def test_specify_command_delegates_to_agent_lifecycle(monkeypatch) -> None:
@@ -70,7 +73,9 @@ def test_specify_command_delegates_to_agent_lifecycle(monkeypatch) -> None:
         captured["mission"] = mission
         captured["json_output"] = json_output
 
-    monkeypatch.setattr(lifecycle_module.agent_feature, "create_feature", fake_create_feature)
+    monkeypatch.setattr(
+        lifecycle_module.agent_feature, "create_feature", fake_create_feature
+    )
 
     result = runner.invoke(cli_app, ["specify", "My Great Feature"])
     assert result.exit_code == 0
@@ -90,7 +95,9 @@ def test_plan_and_tasks_delegate_to_agent_lifecycle(monkeypatch) -> None:
         captured["tasks_json"] = json_output
 
     monkeypatch.setattr(lifecycle_module.agent_feature, "setup_plan", fake_setup_plan)
-    monkeypatch.setattr(lifecycle_module.agent_feature, "finalize_tasks", fake_finalize_tasks)
+    monkeypatch.setattr(
+        lifecycle_module.agent_feature, "finalize_tasks", fake_finalize_tasks
+    )
 
     plan_result = runner.invoke(cli_app, ["plan", "--feature", "001-demo", "--json"])
     tasks_result = runner.invoke(cli_app, ["tasks", "--json"])
@@ -120,19 +127,29 @@ def test_dashboard_kill_stops_instance(monkeypatch, tmp_path: Path) -> None:
 
 def test_research_creates_artifacts(monkeypatch, tmp_path: Path) -> None:
     project_root = tmp_path / "project"
-    (project_root / ".kittify" / "missions" / "software-dev" / "templates").mkdir(parents=True)
+    (project_root / ".kittify" / "missions" / "software-dev" / "templates").mkdir(
+        parents=True
+    )
     feature_dir = project_root / "kitty-specs" / "001-demo-feature"
 
     monkeypatch.setattr(research_module, "find_repo_root", lambda: project_root)
-    monkeypatch.setattr(research_module, "get_feature_mission_key", lambda *_args, **_kwargs: "software-dev")
+    monkeypatch.setattr(
+        research_module,
+        "get_feature_mission_key",
+        lambda *_args, **_kwargs: "software-dev",
+    )
     monkeypatch.setattr(
         research_module,
         "resolve_worktree_aware_feature_dir",
         lambda *_args, **_kwargs: feature_dir,
     )
-    monkeypatch.setattr(research_module, "resolve_template_path", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        research_module, "resolve_template_path", lambda *_args, **_kwargs: None
+    )
 
-    result = runner.invoke(cli_app, ["research", "--feature", "001-demo-feature", "--force"])
+    result = runner.invoke(
+        cli_app, ["research", "--feature", "001-demo-feature", "--force"]
+    )
     assert result.exit_code == 0
 
     assert (feature_dir / "research.md").exists()
@@ -157,13 +174,25 @@ def test_accept_checklist_json_output(monkeypatch, tmp_path: Path) -> None:
             return {"feature": self.feature, "lanes": self.lanes}
 
     monkeypatch.setattr(accept_module, "find_repo_root", lambda: repo_root)
-    monkeypatch.setattr(accept_module, "detect_feature_slug", lambda _repo_root: "001-demo-feature")
+    monkeypatch.setattr(
+        accept_module, "detect_feature_slug", lambda _repo_root: "001-demo-feature"
+    )
     monkeypatch.setattr(accept_module, "choose_mode", lambda mode, _repo_root: mode)
-    monkeypatch.setattr(accept_module, "collect_feature_summary", lambda *args, **kwargs: DummySummary())
+    monkeypatch.setattr(
+        accept_module, "collect_feature_summary", lambda *args, **kwargs: DummySummary()
+    )
 
     result = runner.invoke(
         cli_app,
-        ["accept", "--mode", "checklist", "--json", "--feature", "001-demo-feature", "--allow-fail"],
+        [
+            "accept",
+            "--mode",
+            "checklist",
+            "--json",
+            "--feature",
+            "001-demo-feature",
+            "--allow-fail",
+        ],
     )
     assert result.exit_code == 0
     assert result.stdout.lstrip().startswith("{")
@@ -171,7 +200,9 @@ def test_accept_checklist_json_output(monkeypatch, tmp_path: Path) -> None:
     assert data["feature"] == "001-demo-feature"
 
 
-def test_accept_json_suppresses_fallback_announcement(monkeypatch, tmp_path: Path) -> None:
+def test_accept_json_suppresses_fallback_announcement(
+    monkeypatch, tmp_path: Path
+) -> None:
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
 
@@ -198,7 +229,9 @@ def test_accept_json_suppresses_fallback_announcement(monkeypatch, tmp_path: Pat
     monkeypatch.setattr(accept_module, "find_repo_root", lambda: repo_root)
     monkeypatch.setattr(accept_module, "detect_feature_slug", fake_detect)
     monkeypatch.setattr(accept_module, "choose_mode", lambda mode, _repo_root: mode)
-    monkeypatch.setattr(accept_module, "collect_feature_summary", lambda *args, **kwargs: DummySummary())
+    monkeypatch.setattr(
+        accept_module, "collect_feature_summary", lambda *args, **kwargs: DummySummary()
+    )
 
     result = runner.invoke(
         cli_app,
@@ -234,7 +267,9 @@ def test_merge_dry_run_outputs_steps(monkeypatch, tmp_path: Path) -> None:
     assert "git checkout main" in result.stdout
 
 
-def test_merge_skips_pull_when_target_has_no_tracking(monkeypatch, tmp_path: Path) -> None:
+def test_merge_skips_pull_when_target_has_no_tracking(
+    monkeypatch, tmp_path: Path
+) -> None:
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
     calls: list[list[str]] = []
@@ -255,12 +290,16 @@ def test_merge_skips_pull_when_target_has_no_tracking(monkeypatch, tmp_path: Pat
         if call[:2] == ["git", "branch"]:
             return 0, "", ""
         if call[:2] == ["git", "pull"]:
-            raise AssertionError("git pull should be skipped when no tracking branch exists")
+            raise AssertionError(
+                "git pull should be skipped when no tracking branch exists"
+            )
         return 0, "", ""
 
     monkeypatch.setattr(merge_module, "find_repo_root", lambda: repo_root)
     monkeypatch.setattr(merge_module, "run_command", fake_run_command)
-    monkeypatch.setattr(merge_module, "check_version_compatibility", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        merge_module, "check_version_compatibility", lambda *_args, **_kwargs: None
+    )
     monkeypatch.setattr(merge_module, "has_remote", lambda _repo: True)
     monkeypatch.setattr(merge_module, "has_tracking_branch", lambda _repo: False)
     monkeypatch.setattr(merge_module, "show_banner", lambda: None)
@@ -276,14 +315,18 @@ def test_verify_setup_json_output(monkeypatch, tmp_path: Path) -> None:
     repo_root.mkdir()
 
     monkeypatch.setattr(verify_module, "find_repo_root", lambda: repo_root)
-    monkeypatch.setattr(verify_module, "get_project_root_or_exit", lambda _repo=None: repo_root)
+    monkeypatch.setattr(
+        verify_module, "get_project_root_or_exit", lambda _repo=None: repo_root
+    )
 
     def fake_verify(*_args, **_kwargs):
         return {"status": "ok", "feature": "001-demo-feature"}
 
     monkeypatch.setattr(verify_module, "run_enhanced_verify", fake_verify)
 
-    result = runner.invoke(cli_app, ["verify-setup", "--json", "--feature", "001-demo-feature"])
+    result = runner.invoke(
+        cli_app, ["verify-setup", "--json", "--feature", "001-demo-feature"]
+    )
     assert result.exit_code == 0
     payload = _load_json_from_output(result.stdout)
     assert payload["status"] == "ok"

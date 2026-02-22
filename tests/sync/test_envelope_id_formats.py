@@ -23,7 +23,9 @@ def _make_full_event(
 ) -> dict:
     """Build a well-formed event dict for _validate_event testing."""
     event = {
-        "event_id": event_id if event_id is not None else emitter.generate_causation_id(),
+        "event_id": event_id
+        if event_id is not None
+        else emitter.generate_causation_id(),
         "event_type": "WPStatusChanged",
         "aggregate_id": "WP01",
         "aggregate_type": "WorkPackage",
@@ -65,9 +67,7 @@ class TestEventIdAcceptance:
     def test_uuid_bare_event_id_accepted_and_normalized(
         self, emitter: EventEmitter, temp_queue
     ):
-        event = _make_full_event(
-            emitter, event_id="550e8400e29b41d4a716446655440000"
-        )
+        event = _make_full_event(emitter, event_id="550e8400e29b41d4a716446655440000")
         assert emitter._validate_event(event) is True
 
     def test_uuid_bare_event_id_stored_as_hyphenated_lowercase(
@@ -78,7 +78,9 @@ class TestEventIdAcceptance:
         emitter._validate_event(event)
         assert event["event_id"] == "550e8400-e29b-41d4-a716-446655440000"
 
-    def test_lowercase_ulid_event_id_uppercased(self, emitter: EventEmitter, temp_queue):
+    def test_lowercase_ulid_event_id_uppercased(
+        self, emitter: EventEmitter, temp_queue
+    ):
         """Lowercase Crockford base32 ULID is normalized to uppercase."""
         lower_ulid = "01hxyz0123456789abcdefghjk"
         event = _make_full_event(emitter, event_id=lower_ulid)
@@ -114,9 +116,7 @@ class TestCausationIdAcceptance:
         )
         assert emitter._validate_event(event) is True
 
-    def test_uuid_bare_causation_id_normalized(
-        self, emitter: EventEmitter, temp_queue
-    ):
+    def test_uuid_bare_causation_id_normalized(self, emitter: EventEmitter, temp_queue):
         bare = "AABBCCDD11223344AABBCCDD11223344"
         event = _make_full_event(emitter, causation_id=bare)
         assert emitter._validate_event(event) is True
@@ -163,8 +163,13 @@ class TestEnvelopeIdRejection:
 
 
 class TestUuidEventsNotDropped:
-    @patch("specify_cli.sync.emitter._generate_ulid", return_value="550e8400-e29b-41d4-a716-446655440000")
-    def test_uuid_event_queued_not_dropped(self, _mock_ulid, emitter: EventEmitter, temp_queue):
+    @patch(
+        "specify_cli.sync.emitter._generate_ulid",
+        return_value="550e8400-e29b-41d4-a716-446655440000",
+    )
+    def test_uuid_event_queued_not_dropped(
+        self, _mock_ulid, emitter: EventEmitter, temp_queue
+    ):
         """UUID-format event_id events must reach the queue, not be silently dropped.
 
         Patches _generate_ulid to return a UUID, proving the full _emit path

@@ -217,7 +217,9 @@ def categorize_conflicts(
         # Unknown/invalid severities are bucketed as HIGH for safety.
         # This prevents KeyError and ensures unrecognised severities
         # never silently pass through as non-blocking.
-        bucket = conflict.severity if conflict.severity in categorized else Severity.HIGH
+        bucket = (
+            conflict.severity if conflict.severity in categorized else Severity.HIGH
+        )
         categorized[bucket].append(conflict)
 
     return categorized

@@ -31,21 +31,31 @@ def run_cli(project_path: Path, *args: str) -> subprocess.CompletedProcess:
 
     env = os.environ.copy()
     src_path = REPO_ROOT / "src"
-    env["PYTHONPATH"] = f"{src_path}{os.pathsep}{env.get('PYTHONPATH', '')}".rstrip(os.pathsep)
+    env["PYTHONPATH"] = f"{src_path}{os.pathsep}{env.get('PYTHONPATH', '')}".rstrip(
+        os.pathsep
+    )
     env.setdefault("SPEC_KITTY_TEMPLATE_ROOT", str(REPO_ROOT))
     command = [str(get_venv_python()), "-m", "specify_cli.__init__", *args]
-    return subprocess.run(command, cwd=str(project_path), capture_output=True, text=True, env=env)
+    return subprocess.run(
+        command, cwd=str(project_path), capture_output=True, text=True, env=env
+    )
 
 
-def create_feature_with_target(repo: Path, feature_slug: str, target_branch: str) -> Path:
+def create_feature_with_target(
+    repo: Path, feature_slug: str, target_branch: str
+) -> Path:
     """Create minimal feature for testing."""
     import yaml
 
     # Create .kittify
     kittify = repo / ".kittify"
     kittify.mkdir(exist_ok=True)
-    (kittify / "config.yaml").write_text(yaml.dump({"vcs": {"type": "git"}, "agents": {"available": ["claude"]}}))
-    (kittify / "metadata.yaml").write_text(yaml.dump({"spec_kitty": {"version": "0.13.8"}}))
+    (kittify / "config.yaml").write_text(
+        yaml.dump({"vcs": {"type": "git"}, "agents": {"available": ["claude"]}})
+    )
+    (kittify / "metadata.yaml").write_text(
+        yaml.dump({"spec_kitty": {"version": "0.13.8"}})
+    )
 
     # Create feature
     feature_dir = repo / "kitty-specs" / feature_slug
@@ -63,17 +73,17 @@ def create_feature_with_target(repo: Path, feature_slug: str, target_branch: str
 
     # Create WP01
     (tasks_dir / "WP01-test.md").write_text(
-        "---\n"
-        "work_package_id: WP01\n"
-        "lane: planned\n"
-        "dependencies: []\n"
-        "---\n\n"
-        "# WP01\n"
+        "---\nwork_package_id: WP01\nlane: planned\ndependencies: []\n---\n\n# WP01\n"
     )
 
     # Commit
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", f"Add {feature_slug}"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", f"Add {feature_slug}"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
 
     return feature_dir
 
@@ -91,14 +101,28 @@ def test_auto_create_target_branch_on_first_implement(tmp_path):
     repo.mkdir()
 
     # Initialize git
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
 
     # Initial commit
     (repo / "README.md").write_text("# Test\n")
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True
+    )
 
     # Create feature targeting non-existent 3.x branch
     feature_dir = create_feature_with_target(repo, "002-test-feature", "3.x")
@@ -108,7 +132,7 @@ def test_auto_create_target_branch_on_first_implement(tmp_path):
         ["git", "rev-parse", "--verify", "3.x"],
         cwd=repo,
         capture_output=True,
-        check=False
+        check=False,
     )
     assert result.returncode != 0, "3.x should not exist before implement"
 
@@ -121,7 +145,7 @@ def test_auto_create_target_branch_on_first_implement(tmp_path):
         ["git", "rev-parse", "--verify", "3.x"],
         cwd=repo,
         capture_output=True,
-        check=False
+        check=False,
     )
     assert result_after.returncode == 0, "3.x should exist after implement"
 
@@ -160,13 +184,27 @@ def test_subsequent_implement_uses_existing_target(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
 
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
 
     (repo / "README.md").write_text("# Test\n")
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True
+    )
 
     feature_dir = create_feature_with_target(repo, "002-test", "3.x")
 
@@ -174,8 +212,12 @@ def test_subsequent_implement_uses_existing_target(tmp_path):
     (feature_dir / "tasks/WP02-test.md").write_text(
         "---\nwork_package_id: WP02\nlane: planned\ndependencies: []\n---\n\n# WP02\n"
     )
-    subprocess.run(["git", "add", str(feature_dir)], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "Add WP02"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", str(feature_dir)], cwd=repo, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "commit", "-m", "Add WP02"], cwd=repo, check=True, capture_output=True
+    )
 
     # Implement WP01 (creates 3.x)
     result1 = run_cli(repo, "implement", "WP01")
@@ -218,13 +260,27 @@ def test_auto_create_message_shown(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
 
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
 
     (repo / "README.md").write_text("# Test\n")
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True
+    )
 
     create_feature_with_target(repo, "002-test", "3.x")
 
@@ -233,11 +289,15 @@ def test_auto_create_message_shown(tmp_path):
     assert result.returncode == 0
 
     # Check output mentions branch creation
-    assert "Creating target branch" in result.stdout or "Created target branch" in result.stdout, \
-        "Should announce target branch creation"
+    assert (
+        "Creating target branch" in result.stdout
+        or "Created target branch" in result.stdout
+    ), "Should announce target branch creation"
 
 
-@pytest.mark.xfail(reason="Known issue: Status commits don't route to auto-created branch immediately (fallback to main works)")
+@pytest.mark.xfail(
+    reason="Known issue: Status commits don't route to auto-created branch immediately (fallback to main works)"
+)
 def test_status_commits_route_to_auto_created_branch(tmp_path):
     """Test that status commits route to auto-created target branch.
 
@@ -249,13 +309,27 @@ def test_status_commits_route_to_auto_created_branch(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
 
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
 
     (repo / "README.md").write_text("# Test\n")
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True
+    )
 
     feature_dir = create_feature_with_target(repo, "002-test", "3.x")
 
@@ -271,11 +345,15 @@ def test_status_commits_route_to_auto_created_branch(tmp_path):
         text=True,
         check=True,
     )
-    assert "Add 002-test" in log_3x_before_status.stdout, "3.x should have planning commits"
+    assert "Add 002-test" in log_3x_before_status.stdout, (
+        "3.x should have planning commits"
+    )
 
     # Move to doing (status commit should route to 3.x)
     result_move = run_cli(repo, "agent", "tasks", "move-task", "WP01", "--to", "doing")
-    assert result_move.returncode == 0, f"move-task failed: {result_move.stderr}\n{result_move.stdout}"
+    assert result_move.returncode == 0, (
+        f"move-task failed: {result_move.stderr}\n{result_move.stdout}"
+    )
 
     # Verify status commit on 3.x (not main)
     log_3x = subprocess.run(
@@ -286,7 +364,9 @@ def test_status_commits_route_to_auto_created_branch(tmp_path):
         check=True,
     )
 
-    assert "Move WP01 to doing" in log_3x.stdout, f"Status commit should be on 3.x. Log:\n{log_3x.stdout}"
+    assert "Move WP01 to doing" in log_3x.stdout, (
+        f"Status commit should be on 3.x. Log:\n{log_3x.stdout}"
+    )
 
     # Verify main doesn't have status commit (before we sync)
     log_main = subprocess.run(
@@ -328,13 +408,27 @@ def test_main_as_target_doesnt_recreate(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
 
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
 
     (repo / "README.md").write_text("# Test\n")
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True
+    )
 
     # Create feature targeting "main" (normal case)
     create_feature_with_target(repo, "001-test", "main")
@@ -366,4 +460,6 @@ def test_main_as_target_doesnt_recreate(tmp_path):
     # Should be same (or advanced by status commit, but not recreated)
     # The key is that git branch main shouldn't have been attempted
     assert "fatal" not in result.stdout.lower(), "Should not try to create main"
-    assert "already exists" not in result.stdout.lower(), "Should not try to create main"
+    assert "already exists" not in result.stdout.lower(), (
+        "Should not try to create main"
+    )

@@ -38,7 +38,9 @@ def test_create_feature_in_main_no_worktree(test_project: Path, run_cli) -> None
 
     # Verify NO worktree was created
     worktree_dir = test_project / ".worktrees" / "001-test-planning-workflow"
-    assert not worktree_dir.exists(), "Worktree should NOT be created during feature creation"
+    assert not worktree_dir.exists(), (
+        "Worktree should NOT be created during feature creation"
+    )
 
     # Verify spec.md was committed to main
     log_result = subprocess.run(
@@ -70,8 +72,7 @@ def test_setup_plan_in_main(test_project: Path, run_cli) -> None:
     plan_template_dir.mkdir(parents=True, exist_ok=True)
     plan_template = plan_template_dir / "plan-template.md"
     plan_template.write_text(
-        "# Implementation Plan\n\nThis is a test plan template.\n",
-        encoding="utf-8"
+        "# Implementation Plan\n\nThis is a test plan template.\n", encoding="utf-8"
     )
 
     # Run setup-plan command
@@ -100,7 +101,9 @@ def test_setup_plan_in_main(test_project: Path, run_cli) -> None:
     assert "plan" in log_result.stdout.lower(), "plan.md should be committed to main"
 
 
-def test_setup_plan_explicit_feature_reports_spec_path(test_project: Path, run_cli) -> None:
+def test_setup_plan_explicit_feature_reports_spec_path(
+    test_project: Path, run_cli
+) -> None:
     """setup-plan with explicit --feature returns deterministic context fields."""
     import json
 
@@ -142,7 +145,9 @@ def test_setup_plan_explicit_feature_reports_spec_path(test_project: Path, run_c
     assert payload["plan_file"] == str(feature_dir / "plan.md")
 
 
-def test_setup_plan_ambiguous_context_returns_candidates(test_project: Path, run_cli) -> None:
+def test_setup_plan_ambiguous_context_returns_candidates(
+    test_project: Path, run_cli
+) -> None:
     """setup-plan without explicit context returns candidate features and remediation."""
     import json
 
@@ -171,15 +176,21 @@ def test_setup_plan_ambiguous_context_returns_candidates(test_project: Path, run
         "--json",
     )
 
-    assert result.returncode != 0, "setup-plan should fail without explicit feature in ambiguous context"
+    assert result.returncode != 0, (
+        "setup-plan should fail without explicit feature in ambiguous context"
+    )
     payload = json.loads(result.stdout.strip().split("\n")[0])
     assert payload["error_code"] == "PLAN_CONTEXT_UNRESOLVED"
     assert len(payload["candidate_features"]) >= 2
-    assert all(entry["spec_file"].startswith("/") for entry in payload["candidate_features"])
+    assert all(
+        entry["spec_file"].startswith("/") for entry in payload["candidate_features"]
+    )
     assert any("--feature" in command for command in payload["suggested_commands"])
 
 
-def test_setup_plan_missing_spec_reports_absolute_path(test_project: Path, run_cli) -> None:
+def test_setup_plan_missing_spec_reports_absolute_path(
+    test_project: Path, run_cli
+) -> None:
     """setup-plan should fail when spec.md is missing for an explicit feature."""
     import json
 
@@ -219,8 +230,7 @@ def test_full_planning_workflow_no_worktrees(test_project: Path, run_cli) -> Non
     plan_template_dir = test_project / ".kittify" / "templates"
     plan_template_dir.mkdir(parents=True, exist_ok=True)
     (plan_template_dir / "plan-template.md").write_text(
-        "# Plan Template\n",
-        encoding="utf-8"
+        "# Plan Template\n", encoding="utf-8"
     )
 
     # Step 1: Create feature (specify phase)
@@ -254,7 +264,8 @@ def test_full_planning_workflow_no_worktrees(test_project: Path, run_cli) -> Non
 
     # Create tasks.md with dependencies
     tasks_md = feature_dir / "tasks.md"
-    tasks_md.write_text("""# Work Packages
+    tasks_md.write_text(
+        """# Work Packages
 
 ## Work Package WP01: Foundation
 **Dependencies**: None
@@ -270,7 +281,9 @@ def test_full_planning_workflow_no_worktrees(test_project: Path, run_cli) -> Non
 
 ### Included Subtasks
 - T003 Build REST endpoints
-""", encoding="utf-8")
+""",
+        encoding="utf-8",
+    )
 
     # Create WP files WITHOUT dependencies (simulate LLM before finalize-tasks)
     wp01_content = """---
@@ -349,7 +362,9 @@ Test work package content.
     if worktrees_dir.exists():
         # Directory might exist but should be empty
         worktree_contents = list(worktrees_dir.iterdir())
-        assert len(worktree_contents) == 0, "No worktrees should be created during planning"
+        assert len(worktree_contents) == 0, (
+            "No worktrees should be created during planning"
+        )
 
     # Verify: All artifacts committed to main branch
     log_result = subprocess.run(
@@ -384,7 +399,9 @@ Test work package content.
         check=True,
     )
     default_branch = branch_result.stdout.strip()
-    assert default_branch in ("main", "master"), f"Should still be on default branch, got: {default_branch}"
+    assert default_branch in ("main", "master"), (
+        f"Should still be on default branch, got: {default_branch}"
+    )
 
 
 def test_check_prerequisites_works_in_main(test_project: Path, run_cli) -> None:
@@ -412,6 +429,7 @@ def test_check_prerequisites_works_in_main(test_project: Path, run_cli) -> None:
 
     # Should find the latest feature and validate its structure
     import json
+
     output = json.loads(result.stdout)
     assert output["valid"] is True, "Feature structure should be valid"
     assert "spec_file" in output["paths"], "Should detect spec.md"
@@ -450,11 +468,15 @@ def test_check_prerequisites_ambiguous_context_returns_candidates(
         "--include-tasks",
     )
 
-    assert result.returncode != 0, "Ambiguous feature context should fail without --feature"
+    assert result.returncode != 0, (
+        "Ambiguous feature context should fail without --feature"
+    )
     payload = json.loads(result.stdout.strip().split("\n")[0])
     assert payload["error_code"] == "FEATURE_CONTEXT_UNRESOLVED"
     assert len(payload["candidate_features"]) >= 2
-    assert all(entry["spec_file"].startswith("/") for entry in payload["candidate_features"])
+    assert all(
+        entry["spec_file"].startswith("/") for entry in payload["candidate_features"]
+    )
     assert any("--feature" in command for command in payload["suggested_commands"])
 
 
@@ -489,12 +511,19 @@ def test_finalize_tasks_ambiguous_context_returns_candidates(
         "--json",
     )
 
-    assert result.returncode != 0, "Ambiguous feature context should fail without --feature"
+    assert result.returncode != 0, (
+        "Ambiguous feature context should fail without --feature"
+    )
     payload = json.loads(result.stdout.strip().split("\n")[0])
     assert payload["error_code"] == "FEATURE_CONTEXT_UNRESOLVED"
     assert len(payload["candidate_features"]) >= 2
-    assert all(entry["spec_file"].startswith("/") for entry in payload["candidate_features"])
-    assert any("finalize-tasks --feature" in command for command in payload["suggested_commands"])
+    assert all(
+        entry["spec_file"].startswith("/") for entry in payload["candidate_features"]
+    )
+    assert any(
+        "finalize-tasks --feature" in command
+        for command in payload["suggested_commands"]
+    )
 
 
 @pytest.mark.skipif(IS_2X_BRANCH, reason=LEGACY_0X_ONLY_REASON)
@@ -519,5 +548,6 @@ def test_feature_creation_requires_main_branch(test_project: Path, run_cli) -> N
     )
 
     assert result.returncode != 0, "create-feature should fail when not on main branch"
-    assert "main" in result.stdout.lower() or "main" in result.stderr.lower(), \
+    assert "main" in result.stdout.lower() or "main" in result.stderr.lower(), (
         "Error message should mention main branch requirement"
+    )

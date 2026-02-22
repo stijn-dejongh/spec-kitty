@@ -62,14 +62,16 @@ class CompleteLaneMigration(BaseMigration):
     # System files to ignore when determining if a directory is empty
     # These files are created automatically by operating systems and should not
     # prevent lane directory cleanup
-    IGNORE_FILES = frozenset({
-        ".gitkeep",      # Git placeholder
-        ".DS_Store",     # macOS Finder metadata
-        "Thumbs.db",     # Windows thumbnail cache
-        "desktop.ini",   # Windows folder settings
-        ".directory",    # KDE folder settings
-        "._*",           # macOS resource fork prefix (pattern)
-    })
+    IGNORE_FILES = frozenset(
+        {
+            ".gitkeep",  # Git placeholder
+            ".DS_Store",  # macOS Finder metadata
+            "Thumbs.db",  # Windows thumbnail cache
+            "desktop.ini",  # Windows folder settings
+            ".directory",  # KDE folder settings
+            "._*",  # macOS resource fork prefix (pattern)
+        }
+    )
 
     @classmethod
     def _should_ignore_file(cls, filename: str) -> bool:
@@ -130,7 +132,9 @@ class CompleteLaneMigration(BaseMigration):
                 wt_specs = worktree / "kitty-specs"
                 if wt_specs.exists():
                     for feature_dir in wt_specs.iterdir():
-                        if feature_dir.is_dir() and self._has_remaining_lane_dirs(feature_dir):
+                        if feature_dir.is_dir() and self._has_remaining_lane_dirs(
+                            feature_dir
+                        ):
                             return True
 
                 # Part 2: Check for agent command directories in worktree
@@ -185,9 +189,13 @@ class CompleteLaneMigration(BaseMigration):
             total_dirs_removed = 0
 
             for feature_dir, location_label in features_found:
-                feature_changes, feature_warnings, feature_errors, migrated, dirs_removed = (
-                    self._migrate_remaining_files(feature_dir, location_label, dry_run)
-                )
+                (
+                    feature_changes,
+                    feature_warnings,
+                    feature_errors,
+                    migrated,
+                    dirs_removed,
+                ) = self._migrate_remaining_files(feature_dir, location_label, dry_run)
                 changes.extend(feature_changes)
                 warnings.extend(feature_warnings)
                 errors.extend(feature_errors)
@@ -208,14 +216,18 @@ class CompleteLaneMigration(BaseMigration):
         # Part 2: Clean up worktrees
         changes.append("")
         changes.append("=== Part 2: Worktree Cleanup ===")
-        worktree_changes, worktree_errors = self._cleanup_worktrees(project_path, dry_run)
+        worktree_changes, worktree_errors = self._cleanup_worktrees(
+            project_path, dry_run
+        )
         changes.extend(worktree_changes)
         errors.extend(worktree_errors)
 
         # Part 3: Normalize frontmatter
         changes.append("")
         changes.append("=== Part 3: Normalize Frontmatter ===")
-        fm_changes, fm_warnings, fm_errors = self._normalize_all_frontmatter(project_path, dry_run)
+        fm_changes, fm_warnings, fm_errors = self._normalize_all_frontmatter(
+            project_path, dry_run
+        )
         changes.extend(fm_changes)
         warnings.extend(fm_warnings)
         errors.extend(fm_errors)
@@ -247,8 +259,12 @@ class CompleteLaneMigration(BaseMigration):
                     wt_specs = worktree / "kitty-specs"
                     if wt_specs.exists():
                         for feature_dir in sorted(wt_specs.iterdir()):
-                            if feature_dir.is_dir() and self._has_remaining_lane_dirs(feature_dir):
-                                features.append((feature_dir, f"worktree:{worktree.name}"))
+                            if feature_dir.is_dir() and self._has_remaining_lane_dirs(
+                                feature_dir
+                            ):
+                                features.append(
+                                    (feature_dir, f"worktree:{worktree.name}")
+                                )
 
         return features
 
@@ -293,12 +309,16 @@ class CompleteLaneMigration(BaseMigration):
 
                     try:
                         if dry_run:
-                            changes.append(f"  Would move: {lane}/{item.name} → tasks/{item.name}")
+                            changes.append(
+                                f"  Would move: {lane}/{item.name} → tasks/{item.name}"
+                            )
                         else:
                             # For .md files, ensure lane in frontmatter
                             if item.suffix == ".md":
                                 content = item.read_text(encoding="utf-8-sig")
-                                updated_content = self._ensure_lane_in_frontmatter(content, lane)
+                                updated_content = self._ensure_lane_in_frontmatter(
+                                    content, lane
+                                )
                                 target.write_text(updated_content, encoding="utf-8")
                             else:
                                 # For non-.md files, just copy
@@ -307,7 +327,9 @@ class CompleteLaneMigration(BaseMigration):
                             # Remove original
                             item.unlink()
 
-                            changes.append(f"  Moved: {lane}/{item.name} → tasks/{item.name}")
+                            changes.append(
+                                f"  Moved: {lane}/{item.name} → tasks/{item.name}"
+                            )
 
                         migrated += 1
 
@@ -364,10 +386,10 @@ class CompleteLaneMigration(BaseMigration):
             return f'---\nlane: "{expected_lane}"\n---\n{content}'
 
         frontmatter_lines = lines[1:closing_idx]
-        body_lines = lines[closing_idx + 1:]
+        body_lines = lines[closing_idx + 1 :]
 
         # Check if lane field exists
-        lane_pattern = re.compile(r'^lane:\s*(.*)$')
+        lane_pattern = re.compile(r"^lane:\s*(.*)$")
         lane_found = False
         updated_lines = []
 
@@ -375,7 +397,7 @@ class CompleteLaneMigration(BaseMigration):
             match = lane_pattern.match(line)
             if match:
                 lane_found = True
-                current_value = match.group(1).strip().strip('"\'')
+                current_value = match.group(1).strip().strip("\"'")
                 if current_value != expected_lane:
                     # Replace with expected lane from directory
                     updated_lines.append(f'lane: "{expected_lane}"')
@@ -397,7 +419,9 @@ class CompleteLaneMigration(BaseMigration):
         result_lines = ["---"] + updated_lines + ["---"] + body_lines
         return "\n".join(result_lines)
 
-    def _cleanup_worktrees(self, project_path: Path, dry_run: bool) -> Tuple[List[str], List[str]]:
+    def _cleanup_worktrees(
+        self, project_path: Path, dry_run: bool
+    ) -> Tuple[List[str], List[str]]:
         """Clean up agent command directories and scripts from all worktrees."""
         changes: List[str] = []
         errors: List[str] = []
@@ -543,45 +567,63 @@ class CompleteLaneMigration(BaseMigration):
                     # Just check if it would change
                     try:
                         from specify_cli.frontmatter import FrontmatterManager
+
                         manager = FrontmatterManager()
                         original = md_file.read_text(encoding="utf-8-sig")
                         frontmatter, body = manager.read(md_file)
 
                         # Write to temp buffer
                         import io
+
                         buffer = io.StringIO()
                         buffer.write("---\n")
-                        manager.yaml.dump(manager._normalize_frontmatter(frontmatter), buffer)
+                        manager.yaml.dump(
+                            manager._normalize_frontmatter(frontmatter), buffer
+                        )
                         buffer.write("---\n")
                         buffer.write(body)
                         new_content = buffer.getvalue()
 
                         if original != new_content:
-                            changes.append(f"Would normalize: {md_file.relative_to(project_path)}")
+                            changes.append(
+                                f"Would normalize: {md_file.relative_to(project_path)}"
+                            )
                             normalized_count += 1
                         else:
                             skipped_count += 1
                     except FrontmatterError:
-                        warnings.append(f"Skip (no frontmatter): {md_file.relative_to(project_path)}")
+                        warnings.append(
+                            f"Skip (no frontmatter): {md_file.relative_to(project_path)}"
+                        )
                         skipped_count += 1
                 else:
                     # Actually normalize
                     if normalize_file(md_file):
-                        changes.append(f"Normalized: {md_file.relative_to(project_path)}")
+                        changes.append(
+                            f"Normalized: {md_file.relative_to(project_path)}"
+                        )
                         normalized_count += 1
                     else:
                         skipped_count += 1
 
             except FrontmatterError as e:
-                warnings.append(f"Skip (error): {md_file.relative_to(project_path)}: {e}")
+                warnings.append(
+                    f"Skip (error): {md_file.relative_to(project_path)}: {e}"
+                )
                 skipped_count += 1
             except Exception as e:
-                errors.append(f"Failed to normalize {md_file.relative_to(project_path)}: {e}")
+                errors.append(
+                    f"Failed to normalize {md_file.relative_to(project_path)}: {e}"
+                )
 
         if dry_run:
-            changes.append(f"Would normalize {normalized_count} files, skip {skipped_count}")
+            changes.append(
+                f"Would normalize {normalized_count} files, skip {skipped_count}"
+            )
         else:
-            changes.append(f"Normalized {normalized_count} files, skipped {skipped_count}")
+            changes.append(
+                f"Normalized {normalized_count} files, skipped {skipped_count}"
+            )
 
         return changes, warnings, errors
 

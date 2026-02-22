@@ -10,7 +10,10 @@ import tempfile
 from pathlib import Path
 
 from specify_cli.constitution.context import build_constitution_context
-from specify_cli.constitution.resolver import GovernanceResolutionError, resolve_governance
+from specify_cli.constitution.resolver import (
+    GovernanceResolutionError,
+    resolve_governance,
+)
 from specify_cli.runtime.resolver import resolve_command
 
 
@@ -34,11 +37,17 @@ def build_prompt(
     rules, WP content, and completion instructions.
     """
     if action in ("implement", "review") and wp_id:
-        prompt_text = _build_wp_prompt(action, feature_dir, feature_slug, wp_id, agent, repo_root, mission_key)
+        prompt_text = _build_wp_prompt(
+            action, feature_dir, feature_slug, wp_id, agent, repo_root, mission_key
+        )
     else:
-        prompt_text = _build_template_prompt(action, feature_dir, feature_slug, agent, repo_root, mission_key)
+        prompt_text = _build_template_prompt(
+            action, feature_dir, feature_slug, agent, repo_root, mission_key
+        )
 
-    prompt_file = _write_to_temp(action, wp_id, prompt_text, agent=agent, feature_slug=feature_slug)
+    prompt_file = _write_to_temp(
+        action, wp_id, prompt_text, agent=agent, feature_slug=feature_slug
+    )
     return prompt_text, prompt_file
 
 
@@ -73,12 +82,17 @@ def build_decision_prompt(
         lines.append("")
 
     lines.append("To answer:")
-    lines.append(f'  spec-kitty next --agent {agent} --feature {feature_slug} --answer "<your answer>" --decision-id "{decision_id}"')
+    lines.append(
+        f'  spec-kitty next --agent {agent} --feature {feature_slug} --answer "<your answer>" --decision-id "{decision_id}"'
+    )
 
     prompt_text = "\n".join(lines)
     prompt_file = _write_to_temp(
-        "decision", None, prompt_text,
-        agent=agent, feature_slug=feature_slug,
+        "decision",
+        None,
+        prompt_text,
+        agent=agent,
+        feature_slug=feature_slug,
     )
     return prompt_text, prompt_file
 
@@ -133,7 +147,9 @@ def _build_wp_prompt(
     lines.append("=" * 78)
     lines.append(f"  CRITICAL: WORK PACKAGE ISOLATION RULES")
     lines.append("=" * 78)
-    lines.append(f"  YOU ARE {'IMPLEMENTING' if action == 'implement' else 'REVIEWING'}: {wp_id}")
+    lines.append(
+        f"  YOU ARE {'IMPLEMENTING' if action == 'implement' else 'REVIEWING'}: {wp_id}"
+    )
     lines.append("")
     lines.append("  DO:")
     lines.append(f"    - Only modify status of {wp_id}")
@@ -171,10 +187,16 @@ def _build_wp_prompt(
     # Completion instructions
     lines.append("WHEN DONE:")
     if action == "implement":
-        lines.append(f"  spec-kitty agent tasks move-task {wp_id} --to for_review --note \"Ready for review\"")
+        lines.append(
+            f'  spec-kitty agent tasks move-task {wp_id} --to for_review --note "Ready for review"'
+        )
     else:
-        lines.append(f"  APPROVE: spec-kitty agent tasks move-task {wp_id} --to done --note \"Review passed\"")
-        lines.append(f"  REJECT:  spec-kitty agent tasks move-task {wp_id} --to planned --note \"Changes requested\"")
+        lines.append(
+            f'  APPROVE: spec-kitty agent tasks move-task {wp_id} --to done --note "Review passed"'
+        )
+        lines.append(
+            f'  REJECT:  spec-kitty agent tasks move-task {wp_id} --to planned --note "Changes requested"'
+        )
 
     return "\n".join(lines)
 
@@ -199,7 +221,9 @@ def _governance_context(repo_root: Path, action: str | None = None) -> str:
     """
     if action:
         try:
-            context = build_constitution_context(repo_root, action=action, mark_loaded=True)
+            context = build_constitution_context(
+                repo_root, action=action, mark_loaded=True
+            )
             if context.mode != "missing":
                 return context.text
         except Exception:

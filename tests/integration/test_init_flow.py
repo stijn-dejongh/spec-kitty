@@ -14,6 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src" / "specify_cli"))
 
 import gitignore_manager
+
 GitignoreManager = gitignore_manager.GitignoreManager
 
 
@@ -29,7 +30,9 @@ def test_init_flow_fresh_project():
         # Verify success
         assert result.success, "Init flow should succeed"
         assert result.modified, "Should create new .gitignore"
-        assert len(result.entries_added) == 14, "Should add all 12 agents + 2 runtime paths"
+        assert len(result.entries_added) == 14, (
+            "Should add all 12 agents + 2 runtime paths"
+        )
 
         # Verify file exists and has correct content
         gitignore_path = project_path / ".gitignore"
@@ -67,7 +70,9 @@ dist/
         # Verify success
         assert result.success, "Init flow should succeed"
         assert result.modified, "Should modify existing .gitignore"
-        assert len(result.entries_added) == 14, "Should add all 12 agents + 2 runtime paths"
+        assert len(result.entries_added) == 14, (
+            "Should add all 12 agents + 2 runtime paths"
+        )
 
         # Verify existing content is preserved
         content = gitignore_path.read_text()
@@ -209,9 +214,18 @@ npm-debug.log*
 
         # All agents should be present
         all_agents = [
-            ".claude/", ".codex/", ".opencode/", ".windsurf/",
-            ".gemini/", ".cursor/", ".qwen/", ".kilocode/",
-            ".augment/", ".roo/", ".amazonq/", ".github/copilot/"
+            ".claude/",
+            ".codex/",
+            ".opencode/",
+            ".windsurf/",
+            ".gemini/",
+            ".cursor/",
+            ".qwen/",
+            ".kilocode/",
+            ".augment/",
+            ".roo/",
+            ".amazonq/",
+            ".github/copilot/",
         ]
         for agent in all_agents:
             assert agent in content

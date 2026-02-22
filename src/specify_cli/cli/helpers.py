@@ -95,9 +95,15 @@ def show_banner() -> None:
 
 def callback(ctx: typer.Context) -> None:
     """Display the banner when CLI is invoked without a subcommand."""
-    if ctx.invoked_subcommand is None and "--help" not in sys.argv and "-h" not in sys.argv:
+    if (
+        ctx.invoked_subcommand is None
+        and "--help" not in sys.argv
+        and "-h" not in sys.argv
+    ):
         show_banner()
-        console.print(Align.center("[dim]Run 'spec-kitty --help' for usage information[/dim]"))
+        console.print(
+            Align.center("[dim]Run 'spec-kitty --help' for usage information[/dim]")
+        )
         console.print()
 
 
@@ -105,9 +111,15 @@ def get_project_root_or_exit(start: Path | None = None) -> Path:
     """Return the project root or exit when .kittify cannot be located."""
     project_root = locate_project_root(start)
     if project_root is None:
-        console.print("[red]Error:[/red] Unable to locate the Spec Kitty project root (.kittify directory not found).")
-        console.print("[dim]Run this command from the project root or from a feature worktree under .worktrees/<feature>/.[/dim]")
-        console.print("[dim]Tip: Initialize a project with 'spec-kitty init <name>' if one does not exist.[/dim]")
+        console.print(
+            "[red]Error:[/red] Unable to locate the Spec Kitty project root (.kittify directory not found)."
+        )
+        console.print(
+            "[dim]Run this command from the project root or from a feature worktree under .worktrees/<feature>/.[/dim]"
+        )
+        console.print(
+            "[dim]Tip: Initialize a project with 'spec-kitty init <name>' if one does not exist.[/dim]"
+        )
         raise typer.Exit(1)
     return project_root
 
@@ -139,7 +151,9 @@ def check_version_compatibility(project_root: Path, command_name: str) -> None:
 
     # Handle missing metadata (legacy project)
     if project_version is None:
-        console.print("[yellow]Warning:[/yellow] Project metadata not found (.kittify/metadata.yaml)")
+        console.print(
+            "[yellow]Warning:[/yellow] Project metadata not found (.kittify/metadata.yaml)"
+        )
         console.print("[yellow]Please run:[/yellow] spec-kitty upgrade")
         console.print()
         return  # Warn but don't block
@@ -149,7 +163,9 @@ def check_version_compatibility(project_root: Path, command_name: str) -> None:
     # Handle version mismatches
     if mismatch_type != "match":
         if mismatch_type == "unknown":
-            console.print("[yellow]Warning:[/yellow] Unable to determine version compatibility")
+            console.print(
+                "[yellow]Warning:[/yellow] Unable to determine version compatibility"
+            )
             console.print(f"  CLI version: {cli_version}")
             console.print(f"  Project version: {project_version}")
             console.print()
@@ -162,4 +178,11 @@ def check_version_compatibility(project_root: Path, command_name: str) -> None:
         raise typer.Exit(1)
 
 
-__all__ = ["BannerGroup", "callback", "check_version_compatibility", "console", "get_project_root_or_exit", "show_banner"]
+__all__ = [
+    "BannerGroup",
+    "callback",
+    "check_version_compatibility",
+    "console",
+    "get_project_root_or_exit",
+    "show_banner",
+]

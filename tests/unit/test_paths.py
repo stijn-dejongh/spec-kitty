@@ -15,7 +15,9 @@ from specify_cli.core.paths import (
 )
 
 
-def test_locate_project_root_from_main(mock_main_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_locate_project_root_from_main(
+    mock_main_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test path resolution from main repository."""
     # Change to main repo directory
     monkeypatch.chdir(mock_main_repo)
@@ -28,7 +30,9 @@ def test_locate_project_root_from_main(mock_main_repo: Path, monkeypatch: pytest
     assert (repo_root / ".kittify").exists()
 
 
-def test_locate_project_root_from_worktree(mock_worktree: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+def test_locate_project_root_from_worktree(
+    mock_worktree: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test path resolution from worktree directory."""
     # Change to worktree directory
     monkeypatch.chdir(mock_worktree["worktree_path"])
@@ -41,7 +45,9 @@ def test_locate_project_root_from_worktree(mock_worktree: dict[str, Path], monke
     assert (repo_root / ".kittify").exists()
 
 
-def test_locate_project_root_with_env_var(mock_main_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_locate_project_root_with_env_var(
+    mock_main_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test path resolution using SPECIFY_REPO_ROOT environment variable."""
     # Set environment variable
     monkeypatch.setenv("SPECIFY_REPO_ROOT", str(mock_main_repo))
@@ -58,7 +64,9 @@ def test_locate_project_root_with_env_var(mock_main_repo: Path, monkeypatch: pyt
     assert repo_root == mock_main_repo
 
 
-def test_locate_project_root_from_nested_dir(mock_main_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_locate_project_root_from_nested_dir(
+    mock_main_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test path resolution from deeply nested directory."""
     # Create nested directory structure
     nested = mock_main_repo / "kitty-specs" / "001-feature" / "deep" / "nested"
@@ -84,7 +92,9 @@ def test_is_worktree_context(mock_worktree: dict[str, Path]) -> None:
     assert is_worktree_context(mock_worktree["feature_dir"]) is True
 
 
-def test_resolve_with_context_main_repo(mock_main_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_resolve_with_context_main_repo(
+    mock_main_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test combined resolution from main repo."""
     monkeypatch.chdir(mock_main_repo)
 
@@ -94,7 +104,9 @@ def test_resolve_with_context_main_repo(mock_main_repo: Path, monkeypatch: pytes
     assert in_worktree is False
 
 
-def test_resolve_with_context_worktree(mock_worktree: dict[str, Path], monkeypatch: pytest.MonkeyPatch) -> None:
+def test_resolve_with_context_worktree(
+    mock_worktree: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test combined resolution from worktree."""
     monkeypatch.chdir(mock_worktree["worktree_path"])
 
@@ -132,7 +144,9 @@ def test_broken_symlink_handling(tmp_path: Path) -> None:
     assert check_broken_symlink(regular_file) is False
 
 
-def test_locate_project_root_no_marker(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_locate_project_root_no_marker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test path resolution when no .kittify marker exists."""
     # Create directory without .kittify
     no_marker = tmp_path / "no-marker-dir"
@@ -146,7 +160,9 @@ def test_locate_project_root_no_marker(tmp_path: Path, monkeypatch: pytest.Monke
     assert repo_root is None
 
 
-def test_locate_project_root_with_broken_symlink_kittify(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_locate_project_root_with_broken_symlink_kittify(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test path resolution gracefully handles broken .kittify symlink."""
     # Create directory with broken .kittify symlink
     test_dir = tmp_path / "test-dir"

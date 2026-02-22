@@ -45,7 +45,8 @@ def test_no_orphaned_detect_feature_slug_functions(repo_root: Path):
         lines = result.stdout.strip().split("\n")
         # Filter out the centralized implementation, test files, and backward-compatible wrappers
         orphaned = [
-            line for line in lines
+            line
+            for line in lines
             if "core/feature_detection.py" not in line
             and "test_" not in line
             and "acceptance.py" not in line  # Backward-compatible wrapper
@@ -60,7 +61,10 @@ def test_no_orphaned_detect_feature_slug_functions(repo_root: Path):
                 content = full_path.read_text()
 
                 # If function calls centralized detection, it's OK (wrapper)
-                if "centralized_detect_feature_slug" not in content and "detect_feature(" not in content:
+                if (
+                    "centralized_detect_feature_slug" not in content
+                    and "detect_feature(" not in content
+                ):
                     pytest.fail(
                         f"Found orphaned detect_feature_slug() function that doesn't delegate:\n{line}"
                     )
@@ -70,7 +74,13 @@ def test_no_orphaned_find_feature_slug_functions(repo_root: Path):
     """Verify no find_feature_slug() from core.paths usages remain."""
     # Search for imports of find_feature_slug from paths module
     result = subprocess.run(
-        ["grep", "-r", "from.*paths.*import.*find_feature_slug", "src/specify_cli/", "--include=*.py"],
+        [
+            "grep",
+            "-r",
+            "from.*paths.*import.*find_feature_slug",
+            "src/specify_cli/",
+            "--include=*.py",
+        ],
         cwd=repo_root,
         capture_output=True,
         text=True,
@@ -80,7 +90,8 @@ def test_no_orphaned_find_feature_slug_functions(repo_root: Path):
         lines = result.stdout.strip().split("\n")
         if lines and lines[0]:  # Not empty
             pytest.fail(
-                f"Found imports of find_feature_slug from paths (should be removed):\n" + "\n".join(lines)
+                f"Found imports of find_feature_slug from paths (should be removed):\n"
+                + "\n".join(lines)
             )
 
     # Also check for direct calls to paths.find_feature_slug
@@ -103,7 +114,13 @@ def test_no_orphaned_find_feature_directory_functions(repo_root: Path):
     """Verify no orphaned _find_feature_directory() functions remain (except updated ones)."""
     # Search for function definitions
     result = subprocess.run(
-        ["grep", "-r", "def _find_feature_directory", "src/specify_cli/", "--include=*.py"],
+        [
+            "grep",
+            "-r",
+            "def _find_feature_directory",
+            "src/specify_cli/",
+            "--include=*.py",
+        ],
         cwd=repo_root,
         capture_output=True,
         text=True,
@@ -204,7 +221,9 @@ def test_centralized_imports_used(repo_root: Path):
 
         if uses_feature_detection:
             # Should import from centralized module
-            has_centralized_import = "from specify_cli.core.feature_detection import" in content
+            has_centralized_import = (
+                "from specify_cli.core.feature_detection import" in content
+            )
 
             if not has_centralized_import:
                 # Check if it's just passing through without needing detection
@@ -226,18 +245,24 @@ def test_centralized_imports_used(repo_root: Path):
 def test_error_messages_mention_feature_flag(repo_root: Path):
     """Verify error messages in commands guide users to --feature flag."""
     # The centralized module should have error messages mentioning --feature
-    detection_module = repo_root / "src" / "specify_cli" / "core" / "feature_detection.py"
+    detection_module = (
+        repo_root / "src" / "specify_cli" / "core" / "feature_detection.py"
+    )
     content = detection_module.read_text()
 
     # Check for helpful error messages
     assert "--feature" in content, "Error messages should mention --feature flag"
-    assert "SPECIFY_FEATURE" in content, "Error messages should mention SPECIFY_FEATURE env var"
+    assert "SPECIFY_FEATURE" in content, (
+        "Error messages should mention SPECIFY_FEATURE env var"
+    )
     assert "Multiple features found" in content, "Should handle multiple features case"
 
 
 def test_error_messages_list_available_features(repo_root: Path):
     """Verify error messages list available features when multiple exist."""
-    detection_module = repo_root / "src" / "specify_cli" / "core" / "feature_detection.py"
+    detection_module = (
+        repo_root / "src" / "specify_cli" / "core" / "feature_detection.py"
+    )
     content = detection_module.read_text()
 
     # Should list available features in error
@@ -265,7 +290,9 @@ def test_acceptance_module_backward_compatible(repo_root: Path):
 
 def test_implement_module_backward_compatible(repo_root: Path):
     """Verify implement.py maintains backward compatible API."""
-    implement_file = repo_root / "src" / "specify_cli" / "cli" / "commands" / "implement.py"
+    implement_file = (
+        repo_root / "src" / "specify_cli" / "cli" / "commands" / "implement.py"
+    )
     content = implement_file.read_text()
 
     # Should still export detect_feature_context function
@@ -299,11 +326,13 @@ def test_agent_commands_accept_feature_parameter(repo_root: Path):
         content = full_path.read_text()
 
         # Look for command definitions
-        commands = re.findall(r'@app\.command\([^)]*\)\s+def\s+(\w+)\(', content, re.MULTILINE)
+        commands = re.findall(
+            r"@app\.command\([^)]*\)\s+def\s+(\w+)\(", content, re.MULTILINE
+        )
 
         for cmd in commands:
             # Find the function signature
-            func_pattern = rf'def {cmd}\([^)]*\):'
+            func_pattern = rf"def {cmd}\([^)]*\):"
             match = re.search(func_pattern, content)
 
             if not match:
@@ -311,26 +340,26 @@ def test_agent_commands_accept_feature_parameter(repo_root: Path):
 
             # Get the function signature (next ~10 lines)
             start = match.start()
-            signature_text = content[start:start + 500]
+            signature_text = content[start : start + 500]
 
             # Check if feature parameter exists
             # (Some commands may not need it, but most should have it)
             has_feature_param = (
-                'feature:' in signature_text
+                "feature:" in signature_text
                 or '"--feature"' in signature_text
                 or "'--feature'" in signature_text
             )
 
             # If command uses _find_feature_slug, it should have --feature parameter
-            if f'_find_feature_slug(' in content and not has_feature_param:
+            if f"_find_feature_slug(" in content and not has_feature_param:
                 # Get just the function body
                 func_start = match.end()
-                func_end = content.find('\ndef ', func_start)
+                func_end = content.find("\ndef ", func_start)
                 if func_end == -1:
                     func_end = len(content)
                 func_body = content[func_start:func_end]
 
-                if '_find_feature_slug(' in func_body:
+                if "_find_feature_slug(" in func_body:
                     pytest.fail(
                         f"{file_path}::{cmd}() calls _find_feature_slug() but doesn't have --feature parameter"
                     )
@@ -343,28 +372,32 @@ def test_agent_commands_accept_feature_parameter(repo_root: Path):
 
 def test_all_feature_detection_paths_tested(repo_root: Path):
     """Verify the test suite covers all detection paths."""
-    test_file = repo_root / "tests" / "specify_cli" / "core" / "test_feature_detection.py"
+    test_file = (
+        repo_root / "tests" / "specify_cli" / "core" / "test_feature_detection.py"
+    )
     content = test_file.read_text()
 
     # Check for tests covering each detection method
     detection_methods = [
         "explicit",  # Explicit parameter
-        "env",       # Environment variable
+        "env",  # Environment variable
         "git_branch",  # Git branch
-        "cwd",       # Current directory
+        "cwd",  # Current directory
         "single_auto",  # Single feature auto-detect
     ]
 
     for method in detection_methods:
         # Look for test functions that cover this method
-        test_pattern = rf'def test.*{method}'
+        test_pattern = rf"def test.*{method}"
         if not re.search(test_pattern, content, re.IGNORECASE):
             pytest.fail(f"No test found for detection method: {method}")
 
 
 def test_error_scenarios_covered(repo_root: Path):
     """Verify error scenarios are tested."""
-    test_file = repo_root / "tests" / "specify_cli" / "core" / "test_feature_detection.py"
+    test_file = (
+        repo_root / "tests" / "specify_cli" / "core" / "test_feature_detection.py"
+    )
     content = test_file.read_text()
 
     error_scenarios = [
@@ -375,6 +408,6 @@ def test_error_scenarios_covered(repo_root: Path):
     ]
 
     for scenario in error_scenarios:
-        test_pattern = rf'def test.*{scenario}'
+        test_pattern = rf"def test.*{scenario}"
         if not re.search(test_pattern, content, re.IGNORECASE):
             pytest.fail(f"No test found for error scenario: {scenario}")

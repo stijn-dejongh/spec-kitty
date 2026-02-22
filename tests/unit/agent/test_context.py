@@ -27,6 +27,7 @@ runner = CliRunner()
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def sample_plan_md(tmp_path: Path) -> Path:
     """Create a sample plan.md file with Technical Context section."""
@@ -151,6 +152,7 @@ User customizations here.
 # Unit Tests: parse_plan_for_tech_stack (T063)
 # =============================================================================
 
+
 def test_parse_plan_extracts_all_fields(sample_plan_md: Path):
     """Test that parse_plan_for_tech_stack extracts all Technical Context fields."""
     result = parse_plan_for_tech_stack(sample_plan_md)
@@ -221,6 +223,7 @@ def test_parse_plan_multiline_dependencies(tmp_path: Path):
 # Unit Tests: format_technology_stack (T063)
 # =============================================================================
 
+
 def test_format_technology_stack_combines_language_and_deps():
     """Test that format_technology_stack combines language and dependencies."""
     tech_stack = {
@@ -272,6 +275,7 @@ def test_format_technology_stack_empty():
 # =============================================================================
 # Unit Tests: preserve_manual_additions (T064)
 # =============================================================================
+
 
 def test_preserve_manual_additions_basic():
     """Test that preserve_manual_additions preserves content between markers."""
@@ -397,6 +401,7 @@ code_block = "preserved"
 # Unit Tests: update_agent_context (T065)
 # =============================================================================
 
+
 def test_update_agent_context_updates_sections(sample_agent_file: Path):
     """Test that update_agent_context updates Active Technologies and Recent Changes."""
     tech_stack = {
@@ -481,13 +486,21 @@ def test_update_agent_context_limits_recent_changes(sample_agent_file: Path):
     changes_section = updated_content.split("## Recent Changes")[1].split("##")[0]
 
     # Count entries (new + 2 old)
-    entries = [line for line in changes_section.split("\n") if line.strip().startswith("- ")]
+    entries = [
+        line for line in changes_section.split("\n") if line.strip().startswith("- ")
+    ]
     assert len(entries) <= 3  # 1 new + 2 old
 
 
 def test_update_agent_context_unsupported_agent_type(tmp_path: Path):
     """Test that unsupported agent type raises ValueError."""
-    tech_stack = {"language": "Python", "dependencies": None, "storage": None, "testing": None, "project_type": None}
+    tech_stack = {
+        "language": "Python",
+        "dependencies": None,
+        "storage": None,
+        "testing": None,
+        "project_type": None,
+    }
 
     with pytest.raises(ValueError, match="Unsupported agent type"):
         update_agent_context(
@@ -501,7 +514,13 @@ def test_update_agent_context_unsupported_agent_type(tmp_path: Path):
 
 def test_update_agent_context_missing_file(tmp_path: Path):
     """Test that missing agent file raises FileNotFoundError."""
-    tech_stack = {"language": "Python", "dependencies": None, "storage": None, "testing": None, "project_type": None}
+    tech_stack = {
+        "language": "Python",
+        "dependencies": None,
+        "storage": None,
+        "testing": None,
+        "project_type": None,
+    }
 
     with pytest.raises(FileNotFoundError, match="Agent file not found"):
         update_agent_context(
@@ -516,6 +535,7 @@ def test_update_agent_context_missing_file(tmp_path: Path):
 # =============================================================================
 # Unit Tests: Helper Functions (T066)
 # =============================================================================
+
 
 def test_get_supported_agent_types():
     """Test that get_supported_agent_types returns all agent types."""

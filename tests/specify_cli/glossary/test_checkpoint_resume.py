@@ -61,10 +61,15 @@ def _mock_events_available():
     canonical event path, writing JSONL files via a mock _pkg_append_event that
     serializes dicts to disk (matching what the real package does).
     """
+
     def _mock_pkg_append(instance, path):
         """Write the event dict as a JSONL line, mimicking the real package."""
         path.parent.mkdir(parents=True, exist_ok=True)
-        payload = instance if isinstance(instance, dict) else getattr(instance, "__dict__", {})
+        payload = (
+            instance
+            if isinstance(instance, dict)
+            else getattr(instance, "__dict__", {})
+        )
         with open(path, "a") as f:
             f.write(json.dumps(payload, sort_keys=True, default=str) + "\n")
 
@@ -74,16 +79,35 @@ def _mock_events_available():
 
     mock_cls = MagicMock(side_effect=_identity_cls)
 
-    with patch.object(_events_mod, "EVENTS_AVAILABLE", True), \
-         patch.object(_events_mod, "_pkg_append_event", _mock_pkg_append, create=True), \
-         patch.object(_events_mod, "_CanonicStepCheckpointed", mock_cls, create=True), \
-         patch.object(_events_mod, "_CanonicGenerationBlockedBySemanticConflict", mock_cls, create=True), \
-         patch.object(_events_mod, "_CanonicGlossaryScopeActivated", mock_cls, create=True), \
-         patch.object(_events_mod, "_CanonicTermCandidateObserved", mock_cls, create=True), \
-         patch.object(_events_mod, "_CanonicSemanticCheckEvaluated", mock_cls, create=True), \
-         patch.object(_events_mod, "_CanonicGlossaryClarificationRequested", mock_cls, create=True), \
-         patch.object(_events_mod, "_CanonicGlossaryClarificationResolved", mock_cls, create=True), \
-         patch.object(_events_mod, "_CanonicGlossarySenseUpdated", mock_cls, create=True):
+    with (
+        patch.object(_events_mod, "EVENTS_AVAILABLE", True),
+        patch.object(_events_mod, "_pkg_append_event", _mock_pkg_append, create=True),
+        patch.object(_events_mod, "_CanonicStepCheckpointed", mock_cls, create=True),
+        patch.object(
+            _events_mod,
+            "_CanonicGenerationBlockedBySemanticConflict",
+            mock_cls,
+            create=True,
+        ),
+        patch.object(
+            _events_mod, "_CanonicGlossaryScopeActivated", mock_cls, create=True
+        ),
+        patch.object(
+            _events_mod, "_CanonicTermCandidateObserved", mock_cls, create=True
+        ),
+        patch.object(
+            _events_mod, "_CanonicSemanticCheckEvaluated", mock_cls, create=True
+        ),
+        patch.object(
+            _events_mod, "_CanonicGlossaryClarificationRequested", mock_cls, create=True
+        ),
+        patch.object(
+            _events_mod, "_CanonicGlossaryClarificationResolved", mock_cls, create=True
+        ),
+        patch.object(
+            _events_mod, "_CanonicGlossarySenseUpdated", mock_cls, create=True
+        ),
+    ):
         yield
 
 
@@ -104,10 +128,12 @@ class MockPrimitiveContext:
     step_output: Dict[str, Any] = field(default_factory=dict)
     extracted_terms: List[Any] = field(default_factory=list)
     conflicts: List[SemanticConflict] = field(default_factory=list)
-    inputs: Dict[str, Any] = field(default_factory=lambda: {
-        "description": "Implement feature X",
-        "requirements": ["req1", "req2"],
-    })
+    inputs: Dict[str, Any] = field(
+        default_factory=lambda: {
+            "description": "Implement feature X",
+            "requirements": ["req1", "req2"],
+        }
+    )
     mission_strictness: Strictness | None = None
     step_strictness: Strictness | None = None
     effective_strictness: Strictness | None = None
@@ -160,8 +186,12 @@ def high_severity_conflict():
         severity=Severity.HIGH,
         confidence=0.9,
         candidate_senses=[
-            SenseRef(surface="workspace", scope="mission", definition="def1", confidence=0.9),
-            SenseRef(surface="workspace", scope="global", definition="def2", confidence=0.8),
+            SenseRef(
+                surface="workspace", scope="mission", definition="def1", confidence=0.9
+            ),
+            SenseRef(
+                surface="workspace", scope="global", definition="def2", confidence=0.8
+            ),
         ],
         context="test context",
     )
@@ -218,7 +248,9 @@ class TestResumeMiddlewareNoCheckpointFound:
         result = middleware.process(mock_context)
 
         assert result is mock_context
-        assert not hasattr(result, "checkpoint_cursor") or result.checkpoint_cursor is None
+        assert (
+            not hasattr(result, "checkpoint_cursor") or result.checkpoint_cursor is None
+        )
 
     def test_missing_checkpoint_does_not_set_resumed(self, mock_context, tmp_path):
         mock_context.retry_token = str(uuid.uuid4())
@@ -418,7 +450,9 @@ class TestGenerationGateCheckpointEmission:
             with pytest.raises(BlockedByConflict):
                 gate.process(mock_context)
 
-        events_file = tmp_path / ".kittify" / "events" / "glossary" / "041-mission.events.jsonl"
+        events_file = (
+            tmp_path / ".kittify" / "events" / "glossary" / "041-mission.events.jsonl"
+        )
         assert events_file.exists()
 
         lines = [l for l in events_file.read_text().splitlines() if l.strip()]
@@ -528,6 +562,7 @@ class TestGenerationGateCheckpointEmission:
             emission_order.append("checkpoint")
             # Still persist to file
             from specify_cli.glossary.events import emit_step_checkpointed as real_emit
+
             # Just track the order, actual persistence already happened
             pass
 
@@ -875,7 +910,9 @@ class TestEdgeCases:
         result = middleware.process(context)
         assert result is context
 
-    def test_resume_with_magicmock_context(self, tmp_path, sample_checkpoint, events_dir):
+    def test_resume_with_magicmock_context(
+        self, tmp_path, sample_checkpoint, events_dir
+    ):
         """Works with MagicMock context objects."""
         payload = _checkpoint_event_dict(sample_checkpoint)
         (events_dir / "m.events.jsonl").write_text(
@@ -885,7 +922,10 @@ class TestEdgeCases:
         context = MagicMock()
         context.retry_token = sample_checkpoint.retry_token
         context.step_id = sample_checkpoint.step_id
-        context.inputs = {"description": "Implement feature X", "requirements": ["req1", "req2"]}
+        context.inputs = {
+            "description": "Implement feature X",
+            "requirements": ["req1", "req2"],
+        }
 
         middleware = ResumeMiddleware(project_root=tmp_path)
         result = middleware.process(context)

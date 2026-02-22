@@ -49,8 +49,7 @@ class TestDetectWorkspaceContext:
         with patch("pathlib.Path.cwd", return_value=tmp_path):
             with patch("subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(
-                    returncode=0,
-                    stdout="015-vcs-integration-WP03\n"
+                    returncode=0, stdout="015-vcs-integration-WP03\n"
                 )
 
                 workspace_path, feature_slug = _detect_workspace_context()
@@ -189,10 +188,13 @@ class TestRepairFunctions:
             assert mock_run.call_count == 2
 
 
-@pytest.mark.parametrize("backend", [
-    "git",
-    pytest.param("jj", marks=pytest.mark.jj),
-])
+@pytest.mark.parametrize(
+    "backend",
+    [
+        "git",
+        pytest.param("jj", marks=pytest.mark.jj),
+    ],
+)
 class TestSyncCommand:
     """Tests for sync command."""
 
@@ -328,10 +330,13 @@ class TestSyncWithConflicts:
 class TestSyncRepair:
     """Tests for --repair flag."""
 
-    @pytest.mark.parametrize("backend", [
-        "git",
-        pytest.param("jj", marks=pytest.mark.jj),
-    ])
+    @pytest.mark.parametrize(
+        "backend",
+        [
+            "git",
+            pytest.param("jj", marks=pytest.mark.jj),
+        ],
+    )
     def test_repair_success(self, tmp_path, backend):
         """Test successful repair."""
         worktree = tmp_path / ".worktrees" / "010-feature-WP01"
@@ -344,17 +349,22 @@ class TestSyncRepair:
                 mock_get_vcs.return_value = mock_vcs
 
                 repair_func = "_jj_repair" if backend == "jj" else "_git_repair"
-                with patch(f"specify_cli.cli.commands.sync.{repair_func}") as mock_repair:
+                with patch(
+                    f"specify_cli.cli.commands.sync.{repair_func}"
+                ) as mock_repair:
                     mock_repair.return_value = True
 
                     sync_workspace(repair=True)
 
                     mock_repair.assert_called_once()
 
-    @pytest.mark.parametrize("backend", [
-        "git",
-        pytest.param("jj", marks=pytest.mark.jj),
-    ])
+    @pytest.mark.parametrize(
+        "backend",
+        [
+            "git",
+            pytest.param("jj", marks=pytest.mark.jj),
+        ],
+    )
     def test_repair_failure(self, tmp_path, backend):
         """Test failed repair."""
         worktree = tmp_path / ".worktrees" / "010-feature-WP01"
@@ -367,7 +377,9 @@ class TestSyncRepair:
                 mock_get_vcs.return_value = mock_vcs
 
                 repair_func = "_jj_repair" if backend == "jj" else "_git_repair"
-                with patch(f"specify_cli.cli.commands.sync.{repair_func}") as mock_repair:
+                with patch(
+                    f"specify_cli.cli.commands.sync.{repair_func}"
+                ) as mock_repair:
                     mock_repair.return_value = False
 
                     with pytest.raises(typer.Exit) as exc:
@@ -458,7 +470,9 @@ class TestSyncNowExitCodes:
 
         runner = CliRunner()
         with patch("specify_cli.sync.background.get_sync_service", return_value=svc):
-            with patch("specify_cli.sync.batch.format_sync_summary", return_value="summary"):
+            with patch(
+                "specify_cli.sync.batch.format_sync_summary", return_value="summary"
+            ):
                 with patch("specify_cli.sync.batch.write_failure_report"):
                     res = runner.invoke(sync_app, ["now"])
         assert res.exit_code == 1
@@ -470,7 +484,9 @@ class TestSyncNowExitCodes:
 
         runner = CliRunner()
         with patch("specify_cli.sync.background.get_sync_service", return_value=svc):
-            with patch("specify_cli.sync.batch.format_sync_summary", return_value="summary"):
+            with patch(
+                "specify_cli.sync.batch.format_sync_summary", return_value="summary"
+            ):
                 res = runner.invoke(sync_app, ["now"])
         assert res.exit_code == 0
 
@@ -481,7 +497,9 @@ class TestSyncNowExitCodes:
 
         runner = CliRunner()
         with patch("specify_cli.sync.background.get_sync_service", return_value=svc):
-            with patch("specify_cli.sync.batch.format_sync_summary", return_value="summary"):
+            with patch(
+                "specify_cli.sync.batch.format_sync_summary", return_value="summary"
+            ):
                 with patch("specify_cli.sync.batch.write_failure_report"):
                     res = runner.invoke(sync_app, ["now", "--no-strict"])
         assert res.exit_code == 0
@@ -503,7 +521,9 @@ class TestSyncNowExitCodes:
         runner = CliRunner()
         report_path = tmp_path / "failures.json"
         with patch("specify_cli.sync.background.get_sync_service", return_value=svc):
-            with patch("specify_cli.sync.batch.format_sync_summary", return_value="summary"):
+            with patch(
+                "specify_cli.sync.batch.format_sync_summary", return_value="summary"
+            ):
                 with patch("specify_cli.sync.batch.write_failure_report") as write_mock:
                     res = runner.invoke(sync_app, ["now", "--report", str(report_path)])
         assert res.exit_code == 1
@@ -516,7 +536,9 @@ class TestSyncNowExitCodes:
 
         runner = CliRunner()
         with patch("specify_cli.sync.background.get_sync_service", return_value=svc):
-            with patch("specify_cli.sync.batch.format_sync_summary", return_value="summary"):
+            with patch(
+                "specify_cli.sync.batch.format_sync_summary", return_value="summary"
+            ):
                 res = runner.invoke(sync_app, ["now"])
         assert res.exit_code == 1
         assert "not authenticated" in res.output

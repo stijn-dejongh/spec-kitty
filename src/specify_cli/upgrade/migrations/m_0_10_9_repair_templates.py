@@ -132,7 +132,7 @@ class RepairTemplatesMigration(BaseMigration):
                         command_templates_dir=command_templates_dir,
                         project_path=project_path,
                         agent_key=ai_config,
-                        script_type="sh"
+                        script_type="sh",
                     )
                     changes.append("Regenerated all agent slash commands")
                 except Exception as e:
@@ -157,7 +157,9 @@ class RepairTemplatesMigration(BaseMigration):
                     "Please run 'spec-kitty upgrade' again or report an issue."
                 )
             else:
-                changes.append("✓ Templates successfully repaired - no bash script references found")
+                changes.append(
+                    "✓ Templates successfully repaired - no bash script references found"
+                )
 
         success = len(errors) == 0
         return MigrationResult(

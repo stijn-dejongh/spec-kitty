@@ -23,18 +23,20 @@ from .base import BaseMigration, MigrationResult
 
 MIGRATION_ID = "0.12.1_remove_kitty_specs_from_gitignore"
 MIGRATION_VERSION = "0.12.1"
-MIGRATION_DESCRIPTION = "Remove kitty-specs/ from main repo .gitignore to allow tracking feature specs"
+MIGRATION_DESCRIPTION = (
+    "Remove kitty-specs/ from main repo .gitignore to allow tracking feature specs"
+)
 
 # Patterns to REMOVE (block entire kitty-specs directory)
 PATTERNS_TO_REMOVE = [
-    r"^kitty-specs/?$",          # kitty-specs or kitty-specs/
-    r"^/kitty-specs/?$",         # /kitty-specs or /kitty-specs/
+    r"^kitty-specs/?$",  # kitty-specs or kitty-specs/
+    r"^/kitty-specs/?$",  # /kitty-specs or /kitty-specs/
 ]
 
 # Patterns to KEEP (worktree-specific, prevent merge conflicts)
 PATTERNS_TO_KEEP = [
     r"kitty-specs/\*\*/tasks/",  # kitty-specs/**/tasks/*.md
-    r"kitty-specs/.*/tasks/",    # kitty-specs/*/tasks/*.md
+    r"kitty-specs/.*/tasks/",  # kitty-specs/*/tasks/*.md
 ]
 
 
@@ -88,7 +90,9 @@ def find_blocking_entries(gitignore_path: Path) -> List[Tuple[int, str]]:
     return blocking_entries
 
 
-def remove_blocking_entries(gitignore_path: Path, dry_run: bool = False) -> Tuple[List[str], List[str]]:
+def remove_blocking_entries(
+    gitignore_path: Path, dry_run: bool = False
+) -> Tuple[List[str], List[str]]:
     """Remove entries that block kitty-specs/ from .gitignore.
 
     Returns (changes, errors) tuple.
@@ -123,7 +127,9 @@ def remove_blocking_entries(gitignore_path: Path, dry_run: bool = False) -> Tupl
         return changes, errors
 
     if dry_run:
-        changes.insert(0, f"Would remove {removed_count} blocking entries from .gitignore")
+        changes.insert(
+            0, f"Would remove {removed_count} blocking entries from .gitignore"
+        )
         return changes, errors
 
     # Write updated content

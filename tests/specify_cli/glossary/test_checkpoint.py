@@ -108,6 +108,7 @@ class TestStepCheckpoint:
     def test_checkpoint_has_nine_fields(self, sample_checkpoint):
         """Verify checkpoint has exactly 9 required fields."""
         import dataclasses
+
         fields = dataclasses.fields(sample_checkpoint)
         assert len(fields) == 9
 
@@ -395,9 +396,7 @@ class TestParseCheckpointEvent:
         payload = checkpoint_to_dict(sample_checkpoint)
         parsed = parse_checkpoint_event(payload)
         assert len(parsed.scope_refs) == len(sample_checkpoint.scope_refs)
-        for orig, parsed_ref in zip(
-            sample_checkpoint.scope_refs, parsed.scope_refs
-        ):
+        for orig, parsed_ref in zip(sample_checkpoint.scope_refs, parsed.scope_refs):
             assert parsed_ref.scope == orig.scope
             assert parsed_ref.version_id == orig.version_id
 
@@ -628,7 +627,11 @@ class TestLoadCheckpoint:
         events_dir = tmp_path / ".kittify" / "events" / "glossary"
         events_dir.mkdir(parents=True)
 
-        invalid = {"event_type": "StepCheckpointed", "step_id": "step-001", "mission_id": "m"}  # Missing fields
+        invalid = {
+            "event_type": "StepCheckpointed",
+            "step_id": "step-001",
+            "mission_id": "m",
+        }  # Missing fields
         valid = {
             "event_type": "StepCheckpointed",
             "mission_id": "m",
@@ -700,7 +703,10 @@ class TestVerifyInputHash:
 
     def test_reordered_keys_still_match(self, sample_checkpoint):
         """Same content with different key order should match."""
-        reordered = {"requirements": ["req1", "req2"], "description": "Implement feature X"}
+        reordered = {
+            "requirements": ["req1", "req2"],
+            "description": "Implement feature X",
+        }
         matches, _, _ = verify_input_hash(sample_checkpoint, reordered)
         assert matches is True
 
@@ -774,6 +780,7 @@ class TestHandleContextChange:
 
     def test_change_prompts_user_confirm(self, sample_checkpoint):
         """When context changed and user confirms, returns True."""
+
         def mock_confirm(old_h, new_h):
             return True
 
@@ -785,6 +792,7 @@ class TestHandleContextChange:
 
     def test_change_prompts_user_decline(self, sample_checkpoint):
         """When context changed and user declines, returns False."""
+
         def mock_confirm(old_h, new_h):
             return False
 
@@ -804,8 +812,6 @@ class TestHandleContextChange:
             return True
 
         changed = {"description": "Different"}
-        handle_context_change(
-            sample_checkpoint, changed, confirm_fn=mock_confirm
-        )
+        handle_context_change(sample_checkpoint, changed, confirm_fn=mock_confirm)
         assert len(received["old"]) == 16
         assert len(received["new"]) == 16

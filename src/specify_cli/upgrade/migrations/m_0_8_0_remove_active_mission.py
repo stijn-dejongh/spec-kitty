@@ -20,7 +20,9 @@ class RemoveActiveMissionMigration(BaseMigration):
     """
 
     migration_id = "0.8.0_remove_active_mission"
-    description = "Remove deprecated .kittify/active-mission (missions are now per-feature)"
+    description = (
+        "Remove deprecated .kittify/active-mission (missions are now per-feature)"
+    )
     target_version = "0.8.0"
 
     def detect(self, project_path: Path) -> bool:
@@ -46,18 +48,14 @@ class RemoveActiveMissionMigration(BaseMigration):
 
         if active_mission.exists() or active_mission.is_symlink():
             if dry_run:
-                changes.append(
-                    "Would remove .kittify/active-mission"
-                )
+                changes.append("Would remove .kittify/active-mission")
                 changes.append(
                     "  -> Missions are now selected per-feature during /spec-kitty.specify"
                 )
             else:
                 try:
                     active_mission.unlink()
-                    changes.append(
-                        "Removed deprecated .kittify/active-mission"
-                    )
+                    changes.append("Removed deprecated .kittify/active-mission")
                     changes.append(
                         "  -> Missions are now selected per-feature during /spec-kitty.specify"
                     )
@@ -65,9 +63,7 @@ class RemoveActiveMissionMigration(BaseMigration):
                         "  -> Existing features will use 'software-dev' mission by default"
                     )
                 except OSError as e:
-                    errors.append(
-                        f"Failed to remove .kittify/active-mission: {e}"
-                    )
+                    errors.append(f"Failed to remove .kittify/active-mission: {e}")
         else:
             warnings.append(
                 "No .kittify/active-mission found (already migrated or new project)"

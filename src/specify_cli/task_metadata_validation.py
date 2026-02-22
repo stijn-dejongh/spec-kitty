@@ -55,7 +55,9 @@ def detect_lane_mismatch(task_file: Path) -> tuple[bool, Optional[str], Optional
     # Determine expected lane from file path
     expected_lane = None
     for lane in ["planned", "doing", "for_review", "done"]:
-        if f"/tasks/{lane}/" in str(task_file) or f"\\tasks\\{lane}\\" in str(task_file):
+        if f"/tasks/{lane}/" in str(task_file) or f"\\tasks\\{lane}\\" in str(
+            task_file
+        ):
             expected_lane = lane
             break
 
@@ -128,11 +130,11 @@ def repair_lane_mismatch(
     if add_history:
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         history_entry = (
-            f"  - timestamp: \"{timestamp}\"\n"
-            f"    lane: \"{expected_lane}\"\n"
-            f"    agent: \"{agent}\"\n"
-            f"    shell_pid: \"{shell_pid}\"\n"
-            f"    action: \"Auto-repaired lane metadata (was: {actual_lane})\"\n"
+            f'  - timestamp: "{timestamp}"\n'
+            f'    lane: "{expected_lane}"\n'
+            f'    agent: "{agent}"\n'
+            f'    shell_pid: "{shell_pid}"\n'
+            f'    action: "Auto-repaired lane metadata (was: {actual_lane})"\n'
         )
 
         # Find activity_log in frontmatter
@@ -141,16 +143,20 @@ def repair_lane_mismatch(
             existing_log = frontmatter.get("activity_log", "")
             if isinstance(existing_log, list):
                 # Already parsed as list - append dict
-                frontmatter["activity_log"].append({
-                    "timestamp": timestamp,
-                    "lane": expected_lane,
-                    "agent": agent,
-                    "shell_pid": shell_pid,
-                    "action": f"Auto-repaired lane metadata (was: {actual_lane})"
-                })
+                frontmatter["activity_log"].append(
+                    {
+                        "timestamp": timestamp,
+                        "lane": expected_lane,
+                        "agent": agent,
+                        "shell_pid": shell_pid,
+                        "action": f"Auto-repaired lane metadata (was: {actual_lane})",
+                    }
+                )
             elif isinstance(existing_log, str):
                 # Raw YAML string - append entry
-                frontmatter["activity_log"] = existing_log.rstrip() + "\n" + history_entry
+                frontmatter["activity_log"] = (
+                    existing_log.rstrip() + "\n" + history_entry
+                )
         else:
             # Create new activity log
             frontmatter["activity_log"] = history_entry
@@ -161,7 +167,9 @@ def repair_lane_mismatch(
     # Rebuild file content
     try:
         # Convert frontmatter dict back to YAML string
-        frontmatter_yaml = yaml.dump(frontmatter, default_flow_style=False, allow_unicode=True, sort_keys=False)
+        frontmatter_yaml = yaml.dump(
+            frontmatter, default_flow_style=False, allow_unicode=True, sort_keys=False
+        )
         new_content = build_document(frontmatter_yaml, body, padding)
         task_file.write_text(new_content, encoding="utf-8-sig")
         return True, None

@@ -127,8 +127,7 @@ class DoneEvidence:
             review=ReviewApproval.from_dict(data["review"]),
             repos=[RepoEvidence.from_dict(r) for r in data.get("repos", [])],
             verification=[
-                VerificationResult.from_dict(v)
-                for v in data.get("verification", [])
+                VerificationResult.from_dict(v) for v in data.get("verification", [])
             ],
         )
 
@@ -187,9 +186,7 @@ class StatusEvent:
             execution_mode=data["execution_mode"],
             reason=data.get("reason"),
             review_ref=data.get("review_ref"),
-            evidence=DoneEvidence.from_dict(evidence_data)
-            if evidence_data
-            else None,
+            evidence=DoneEvidence.from_dict(evidence_data) if evidence_data else None,
             policy_metadata=data.get("policy_metadata"),
         )
 

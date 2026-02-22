@@ -188,9 +188,9 @@ class TestWorkspaceContextPersistence:
                 feature_slug="010-feature",
                 worktree_path=f".worktrees/010-feature-WP0{i}",
                 branch_name=f"010-feature-WP0{i}",
-                base_branch="main" if i == 1 else f"010-feature-WP0{i-1}",
+                base_branch="main" if i == 1 else f"010-feature-WP0{i - 1}",
                 base_commit=f"commit{i}",
-                dependencies=[] if i == 1 else [f"WP0{i-1}"],
+                dependencies=[] if i == 1 else [f"WP0{i - 1}"],
                 created_at="2026-01-23T10:00:00Z",
                 created_by="implement-command",
                 vcs_backend="git",
@@ -334,11 +334,14 @@ class TestBaseBranchInFrontmatter:
         write_frontmatter(wp_file, frontmatter, body)
 
         # Update with base tracking
-        update_fields(wp_file, {
-            "base_branch": "010-feature-WP01",
-            "base_commit": "abc123def456",
-            "created_at": "2026-01-23T10:00:00Z",
-        })
+        update_fields(
+            wp_file,
+            {
+                "base_branch": "010-feature-WP01",
+                "base_commit": "abc123def456",
+                "created_at": "2026-01-23T10:00:00Z",
+            },
+        )
 
         # Read and verify
         updated_frontmatter, _ = read_frontmatter(wp_file)
@@ -402,7 +405,14 @@ class TestIntegrationBaseBranchTracking:
         save_context(tmp_path, context)
 
         # From worktree, access context via ../../.kittify/workspaces/
-        context_from_worktree = worktree_path / ".." / ".." / ".kittify" / "workspaces" / "010-feature-WP02.json"
+        context_from_worktree = (
+            worktree_path
+            / ".."
+            / ".."
+            / ".kittify"
+            / "workspaces"
+            / "010-feature-WP02.json"
+        )
         assert context_from_worktree.exists()
 
         # Read and verify

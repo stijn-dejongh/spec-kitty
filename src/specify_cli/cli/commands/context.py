@@ -48,7 +48,12 @@ def detect_current_workspace(cwd: Path, repo_root: Path) -> str | None:
 
 @app.command(name="info")
 def info_command(
-    workspace: str = typer.Option(None, "--workspace", "-w", help="Workspace name (auto-detected if inside worktree)"),
+    workspace: str = typer.Option(
+        None,
+        "--workspace",
+        "-w",
+        help="Workspace name (auto-detected if inside worktree)",
+    ),
     json_output: bool = typer.Option(False, "--json", help="Output in JSON format"),
 ) -> None:
     """Show context information for current or specified workspace.
@@ -73,7 +78,9 @@ def info_command(
     if workspace is None:
         workspace = detect_current_workspace(Path.cwd(), repo_root)
         if workspace is None:
-            console.print("[red]Error:[/red] Not inside a worktree and no --workspace specified")
+            console.print(
+                "[red]Error:[/red] Not inside a worktree and no --workspace specified"
+            )
             console.print("\nRun from inside a worktree or use --workspace flag:")
             console.print("  spec-kitty context info --workspace 010-feature-WP02")
             raise typer.Exit(1)
@@ -83,7 +90,9 @@ def info_command(
     if context is None:
         console.print(f"[red]Error:[/red] No context found for workspace: {workspace}")
         console.print("\nContext file not found:")
-        console.print(f"  {repo_root / '.kittify' / 'workspaces' / f'{workspace}.json'}")
+        console.print(
+            f"  {repo_root / '.kittify' / 'workspaces' / f'{workspace}.json'}"
+        )
         raise typer.Exit(1)
 
     # Output
@@ -102,7 +111,12 @@ def info_command(
         table.add_row("Feature", context.feature_slug)
         table.add_row("Base Branch", f"[cyan]{context.base_branch}[/cyan]")
         table.add_row("Base Commit", f"[dim]{context.base_commit[:12]}[/dim]")
-        table.add_row("Dependencies", ", ".join(context.dependencies) if context.dependencies else "[dim]none[/dim]")
+        table.add_row(
+            "Dependencies",
+            ", ".join(context.dependencies)
+            if context.dependencies
+            else "[dim]none[/dim]",
+        )
         table.add_row("Created", context.created_at)
         table.add_row("Worktree", context.worktree_path)
         table.add_row("Branch", context.branch_name)
@@ -115,7 +129,9 @@ def info_command(
 @app.command(name="list")
 def list_command(
     json_output: bool = typer.Option(False, "--json", help="Output in JSON format"),
-    show_orphaned: bool = typer.Option(False, "--orphaned", help="Show only orphaned contexts"),
+    show_orphaned: bool = typer.Option(
+        False, "--orphaned", help="Show only orphaned contexts"
+    ),
 ) -> None:
     """List all workspace contexts.
 
@@ -138,16 +154,23 @@ def list_command(
     if show_orphaned:
         orphaned = find_orphaned_contexts(repo_root)
         if json_output:
-            print(json.dumps([
-                {"workspace": name, "context": ctx.to_dict()}
-                for name, ctx in orphaned
-            ], indent=2))
+            print(
+                json.dumps(
+                    [
+                        {"workspace": name, "context": ctx.to_dict()}
+                        for name, ctx in orphaned
+                    ],
+                    indent=2,
+                )
+            )
         else:
             if not orphaned:
                 console.print("[green]✓[/green] No orphaned contexts found")
                 return
 
-            console.print(f"\n[yellow]⚠️  Found {len(orphaned)} orphaned context(s)[/yellow]\n")
+            console.print(
+                f"\n[yellow]⚠️  Found {len(orphaned)} orphaned context(s)[/yellow]\n"
+            )
             for name, ctx in orphaned:
                 console.print(f"  [bold]{name}[/bold]")
                 console.print(f"    Worktree: [dim]{ctx.worktree_path} (deleted)[/dim]")
@@ -164,7 +187,9 @@ def list_command(
                 console.print("[dim]No workspace contexts found[/dim]")
                 return
 
-            console.print(f"\n[bold]Workspace Contexts[/bold] ({len(contexts)} total)\n")
+            console.print(
+                f"\n[bold]Workspace Contexts[/bold] ({len(contexts)} total)\n"
+            )
 
             table = Table(show_header=True)
             table.add_column("WP", style="bold")
@@ -176,9 +201,17 @@ def list_command(
             for ctx in sorted(contexts, key=lambda c: (c.feature_slug, c.wp_id)):
                 # Check if worktree exists
                 worktree_path = repo_root / ctx.worktree_path
-                status = "[green]Active[/green]" if worktree_path.exists() else "[yellow]Orphaned[/yellow]"
+                status = (
+                    "[green]Active[/green]"
+                    if worktree_path.exists()
+                    else "[yellow]Orphaned[/yellow]"
+                )
 
-                deps = ", ".join(ctx.dependencies) if ctx.dependencies else "[dim]none[/dim]"
+                deps = (
+                    ", ".join(ctx.dependencies)
+                    if ctx.dependencies
+                    else "[dim]none[/dim]"
+                )
 
                 table.add_row(
                     ctx.wp_id,
@@ -194,7 +227,9 @@ def list_command(
 
 @app.command(name="cleanup")
 def cleanup_command(
-    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be cleaned up without deleting"),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show what would be cleaned up without deleting"
+    ),
 ) -> None:
     """Clean up orphaned workspace contexts.
 

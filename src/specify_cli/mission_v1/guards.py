@@ -145,7 +145,10 @@ def _make_gate_passed_guard(args: list[Any]) -> Callable[..., bool]:
                 if not line:
                     continue
                 entry = json.loads(line)
-                if entry.get("type") == "gate_passed" and entry.get("name") == gate_name:
+                if (
+                    entry.get("type") == "gate_passed"
+                    and entry.get("name") == gate_name
+                ):
                     return True
         except (json.JSONDecodeError, OSError):
             return False
@@ -303,7 +306,9 @@ def _is_guard_expression(s: str) -> bool:
     return "(" in s and s.rstrip().endswith(")")
 
 
-def compile_guards(config: dict[str, Any], feature_dir: Path | None = None) -> dict[str, Any]:
+def compile_guards(
+    config: dict[str, Any], feature_dir: Path | None = None
+) -> dict[str, Any]:
     """Process a v1 config dict, compiling guard expression strings into callables.
 
     For each transition in ``config["transitions"]``, this function inspects

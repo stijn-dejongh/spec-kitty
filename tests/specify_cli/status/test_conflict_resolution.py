@@ -35,7 +35,15 @@ class TestLanePriority:
 
     def test_all_canonical_lanes_present(self):
         """All 7 canonical lanes must be in LANE_PRIORITY."""
-        canonical = {"planned", "claimed", "in_progress", "for_review", "done", "blocked", "canceled"}
+        canonical = {
+            "planned",
+            "claimed",
+            "in_progress",
+            "for_review",
+            "done",
+            "blocked",
+            "canceled",
+        }
         for lane in canonical:
             assert lane in LANE_PRIORITY, f"Missing canonical lane: {lane}"
 
@@ -66,16 +74,19 @@ class TestLanePriority:
         """7 canonical lanes + 1 'doing' alias = 8 entries total."""
         assert len(LANE_PRIORITY) == 8
 
-    @pytest.mark.parametrize("lane,expected_priority", [
-        ("planned", 1),
-        ("claimed", 2),
-        ("in_progress", 3),
-        ("for_review", 4),
-        ("done", 5),
-        ("blocked", 0),
-        ("canceled", 6),
-        ("doing", 3),
-    ])
+    @pytest.mark.parametrize(
+        "lane,expected_priority",
+        [
+            ("planned", 1),
+            ("claimed", 2),
+            ("in_progress", 3),
+            ("for_review", 4),
+            ("done", 5),
+            ("blocked", 0),
+            ("canceled", 6),
+            ("doing", 3),
+        ],
+    )
     def test_specific_priority_values(self, lane, expected_priority):
         """Each lane has its expected numeric priority."""
         assert LANE_PRIORITY[lane] == expected_priority
@@ -264,8 +275,10 @@ reviewed_by: alice
 ---
 """
         result = resolve_lane_conflict_rollback_aware(
-            ours_content, theirs_content,
-            ours_lane="done", theirs_lane="in_progress",
+            ours_content,
+            theirs_content,
+            ours_lane="done",
+            theirs_lane="in_progress",
         )
         assert result == "in_progress"
 
@@ -283,8 +296,10 @@ reviewed_by: ""
 ---
 """
         result = resolve_lane_conflict_rollback_aware(
-            ours_content, theirs_content,
-            ours_lane="in_progress", theirs_lane="done",
+            ours_content,
+            theirs_content,
+            ours_lane="in_progress",
+            theirs_lane="done",
         )
         assert result == "in_progress"
 
@@ -303,8 +318,10 @@ reviewed_by: ""
 ---
 """
         result = resolve_lane_conflict_rollback_aware(
-            ours_content, theirs_content,
-            ours_lane="for_review", theirs_lane="in_progress",
+            ours_content,
+            theirs_content,
+            ours_lane="for_review",
+            theirs_lane="in_progress",
         )
         assert result == "for_review"
 
@@ -323,8 +340,10 @@ reviewed_by: ""
 ---
 """
         result = resolve_lane_conflict_rollback_aware(
-            ours_content, theirs_content,
-            ours_lane="in_progress", theirs_lane="done",
+            ours_content,
+            theirs_content,
+            ours_lane="in_progress",
+            theirs_lane="done",
         )
         assert result == "done"
 
@@ -344,8 +363,10 @@ reviewed_by: bob
 """
         # for_review (4) vs in_progress (3) -- in_progress is lower
         result = resolve_lane_conflict_rollback_aware(
-            ours_content, theirs_content,
-            ours_lane="in_progress", theirs_lane="for_review",
+            ours_content,
+            theirs_content,
+            ours_lane="in_progress",
+            theirs_lane="for_review",
         )
         assert result == "in_progress"
 
@@ -362,8 +383,10 @@ review_status: "has_feedback"
 ---
 """
         result = resolve_lane_conflict_rollback_aware(
-            ours_content, theirs_content,
-            ours_lane="for_review", theirs_lane="planned",
+            ours_content,
+            theirs_content,
+            ours_lane="for_review",
+            theirs_lane="planned",
         )
         assert result == "planned"
 
@@ -382,8 +405,10 @@ reviewed_by: ""
 ---
 """
         result = resolve_lane_conflict_rollback_aware(
-            ours_content, theirs_content,
-            ours_lane="in_progress", theirs_lane="in_progress",
+            ours_content,
+            theirs_content,
+            ours_lane="in_progress",
+            theirs_lane="in_progress",
         )
         assert result == "in_progress"
 
@@ -402,8 +427,10 @@ reviewed_by: ""
 ---
 """
         result = resolve_lane_conflict_rollback_aware(
-            ours_content, theirs_content,
-            ours_lane="unknown_state", theirs_lane="planned",
+            ours_content,
+            theirs_content,
+            ours_lane="unknown_state",
+            theirs_lane="planned",
         )
         # planned (1) > unknown_state (0), so planned wins in monotonic mode
         assert result == "planned"
@@ -419,8 +446,26 @@ class TestResolveJsonlConflict:
 
     def test_merge_non_overlapping_events(self):
         """Two files with non-overlapping events produce merged sorted output."""
-        ours = json.dumps({"event_id": "ev1", "at": "2026-01-01T10:00:00Z", "type": "lane_changed"}) + "\n"
-        theirs = json.dumps({"event_id": "ev2", "at": "2026-01-02T11:00:00Z", "type": "lane_changed"}) + "\n"
+        ours = (
+            json.dumps(
+                {
+                    "event_id": "ev1",
+                    "at": "2026-01-01T10:00:00Z",
+                    "type": "lane_changed",
+                }
+            )
+            + "\n"
+        )
+        theirs = (
+            json.dumps(
+                {
+                    "event_id": "ev2",
+                    "at": "2026-01-02T11:00:00Z",
+                    "type": "lane_changed",
+                }
+            )
+            + "\n"
+        )
 
         result = resolve_jsonl_conflict(ours, theirs)
         lines = result.strip().splitlines()
@@ -432,7 +477,12 @@ class TestResolveJsonlConflict:
 
     def test_merge_duplicate_events(self):
         """Shared event_ids are deduplicated (first occurrence wins)."""
-        event = {"event_id": "ev1", "at": "2026-01-01T10:00:00Z", "type": "lane_changed", "lane": "done"}
+        event = {
+            "event_id": "ev1",
+            "at": "2026-01-01T10:00:00Z",
+            "type": "lane_changed",
+            "lane": "done",
+        }
         ours = json.dumps(event) + "\n"
         theirs = json.dumps(event) + "\n"
 
@@ -443,9 +493,18 @@ class TestResolveJsonlConflict:
 
     def test_merge_sort_order(self):
         """Output is sorted by (at, event_id)."""
-        ev_late = json.dumps({"event_id": "ev_z", "at": "2026-01-03T10:00:00Z", "type": "a"}) + "\n"
-        ev_early = json.dumps({"event_id": "ev_a", "at": "2026-01-01T10:00:00Z", "type": "b"}) + "\n"
-        ev_mid = json.dumps({"event_id": "ev_m", "at": "2026-01-02T10:00:00Z", "type": "c"}) + "\n"
+        ev_late = (
+            json.dumps({"event_id": "ev_z", "at": "2026-01-03T10:00:00Z", "type": "a"})
+            + "\n"
+        )
+        ev_early = (
+            json.dumps({"event_id": "ev_a", "at": "2026-01-01T10:00:00Z", "type": "b"})
+            + "\n"
+        )
+        ev_mid = (
+            json.dumps({"event_id": "ev_m", "at": "2026-01-02T10:00:00Z", "type": "c"})
+            + "\n"
+        )
 
         result = resolve_jsonl_conflict(ev_late + ev_mid, ev_early)
         lines = result.strip().splitlines()
@@ -470,7 +529,10 @@ class TestResolveJsonlConflict:
 
     def test_merge_corrupted_line(self):
         """Corrupted JSON line is skipped, valid events preserved."""
-        valid = json.dumps({"event_id": "ev1", "at": "2026-01-01T10:00:00Z", "type": "ok"}) + "\n"
+        valid = (
+            json.dumps({"event_id": "ev1", "at": "2026-01-01T10:00:00Z", "type": "ok"})
+            + "\n"
+        )
         corrupted = "this is not json\n"
 
         result = resolve_jsonl_conflict(valid + corrupted, "")
@@ -485,7 +547,10 @@ class TestResolveJsonlConflict:
 
     def test_merge_one_empty(self):
         """One side empty, other side preserved."""
-        event = json.dumps({"event_id": "ev1", "at": "2026-01-01T10:00:00Z", "type": "a"}) + "\n"
+        event = (
+            json.dumps({"event_id": "ev1", "at": "2026-01-01T10:00:00Z", "type": "a"})
+            + "\n"
+        )
 
         result_ours_empty = resolve_jsonl_conflict("", event)
         assert "ev1" in result_ours_empty
@@ -496,7 +561,10 @@ class TestResolveJsonlConflict:
     def test_merge_no_event_id_skipped(self):
         """Events without event_id are skipped."""
         no_id = json.dumps({"at": "2026-01-01T10:00:00Z", "type": "orphan"}) + "\n"
-        with_id = json.dumps({"event_id": "ev1", "at": "2026-01-02T10:00:00Z", "type": "ok"}) + "\n"
+        with_id = (
+            json.dumps({"event_id": "ev1", "at": "2026-01-02T10:00:00Z", "type": "ok"})
+            + "\n"
+        )
 
         result = resolve_jsonl_conflict(no_id, with_id)
         lines = result.strip().splitlines()
@@ -506,7 +574,11 @@ class TestResolveJsonlConflict:
     def test_merge_dedup_first_occurrence_wins(self):
         """When both sides have the same event_id, first (ours) occurrence wins."""
         ours_event = {"event_id": "ev1", "at": "2026-01-01T10:00:00Z", "lane": "done"}
-        theirs_event = {"event_id": "ev1", "at": "2026-01-01T10:00:00Z", "lane": "in_progress"}
+        theirs_event = {
+            "event_id": "ev1",
+            "at": "2026-01-01T10:00:00Z",
+            "lane": "in_progress",
+        }
 
         result = resolve_jsonl_conflict(
             json.dumps(ours_event) + "\n",
@@ -525,7 +597,12 @@ class TestResolveJsonlConflict:
 
     def test_output_uses_sort_keys(self):
         """Output JSON uses sorted keys for determinism."""
-        event = {"event_id": "ev1", "at": "2026-01-01T10:00:00Z", "zebra": "z", "alpha": "a"}
+        event = {
+            "event_id": "ev1",
+            "at": "2026-01-01T10:00:00Z",
+            "zebra": "z",
+            "alpha": "a",
+        }
         result = resolve_jsonl_conflict(json.dumps(event) + "\n", "")
         lines = result.strip().splitlines()
         parsed_line = lines[0]
@@ -647,39 +724,56 @@ class TestExistingBehaviorPreserved:
 class TestExhaustiveTransitionPairs:
     """Parametrized tests for all interesting lane transition pairs."""
 
-    @pytest.mark.parametrize("ours_lane,theirs_lane,expected_winner", [
-        ("planned", "done", "done"),
-        ("done", "planned", "done"),
-        ("in_progress", "for_review", "for_review"),
-        ("for_review", "in_progress", "for_review"),
-        ("blocked", "claimed", "claimed"),
-        ("claimed", "blocked", "claimed"),
-        ("canceled", "done", "canceled"),
-        ("done", "canceled", "canceled"),
-        ("doing", "for_review", "for_review"),
-        ("for_review", "doing", "for_review"),
-    ])
+    @pytest.mark.parametrize(
+        "ours_lane,theirs_lane,expected_winner",
+        [
+            ("planned", "done", "done"),
+            ("done", "planned", "done"),
+            ("in_progress", "for_review", "for_review"),
+            ("for_review", "in_progress", "for_review"),
+            ("blocked", "claimed", "claimed"),
+            ("claimed", "blocked", "claimed"),
+            ("canceled", "done", "canceled"),
+            ("done", "canceled", "canceled"),
+            ("doing", "for_review", "for_review"),
+            ("for_review", "doing", "for_review"),
+        ],
+    )
     def test_monotonic_resolution_pairs(self, ours_lane, theirs_lane, expected_winner):
         """No rollback: higher priority lane always wins."""
-        ours_content = f"---\nlane: {ours_lane}\nreview_status: \"\"\nreviewed_by: \"\"\n---\n"
-        theirs_content = f"---\nlane: {theirs_lane}\nreview_status: \"\"\nreviewed_by: \"\"\n---\n"
+        ours_content = (
+            f'---\nlane: {ours_lane}\nreview_status: ""\nreviewed_by: ""\n---\n'
+        )
+        theirs_content = (
+            f'---\nlane: {theirs_lane}\nreview_status: ""\nreviewed_by: ""\n---\n'
+        )
 
         result = resolve_lane_conflict_rollback_aware(
-            ours_content, theirs_content,
-            ours_lane=ours_lane, theirs_lane=theirs_lane,
+            ours_content,
+            theirs_content,
+            ours_lane=ours_lane,
+            theirs_lane=theirs_lane,
         )
         assert result == expected_winner
 
-    @pytest.mark.parametrize("rollback_lane", [
-        "planned", "claimed", "in_progress", "doing",
-    ])
+    @pytest.mark.parametrize(
+        "rollback_lane",
+        [
+            "planned",
+            "claimed",
+            "in_progress",
+            "doing",
+        ],
+    )
     def test_rollback_always_beats_done(self, rollback_lane):
         """Any rollback (lane behind for_review) beats forward 'done'."""
-        ours_content = f"---\nlane: done\nreview_status: \"\"\nreviewed_by: \"\"\n---\n"
-        theirs_content = f"---\nlane: {rollback_lane}\nreview_status: \"has_feedback\"\nreviewed_by: alice\n---\n"
+        ours_content = f'---\nlane: done\nreview_status: ""\nreviewed_by: ""\n---\n'
+        theirs_content = f'---\nlane: {rollback_lane}\nreview_status: "has_feedback"\nreviewed_by: alice\n---\n'
 
         result = resolve_lane_conflict_rollback_aware(
-            ours_content, theirs_content,
-            ours_lane="done", theirs_lane=rollback_lane,
+            ours_content,
+            theirs_content,
+            ours_lane="done",
+            theirs_lane=rollback_lane,
         )
         assert result == rollback_lane

@@ -37,7 +37,9 @@ def git_repo(tmp_path: Path) -> Path:
     # Create initial commit
     initial_file = repo / "README.md"
     initial_file.write_text("# Test Repo\n")
-    subprocess.run(["git", "add", "README.md"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "README.md"], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", "Initial commit"],
         cwd=repo,
@@ -83,9 +85,10 @@ def test_safe_commit_preserves_unrelated_staged_files(git_repo: Path):
     )
 
     # File should be staged (index modified) - shown as "A " or "M " in first column
-    assert "A  unrelated.txt" in status_result.stdout or "M  unrelated.txt" in status_result.stdout, (
-        f"Unrelated file should remain staged. Got:\n{status_result.stdout}"
-    )
+    assert (
+        "A  unrelated.txt" in status_result.stdout
+        or "M  unrelated.txt" in status_result.stdout
+    ), f"Unrelated file should remain staged. Got:\n{status_result.stdout}"
 
     # Check that WP file was committed (not in status)
     assert "WP01.md" not in status_result.stdout, "WP01.md should be committed"
@@ -116,7 +119,9 @@ def test_safe_commit_nothing_to_commit_graceful(git_repo: Path):
         commit_message="No changes",
         allow_empty=False,
     )
-    assert result is False, "Should return False when nothing to commit and allow_empty=False"
+    assert result is False, (
+        "Should return False when nothing to commit and allow_empty=False"
+    )
 
     # allow_empty=True should return True
     result = safe_commit(
@@ -125,7 +130,9 @@ def test_safe_commit_nothing_to_commit_graceful(git_repo: Path):
         commit_message="No changes",
         allow_empty=True,
     )
-    assert result is True, "Should return True when nothing to commit and allow_empty=True"
+    assert result is True, (
+        "Should return True when nothing to commit and allow_empty=True"
+    )
 
 
 def test_safe_commit_preserves_multiple_unrelated_staged_files(git_repo: Path):

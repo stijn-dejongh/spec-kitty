@@ -110,18 +110,24 @@ class CitationValidationResult:
             if errors:
                 output.append("ERRORS (must fix):")
                 for issue in errors:
-                    output.append(f"  Line {issue.line_number} ({issue.field}): {issue.message}")
+                    output.append(
+                        f"  Line {issue.line_number} ({issue.field}): {issue.message}"
+                    )
                 output.append("")
 
             if warnings:
                 output.append("WARNINGS (recommended fixes):")
                 for issue in warnings:
-                    output.append(f"  Line {issue.line_number} ({issue.field}): {issue.message}")
+                    output.append(
+                        f"  Line {issue.line_number} ({issue.field}): {issue.message}"
+                    )
 
         return "\n".join(output)
 
 
-def _missing_columns(fieldnames: Iterable[str] | None, required: list[str]) -> list[str]:
+def _missing_columns(
+    fieldnames: Iterable[str] | None, required: list[str]
+) -> list[str]:
     if not fieldnames:
         return required.copy()
     return [col for col in required if col not in fieldnames]
@@ -186,7 +192,9 @@ def validate_citations(evidence_log_path: Path) -> CitationValidationResult:
     try:
         with evidence_log_path.open("r", encoding="utf-8-sig") as handle:
             reader = csv.DictReader(handle)
-            missing_columns = _missing_columns(reader.fieldnames, EVIDENCE_REQUIRED_COLUMNS)
+            missing_columns = _missing_columns(
+                reader.fieldnames, EVIDENCE_REQUIRED_COLUMNS
+            )
             if missing_columns:
                 issues.append(
                     CitationIssue(
@@ -298,7 +306,9 @@ def validate_source_register(source_register_path: Path) -> CitationValidationRe
     try:
         with source_register_path.open("r", encoding="utf-8-sig") as handle:
             reader = csv.DictReader(handle)
-            missing_columns = _missing_columns(reader.fieldnames, SOURCE_REGISTER_REQUIRED_COLUMNS)
+            missing_columns = _missing_columns(
+                reader.fieldnames, SOURCE_REGISTER_REQUIRED_COLUMNS
+            )
             if missing_columns:
                 issues.append(
                     CitationIssue(

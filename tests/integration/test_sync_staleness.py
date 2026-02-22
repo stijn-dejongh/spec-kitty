@@ -257,7 +257,9 @@ class TestSyncStaleness:
             capture_output=True,
         )
         (wp01_dir / "WP01.txt").write_text("WP01 work")
-        subprocess.run(["git", "add", "."], cwd=wp01_dir, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=wp01_dir, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP01"],
             cwd=wp01_dir,
@@ -290,7 +292,9 @@ class TestSyncStaleness:
             capture_output=True,
         )
         (wp02_dir / "WP02.txt").write_text("WP02 work")
-        subprocess.run(["git", "add", "."], cwd=wp02_dir, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=wp02_dir, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP02"],
             cwd=wp02_dir,
@@ -380,7 +384,9 @@ class TestSyncStaleness:
             capture_output=True,
         )
         (wp01_dir / "WP01.txt").write_text("WP01 work")
-        subprocess.run(["git", "add", "."], cwd=wp01_dir, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=wp01_dir, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP01"],
             cwd=wp01_dir,
@@ -397,13 +403,23 @@ class TestSyncStaleness:
         )
         wp02_dir = repo / ".worktrees" / "feature-WP02"
         subprocess.run(
-            ["git", "worktree", "add", str(wp02_dir), "feature-WP01", "-b", "feature-WP02"],
+            [
+                "git",
+                "worktree",
+                "add",
+                str(wp02_dir),
+                "feature-WP01",
+                "-b",
+                "feature-WP02",
+            ],
             cwd=repo,
             check=True,
             capture_output=True,
         )
         (wp02_dir / "WP02.txt").write_text("WP02 work")
-        subprocess.run(["git", "add", "."], cwd=wp02_dir, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=wp02_dir, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP02"],
             cwd=wp02_dir,
@@ -422,7 +438,9 @@ class TestSyncStaleness:
 
         # Update WP01 (add new commit)
         (wp01_dir / "WP01_updated.txt").write_text("updated")
-        subprocess.run(["git", "add", "."], cwd=wp01_dir, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=wp01_dir, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "update WP01"],
             cwd=wp01_dir,
@@ -524,7 +542,9 @@ class TestSyncStaleness:
             capture_output=True,
         )
         (wp01_dir / "WP01.txt").write_text("work")
-        subprocess.run(["git", "add", "."], cwd=wp01_dir, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=wp01_dir, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP01"],
             cwd=wp01_dir,

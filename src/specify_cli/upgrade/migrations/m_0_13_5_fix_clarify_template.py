@@ -32,7 +32,9 @@ class FixClarifyTemplateMigration(BaseMigration):
     """
 
     migration_id = "0.13.5_fix_clarify_template"
-    description = "Fix clarify template - replace placeholder with check-prerequisites command"
+    description = (
+        "Fix clarify template - replace placeholder with check-prerequisites command"
+    )
     target_version = "0.13.5"
 
     MISSION_NAME = "software-dev"
@@ -48,7 +50,10 @@ class FixClarifyTemplateMigration(BaseMigration):
             if slash_cmd.exists():
                 content = slash_cmd.read_text(encoding="utf-8")
                 # If it has the broken placeholder or old manual detection logic
-                if "(Missing script command for sh)" in content or "Check git branch name for pattern" in content:
+                if (
+                    "(Missing script command for sh)" in content
+                    or "Check git branch name for pattern" in content
+                ):
                     return True
         return False
 
@@ -118,17 +123,21 @@ class FixClarifyTemplateMigration(BaseMigration):
 
                 # Check if needs migration (has broken placeholder or old logic)
                 needs_migration = (
-                    "(Missing script command for sh)" in current_content or
-                    "Check git branch name for pattern" in current_content
+                    "(Missing script command for sh)" in current_content
+                    or "Check git branch name for pattern" in current_content
                 )
 
                 if needs_migration:
                     if dry_run:
-                        changes.append(f"Would update: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}")
+                        changes.append(
+                            f"Would update: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}"
+                        )
                     else:
                         try:
                             slash_cmd.write_text(template_content, encoding="utf-8")
-                            changes.append(f"Updated: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}")
+                            changes.append(
+                                f"Updated: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}"
+                            )
                             agents_updated += 1
                         except Exception as e:
                             errors.append(f"Failed to update {agent_dir}/{subdir}: {e}")

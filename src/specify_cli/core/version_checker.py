@@ -43,11 +43,13 @@ def get_cli_version() -> str:
 
     try:
         from importlib.metadata import version as get_version
+
         return get_version("spec-kitty-cli")
     except Exception:
         # Fall back to __version__ from __init__.py
         try:
             from specify_cli import __version__
+
             return __version__
         except Exception:
             return "unknown"
@@ -73,7 +75,9 @@ def get_project_version(project_root: Path) -> Optional[str]:
     return metadata.version
 
 
-def compare_versions(cli_version: str, project_version: str) -> tuple[int, MismatchType]:
+def compare_versions(
+    cli_version: str, project_version: str
+) -> tuple[int, MismatchType]:
     """Compare CLI and project versions using semantic versioning.
 
     Args:
@@ -106,9 +110,7 @@ def compare_versions(cli_version: str, project_version: str) -> tuple[int, Misma
 
 
 def format_version_error(
-    cli_version: str,
-    project_version: str,
-    mismatch_type: MismatchType
+    cli_version: str, project_version: str, mismatch_type: MismatchType
 ) -> str:
     """Format a user-facing error message for version mismatch.
 
@@ -126,6 +128,7 @@ def format_version_error(
         # Check if this is the critical 0.8.x -> 0.9.x upgrade
         try:
             from packaging.version import Version
+
             cli_ver = Version(cli_version)
             proj_ver = Version(project_version)
             is_090_upgrade = cli_ver >= Version("0.9.0") and proj_ver < Version("0.9.0")
@@ -245,7 +248,7 @@ def should_check_version(command_name: str) -> bool:
         "init",
         "upgrade",
         "version",  # --version flag
-        "help",     # --help flag
+        "help",  # --help flag
     }
 
     return command_name not in skip_commands

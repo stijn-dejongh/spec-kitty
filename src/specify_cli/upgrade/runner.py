@@ -74,7 +74,9 @@ class MigrationRunner:
         )
 
         # Get applicable migrations
-        migrations = MigrationRegistry.get_applicable(from_version, target_version, project_path=self.project_path)
+        migrations = MigrationRegistry.get_applicable(
+            from_version, target_version, project_path=self.project_path
+        )
 
         if not migrations:
             # Still update version stamp even when no migrations needed
@@ -126,9 +128,7 @@ class MigrationRunner:
             if worktrees_result.get("errors"):
                 result.errors.extend(worktrees_result["errors"])
                 # Don't fail the whole upgrade for worktree issues
-                result.warnings.append(
-                    "Some worktrees had issues - check errors above"
-                )
+                result.warnings.append("Some worktrees had issues - check errors above")
 
         return result
 
@@ -152,7 +152,9 @@ class MigrationRunner:
         if metadata.has_migration(migration.migration_id):
             return MigrationResult(
                 success=True,
-                warnings=[f"Migration {migration.migration_id} already applied, skipping"],
+                warnings=[
+                    f"Migration {migration.migration_id} already applied, skipping"
+                ],
             )
 
         # Check if migration is needed via detection
@@ -258,11 +260,17 @@ class MigrationRunner:
                             else None,
                         )
                     result["warnings"].extend(
-                        [f"Worktree {worktree.name}: {w}" for w in migration_result.warnings]
+                        [
+                            f"Worktree {worktree.name}: {w}"
+                            for w in migration_result.warnings
+                        ]
                     )
                 else:
                     result["errors"].extend(
-                        [f"Worktree {worktree.name}: {e}" for e in migration_result.errors]
+                        [
+                            f"Worktree {worktree.name}: {e}"
+                            for e in migration_result.errors
+                        ]
                     )
 
             # Save worktree metadata

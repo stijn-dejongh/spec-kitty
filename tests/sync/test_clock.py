@@ -33,7 +33,9 @@ class TestTick:
 
     def test_tick_from_nonzero(self, tmp_path: Path):
         """tick() works from a nonzero starting value."""
-        clock = LamportClock(value=99, node_id="test", _storage_path=tmp_path / "c.json")
+        clock = LamportClock(
+            value=99, node_id="test", _storage_path=tmp_path / "c.json"
+        )
         assert clock.tick() == 100
 
     def test_tick_persists(self, tmp_path: Path):
@@ -59,14 +61,18 @@ class TestReceive:
 
     def test_receive_when_local_is_higher(self, tmp_path: Path):
         """receive() still increments when local > remote."""
-        clock = LamportClock(value=20, node_id="test", _storage_path=tmp_path / "c.json")
+        clock = LamportClock(
+            value=20, node_id="test", _storage_path=tmp_path / "c.json"
+        )
         result = clock.receive(5)
         assert result == 21
         assert clock.value == 21
 
     def test_receive_when_equal(self, tmp_path: Path):
         """receive() increments when local == remote."""
-        clock = LamportClock(value=10, node_id="test", _storage_path=tmp_path / "c.json")
+        clock = LamportClock(
+            value=10, node_id="test", _storage_path=tmp_path / "c.json"
+        )
         result = clock.receive(10)
         assert result == 11
 

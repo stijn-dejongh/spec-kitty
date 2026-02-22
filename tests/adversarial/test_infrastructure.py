@@ -3,6 +3,7 @@ Infrastructure smoke tests to verify adversarial test setup.
 
 These tests validate that the test infrastructure is correctly configured.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

@@ -168,6 +168,7 @@ class GlossaryCandidateExtractionMiddleware:
             )
         except Exception as exc:
             import logging
+
             logging.getLogger(__name__).error(
                 "Failed to emit TermCandidateObserved for %s: %s",
                 term.surface,
@@ -333,6 +334,7 @@ class SemanticCheckMiddleware:
             )
         except Exception as exc:
             import logging
+
             logging.getLogger(__name__).error(
                 "Failed to emit SemanticCheckEvaluated: %s", exc
             )
@@ -462,6 +464,7 @@ class GenerationGateMiddleware:
                 setattr(context, "checkpoint_token", checkpoint.retry_token)
             except Exception as ckpt_err:
                 import logging
+
                 _logger = logging.getLogger(__name__)
                 _logger.error(
                     "Failed to emit checkpoint (blocking proceeds): %s",
@@ -482,6 +485,7 @@ class GenerationGateMiddleware:
                 )
             except Exception as emit_err:
                 import logging
+
                 _logger = logging.getLogger(__name__)
                 _logger.error(
                     "Failed to emit generation-blocked event (blocking proceeds): %s",
@@ -646,9 +650,7 @@ class ResumeMiddleware:
 
         # Verify input context hasn't changed
         inputs = getattr(context, "inputs", {})
-        if not handle_context_change(
-            checkpoint, inputs, confirm_fn=self.confirm_fn
-        ):
+        if not handle_context_change(checkpoint, inputs, confirm_fn=self.confirm_fn):
             # User declined resumption
             raise AbortResume("User declined resumption due to context change")
 

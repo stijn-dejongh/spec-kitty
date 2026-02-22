@@ -38,7 +38,9 @@ def register_commands(app: typer.Typer) -> None:
     app.add_typer(constitution_module.app, name="constitution")
     app.add_typer(context_module.app, name="context")
     app.command()(dashboard_module.dashboard)
-    app.add_typer(glossary_module.app, name="glossary", help="Glossary management commands")
+    app.add_typer(
+        glossary_module.app, name="glossary", help="Glossary management commands"
+    )
     app.command()(implement_module.implement)
     app.command()(lifecycle_module.specify)
     app.command()(lifecycle_module.plan)

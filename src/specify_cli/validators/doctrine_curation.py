@@ -67,19 +67,27 @@ def validate_import_candidate(path: Path) -> ImportCandidateValidationResult:
     else:
         targets = classification.get("target_concepts")
         if not isinstance(targets, list) or not targets:
-            errors.append("classification.target_concepts must contain at least one concept")
+            errors.append(
+                "classification.target_concepts must contain at least one concept"
+            )
 
     if str(data.get("status", "")).strip().lower() == ADOPTED:
         artifacts = data.get("resulting_artifacts")
         if not isinstance(artifacts, list) or not artifacts:
-            errors.append("status=adopted requires resulting_artifacts links to doctrine artifacts")
+            errors.append(
+                "status=adopted requires resulting_artifacts links to doctrine artifacts"
+            )
         else:
             for idx, artifact in enumerate(artifacts, start=1):
                 value = str(artifact).strip()
                 if not value:
-                    errors.append(f"resulting_artifacts[{idx}] must be a non-empty path")
+                    errors.append(
+                        f"resulting_artifacts[{idx}] must be a non-empty path"
+                    )
                 elif not value.startswith("src/doctrine/"):
-                    errors.append(f"resulting_artifacts[{idx}] must link to src/doctrine/*")
+                    errors.append(
+                        f"resulting_artifacts[{idx}] must link to src/doctrine/*"
+                    )
 
     return ImportCandidateValidationResult(
         file_path=path,

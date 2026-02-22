@@ -41,6 +41,7 @@ from . import reducer as _reducer
 
 logger = logging.getLogger(__name__)
 
+
 class TransitionError(Exception):
     """Raised when a status transition is invalid."""
 
@@ -94,12 +95,7 @@ def _build_done_evidence(evidence: dict[str, Any]) -> DoneEvidence:
     reviewer = review_data.get("reviewer")
     verdict = review_data.get("verdict")
     reference = review_data.get("reference")
-    if (
-        not reviewer
-        or not verdict
-        or not reference
-        or not str(reference).strip()
-    ):
+    if not reviewer or not verdict or not reference or not str(reference).strip():
         raise TransitionError(
             "Moving to done requires evidence with review.reviewer "
             "review.verdict, and review.reference"
@@ -111,12 +107,8 @@ def _build_done_evidence(evidence: dict[str, Any]) -> DoneEvidence:
         reference=str(reference),
     )
 
-    repos = [
-        RepoEvidence(**r) for r in evidence.get("repos", [])
-    ]
-    verification = [
-        VerificationResult(**v) for v in evidence.get("verification", [])
-    ]
+    repos = [RepoEvidence(**r) for r in evidence.get("repos", [])]
+    verification = [VerificationResult(**v) for v in evidence.get("verification", [])]
 
     return DoneEvidence(
         review=review_approval,

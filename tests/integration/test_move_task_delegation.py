@@ -29,14 +29,20 @@ def task_repo(tmp_path: Path) -> Path:
     repo.mkdir()
 
     # Initialize git repo
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "config", "user.name", "Test User"],
-        cwd=repo, check=True, capture_output=True,
+        cwd=repo,
+        check=True,
+        capture_output=True,
     )
     subprocess.run(
         ["git", "config", "user.email", "test@example.com"],
-        cwd=repo, check=True, capture_output=True,
+        cwd=repo,
+        check=True,
+        capture_output=True,
     )
 
     # Create .kittify marker
@@ -78,7 +84,9 @@ Test implementation content.
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
     subprocess.run(
         ["git", "commit", "-m", "Initial"],
-        cwd=repo, check=True, capture_output=True,
+        cwd=repo,
+        check=True,
+        capture_output=True,
     )
 
     return repo
@@ -92,12 +100,18 @@ class TestMoveTaskProducesJsonlEvent:
         monkeypatch.chdir(task_repo)
 
         result = runner.invoke(
-            app, [
-                "move-task", "WP01", "--to", "doing",
-                "--feature", "001-test-feature",
-                "--agent", "test-agent",
+            app,
+            [
+                "move-task",
+                "WP01",
+                "--to",
+                "doing",
+                "--feature",
+                "001-test-feature",
+                "--agent",
+                "test-agent",
                 "--json",
-            ]
+            ],
         )
 
         assert result.exit_code == 0, f"stdout: {result.stdout}"
@@ -126,12 +140,18 @@ class TestMoveTaskProducesStatusJson:
         monkeypatch.chdir(task_repo)
 
         result = runner.invoke(
-            app, [
-                "move-task", "WP01", "--to", "doing",
-                "--feature", "001-test-feature",
-                "--agent", "test-agent",
+            app,
+            [
+                "move-task",
+                "WP01",
+                "--to",
+                "doing",
+                "--feature",
+                "001-test-feature",
+                "--agent",
+                "test-agent",
                 "--json",
-            ]
+            ],
         )
 
         assert result.exit_code == 0, f"stdout: {result.stdout}"
@@ -157,20 +177,34 @@ class TestMoveTaskFrontmatterStillUpdated:
         monkeypatch.chdir(task_repo)
 
         result = runner.invoke(
-            app, [
-                "move-task", "WP01", "--to", "doing",
-                "--feature", "001-test-feature",
-                "--agent", "test-agent",
-                "--assignee", "claude",
-                "--shell-pid", "12345",
+            app,
+            [
+                "move-task",
+                "WP01",
+                "--to",
+                "doing",
+                "--feature",
+                "001-test-feature",
+                "--agent",
+                "test-agent",
+                "--assignee",
+                "claude",
+                "--shell-pid",
+                "12345",
                 "--json",
-            ]
+            ],
         )
 
         assert result.exit_code == 0, f"stdout: {result.stdout}"
 
         # Verify WP file frontmatter was updated
-        wp_file = task_repo / "kitty-specs" / "001-test-feature" / "tasks" / "WP01-test-task.md"
+        wp_file = (
+            task_repo
+            / "kitty-specs"
+            / "001-test-feature"
+            / "tasks"
+            / "WP01-test-task.md"
+        )
         content = wp_file.read_text(encoding="utf-8")
         front, body, _ = split_frontmatter(content)
 
@@ -190,25 +224,33 @@ class TestMoveTaskFrontmatterStillUpdated:
 class TestMoveTaskDoingAliasMapsToInProgress:
     """T047: test_move_task_doing_alias_maps_to_in_progress"""
 
-    def test_move_task_doing_alias_maps_to_in_progress(self, task_repo: Path, monkeypatch):
+    def test_move_task_doing_alias_maps_to_in_progress(
+        self, task_repo: Path, monkeypatch
+    ):
         """--to doing should resolve to in_progress in both event and frontmatter."""
         monkeypatch.chdir(task_repo)
 
         result = runner.invoke(
-            app, [
-                "move-task", "WP01", "--to", "doing",
-                "--feature", "001-test-feature",
-                "--agent", "test-agent",
+            app,
+            [
+                "move-task",
+                "WP01",
+                "--to",
+                "doing",
+                "--feature",
+                "001-test-feature",
+                "--agent",
+                "test-agent",
                 "--json",
-            ]
+            ],
         )
 
         assert result.exit_code == 0, f"stdout: {result.stdout}"
 
         # Parse JSON output
         json_line = None
-        for line in result.stdout.strip().split('\n'):
-            if line.strip().startswith('{'):
+        for line in result.stdout.strip().split("\n"):
+            if line.strip().startswith("{"):
                 json_line = line.strip()
                 break
         assert json_line is not None
@@ -239,30 +281,42 @@ class TestMoveTaskPreValidationStillWorks:
 
         # First, assign WP01 to agent-a
         result1 = runner.invoke(
-            app, [
-                "move-task", "WP01", "--to", "doing",
-                "--feature", "001-test-feature",
-                "--agent", "agent-a",
+            app,
+            [
+                "move-task",
+                "WP01",
+                "--to",
+                "doing",
+                "--feature",
+                "001-test-feature",
+                "--agent",
+                "agent-a",
                 "--json",
-            ]
+            ],
         )
         assert result1.exit_code == 0, f"stdout: {result1.stdout}"
 
         # Now try to move as agent-b (should fail without --force)
         result2 = runner.invoke(
-            app, [
-                "move-task", "WP01", "--to", "for_review",
-                "--feature", "001-test-feature",
-                "--agent", "agent-b",
+            app,
+            [
+                "move-task",
+                "WP01",
+                "--to",
+                "for_review",
+                "--feature",
+                "001-test-feature",
+                "--agent",
+                "agent-b",
                 "--json",
-            ]
+            ],
         )
         assert result2.exit_code == 1
 
         # Verify error mentions agent mismatch
         json_line = None
-        for line in result2.stdout.strip().split('\n'):
-            if line.strip().startswith('{'):
+        for line in result2.stdout.strip().split("\n"):
+            if line.strip().startswith("{"):
                 json_line = line.strip()
                 break
         assert json_line is not None
@@ -274,11 +328,16 @@ class TestMoveTaskPreValidationStillWorks:
         monkeypatch.chdir(task_repo)
 
         result = runner.invoke(
-            app, [
-                "move-task", "WP01", "--to", "bogus_lane",
-                "--feature", "001-test-feature",
+            app,
+            [
+                "move-task",
+                "WP01",
+                "--to",
+                "bogus_lane",
+                "--feature",
+                "001-test-feature",
                 "--json",
-            ]
+            ],
         )
         assert result.exit_code == 1
 
@@ -300,13 +359,19 @@ class TestMoveTaskNoCommitStillEmitsEvent:
         monkeypatch.chdir(task_repo)
 
         result = runner.invoke(
-            app, [
-                "move-task", "WP01", "--to", "doing",
-                "--feature", "001-test-feature",
-                "--agent", "test-agent",
+            app,
+            [
+                "move-task",
+                "WP01",
+                "--to",
+                "doing",
+                "--feature",
+                "001-test-feature",
+                "--agent",
+                "test-agent",
                 "--no-auto-commit",
                 "--json",
-            ]
+            ],
         )
 
         assert result.exit_code == 0, f"stdout: {result.stdout}"
@@ -321,7 +386,9 @@ class TestMoveTaskNoCommitStillEmitsEvent:
 
         # Verify status.json snapshot was still created
         snapshot_file = feature_dir / SNAPSHOT_FILENAME
-        assert snapshot_file.exists(), "Snapshot should be created even without auto-commit"
+        assert snapshot_file.exists(), (
+            "Snapshot should be created even without auto-commit"
+        )
 
 
 class TestMoveTaskBehaviorMatchesPreRefactor:
@@ -334,40 +401,65 @@ class TestMoveTaskBehaviorMatchesPreRefactor:
 
         # planned -> doing (in_progress)
         result1 = runner.invoke(
-            app, [
-                "move-task", "WP01", "--to", "doing",
-                "--feature", "001-test-feature",
-                "--agent", "test-agent",
+            app,
+            [
+                "move-task",
+                "WP01",
+                "--to",
+                "doing",
+                "--feature",
+                "001-test-feature",
+                "--agent",
+                "test-agent",
                 "--json",
-            ]
+            ],
         )
         assert result1.exit_code == 0, f"step 1 stdout: {result1.stdout}"
 
         # doing -> for_review
         result2 = runner.invoke(
-            app, [
-                "move-task", "WP01", "--to", "for_review",
-                "--feature", "001-test-feature",
-                "--agent", "test-agent",
+            app,
+            [
+                "move-task",
+                "WP01",
+                "--to",
+                "for_review",
+                "--feature",
+                "001-test-feature",
+                "--agent",
+                "test-agent",
                 "--json",
-            ]
+            ],
         )
         assert result2.exit_code == 0, f"step 2 stdout: {result2.stdout}"
 
         # for_review -> done
         result3 = runner.invoke(
-            app, [
-                "move-task", "WP01", "--to", "done",
-                "--feature", "001-test-feature",
-                "--agent", "test-agent",
-                "--approval-ref", "PR#42",
+            app,
+            [
+                "move-task",
+                "WP01",
+                "--to",
+                "done",
+                "--feature",
+                "001-test-feature",
+                "--agent",
+                "test-agent",
+                "--approval-ref",
+                "PR#42",
                 "--json",
-            ]
+            ],
         )
         assert result3.exit_code == 0, f"step 3 stdout: {result3.stdout}"
 
         # Verify final state in frontmatter
-        wp_file = task_repo / "kitty-specs" / "001-test-feature" / "tasks" / "WP01-test-task.md"
+        wp_file = (
+            task_repo
+            / "kitty-specs"
+            / "001-test-feature"
+            / "tasks"
+            / "WP01-test-task.md"
+        )
         content = wp_file.read_text(encoding="utf-8")
         front, body, _ = split_frontmatter(content)
         assert extract_scalar(front, "lane") == "done"
@@ -388,27 +480,42 @@ class TestMoveTaskBehaviorMatchesPreRefactor:
         runner.invoke(
             app,
             [
-                "move-task", "WP01", "--to", "doing",
-                "--feature", "001-test-feature",
-                "--agent", "test-agent",
+                "move-task",
+                "WP01",
+                "--to",
+                "doing",
+                "--feature",
+                "001-test-feature",
+                "--agent",
+                "test-agent",
                 "--json",
             ],
         )
         runner.invoke(
             app,
             [
-                "move-task", "WP01", "--to", "for_review",
-                "--feature", "001-test-feature",
-                "--agent", "test-agent",
+                "move-task",
+                "WP01",
+                "--to",
+                "for_review",
+                "--feature",
+                "001-test-feature",
+                "--agent",
+                "test-agent",
                 "--json",
             ],
         )
         result = runner.invoke(
             app,
             [
-                "move-task", "WP01", "--to", "done",
-                "--feature", "001-test-feature",
-                "--agent", "test-agent",
+                "move-task",
+                "WP01",
+                "--to",
+                "done",
+                "--feature",
+                "001-test-feature",
+                "--agent",
+                "test-agent",
                 "--json",
             ],
         )
@@ -425,20 +532,26 @@ class TestMoveTaskBehaviorMatchesPreRefactor:
         monkeypatch.chdir(task_repo)
 
         result = runner.invoke(
-            app, [
-                "move-task", "WP01", "--to", "doing",
-                "--feature", "001-test-feature",
-                "--agent", "test-agent",
+            app,
+            [
+                "move-task",
+                "WP01",
+                "--to",
+                "doing",
+                "--feature",
+                "001-test-feature",
+                "--agent",
+                "test-agent",
                 "--json",
-            ]
+            ],
         )
 
         assert result.exit_code == 0, f"stdout: {result.stdout}"
 
         # Find JSON output line
         json_line = None
-        for line in result.stdout.strip().split('\n'):
-            if line.strip().startswith('{'):
+        for line in result.stdout.strip().split("\n"):
+            if line.strip().startswith("{"):
                 json_line = line.strip()
                 break
         assert json_line is not None
@@ -460,19 +573,33 @@ class TestMoveTaskBehaviorMatchesPreRefactor:
         monkeypatch.chdir(task_repo)
 
         result = runner.invoke(
-            app, [
-                "move-task", "WP01", "--to", "doing",
-                "--feature", "001-test-feature",
-                "--agent", "my-agent",
-                "--shell-pid", "9999",
-                "--note", "Starting implementation",
+            app,
+            [
+                "move-task",
+                "WP01",
+                "--to",
+                "doing",
+                "--feature",
+                "001-test-feature",
+                "--agent",
+                "my-agent",
+                "--shell-pid",
+                "9999",
+                "--note",
+                "Starting implementation",
                 "--json",
-            ]
+            ],
         )
 
         assert result.exit_code == 0, f"stdout: {result.stdout}"
 
-        wp_file = task_repo / "kitty-specs" / "001-test-feature" / "tasks" / "WP01-test-task.md"
+        wp_file = (
+            task_repo
+            / "kitty-specs"
+            / "001-test-feature"
+            / "tasks"
+            / "WP01-test-task.md"
+        )
         content = wp_file.read_text(encoding="utf-8")
 
         # Verify activity log entry format
@@ -487,18 +614,30 @@ class TestMoveTaskBehaviorMatchesPreRefactor:
 
         # Move to blocked (new canonical lane)
         result = runner.invoke(
-            app, [
-                "move-task", "WP01", "--to", "blocked",
-                "--feature", "001-test-feature",
-                "--agent", "test-agent",
+            app,
+            [
+                "move-task",
+                "WP01",
+                "--to",
+                "blocked",
+                "--feature",
+                "001-test-feature",
+                "--agent",
+                "test-agent",
                 "--json",
-            ]
+            ],
         )
 
         assert result.exit_code == 0, f"stdout: {result.stdout}"
 
         # Verify frontmatter
-        wp_file = task_repo / "kitty-specs" / "001-test-feature" / "tasks" / "WP01-test-task.md"
+        wp_file = (
+            task_repo
+            / "kitty-specs"
+            / "001-test-feature"
+            / "tasks"
+            / "WP01-test-task.md"
+        )
         content = wp_file.read_text(encoding="utf-8")
         front, _, _ = split_frontmatter(content)
         assert extract_scalar(front, "lane") == "blocked"

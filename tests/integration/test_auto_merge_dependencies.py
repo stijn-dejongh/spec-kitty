@@ -37,10 +37,14 @@ def run_cli(project_path: Path, *args: str) -> subprocess.CompletedProcess:
 
     env = os.environ.copy()
     src_path = REPO_ROOT / "src"
-    env["PYTHONPATH"] = f"{src_path}{os.pathsep}{env.get('PYTHONPATH', '')}".rstrip(os.pathsep)
+    env["PYTHONPATH"] = f"{src_path}{os.pathsep}{env.get('PYTHONPATH', '')}".rstrip(
+        os.pathsep
+    )
     env.setdefault("SPEC_KITTY_TEMPLATE_ROOT", str(REPO_ROOT))
     command = [str(get_venv_python()), "-m", "specify_cli.__init__", *args]
-    return subprocess.run(command, cwd=str(project_path), capture_output=True, text=True, env=env)
+    return subprocess.run(
+        command, cwd=str(project_path), capture_output=True, text=True, env=env
+    )
 
 
 def test_detect_all_dependencies_done():
@@ -62,11 +66,7 @@ def test_detect_all_dependencies_done():
         for wp_id, lane in [("WP01", "done"), ("WP02", "done"), ("WP03", "done")]:
             wp_file = tmp_path / f"{wp_id}.md"
             wp_file.write_text(
-                f"---\n"
-                f"work_package_id: {wp_id}\n"
-                f"lane: {lane}\n"
-                f"---\n\n"
-                f"# {wp_id}\n"
+                f"---\nwork_package_id: {wp_id}\nlane: {lane}\n---\n\n# {wp_id}\n"
             )
 
         # Check if all done
@@ -97,11 +97,7 @@ def test_detect_partial_dependencies_done():
         for wp_id, lane in [("WP01", "done"), ("WP02", "for_review"), ("WP03", "done")]:
             wp_file = tmp_path / f"{wp_id}.md"
             wp_file.write_text(
-                f"---\n"
-                f"work_package_id: {wp_id}\n"
-                f"lane: {lane}\n"
-                f"---\n\n"
-                f"# {wp_id}\n"
+                f"---\nwork_package_id: {wp_id}\nlane: {lane}\n---\n\n# {wp_id}\n"
             )
 
         # Check if all done
@@ -135,7 +131,9 @@ def test_should_merge_dependencies_before_implement():
     deps_partial_multi = ["WP01", "WP02", "WP03"]
     lanes_partial = {"WP01": "done", "WP02": "for_review", "WP03": "done"}
 
-    should_merge_partial = all(lanes_partial[dep] == "done" for dep in deps_partial_multi)
+    should_merge_partial = all(
+        lanes_partial[dep] == "done" for dep in deps_partial_multi
+    )
     assert should_merge_partial is False, "Should NOT merge when any dep not done"
 
     # Test case 3: All done, single parent → don't need merge (use --base)
@@ -143,7 +141,9 @@ def test_should_merge_dependencies_before_implement():
     lanes_single = {"WP01": "done"}
 
     is_multi_parent = len(deps_single) > 1
-    should_merge_single = is_multi_parent and all(lanes_single[dep] == "done" for dep in deps_single)
+    should_merge_single = is_multi_parent and all(
+        lanes_single[dep] == "done" for dep in deps_single
+    )
     assert should_merge_single is False, "Single parent uses --base, no merge needed"
 
 
@@ -253,7 +253,9 @@ def test_recommendation_engine():
     """
     # Design test for recommendation logic
 
-    def recommend_strategy(dep_count: int, all_done: bool, conflicts_predicted: bool) -> str:
+    def recommend_strategy(
+        dep_count: int, all_done: bool, conflicts_predicted: bool
+    ) -> str:
         if not all_done:
             return "Cannot implement - dependencies not complete"
 

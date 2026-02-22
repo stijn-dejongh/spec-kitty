@@ -25,11 +25,28 @@ _VALID_RESULTS = ("success", "failed", "blocked")
 @require_main_repo
 def next_step(
     agent: Annotated[str, typer.Option("--agent", help="Agent name (required)")],
-    result: Annotated[str, typer.Option("--result", help="Result of previous step: success|failed|blocked")] = "success",
-    feature: Annotated[Optional[str], typer.Option("--feature", help="Feature slug (auto-detected if omitted)")] = None,
-    json_output: Annotated[bool, typer.Option("--json", help="Output JSON decision only")] = False,
-    answer: Annotated[Optional[str], typer.Option("--answer", help="Answer to a pending decision")] = None,
-    decision_id: Annotated[Optional[str], typer.Option("--decision-id", help="Decision ID (required if multiple pending)")] = None,
+    result: Annotated[
+        str,
+        typer.Option(
+            "--result", help="Result of previous step: success|failed|blocked"
+        ),
+    ] = "success",
+    feature: Annotated[
+        Optional[str],
+        typer.Option("--feature", help="Feature slug (auto-detected if omitted)"),
+    ] = None,
+    json_output: Annotated[
+        bool, typer.Option("--json", help="Output JSON decision only")
+    ] = False,
+    answer: Annotated[
+        Optional[str], typer.Option("--answer", help="Answer to a pending decision")
+    ] = None,
+    decision_id: Annotated[
+        Optional[str],
+        typer.Option(
+            "--decision-id", help="Decision ID (required if multiple pending)"
+        ),
+    ] = None,
 ) -> None:
     """Decide and emit the next agent action for the current mission.
 
@@ -46,7 +63,10 @@ def next_step(
     """
     # Validate --result
     if result not in _VALID_RESULTS:
-        print(f"Error: --result must be one of {_VALID_RESULTS}, got '{result}'", file=sys.stderr)
+        print(
+            f"Error: --result must be one of {_VALID_RESULTS}, got '{result}'",
+            file=sys.stderr,
+        )
         raise typer.Exit(1)
 
     # Resolve repo root
@@ -65,7 +85,9 @@ def next_step(
     # Handle --answer flow
     answered_id = None
     if answer is not None:
-        answered_id = _handle_answer(agent, feature_slug, answer, decision_id, repo_root)
+        answered_id = _handle_answer(
+            agent, feature_slug, answer, decision_id, repo_root
+        )
 
     # Core decision
     decision = decide_next(agent, feature_slug, result, repo_root)
@@ -116,10 +138,15 @@ def _handle_answer(
     """
     from pathlib import Path
 
-    repo_root_path = Path(str(repo_root)) if not isinstance(repo_root, Path) else repo_root
+    repo_root_path = (
+        Path(str(repo_root)) if not isinstance(repo_root, Path) else repo_root
+    )
 
     try:
-        from specify_cli.next.runtime_bridge import answer_decision_via_runtime, get_or_start_run
+        from specify_cli.next.runtime_bridge import (
+            answer_decision_via_runtime,
+            get_or_start_run,
+        )
         from specify_cli.mission import get_feature_mission_key
 
         feature_dir = repo_root_path / "kitty-specs" / feature_slug
@@ -148,7 +175,11 @@ def _handle_answer(
                 raise typer.Exit(1)
 
         answer_decision_via_runtime(
-            feature_slug, decision_id, answer, agent, repo_root_path,
+            feature_slug,
+            decision_id,
+            answer,
+            agent,
+            repo_root_path,
         )
 
         return decision_id

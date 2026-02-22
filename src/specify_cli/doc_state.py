@@ -69,7 +69,8 @@ class DocumentationState(TypedDict):
 
 
 def set_iteration_mode(
-    meta_file: Path, iteration_mode: Literal["initial", "gap_filling", "feature_specific"]
+    meta_file: Path,
+    iteration_mode: Literal["initial", "gap_filling", "feature_specific"],
 ) -> None:
     """Set iteration mode in feature meta.json.
 
@@ -137,7 +138,9 @@ def set_divio_types_selected(meta_file: Path, divio_types: List[str]) -> None:
         json.dump(meta, f, indent=2)
 
 
-def set_generators_configured(meta_file: Path, generators: List[GeneratorConfig]) -> None:
+def set_generators_configured(
+    meta_file: Path, generators: List[GeneratorConfig]
+) -> None:
     """Set configured generators in feature meta.json.
 
     Args:

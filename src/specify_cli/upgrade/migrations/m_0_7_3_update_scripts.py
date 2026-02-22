@@ -25,7 +25,9 @@ class UpdateScriptsMigration(BaseMigration):
 
     def detect(self, project_path: Path) -> bool:
         """Check if project has old scripts that need updating."""
-        script_path = project_path / ".kittify" / "scripts" / "bash" / "create-new-feature.sh"
+        script_path = (
+            project_path / ".kittify" / "scripts" / "bash" / "create-new-feature.sh"
+        )
 
         if not script_path.exists():
             return False
@@ -61,7 +63,10 @@ class UpdateScriptsMigration(BaseMigration):
 
         # Scripts to update
         scripts = [
-            ("scripts/bash/create-new-feature.sh", ".kittify/scripts/bash/create-new-feature.sh"),
+            (
+                "scripts/bash/create-new-feature.sh",
+                ".kittify/scripts/bash/create-new-feature.sh",
+            ),
             ("scripts/bash/common.sh", ".kittify/scripts/bash/common.sh"),
         ]
 

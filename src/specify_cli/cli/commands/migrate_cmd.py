@@ -32,14 +32,14 @@ console = Console()
 
 def migrate(
     dry_run: bool = typer.Option(
-        False, "--dry-run", help="Show what would change without modifying the filesystem"
+        False,
+        "--dry-run",
+        help="Show what would change without modifying the filesystem",
     ),
     verbose: bool = typer.Option(
         False, "--verbose", "-v", help="Show file-by-file detail"
     ),
-    force: bool = typer.Option(
-        False, "--force", help="Skip confirmation prompt"
-    ),
+    force: bool = typer.Option(False, "--force", help="Skip confirmation prompt"),
 ) -> None:
     """Migrate project .kittify/ to centralized model.
 
@@ -75,9 +75,13 @@ def migrate(
     # Step 1: Ensure global runtime is installed and current.
     # This is idempotent -- fast-path returns immediately if version matches.
     if dry_run:
-        console.print("[bold]Step 1:[/bold] Global runtime check (no changes in dry-run)")
+        console.print(
+            "[bold]Step 1:[/bold] Global runtime check (no changes in dry-run)"
+        )
     else:
-        console.print("[bold]Step 1:[/bold] Ensuring global runtime (~/.kittify/) is up to date...")
+        console.print(
+            "[bold]Step 1:[/bold] Ensuring global runtime (~/.kittify/) is up to date..."
+        )
         ensure_runtime()
         console.print("  [green]Global runtime is current.[/green]")
 

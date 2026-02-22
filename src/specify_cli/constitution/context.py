@@ -9,10 +9,15 @@ from pathlib import Path
 
 from ruamel.yaml import YAML
 
-from specify_cli.constitution.resolver import GovernanceResolutionError, resolve_governance
+from specify_cli.constitution.resolver import (
+    GovernanceResolutionError,
+    resolve_governance,
+)
 
 
-BOOTSTRAP_ACTIONS: frozenset[str] = frozenset({"specify", "plan", "implement", "review"})
+BOOTSTRAP_ACTIONS: frozenset[str] = frozenset(
+    {"specify", "plan", "implement", "review"}
+)
 
 
 @dataclass(frozen=True)
@@ -86,7 +91,9 @@ def build_constitution_context(
     )
 
 
-def _render_bootstrap(constitution_path: Path, summary: list[str], references: list[dict[str, str]]) -> str:
+def _render_bootstrap(
+    constitution_path: Path, summary: list[str], references: list[dict[str, str]]
+) -> str:
     lines: list[str] = [
         "Constitution Context (Bootstrap):",
         f"  - Source: {constitution_path}",
@@ -145,7 +152,11 @@ def _extract_policy_summary(content: str) -> list[str]:
 
     if start is None:
         # Fallback: return the first meaningful bullet points in the document.
-        fallback = [line.strip().lstrip("- ").strip() for line in lines if line.strip().startswith("-")]
+        fallback = [
+            line.strip().lstrip("- ").strip()
+            for line in lines
+            if line.strip().startswith("-")
+        ]
         return [item for item in fallback if item][:8]
 
     summary: list[str] = []
@@ -183,11 +194,13 @@ def _load_references(path: Path) -> list[dict[str, str]]:
     for item in raw_references:
         if not isinstance(item, dict):
             continue
-        refs.append({
-            "id": str(item.get("id", "")),
-            "title": str(item.get("title", "")),
-            "local_path": str(item.get("local_path", "")),
-        })
+        refs.append(
+            {
+                "id": str(item.get("id", "")),
+                "title": str(item.get("title", "")),
+                "local_path": str(item.get("local_path", "")),
+            }
+        )
     return refs
 
 

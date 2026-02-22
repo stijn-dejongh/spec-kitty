@@ -305,9 +305,7 @@ def run_doctor(
         FileNotFoundError: If feature_dir does not exist.
     """
     if not feature_dir.exists():
-        raise FileNotFoundError(
-            f"Feature directory does not exist: {feature_dir}"
-        )
+        raise FileNotFoundError(f"Feature directory does not exist: {feature_dir}")
 
     result = DoctorResult(feature_slug=feature_slug)
 

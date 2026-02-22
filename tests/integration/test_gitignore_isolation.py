@@ -42,7 +42,9 @@ def test_worktree_creation_does_not_modify_gitignore(tmp_path: Path):
 
     # Create meta.json
     meta_path = feature_dir / "meta.json"
-    meta_path.write_text('{"feature_slug": "001-test-feature", "target_branch": "main"}')
+    meta_path.write_text(
+        '{"feature_slug": "001-test-feature", "target_branch": "main"}'
+    )
 
     # Create WP task file
     tasks_dir = feature_dir / "tasks"
@@ -159,7 +161,9 @@ def test_worktree_merge_has_no_gitignore_pollution(tmp_path: Path):
 
     # Create meta.json
     meta_path = feature_dir / "meta.json"
-    meta_path.write_text('{"feature_slug": "001-test-feature", "target_branch": "main"}')
+    meta_path.write_text(
+        '{"feature_slug": "001-test-feature", "target_branch": "main"}'
+    )
 
     # Create WP task file
     tasks_dir = feature_dir / "tasks"
@@ -239,10 +243,7 @@ dependencies: []
     )
 
     # Only the initial commit should mention .gitignore
-    gitignore_commits = [
-        line for line in git_log.stdout.split("\n")
-        if line.strip()
-    ]
+    gitignore_commits = [line for line in git_log.stdout.split("\n") if line.strip()]
 
     # Should only be 1 commit (initial commit)
     assert len(gitignore_commits) <= 1, (
@@ -282,7 +283,9 @@ def test_git_info_exclude_contains_exclusion_patterns(tmp_path: Path):
 
     # Create meta.json
     meta_path = feature_dir / "meta.json"
-    meta_path.write_text('{"feature_slug": "001-test-feature", "target_branch": "main"}')
+    meta_path.write_text(
+        '{"feature_slug": "001-test-feature", "target_branch": "main"}'
+    )
 
     # Create WP task file
     tasks_dir = feature_dir / "tasks"
@@ -331,9 +334,7 @@ dependencies: []
     git_dir = Path(git_dir_str)
     exclude_path = git_dir / "info" / "exclude"
 
-    assert exclude_path.exists(), (
-        f".git/info/exclude should exist at {exclude_path}"
-    )
+    assert exclude_path.exists(), f".git/info/exclude should exist at {exclude_path}"
 
     # Verify it contains the exclusion pattern for WP status files
     exclude_content = exclude_path.read_text()
@@ -343,7 +344,10 @@ dependencies: []
     )
 
     # Verify comment is included
-    assert "Block WP status files" in exclude_content or "managed in planning branch" in exclude_content, (
+    assert (
+        "Block WP status files" in exclude_content
+        or "managed in planning branch" in exclude_content
+    ), (
         ".git/info/exclude should contain explanatory comment. "
         f"Content:\n{exclude_content}"
     )

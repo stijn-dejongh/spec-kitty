@@ -4,7 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from specify_cli.constitution.generator import build_constitution_draft, write_constitution
+from specify_cli.constitution.generator import (
+    build_constitution_draft,
+    write_constitution,
+)
 
 
 def test_build_constitution_draft_defaults() -> None:

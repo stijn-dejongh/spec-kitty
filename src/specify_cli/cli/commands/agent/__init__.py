@@ -8,7 +8,7 @@ from . import config, feature, tasks, context, release, workflow, status
 app = typer.Typer(
     name="agent",
     help="Commands for AI agents to execute spec-kitty workflows programmatically",
-    no_args_is_help=True
+    no_args_is_help=True,
 )
 
 # Register sub-apps for each command module

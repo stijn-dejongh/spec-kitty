@@ -247,7 +247,9 @@ def _resolve_preferred_agents(
         preferred_implementer = selected_agents[0]
     if not preferred_reviewer:
         if len(selected_agents) > 1:
-            preferred_reviewer = next(agent for agent in selected_agents if agent != preferred_implementer)
+            preferred_reviewer = next(
+                agent for agent in selected_agents if agent != preferred_implementer
+            )
         else:
             preferred_reviewer = preferred_implementer
 
@@ -310,37 +312,70 @@ def _save_vcs_config(config_path: Path, detected_vcs: VCSBackend) -> None:
 
 def init(
     project_name: str | None = typer.Argument(
-        None, help="Name for your new project directory (optional if using --here, or use '.' for current directory)"
+        None,
+        help="Name for your new project directory (optional if using --here, or use '.' for current directory)",
     ),
     ai_assistant: str | None = typer.Option(
-        None, "--ai", help="Comma-separated AI assistants (claude,codex,gemini,...)", rich_help_panel="Selection"
+        None,
+        "--ai",
+        help="Comma-separated AI assistants (claude,codex,gemini,...)",
+        rich_help_panel="Selection",
     ),
     script_type: str | None = typer.Option(
-        None, "--script", help="Script type to use: sh or ps", rich_help_panel="Selection"
+        None,
+        "--script",
+        help="Script type to use: sh or ps",
+        rich_help_panel="Selection",
     ),
     preferred_implementer: str | None = typer.Option(
-        None, "--preferred-implementer", help="Preferred agent for implementation", rich_help_panel="Selection"
+        None,
+        "--preferred-implementer",
+        help="Preferred agent for implementation",
+        rich_help_panel="Selection",
     ),
     preferred_reviewer: str | None = typer.Option(
-        None, "--preferred-reviewer", help="Preferred agent for review", rich_help_panel="Selection"
+        None,
+        "--preferred-reviewer",
+        help="Preferred agent for review",
+        rich_help_panel="Selection",
     ),
     mission_key: str | None = typer.Option(
-        None, "--mission", hidden=True, help="[DEPRECATED] Mission selection moved to /spec-kitty.specify"
+        None,
+        "--mission",
+        hidden=True,
+        help="[DEPRECATED] Mission selection moved to /spec-kitty.specify",
     ),
     ignore_agent_tools: bool = typer.Option(
-        False, "--ignore-agent-tools", help="Skip checks for AI agent tools like Claude Code"
+        False,
+        "--ignore-agent-tools",
+        help="Skip checks for AI agent tools like Claude Code",
     ),
-    no_git: bool = typer.Option(False, "--no-git", help="Skip git repository initialization"),
+    no_git: bool = typer.Option(
+        False, "--no-git", help="Skip git repository initialization"
+    ),
     here: bool = typer.Option(
-        False, "--here", help="Initialize project in the current directory instead of creating a new one"
+        False,
+        "--here",
+        help="Initialize project in the current directory instead of creating a new one",
     ),
-    force: bool = typer.Option(False, "--force", help="Force merge/overwrite when using --here (skip confirmation)"),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="Force merge/overwrite when using --here (skip confirmation)",
+    ),
     non_interactive: bool = typer.Option(
-        False, "--non-interactive", "--yes", help="Run without interactive prompts (suitable for CI/CD)"
+        False,
+        "--non-interactive",
+        "--yes",
+        help="Run without interactive prompts (suitable for CI/CD)",
     ),
-    skip_tls: bool = typer.Option(False, "--skip-tls", help="Skip SSL/TLS verification (not recommended)"),
+    skip_tls: bool = typer.Option(
+        False, "--skip-tls", help="Skip SSL/TLS verification (not recommended)"
+    ),
     debug: bool = typer.Option(
-        False, "--debug", help="Show verbose diagnostic output for network and extraction failures"
+        False,
+        "--debug",
+        help="Show verbose diagnostic output for network and extraction failures",
     ),
     github_token: str | None = typer.Option(
         None,
@@ -348,7 +383,9 @@ def init(
         help="GitHub token to use for API requests (or set GH_TOKEN or GITHUB_TOKEN environment variable)",
     ),
     template_root: str | None = typer.Option(
-        None, "--template-root", help="Override default template location (useful for development mode)"
+        None,
+        "--template-root",
+        help="Override default template location (useful for development mode)",
     ),
 ) -> None:
     """Initialize a new Spec Kitty project."""
@@ -367,7 +404,9 @@ def init(
         project_name = None  # Clear project_name to use existing validation logic
 
     if here and project_name:
-        _console.print("[red]Error:[/red] Cannot specify both project name and --here flag")
+        _console.print(
+            "[red]Error:[/red] Cannot specify both project name and --here flag"
+        )
         raise typer.Exit(1)
 
     if not here and not project_name:
@@ -390,12 +429,16 @@ def init(
 
         existing_items = list(project_path.iterdir())
         if existing_items:
-            _console.print(f"[yellow]Warning:[/yellow] Current directory is not empty ({len(existing_items)} items)")
+            _console.print(
+                f"[yellow]Warning:[/yellow] Current directory is not empty ({len(existing_items)} items)"
+            )
             _console.print(
                 "[yellow]Template files will be merged with existing content and may overwrite existing files[/yellow]"
             )
             if force:
-                _console.print("[cyan]--force supplied: skipping confirmation and proceeding with merge[/cyan]")
+                _console.print(
+                    "[cyan]--force supplied: skipping confirmation and proceeding with merge[/cyan]"
+                )
             else:
                 if non_interactive:
                     _console.print(
@@ -443,7 +486,9 @@ def init(
     if not no_git:
         should_init_git = check_tool("git", "https://git-scm.com/downloads")
         if not should_init_git:
-            _console.print("[yellow]Git not found - will skip repository initialization[/yellow]")
+            _console.print(
+                "[yellow]Git not found - will skip repository initialization[/yellow]"
+            )
 
     # Detect VCS (git only, jj support removed)
     selected_vcs: VCSBackend | None = None
@@ -455,12 +500,20 @@ def init(
     except VCSNotFoundError:
         # git not available - not an error, just informational
         selected_vcs = None
-        _console.print("[yellow]ℹ git not detected[/yellow] - install git for version control")
+        _console.print(
+            "[yellow]ℹ git not detected[/yellow] - install git for version control"
+        )
 
     if ai_assistant:
-        raw_agents = [part.strip().lower() for part in ai_assistant.replace(";", ",").split(",") if part.strip()]
+        raw_agents = [
+            part.strip().lower()
+            for part in ai_assistant.replace(";", ",").split(",")
+            if part.strip()
+        ]
         if not raw_agents:
-            _console.print("[red]Error:[/red] --ai flag did not contain any valid agent identifiers")
+            _console.print(
+                "[red]Error:[/red] --ai flag did not contain any valid agent identifiers"
+            )
             raise typer.Exit(1)
         selected_agents: list[str] = []
         seen_agents: set[str] = set()
@@ -506,9 +559,13 @@ def init(
         if missing_agents:
             lines = []
             for agent_key, display_name, url in missing_agents:
-                lines.append(f"[cyan]{display_name}[/cyan] ({agent_key}) → install: [cyan]{url}[/cyan]")
+                lines.append(
+                    f"[cyan]{display_name}[/cyan] ({agent_key}) → install: [cyan]{url}[/cyan]"
+                )
             lines.append("")
-            lines.append("These tools are optional. You can install them later to enable additional features.")
+            lines.append(
+                "These tools are optional. You can install them later to enable additional features."
+            )
             warning_panel = Panel(
                 "\n".join(lines),
                 title="[yellow]Optional Agent Tool(s) Not Found[/yellow]",
@@ -542,7 +599,9 @@ def init(
         _console.print()
         if preferred_implementer_value:
             if preferred_implementer_value not in selected_agents:
-                _console.print("[red]Error:[/red] --preferred-implementer must be one of the selected agents")
+                _console.print(
+                    "[red]Error:[/red] --preferred-implementer must be one of the selected agents"
+                )
                 raise typer.Exit(1)
             selected_preferred_implementer = preferred_implementer_value
         elif non_interactive:
@@ -559,11 +618,14 @@ def init(
         if len(selected_agents) > 1:
             # Default to a different agent for review
             default_reviewer = next(
-                (a for a in selected_agents if a != selected_preferred_implementer), selected_agents[0]
+                (a for a in selected_agents if a != selected_preferred_implementer),
+                selected_agents[0],
             )
             if preferred_reviewer_value:
                 if preferred_reviewer_value not in selected_agents:
-                    _console.print("[red]Error:[/red] --preferred-reviewer must be one of the selected agents")
+                    _console.print(
+                        "[red]Error:[/red] --preferred-reviewer must be one of the selected agents"
+                    )
                     raise typer.Exit(1)
                 selected_preferred_reviewer = preferred_reviewer_value
             elif non_interactive:
@@ -574,7 +636,10 @@ def init(
                     "Which agent should be the preferred REVIEWER?",
                     default_key=default_reviewer,
                 )
-            if selected_preferred_reviewer == selected_preferred_implementer and len(selected_agents) > 1:
+            if (
+                selected_preferred_reviewer == selected_preferred_implementer
+                and len(selected_agents) > 1
+            ):
                 _console.print(
                     "[yellow]Note:[/yellow] Same agent for implementation and review (cross-review disabled)"
                 )
@@ -605,14 +670,18 @@ def init(
     else:
         # Auto-detect based on platform
         selected_script = "ps" if os.name == "nt" else "sh"
-        _console.print(f"[dim]Auto-detected script type:[/dim] [cyan]{SCRIPT_TYPE_CHOICES[selected_script]}[/cyan]")
+        _console.print(
+            f"[dim]Auto-detected script type:[/dim] [cyan]{SCRIPT_TYPE_CHOICES[selected_script]}[/cyan]"
+        )
 
     # Mission selection deprecated - missions are now per-feature
     if mission_key:
         _console.print(
             "[yellow]Warning:[/yellow] The --mission flag is deprecated. Missions are now selected per-feature during /spec-kitty.specify"
         )
-        _console.print("[dim]Ignoring --mission flag and continuing with initialization...[/dim]")
+        _console.print(
+            "[dim]Ignoring --mission flag and continuing with initialization...[/dim]"
+        )
         _console.print()
 
     # No longer select a project-level mission - just use software-dev for initial setup
@@ -636,7 +705,9 @@ def init(
             raise typer.Exit(1)
         template_mode = "remote"
         if debug:
-            _console.print(f"[cyan]Using remote templates from[/cyan] {repo_owner}/{repo_name}")
+            _console.print(
+                f"[cyan]Using remote templates from[/cyan] {repo_owner}/{repo_name}"
+            )
     elif template_mode == "package" and debug:
         _console.print("[cyan]Using templates bundled with specify_cli package[/cyan]")
 
@@ -685,7 +756,9 @@ def init(
     if template_mode == "remote" and (repo_owner is None or repo_name is None):
         repo_owner, repo_name = parse_repo_slug(DEFAULT_TEMPLATE_REPO)
 
-    with Live(tracker.render(), console=_console, refresh_per_second=8, transient=True) as live:
+    with Live(
+        tracker.render(), console=_console, refresh_per_second=8, transient=True
+    ) as live:
         tracker.attach_refresh(lambda: live.update(tracker.render()))
         try:
             # Create a httpx client with verify based on skip_tls
@@ -693,7 +766,11 @@ def init(
 
             for index, agent_key in enumerate(selected_agents):
                 if template_mode in ("local", "package"):
-                    source_detail = "local checkout" if template_mode == "local" else "packaged data"
+                    source_detail = (
+                        "local checkout"
+                        if template_mode == "local"
+                        else "packaged data"
+                    )
                     tracker.start(f"{agent_key}-fetch")
                     tracker.complete(f"{agent_key}-fetch", source_detail)
                     tracker.start(f"{agent_key}-download")
@@ -708,11 +785,16 @@ def init(
 
                                 ensure_runtime()
                             except Exception:
-                                _logger.debug("ensure_runtime() failed; falling back to legacy init", exc_info=True)
+                                _logger.debug(
+                                    "ensure_runtime() failed; falling back to legacy init",
+                                    exc_info=True,
+                                )
                             # Check if global runtime exists -- if so, skip
                             # copying shared assets to the project and resolve
                             # templates directly from the package / global.
-                            use_global = _has_global_runtime() and template_mode == "package"
+                            use_global = (
+                                _has_global_runtime() and template_mode == "package"
+                            )
                             if use_global:
                                 _prepare_project_minimal(project_path)
                                 copy_constitution_templates(project_path)
@@ -742,19 +824,25 @@ def init(
                             if not use_global:
                                 if template_mode == "local":
                                     assert local_repo is not None
-                                    command_templates_dir = copy_specify_base_from_local(
-                                        local_repo, project_path, selected_script
+                                    command_templates_dir = (
+                                        copy_specify_base_from_local(
+                                            local_repo, project_path, selected_script
+                                        )
                                     )
                                 else:
-                                    command_templates_dir = copy_specify_base_from_package(
-                                        project_path, selected_script
+                                    command_templates_dir = (
+                                        copy_specify_base_from_package(
+                                            project_path, selected_script
+                                        )
                                     )
                                 # Track templates root for later use (AGENTS.md, .claudeignore)
                                 if command_templates_dir:
                                     templates_root = command_templates_dir.parent
                             base_prepared = True
                         if command_templates_dir is None:
-                            raise RuntimeError("Command templates directory was not prepared")
+                            raise RuntimeError(
+                                "Command templates directory was not prepared"
+                            )
                         if render_templates_dir is None:
                             # Resolve mission command templates through the
                             # full 4-tier precedence chain (override > legacy
@@ -764,16 +852,23 @@ def init(
                             # unlike the package templates dir in global mode.
                             scratch = project_path / ".kittify"
                             scratch.mkdir(parents=True, exist_ok=True)
-                            mission_templates_dir = _resolve_mission_command_templates_dir(
-                                project_path,
-                                selected_mission,
-                                scratch_parent=scratch,
+                            mission_templates_dir = (
+                                _resolve_mission_command_templates_dir(
+                                    project_path,
+                                    selected_mission,
+                                    scratch_parent=scratch,
+                                )
                             )
                             render_templates_dir = prepare_command_templates(
                                 command_templates_dir,
                                 mission_templates_dir,
                             )
-                        generate_agent_assets(render_templates_dir, project_path, agent_key, selected_script)
+                        generate_agent_assets(
+                            render_templates_dir,
+                            project_path,
+                            agent_key,
+                            selected_script,
+                        )
                     except Exception as exc:
                         tracker.error(f"{agent_key}-extract", str(exc))
                         raise
@@ -782,7 +877,9 @@ def init(
                         tracker.start(f"{agent_key}-zip-list")
                         tracker.complete(f"{agent_key}-zip-list", "templates ready")
                         tracker.start(f"{agent_key}-extracted-summary")
-                        tracker.complete(f"{agent_key}-extracted-summary", "commands ready")
+                        tracker.complete(
+                            f"{agent_key}-extracted-summary", "commands ready"
+                        )
                         tracker.start(f"{agent_key}-cleanup")
                         tracker.complete(f"{agent_key}-cleanup", "done")
                 else:
@@ -811,9 +908,13 @@ def init(
                 if _has_global_runtime():
                     # In global runtime mode, missions resolve from ~/.kittify/
                     # so we don't need to check the project's local missions dir.
-                    mission_status = f"{mission_display} (per-feature selection, global runtime)"
+                    mission_status = (
+                        f"{mission_display} (per-feature selection, global runtime)"
+                    )
                 else:
-                    mission_status = _activate_mission(project_path, selected_mission, mission_display, _console)
+                    mission_status = _activate_mission(
+                        project_path, selected_mission, mission_display, _console
+                    )
             except Exception as exc:
                 tracker.error("mission-activate", str(exc))
                 raise
@@ -847,7 +948,11 @@ def init(
             tracker.complete("final", "project ready")
         except Exception as e:
             tracker.error("final", str(e))
-            _console.print(Panel(f"Initialization failed: {e}", title="Failure", border_style="red"))
+            _console.print(
+                Panel(
+                    f"Initialization failed: {e}", title="Failure", border_style="red"
+                )
+            )
             if debug:
                 _env_pairs = [
                     ("Python", sys.version.split()[0]),
@@ -855,8 +960,17 @@ def init(
                     ("CWD", str(Path.cwd())),
                 ]
                 _label_width = max(len(k) for k, _ in _env_pairs)
-                env_lines = [f"{k.ljust(_label_width)} → [bright_black]{v}[/bright_black]" for k, v in _env_pairs]
-                _console.print(Panel("\n".join(env_lines), title="Debug Environment", border_style="magenta"))
+                env_lines = [
+                    f"{k.ljust(_label_width)} → [bright_black]{v}[/bright_black]"
+                    for k, v in _env_pairs
+                ]
+                _console.print(
+                    Panel(
+                        "\n".join(env_lines),
+                        title="Debug Environment",
+                        border_style="magenta",
+                    )
+                )
             if not here and project_path.exists():
                 shutil.rmtree(project_path)
             raise typer.Exit(1)
@@ -896,7 +1010,9 @@ def init(
             "Consider adding the following folders (or subsets) to [cyan].gitignore[/cyan]:",
             "",
         ]
-        body_lines.extend(f"- {display}: [cyan]{folder}[/cyan]" for display, folder in notice_entries)
+        body_lines.extend(
+            f"- {display}: [cyan]{folder}[/cyan]" for display, folder in notice_entries
+        )
         security_notice = Panel(
             "\n".join(body_lines),
             title="[yellow]Agent Folder Security[/yellow]",
@@ -910,7 +1026,9 @@ def init(
     steps_lines = []
     step_num = 1
     if not here:
-        steps_lines.append(f"{step_num}. Go to the project folder: [cyan]cd {project_name}[/cyan]")
+        steps_lines.append(
+            f"{step_num}. Go to the project folder: [cyan]cd {project_name}[/cyan]"
+        )
     else:
         steps_lines.append(f"{step_num}. You're already in the project directory!")
     step_num += 1
@@ -920,21 +1038,43 @@ def init(
     )
     step_num += 1
 
-    steps_lines.append(f"{step_num}. Start using slash commands with your AI agent (in workflow order):")
+    steps_lines.append(
+        f"{step_num}. Start using slash commands with your AI agent (in workflow order):"
+    )
     step_num += 1
 
-    steps_lines.append("   - [cyan]/spec-kitty.dashboard[/] - Open the real-time kanban dashboard")
-    steps_lines.append("   - [cyan]/spec-kitty.constitution[/] - Establish project principles")
-    steps_lines.append("   - [cyan]/spec-kitty.specify[/] - Create baseline specification")
+    steps_lines.append(
+        "   - [cyan]/spec-kitty.dashboard[/] - Open the real-time kanban dashboard"
+    )
+    steps_lines.append(
+        "   - [cyan]/spec-kitty.constitution[/] - Establish project principles"
+    )
+    steps_lines.append(
+        "   - [cyan]/spec-kitty.specify[/] - Create baseline specification"
+    )
     steps_lines.append("   - [cyan]/spec-kitty.plan[/] - Create implementation plan")
-    steps_lines.append("   - [cyan]/spec-kitty.research[/] - Run mission-specific Phase 0 research scaffolding")
-    steps_lines.append("   - [cyan]/spec-kitty.tasks[/] - Generate tasks and kanban-ready prompt files")
-    steps_lines.append("   - [cyan]/spec-kitty.implement[/] - Execute implementation from /tasks/doing/")
-    steps_lines.append("   - [cyan]/spec-kitty.review[/] - Review prompts and move them to /tasks/done/")
-    steps_lines.append("   - [cyan]/spec-kitty.accept[/] - Run acceptance checks and verify feature complete")
-    steps_lines.append("   - [cyan]/spec-kitty.merge[/] - Merge feature into main and cleanup worktree")
+    steps_lines.append(
+        "   - [cyan]/spec-kitty.research[/] - Run mission-specific Phase 0 research scaffolding"
+    )
+    steps_lines.append(
+        "   - [cyan]/spec-kitty.tasks[/] - Generate tasks and kanban-ready prompt files"
+    )
+    steps_lines.append(
+        "   - [cyan]/spec-kitty.implement[/] - Execute implementation from /tasks/doing/"
+    )
+    steps_lines.append(
+        "   - [cyan]/spec-kitty.review[/] - Review prompts and move them to /tasks/done/"
+    )
+    steps_lines.append(
+        "   - [cyan]/spec-kitty.accept[/] - Run acceptance checks and verify feature complete"
+    )
+    steps_lines.append(
+        "   - [cyan]/spec-kitty.merge[/] - Merge feature into main and cleanup worktree"
+    )
 
-    steps_panel = Panel("\n".join(steps_lines), title="Next Steps", border_style="cyan", padding=(1, 2))
+    steps_panel = Panel(
+        "\n".join(steps_lines), title="Next Steps", border_style="cyan", padding=(1, 2)
+    )
     _console.print()
     _console.print(steps_panel)
 
@@ -946,7 +1086,10 @@ def init(
         "○ [cyan]/spec-kitty.checklist[/] [bright_black](optional)[/bright_black] - Generate quality checklists to validate requirements completeness, clarity, and consistency (after [cyan]/spec-kitty.plan[/])",
     ]
     enhancements_panel = Panel(
-        "\n".join(enhancement_lines), title="Enhancement Commands", border_style="cyan", padding=(1, 2)
+        "\n".join(enhancement_lines),
+        title="Enhancement Commands",
+        border_style="cyan",
+        padding=(1, 2),
     )
     _console.print()
     _console.print(enhancements_panel)
@@ -989,13 +1132,17 @@ def init(
 
     # Display results to user
     if result.modified:
-        _console.print("[cyan]Updated .gitignore to exclude AI agent directories:[/cyan]")
+        _console.print(
+            "[cyan]Updated .gitignore to exclude AI agent directories:[/cyan]"
+        )
         for entry in result.entries_added:
             _console.print(f"  • {entry}")
         if result.entries_skipped:
             _console.print(f"  ({len(result.entries_skipped)} already protected)")
     elif result.entries_skipped:
-        _console.print(f"[dim]All {len(result.entries_skipped)} agent directories already in .gitignore[/dim]")
+        _console.print(
+            f"[dim]All {len(result.entries_skipped)} agent directories already in .gitignore[/dim]"
+        )
 
     # Show warnings (especially for .github/)
     for warning in result.warnings:
@@ -1019,7 +1166,9 @@ def init(
         claudeignore_dest = project_path / ".claudeignore"
         if claudeignore_template.exists() and not claudeignore_dest.exists():
             shutil.copy2(claudeignore_template, claudeignore_dest)
-            _console.print("[dim]Created .claudeignore to optimize AI assistant scanning[/dim]")
+            _console.print(
+                "[dim]Created .claudeignore to optimize AI assistant scanning[/dim]"
+            )
 
     # Create project metadata for upgrade tracking
     try:
@@ -1068,14 +1217,21 @@ def init(
             try:
                 shutil.rmtree(cleanup_dir)
             except PermissionError:
-                _console.print(f"[dim]Note: Could not remove .kittify/{cleanup_name}/ (permission denied)[/dim]")
+                _console.print(
+                    f"[dim]Note: Could not remove .kittify/{cleanup_name}/ (permission denied)[/dim]"
+                )
             except Exception as e:
-                _console.print(f"[dim]Note: Could not remove .kittify/{cleanup_name}/: {e}[/dim]")
+                _console.print(
+                    f"[dim]Note: Could not remove .kittify/{cleanup_name}/: {e}[/dim]"
+                )
     # Also clean up resolver scratch dirs (.resolved-* and .merged-*)
     kittify_dir = project_path / ".kittify"
     if kittify_dir.is_dir():
         for scratch in kittify_dir.iterdir():
-            if scratch.is_dir() and (scratch.name.startswith(".resolved-") or scratch.name.startswith(".merged-")):
+            if scratch.is_dir() and (
+                scratch.name.startswith(".resolved-")
+                or scratch.name.startswith(".merged-")
+            ):
                 try:
                     shutil.rmtree(scratch)
                 except Exception:
@@ -1130,7 +1286,9 @@ def register_init_command(
 
     # Ensure app is in multi-command mode by checking if there are existing commands
     # If not, add a hidden dummy command to force subcommand mode
-    if not hasattr(app, "registered_commands") or not getattr(app, "registered_commands"):
+    if not hasattr(app, "registered_commands") or not getattr(
+        app, "registered_commands"
+    ):
 
         @app.command("__force_multi_command_mode__", hidden=True)
         def _dummy() -> None:

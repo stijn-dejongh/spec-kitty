@@ -118,9 +118,7 @@ def load_agent_config(repo_root: Path) -> AgentConfig:
             data = yaml.load(f) or {}
     except Exception as e:
         logger.error(f"Failed to load config: {e}")
-        raise AgentConfigError(
-            f"Invalid YAML in {config_file}: {e}"
-        ) from e
+        raise AgentConfigError(f"Invalid YAML in {config_file}: {e}") from e
 
     agents_data = data.get("agents", {})
     if not agents_data:

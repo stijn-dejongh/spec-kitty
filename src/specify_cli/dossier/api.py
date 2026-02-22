@@ -68,29 +68,22 @@ class DossierOverviewResponse(BaseModel):
 class ArtifactListItem(BaseModel):
     """Summary of a single artifact in list view."""
 
-    artifact_key: str = Field(
-        ..., description="Stable, unique key for this artifact"
-    )
+    artifact_key: str = Field(..., description="Stable, unique key for this artifact")
     artifact_class: str = Field(
-        ..., description="Classification: input|workflow|output|evidence|policy|runtime|other"
+        ...,
+        description="Classification: input|workflow|output|evidence|policy|runtime|other",
     )
-    relative_path: str = Field(
-        ..., description="Relative path from feature directory"
-    )
+    relative_path: str = Field(..., description="Relative path from feature directory")
     size_bytes: int = Field(..., description="File size in bytes")
     wp_id: Optional[str] = Field(
         None, description="Work package ID if linked (e.g., 'WP01')"
     )
-    step_id: Optional[str] = Field(
-        None, description="Mission step (e.g., 'planning')"
-    )
+    step_id: Optional[str] = Field(None, description="Mission step (e.g., 'planning')")
     required_status: str = Field(
         ..., description="'required' | 'optional' (from manifest)"
     )
     is_present: bool = Field(..., description="True if file currently exists")
-    error_reason: Optional[str] = Field(
-        None, description="Error reason if not present"
-    )
+    error_reason: Optional[str] = Field(None, description="Error reason if not present")
 
 
 class ArtifactListResponse(BaseModel):
@@ -124,9 +117,7 @@ class ArtifactDetailResponse(BaseModel):
     content: Optional[str] = Field(
         None, description="Full text content (if <5MB and readable)"
     )
-    content_truncated: bool = Field(
-        ..., description="True if content was truncated"
-    )
+    content_truncated: bool = Field(..., description="True if content was truncated")
     truncation_notice: Optional[str] = Field(
         None, description="Explanation if content truncated or unreadable"
     )
@@ -146,16 +137,26 @@ class SnapshotExportResponse(BaseModel):
     snapshot_id: str = Field(..., description="Unique snapshot ID (UUID)")
     total_artifacts: int = Field(..., description="Total number of artifacts")
     required_artifacts: int = Field(..., description="Count of required artifacts")
-    required_present: int = Field(..., description="Count of present required artifacts")
-    required_missing: int = Field(..., description="Count of missing required artifacts")
+    required_present: int = Field(
+        ..., description="Count of present required artifacts"
+    )
+    required_missing: int = Field(
+        ..., description="Count of missing required artifacts"
+    )
     optional_artifacts: int = Field(..., description="Count of optional artifacts")
-    optional_present: int = Field(..., description="Count of present optional artifacts")
-    completeness_status: str = Field(..., description="'complete'|'incomplete'|'unknown'")
+    optional_present: int = Field(
+        ..., description="Count of present optional artifacts"
+    )
+    completeness_status: str = Field(
+        ..., description="'complete'|'incomplete'|'unknown'"
+    )
     parity_hash_sha256: str = Field(..., description="SHA256 parity hash")
     artifact_summaries: List[Dict[str, Any]] = Field(
         ..., description="Artifact metadata summaries"
     )
-    computed_at: str = Field(..., description="ISO timestamp when snapshot was computed")
+    computed_at: str = Field(
+        ..., description="ISO timestamp when snapshot was computed"
+    )
 
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}
@@ -281,9 +282,7 @@ class DossierAPIHandler(DossierHandlerAdapter):
         """
         try:
             # Load snapshot
-            feature_dir = (
-                self.repo_root / "kitty-specs" / feature_slug
-            )
+            feature_dir = self.repo_root / "kitty-specs" / feature_slug
             snapshot = load_snapshot(feature_dir, feature_slug)
 
             if not snapshot:
@@ -359,9 +358,7 @@ class DossierAPIHandler(DossierHandlerAdapter):
             # Filter by required_only
             if filters.get("required_only") == "true":
                 filtered_artifacts = [
-                    a
-                    for a in filtered_artifacts
-                    if a.required_status == "required"
+                    a for a in filtered_artifacts if a.required_status == "required"
                 ]
 
             # Sort by artifact_key (stable ordering)
@@ -471,9 +468,7 @@ class DossierAPIHandler(DossierHandlerAdapter):
             SnapshotExportResponse or error dict (SaaS import-compatible)
         """
         try:
-            feature_dir = (
-                self.repo_root / "kitty-specs" / feature_slug
-            )
+            feature_dir = self.repo_root / "kitty-specs" / feature_slug
             snapshot = load_snapshot(feature_dir, feature_slug)
 
             if not snapshot:
@@ -524,6 +519,7 @@ class DossierAPIHandler(DossierHandlerAdapter):
             indexed_at = summary.get("indexed_at")
             if isinstance(indexed_at, str):
                 from datetime import datetime
+
                 indexed_at = datetime.fromisoformat(indexed_at)
 
             artifact = ArtifactRef(

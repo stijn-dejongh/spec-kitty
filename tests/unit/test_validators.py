@@ -94,7 +94,9 @@ def test_simple_format_detection() -> None:
 def test_citation_format_detection() -> None:
     assert detect_citation_format("@article{smith2024,") is CitationFormat.BIBTEX
     assert detect_citation_format("Smith, J. (2024). Title.") is CitationFormat.APA
-    assert detect_citation_format("Smith (2024). Title. Source.") is CitationFormat.SIMPLE
+    assert (
+        detect_citation_format("Smith (2024). Title. Source.") is CitationFormat.SIMPLE
+    )
     assert detect_citation_format("invalid citation") is CitationFormat.UNKNOWN
 
 
@@ -168,7 +170,9 @@ def test_validate_paths_all_exist(tmp_path: Path) -> None:
     (tmp_path / "src").mkdir()
     (tmp_path / "tests").mkdir()
 
-    mission = _MissionStub("Software Dev Kitty", {"workspace": "src/", "tests": "tests/"})
+    mission = _MissionStub(
+        "Software Dev Kitty", {"workspace": "src/", "tests": "tests/"}
+    )
     result = validate_mission_paths(mission, tmp_path, strict=False)
 
     assert result.is_valid
@@ -178,7 +182,9 @@ def test_validate_paths_all_exist(tmp_path: Path) -> None:
 
 def test_validate_paths_warns_when_missing(tmp_path: Path) -> None:
     (tmp_path / "src").mkdir()
-    mission = _MissionStub("Software Dev Kitty", {"workspace": "src/", "tests": "tests/"})
+    mission = _MissionStub(
+        "Software Dev Kitty", {"workspace": "src/", "tests": "tests/"}
+    )
 
     result = validate_mission_paths(mission, tmp_path, strict=False)
 

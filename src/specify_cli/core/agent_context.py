@@ -67,7 +67,9 @@ def parse_plan_for_tech_stack(plan_path: Path) -> Dict[str, Optional[str]]:
     }
 
 
-def format_technology_stack(tech_stack: Dict[str, Optional[str]], feature_slug: str) -> List[str]:
+def format_technology_stack(
+    tech_stack: Dict[str, Optional[str]], feature_slug: str
+) -> List[str]:
     """
     Format tech stack data into markdown bullet points for Active Technologies section.
 
@@ -130,7 +132,7 @@ def preserve_manual_additions(old_content: str, new_content: str) -> str:
         return new_content
 
     # Extract the manual section (including markers)
-    manual_section = old_content[start_idx:end_idx + len(end_marker)]
+    manual_section = old_content[start_idx : end_idx + len(end_marker)]
 
     # Find where to inject in new content
     new_start_idx = new_content.find(start_marker)
@@ -142,7 +144,7 @@ def preserve_manual_additions(old_content: str, new_content: str) -> str:
 
     # Replace the section in new content with the preserved manual section
     before = new_content[:new_start_idx]
-    after = new_content[new_end_idx + len(end_marker):]
+    after = new_content[new_end_idx + len(end_marker) :]
 
     return before + manual_section + after
 
@@ -198,8 +200,12 @@ def update_agent_context(
     if tech_stack.get("dependencies"):
         tech_parts.append(tech_stack["dependencies"])
 
-    tech_description = " + ".join(tech_parts) if tech_parts else tech_stack.get("storage", "")
-    new_change_entry = f"- {feature_slug}: Added {tech_description}" if tech_description else ""
+    tech_description = (
+        " + ".join(tech_parts) if tech_parts else tech_stack.get("storage", "")
+    )
+    new_change_entry = (
+        f"- {feature_slug}: Added {tech_description}" if tech_description else ""
+    )
 
     # Process file line by line to update sections
     lines = old_content.splitlines(keepends=True)
@@ -265,7 +271,7 @@ def update_agent_context(
         # Update last updated timestamp
         if "**Last updated**:" in line or "*Last updated*:" in line:
             # Replace date in format YYYY-MM-DD
-            line = re.sub(r'\d{4}-\d{2}-\d{2}', current_date, line)
+            line = re.sub(r"\d{4}-\d{2}-\d{2}", current_date, line)
 
         new_lines.append(line)
 
@@ -280,7 +286,7 @@ def update_agent_context(
     final_content = preserve_manual_additions(old_content, new_content)
 
     # Write updated content
-    agent_file_path.write_text(final_content, encoding='utf-8')
+    agent_file_path.write_text(final_content, encoding="utf-8")
 
 
 def get_supported_agent_types() -> List[str]:

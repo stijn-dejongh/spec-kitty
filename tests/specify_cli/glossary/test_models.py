@@ -1,10 +1,19 @@
 import pytest
 from datetime import datetime
 from specify_cli.glossary.models import (
-    TermSurface, TermSense, SemanticConflict, Provenance,
-    SenseStatus, ConflictType, Severity, SenseRef,
-    term_surface_to_dict, term_sense_to_dict, semantic_conflict_to_dict,
+    TermSurface,
+    TermSense,
+    SemanticConflict,
+    Provenance,
+    SenseStatus,
+    ConflictType,
+    Severity,
+    SenseRef,
+    term_surface_to_dict,
+    term_sense_to_dict,
+    semantic_conflict_to_dict,
 )
+
 
 def test_term_surface_normalized():
     """TermSurface must be lowercase and trimmed."""
@@ -16,6 +25,7 @@ def test_term_surface_normalized():
 
     with pytest.raises(ValueError, match="must be normalized"):
         TermSurface(" workspace ")  # Not trimmed
+
 
 def test_term_sense_validation():
     """TermSense validates confidence range and definition."""
@@ -51,6 +61,7 @@ def test_term_sense_validation():
             confidence=0.9,
         )
 
+
 def test_semantic_conflict_validation():
     """SemanticConflict validates AMBIGUOUS must have candidates."""
     ts = TermSurface("workspace")
@@ -69,7 +80,9 @@ def test_semantic_conflict_validation():
     assert len(sc.candidate_senses) == 2
 
     # Invalid: AMBIGUOUS without candidates
-    with pytest.raises(ValueError, match="AMBIGUOUS conflict must have candidate_senses"):
+    with pytest.raises(
+        ValueError, match="AMBIGUOUS conflict must have candidate_senses"
+    ):
         SemanticConflict(
             term=ts,
             conflict_type=ConflictType.AMBIGUOUS,
@@ -103,7 +116,7 @@ def test_term_sense_to_dict():
     prov = Provenance(
         actor_id="user:alice",
         timestamp=datetime(2026, 2, 16, 12, 0, 0),
-        source="user_clarification"
+        source="user_clarification",
     )
 
     ts = TermSense(

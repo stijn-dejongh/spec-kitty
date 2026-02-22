@@ -100,12 +100,14 @@ def scan_for_wp_commits(
                     # Get the latest commit on this branch
                     display_branch = branch_name
                     if branch_name.startswith("remotes/origin/"):
-                        display_branch = branch_name[len("remotes/origin/"):]
+                        display_branch = branch_name[len("remotes/origin/") :]
 
                     try:
                         log_result = subprocess.run(
                             [
-                                "git", "log", "-1",
+                                "git",
+                                "log",
+                                "-1",
                                 "--format=%H%n%s%n%an%n%aI",
                                 branch_name,
                             ],
@@ -130,7 +132,8 @@ def scan_for_wp_commits(
                     except subprocess.TimeoutExpired:
                         logger.warning(
                             "Timeout getting log for branch %s in %s",
-                            branch_name, repo_path,
+                            branch_name,
+                            repo_path,
                         )
     except subprocess.TimeoutExpired:
         logger.warning("Timeout listing branches in %s", repo_path)
@@ -139,7 +142,10 @@ def scan_for_wp_commits(
     try:
         grep_result = subprocess.run(
             [
-                "git", "log", "--all", "--oneline",
+                "git",
+                "log",
+                "--all",
+                "--oneline",
                 f"--grep={feature_slug}",
                 "--format=%H %s",
             ],
@@ -169,7 +175,9 @@ def scan_for_wp_commits(
                     try:
                         detail_result = subprocess.run(
                             [
-                                "git", "log", "-1",
+                                "git",
+                                "log",
+                                "-1",
                                 "--format=%an%n%aI",
                                 sha,
                             ],
@@ -180,7 +188,10 @@ def scan_for_wp_commits(
                             errors="replace",
                             timeout=_GIT_TIMEOUT,
                         )
-                        if detail_result.returncode == 0 and detail_result.stdout.strip():
+                        if (
+                            detail_result.returncode == 0
+                            and detail_result.stdout.strip()
+                        ):
                             detail_parts = detail_result.stdout.strip().split("\n")
                             if len(detail_parts) >= 2:
                                 commit_info = CommitInfo(
@@ -195,13 +206,12 @@ def scan_for_wp_commits(
                                     c.sha for c in result_map.get(wp_id, [])
                                 }
                                 if sha[:40] not in existing_shas:
-                                    result_map.setdefault(wp_id, []).append(
-                                        commit_info
-                                    )
+                                    result_map.setdefault(wp_id, []).append(commit_info)
                     except subprocess.TimeoutExpired:
                         logger.warning(
                             "Timeout getting commit detail for %s in %s",
-                            sha[:8], repo_path,
+                            sha[:8],
+                            repo_path,
                         )
     except subprocess.TimeoutExpired:
         logger.warning("Timeout scanning commit messages in %s", repo_path)
@@ -221,8 +231,12 @@ def _get_merged_wps(
         try:
             result = subprocess.run(
                 [
-                    "git", "branch", "--merged", base_branch,
-                    "--list", f"*{feature_slug}*",
+                    "git",
+                    "branch",
+                    "--merged",
+                    base_branch,
+                    "--list",
+                    f"*{feature_slug}*",
                 ],
                 cwd=repo_path,
                 capture_output=True,
@@ -240,7 +254,8 @@ def _get_merged_wps(
         except subprocess.TimeoutExpired:
             logger.warning(
                 "Timeout checking merged branches against %s in %s",
-                base_branch, repo_path,
+                base_branch,
+                repo_path,
             )
 
     return merged
@@ -320,9 +335,7 @@ def _generate_reconciliation_events(
 
         # Terminal lanes: no reconciliation
         if is_terminal(str(current_lane)):
-            details.append(
-                f"{wp_id}: in terminal lane {current_lane}, skipping"
-            )
+            details.append(f"{wp_id}: in terminal lane {current_lane}, skipping")
             continue
 
         # Blocked lane: note but don't advance
@@ -337,7 +350,9 @@ def _generate_reconciliation_events(
         wp_merged = wp_id in merged_wps
 
         if wp_merged and current_lane in (
-            Lane.PLANNED, Lane.CLAIMED, Lane.IN_PROGRESS,
+            Lane.PLANNED,
+            Lane.CLAIMED,
+            Lane.IN_PROGRESS,
         ):
             # Branch merged but WP not even at for_review
             target_lane = Lane.FOR_REVIEW
@@ -375,9 +390,7 @@ def _generate_reconciliation_events(
             )
             continue
 
-        details.append(
-            f"{wp_id}: {current_lane} -> {target_lane} ({evidence_summary})"
-        )
+        details.append(f"{wp_id}: {current_lane} -> {target_lane} ({evidence_summary})")
 
         for from_lane, to_lane in chain:
             event = StatusEvent(
@@ -409,9 +422,7 @@ def _generate_reconciliation_events(
             if ok:
                 events.append(event)
             else:
-                details.append(
-                    f"{wp_id}: skipping {from_lane} -> {to_lane}: {err}"
-                )
+                details.append(f"{wp_id}: skipping {from_lane} -> {to_lane}: {err}")
 
     return events, details
 
@@ -504,7 +515,10 @@ def reconcile(
     # Generate reconciliation events
     if all_commits:
         events, details = _generate_reconciliation_events(
-            feature_slug, snapshot, all_commits, all_merged,
+            feature_slug,
+            snapshot,
+            all_commits,
+            all_merged,
         )
         result.suggested_events = events
         result.details = details

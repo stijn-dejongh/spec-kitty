@@ -9,7 +9,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List, Optional
 
 from .extraction import ExtractedTerm
-from .models import ConflictType, Severity, TermSense, TermSurface, SenseRef, SenseStatus
+from .models import (
+    ConflictType,
+    Severity,
+    TermSense,
+    TermSurface,
+    SenseRef,
+    SenseStatus,
+)
 
 if TYPE_CHECKING:
     from . import models
@@ -114,8 +121,24 @@ def _detect_inconsistent_usage(
     # Extract key concepts from definition (simple noun extraction)
     # Split definition into words, filter stop words
     stop_words = {
-        "a", "an", "the", "is", "are", "of", "for", "to", "in", "on",
-        "at", "by", "with", "from", "as", "and", "or", "but",
+        "a",
+        "an",
+        "the",
+        "is",
+        "are",
+        "of",
+        "for",
+        "to",
+        "in",
+        "on",
+        "at",
+        "by",
+        "with",
+        "from",
+        "as",
+        "and",
+        "or",
+        "but",
     }
     definition_words = set(
         word.strip(".,;:!?")
@@ -139,9 +162,7 @@ def _detect_inconsistent_usage(
         # Example: definition has "unit of work", output says "not a unit of work"
         for def_word in definition_words:
             # Pattern: "is not a {def_word}", "isn't a {def_word}", "{term} not a {def_word}"
-            negation_of_concept = (
-                rf"\b(is\s+not|isn['']t|not\s+a|not\s+an)\s+({def_word}|[a-z]+\s+{def_word})"
-            )
+            negation_of_concept = rf"\b(is\s+not|isn['']t|not\s+a|not\s+an)\s+({def_word}|[a-z]+\s+{def_word})"
             if re.search(negation_of_concept, context):
                 return True  # Negation of key concept = contradiction
 

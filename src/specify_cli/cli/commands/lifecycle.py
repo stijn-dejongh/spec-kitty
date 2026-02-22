@@ -23,17 +23,25 @@ def _slugify_feature_input(value: str) -> str:
 
 
 def specify(
-    feature: str = typer.Argument(..., help="Feature name or slug (e.g., user-authentication)"),
-    mission: Optional[str] = typer.Option(None, "--mission", help="Mission type (e.g., software-dev, research)"),
+    feature: str = typer.Argument(
+        ..., help="Feature name or slug (e.g., user-authentication)"
+    ),
+    mission: Optional[str] = typer.Option(
+        None, "--mission", help="Mission type (e.g., software-dev, research)"
+    ),
     json_output: bool = typer.Option(False, "--json", help="Emit JSON result"),
 ) -> None:
     """Create a feature scaffold in kitty-specs/."""
     slug = _slugify_feature_input(feature)
-    agent_feature.create_feature(feature_slug=slug, mission=mission, json_output=json_output)
+    agent_feature.create_feature(
+        feature_slug=slug, mission=mission, json_output=json_output
+    )
 
 
 def plan(
-    feature: Optional[str] = typer.Option(None, "--feature", help="Feature slug (e.g., 001-user-authentication)"),
+    feature: Optional[str] = typer.Option(
+        None, "--feature", help="Feature slug (e.g., 001-user-authentication)"
+    ),
     json_output: bool = typer.Option(False, "--json", help="Emit JSON result"),
 ) -> None:
     """Scaffold plan.md for a feature."""

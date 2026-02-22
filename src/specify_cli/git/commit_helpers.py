@@ -106,7 +106,10 @@ def safe_commit(
             return True
 
         # Check if it was "nothing to commit" scenario
-        if "nothing to commit" in commit_result.stdout or "nothing to commit" in commit_result.stderr:
+        if (
+            "nothing to commit" in commit_result.stdout
+            or "nothing to commit" in commit_result.stderr
+        ):
             return allow_empty
 
         # Other error occurred

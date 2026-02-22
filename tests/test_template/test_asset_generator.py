@@ -116,7 +116,9 @@ def test_prepare_command_templates_overlays_mission(tmp_path: Path) -> None:
 
     _write_template_with_body(base_dir / "demo.md", "Base content for __AGENT__.")
     _write_template_with_body(base_dir / "baseonly.md", "Base-only template.")
-    _write_template_with_body(mission_dir / "demo.md", "Mission override for __AGENT__.")
+    _write_template_with_body(
+        mission_dir / "demo.md", "Mission override for __AGENT__."
+    )
 
     merged_dir = prepare_command_templates(base_dir, mission_dir)
 

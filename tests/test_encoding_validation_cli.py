@@ -23,7 +23,13 @@ def run_validate_encoding_cli(
 ) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env.pop("PYTHONPATH", None)
-    command = [str(get_venv_python()), "-m", "specify_cli.__init__", "validate-encoding", *args]
+    command = [
+        str(get_venv_python()),
+        "-m",
+        "specify_cli.__init__",
+        "validate-encoding",
+        *args,
+    ]
     return subprocess.run(
         command,
         cwd=cwd,
@@ -49,8 +55,14 @@ class TestValidateCleanFeature:
 
             # Initialize git repo (required for spec-kitty commands)
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
 
             # Create .kittify directory (required for project detection)
             (tmpdir / ".kittify").mkdir()
@@ -64,12 +76,15 @@ class TestValidateCleanFeature:
             )
 
             # Should exit successfully
-            assert result.returncode == 0, f"Should exit 0, got {result.returncode}: {result.stdout}"
+            assert result.returncode == 0, (
+                f"Should exit 0, got {result.returncode}: {result.stdout}"
+            )
 
             # Should confirm clean files
             output = result.stdout + result.stderr
-            assert "properly UTF-8 encoded" in output or "✓" in output, \
+            assert "properly UTF-8 encoded" in output or "✓" in output, (
                 f"Should confirm clean encoding. Got: {output}"
+            )
 
 
 class TestDetectIssuesWithoutFix:
@@ -87,8 +102,14 @@ class TestDetectIssuesWithoutFix:
 
             # Initialize git
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
             (tmpdir / ".kittify").mkdir()
 
             # Run without --fix
@@ -99,18 +120,21 @@ class TestDetectIssuesWithoutFix:
             )
 
             # Should exit with error code
-            assert result.returncode == 1, \
+            assert result.returncode == 1, (
                 f"Should exit 1 with issues, got {result.returncode}"
+            )
 
             # Should show the problematic file
             output = result.stdout + result.stderr
-            assert "bad.md" in output, \
+            assert "bad.md" in output, (
                 f"Should show bad.md in output. Got: {result.stdout}"
+            )
 
             # Should suggest fix
             output = result.stdout + result.stderr
-            assert "--fix" in output or "fix" in result.stdout.lower(), \
+            assert "--fix" in output or "fix" in result.stdout.lower(), (
                 f"Should suggest --fix. Got: {result.stdout}"
+            )
 
 
 class TestFixIssuesWithBackup:
@@ -129,8 +153,14 @@ class TestFixIssuesWithBackup:
 
             # Initialize git
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
             (tmpdir / ".kittify").mkdir()
 
             # Run with --fix
@@ -142,24 +172,28 @@ class TestFixIssuesWithBackup:
             )
 
             # Should exit successfully
-            assert result.returncode == 0, \
+            assert result.returncode == 0, (
                 f"Should exit 0 after fix, got {result.returncode}: {result.stdout}"
+            )
 
             # Should mention fix
             output = result.stdout + result.stderr
-            assert "Fixed" in output or "fixed" in result.stdout, \
+            assert "Fixed" in output or "fixed" in result.stdout, (
                 f"Should mention fix. Got: {result.stdout}"
+            )
 
             # File should be fixed
             fixed_content = bad_file.read_text()
-            assert fixed_content == 'User\'s "test"', \
+            assert fixed_content == 'User\'s "test"', (
                 f"File should be fixed, got: {fixed_content!r}"
+            )
 
             # Backup should exist
             backup = bad_file.with_suffix(".md.bak")
             assert backup.exists(), "Backup should be created"
-            assert backup.read_text() == "User\u2019s \u201ctest\u201d", \
+            assert backup.read_text() == "User\u2019s \u201ctest\u201d", (
                 "Backup should have original content"
+            )
 
 
 class TestFixWithoutBackup:
@@ -178,8 +212,14 @@ class TestFixWithoutBackup:
 
             # Initialize git
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
             (tmpdir / ".kittify").mkdir()
 
             # Run with --fix --no-backup
@@ -192,8 +232,7 @@ class TestFixWithoutBackup:
             )
 
             # Should exit successfully
-            assert result.returncode == 0, \
-                f"Should exit 0, got {result.returncode}"
+            assert result.returncode == 0, f"Should exit 0, got {result.returncode}"
 
             # File should be fixed
             assert bad_file.read_text() == "User's test", "File should be fixed"
@@ -219,8 +258,14 @@ class TestValidateAllFeatures:
 
             # Initialize git
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
             (tmpdir / ".kittify").mkdir()
 
             # Run with --all
@@ -230,14 +275,19 @@ class TestValidateAllFeatures:
             )
 
             # Should detect issues in all features
-            assert result.returncode == 1, \
+            assert result.returncode == 1, (
                 f"Should exit 1 with issues, got {result.returncode}"
+            )
 
             # Should mention multiple features or show count
             output = result.stdout
-            assert ("001-feature" in output or "002-feature" in output or
-                    "003-feature" in output or "3" in output or "features" in output), \
-                f"Should indicate multiple features scanned. Got: {output}"
+            assert (
+                "001-feature" in output
+                or "002-feature" in output
+                or "003-feature" in output
+                or "3" in output
+                or "features" in output
+            ), f"Should indicate multiple features scanned. Got: {output}"
 
     def test_fix_all_features(self):
         """Verify --all --fix repairs all features."""
@@ -255,8 +305,14 @@ class TestValidateAllFeatures:
 
             # Initialize git
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
             (tmpdir / ".kittify").mkdir()
 
             # Run with --all --fix
@@ -267,8 +323,9 @@ class TestValidateAllFeatures:
             )
 
             # Should exit successfully
-            assert result.returncode == 0, \
+            assert result.returncode == 0, (
                 f"Should exit 0 after fixing all, got {result.returncode}"
+            )
 
             # All files should be fixed
             for f in files_to_check:
@@ -301,8 +358,14 @@ class TestCLIErrorHandling:
 
             # Initialize project structure
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
             (tmpdir / ".kittify").mkdir()
             (tmpdir / "kitty-specs").mkdir()
 
@@ -316,8 +379,9 @@ class TestCLIErrorHandling:
             # Should fail with clear message
             assert result.returncode == 1, "Should exit 1 for nonexistent feature"
             output = result.stdout + result.stderr
-            assert "not found" in output.lower() or "Error" in result.stdout, \
+            assert "not found" in output.lower() or "Error" in result.stdout, (
                 f"Should indicate feature not found. Got: {result.stdout}"
+            )
 
 
 class TestCLIOutputFormatting:
@@ -337,8 +401,14 @@ class TestCLIOutputFormatting:
 
             # Initialize git
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
             (tmpdir / ".kittify").mkdir()
 
             # Run validation
@@ -368,8 +438,14 @@ class TestCLIOutputFormatting:
 
             # Initialize git
             subprocess.run(["git", "init"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=tmpdir, capture_output=True)
-            subprocess.run(["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "test@test.com"],
+                cwd=tmpdir,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Test"], cwd=tmpdir, capture_output=True
+            )
             (tmpdir / ".kittify").mkdir()
 
             # Run with --fix

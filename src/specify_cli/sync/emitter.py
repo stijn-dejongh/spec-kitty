@@ -98,6 +98,7 @@ _ULID_PATTERN = re.compile(r"^[0-9A-HJKMNP-TV-Z]{26}$")  # kept for test compat
 
 # Broader ID validation via normalize_event_id (accepts ULID + UUID)
 from specify_cli.spec_kitty_events import normalize_event_id as _normalize_event_id
+
 _WP_ID_PATTERN = re.compile(r"^WP\d{2}$")
 _FEATURE_SLUG_PATTERN = re.compile(r"^\d{3}-[a-z0-9-]+$")
 _FEATURE_NUMBER_PATTERN = re.compile(r"^\d{3}$")
@@ -123,8 +124,30 @@ _PAYLOAD_RULES: dict[str, dict[str, Any]] = {
         "required": {"wp_id", "from_lane", "to_lane"},
         "validators": {
             "wp_id": lambda v: isinstance(v, str) and bool(_WP_ID_PATTERN.match(v)),
-            "from_lane": lambda v: v in {"planned", "claimed", "in_progress", "for_review", "done", "blocked", "canceled"},
-            "to_lane": lambda v: v in {"planned", "claimed", "in_progress", "for_review", "done", "blocked", "canceled"},
+            "from_lane": lambda v: (
+                v
+                in {
+                    "planned",
+                    "claimed",
+                    "in_progress",
+                    "for_review",
+                    "done",
+                    "blocked",
+                    "canceled",
+                }
+            ),
+            "to_lane": lambda v: (
+                v
+                in {
+                    "planned",
+                    "claimed",
+                    "in_progress",
+                    "for_review",
+                    "done",
+                    "blocked",
+                    "canceled",
+                }
+            ),
             "actor": lambda v: isinstance(v, str) if v is not None else True,
             "feature_slug": lambda v: _is_nullable_string(v),
             "policy_metadata": lambda v: v is None or isinstance(v, dict),
@@ -136,8 +159,12 @@ _PAYLOAD_RULES: dict[str, dict[str, Any]] = {
             "wp_id": lambda v: isinstance(v, str) and bool(_WP_ID_PATTERN.match(v)),
             "title": lambda v: isinstance(v, str) and len(v) >= 1,
             "feature_slug": lambda v: isinstance(v, str) and len(v) >= 1,
-            "dependencies": lambda v: isinstance(v, list)
-            and all(isinstance(item, str) and _WP_ID_PATTERN.match(item) for item in v),
+            "dependencies": lambda v: (
+                isinstance(v, list)
+                and all(
+                    isinstance(item, str) and _WP_ID_PATTERN.match(item) for item in v
+                )
+            ),
         },
     },
     "WPAssigned": {
@@ -152,8 +179,12 @@ _PAYLOAD_RULES: dict[str, dict[str, Any]] = {
     "FeatureCreated": {
         "required": {"feature_slug", "feature_number", "target_branch", "wp_count"},
         "validators": {
-            "feature_slug": lambda v: isinstance(v, str) and bool(_FEATURE_SLUG_PATTERN.match(v)),
-            "feature_number": lambda v: isinstance(v, str) and bool(_FEATURE_NUMBER_PATTERN.match(v)),
+            "feature_slug": lambda v: (
+                isinstance(v, str) and bool(_FEATURE_SLUG_PATTERN.match(v))
+            ),
+            "feature_number": lambda v: (
+                isinstance(v, str) and bool(_FEATURE_NUMBER_PATTERN.match(v))
+            ),
             "target_branch": lambda v: isinstance(v, str) and len(v) >= 1,
             "wp_count": lambda v: isinstance(v, int) and v >= 0,
             "created_at": lambda v: _is_datetime_string(v),
@@ -180,7 +211,9 @@ _PAYLOAD_RULES: dict[str, dict[str, Any]] = {
     "ErrorLogged": {
         "required": {"error_type", "error_message"},
         "validators": {
-            "error_type": lambda v: v in {"validation", "runtime", "network", "auth", "unknown"},
+            "error_type": lambda v: (
+                v in {"validation", "runtime", "network", "auth", "unknown"}
+            ),
             "error_message": lambda v: isinstance(v, str) and len(v) >= 1,
             "wp_id": _is_nullable_string,
             "stack_trace": _is_nullable_string,
@@ -191,19 +224,42 @@ _PAYLOAD_RULES: dict[str, dict[str, Any]] = {
         "required": {"wp_id", "dependency_wp_id", "resolution_type"},
         "validators": {
             "wp_id": lambda v: isinstance(v, str) and bool(_WP_ID_PATTERN.match(v)),
-            "dependency_wp_id": lambda v: isinstance(v, str) and bool(_WP_ID_PATTERN.match(v)),
+            "dependency_wp_id": lambda v: (
+                isinstance(v, str) and bool(_WP_ID_PATTERN.match(v))
+            ),
             "resolution_type": lambda v: v in {"completed", "skipped", "merged"},
         },
     },
     # WP04: Dossier events
     "MissionDossierArtifactIndexed": {
-        "required": {"feature_slug", "artifact_key", "artifact_class", "relative_path", "content_hash_sha256", "size_bytes", "required_status"},
+        "required": {
+            "feature_slug",
+            "artifact_key",
+            "artifact_class",
+            "relative_path",
+            "content_hash_sha256",
+            "size_bytes",
+            "required_status",
+        },
         "validators": {
             "feature_slug": lambda v: isinstance(v, str) and len(v) >= 1,
             "artifact_key": lambda v: isinstance(v, str) and len(v) >= 1,
-            "artifact_class": lambda v: v in {"input", "workflow", "output", "evidence", "policy", "runtime", "other"},
+            "artifact_class": lambda v: (
+                v
+                in {
+                    "input",
+                    "workflow",
+                    "output",
+                    "evidence",
+                    "policy",
+                    "runtime",
+                    "other",
+                }
+            ),
             "relative_path": lambda v: isinstance(v, str) and len(v) >= 1,
-            "content_hash_sha256": lambda v: isinstance(v, str) and bool(re.match(r"^[a-f0-9]{64}$", v)),
+            "content_hash_sha256": lambda v: (
+                isinstance(v, str) and bool(re.match(r"^[a-f0-9]{64}$", v))
+            ),
             "size_bytes": lambda v: isinstance(v, int) and v >= 0,
             "wp_id": _is_nullable_string,
             "step_id": _is_nullable_string,
@@ -211,33 +267,70 @@ _PAYLOAD_RULES: dict[str, dict[str, Any]] = {
         },
     },
     "MissionDossierArtifactMissing": {
-        "required": {"feature_slug", "artifact_key", "artifact_class", "expected_path_pattern", "reason_code", "blocking"},
+        "required": {
+            "feature_slug",
+            "artifact_key",
+            "artifact_class",
+            "expected_path_pattern",
+            "reason_code",
+            "blocking",
+        },
         "validators": {
             "feature_slug": lambda v: isinstance(v, str) and len(v) >= 1,
             "artifact_key": lambda v: isinstance(v, str) and len(v) >= 1,
-            "artifact_class": lambda v: v in {"input", "workflow", "output", "evidence", "policy", "runtime", "other"},
+            "artifact_class": lambda v: (
+                v
+                in {
+                    "input",
+                    "workflow",
+                    "output",
+                    "evidence",
+                    "policy",
+                    "runtime",
+                    "other",
+                }
+            ),
             "expected_path_pattern": lambda v: isinstance(v, str) and len(v) >= 1,
-            "reason_code": lambda v: v in {"not_found", "unreadable", "invalid_format", "deleted_after_scan"},
+            "reason_code": lambda v: (
+                v in {"not_found", "unreadable", "invalid_format", "deleted_after_scan"}
+            ),
             "reason_detail": _is_nullable_string,
             "blocking": lambda v: isinstance(v, bool),
         },
     },
     "MissionDossierSnapshotComputed": {
-        "required": {"feature_slug", "parity_hash_sha256", "artifact_counts", "completeness_status", "snapshot_id"},
+        "required": {
+            "feature_slug",
+            "parity_hash_sha256",
+            "artifact_counts",
+            "completeness_status",
+            "snapshot_id",
+        },
         "validators": {
             "feature_slug": lambda v: isinstance(v, str) and len(v) >= 1,
-            "parity_hash_sha256": lambda v: isinstance(v, str) and bool(re.match(r"^[a-f0-9]{64}$", v)),
+            "parity_hash_sha256": lambda v: (
+                isinstance(v, str) and bool(re.match(r"^[a-f0-9]{64}$", v))
+            ),
             "artifact_counts": lambda v: isinstance(v, dict),
             "completeness_status": lambda v: v in {"complete", "incomplete", "unknown"},
             "snapshot_id": lambda v: isinstance(v, str) and len(v) >= 1,
         },
     },
     "MissionDossierParityDriftDetected": {
-        "required": {"feature_slug", "local_parity_hash", "baseline_parity_hash", "severity"},
+        "required": {
+            "feature_slug",
+            "local_parity_hash",
+            "baseline_parity_hash",
+            "severity",
+        },
         "validators": {
             "feature_slug": lambda v: isinstance(v, str) and len(v) >= 1,
-            "local_parity_hash": lambda v: isinstance(v, str) and bool(re.match(r"^[a-f0-9]{64}$", v)),
-            "baseline_parity_hash": lambda v: isinstance(v, str) and bool(re.match(r"^[a-f0-9]{64}$", v)),
+            "local_parity_hash": lambda v: (
+                isinstance(v, str) and bool(re.match(r"^[a-f0-9]{64}$", v))
+            ),
+            "baseline_parity_hash": lambda v: (
+                isinstance(v, str) and bool(re.match(r"^[a-f0-9]{64}$", v))
+            ),
             "missing_in_local": lambda v: isinstance(v, list),
             "missing_in_baseline": lambda v: isinstance(v, list),
             "severity": lambda v: v in {"info", "warning", "error"},
@@ -318,6 +411,7 @@ class EventEmitter:
         """Lazy-load AuthClient to avoid circular imports."""
         if self._auth is None:
             from .auth import AuthClient
+
             self._auth = AuthClient()
         return self._auth
 
@@ -548,7 +642,8 @@ class EventEmitter:
             clock_value = self.clock.tick()
             logger.debug(
                 "Emitting %s event with Lamport clock: %d",
-                event_type, clock_value,
+                event_type,
+                clock_value,
             )
 
             # Resolve identity and team_slug
@@ -570,7 +665,9 @@ class EventEmitter:
                 "causation_id": causation_id,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "team_slug": team_slug,
-                "project_uuid": str(identity.project_uuid) if identity.project_uuid else None,
+                "project_uuid": str(identity.project_uuid)
+                if identity.project_uuid
+                else None,
                 "project_slug": identity.project_slug,
                 # Git correlation fields (Feature 033)
                 "git_branch": git_meta.git_branch,
@@ -606,7 +703,9 @@ class EventEmitter:
                 if slug:
                     return slug
         except Exception as e:
-            _console.print(f"[yellow]Warning: Could not resolve team_slug: {e}[/yellow]")
+            _console.print(
+                f"[yellow]Warning: Could not resolve team_slug: {e}[/yellow]"
+            )
         return "local"
 
     def _validate_event(self, event: dict[str, Any]) -> bool:
@@ -656,7 +755,9 @@ class EventEmitter:
             try:
                 event["event_id"] = _normalize_event_id(event["event_id"])
             except (ValueError, TypeError):
-                _console.print(f"[yellow]Warning: Invalid event_id: {event.get('event_id')!r}[/yellow]")
+                _console.print(
+                    f"[yellow]Warning: Invalid event_id: {event.get('event_id')!r}[/yellow]"
+                )
                 return False
 
             causation_id = event.get("causation_id")
@@ -664,7 +765,9 @@ class EventEmitter:
                 try:
                     event["causation_id"] = _normalize_event_id(causation_id)
                 except (ValueError, TypeError):
-                    _console.print(f"[yellow]Warning: Invalid causation_id: {causation_id!r}[/yellow]")
+                    _console.print(
+                        f"[yellow]Warning: Invalid causation_id: {causation_id!r}[/yellow]"
+                    )
                     return False
 
             # Future-proof: normalize correlation_id if present
@@ -673,7 +776,9 @@ class EventEmitter:
                 try:
                     event["correlation_id"] = _normalize_event_id(correlation_id)
                 except (ValueError, TypeError):
-                    _console.print(f"[yellow]Warning: Invalid correlation_id: {correlation_id!r}[/yellow]")
+                    _console.print(
+                        f"[yellow]Warning: Invalid correlation_id: {correlation_id!r}[/yellow]"
+                    )
                     return False
 
             # 4. Validate payload against per-event-type rules
@@ -732,9 +837,14 @@ class EventEmitter:
                 pass
 
             # If authenticated and WebSocket connected, send directly
-            if authenticated and self.ws_client is not None and self.ws_client.connected:
+            if (
+                authenticated
+                and self.ws_client is not None
+                and self.ws_client.connected
+            ):
                 try:
                     import asyncio
+
                     loop = asyncio.get_event_loop()
                     if loop.is_running():
                         asyncio.ensure_future(self.ws_client.send_event(event))
@@ -752,7 +862,5 @@ class EventEmitter:
             return self.queue.queue_event(event)
 
         except Exception as e:
-            _console.print(
-                f"[yellow]Warning: Event routing failed: {e}[/yellow]"
-            )
+            _console.print(f"[yellow]Warning: Event routing failed: {e}[/yellow]")
             return False

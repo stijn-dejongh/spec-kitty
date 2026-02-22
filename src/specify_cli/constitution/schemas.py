@@ -68,7 +68,9 @@ class DoctrineSelectionConfig(BaseModel):
 class GovernanceConfig(BaseModel):
     """Top-level governance configuration."""
 
-    testing: ConstitutionTestingConfig = Field(default_factory=ConstitutionTestingConfig)
+    testing: ConstitutionTestingConfig = Field(
+        default_factory=ConstitutionTestingConfig
+    )
     quality: QualityConfig = Field(default_factory=QualityConfig)
     commits: CommitConfig = Field(default_factory=CommitConfig)
     performance: PerformanceConfig = Field(default_factory=PerformanceConfig)

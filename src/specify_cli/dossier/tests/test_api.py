@@ -18,7 +18,11 @@ from specify_cli.dossier.api import (
     error_response,
     infer_media_type,
 )
-from specify_cli.dossier.models import ArtifactRef, MissionDossier, MissionDossierSnapshot
+from specify_cli.dossier.models import (
+    ArtifactRef,
+    MissionDossier,
+    MissionDossierSnapshot,
+)
 
 
 # ============================================================================
@@ -106,7 +110,9 @@ def sample_dossier(sample_artifacts):
         feature_slug="042-local-mission-dossier",
         feature_dir="/tmp/kitty-specs/042-local-mission-dossier",
         artifacts=sample_artifacts,
-        manifest={"required": ["input.spec.main", "output.tasks.per_wp", "policy.manifest"]},
+        manifest={
+            "required": ["input.spec.main", "output.tasks.per_wp", "policy.manifest"]
+        },
         latest_snapshot=None,
         dossier_created_at=datetime.utcnow(),
         dossier_updated_at=datetime.utcnow(),
@@ -218,9 +224,7 @@ class TestDossierArtifactsEndpoint:
     def test_artifacts_returns_all_if_no_filters(self, handler, sample_dossier):
         """Test that all artifacts returned if no filters applied."""
         with patch.object(handler, "_load_dossier", return_value=sample_dossier):
-            response = handler.handle_dossier_artifacts(
-                "042-local-mission-dossier"
-            )
+            response = handler.handle_dossier_artifacts("042-local-mission-dossier")
 
             assert isinstance(response, ArtifactListResponse)
             assert response.total_count == 4
@@ -288,9 +292,7 @@ class TestDossierArtifactsEndpoint:
     def test_artifacts_stable_ordering(self, handler, sample_dossier):
         """Test that artifacts ordered by artifact_key (stable)."""
         with patch.object(handler, "_load_dossier", return_value=sample_dossier):
-            response = handler.handle_dossier_artifacts(
-                "042-local-mission-dossier"
-            )
+            response = handler.handle_dossier_artifacts("042-local-mission-dossier")
 
             keys = [a.artifact_key for a in response.artifacts]
             assert keys == sorted(keys)  # Lexicographic order
@@ -298,9 +300,7 @@ class TestDossierArtifactsEndpoint:
     def test_artifacts_returns_404_if_dossier_not_found(self, handler):
         """Test that 404 returned if dossier not found."""
         with patch.object(handler, "_load_dossier", return_value=None):
-            response = handler.handle_dossier_artifacts(
-                "nonexistent-feature"
-            )
+            response = handler.handle_dossier_artifacts("nonexistent-feature")
 
             assert isinstance(response, dict)
             assert response["status_code"] == 404
@@ -309,8 +309,7 @@ class TestDossierArtifactsEndpoint:
         """Test that filters_applied field populated."""
         with patch.object(handler, "_load_dossier", return_value=sample_dossier):
             response = handler.handle_dossier_artifacts(
-                "042-local-mission-dossier",
-                **{"class": "input", "wp_id": "WP01"}
+                "042-local-mission-dossier", **{"class": "input", "wp_id": "WP01"}
             )
 
             assert "class" in response.filters_applied
@@ -472,9 +471,7 @@ class TestDossierSnapshotExportEndpoint:
     def test_export_returns_404_if_not_found(self, handler):
         """Test that 404 returned if snapshot not found."""
         with patch("specify_cli.dossier.api.load_snapshot", return_value=None):
-            response = handler.handle_dossier_snapshot_export(
-                "nonexistent-feature"
-            )
+            response = handler.handle_dossier_snapshot_export("nonexistent-feature")
 
             assert isinstance(response, dict)
             assert response["status_code"] == 404
@@ -585,7 +582,5 @@ class TestAdapterProtocol:
         with patch(
             "specify_cli.dossier.api.load_snapshot", return_value=sample_snapshot
         ):
-            result = handler.handle_dossier_snapshot_export(
-                "042-local-mission-dossier"
-            )
+            result = handler.handle_dossier_snapshot_export("042-local-mission-dossier")
             assert isinstance(result, (SnapshotExportResponse, dict))

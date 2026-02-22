@@ -39,7 +39,9 @@ class TestMergePackageAssets:
         merge_package_assets(source, dest)
 
         # Verify overwritten
-        assert (dest / "missions" / "software-dev" / "mission.yaml").read_text() == "new"
+        assert (
+            dest / "missions" / "software-dev" / "mission.yaml"
+        ).read_text() == "new"
         # Verify stale file removed (rmtree + copytree)
         assert not (dest / "missions" / "software-dev" / "old-file.txt").exists()
 
@@ -59,7 +61,9 @@ class TestMergePackageAssets:
         merge_package_assets(source, dest)
 
         # User data preserved
-        assert (dest / "missions" / "custom" / "my-mission.yaml").read_text() == "user data"
+        assert (
+            dest / "missions" / "custom" / "my-mission.yaml"
+        ).read_text() == "user data"
 
     def test_config_yaml_preserved(self, tmp_path: Path) -> None:
         """config.yaml in dest is never touched by merge."""
@@ -122,7 +126,9 @@ class TestMergePackageAssets:
 
         merge_package_assets(source, dest)
 
-        assert (dest / "missions" / "software-dev" / "mission.yaml").read_text() == "data"
+        assert (
+            dest / "missions" / "software-dev" / "mission.yaml"
+        ).read_text() == "data"
 
     def test_scripts_dir_overwritten(self, tmp_path: Path) -> None:
         """scripts/ directory is a managed dir and gets overwritten."""

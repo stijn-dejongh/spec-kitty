@@ -55,13 +55,17 @@ def _display_operations(ops: list[OperationInfo], backend: VCSBackend) -> None:
 
     for op in ops:
         # Truncate operation ID for display
-        short_id = op.operation_id[:12] if len(op.operation_id) > 12 else op.operation_id
+        short_id = (
+            op.operation_id[:12] if len(op.operation_id) > 12 else op.operation_id
+        )
 
         # Format timestamp
         time_str = op.timestamp.strftime("%Y-%m-%d %H:%M")
 
         # Truncate description if too long
-        desc = op.description[:60] + "..." if len(op.description) > 60 else op.description
+        desc = (
+            op.description[:60] + "..." if len(op.description) > 60 else op.description
+        )
 
         row = [short_id, time_str, desc]
 
@@ -166,7 +170,9 @@ def undo(
         console.print("[dim]Git does not have reversible operation history.[/dim]")
         console.print("[dim]Consider using these alternatives manually:[/dim]")
         console.print("  • git reset --soft HEAD~1  (undo last commit, keep changes)")
-        console.print("  • git reset --hard HEAD~1  (undo last commit, discard changes)")
+        console.print(
+            "  • git reset --hard HEAD~1  (undo last commit, discard changes)"
+        )
         console.print("  • git revert <commit>      (create reverting commit)")
         console.print("  • git reflog               (find previous states)")
         console.print()
@@ -250,7 +256,9 @@ def restore(
         if result.returncode == 0:
             console.print("[green]✓ Restored successfully[/green]")
             console.print()
-            console.print("[dim]Use 'spec-kitty ops log' to see the updated history.[/dim]")
+            console.print(
+                "[dim]Use 'spec-kitty ops log' to see the updated history.[/dim]"
+            )
         else:
             console.print("[red]✗ Restore failed[/red]")
             if result.stderr:

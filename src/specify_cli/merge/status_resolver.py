@@ -61,10 +61,10 @@ LANE_PRIORITY = {
     "in_progress": 3,
     "for_review": 4,
     "done": 5,
-    "blocked": 0,       # Blocked is lowest priority (not "ahead" in workflow)
-    "canceled": 6,       # Canceled is terminal, treated as highest monotonic priority
+    "blocked": 0,  # Blocked is lowest priority (not "ahead" in workflow)
+    "canceled": 6,  # Canceled is terminal, treated as highest monotonic priority
     # Legacy alias support:
-    "doing": 3,          # Maps to same priority as in_progress
+    "doing": 3,  # Maps to same priority as in_progress
 }
 
 
@@ -96,8 +96,8 @@ def parse_conflict_markers(content: str) -> list[ConflictRegion]:
     for match in CONFLICT_PATTERN.finditer(content):
         regions.append(
             ConflictRegion(
-                start_line=content[:match.start()].count("\n"),
-                end_line=content[:match.end()].count("\n"),
+                start_line=content[: match.start()].count("\n"),
+                end_line=content[: match.end()].count("\n"),
                 ours=match.group(1),
                 theirs=match.group(2),
                 original=match.group(0),
@@ -150,7 +150,7 @@ def _detect_rollback(content: str) -> bool:
         return True
 
     # Heuristic 2: History entry mentions "review" and lane is behind for_review
-    if re.search(r'action:.*review.*', content, re.IGNORECASE):
+    if re.search(r"action:.*review.*", content, re.IGNORECASE):
         lane_match = LANE_PATTERN.search(content)
         if lane_match:
             lane_value = lane_match.group(3)
@@ -221,9 +221,7 @@ def resolve_lane_conflict_rollback_aware(
     return ours_lane if ours_priority >= theirs_priority else theirs_lane
 
 
-def _resolve_lane_with_rollback_awareness(
-    ours: str, theirs: str
-) -> str | None:
+def _resolve_lane_with_rollback_awareness(ours: str, theirs: str) -> str | None:
     """Internal: resolve a lane conflict region using rollback-aware logic.
 
     Extracts lane values, runs rollback-aware resolution, and returns
@@ -480,10 +478,16 @@ def resolve_status_conflicts(repo_root: Path) -> list[ResolutionResult]:
         resolution_types: set[str] = set()
 
         for region in regions:
-            if CHECKBOX_PATTERN.search(region.ours) or CHECKBOX_PATTERN.search(region.theirs):
+            if CHECKBOX_PATTERN.search(region.ours) or CHECKBOX_PATTERN.search(
+                region.theirs
+            ):
                 resolved_region = resolve_checkbox_conflict(region.ours, region.theirs)
-                resolved_region = _preserve_trailing_newline(resolved_region, region.original)
-                resolved_content = resolved_content.replace(region.original, resolved_region)
+                resolved_region = _preserve_trailing_newline(
+                    resolved_region, region.original
+                )
+                resolved_content = resolved_content.replace(
+                    region.original, resolved_region
+                )
                 resolved_count += 1
                 resolution_types.add("checkbox")
                 continue
@@ -491,23 +495,37 @@ def resolve_status_conflicts(repo_root: Path) -> list[ResolutionResult]:
             resolved_region = resolve_history_conflict(region.ours, region.theirs)
             if resolved_region is not None:
                 # Use rollback-aware lane resolution
-                lane_resolved = _resolve_lane_with_rollback_awareness(region.ours, region.theirs)
+                lane_resolved = _resolve_lane_with_rollback_awareness(
+                    region.ours, region.theirs
+                )
                 if lane_resolved is not None:
                     lane_value = extract_lane_value(lane_resolved)
                     if lane_value:
-                        resolved_region = replace_lane_value(resolved_region, lane_value)
+                        resolved_region = replace_lane_value(
+                            resolved_region, lane_value
+                        )
                     resolution_types.add("lane")
                 resolution_types.add("history")
-                resolved_region = _preserve_trailing_newline(resolved_region, region.original)
-                resolved_content = resolved_content.replace(region.original, resolved_region)
+                resolved_region = _preserve_trailing_newline(
+                    resolved_region, region.original
+                )
+                resolved_content = resolved_content.replace(
+                    region.original, resolved_region
+                )
                 resolved_count += 1
                 continue
 
             # Use rollback-aware lane resolution
-            lane_resolved = _resolve_lane_with_rollback_awareness(region.ours, region.theirs)
+            lane_resolved = _resolve_lane_with_rollback_awareness(
+                region.ours, region.theirs
+            )
             if lane_resolved is not None:
-                lane_resolved = _preserve_trailing_newline(lane_resolved, region.original)
-                resolved_content = resolved_content.replace(region.original, lane_resolved)
+                lane_resolved = _preserve_trailing_newline(
+                    lane_resolved, region.original
+                )
+                resolved_content = resolved_content.replace(
+                    region.original, lane_resolved
+                )
                 resolved_count += 1
                 resolution_types.add("lane")
 
@@ -528,7 +546,9 @@ def resolve_status_conflicts(repo_root: Path) -> list[ResolutionResult]:
             ResolutionResult(
                 file_path=file_path,
                 resolved=resolved_all,
-                resolution_type="mixed" if len(resolution_types) > 1 else next(iter(resolution_types)),
+                resolution_type="mixed"
+                if len(resolution_types) > 1
+                else next(iter(resolution_types)),
                 original_conflicts=len(regions),
                 resolved_conflicts=resolved_count,
             )

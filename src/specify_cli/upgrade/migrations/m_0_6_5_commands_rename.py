@@ -97,11 +97,15 @@ class CommandsRenameMigration(BaseMigration):
         def rename_dir(old: Path, new: Path, context: str) -> None:
             if old.exists() and not new.exists():
                 if dry_run:
-                    changes.append(f"Would rename {context}: commands/ -> command-templates/")
+                    changes.append(
+                        f"Would rename {context}: commands/ -> command-templates/"
+                    )
                 else:
                     try:
                         shutil.move(str(old), str(new))
-                        changes.append(f"Renamed {context}: commands/ -> command-templates/")
+                        changes.append(
+                            f"Renamed {context}: commands/ -> command-templates/"
+                        )
                     except OSError as e:
                         errors.append(f"Failed to rename {context}: {e}")
 
@@ -132,7 +136,9 @@ class CommandsRenameMigration(BaseMigration):
             for worktree in worktrees_dir.iterdir():
                 if worktree.is_dir():
                     # Remove old templates/commands/
-                    wt_templates_commands = worktree / ".kittify" / "templates" / "commands"
+                    wt_templates_commands = (
+                        worktree / ".kittify" / "templates" / "commands"
+                    )
                     if wt_templates_commands.exists():
                         if dry_run:
                             changes.append(

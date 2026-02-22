@@ -187,9 +187,7 @@ def detect_cycles(graph: dict[str, list[str]]) -> list[list[str]] | None:
 
 
 def validate_dependencies(
-    wp_id: str,
-    declared_deps: list[str],
-    graph: dict[str, list[str]]
+    wp_id: str, declared_deps: list[str], graph: dict[str, list[str]]
 ) -> tuple[bool, list[str]]:
     """Validate that WP's dependencies are valid.
 

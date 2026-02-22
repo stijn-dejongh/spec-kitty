@@ -53,7 +53,9 @@ class OriginEntry:
     asset_type: str  # "template", "command", "mission", "script", "file"
     name: str  # "spec-template.md", "software-dev", etc.
     resolved_path: Path | None
-    tier: str | None  # "override", "legacy", "global_mission", "global", "package_default"
+    tier: (
+        str | None
+    )  # "override", "legacy", "global_mission", "global", "package_default"
     error: str | None  # If resolution failed
 
 
@@ -66,7 +68,11 @@ def _discover_mission_names() -> list[str]:
     """Discover all mission directories from the package defaults."""
     try:
         pkg_root = get_package_asset_root()
-        return sorted(d.name for d in pkg_root.iterdir() if d.is_dir() and (d / "mission.yaml").is_file())
+        return sorted(
+            d.name
+            for d in pkg_root.iterdir()
+            if d.is_dir() and (d / "mission.yaml").is_file()
+        )
     except (FileNotFoundError, OSError) as exc:
         logger.debug("Cannot discover missions from package: %s", exc)
         return ["software-dev", "research", "documentation"]
@@ -85,7 +91,11 @@ def _discover_command_names(mission: str) -> list[str]:
         pkg_root = get_package_asset_root()
         pkg_cmd_dir = pkg_root / mission / "command-templates"
         if pkg_cmd_dir.is_dir():
-            names.update(f.name for f in pkg_cmd_dir.iterdir() if f.is_file() and f.suffix == ".md")
+            names.update(
+                f.name
+                for f in pkg_cmd_dir.iterdir()
+                if f.is_file() and f.suffix == ".md"
+            )
     except (FileNotFoundError, OSError):
         pass
 
@@ -104,7 +114,11 @@ def _discover_template_names(mission: str) -> list[str]:
         pkg_tpl_dir = pkg_root / mission / "templates"
         if pkg_tpl_dir.is_dir():
             # Only top-level .md files (not subdirectory templates like divio/)
-            names.update(f.name for f in pkg_tpl_dir.iterdir() if f.is_file() and f.suffix == ".md")
+            names.update(
+                f.name
+                for f in pkg_tpl_dir.iterdir()
+                if f.is_file() and f.suffix == ".md"
+            )
     except (FileNotFoundError, OSError):
         pass
 
@@ -128,7 +142,9 @@ def _discover_scripts(project_dir: Path) -> list[OriginEntry]:
         for script_file in sorted(project_scripts.rglob("*")):
             if script_file.is_file():
                 rel = script_file.relative_to(project_scripts)
-                entries.append(OriginEntry("script", str(rel), script_file, "project", None))
+                entries.append(
+                    OriginEntry("script", str(rel), script_file, "project", None)
+                )
 
     # Package-bundled scripts (discover from src/specify_cli/scripts/)
     try:
@@ -141,7 +157,11 @@ def _discover_scripts(project_dir: Path) -> list[OriginEntry]:
                     rel = script_file.relative_to(pkg_scripts)
                     # Skip if already found at project level (project takes precedence)
                     if not any(e.name == str(rel) for e in entries):
-                        entries.append(OriginEntry("script", str(rel), script_file, "package_default", None))
+                        entries.append(
+                            OriginEntry(
+                                "script", str(rel), script_file, "package_default", None
+                            )
+                        )
     except (ImportError, OSError):
         pass
 
@@ -163,13 +183,20 @@ def _discover_agents_md(project_dir: Path) -> OriginEntry:
     try:
         import specify_cli
 
-        pkg_agents = Path(specify_cli.__file__).parent.parent / "doctrine" / "templates" / "AGENTS.md"
+        pkg_agents = (
+            Path(specify_cli.__file__).parent.parent
+            / "doctrine"
+            / "templates"
+            / "AGENTS.md"
+        )
         if pkg_agents.is_file():
             return OriginEntry("file", "AGENTS.md", pkg_agents, "package_default", None)
     except (ImportError, OSError):
         pass
 
-    return OriginEntry("file", "AGENTS.md", None, None, "AGENTS.md not found at any location")
+    return OriginEntry(
+        "file", "AGENTS.md", None, None, "AGENTS.md not found at any location"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -204,7 +231,9 @@ def collect_origins(
     for name in template_names:
         try:
             result = resolve_template(name, project_dir, mission)
-            entries.append(OriginEntry("template", name, result.path, result.tier.value, None))
+            entries.append(
+                OriginEntry("template", name, result.path, result.tier.value, None)
+            )
         except FileNotFoundError as e:
             entries.append(OriginEntry("template", name, None, None, str(e)))
 
@@ -213,7 +242,9 @@ def collect_origins(
     for name in command_names:
         try:
             result = resolve_command(name, project_dir, mission)
-            entries.append(OriginEntry("command", name, result.path, result.tier.value, None))
+            entries.append(
+                OriginEntry("command", name, result.path, result.tier.value, None)
+            )
         except FileNotFoundError as e:
             entries.append(OriginEntry("command", name, None, None, str(e)))
 
@@ -222,7 +253,9 @@ def collect_origins(
     for name in mission_names:
         try:
             result = resolve_mission(name, project_dir)
-            entries.append(OriginEntry("mission", name, result.path, result.tier.value, None))
+            entries.append(
+                OriginEntry("mission", name, result.path, result.tier.value, None)
+            )
         except FileNotFoundError as e:
             entries.append(OriginEntry("mission", name, None, None, str(e)))
 

@@ -15,7 +15,11 @@ from pathlib import Path
 
 import pytest
 
-from specify_cli.dossier.models import ArtifactRef, MissionDossier, MissionDossierSnapshot
+from specify_cli.dossier.models import (
+    ArtifactRef,
+    MissionDossier,
+    MissionDossierSnapshot,
+)
 from specify_cli.dossier.snapshot import (
     compute_snapshot,
     compute_parity_hash_from_dossier,

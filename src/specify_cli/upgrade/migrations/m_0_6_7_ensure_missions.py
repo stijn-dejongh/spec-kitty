@@ -116,9 +116,13 @@ class EnsureMissionsMigration(BaseMigration):
                             # Remove incomplete and copy fresh
                             shutil.rmtree(dest_mission)
                             shutil.copytree(src_mission, dest_mission)
-                            changes.append(f"Repaired incomplete mission: {mission_name}")
+                            changes.append(
+                                f"Repaired incomplete mission: {mission_name}"
+                            )
                         except OSError as e:
-                            errors.append(f"Failed to repair mission {mission_name}: {e}")
+                            errors.append(
+                                f"Failed to repair mission {mission_name}: {e}"
+                            )
             else:
                 # Mission doesn't exist, copy it
                 if dry_run:
@@ -217,7 +221,7 @@ class EnsureMissionsMigration(BaseMigration):
                 if missions_dir.exists() and pyproject.exists():
                     # Verify it's the spec-kitty repo by checking pyproject.toml
                     try:
-                        content = pyproject.read_text(encoding='utf-8-sig')
+                        content = pyproject.read_text(encoding="utf-8-sig")
                         if "spec-kitty-cli" in content:
                             return missions_dir
                     except OSError:

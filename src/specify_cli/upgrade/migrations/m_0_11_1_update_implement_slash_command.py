@@ -57,7 +57,10 @@ class UpdateImplementSlashCommandMigration(BaseMigration):
             if slash_cmd.exists():
                 content = slash_cmd.read_text(encoding="utf-8")
                 # If it has the old single-command pattern and NOT the two-step section
-                if old_pattern in content and "CRITICAL: This is a TWO-STEP Command" not in content:
+                if (
+                    old_pattern in content
+                    and "CRITICAL: This is a TWO-STEP Command" not in content
+                ):
                     return True
                 # If it's missing step 2 entirely
                 if "spec-kitty implement WP##" not in content:
@@ -134,11 +137,15 @@ class UpdateImplementSlashCommandMigration(BaseMigration):
 
             if needs_update:
                 if dry_run:
-                    changes.append(f"Would update: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}")
+                    changes.append(
+                        f"Would update: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}"
+                    )
                 else:
                     try:
                         slash_cmd.write_text(template_content, encoding="utf-8")
-                        changes.append(f"Updated: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}")
+                        changes.append(
+                            f"Updated: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}"
+                        )
                         agents_updated += 1
                     except Exception as e:
                         errors.append(f"Failed to update {agent_dir}/{subdir}: {e}")

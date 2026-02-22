@@ -189,7 +189,9 @@ def _display_changes_integrated(changes: list[ChangeInfo]) -> None:
     for change in changes[:5]:  # Show first 5 changes
         short_id = change.commit_id[:7] if change.commit_id else "unknown"
         # Truncate message to 50 chars
-        msg = change.message[:50] + "..." if len(change.message) > 50 else change.message
+        msg = (
+            change.message[:50] + "..." if len(change.message) > 50 else change.message
+        )
         console.print(f"  • [dim]{short_id}[/dim] {msg}")
 
     if len(changes) > 5:
@@ -661,8 +663,15 @@ def now(
         if result.error_count > 0:
             raise typer.Exit(1)
         # Detect auth-missing: queue was non-empty but nothing progressed
-        if queue_size > 0 and result.synced_count == 0 and result.duplicate_count == 0 and result.error_count == 0:
-            console.print("[red]Strict mode:[/red] queue non-empty but no events processed (likely not authenticated)")
+        if (
+            queue_size > 0
+            and result.synced_count == 0
+            and result.duplicate_count == 0
+            and result.error_count == 0
+        ):
+            console.print(
+                "[red]Strict mode:[/red] queue non-empty but no events processed (likely not authenticated)"
+            )
             raise typer.Exit(1)
 
 
@@ -734,11 +743,17 @@ def status(
     table.add_row("Background", bg_status)
 
     if service.consecutive_failures > 0:
-        table.add_row("Failures", f"[yellow]{service.consecutive_failures} consecutive[/yellow]")
+        table.add_row(
+            "Failures", f"[yellow]{service.consecutive_failures} consecutive[/yellow]"
+        )
 
     # Auth status
     auth_ok = emitter.auth.is_authenticated()
-    auth_text = "[green]Authenticated[/green]" if auth_ok else "[yellow]Not authenticated[/yellow]"
+    auth_text = (
+        "[green]Authenticated[/green]"
+        if auth_ok
+        else "[yellow]Not authenticated[/yellow]"
+    )
     table.add_row("Auth", auth_text)
 
     # Server URL
@@ -765,7 +780,9 @@ def status(
         console.print()
 
     if not check_connection:
-        console.print("[dim]Use 'spec-kitty sync status --check' to test connectivity.[/dim]")
+        console.print(
+            "[dim]Use 'spec-kitty sync status --check' to test connectivity.[/dim]"
+        )
         console.print()
 
 
@@ -799,7 +816,9 @@ def diagnose(
 
     if not pending:
         if json_output:
-            console.print(json_mod.dumps({"total": 0, "valid": 0, "invalid": 0, "results": []}))
+            console.print(
+                json_mod.dumps({"total": 0, "valid": 0, "invalid": 0, "results": []})
+            )
         else:
             console.print("[green]No pending events in queue.[/green]")
         return

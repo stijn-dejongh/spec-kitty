@@ -18,6 +18,7 @@ from typing import Generator
 # Fixtures
 # ============================================================================
 
+
 @pytest.fixture
 def temp_project(tmp_path: Path) -> Generator[Path, None, None]:
     """Create a temporary spec-kitty project for testing.
@@ -55,14 +56,13 @@ def plan_feature(temp_project: Path) -> Generator[tuple[str, Path], None, None]:
         "feature_number": "001",
         "slug": feature_slug,
         "mission": "plan",
-        "created_at": "2026-02-22T00:00:00+00:00"
+        "created_at": "2026-02-22T00:00:00+00:00",
     }
     (feature_dir / "meta.json").write_text(json.dumps(meta, indent=2))
 
     # Create spec.md
     (feature_dir / "spec.md").write_text(
-        "# Test Feature\n\n"
-        "This is a test feature for plan mission integration.\n"
+        "# Test Feature\n\nThis is a test feature for plan mission integration.\n"
     )
 
     yield (feature_slug, feature_dir)
@@ -86,8 +86,8 @@ def mock_runtime_bridge() -> MagicMock:
                 {"id": "specify", "order": 1, "title": "Specify"},
                 {"id": "research", "order": 2, "title": "Research"},
                 {"id": "plan", "order": 3, "title": "Plan"},
-                {"id": "review", "order": 4, "title": "Review"}
-            ]
+                {"id": "review", "order": 4, "title": "Review"},
+            ],
         }
     }
 
@@ -116,6 +116,7 @@ def mock_workspace_context() -> MagicMock:
 # ============================================================================
 # Test Classes
 # ============================================================================
+
 
 class TestPlanMissionIntegration:
     """Integration tests for plan mission feature creation and runtime."""
@@ -172,8 +173,8 @@ class TestPlanMissionIntegration:
 
         # Verify steps are in correct order
         for i, expected_id in enumerate(["specify", "research", "plan", "review"], 1):
-            assert steps[i-1]["id"] == expected_id
-            assert steps[i-1]["order"] == i
+            assert steps[i - 1]["id"] == expected_id
+            assert steps[i - 1]["order"] == i
 
     def test_next_command_plan_feature_not_blocked(self, plan_feature):
         """Verify spec-kitty next doesn't block on plan features (Feature 041 fix).
@@ -199,7 +200,9 @@ class TestPlanMissionIntegration:
         # 4. Verify mission is NOT blocked (would have status "blocked": true)
         # The runtime should discover the plan mission successfully
         assert "steps" in mission_def["mission"], "Mission must have steps"
-        assert len(mission_def["mission"]["steps"]) == 4, "Plan mission must have 4 steps"
+        assert len(mission_def["mission"]["steps"]) == 4, (
+            "Plan mission must have 4 steps"
+        )
 
         # 5. Verify no error would be raised by discovery
         # (In real execution, discover_mission would be called and not raise exception)
@@ -269,7 +272,9 @@ class TestPlanMissionRegressions:
         # Load and parse
         data = yaml.safe_load(sd_runtime.read_text())
         assert "mission" in data, "software-dev must have 'mission' key at top level"
-        assert data["mission"]["key"] == "software-dev", "Mission key must be software-dev"
+        assert data["mission"]["key"] == "software-dev", (
+            "Mission key must be software-dev"
+        )
 
         # Verify steps exist (software-dev has steps at top level)
         assert "steps" in data, "software-dev must have steps at top level"
@@ -281,7 +286,9 @@ class TestPlanMissionRegressions:
         core_templates = ["specify.md", "plan.md", "implement.md", "review.md"]
         for template in core_templates:
             template_file = cmd_dir / template
-            assert template_file.exists(), f"Missing core template {template} in software-dev"
+            assert template_file.exists(), (
+                f"Missing core template {template} in software-dev"
+            )
 
     def test_plan_mission_isolated_from_research(self):
         """Verify plan mission doesn't interfere with research."""
@@ -303,13 +310,17 @@ class TestPlanMissionRegressions:
         # Verify command templates exist
         cmd_dir = Path("src/specify_cli/missions/research/command-templates")
         assert cmd_dir.exists(), "research command-templates directory must exist"
-        assert len(list(cmd_dir.glob("*.md"))) > 0, "research must have command templates"
+        assert len(list(cmd_dir.glob("*.md"))) > 0, (
+            "research must have command templates"
+        )
 
         # Verify core templates for research
         core_templates = ["specify.md", "plan.md", "review.md"]
         for template in core_templates:
             template_file = cmd_dir / template
-            assert template_file.exists(), f"Missing core template {template} in research"
+            assert template_file.exists(), (
+                f"Missing core template {template} in research"
+            )
 
     def test_mission_runtime_yaml_validation(self):
         """Verify mission-runtime.yaml is valid YAML and structure is correct."""
@@ -345,9 +356,15 @@ class TestPlanMissionRegressions:
             assert step["order"] == i, f"Step {i} order must be {i}"
 
         # Verify dependency chain
-        assert steps[0].get("depends_on", []) == [], "First step must not depend on others"
-        assert steps[1].get("depends_on") == ["specify"], "Research must depend on specify"
-        assert steps[2].get("depends_on") == ["research"], "Plan must depend on research"
+        assert steps[0].get("depends_on", []) == [], (
+            "First step must not depend on others"
+        )
+        assert steps[1].get("depends_on") == ["specify"], (
+            "Research must depend on specify"
+        )
+        assert steps[2].get("depends_on") == ["research"], (
+            "Plan must depend on research"
+        )
         assert steps[3].get("depends_on") == ["plan"], "Review must depend on plan"
 
         # Verify runtime configuration
@@ -355,7 +372,9 @@ class TestPlanMissionRegressions:
         runtime = mission_obj["runtime"]
         assert runtime["loop_type"] == "sequential", "Loop type must be sequential"
         assert runtime["step_transition"] == "manual", "Step transition must be manual"
-        assert runtime["prompt_template_dir"] == "command-templates", "Prompt dir must be command-templates"
+        assert runtime["prompt_template_dir"] == "command-templates", (
+            "Prompt dir must be command-templates"
+        )
         assert runtime["terminal_step"] == "review", "Terminal step must be review"
 
 
@@ -377,7 +396,9 @@ class TestPlanMissionSteps:
         assert template.exists(), "research.md must exist"
 
         content = template.read_text()
-        assert "## Deliverables" in content, "research.md must have Deliverables section"
+        assert "## Deliverables" in content, (
+            "research.md must have Deliverables section"
+        )
         assert len(content) > 100, "research.md must have meaningful content"
 
     def test_plan_step_has_deliverables(self):
@@ -437,12 +458,14 @@ class TestPlanMissionWorkflow:
             else:
                 # Each step depends only on the previous one
                 expected_dep = step_ids[i - 1]
-                assert depends_on == [expected_dep], \
+                assert depends_on == [expected_dep], (
                     f"Step {step_id} should depend only on {expected_dep}, got {depends_on}"
+                )
 
         # Verify no cycles (linear chain is acyclic by definition)
         assert len(step_ids) == len(set(step_ids)), "Step IDs must be unique"
 
         # Verify terminal step is correct
-        assert mission["mission"]["runtime"]["terminal_step"] == "review", \
+        assert mission["mission"]["runtime"]["terminal_step"] == "review", (
             "Terminal step must be review (last step)"
+        )

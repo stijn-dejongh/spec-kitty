@@ -45,7 +45,9 @@ class TestImplementEmitsWPStatusChanged:
         assert event["payload"]["to_lane"] == "in_progress"
         assert event["payload"]["actor"] == "claude-opus"
 
-    def test_implement_event_includes_git_metadata(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_implement_event_includes_git_metadata(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """implement: emitted event includes git metadata fields."""
         event = emitter.emit_wp_status_changed(
             wp_id="WP01",
@@ -60,7 +62,9 @@ class TestImplementEmitsWPStatusChanged:
         assert event["head_commit_sha"] == "a" * 40
         assert event["repo_slug"] == "test-org/test-repo"
 
-    def test_event_queued_for_sync(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_event_queued_for_sync(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """implement: event is queued in offline queue."""
         emitter.emit_wp_status_changed("WP01", "planned", "in_progress")
         assert temp_queue.size() == 1
@@ -95,7 +99,9 @@ class TestAcceptEmitsWPStatusChanged:
         assert event["payload"]["from_lane"] == "for_review"
         assert event["payload"]["to_lane"] == "done"
 
-    def test_accept_event_includes_git_metadata(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_accept_event_includes_git_metadata(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """accept: emitted event includes git metadata fields."""
         event = emitter.emit_wp_status_changed(
             wp_id="WP01",
@@ -111,7 +117,9 @@ class TestAcceptEmitsWPStatusChanged:
 class TestFinalizeTasksEmitsBatch:
     """SC-004: finalize-tasks emits FeatureCreated + WPCreated for each WP."""
 
-    def test_feature_created_plus_wp_created(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_feature_created_plus_wp_created(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """finalize-tasks: 1 FeatureCreated + 7 WPCreated events."""
         causation_id = emitter.generate_causation_id()
 
@@ -132,7 +140,7 @@ class TestFinalizeTasksEmitsBatch:
                 wp_id=f"WP{i:02d}",
                 title=f"Work Package {i}",
                 feature_slug="028-cli-event-emission-sync",
-                dependencies=([f"WP{i-1:02d}"] if i > 1 else []),
+                dependencies=([f"WP{i - 1:02d}"] if i > 1 else []),
                 causation_id=causation_id,
             )
             assert wp is not None
@@ -149,7 +157,9 @@ class TestFinalizeTasksEmitsBatch:
 class TestGitMetadataInBatchEvents:
     """SC-001 (Feature 033): git metadata present in batch event emissions."""
 
-    def test_feature_created_includes_git_metadata(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_feature_created_includes_git_metadata(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """FeatureCreated event includes git metadata fields."""
         event = emitter.emit_feature_created(
             feature_slug="033-observability",
@@ -162,7 +172,9 @@ class TestGitMetadataInBatchEvents:
         assert event["head_commit_sha"] == "a" * 40
         assert event["repo_slug"] == "test-org/test-repo"
 
-    def test_wp_created_includes_git_metadata(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_wp_created_includes_git_metadata(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """WPCreated event includes git metadata fields."""
         event = emitter.emit_wp_created(
             wp_id="WP01",
@@ -174,7 +186,9 @@ class TestGitMetadataInBatchEvents:
         assert event["head_commit_sha"] == "a" * 40
         assert event["repo_slug"] == "test-org/test-repo"
 
-    def test_error_logged_includes_git_metadata(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_error_logged_includes_git_metadata(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """ErrorLogged event includes git metadata fields."""
         event = emitter.emit_error_logged(
             error_type="runtime",
@@ -189,7 +203,9 @@ class TestGitMetadataInBatchEvents:
 class TestOrchestrateEmitsWPAssigned:
     """SC-005: orchestrate emits WPAssigned events."""
 
-    def test_wp_assigned_for_implementation(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_wp_assigned_for_implementation(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """orchestrate: emits WPAssigned with implementation phase."""
         event = emitter.emit_wp_assigned(
             wp_id="WP01",
@@ -201,7 +217,9 @@ class TestOrchestrateEmitsWPAssigned:
         assert event["payload"]["agent_id"] == "claude-opus"
         assert event["payload"]["phase"] == "implementation"
 
-    def test_wp_assigned_for_review(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_wp_assigned_for_review(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """orchestrate: emits WPAssigned with review phase."""
         event = emitter.emit_wp_assigned(
             wp_id="WP01",
@@ -211,7 +229,9 @@ class TestOrchestrateEmitsWPAssigned:
         assert event is not None
         assert event["payload"]["phase"] == "review"
 
-    def test_wp_assigned_with_retry(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_wp_assigned_with_retry(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """orchestrate: retry_count tracked on reassignment."""
         event = emitter.emit_wp_assigned(
             wp_id="WP01",
@@ -233,18 +253,24 @@ class TestEmissionFailureNonBlocking:
         auth = MagicMock()
         config = MagicMock()
 
-        em = EventEmitter(clock=clock, config=config, queue=temp_queue, _auth=auth, ws_client=None)
+        em = EventEmitter(
+            clock=clock, config=config, queue=temp_queue, _auth=auth, ws_client=None
+        )
         event = em.emit_wp_status_changed("WP01", "planned", "in_progress")
         assert event is None
         # Critically: no exception raised
 
-    def test_validation_failure_returns_none(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_validation_failure_returns_none(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """Validation failure returns None, doesn't raise."""
         event = emitter.emit_wp_status_changed("INVALID_ID", "planned", "in_progress")
         assert event is None
         assert temp_queue.size() == 0
 
-    def test_queue_failure_returns_event(self, temp_queue: OfflineQueue, temp_clock, mock_config):
+    def test_queue_failure_returns_event(
+        self, temp_queue: OfflineQueue, temp_clock, mock_config
+    ):
         """Queue write failure still returns the event (non-blocking)."""
         broken_queue = MagicMock(spec=OfflineQueue)
         broken_queue.queue_event.side_effect = Exception("Disk full")
@@ -253,8 +279,11 @@ class TestEmissionFailureNonBlocking:
         auth.is_authenticated.return_value = False
 
         em = EventEmitter(
-            clock=temp_clock, config=mock_config, queue=broken_queue,
-            _auth=auth, ws_client=None,
+            clock=temp_clock,
+            config=mock_config,
+            queue=broken_queue,
+            _auth=auth,
+            ws_client=None,
         )
         event = em.emit_wp_status_changed("WP01", "planned", "in_progress")
         assert event is not None  # Event still created, just not queued
@@ -263,7 +292,9 @@ class TestEmissionFailureNonBlocking:
 class TestErrorLoggedEmission:
     """SC-011: ErrorLogged events emitted on command errors."""
 
-    def test_error_logged_with_wp_context(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_error_logged_with_wp_context(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """ErrorLogged includes wp_id context."""
         event = emitter.emit_error_logged(
             error_type="runtime",
@@ -276,7 +307,9 @@ class TestErrorLoggedEmission:
         assert event["payload"]["wp_id"] == "WP03"
         assert event["payload"]["agent_id"] == "claude-opus"
 
-    def test_error_logged_with_stack_trace(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_error_logged_with_stack_trace(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """ErrorLogged can include stack trace."""
         event = emitter.emit_error_logged(
             error_type="runtime",
@@ -286,7 +319,9 @@ class TestErrorLoggedEmission:
         assert event is not None
         assert "File 'foo.py'" in event["payload"]["stack_trace"]
 
-    def test_all_error_types_valid(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_all_error_types_valid(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """All 5 error types produce valid events."""
         for etype in ["validation", "runtime", "network", "auth", "unknown"]:
             event = emitter.emit_error_logged(etype, f"Error of type {etype}")
@@ -296,7 +331,9 @@ class TestErrorLoggedEmission:
 class TestDependencyResolvedEmission:
     """SC-012: DependencyResolved emitted when dependencies unblocked."""
 
-    def test_dependency_completed(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_dependency_completed(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """DependencyResolved with completed resolution."""
         event = emitter.emit_dependency_resolved(
             wp_id="WP02",
@@ -374,7 +411,10 @@ class TestIdentityInjection:
         assert event["project_uuid"] is not None
 
     def test_identity_is_cached(
-        self, emitter: EventEmitter, temp_queue: OfflineQueue, mock_identity: ProjectIdentity
+        self,
+        emitter: EventEmitter,
+        temp_queue: OfflineQueue,
+        mock_identity: ProjectIdentity,
     ):
         """Identity is resolved once and cached for subsequent events."""
         # Emit multiple events
@@ -422,7 +462,10 @@ class TestMissingIdentityQueuesOnly:
 
         # Capture stderr (Rich console output goes to stderr)
         captured = capsys.readouterr()
-        assert "missing project_uuid" in captured.err or "queued locally only" in captured.err
+        assert (
+            "missing project_uuid" in captured.err
+            or "queued locally only" in captured.err
+        )
 
     def test_multiple_events_without_identity_all_queued(
         self, emitter_without_identity: EventEmitter, temp_queue: OfflineQueue
@@ -446,7 +489,9 @@ class TestNoDuplicateEmissions:
     event per status transition, not duplicates.
     """
 
-    def test_implement_emits_once(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_implement_emits_once(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """implement command should emit exactly one WPStatusChanged.
 
         Regression test: Previously implement.py emitted twice:
@@ -473,7 +518,9 @@ class TestNoDuplicateEmissions:
         assert events[0]["payload"]["from_lane"] == "planned"
         assert events[0]["payload"]["to_lane"] == "in_progress"
 
-    def test_accept_emits_once_per_wp(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_accept_emits_once_per_wp(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """accept command should emit exactly one WPStatusChanged per WP.
 
         Regression test: Previously accept.py emitted twice per WP:
@@ -493,7 +540,9 @@ class TestNoDuplicateEmissions:
             )
 
         # Verify exactly 3 events (one per WP, not 6)
-        assert temp_queue.size() == 3, f"Expected 3 emissions (one per WP), got {temp_queue.size()}"
+        assert temp_queue.size() == 3, (
+            f"Expected 3 emissions (one per WP), got {temp_queue.size()}"
+        )
 
         # Verify all events are for_review -> done
         events = temp_queue.drain_queue()
@@ -551,9 +600,7 @@ class TestPolicyMetadataPassthrough:
         from unittest.mock import patch
 
         policy = {"orchestrator_id": "orch-1", "orchestrator_version": "0.1.0"}
-        with patch(
-            "specify_cli.sync.events.get_emitter", return_value=emitter
-        ):
+        with patch("specify_cli.sync.events.get_emitter", return_value=emitter):
             from specify_cli.sync.events import emit_wp_status_changed as wrapper_emit
 
             event = wrapper_emit(

@@ -1,4 +1,5 @@
 """Multi-Parent Merge Tests for diamond dependencies."""
+
 from __future__ import annotations
 
 import subprocess
@@ -144,7 +145,9 @@ def triple_repo(tmp_path: Path) -> tuple[Path, str]:
 
 
 class TestMergeConflictDetection:
-    def test_conflict_clearly_reported(self, diamond_conflict_repo: tuple[Path, str]) -> None:
+    def test_conflict_clearly_reported(
+        self, diamond_conflict_repo: tuple[Path, str]
+    ) -> None:
         repo, feature_slug = diamond_conflict_repo
 
         result = create_multi_parent_base(
@@ -221,7 +224,9 @@ class TestOrphanedBranchCleanup:
 
 
 class TestThreeParentMerge:
-    def test_three_parent_merge_includes_all_files(self, triple_repo: tuple[Path, str]) -> None:
+    def test_three_parent_merge_includes_all_files(
+        self, triple_repo: tuple[Path, str]
+    ) -> None:
         repo, feature_slug = triple_repo
 
         result = create_multi_parent_base(

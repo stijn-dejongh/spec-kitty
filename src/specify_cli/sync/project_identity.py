@@ -269,7 +269,9 @@ def load_identity(config_path: Path) -> ProjectIdentity:
 
     project = config.get("project", {})
     if not isinstance(project, dict):
-        logger.warning("Invalid 'project' section in config.yaml; regenerating identity")
+        logger.warning(
+            "Invalid 'project' section in config.yaml; regenerating identity"
+        )
         return ProjectIdentity()
 
     return ProjectIdentity.from_dict(project)

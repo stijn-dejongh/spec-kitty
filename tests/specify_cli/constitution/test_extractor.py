@@ -60,10 +60,16 @@ class TestSectionClassification:
         assert extractor._classify_section("Quality Gates") == ("governance", "quality")
 
     def test_classify_commit_section(self, extractor: Extractor) -> None:
-        assert extractor._classify_section("Commit Guidelines") == ("governance", "commits")
+        assert extractor._classify_section("Commit Guidelines") == (
+            "governance",
+            "commits",
+        )
 
     def test_classify_directive_section(self, extractor: Extractor) -> None:
-        assert extractor._classify_section("Project Directives") == ("directives", "directives")
+        assert extractor._classify_section("Project Directives") == (
+            "directives",
+            "directives",
+        )
 
     def test_classify_case_insensitive(self, extractor: Extractor) -> None:
         assert extractor._classify_section("TESTING") == ("governance", "testing")
@@ -99,7 +105,9 @@ Pre-commit hooks are required.
         assert result.governance.quality.pr_approvals == 2
         assert result.governance.quality.pre_commit_hooks is True
 
-    def test_extract_doctrine_selection_from_yaml_block(self, extractor: Extractor) -> None:
+    def test_extract_doctrine_selection_from_yaml_block(
+        self, extractor: Extractor
+    ) -> None:
         content = """## Governance Activation
 
 ```yaml
@@ -161,7 +169,9 @@ class TestIdempotency:
         return Extractor()
 
     @patch("specify_cli.constitution.extractor.datetime")
-    def test_extract_twice_identical_results(self, mock_datetime, extractor: Extractor) -> None:
+    def test_extract_twice_identical_results(
+        self, mock_datetime, extractor: Extractor
+    ) -> None:
         fixed_time = datetime(2026, 2, 15, 12, 0, 0, tzinfo=timezone.utc)
         mock_datetime.now.return_value = fixed_time
         mock_datetime.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
@@ -244,4 +254,6 @@ class TestYAMLWriter:
 
         governance_content = (constitution_dir / "governance.yaml").read_text()
         assert "# Auto-generated from constitution.md" in governance_content
-        assert "# Run 'spec-kitty constitution sync' to regenerate" in governance_content
+        assert (
+            "# Run 'spec-kitty constitution sync' to regenerate" in governance_content
+        )

@@ -84,9 +84,7 @@ class TestCheckGlobalRuntimeExists:
         assert check.severity == "info"
         assert "exists" in check.message
 
-    def test_check_name(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_check_name(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Check has the expected name."""
         monkeypatch.setenv("SPEC_KITTY_HOME", str(tmp_path / "nope"))
         check = check_global_runtime_exists()
@@ -142,9 +140,7 @@ class TestCheckVersionLock:
         assert check.severity == "info"
         assert "matches CLI" in check.message
 
-    def test_check_name(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_check_name(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Check has the expected name."""
         home = tmp_path / "kittify"
         home.mkdir()
@@ -200,9 +196,7 @@ class TestCheckMissionIntegrity:
         for managed_dir in MANAGED_MISSION_DIRS:
             assert managed_dir in check.message
 
-    def test_check_name(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_check_name(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Check has the expected name."""
         home = tmp_path / "kittify"
         home.mkdir()
@@ -273,9 +267,7 @@ class TestCheckStaleLegacyAssets:
         (kittify / "templates").mkdir(parents=True)
         (kittify / "templates" / "spec.md").write_text("stale")
         (kittify / "missions" / "software-dev").mkdir(parents=True)
-        (kittify / "missions" / "software-dev" / "mission.yaml").write_text(
-            "stale"
-        )
+        (kittify / "missions" / "software-dev" / "mission.yaml").write_text("stale")
         (kittify / "scripts").mkdir(parents=True)
         (kittify / "scripts" / "build.sh").write_text("stale")
 

@@ -81,9 +81,7 @@ def _write_live_event(feature_dir: Path, wp_id: str = "WP01") -> None:
     )
 
 
-def _write_migration_only_event(
-    feature_dir: Path, wp_id: str = "WP01"
-) -> None:
+def _write_migration_only_event(feature_dir: Path, wp_id: str = "WP01") -> None:
     """Write a StatusEvent with a migration actor (legacy bootstrap)."""
     from specify_cli.status.models import Lane, StatusEvent
 
@@ -258,10 +256,23 @@ class TestApply:
         feature_dir = tmp_path / "kitty-specs" / "910-single"
         tasks_dir = feature_dir / "tasks"
         tasks_dir.mkdir(parents=True)
-        _write_wp(tasks_dir, "WP01", "done", history=[
-            {"timestamp": "2026-01-01T10:00:00Z", "lane": "planned", "agent": "system"},
-            {"timestamp": "2026-01-01T11:00:00Z", "lane": "done", "agent": "reviewer"},
-        ])
+        _write_wp(
+            tasks_dir,
+            "WP01",
+            "done",
+            history=[
+                {
+                    "timestamp": "2026-01-01T10:00:00Z",
+                    "lane": "planned",
+                    "agent": "system",
+                },
+                {
+                    "timestamp": "2026-01-01T11:00:00Z",
+                    "lane": "done",
+                    "agent": "reviewer",
+                },
+            ],
+        )
 
         migration = HistoricalStatusMigration()
         result = migration.apply(tmp_path)
@@ -363,12 +374,16 @@ class TestApply:
         # Dry run: no files
         dry_result = migration.apply(tmp_path, dry_run=True)
         assert dry_result.success is True
-        assert not (tmp_path / "kitty-specs" / "941-dryreal" / "status.events.jsonl").exists()
+        assert not (
+            tmp_path / "kitty-specs" / "941-dryreal" / "status.events.jsonl"
+        ).exists()
 
         # Real run: files created
         real_result = migration.apply(tmp_path, dry_run=False)
         assert real_result.success is True
-        assert (tmp_path / "kitty-specs" / "941-dryreal" / "status.events.jsonl").exists()
+        assert (
+            tmp_path / "kitty-specs" / "941-dryreal" / "status.events.jsonl"
+        ).exists()
 
     def test_apply_all_planned_no_events(self, tmp_path: Path) -> None:
         """apply() on all-planned WPs produces no events (no transitions)."""
@@ -394,11 +409,25 @@ class TestCrossBranchIdempotency:
         tasks_dir = tmp_path / "kitty-specs" / "950-cross" / "tasks"
         tasks_dir.mkdir(parents=True)
         _write_wp(
-            tasks_dir, "WP01", "done",
+            tasks_dir,
+            "WP01",
+            "done",
             history=[
-                {"timestamp": "2026-01-01T10:00:00Z", "lane": "planned", "agent": "system"},
-                {"timestamp": "2026-01-01T11:00:00Z", "lane": "doing", "agent": "claude"},
-                {"timestamp": "2026-01-01T12:00:00Z", "lane": "done", "agent": "reviewer"},
+                {
+                    "timestamp": "2026-01-01T10:00:00Z",
+                    "lane": "planned",
+                    "agent": "system",
+                },
+                {
+                    "timestamp": "2026-01-01T11:00:00Z",
+                    "lane": "doing",
+                    "agent": "claude",
+                },
+                {
+                    "timestamp": "2026-01-01T12:00:00Z",
+                    "lane": "done",
+                    "agent": "reviewer",
+                },
             ],
             review_status="approved",
             reviewed_by="reviewer",
@@ -470,7 +499,5 @@ class TestMigrationMetadata:
     def test_registered_in_registry(self) -> None:
         from specify_cli.upgrade.registry import MigrationRegistry
 
-        registered_ids = [
-            m.migration_id for m in MigrationRegistry.get_all()
-        ]
+        registered_ids = [m.migration_id for m in MigrationRegistry.get_all()]
         assert "2.0.0_historical_status_migration" in registered_ids

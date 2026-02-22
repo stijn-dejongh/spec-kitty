@@ -75,7 +75,9 @@ def workspace_per_wp_repo(git_repo: Path) -> Path:
 
         # Make a commit in the worktree
         (worktree_path / f"{wp_id}.txt").write_text(f"Changes for {wp_id}\n")
-        subprocess.run(["git", "add", "."], cwd=worktree_path, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=worktree_path, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", f"Add {wp_id} changes"],
             cwd=worktree_path,
@@ -91,7 +93,9 @@ class TestExtractFeatureSlug:
 
     def test_extracts_from_wp_branch(self):
         """Test extracting feature slug from WP branch name."""
-        assert extract_feature_slug("010-workspace-per-wp-WP01") == "010-workspace-per-wp"
+        assert (
+            extract_feature_slug("010-workspace-per-wp-WP01") == "010-workspace-per-wp"
+        )
         assert extract_feature_slug("005-my-feature-WP12") == "005-my-feature"
 
     def test_returns_as_is_for_legacy_branch(self):
@@ -370,7 +374,10 @@ class TestWorkspacePerWpMergeIntegration:
         # Get the default branch name
         branch_result = subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            cwd=workspace_per_wp_repo, capture_output=True, text=True, check=True
+            cwd=workspace_per_wp_repo,
+            capture_output=True,
+            text=True,
+            check=True,
         )
         default_branch = branch_result.stdout.strip()
 
@@ -434,7 +441,10 @@ class TestWorkspacePerWpMergeIntegration:
         # Get the default branch name
         branch_result = subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
-            cwd=workspace_per_wp_repo, capture_output=True, text=True, check=True
+            cwd=workspace_per_wp_repo,
+            capture_output=True,
+            text=True,
+            check=True,
         )
         default_branch = branch_result.stdout.strip()
 
@@ -502,6 +512,7 @@ class TestVCSAbstractionIntegration:
         """Test that merge command detects git backend correctly."""
         # Clear the lru_cache and patch the function
         from specify_cli.core.vcs import detection
+
         detection.is_jj_available.cache_clear()
 
         with patch.object(detection, "is_jj_available", return_value=False):
@@ -517,6 +528,7 @@ class TestVCSAbstractionIntegration:
         (git_repo / ".jj").mkdir()
 
         from specify_cli.core.vcs import detection
+
         detection.is_jj_available.cache_clear()
 
         with patch.object(detection, "is_jj_available", return_value=True):
@@ -528,6 +540,7 @@ class TestVCSAbstractionIntegration:
     def test_merge_displays_backend_info(self, workspace_per_wp_repo: Path, capsys):
         """Test that merge command displays VCS backend info."""
         from specify_cli.core.vcs import detection
+
         detection.is_jj_available.cache_clear()
 
         with patch.object(detection, "is_jj_available", return_value=False):
@@ -545,6 +558,7 @@ class TestVCSAbstractionIntegration:
         test_dir.mkdir()
 
         from specify_cli.core.vcs import detection
+
         detection.is_jj_available.cache_clear()
         detection.is_git_available.cache_clear()
 
@@ -563,6 +577,7 @@ class TestVCSAbstractionIntegration:
         (git_repo / ".jj").mkdir()
 
         from specify_cli.core.vcs import detection
+
         detection.is_jj_available.cache_clear()
 
         with patch.object(detection, "is_jj_available", return_value=True):
@@ -578,6 +593,7 @@ class TestVCSAbstractionIntegration:
         (git_repo / ".jj").mkdir()
 
         from specify_cli.core.vcs import detection
+
         detection.is_jj_available.cache_clear()
 
         with patch.object(detection, "is_jj_available", return_value=False):

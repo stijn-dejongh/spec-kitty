@@ -10,17 +10,33 @@ from rich.panel import Panel
 from rich.table import Table
 
 from specify_cli.acceptance import AcceptanceError, detect_feature_slug
-from specify_cli.cli.helpers import check_version_compatibility, console, get_project_root_or_exit
+from specify_cli.cli.helpers import (
+    check_version_compatibility,
+    console,
+    get_project_root_or_exit,
+)
 from specify_cli.core.project_resolver import resolve_worktree_aware_feature_dir
 from specify_cli.tasks_support import TaskCliError, find_repo_root
-from specify_cli.text_sanitization import detect_problematic_characters, sanitize_directory, sanitize_file
+from specify_cli.text_sanitization import (
+    detect_problematic_characters,
+    sanitize_directory,
+    sanitize_file,
+)
 
 
 def validate_encoding(
-    feature: Optional[str] = typer.Option(None, "--feature", help="Feature slug to validate (auto-detected when omitted)"),
-    fix: bool = typer.Option(False, "--fix", help="Automatically fix encoding errors by sanitizing files"),
-    check_all: bool = typer.Option(False, "--all", help="Check all features, not just one"),
-    backup: bool = typer.Option(True, "--backup/--no-backup", help="Create .bak files before fixing"),
+    feature: Optional[str] = typer.Option(
+        None, "--feature", help="Feature slug to validate (auto-detected when omitted)"
+    ),
+    fix: bool = typer.Option(
+        False, "--fix", help="Automatically fix encoding errors by sanitizing files"
+    ),
+    check_all: bool = typer.Option(
+        False, "--all", help="Check all features, not just one"
+    ),
+    backup: bool = typer.Option(
+        True, "--backup/--no-backup", help="Create .bak files before fixing"
+    ),
 ) -> None:
     """Validate and optionally fix file encoding in feature artifacts.
 
@@ -49,7 +65,9 @@ def validate_encoding(
             console.print("[yellow]No feature directories found.[/yellow]")
             raise typer.Exit(0)
 
-        console.print(f"[cyan]Checking encoding for {len(feature_dirs)} features...[/cyan]")
+        console.print(
+            f"[cyan]Checking encoding for {len(feature_dirs)} features...[/cyan]"
+        )
         console.print()
 
         total_issues = 0
@@ -61,24 +79,30 @@ def validate_encoding(
             total_fixed += fixed
 
         console.print()
-        console.print(Panel(
-            f"[bold]Summary:[/bold]\n"
-            f"Total files with issues: [yellow]{total_issues}[/yellow]\n"
-            f"Total files fixed: [green]{total_fixed}[/green]",
-            title="Encoding Validation Complete",
-            border_style="cyan" if total_issues == 0 else "yellow",
-        ))
+        console.print(
+            Panel(
+                f"[bold]Summary:[/bold]\n"
+                f"Total files with issues: [yellow]{total_issues}[/yellow]\n"
+                f"Total files fixed: [green]{total_fixed}[/green]",
+                title="Encoding Validation Complete",
+                border_style="cyan" if total_issues == 0 else "yellow",
+            )
+        )
 
         raise typer.Exit(0 if total_issues == 0 or fix else 1)
 
     # Validate single feature
     try:
-        feature_slug = (feature or detect_feature_slug(repo_root, cwd=Path.cwd())).strip()
+        feature_slug = (
+            feature or detect_feature_slug(repo_root, cwd=Path.cwd())
+        ).strip()
     except AcceptanceError as exc:
         console.print(f"[red]Error:[/red] {exc}")
         raise typer.Exit(1)
 
-    feature_dir = resolve_worktree_aware_feature_dir(repo_root, feature_slug, Path.cwd(), console)
+    feature_dir = resolve_worktree_aware_feature_dir(
+        repo_root, feature_slug, Path.cwd(), console
+    )
 
     if not feature_dir.exists():
         console.print(f"[red]Error:[/red] Feature directory not found: {feature_dir}")
@@ -105,7 +129,9 @@ def validate_encoding(
         raise typer.Exit(1)
 
 
-def _validate_feature_dir(feature_dir: Path, *, fix: bool, backup: bool) -> tuple[int, int]:
+def _validate_feature_dir(
+    feature_dir: Path, *, fix: bool, backup: bool
+) -> tuple[int, int]:
     """Validate encoding for a single feature directory.
 
     Returns:
@@ -114,7 +140,9 @@ def _validate_feature_dir(feature_dir: Path, *, fix: bool, backup: bool) -> tupl
     console.print(f"[cyan]Checking:[/cyan] {feature_dir.name}")
 
     # Scan all markdown files
-    results = sanitize_directory(feature_dir, pattern="**/*.md", backup=backup, dry_run=not fix)
+    results = sanitize_directory(
+        feature_dir, pattern="**/*.md", backup=backup, dry_run=not fix
+    )
 
     files_with_issues = []
     files_fixed = []
@@ -122,7 +150,11 @@ def _validate_feature_dir(feature_dir: Path, *, fix: bool, backup: bool) -> tupl
 
     for file_path_str, (was_modified, error) in results.items():
         file_path = Path(file_path_str)
-        relative_path = file_path.relative_to(feature_dir) if file_path.is_relative_to(feature_dir) else file_path
+        relative_path = (
+            file_path.relative_to(feature_dir)
+            if file_path.is_relative_to(feature_dir)
+            else file_path
+        )
 
         if error:
             file_errors.append((relative_path, error))
@@ -133,7 +165,9 @@ def _validate_feature_dir(feature_dir: Path, *, fix: bool, backup: bool) -> tupl
 
     # Display results
     if files_with_issues:
-        table = Table(title=f"Files with Encoding Issues: {feature_dir.name}", show_header=True)
+        table = Table(
+            title=f"Files with Encoding Issues: {feature_dir.name}", show_header=True
+        )
         table.add_column("File", style="cyan")
         table.add_column("Status", style="yellow")
 
@@ -164,7 +198,9 @@ def _validate_feature_dir(feature_dir: Path, *, fix: bool, backup: bool) -> tupl
                 issues = detect_problematic_characters(content)
                 if issues:
                     console.print()
-                    console.print(f"[yellow]Example issues in {files_with_issues[0]}:[/yellow]")
+                    console.print(
+                        f"[yellow]Example issues in {files_with_issues[0]}:[/yellow]"
+                    )
                     for line_num, col, char, replacement in issues[:5]:  # Show first 5
                         console.print(
                             f"  Line {line_num}, col {col}: '{char}' (U+{ord(char):04X}) → '{replacement}'"

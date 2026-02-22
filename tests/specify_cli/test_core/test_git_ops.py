@@ -120,7 +120,9 @@ def test_has_remote_with_origin(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
     run_command(["git", "init"], cwd=repo)
-    run_command(["git", "remote", "add", "origin", "https://example.com/repo.git"], cwd=repo)
+    run_command(
+        ["git", "remote", "add", "origin", "https://example.com/repo.git"], cwd=repo
+    )
 
     assert has_remote(repo) is True
 
@@ -212,7 +214,9 @@ def test_has_tracking_branch_with_tracking(tmp_path, _git_identity):
     run_command(["git", "commit", "-m", "Initial"], cwd=repo)
 
     # Get branch name
-    _, branch, _ = run_command(["git", "branch", "--show-current"], cwd=repo, capture=True)
+    _, branch, _ = run_command(
+        ["git", "branch", "--show-current"], cwd=repo, capture=True
+    )
     branch = branch.strip()
 
     # Push and set up tracking
@@ -220,6 +224,7 @@ def test_has_tracking_branch_with_tracking(tmp_path, _git_identity):
 
     # Should have tracking now
     from specify_cli.core.git_ops import has_tracking_branch
+
     assert has_tracking_branch(repo) is True
 
 
@@ -242,6 +247,7 @@ def test_has_tracking_branch_without_tracking(tmp_path, _git_identity):
 
     # Should NOT have tracking
     from specify_cli.core.git_ops import has_tracking_branch
+
     assert has_tracking_branch(repo) is False
 
 
@@ -258,6 +264,7 @@ def test_has_tracking_branch_no_remote(tmp_path, _git_identity):
 
     # Should NOT have tracking (no remote)
     from specify_cli.core.git_ops import has_tracking_branch
+
     assert has_tracking_branch(repo) is False
 
 
@@ -314,7 +321,9 @@ def test_resolve_target_branch_branches_differ_respect_current(tmp_path):
     (feature_dir / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
 
     # Resolve from develop (current) when target is main
-    resolution = resolve_target_branch("002-test", repo, "develop", respect_current=True)
+    resolution = resolve_target_branch(
+        "002-test", repo, "develop", respect_current=True
+    )
 
     assert resolution.target == "main"
     assert resolution.current == "develop"
@@ -371,7 +380,9 @@ def test_resolve_target_branch_auto_detect_current(tmp_path):
     (feature_dir / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
 
     # Resolve WITHOUT providing current_branch (should auto-detect)
-    resolution = resolve_target_branch("004-test", repo, current_branch=None, respect_current=True)
+    resolution = resolve_target_branch(
+        "004-test", repo, current_branch=None, respect_current=True
+    )
 
     assert resolution.current == "develop"  # Auto-detected
     assert resolution.target == "main"
@@ -550,7 +561,9 @@ def test_resolve_target_branch_meta_overrides_detected_primary(tmp_path):
     meta = {"target_branch": "2.x"}
     (feature_dir / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
 
-    resolution = resolve_target_branch("025-feature", repo, "master", respect_current=True)
+    resolution = resolve_target_branch(
+        "025-feature", repo, "master", respect_current=True
+    )
 
     assert resolution.target == "2.x"  # meta.json wins over detected "master"
     assert resolution.should_notify is True  # master != 2.x
@@ -626,7 +639,9 @@ def test_manifest_merged_check_uses_detected_primary(tmp_path):
     run_command(["git", "add", "."], cwd=repo)
     run_command(["git", "commit", "-m", "Feature work"], cwd=repo)
     run_command(["git", "checkout", "master"], cwd=repo)
-    run_command(["git", "merge", "--no-ff", "001-my-feature", "-m", "Merge feature"], cwd=repo)
+    run_command(
+        ["git", "merge", "--no-ff", "001-my-feature", "-m", "Merge feature"], cwd=repo
+    )
 
     # Create kitty-specs directory so it shows up (needs a file; git ignores empty dirs)
     feature_dir = repo / "kitty-specs" / "001-my-feature"

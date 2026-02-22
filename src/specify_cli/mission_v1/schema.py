@@ -254,7 +254,11 @@ def validate_mission_v1(config: dict[str, Any]) -> None:
 
     error_messages: list[str] = []
     for err in raw_errors:
-        path = ".".join(str(p) for p in err.absolute_path) if err.absolute_path else "(root)"
+        path = (
+            ".".join(str(p) for p in err.absolute_path)
+            if err.absolute_path
+            else "(root)"
+        )
         error_messages.append(f"{path}: {err.message}")
 
     raise MissionValidationError(
@@ -269,15 +273,17 @@ def validate_mission_v1(config: dict[str, Any]) -> None:
 
 #: Keys that only appear in v1 mission configs (state-machine DSL).
 #: Stripping these allows a hybrid YAML to pass v0 Pydantic validation.
-V1_ONLY_KEYS: frozenset[str] = frozenset({
-    "states",
-    "transitions",
-    "initial",
-    "guards",
-    "inputs",
-    "outputs",
-    "mission",
-})
+V1_ONLY_KEYS: frozenset[str] = frozenset(
+    {
+        "states",
+        "transitions",
+        "initial",
+        "guards",
+        "inputs",
+        "outputs",
+        "mission",
+    }
+)
 
 
 def strip_v1_keys(config: dict[str, Any]) -> dict[str, Any]:

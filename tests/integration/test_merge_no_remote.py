@@ -42,7 +42,9 @@ def test_execute_merge_skips_pull_without_remote(tmp_path):
 
     # Create worktree with changes
     worktree = repo / ".worktrees" / "001-feature-WP01"
-    run_command(["git", "worktree", "add", str(worktree), "-b", "001-feature-WP01"], cwd=repo)
+    run_command(
+        ["git", "worktree", "add", str(worktree), "-b", "001-feature-WP01"], cwd=repo
+    )
     (worktree / "test.txt").write_text("change")
     run_command(["git", "add", "."], cwd=worktree)
     run_command(["git", "commit", "-m", "Add test"], cwd=worktree)
@@ -111,6 +113,7 @@ def test_execute_legacy_merge_succeeds_without_remote(tmp_path):
 
     # Change to repo directory before merge
     import os
+
     original_cwd = os.getcwd()
     os.chdir(repo)
 
@@ -163,7 +166,9 @@ def test_merge_dry_run_without_remote(tmp_path):
 
     # Create worktree with changes
     worktree = repo / ".worktrees" / "001-feature-WP01"
-    run_command(["git", "worktree", "add", str(worktree), "-b", "001-feature-WP01"], cwd=repo)
+    run_command(
+        ["git", "worktree", "add", str(worktree), "-b", "001-feature-WP01"], cwd=repo
+    )
     (worktree / "test.txt").write_text("change")
     run_command(["git", "add", "."], cwd=worktree)
     run_command(["git", "commit", "-m", "Add test"], cwd=worktree)
@@ -227,12 +232,15 @@ def test_execute_merge_skips_pull_with_untracked_branch(tmp_path):
     run_command(["git", "commit", "-m", "Initial"], cwd=repo)
 
     # Verify: remote exists but no tracking
-    assert subprocess.run(
-        ["git", "remote", "get-url", "origin"],
-        cwd=repo,
-        capture_output=True,
-        check=False,
-    ).returncode == 0
+    assert (
+        subprocess.run(
+            ["git", "remote", "get-url", "origin"],
+            cwd=repo,
+            capture_output=True,
+            check=False,
+        ).returncode
+        == 0
+    )
 
     assert not has_tracking_branch(repo)
 
@@ -246,7 +254,9 @@ def test_execute_merge_skips_pull_with_untracked_branch(tmp_path):
 
     # Create worktree with changes
     worktree = repo / ".worktrees" / "001-feature-WP01"
-    run_command(["git", "worktree", "add", str(worktree), "-b", "001-feature-WP01"], cwd=repo)
+    run_command(
+        ["git", "worktree", "add", str(worktree), "-b", "001-feature-WP01"], cwd=repo
+    )
     (worktree / "test.txt").write_text("change", encoding="utf-8")
     run_command(["git", "add", "."], cwd=worktree)
     run_command(["git", "commit", "-m", "Add test"], cwd=worktree)

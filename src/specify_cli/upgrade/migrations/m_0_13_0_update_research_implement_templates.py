@@ -49,7 +49,10 @@ class UpdateResearchImplementTemplatesMigration(BaseMigration):
                 content = slash_cmd.read_text(encoding="utf-8")
                 # If it's a research template (has Sprint Planning Artifacts)
                 # but missing schema docs
-                if "Sprint Planning Artifacts" in content and "Research CSV Schemas" not in content:
+                if (
+                    "Sprint Planning Artifacts" in content
+                    and "Research CSV Schemas" not in content
+                ):
                     return True
         return False
 
@@ -119,18 +122,24 @@ class UpdateResearchImplementTemplatesMigration(BaseMigration):
                         continue  # Already up to date
 
                     if dry_run:
-                        changes.append(f"Would update: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}")
+                        changes.append(
+                            f"Would update: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}"
+                        )
                     else:
                         try:
                             slash_cmd.write_text(template_content, encoding="utf-8")
-                            changes.append(f"Updated: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}")
+                            changes.append(
+                                f"Updated: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}"
+                            )
                             agents_updated += 1
                         except Exception as e:
                             errors.append(f"Failed to update {agent_dir}/{subdir}: {e}")
 
         if agents_updated > 0:
             if dry_run:
-                changes.append(f"Would update {agents_updated} agent research templates")
+                changes.append(
+                    f"Would update {agents_updated} agent research templates"
+                )
             else:
                 changes.append(f"Updated {agents_updated} agent research templates")
         else:

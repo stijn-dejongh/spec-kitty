@@ -112,9 +112,13 @@ class TestFreshInstallE2E:
         # After: global home exists with expected structure
         assert isolated_runtime.is_dir()
         assert (isolated_runtime / "cache" / "version.lock").exists()
-        assert (isolated_runtime / "cache" / "version.lock").read_text().strip() == FAKE_VERSION
+        assert (
+            isolated_runtime / "cache" / "version.lock"
+        ).read_text().strip() == FAKE_VERSION
         assert (isolated_runtime / "missions" / "software-dev").is_dir()
-        assert (isolated_runtime / "missions" / "software-dev" / "mission.yaml").exists()
+        assert (
+            isolated_runtime / "missions" / "software-dev" / "mission.yaml"
+        ).exists()
         assert (isolated_runtime / "missions" / "software-dev" / "templates").is_dir()
 
     def test_resolution_works_from_global_tier(
@@ -137,9 +141,7 @@ class TestFreshInstallE2E:
         (project / ".kittify").mkdir(parents=True)
 
         # Resolve template -- should come from global tier
-        result = resolve_template(
-            "spec-template.md", project, mission="software-dev"
-        )
+        result = resolve_template("spec-template.md", project, mission="software-dev")
         assert result.tier == ResolutionTier.GLOBAL_MISSION
         assert result.path.exists()
         assert "Spec Template" in result.path.read_text()
@@ -293,9 +295,10 @@ class TestUpgradeLegacyProjectE2E:
         # Customized file should move to overrides
         assert len(report.moved) >= 1
         assert (kittify / "overrides" / "templates" / "spec-template.md").exists()
-        assert "My Custom Spec" in (
-            kittify / "overrides" / "templates" / "spec-template.md"
-        ).read_text()
+        assert (
+            "My Custom Spec"
+            in (kittify / "overrides" / "templates" / "spec-template.md").read_text()
+        )
 
     def test_after_migration_resolves_from_override_tier(
         self,
@@ -391,9 +394,7 @@ class TestUpgradeLegacyProjectE2E:
         execute_migration(project)
 
         # Re-resolve -- should fall through to GLOBAL tier
-        result = resolve_template(
-            "spec-template.md", project, mission="software-dev"
-        )
+        result = resolve_template("spec-template.md", project, mission="software-dev")
         assert result.tier == ResolutionTier.GLOBAL_MISSION
         assert result.path.exists()
 
@@ -415,9 +416,7 @@ class TestUpgradeLegacyProjectE2E:
         project = isolated_runtime.parent / "pinned_project"
         kittify = project / ".kittify"
         kittify.mkdir(parents=True)
-        (kittify / "config.yaml").write_text(
-            "runtime:\n  pin_version: '1.2.3'\n"
-        )
+        (kittify / "config.yaml").write_text("runtime:\n  pin_version: '1.2.3'\n")
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")

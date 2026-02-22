@@ -81,7 +81,9 @@ def detect_execution_context(cwd: Path | None = None) -> CurrentContext:
         for i, part in enumerate(cwd.parts):
             if part == ".worktrees" and i + 1 < len(cwd.parts):
                 candidate_root = Path(*cwd.parts[:i])
-                if (candidate_root / ".kittify").exists() or (candidate_root / ".git").exists():
+                if (candidate_root / ".kittify").exists() or (
+                    candidate_root / ".git"
+                ).exists():
                     worktree_name = cwd.parts[i + 1]
                     worktree_path = Path(*cwd.parts[: i + 2])
                     repo_root = candidate_root

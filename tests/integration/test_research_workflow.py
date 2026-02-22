@@ -19,8 +19,18 @@ def research_project_root(tmp_path: Path) -> Path:
 
     # Initialize git
     subprocess.run(["git", "init"], cwd=project_dir, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=project_dir, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Test User"], cwd=project_dir, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"],
+        cwd=project_dir,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test User"],
+        cwd=project_dir,
+        check=True,
+        capture_output=True,
+    )
 
     # Create .kittify structure with research mission
     kittify = project_dir / ".kittify"
@@ -28,6 +38,7 @@ def research_project_root(tmp_path: Path) -> Path:
 
     # Copy missions from current repo (new location in src/)
     import shutil
+
     src_missions = Path.cwd() / "src" / "specify_cli" / "missions"
     if src_missions.exists():
         shutil.copytree(src_missions, kittify / "missions")
@@ -41,8 +52,15 @@ def research_project_root(tmp_path: Path) -> Path:
         active_link.write_text("research\n")
 
     # Initial commit
-    subprocess.run(["git", "add", "."], cwd=project_dir, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "Init research project"], cwd=project_dir, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "."], cwd=project_dir, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "commit", "-m", "Init research project"],
+        cwd=project_dir,
+        check=True,
+        capture_output=True,
+    )
 
     return project_dir
 
@@ -51,6 +69,7 @@ def research_project_root(tmp_path: Path) -> Path:
 def test_research_mission_loads_correctly(research_project_root: Path) -> None:
     """Research mission should load with correct configuration."""
     import sys
+
     sys.path.insert(0, str(Path.cwd() / "src"))
 
     from specify_cli.mission import get_active_mission
@@ -67,6 +86,7 @@ def test_research_mission_loads_correctly(research_project_root: Path) -> None:
 def test_research_templates_exist(research_project_root: Path) -> None:
     """Research templates should exist and be accessible."""
     import sys
+
     sys.path.insert(0, str(Path.cwd() / "src"))
 
     from specify_cli.mission import get_active_mission
@@ -87,6 +107,7 @@ def test_research_templates_exist(research_project_root: Path) -> None:
 def test_citation_validation_with_valid_data(tmp_path: Path) -> None:
     """Citation validation should pass with valid citations."""
     import sys
+
     sys.path.insert(0, str(Path.cwd() / "src"))
 
     from specify_cli.validators.research import validate_citations
@@ -94,7 +115,7 @@ def test_citation_validation_with_valid_data(tmp_path: Path) -> None:
     evidence_log = tmp_path / "evidence-log.csv"
     evidence_log.write_text(
         "timestamp,source_type,citation,key_finding,confidence,notes\n"
-        "2025-01-15T10:00:00,journal,\"Smith (2024). Title. Journal.\",Finding,high,Notes\n"
+        '2025-01-15T10:00:00,journal,"Smith (2024). Title. Journal.",Finding,high,Notes\n'
     )
 
     result = validate_citations(evidence_log)
@@ -104,6 +125,7 @@ def test_citation_validation_with_valid_data(tmp_path: Path) -> None:
 def test_citation_validation_catches_errors(tmp_path: Path) -> None:
     """Citation validation should catch completeness errors."""
     import sys
+
     sys.path.insert(0, str(Path.cwd() / "src"))
 
     from specify_cli.validators.research import validate_citations
@@ -122,6 +144,7 @@ def test_citation_validation_catches_errors(tmp_path: Path) -> None:
 def test_source_register_validation(tmp_path: Path) -> None:
     """Source register validation should work in research context."""
     import sys
+
     sys.path.insert(0, str(Path.cwd() / "src"))
 
     from specify_cli.validators.research import validate_source_register
@@ -129,7 +152,7 @@ def test_source_register_validation(tmp_path: Path) -> None:
     valid = tmp_path / "sources.csv"
     valid.write_text(
         "source_id,citation,url,accessed_date,relevance,status\n"
-        "smith2024,\"Citation\",https://example.com,2025-01-15,high,reviewed\n"
+        'smith2024,"Citation",https://example.com,2025-01-15,high,reviewed\n'
     )
 
     result = validate_source_register(valid)
@@ -140,6 +163,7 @@ def test_source_register_validation(tmp_path: Path) -> None:
 def test_path_validation_for_research_mission(research_project_root: Path) -> None:
     """Path validation should check research-specific paths."""
     import sys
+
     sys.path.insert(0, str(Path.cwd() / "src"))
 
     from specify_cli.mission import get_active_mission
@@ -164,7 +188,16 @@ def test_full_research_workflow_via_cli(tmp_path: Path, run_cli) -> None:
     import subprocess
 
     # Initialize research project via CLI
-    result = run_cli(tmp_path, "init", "research-test", "--mission", "research", "--ai", "claude", "--no-git")
+    result = run_cli(
+        tmp_path,
+        "init",
+        "research-test",
+        "--mission",
+        "research",
+        "--ai",
+        "claude",
+        "--no-git",
+    )
 
     project_dir = tmp_path / "research-test"
     assert result.returncode == 0, f"CLI init failed: {result.stderr}"
@@ -172,10 +205,27 @@ def test_full_research_workflow_via_cli(tmp_path: Path, run_cli) -> None:
 
     # Init git for testing
     subprocess.run(["git", "init"], cwd=project_dir, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=project_dir, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=project_dir, check=True, capture_output=True)
-    subprocess.run(["git", "add", "."], cwd=project_dir, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "Init"], cwd=project_dir, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=project_dir,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=project_dir,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "add", "."], cwd=project_dir, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "commit", "-m", "Init"],
+        cwd=project_dir,
+        check=True,
+        capture_output=True,
+    )
 
     # Verify research mission active
     result = run_cli(project_dir, "mission", "current")
@@ -188,18 +238,22 @@ def test_full_research_workflow_via_cli(tmp_path: Path, run_cli) -> None:
 
     (research_dir / "evidence-log.csv").write_text(
         "timestamp,source_type,citation,key_finding,confidence,notes\n"
-        "2025-01-15T10:00:00,journal,\"Smith (2024). Title.\",Finding,high,Notes\n"
+        '2025-01-15T10:00:00,journal,"Smith (2024). Title.",Finding,high,Notes\n'
     )
 
     (research_dir / "source-register.csv").write_text(
         "source_id,citation,url,accessed_date,relevance,status\n"
-        "smith2024,\"Smith (2024). Title.\",https://example.com,2025-01-15,high,reviewed\n"
+        'smith2024,"Smith (2024). Title.",https://example.com,2025-01-15,high,reviewed\n'
     )
 
     # Validate artifacts
     import sys
+
     sys.path.insert(0, str(Path.cwd() / "src"))
-    from specify_cli.validators.research import validate_citations, validate_source_register
+    from specify_cli.validators.research import (
+        validate_citations,
+        validate_source_register,
+    )
 
     result_cit = validate_citations(research_dir / "evidence-log.csv")
     assert not result_cit.has_errors
@@ -212,6 +266,7 @@ def test_deliverables_path_in_meta_json(tmp_path: Path) -> None:
     """meta.json should correctly store and retrieve deliverables_path."""
     import sys
     import json
+
     sys.path.insert(0, str(Path.cwd() / "src"))
 
     from specify_cli.mission import get_deliverables_path
@@ -222,11 +277,15 @@ def test_deliverables_path_in_meta_json(tmp_path: Path) -> None:
 
     # Write meta.json with deliverables_path
     meta_file = feature_dir / "meta.json"
-    meta_file.write_text(json.dumps({
-        "mission": "research",
-        "slug": "001-market-research",
-        "deliverables_path": "docs/research/market-study/"
-    }))
+    meta_file.write_text(
+        json.dumps(
+            {
+                "mission": "research",
+                "slug": "001-market-research",
+                "deliverables_path": "docs/research/market-study/",
+            }
+        )
+    )
 
     # Verify retrieval
     result = get_deliverables_path(feature_dir)
@@ -236,6 +295,7 @@ def test_deliverables_path_in_meta_json(tmp_path: Path) -> None:
 def test_deliverables_path_not_in_kitty_specs(tmp_path: Path) -> None:
     """deliverables_path must NOT be inside kitty-specs/."""
     import sys
+
     sys.path.insert(0, str(Path.cwd() / "src"))
 
     from specify_cli.mission import validate_deliverables_path
@@ -254,6 +314,7 @@ def test_research_deliverables_separate_from_planning(tmp_path: Path) -> None:
     """Research deliverables should be separate from planning artifacts."""
     import sys
     import json
+
     sys.path.insert(0, str(Path.cwd() / "src"))
 
     from specify_cli.mission import get_deliverables_path, get_feature_mission_key
@@ -265,15 +326,18 @@ def test_research_deliverables_separate_from_planning(tmp_path: Path) -> None:
     # Create research planning artifacts (in kitty-specs)
     research_planning = feature_dir / "research"
     research_planning.mkdir()
-    (research_planning / "evidence-log.csv").write_text("timestamp,source_type,citation\n")
+    (research_planning / "evidence-log.csv").write_text(
+        "timestamp,source_type,citation\n"
+    )
     (research_planning / "source-register.csv").write_text("source_id,citation,url\n")
 
     # Create meta.json with deliverables path
     meta_file = feature_dir / "meta.json"
-    meta_file.write_text(json.dumps({
-        "mission": "research",
-        "deliverables_path": "docs/research/001-research/"
-    }))
+    meta_file.write_text(
+        json.dumps(
+            {"mission": "research", "deliverables_path": "docs/research/001-research/"}
+        )
+    )
 
     # Verify separation
     assert get_feature_mission_key(feature_dir) == "research"
@@ -292,6 +356,7 @@ def test_default_deliverables_path_generation(tmp_path: Path) -> None:
     """Should generate default deliverables path when not specified."""
     import sys
     import json
+
     sys.path.insert(0, str(Path.cwd() / "src"))
 
     from specify_cli.mission import get_deliverables_path
@@ -301,11 +366,15 @@ def test_default_deliverables_path_generation(tmp_path: Path) -> None:
     feature_dir.mkdir(parents=True)
 
     meta_file = feature_dir / "meta.json"
-    meta_file.write_text(json.dumps({
-        "mission": "research",
-        "slug": "002-literature-review"
-        # Note: no deliverables_path
-    }))
+    meta_file.write_text(
+        json.dumps(
+            {
+                "mission": "research",
+                "slug": "002-literature-review",
+                # Note: no deliverables_path
+            }
+        )
+    )
 
     # Should return default path
     result = get_deliverables_path(feature_dir)

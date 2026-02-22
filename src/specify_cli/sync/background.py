@@ -35,7 +35,9 @@ class BackgroundSyncService:
     _backoff_seconds: float = field(default=0.5, init=False, repr=False)
     _last_sync: Optional[datetime] = field(default=None, init=False, repr=False)
     _consecutive_failures: int = field(default=0, init=False, repr=False)
-    _lock: threading.Lock = field(default_factory=threading.Lock, init=False, repr=False)
+    _lock: threading.Lock = field(
+        default_factory=threading.Lock, init=False, repr=False
+    )
 
     def start(self) -> None:
         """Start the background sync service."""
@@ -44,7 +46,9 @@ class BackgroundSyncService:
                 return
             self._running = True
         self._schedule_next_sync()
-        logger.debug("Background sync service started (interval=%ss)", self.sync_interval_seconds)
+        logger.debug(
+            "Background sync service started (interval=%ss)", self.sync_interval_seconds
+        )
 
     def stop(self) -> None:
         """Stop the background sync service gracefully.

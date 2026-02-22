@@ -35,7 +35,9 @@ class MergeResult:
     """Result of creating a multi-parent merge base."""
 
     success: bool
-    branch_name: str | None  # Temporary branch name (e.g., "010-feature-WP04-merge-base")
+    branch_name: (
+        str | None
+    )  # Temporary branch name (e.g., "010-feature-WP04-merge-base")
     commit_sha: str | None  # SHA of merge commit
     error: str | None  # Error message if failed
     conflicts: list[str]  # List of files with conflicts (if any)
@@ -87,6 +89,7 @@ def create_multi_parent_base(
     # Resolve target branch dynamically if not provided
     if target_branch is None:
         from specify_cli.core.git_ops import resolve_primary_branch
+
         target_branch = resolve_primary_branch(repo_root)
 
     # Sort dependencies for deterministic ordering
@@ -156,17 +159,32 @@ def create_multi_parent_base(
                         # If merge-base == branch tip, branch has no unique commits
                         if merge_base == branch_tip:
                             # Bug #1 Fix: Write to stderr to avoid corrupting JSON output
-                            print(f"⚠️  Warning: Dependency branch '{branch}' has no commits beyond {target_branch}", file=sys.stderr)
-                            print(f"   This may indicate incomplete work or uncommitted changes", file=sys.stderr)
-                            print(f"   The merge-base will not include any work from this branch\n", file=sys.stderr)
+                            print(
+                                f"⚠️  Warning: Dependency branch '{branch}' has no commits beyond {target_branch}",
+                                file=sys.stderr,
+                            )
+                            print(
+                                f"   This may indicate incomplete work or uncommitted changes",
+                                file=sys.stderr,
+                            )
+                            print(
+                                f"   The merge-base will not include any work from this branch\n",
+                                file=sys.stderr,
+                            )
 
             except subprocess.TimeoutExpired:
                 # Git command took too long - skip this check
-                print(f"⚠️  Warning: Timeout checking dependency branch '{branch}' (git taking >10s)", file=sys.stderr)
+                print(
+                    f"⚠️  Warning: Timeout checking dependency branch '{branch}' (git taking >10s)",
+                    file=sys.stderr,
+                )
                 continue
             except Exception as e:
                 # Unexpected error - log and continue
-                print(f"⚠️  Warning: Error checking dependency branch '{branch}': {e}", file=sys.stderr)
+                print(
+                    f"⚠️  Warning: Error checking dependency branch '{branch}': {e}",
+                    file=sys.stderr,
+                )
                 continue
 
         # Step 2: Check if temp branch already exists (cleanup from previous run)
@@ -228,8 +246,14 @@ def create_multi_parent_base(
         conflicts = []
         for dep_branch in dep_branches[1:]:
             result = subprocess.run(
-                ["git", "merge", "--no-edit", dep_branch, "-m",
-                 f"Merge {dep_branch} into multi-parent base for {wp_id}"],
+                [
+                    "git",
+                    "merge",
+                    "--no-edit",
+                    dep_branch,
+                    "-m",
+                    f"Merge {dep_branch} into multi-parent base for {wp_id}",
+                ],
                 cwd=repo_root,
                 capture_output=True,
                 text=True,
@@ -311,7 +335,9 @@ def create_multi_parent_base(
             check=False,
         )
 
-        console.print(f"[cyan]→ Created merge base: {temp_branch} ({merge_commit_sha[:7]})[/cyan]")
+        console.print(
+            f"[cyan]→ Created merge base: {temp_branch} ({merge_commit_sha[:7]})[/cyan]"
+        )
         console.print(f"[cyan]  Combined dependencies: {', '.join(sorted_deps)}[/cyan]")
 
         return MergeResult(

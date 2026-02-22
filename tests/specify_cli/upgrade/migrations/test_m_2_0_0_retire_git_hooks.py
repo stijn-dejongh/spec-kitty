@@ -62,7 +62,9 @@ class TestRetireGitHooksMigration:
 
     def test_detect_false_when_only_custom_hooks_exist(self, tmp_path: Path) -> None:
         hooks_dir = _hooks_dir(tmp_path)
-        (hooks_dir / "pre-commit").write_text("#!/usr/bin/env bash\necho custom\n", encoding="utf-8")
+        (hooks_dir / "pre-commit").write_text(
+            "#!/usr/bin/env bash\necho custom\n", encoding="utf-8"
+        )
 
         migration = RetireGitHooksMigration()
         assert migration.detect(tmp_path) is False
@@ -71,10 +73,18 @@ class TestRetireGitHooksMigration:
         hooks_dir = _hooks_dir(tmp_path)
         (hooks_dir / "pre-commit").write_text(MANAGED_PRE_COMMIT, encoding="utf-8")
         (hooks_dir / "commit-msg").write_text(MANAGED_COMMIT_MSG, encoding="utf-8")
-        (hooks_dir / "pre-commit-agent-check").write_text(MANAGED_AGENT_CHECK, encoding="utf-8")
-        (hooks_dir / "pre-commit-encoding-check").write_text(MANAGED_ENCODING_CHECK, encoding="utf-8")
-        (hooks_dir / "pre-commit-markdown-check").write_text(MANAGED_MARKDOWN_CHECK, encoding="utf-8")
-        (hooks_dir / "prepare-commit-msg").write_text("#!/usr/bin/env bash\necho custom\n", encoding="utf-8")
+        (hooks_dir / "pre-commit-agent-check").write_text(
+            MANAGED_AGENT_CHECK, encoding="utf-8"
+        )
+        (hooks_dir / "pre-commit-encoding-check").write_text(
+            MANAGED_ENCODING_CHECK, encoding="utf-8"
+        )
+        (hooks_dir / "pre-commit-markdown-check").write_text(
+            MANAGED_MARKDOWN_CHECK, encoding="utf-8"
+        )
+        (hooks_dir / "prepare-commit-msg").write_text(
+            "#!/usr/bin/env bash\necho custom\n", encoding="utf-8"
+        )
 
         migration = RetireGitHooksMigration()
         result = migration.apply(tmp_path)
@@ -98,12 +108,17 @@ class TestRetireGitHooksMigration:
 
         assert result.success is True
         assert pre_commit.exists()
-        assert any("Would remove managed hook: pre-commit" in change for change in result.changes_made)
+        assert any(
+            "Would remove managed hook: pre-commit" in change
+            for change in result.changes_made
+        )
 
     def test_apply_skips_custom_hook_with_warning(self, tmp_path: Path) -> None:
         hooks_dir = _hooks_dir(tmp_path)
         pre_commit = hooks_dir / "pre-commit"
-        pre_commit.write_text("#!/usr/bin/env bash\necho custom-hook\n", encoding="utf-8")
+        pre_commit.write_text(
+            "#!/usr/bin/env bash\necho custom-hook\n", encoding="utf-8"
+        )
 
         migration = RetireGitHooksMigration()
         result = migration.apply(tmp_path)
@@ -118,4 +133,3 @@ class TestRetireGitHooksMigration:
 
         assert result.success is True
         assert "No .git/hooks directory found" in result.changes_made
-

@@ -26,6 +26,7 @@ from specify_cli.runtime.resolver import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _create_file(path: Path, content: str = "placeholder") -> Path:
     """Create a file (and any missing parent dirs), return its path."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -65,6 +66,7 @@ def _setup_all_tiers(
 # ---------------------------------------------------------------------------
 # T018 -- Resolution precedence tests (G2)
 # ---------------------------------------------------------------------------
+
 
 class TestResolutionPrecedence:
     """Test that the 4-tier precedence chain is respected."""
@@ -107,7 +109,9 @@ class TestResolutionPrecedence:
 
         # Create legacy, global, package -- but NOT override
         _create_file(kittify / "templates" / "spec-template.md")
-        _create_file(global_home / "missions" / "software-dev" / "templates" / "spec-template.md")
+        _create_file(
+            global_home / "missions" / "software-dev" / "templates" / "spec-template.md"
+        )
         _create_file(pkg_root / "software-dev" / "templates" / "spec-template.md")
 
         with (
@@ -126,7 +130,9 @@ class TestResolutionPrecedence:
 
         assert result.tier == ResolutionTier.LEGACY
         # Should have emitted a DeprecationWarning
-        deprecation_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
+        deprecation_warnings = [
+            x for x in w if issubclass(x.category, DeprecationWarning)
+        ]
         assert len(deprecation_warnings) >= 1
 
     def test_global_resolves_when_no_override_or_legacy(self, tmp_path: Path) -> None:
@@ -136,7 +142,9 @@ class TestResolutionPrecedence:
         global_home = tmp_path / "global_home"
         pkg_root = tmp_path / "pkg"
 
-        _create_file(global_home / "missions" / "software-dev" / "templates" / "spec-template.md")
+        _create_file(
+            global_home / "missions" / "software-dev" / "templates" / "spec-template.md"
+        )
         _create_file(pkg_root / "software-dev" / "templates" / "spec-template.md")
 
         with (
@@ -159,7 +167,9 @@ class TestResolutionPrecedence:
         (project / ".kittify").mkdir(parents=True)
         pkg_root = tmp_path / "pkg"
 
-        pkg_path = _create_file(pkg_root / "software-dev" / "templates" / "spec-template.md")
+        pkg_path = _create_file(
+            pkg_root / "software-dev" / "templates" / "spec-template.md"
+        )
 
         with (
             patch(
@@ -191,13 +201,16 @@ class TestResolutionPrecedence:
                 side_effect=FileNotFoundError("no pkg"),
             ),
         ):
-            with pytest.raises(FileNotFoundError, match="not found in any resolution tier"):
+            with pytest.raises(
+                FileNotFoundError, match="not found in any resolution tier"
+            ):
                 resolve_template("nonexistent.md", project)
 
 
 # ---------------------------------------------------------------------------
 # T018 -- resolve_command and resolve_mission tests
 # ---------------------------------------------------------------------------
+
 
 class TestResolveCommand:
     """Test resolve_command follows the same 4-tier chain for command-templates/."""
@@ -207,7 +220,9 @@ class TestResolveCommand:
         kittify = project / ".kittify"
         pkg_root = tmp_path / "pkg"
 
-        override_path = _create_file(kittify / "overrides" / "command-templates" / "plan.md")
+        override_path = _create_file(
+            kittify / "overrides" / "command-templates" / "plan.md"
+        )
         _create_file(pkg_root / "software-dev" / "command-templates" / "plan.md")
 
         with (
@@ -230,7 +245,9 @@ class TestResolveCommand:
         (project / ".kittify").mkdir(parents=True)
         pkg_root = tmp_path / "pkg"
 
-        pkg_path = _create_file(pkg_root / "software-dev" / "command-templates" / "implement.md")
+        pkg_path = _create_file(
+            pkg_root / "software-dev" / "command-templates" / "implement.md"
+        )
 
         with (
             patch(
@@ -299,7 +316,9 @@ class TestResolveMission:
 
         assert result.tier == ResolutionTier.LEGACY
         assert result.mission == "research"
-        deprecation_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
+        deprecation_warnings = [
+            x for x in w if issubclass(x.category, DeprecationWarning)
+        ]
         assert len(deprecation_warnings) >= 1
 
     def test_mission_not_found(self, tmp_path: Path) -> None:
@@ -316,13 +335,16 @@ class TestResolveMission:
                 side_effect=FileNotFoundError("no pkg"),
             ),
         ):
-            with pytest.raises(FileNotFoundError, match="not found in any resolution tier"):
+            with pytest.raises(
+                FileNotFoundError, match="not found in any resolution tier"
+            ):
                 resolve_mission("nonexistent", project)
 
 
 # ---------------------------------------------------------------------------
 # T019 -- Legacy resolution tests (F-Legacy)
 # ---------------------------------------------------------------------------
+
 
 class TestLegacyResolution:
     """Tests for the F-Legacy family of acceptance criteria."""
@@ -357,13 +379,17 @@ class TestLegacyResolution:
         assert result.path == legacy_path
 
         # Verify the exact DeprecationWarning shape
-        deprecation_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
+        deprecation_warnings = [
+            x for x in w if issubclass(x.category, DeprecationWarning)
+        ]
         assert len(deprecation_warnings) == 1
         assert "spec-kitty migrate" in str(deprecation_warnings[0].message)
         assert "Legacy asset resolved" in str(deprecation_warnings[0].message)
         assert "next major version" in str(deprecation_warnings[0].message)
 
-    def test_legacy_no_customization_resolves_with_warning(self, tmp_path: Path) -> None:
+    def test_legacy_no_customization_resolves_with_warning(
+        self, tmp_path: Path
+    ) -> None:
         """F-Legacy-002: Even an unmodified file at the legacy path resolves
         with the same deprecation warning (we don't diff against defaults).
         """
@@ -399,11 +425,15 @@ class TestLegacyResolution:
         assert result.tier == ResolutionTier.LEGACY
         assert result.path == legacy_path
 
-        deprecation_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
+        deprecation_warnings = [
+            x for x in w if issubclass(x.category, DeprecationWarning)
+        ]
         assert len(deprecation_warnings) == 1
         assert "Legacy asset resolved" in str(deprecation_warnings[0].message)
 
-    def test_legacy_stale_differing_resolves_legacy_version(self, tmp_path: Path) -> None:
+    def test_legacy_stale_differing_resolves_legacy_version(
+        self, tmp_path: Path
+    ) -> None:
         """F-Legacy-003: When the legacy file differs from the global/package
         version, the legacy version is used (not global or package).
         """
@@ -417,7 +447,11 @@ class TestLegacyResolution:
             content="# Old stale legacy version",
         )
         _create_file(
-            global_home / "missions" / "software-dev" / "templates" / "tasks-template.md",
+            global_home
+            / "missions"
+            / "software-dev"
+            / "templates"
+            / "tasks-template.md",
             content="# Updated global version",
         )
         _create_file(
@@ -444,13 +478,16 @@ class TestLegacyResolution:
         assert result.path == legacy_path
         assert result.path.read_text() == "# Old stale legacy version"
 
-        deprecation_warnings = [x for x in w if issubclass(x.category, DeprecationWarning)]
+        deprecation_warnings = [
+            x for x in w if issubclass(x.category, DeprecationWarning)
+        ]
         assert len(deprecation_warnings) == 1
 
 
 # ---------------------------------------------------------------------------
 # T018 -- ResolutionResult dataclass tests
 # ---------------------------------------------------------------------------
+
 
 class TestResolutionResult:
     """Verify ResolutionResult is frozen and has correct defaults."""
@@ -465,13 +502,16 @@ class TestResolutionResult:
         assert r.mission is None
 
     def test_mission_can_be_set(self, tmp_path: Path) -> None:
-        r = ResolutionResult(path=tmp_path, tier=ResolutionTier.PACKAGE_DEFAULT, mission="research")
+        r = ResolutionResult(
+            path=tmp_path, tier=ResolutionTier.PACKAGE_DEFAULT, mission="research"
+        )
         assert r.mission == "research"
 
 
 # ---------------------------------------------------------------------------
 # Init integration -- _resolve_mission_command_templates_dir uses 4-tier
 # ---------------------------------------------------------------------------
+
 
 class TestInitResolverIntegration:
     """Prove that init template discovery respects the full 4-tier chain.
@@ -521,7 +561,9 @@ class TestInitResolverIntegration:
             ),
         ):
             resolved_dir = _resolve_mission_command_templates_dir(
-                project, "software-dev", scratch_parent=tmp_path / "scratch",
+                project,
+                "software-dev",
+                scratch_parent=tmp_path / "scratch",
             )
 
         plan_file = resolved_dir / "plan.md"
@@ -546,7 +588,11 @@ class TestInitResolverIntegration:
 
         # Global tier -- should win (no override, no legacy)
         _create_file(
-            global_home / "missions" / "software-dev" / "command-templates" / "implement.md",
+            global_home
+            / "missions"
+            / "software-dev"
+            / "command-templates"
+            / "implement.md",
             content="# Global custom implement",
         )
 
@@ -569,7 +615,9 @@ class TestInitResolverIntegration:
             ),
         ):
             resolved_dir = _resolve_mission_command_templates_dir(
-                project, "software-dev", scratch_parent=tmp_path / "scratch",
+                project,
+                "software-dev",
+                scratch_parent=tmp_path / "scratch",
             )
 
         impl_file = resolved_dir / "implement.md"
@@ -597,7 +645,11 @@ class TestInitResolverIntegration:
 
         # implement.md -- global wins (no override, no legacy)
         _create_file(
-            global_home / "missions" / "software-dev" / "command-templates" / "implement.md",
+            global_home
+            / "missions"
+            / "software-dev"
+            / "command-templates"
+            / "implement.md",
             content="# Global implement",
         )
         _create_file(
@@ -630,7 +682,9 @@ class TestInitResolverIntegration:
             ),
         ):
             resolved_dir = _resolve_mission_command_templates_dir(
-                project, "software-dev", scratch_parent=tmp_path / "scratch",
+                project,
+                "software-dev",
+                scratch_parent=tmp_path / "scratch",
             )
 
         assert (resolved_dir / "plan.md").read_text() == "# Override plan"
@@ -663,7 +717,9 @@ class TestInitResolverIntegration:
             ),
         ):
             resolved_dir = _resolve_mission_command_templates_dir(
-                project, "software-dev", scratch_parent=tmp_path / "scratch",
+                project,
+                "software-dev",
+                scratch_parent=tmp_path / "scratch",
             )
 
         assert resolved_dir.is_dir()

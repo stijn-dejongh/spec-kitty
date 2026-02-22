@@ -65,9 +65,7 @@ class TestTransition:
 
     def test_evidence_can_be_set(self) -> None:
         evidence = DoneEvidence(
-            review=ReviewApproval(
-                reviewer="bob", verdict="approved", reference="test"
-            )
+            review=ReviewApproval(reviewer="bob", verdict="approved", reference="test")
         )
         t = Transition(
             from_lane="for_review",
@@ -94,9 +92,7 @@ class TestTransitionChain:
         assert len(chain.transitions) == 1
 
     def test_fields(self) -> None:
-        chain = TransitionChain(
-            transitions=[], history_entries=5, has_evidence=True
-        )
+        chain = TransitionChain(transitions=[], history_entries=5, has_evidence=True)
         assert chain.history_entries == 5
         assert chain.has_evidence is True
 
@@ -715,10 +711,18 @@ class TestBuildTransitionChain:
 
         assert chain.history_entries == 6
         assert len(chain.transitions) == 5
-        assert chain.transitions[0] == Transition("planned", "in_progress", "t2", "claude")
-        assert chain.transitions[1] == Transition("in_progress", "blocked", "t3", "claude")
-        assert chain.transitions[2] == Transition("blocked", "in_progress", "t4", "claude")
-        assert chain.transitions[3] == Transition("in_progress", "for_review", "t5", "claude")
+        assert chain.transitions[0] == Transition(
+            "planned", "in_progress", "t2", "claude"
+        )
+        assert chain.transitions[1] == Transition(
+            "in_progress", "blocked", "t3", "claude"
+        )
+        assert chain.transitions[2] == Transition(
+            "blocked", "in_progress", "t4", "claude"
+        )
+        assert chain.transitions[3] == Transition(
+            "in_progress", "for_review", "t5", "claude"
+        )
         # Last transition has evidence
         assert chain.transitions[4].from_lane == "for_review"
         assert chain.transitions[4].to_lane == "done"

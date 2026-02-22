@@ -49,7 +49,9 @@ class PreflightResult:
     warnings: list[str] = field(default_factory=list)
 
 
-def check_worktree_status(worktree_path: Path, wp_id: str, branch_name: str) -> WPStatus:
+def check_worktree_status(
+    worktree_path: Path, wp_id: str, branch_name: str
+) -> WPStatus:
     """Check if a worktree has uncommitted changes.
 
     Args:
@@ -89,7 +91,9 @@ def check_worktree_status(worktree_path: Path, wp_id: str, branch_name: str) -> 
         )
 
 
-def check_target_divergence(target_branch: str, repo_root: Path) -> tuple[bool, str | None]:
+def check_target_divergence(
+    target_branch: str, repo_root: Path
+) -> tuple[bool, str | None]:
     """Check if target branch has diverged from origin.
 
     Args:
@@ -112,7 +116,13 @@ def check_target_divergence(target_branch: str, repo_root: Path) -> tuple[bool, 
 
         # Count commits ahead/behind
         result = subprocess.run(
-            ["git", "rev-list", "--left-right", "--count", f"{target_branch}...origin/{target_branch}"],
+            [
+                "git",
+                "rev-list",
+                "--left-right",
+                "--count",
+                f"{target_branch}...origin/{target_branch}",
+            ],
             cwd=str(repo_root),
             capture_output=True,
             text=True,
@@ -131,7 +141,10 @@ def check_target_divergence(target_branch: str, repo_root: Path) -> tuple[bool, 
         ahead, behind = map(int, parts)
 
         if behind > 0:
-            return True, f"{target_branch} is {behind} commit(s) behind origin. Run: git checkout {target_branch} && git pull"
+            return (
+                True,
+                f"{target_branch} is {behind} commit(s) behind origin. Run: git checkout {target_branch} && git pull",
+            )
 
         return False, None
 
@@ -247,14 +260,18 @@ def display_preflight_result(result: PreflightResult, console: Console) -> None:
 
     # Target branch status
     if result.target_diverged:
-        table.add_row("Target", "[red]✗[/red]", result.target_divergence_msg or "Diverged")
+        table.add_row(
+            "Target", "[red]✗[/red]", result.target_divergence_msg or "Diverged"
+        )
     else:
         table.add_row("Target", "[green]✓[/green]", "Up to date")
 
     console.print(table)
 
     if not result.passed:
-        console.print("\n[bold red]Pre-flight failed.[/bold red] Fix these issues before merging:\n")
+        console.print(
+            "\n[bold red]Pre-flight failed.[/bold red] Fix these issues before merging:\n"
+        )
         for i, error in enumerate(result.errors, 1):
             console.print(f"  {i}. {error}")
         console.print()

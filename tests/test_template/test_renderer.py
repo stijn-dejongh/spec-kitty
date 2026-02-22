@@ -25,7 +25,9 @@ Hello world
     assert "scripts:" in raw
 
 
-def test_render_template_applies_callable_variables_and_rewrites_paths(tmp_path: Path) -> None:
+def test_render_template_applies_callable_variables_and_rewrites_paths(
+    tmp_path: Path,
+) -> None:
     template_path = tmp_path / "cmd.md"
     template_path.write_text(
         """---

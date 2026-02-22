@@ -303,7 +303,14 @@ class TestManifestRegistry:
         assert manifest is not None
         step_ids = manifest.get_step_ids()
         # Should have research-specific states
-        expected_steps = {"scoping", "methodology", "gathering", "synthesis", "output", "done"}
+        expected_steps = {
+            "scoping",
+            "methodology",
+            "gathering",
+            "synthesis",
+            "output",
+            "done",
+        }
         assert expected_steps.issubset(set(step_ids))
 
     def test_documentation_manifest_has_all_states(self):

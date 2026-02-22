@@ -307,9 +307,7 @@ class TestDeferWorkflow:
         conflict_terms = {c.term.surface_text for c in exc_info.value.conflicts}
         assert "workspace" in conflict_terms
 
-    def test_defer_under_off_strictness_completes(
-        self, tmp_path, monkeypatch
-    ):
+    def test_defer_under_off_strictness_completes(self, tmp_path, monkeypatch):
         """Even when user defers, OFF strictness never blocks."""
         _setup_multi_scope_repo(tmp_path)
 
@@ -693,9 +691,7 @@ class TestMultipleConflictsSingleStep:
         assert "workspace" in conflict_terms
         assert "mission" in conflict_terms
 
-    def test_resolve_all_multiple_conflicts_interactively(
-        self, tmp_path, monkeypatch
-    ):
+    def test_resolve_all_multiple_conflicts_interactively(self, tmp_path, monkeypatch):
         """User resolves all conflicts interactively. Pipeline completes."""
         _create_seed_file(
             tmp_path,
@@ -958,9 +954,7 @@ class TestEventEmissionEndToEnd:
             config={},
         )
 
-        event = emit_term_candidate_observed(
-            term=term, context=ctx, repo_root=tmp_path
-        )
+        event = emit_term_candidate_observed(term=term, context=ctx, repo_root=tmp_path)
 
         assert event is not None
         assert event["event_type"] == "TermCandidateObserved"
@@ -1148,9 +1142,7 @@ class TestEventEmissionEndToEnd:
 class TestProductionCodePath:
     """Verify full integration through the production execute_with_glossary hook."""
 
-    def test_full_e2e_production_specify_clarify_proceed(
-        self, tmp_path, monkeypatch
-    ):
+    def test_full_e2e_production_specify_clarify_proceed(self, tmp_path, monkeypatch):
         """Full production path: hook -> pipeline -> clarify -> primitive."""
         from specify_cli.missions.glossary_hook import execute_with_glossary
 
@@ -1168,11 +1160,13 @@ class TestProductionCodePath:
         primitive_results = []
 
         def my_specify_primitive(context):
-            primitive_results.append({
-                "strictness": context.effective_strictness,
-                "remaining_conflicts": len(context.conflicts),
-                "terms_extracted": len(context.extracted_terms),
-            })
+            primitive_results.append(
+                {
+                    "strictness": context.effective_strictness,
+                    "remaining_conflicts": len(context.conflicts),
+                    "terms_extracted": len(context.extracted_terms),
+                }
+            )
             return primitive_results[-1]
 
         ctx = PrimitiveExecutionContext(
@@ -1205,9 +1199,7 @@ class TestProductionCodePath:
         assert result["strictness"] == Strictness.MEDIUM
         assert result["terms_extracted"] >= 1
 
-    def test_production_path_disabled_skips_pipeline_runs_primitive(
-        self, tmp_path
-    ):
+    def test_production_path_disabled_skips_pipeline_runs_primitive(self, tmp_path):
         """When glossary is disabled, the primitive still runs."""
         from specify_cli.missions.glossary_hook import execute_with_glossary
 
@@ -1258,9 +1250,7 @@ class TestErrorHandlingEdgeCases:
             config={},
         )
 
-        pipeline = create_standard_pipeline(
-            tmp_path, runtime_strictness=Strictness.OFF
-        )
+        pipeline = create_standard_pipeline(tmp_path, runtime_strictness=Strictness.OFF)
 
         # Should not crash
         result = pipeline.process(ctx)
@@ -1281,9 +1271,7 @@ class TestErrorHandlingEdgeCases:
             config={},
         )
 
-        pipeline = create_standard_pipeline(
-            tmp_path, runtime_strictness=Strictness.OFF
-        )
+        pipeline = create_standard_pipeline(tmp_path, runtime_strictness=Strictness.OFF)
 
         result = pipeline.process(ctx)
         assert result is not None
@@ -1300,9 +1288,7 @@ class TestErrorHandlingEdgeCases:
             config={},
         )
 
-        pipeline = create_standard_pipeline(
-            tmp_path, runtime_strictness=Strictness.OFF
-        )
+        pipeline = create_standard_pipeline(tmp_path, runtime_strictness=Strictness.OFF)
 
         result = pipeline.process(ctx)
         assert result is not None
@@ -1447,9 +1433,7 @@ class TestIntegrationPerformance:
             config={},
         )
 
-        pipeline = create_standard_pipeline(
-            tmp_path, runtime_strictness=Strictness.OFF
-        )
+        pipeline = create_standard_pipeline(tmp_path, runtime_strictness=Strictness.OFF)
 
         start = time.perf_counter()
         pipeline.process(ctx)

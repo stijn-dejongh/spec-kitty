@@ -25,7 +25,9 @@ from specify_cli.sync.clock import LamportClock
 class TestFullFlow:
     """Test emit → queue → batch sync → server."""
 
-    def test_event_emission_to_queue_to_sync(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_event_emission_to_queue_to_sync(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """Full flow: emit events, verify in queue, sync to mock server (SC-001, SC-006, SC-007)."""
         # 1. Emit events
         emitter.emit_wp_status_changed("WP01", "planned", "in_progress")
@@ -41,8 +43,7 @@ class TestFullFlow:
             mock_response.status_code = 200
             mock_response.json.return_value = {
                 "results": [
-                    {"event_id": e["event_id"], "status": "success"}
-                    for e in events
+                    {"event_id": e["event_id"], "status": "success"} for e in events
                 ]
             }
             mock_post.return_value = mock_response
@@ -58,7 +59,9 @@ class TestFullFlow:
         assert result.synced_count == 2
         assert temp_queue.size() == 0  # Queue drained
 
-    def test_batch_payload_contains_correct_events(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_batch_payload_contains_correct_events(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """Batch POST payload contains all emitted events with correct structure."""
         emitter.emit_wp_status_changed("WP01", "planned", "in_progress")
         emitter.emit_wp_created("WP01", "Test WP", "028-sync")
@@ -69,8 +72,7 @@ class TestFullFlow:
             mock_response.status_code = 200
             mock_response.json.return_value = {
                 "results": [
-                    {"event_id": f"id{i}", "status": "success"}
-                    for i in range(3)
+                    {"event_id": f"id{i}", "status": "success"} for i in range(3)
                 ]
             }
             mock_post.return_value = mock_response
@@ -92,7 +94,9 @@ class TestFullFlow:
             event_types = {e["event_type"] for e in payload["events"]}
             assert event_types == {"WPStatusChanged", "WPCreated", "WPAssigned"}
 
-    def test_lamport_clock_ordering_preserved(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_lamport_clock_ordering_preserved(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """Lamport clock values are strictly increasing across events."""
         events = []
         for i in range(5):
@@ -108,7 +112,9 @@ class TestFullFlow:
 class TestBatchSyncAuthHandling:
     """Test authentication-related sync behavior."""
 
-    def test_401_marks_events_for_retry(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_401_marks_events_for_retry(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """401 response increments retry count, keeps events in queue."""
         emitter.emit_wp_status_changed("WP01", "planned", "in_progress")
         initial_size = temp_queue.size()
@@ -130,7 +136,9 @@ class TestBatchSyncAuthHandling:
         # Events stay in queue for retry
         assert temp_queue.size() == initial_size
 
-    def test_server_error_keeps_events_queued(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_server_error_keeps_events_queued(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """500 response keeps events in queue for retry."""
         emitter.emit_wp_status_changed("WP01", "planned", "in_progress")
 
@@ -155,7 +163,9 @@ class TestLamportClockReconciliation:
 
     def test_clock_receive_updates_from_remote(self, tmp_path: Path):
         """Clock reconciles when remote value is higher."""
-        clock = LamportClock(value=5, node_id="local", _storage_path=tmp_path / "c.json")
+        clock = LamportClock(
+            value=5, node_id="local", _storage_path=tmp_path / "c.json"
+        )
         new_value = clock.receive(100)
         assert new_value == 101
         assert clock.value == 101
@@ -174,7 +184,9 @@ class TestLamportClockReconciliation:
 class TestMultiEventBatch:
     """Test batch flow with finalize-tasks style multi-event emission (SC-004)."""
 
-    def test_feature_created_plus_wp_batch(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_feature_created_plus_wp_batch(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """Simulates finalize-tasks: 1 FeatureCreated + N WPCreated events."""
         causation_id = emitter.generate_causation_id()
 
@@ -207,7 +219,9 @@ class TestMultiEventBatch:
         assert len(causation_ids) == 1
         assert causation_id in causation_ids
 
-    def test_mixed_event_types_in_batch(self, emitter: EventEmitter, temp_queue: OfflineQueue):
+    def test_mixed_event_types_in_batch(
+        self, emitter: EventEmitter, temp_queue: OfflineQueue
+    ):
         """Multiple event types can be batched together."""
         emitter.emit_wp_status_changed("WP01", "planned", "in_progress")
         emitter.emit_wp_assigned("WP01", "claude", "implementation")
@@ -221,8 +235,7 @@ class TestMultiEventBatch:
             mock_response.status_code = 200
             mock_response.json.return_value = {
                 "results": [
-                    {"event_id": e["event_id"], "status": "success"}
-                    for e in events
+                    {"event_id": e["event_id"], "status": "success"} for e in events
                 ]
             }
             mock_post.return_value = mock_response

@@ -101,7 +101,9 @@ class VersionDetector:
             return "0.11.0"
 
         # v0.7.0+: Has missions in .kittify (modernized structure)
-        if missions_dir.exists() and not (has_command_templates or has_mission_command_templates):
+        if missions_dir.exists() and not (
+            has_command_templates or has_mission_command_templates
+        ):
             # Has missions but not the command-templates structure (0.6.5)
             # This means it's between 0.7.0 and pre-command-templates era
             return "0.7.0"
@@ -122,7 +124,10 @@ class VersionDetector:
                 hook_content = (git_hooks / "pre-commit").read_text(
                     encoding="utf-8", errors="ignore"
                 )
-                if "spec-kitty" in hook_content.lower() or "encoding" in hook_content.lower():
+                if (
+                    "spec-kitty" in hook_content.lower()
+                    or "encoding" in hook_content.lower()
+                ):
                     return "0.5.0"
             except OSError:
                 pass

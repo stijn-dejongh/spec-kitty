@@ -6,7 +6,9 @@ from pathlib import Path
 
 
 BASE_TEMPLATE = Path("src/specify_cli/templates/command-templates/review.md")
-MISSION_TEMPLATE = Path("src/specify_cli/missions/software-dev/command-templates/review.md")
+MISSION_TEMPLATE = Path(
+    "src/specify_cli/missions/software-dev/command-templates/review.md"
+)
 
 REQUIRED_KEYS = [
     "dependency_check",

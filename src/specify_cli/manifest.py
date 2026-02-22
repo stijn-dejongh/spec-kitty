@@ -15,7 +15,11 @@ class FileManifest:
     def __init__(self, kittify_dir: Path):
         self.kittify_dir = kittify_dir
         self.active_mission = self._detect_active_mission()
-        self.mission_dir = kittify_dir / "missions" / self.active_mission if self.active_mission else None
+        self.mission_dir = (
+            kittify_dir / "missions" / self.active_mission
+            if self.active_mission
+            else None
+        )
 
     def _detect_active_mission(self) -> Optional[str]:
         """Detect the active mission from the symlink or file."""
@@ -27,7 +31,7 @@ class FileManifest:
                 return target.name
             elif active_mission_path.is_file():
                 # It's a file with the mission name
-                return active_mission_path.read_text(encoding='utf-8-sig').strip()
+                return active_mission_path.read_text(encoding="utf-8-sig").strip()
 
         # Default to software-dev if no active mission
         return "software-dev"
@@ -42,17 +46,14 @@ class FileManifest:
         if not self.mission_dir or not self.mission_dir.exists():
             return {}
 
-        manifest = {
-            "commands": [],
-            "templates": [],
-            "scripts": [],
-            "mission_files": []
-        }
+        manifest = {"commands": [], "templates": [], "scripts": [], "mission_files": []}
 
         # Mission config file
         mission_yaml = self.mission_dir / "mission.yaml"
         if mission_yaml.exists():
-            manifest["mission_files"].append(str(mission_yaml.relative_to(self.kittify_dir)))
+            manifest["mission_files"].append(
+                str(mission_yaml.relative_to(self.kittify_dir))
+            )
 
         # Commands
         commands_dir = self.mission_dir / "command-templates"
@@ -64,7 +65,9 @@ class FileManifest:
         templates_dir = self.mission_dir / "templates"
         if templates_dir.exists():
             for tmpl_file in templates_dir.glob("*.md"):
-                manifest["templates"].append(str(tmpl_file.relative_to(self.kittify_dir)))
+                manifest["templates"].append(
+                    str(tmpl_file.relative_to(self.kittify_dir))
+                )
 
         # Scripts referenced in commands
         manifest["scripts"] = self._get_referenced_scripts()
@@ -74,6 +77,7 @@ class FileManifest:
     def _get_referenced_scripts(self) -> List[str]:
         """Extract script references from command files, filtered by platform."""
         import platform
+
         scripts = set()
 
         if not self.mission_dir:
@@ -84,18 +88,18 @@ class FileManifest:
             return []
 
         # Determine which script type to look for based on platform
-        is_windows = platform.system() == 'Windows'
-        script_key = 'ps:' if is_windows else 'sh:'
+        is_windows = platform.system() == "Windows"
+        script_key = "ps:" if is_windows else "sh:"
 
         # Parse command files for script references
         for cmd_file in commands_dir.glob("*.md"):
-            content = cmd_file.read_text(encoding='utf-8-sig')
-            lines = content.split('\n')
+            content = cmd_file.read_text(encoding="utf-8-sig")
+            lines = content.split("\n")
 
             # Look for script references in YAML frontmatter
             in_frontmatter = False
             for line in lines:
-                if line.strip() == '---':
+                if line.strip() == "---":
                     in_frontmatter = not in_frontmatter
                     if not in_frontmatter and in_frontmatter == False:
                         break  # End of frontmatter
@@ -103,7 +107,7 @@ class FileManifest:
                     # Only check for scripts relevant to this platform
                     if script_key in line:
                         # Extract script path
-                        parts = line.split(':', 1)
+                        parts = line.split(":", 1)
                         if len(parts) == 2:
                             script_line = parts[1].strip().strip('"').strip("'")
                             # Extract just the script path, not the arguments
@@ -113,8 +117,10 @@ class FileManifest:
                                 script_path = script_parts[0]
                                 # Only include actual .kittify/scripts/ files
                                 # Skip CLI commands (spec-kitty, git, python, etc.)
-                                if script_path.startswith('.kittify/scripts/'):
-                                    script_path = script_path.replace('.kittify/', '', 1)
+                                if script_path.startswith(".kittify/scripts/"):
+                                    script_path = script_path.replace(
+                                        ".kittify/", "", 1
+                                    )
                                     scripts.add(script_path)
 
         return sorted(list(scripts))
@@ -127,12 +133,7 @@ class FileManifest:
             Dict with 'present', 'missing', and 'extra' keys
         """
         expected = self.get_expected_files()
-        result = {
-            "present": {},
-            "missing": {},
-            "modified": {},
-            "extra": []
-        }
+        result = {"present": {}, "missing": {}, "modified": {}, "extra": []}
 
         # Check each category
         for category, files in expected.items():
@@ -168,15 +169,15 @@ class WorktreeStatus:
                 text=True,
                 encoding="utf-8",
                 errors="replace",
-                check=True
+                check=True,
             )
-            for line in result.stdout.split('\n'):
-                line = line.strip().replace('* ', '')
+            for line in result.stdout.split("\n"):
+                line = line.strip().replace("* ", "")
                 # Match feature branch pattern (###-name)
-                if line and not line.startswith('remotes/'):
-                    parts = line.split('/')
+                if line and not line.startswith("remotes/"):
+                    parts = line.split("/")
                     branch = parts[-1]
-                    if branch and branch[0].isdigit() and '-' in branch:
+                    if branch and branch[0].isdigit() and "-" in branch:
                         features.add(branch)
         except subprocess.CalledProcessError:
             pass
@@ -185,7 +186,11 @@ class WorktreeStatus:
         kitty_specs = self.repo_root / "kitty-specs"
         if kitty_specs.exists():
             for feature_dir in kitty_specs.iterdir():
-                if feature_dir.is_dir() and feature_dir.name[0].isdigit() and '-' in feature_dir.name:
+                if (
+                    feature_dir.is_dir()
+                    and feature_dir.name[0].isdigit()
+                    and "-" in feature_dir.name
+                ):
                     features.add(feature_dir.name)
 
         return sorted(list(features))
@@ -201,7 +206,7 @@ class WorktreeStatus:
             "artifacts_in_main": [],
             "artifacts_in_worktree": [],
             "last_activity": None,
-            "state": "unknown"  # not_started, in_development, ready_to_merge, merged, abandoned
+            "state": "unknown",  # not_started, in_development, ready_to_merge, merged, abandoned
         }
 
         # Check if branch exists
@@ -212,7 +217,7 @@ class WorktreeStatus:
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
-                errors="replace"
+                errors="replace",
             )
             status["branch_exists"] = result.returncode == 0
         except subprocess.CalledProcessError:
@@ -222,6 +227,7 @@ class WorktreeStatus:
         if status["branch_exists"]:
             try:
                 from specify_cli.core.git_ops import resolve_primary_branch
+
                 primary = resolve_primary_branch(self.repo_root)
                 result = subprocess.run(
                     ["git", "branch", "--merged", primary],
@@ -230,7 +236,7 @@ class WorktreeStatus:
                     text=True,
                     encoding="utf-8",
                     errors="replace",
-                    check=True
+                    check=True,
                 )
                 status["branch_merged"] = feature in result.stdout
             except subprocess.CalledProcessError:
@@ -277,7 +283,7 @@ class WorktreeStatus:
             "active_worktrees": 0,
             "merged_features": 0,
             "in_development": 0,
-            "not_started": 0
+            "not_started": 0,
         }
 
         for feature in features:

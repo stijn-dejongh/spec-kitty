@@ -231,7 +231,9 @@ class TestBaselineSnapshot:
             "captured_by": "abcdef123456",
         }
         snapshot = BaselineSnapshot.from_dict(data)
-        assert snapshot.baseline_key.project_uuid == "550e8400-e29b-41d4-a716-446655440000"
+        assert (
+            snapshot.baseline_key.project_uuid == "550e8400-e29b-41d4-a716-446655440000"
+        )
         assert snapshot.parity_hash_sha256 == "a" * 64
         assert snapshot.captured_by == "abcdef123456"
 

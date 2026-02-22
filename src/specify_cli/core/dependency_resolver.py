@@ -52,7 +52,9 @@ class DependencyStatus:
 
         if not self.all_done:
             not_done = [dep for dep, lane in self.lanes.items() if lane != "done"]
-            return f"Cannot implement - dependencies not complete: {', '.join(not_done)}"
+            return (
+                f"Cannot implement - dependencies not complete: {', '.join(not_done)}"
+            )
 
         if len(self.dependencies) == 1:
             dep = self.dependencies[0]
@@ -139,6 +141,7 @@ def predict_merge_conflicts(
 
     if target is None:
         from specify_cli.core.git_ops import resolve_primary_branch
+
         target = resolve_primary_branch(repo_root)
 
     conflicts = {}
@@ -205,7 +208,9 @@ def get_merge_strategy_recommendation(status: DependencyStatus) -> dict:
             "strategy": "wait",
             "reason": f"Dependencies not complete: {', '.join(not_done)}",
             "command": None,
-            "warnings": [f"Complete {', '.join(not_done)} before implementing {status.wp_id}"],
+            "warnings": [
+                f"Complete {', '.join(not_done)} before implementing {status.wp_id}"
+            ],
         }
 
     if len(status.dependencies) == 1:

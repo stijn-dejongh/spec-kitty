@@ -319,9 +319,7 @@ class TestRenderConflictBatch:
             )
             for i in range(5)
         ]
-        result = render_conflict_batch(
-            mock_console, conflicts, max_questions=3
-        )
+        result = render_conflict_batch(mock_console, conflicts, max_questions=3)
         assert len(result) == 3
 
     def test_truncation_message_shown(self, mock_console):
@@ -341,26 +339,18 @@ class TestRenderConflictBatch:
 
         # Check that a truncation message was printed
         all_calls = mock_console.print.call_args_list
-        print_texts = [
-            str(c[0][0]) if c[0] else str(c)
-            for c in all_calls
-        ]
+        print_texts = [str(c[0][0]) if c[0] else str(c) for c in all_calls]
         truncation_found = any("Showing 3 of 5" in t for t in print_texts)
         assert truncation_found, f"Expected truncation message in: {print_texts}"
 
-    def test_no_truncation_message_when_under_limit(
-        self, mock_console, high_conflict
-    ):
+    def test_no_truncation_message_when_under_limit(self, mock_console, high_conflict):
         """No truncation message when conflicts fit within max_questions."""
-        result = render_conflict_batch(
-            mock_console, [high_conflict], max_questions=3
-        )
+        result = render_conflict_batch(mock_console, [high_conflict], max_questions=3)
         assert len(result) == 1
 
         # Only panel + blank line should be printed, no truncation msg
         print_texts = [
-            str(c[0][0]) if c[0] else ""
-            for c in mock_console.print.call_args_list
+            str(c[0][0]) if c[0] else "" for c in mock_console.print.call_args_list
         ]
         truncation_found = any("Showing" in t and "of" in t for t in print_texts)
         assert not truncation_found
@@ -397,9 +387,7 @@ class TestRenderConflictBatch:
             candidate_senses=[],
             context="test",
         )
-        result = render_conflict_batch(
-            mock_console, [c1, c2], max_questions=5
-        )
+        result = render_conflict_batch(mock_console, [c1, c2], max_questions=5)
         assert result[0].term.surface_text == "alpha"
         assert result[1].term.surface_text == "zebra"
 

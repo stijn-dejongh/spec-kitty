@@ -87,12 +87,19 @@ class TestResearchMissionV1:
     def test_states_count(self, config: dict) -> None:
         state_names = [s["name"] for s in config["states"]]
         assert state_names == [
-            "scoping", "methodology", "gathering", "synthesis", "output", "done"
+            "scoping",
+            "methodology",
+            "gathering",
+            "synthesis",
+            "output",
+            "done",
         ]
 
     def test_all_states_have_display_name(self, config: dict) -> None:
         for state in config["states"]:
-            assert "display_name" in state, f"State {state['name']} missing display_name"
+            assert "display_name" in state, (
+                f"State {state['name']} missing display_name"
+            )
 
     def test_advance_transitions_form_linear_chain(self, config: dict) -> None:
         """Advance transitions should form: scoping -> methodology -> gathering
@@ -117,9 +124,9 @@ class TestResearchMissionV1:
         assert t is not None
         assert "conditions" in t
         conditions = t["conditions"]
-        assert any("event_count" in c and "source_documented" in c for c in conditions), (
-            f"Expected event_count('source_documented', 3) guard, got {conditions}"
-        )
+        assert any(
+            "event_count" in c and "source_documented" in c for c in conditions
+        ), f"Expected event_count('source_documented', 3) guard, got {conditions}"
 
     def test_artifact_gate_on_scoping_to_methodology(self, config: dict) -> None:
         t = _find_transition(config, "advance", "scoping")
@@ -134,12 +141,16 @@ class TestResearchMissionV1:
     def test_artifact_gate_on_synthesis_to_output(self, config: dict) -> None:
         t = _find_transition(config, "advance", "synthesis")
         assert t is not None
-        assert any("artifact_exists" in c and "findings.md" in c for c in t["conditions"])
+        assert any(
+            "artifact_exists" in c and "findings.md" in c for c in t["conditions"]
+        )
 
     def test_gate_passed_on_output_to_done(self, config: dict) -> None:
         t = _find_transition(config, "advance", "output")
         assert t is not None
-        assert any("gate_passed" in c and "publication_approved" in c for c in t["conditions"])
+        assert any(
+            "gate_passed" in c and "publication_approved" in c for c in t["conditions"]
+        )
 
     def test_gather_more_rollback(self, config: dict) -> None:
         """gather_more should allow rolling back from synthesis to gathering."""
@@ -152,8 +163,13 @@ class TestResearchMissionV1:
     def test_guards_section_present(self, config: dict) -> None:
         assert "guards" in config
         guard_names = set(config["guards"].keys())
-        expected = {"has_scope", "has_methodology", "minimum_sources",
-                    "has_findings", "publication_approved"}
+        expected = {
+            "has_scope",
+            "has_methodology",
+            "minimum_sources",
+            "has_findings",
+            "publication_approved",
+        }
         assert expected == guard_names
 
     def test_inputs_defined(self, config: dict) -> None:
@@ -207,12 +223,19 @@ class TestPlanMissionV1:
     def test_states_count(self, config: dict) -> None:
         state_names = [s["name"] for s in config["states"]]
         assert state_names == [
-            "goals", "research", "structure", "draft", "review", "done"
+            "goals",
+            "research",
+            "structure",
+            "draft",
+            "review",
+            "done",
         ]
 
     def test_all_states_have_display_name(self, config: dict) -> None:
         for state in config["states"]:
-            assert "display_name" in state, f"State {state['name']} missing display_name"
+            assert "display_name" in state, (
+                f"State {state['name']} missing display_name"
+            )
 
     def test_advance_transitions_form_linear_chain(self, config: dict) -> None:
         """Advance transitions: goals -> research -> structure -> draft
@@ -238,7 +261,9 @@ class TestPlanMissionV1:
     def test_artifact_gate_on_research_to_structure(self, config: dict) -> None:
         t = _find_transition(config, "advance", "research")
         assert t is not None
-        assert any("artifact_exists" in c and "research.md" in c for c in t["conditions"])
+        assert any(
+            "artifact_exists" in c and "research.md" in c for c in t["conditions"]
+        )
 
     def test_no_guard_on_structure_to_draft(self, config: dict) -> None:
         """structure -> draft should advance without conditions."""

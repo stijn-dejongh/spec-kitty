@@ -23,7 +23,9 @@ def prepare_command_templates(
     if not mission_templates_dir or not mission_templates_dir.exists():
         return base_templates_dir
 
-    merged_dir = base_templates_dir.parent / f".merged-{mission_templates_dir.parent.name}"
+    merged_dir = (
+        base_templates_dir.parent / f".merged-{mission_templates_dir.parent.name}"
+    )
     if merged_dir.exists():
         shutil.rmtree(merged_dir)
 
@@ -34,7 +36,9 @@ def prepare_command_templates(
     return merged_dir
 
 
-def generate_agent_assets(command_templates_dir: Path, project_path: Path, agent_key: str, script_type: str) -> None:
+def generate_agent_assets(
+    command_templates_dir: Path, project_path: Path, agent_key: str, script_type: str
+) -> None:
     """Render every command template for the selected agent."""
     config = AGENT_COMMAND_CONFIG[agent_key]
     output_dir = project_path / config["dir"]
@@ -175,10 +179,12 @@ def _raise_template_discovery_error(commands_dir: Path) -> None:
         "Templates could not be found in any of the expected locations:\n\n"
         "Checked paths (in order):\n"
         f"  ✗ Packaged resources (bundled with CLI)\n"
-        f"  ✗ Environment variable SPEC_KITTY_TEMPLATE_ROOT" +
-        (f" = {env_root}" if env_root else " (not set)") + "\n" +
-        f"  ✗ Remote repository SPECIFY_TEMPLATE_REPO" +
-        (f" = {remote_repo}" if remote_repo else " (not configured)") + "\n\n"
+        f"  ✗ Environment variable SPEC_KITTY_TEMPLATE_ROOT"
+        + (f" = {env_root}" if env_root else " (not set)")
+        + "\n"
+        + f"  ✗ Remote repository SPECIFY_TEMPLATE_REPO"
+        + (f" = {remote_repo}" if remote_repo else " (not configured)")
+        + "\n\n"
         "To fix this, try one of these approaches:\n\n"
         "1. Reinstall from PyPI (recommended for end users):\n"
         "   pip install --upgrade spec-kitty-cli\n\n"

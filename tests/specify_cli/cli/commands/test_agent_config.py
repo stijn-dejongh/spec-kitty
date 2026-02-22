@@ -44,7 +44,10 @@ class TestListCommand:
 
     def test_list_configured_agents(self, mock_project):
         """Test listing configured agents."""
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["list"])
 
             assert result.exit_code == 0
@@ -58,7 +61,10 @@ class TestListCommand:
         kittify.mkdir()
         (kittify / "config.yaml").write_text("agents:\n  available: []\n")
 
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=tmp_path):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=tmp_path,
+        ):
             result = runner.invoke(app, ["list"])
 
             assert result.exit_code == 0
@@ -66,7 +72,10 @@ class TestListCommand:
 
     def test_list_shows_available_agents(self, mock_project):
         """Test that list shows available but not configured agents."""
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["list"])
 
             assert result.exit_code == 0
@@ -79,7 +88,10 @@ class TestAddCommand:
 
     def test_add_single_agent(self, mock_project):
         """Test adding a single agent."""
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["add", "claude"])
 
             assert result.exit_code == 0
@@ -96,7 +108,10 @@ class TestAddCommand:
 
     def test_add_multiple_agents(self, mock_project):
         """Test adding multiple agents at once."""
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["add", "claude", "codex"])
 
             assert result.exit_code == 0
@@ -109,7 +124,10 @@ class TestAddCommand:
 
     def test_add_already_configured_agent(self, mock_project):
         """Test adding an agent that's already configured."""
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["add", "opencode"])
 
             assert result.exit_code == 0
@@ -117,7 +135,10 @@ class TestAddCommand:
 
     def test_add_invalid_agent(self, mock_project):
         """Test adding an invalid agent key."""
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["add", "invalid-agent"])
 
             assert result.exit_code == 1
@@ -126,7 +147,10 @@ class TestAddCommand:
 
     def test_add_creates_templates(self, mock_project):
         """Test that adding an agent copies templates."""
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["add", "claude"])
 
             assert result.exit_code == 0
@@ -142,7 +166,10 @@ class TestRemoveCommand:
 
     def test_remove_agent(self, mock_project):
         """Test removing an agent."""
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["remove", "opencode"])
 
             assert result.exit_code == 0
@@ -161,11 +188,15 @@ class TestRemoveCommand:
 
         # Update config to include claude
         from specify_cli.core.agent_config import load_agent_config
+
         config = load_agent_config(mock_project)
         config.available.append("claude")
         save_agent_config(mock_project, config)
 
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["remove", "opencode", "claude"])
 
             assert result.exit_code == 0
@@ -176,11 +207,15 @@ class TestRemoveCommand:
         """Test removing an agent whose directory doesn't exist."""
         # Add gemini to config but not filesystem
         from specify_cli.core.agent_config import load_agent_config
+
         config = load_agent_config(mock_project)
         config.available.append("gemini")
         save_agent_config(mock_project, config)
 
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["remove", "gemini"])
 
             assert result.exit_code == 0
@@ -188,7 +223,10 @@ class TestRemoveCommand:
 
     def test_remove_with_keep_config(self, mock_project):
         """Test removing agent with --keep-config flag."""
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["remove", "opencode", "--keep-config"])
 
             assert result.exit_code == 0
@@ -198,6 +236,7 @@ class TestRemoveCommand:
             assert not (mock_project / ".opencode").exists()
 
             from specify_cli.core.agent_config import load_agent_config
+
             config = load_agent_config(mock_project)
             assert "opencode" in config.available
 
@@ -207,7 +246,10 @@ class TestStatusCommand:
 
     def test_status_shows_all_agents(self, mock_project):
         """Test status command shows all agents."""
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["status"])
 
             assert result.exit_code == 0
@@ -217,7 +259,10 @@ class TestStatusCommand:
 
     def test_status_shows_ok_for_configured_and_present(self, mock_project):
         """Test status shows OK for agents that are configured and present."""
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["status"])
 
             assert result.exit_code == 0
@@ -231,7 +276,10 @@ class TestStatusCommand:
         if not claude.exists():
             claude.mkdir(parents=True)
 
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["status"])
 
             assert result.exit_code == 0
@@ -249,7 +297,10 @@ class TestSyncCommand:
         if not claude.exists():
             claude.mkdir(parents=True)
 
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["sync"])
 
             assert result.exit_code == 0
@@ -263,7 +314,10 @@ class TestSyncCommand:
         if not claude.exists():
             claude.mkdir(parents=True)
 
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["sync", "--keep-orphaned"])
 
             assert result.exit_code == 0
@@ -274,11 +328,15 @@ class TestSyncCommand:
         """Test sync creates missing directories with --create-missing."""
         # Add gemini to config but don't create directory
         from specify_cli.core.agent_config import load_agent_config
+
         config = load_agent_config(mock_project)
         config.available.append("gemini")
         save_agent_config(mock_project, config)
 
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             result = runner.invoke(app, ["sync", "--create-missing"])
 
             assert result.exit_code == 0
@@ -299,7 +357,10 @@ class TestSyncCommand:
         opencode = tmp_path / ".opencode" / "command"
         opencode.mkdir(parents=True)
 
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=tmp_path):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=tmp_path,
+        ):
             result = runner.invoke(app, ["sync"])
 
             assert result.exit_code == 0
@@ -315,7 +376,10 @@ class TestAgentKeyMapping:
         # auggie -> .augment
         # q -> .amazonq
 
-        with patch("specify_cli.cli.commands.agent.config.find_repo_root", return_value=mock_project):
+        with patch(
+            "specify_cli.cli.commands.agent.config.find_repo_root",
+            return_value=mock_project,
+        ):
             # Test copilot (maps to .github)
             result = runner.invoke(app, ["add", "copilot"])
             assert result.exit_code == 0

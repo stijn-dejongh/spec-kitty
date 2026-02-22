@@ -49,7 +49,9 @@ def test_central_plan_template_workspace_per_wp() -> None:
     content = (TEMPLATE_DIR / "plan.md").read_text(encoding="utf-8")
     content_lower = content.lower()
     assert "main" in content_lower, "plan.md should mention main repository workflow"
-    assert "worktree" in content_lower, "plan.md should mention worktree context (as negative or deferred)"
+    assert "worktree" in content_lower, (
+        "plan.md should mention worktree context (as negative or deferred)"
+    )
 
 
 def test_central_tasks_template_dependency_workflow() -> None:
@@ -65,10 +67,13 @@ def test_central_implement_template_workspace_creation() -> None:
     """Verify implement.md documents workspace creation and base flag."""
     content = (TEMPLATE_DIR / "implement.md").read_text(encoding="utf-8")
     content_lower = content.lower()
-    assert "spec-kitty implement" in content, "implement.md should mention spec-kitty implement"
+    assert "spec-kitty implement" in content, (
+        "implement.md should mention spec-kitty implement"
+    )
     assert "--base" in content, "implement.md should mention --base"
-    assert "worktree" in content_lower or "workspace" in content_lower, \
+    assert "worktree" in content_lower or "workspace" in content_lower, (
         "implement.md should mention worktree/workspace creation"
+    )
 
 
 def test_central_review_template_dependency_checks() -> None:

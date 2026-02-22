@@ -1,4 +1,5 @@
 """Git State Detection Tests for pre-review validation."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -27,7 +28,9 @@ def _init_repo(tmp_path: Path) -> tuple[Path, Path]:
 
     feature_dir = repo / "kitty-specs" / FEATURE_SLUG
     feature_dir.mkdir(parents=True, exist_ok=True)
-    (feature_dir / "meta.json").write_text('{"mission": "software-dev"}\n', encoding="utf-8")
+    (feature_dir / "meta.json").write_text(
+        '{"mission": "software-dev"}\n', encoding="utf-8"
+    )
     run(["git", "add", "kitty-specs"], cwd=repo)
     run(["git", "commit", "-m", "add feature"], cwd=repo)
 
@@ -41,7 +44,9 @@ def _init_repo(tmp_path: Path) -> tuple[Path, Path]:
     return repo, worktree_dir
 
 
-def _commit_in_worktree(worktree: Path, filename: str, content: str, message: str) -> None:
+def _commit_in_worktree(
+    worktree: Path, filename: str, content: str, message: str
+) -> None:
     (worktree / filename).write_text(content, encoding="utf-8")
     run(["git", "add", filename], cwd=worktree)
     run(["git", "commit", "-m", message], cwd=worktree)
@@ -93,24 +98,32 @@ def diverged_main_repo(tmp_path: Path) -> tuple[Path, Path]:
 
 
 class TestDetachedHead:
-    def test_detached_head_detected(self, detached_head_repo: tuple[Path, Path]) -> None:
+    def test_detached_head_detected(
+        self, detached_head_repo: tuple[Path, Path]
+    ) -> None:
         """Detached HEAD should be detected before review."""
         from specify_cli.cli.commands.agent.tasks import _validate_ready_for_review
 
         _, worktree = detached_head_repo
-        is_valid, guidance = _validate_ready_for_review(worktree, FEATURE_SLUG, WP_ID, force=False)
+        is_valid, guidance = _validate_ready_for_review(
+            worktree, FEATURE_SLUG, WP_ID, force=False
+        )
 
         assert is_valid is False
         guidance_text = "\n".join(guidance).lower()
         assert "detached head" in guidance_text
 
-    def test_detached_head_with_changes(self, detached_head_repo: tuple[Path, Path]) -> None:
+    def test_detached_head_with_changes(
+        self, detached_head_repo: tuple[Path, Path]
+    ) -> None:
         """Detached HEAD with uncommitted changes should be caught."""
         from specify_cli.cli.commands.agent.tasks import _validate_ready_for_review
 
         _, worktree = detached_head_repo
         (worktree / "dirty.txt").write_text("dirty", encoding="utf-8")
-        is_valid, guidance = _validate_ready_for_review(worktree, FEATURE_SLUG, WP_ID, force=False)
+        is_valid, guidance = _validate_ready_for_review(
+            worktree, FEATURE_SLUG, WP_ID, force=False
+        )
 
         assert is_valid is False
         guidance_text = "\n".join(guidance).lower()
@@ -124,7 +137,9 @@ class TestMergeState:
         _, worktree = merge_state_repo
         _touch_git_state_marker(worktree, "MERGE_HEAD")
 
-        is_valid, guidance = _validate_ready_for_review(worktree, FEATURE_SLUG, WP_ID, force=False)
+        is_valid, guidance = _validate_ready_for_review(
+            worktree, FEATURE_SLUG, WP_ID, force=False
+        )
 
         assert is_valid is False
         guidance_text = "\n".join(guidance).lower()
@@ -136,19 +151,25 @@ class TestMergeState:
         _, worktree = merge_state_repo
         _touch_git_state_marker(worktree, "REBASE_HEAD")
 
-        is_valid, guidance = _validate_ready_for_review(worktree, FEATURE_SLUG, WP_ID, force=False)
+        is_valid, guidance = _validate_ready_for_review(
+            worktree, FEATURE_SLUG, WP_ID, force=False
+        )
 
         assert is_valid is False
         guidance_text = "\n".join(guidance).lower()
         assert "rebase" in guidance_text
 
-    def test_cherry_pick_head_detected(self, merge_state_repo: tuple[Path, Path]) -> None:
+    def test_cherry_pick_head_detected(
+        self, merge_state_repo: tuple[Path, Path]
+    ) -> None:
         from specify_cli.cli.commands.agent.tasks import _validate_ready_for_review
 
         _, worktree = merge_state_repo
         _touch_git_state_marker(worktree, "CHERRY_PICK_HEAD")
 
-        is_valid, guidance = _validate_ready_for_review(worktree, FEATURE_SLUG, WP_ID, force=False)
+        is_valid, guidance = _validate_ready_for_review(
+            worktree, FEATURE_SLUG, WP_ID, force=False
+        )
 
         assert is_valid is False
         guidance_text = "\n".join(guidance).lower()
@@ -156,11 +177,15 @@ class TestMergeState:
 
 
 class TestStagedUncommitted:
-    def test_staged_uncommitted_detected(self, staged_uncommitted_repo: tuple[Path, Path]) -> None:
+    def test_staged_uncommitted_detected(
+        self, staged_uncommitted_repo: tuple[Path, Path]
+    ) -> None:
         from specify_cli.cli.commands.agent.tasks import _validate_ready_for_review
 
         _, worktree = staged_uncommitted_repo
-        is_valid, guidance = _validate_ready_for_review(worktree, FEATURE_SLUG, WP_ID, force=False)
+        is_valid, guidance = _validate_ready_for_review(
+            worktree, FEATURE_SLUG, WP_ID, force=False
+        )
 
         assert is_valid is False
         guidance_text = "\n".join(guidance).lower()
@@ -169,11 +194,15 @@ class TestStagedUncommitted:
 
 
 class TestMainDivergence:
-    def test_main_divergence_detected(self, diverged_main_repo: tuple[Path, Path]) -> None:
+    def test_main_divergence_detected(
+        self, diverged_main_repo: tuple[Path, Path]
+    ) -> None:
         from specify_cli.cli.commands.agent.tasks import _validate_ready_for_review
 
         _, worktree = diverged_main_repo
-        is_valid, guidance = _validate_ready_for_review(worktree, FEATURE_SLUG, WP_ID, force=False)
+        is_valid, guidance = _validate_ready_for_review(
+            worktree, FEATURE_SLUG, WP_ID, force=False
+        )
 
         assert is_valid is False
         guidance_text = "\n".join(guidance).lower()
@@ -186,7 +215,9 @@ class TestNoCommitsOnBranch:
         from specify_cli.cli.commands.agent.tasks import _validate_ready_for_review
 
         _, worktree = _init_repo(tmp_path)
-        is_valid, guidance = _validate_ready_for_review(worktree, FEATURE_SLUG, WP_ID, force=False)
+        is_valid, guidance = _validate_ready_for_review(
+            worktree, FEATURE_SLUG, WP_ID, force=False
+        )
 
         assert is_valid is False
         guidance_text = "\n".join(guidance).lower()

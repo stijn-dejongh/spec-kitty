@@ -17,22 +17,32 @@ def migration() -> ConstitutionCleanupMigration:
     return ConstitutionCleanupMigration()
 
 
-def test_detects_constitution_dir(migration: ConstitutionCleanupMigration, tmp_path: Path) -> None:
+def test_detects_constitution_dir(
+    migration: ConstitutionCleanupMigration, tmp_path: Path
+) -> None:
     """Detect returns True when constitution directory exists."""
-    constitution_dir = tmp_path / ".kittify" / "missions" / "software-dev" / "constitution"
+    constitution_dir = (
+        tmp_path / ".kittify" / "missions" / "software-dev" / "constitution"
+    )
     constitution_dir.mkdir(parents=True)
 
     assert migration.detect(tmp_path) is True
 
 
-def test_detects_no_missions(migration: ConstitutionCleanupMigration, tmp_path: Path) -> None:
+def test_detects_no_missions(
+    migration: ConstitutionCleanupMigration, tmp_path: Path
+) -> None:
     """Detect returns False when missions directory missing."""
     assert migration.detect(tmp_path) is False
 
 
-def test_apply_removes_constitution(migration: ConstitutionCleanupMigration, tmp_path: Path) -> None:
+def test_apply_removes_constitution(
+    migration: ConstitutionCleanupMigration, tmp_path: Path
+) -> None:
     """Apply removes mission constitutions."""
-    constitution_dir = tmp_path / ".kittify" / "missions" / "software-dev" / "constitution"
+    constitution_dir = (
+        tmp_path / ".kittify" / "missions" / "software-dev" / "constitution"
+    )
     constitution_dir.mkdir(parents=True)
     (constitution_dir / "principles.md").write_text("# Test")
 
@@ -40,7 +50,9 @@ def test_apply_removes_constitution(migration: ConstitutionCleanupMigration, tmp
 
     assert result.success is True
     assert not constitution_dir.exists()
-    assert any("Removed software-dev/constitution/" in change for change in result.changes_made)
+    assert any(
+        "Removed software-dev/constitution/" in change for change in result.changes_made
+    )
 
 
 def test_apply_dry_run(migration: ConstitutionCleanupMigration, tmp_path: Path) -> None:
@@ -52,10 +64,15 @@ def test_apply_dry_run(migration: ConstitutionCleanupMigration, tmp_path: Path) 
 
     assert result.success is True
     assert constitution_dir.exists()
-    assert any("Would remove research/constitution/" in change for change in result.changes_made)
+    assert any(
+        "Would remove research/constitution/" in change
+        for change in result.changes_made
+    )
 
 
-def test_apply_idempotent(migration: ConstitutionCleanupMigration, tmp_path: Path) -> None:
+def test_apply_idempotent(
+    migration: ConstitutionCleanupMigration, tmp_path: Path
+) -> None:
     """Apply is idempotent when run twice."""
     constitution_dir = tmp_path / ".kittify" / "missions" / "research" / "constitution"
     constitution_dir.mkdir(parents=True)

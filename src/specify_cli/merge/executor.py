@@ -24,7 +24,10 @@ from specify_cli.merge.preflight import (
     display_preflight_result,
     run_preflight,
 )
-from specify_cli.merge.status_resolver import get_conflicted_files, resolve_status_conflicts
+from specify_cli.merge.status_resolver import (
+    get_conflicted_files,
+    resolve_status_conflicts,
+)
 from specify_cli.merge.forecast import (
     display_conflict_forecast,
     predict_conflicts,
@@ -185,7 +188,9 @@ def execute_merge(
             for wt_path, wp_id, branch in ordered_workspaces
             if wp_id in remaining_set
         ]
-        console.print(f"[cyan]Resuming from {state.completed_wps[-1] if state.completed_wps else 'start'}[/cyan]")
+        console.print(
+            f"[cyan]Resuming from {state.completed_wps[-1] if state.completed_wps else 'start'}[/cyan]"
+        )
     else:
         state = MergeState(
             feature_slug=feature_slug,
@@ -227,7 +232,9 @@ def execute_merge(
             tracker.complete("pull")
     except Exception as exc:
         tracker.error("pull", str(exc))
-        result.error = f"Pull failed: {exc}. You may need to resolve conflicts manually."
+        result.error = (
+            f"Pull failed: {exc}. You may need to resolve conflicts manually."
+        )
         return result
 
     # Step 6: Merge all WP branches in dependency order
@@ -361,7 +368,9 @@ def execute_merge(
                 # Try force delete
                 try:
                     run_command(["git", "branch", "-D", branch], cwd=merge_root)
-                    console.print(f"[green]\u2713[/green] Force deleted branch: {branch}")
+                    console.print(
+                        f"[green]\u2713[/green] Force deleted branch: {branch}"
+                    )
                 except Exception:
                     failed_deletions.append((wp_id, branch))
 
@@ -419,7 +428,9 @@ def execute_legacy_merge(
 
     tracker.start("verify")
     try:
-        _, status_output, _ = run_command(["git", "status", "--porcelain"], capture=True)
+        _, status_output, _ = run_command(
+            ["git", "status", "--porcelain"], capture=True
+        )
         if status_output.strip():
             tracker.error("verify", "uncommitted changes")
             result.error = "Working directory has uncommitted changes."
@@ -521,7 +532,14 @@ def execute_legacy_merge(
             return result
         else:
             run_command(
-                ["git", "merge", "--no-ff", current_branch, "-m", f"Merge feature {current_branch}"],
+                [
+                    "git",
+                    "merge",
+                    "--no-ff",
+                    current_branch,
+                    "-m",
+                    f"Merge feature {current_branch}",
+                ],
                 cwd=merge_root,
             )
             tracker.complete("merge", "merged with merge commit")
@@ -554,9 +572,7 @@ def execute_legacy_merge(
             _cleanup_sparse_checkout_config(merge_root)
         except Exception as exc:
             tracker.error("worktree", str(exc))
-            console.print(
-                f"\n[yellow]Warning:[/yellow] Could not remove worktree."
-            )
+            console.print(f"\n[yellow]Warning:[/yellow] Could not remove worktree.")
             console.print(f"Run manually: git worktree remove {feature_worktree_path}")
 
     if delete_branch:

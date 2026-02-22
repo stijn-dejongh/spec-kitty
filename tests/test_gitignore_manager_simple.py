@@ -12,6 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src" / "specify_cli"))
 
 import gitignore_manager
+
 GitignoreManager = gitignore_manager.GitignoreManager
 ProtectionResult = gitignore_manager.ProtectionResult
 
@@ -53,13 +54,17 @@ def test_basic_functionality():
         # Test initialization
         manager = GitignoreManager(tmppath)
         assert manager.project_path == tmppath, "Project path not set correctly"
-        assert manager.gitignore_path == tmppath / ".gitignore", ".gitignore path not set"
+        assert manager.gitignore_path == tmppath / ".gitignore", (
+            ".gitignore path not set"
+        )
 
         # Test protect_all_agents
         result = manager.protect_all_agents()
         assert result.success, "protect_all_agents failed"
         assert result.modified, "File should be modified on first run"
-        assert len(result.entries_added) == 14, f"Expected 14 entries, got {len(result.entries_added)}"
+        assert len(result.entries_added) == 14, (
+            f"Expected 14 entries, got {len(result.entries_added)}"
+        )
 
         # Verify file created
         assert manager.gitignore_path.exists(), ".gitignore not created"
@@ -74,9 +79,18 @@ def test_all_agents_protected():
         result = manager.protect_all_agents()
 
         expected_dirs = [
-            ".claude/", ".codex/", ".opencode/", ".windsurf/",
-            ".gemini/", ".cursor/", ".qwen/", ".kilocode/",
-            ".augment/", ".roo/", ".amazonq/", ".github/copilot/"
+            ".claude/",
+            ".codex/",
+            ".opencode/",
+            ".windsurf/",
+            ".gemini/",
+            ".cursor/",
+            ".qwen/",
+            ".kilocode/",
+            ".augment/",
+            ".roo/",
+            ".amazonq/",
+            ".github/copilot/",
         ]
 
         content = manager.gitignore_path.read_text()
@@ -114,7 +128,9 @@ def test_selected_agents():
         # Test with specific agents
         result = manager.protect_selected_agents(["claude", "codex"])
         assert result.success, "protect_selected_agents failed"
-        assert len(result.entries_added) == 2, f"Expected 2 entries, got {len(result.entries_added)}"
+        assert len(result.entries_added) == 2, (
+            f"Expected 2 entries, got {len(result.entries_added)}"
+        )
 
         content = manager.gitignore_path.read_text()
         assert ".claude/" in content, ".claude/ not found"
@@ -147,7 +163,9 @@ def test_error_handling():
         result = manager.protect_selected_agents(["unknown_agent"])
         assert result.success, "Should succeed even with unknown agent"
         assert not result.modified, "Should not modify with only unknown agents"
-        assert any("Unknown agent" in w for w in result.warnings), "Should warn about unknown agent"
+        assert any("Unknown agent" in w for w in result.warnings), (
+            "Should warn about unknown agent"
+        )
 
 
 if __name__ == "__main__":

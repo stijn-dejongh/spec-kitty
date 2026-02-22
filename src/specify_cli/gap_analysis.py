@@ -245,7 +245,9 @@ class CoverageMatrix:
     documentation for each Divio type (tutorial, how-to, reference, explanation).
     """
 
-    project_areas: List[str] = field(default_factory=list)  # e.g., ["auth", "api", "cli"]
+    project_areas: List[str] = field(
+        default_factory=list
+    )  # e.g., ["auth", "api", "cli"]
     divio_types: List[str] = field(
         default_factory=lambda: ["tutorial", "how-to", "reference", "explanation"]
     )
@@ -273,9 +275,7 @@ class CoverageMatrix:
         Returns:
             Dict mapping project area to doc file path (or None if missing)
         """
-        return {
-            area: self.cells.get((area, divio_type)) for area in self.project_areas
-        }
+        return {area: self.cells.get((area, divio_type)) for area in self.project_areas}
 
     def get_gaps(self) -> List[Tuple[str, str]]:
         """Return list of (area, type) tuples with missing documentation.
@@ -400,7 +400,9 @@ def prioritize_gaps(
         if divio_type == "tutorial":
             if is_core_area:
                 priority = GapPriority.HIGH
-                reason = "New users need tutorials to get started with core functionality"
+                reason = (
+                    "New users need tutorials to get started with core functionality"
+                )
             else:
                 priority = GapPriority.MEDIUM
                 reason = "Users need tutorials for advanced features"
@@ -457,7 +459,7 @@ def extract_public_api_from_python(source_dir: Path) -> List[str]:
 
     for py_file in source_dir.rglob("*.py"):
         try:
-            source = py_file.read_text(encoding='utf-8')
+            source = py_file.read_text(encoding="utf-8")
             tree = ast.parse(source)
 
             for node in ast.walk(tree):
@@ -497,7 +499,7 @@ def extract_documented_api_from_sphinx(docs_dir: Path) -> List[str]:
     if build_dir.exists():
         # Parse HTML for documented classes/functions
         for html_file in build_dir.rglob("*.html"):
-            content = html_file.read_text(encoding='utf-8')
+            content = html_file.read_text(encoding="utf-8")
             # Simple heuristic: look for Sphinx autodoc class/function markers
             # Example: <dt class="sig sig-object py" id="ClassName">
             import re
@@ -551,9 +553,7 @@ class GapAnalysis:
     framework: DocFramework
     coverage_matrix: CoverageMatrix
     gaps: List[DocumentationGap]
-    outdated: List[Tuple[Path, str]] = field(
-        default_factory=list
-    )  # (file, reason)
+    outdated: List[Tuple[Path, str]] = field(default_factory=list)  # (file, reason)
     existing: Dict[Path, Tuple[DivioType, float]] = field(
         default_factory=dict
     )  # (type, confidence)
@@ -594,27 +594,21 @@ class GapAnalysis:
                 lines.append("### High Priority")
                 lines.append("")
                 for gap in high_gaps:
-                    lines.append(
-                        f"- **{gap.area} → {gap.divio_type}**: {gap.reason}"
-                    )
+                    lines.append(f"- **{gap.area} → {gap.divio_type}**: {gap.reason}")
                 lines.append("")
 
             if medium_gaps:
                 lines.append("### Medium Priority")
                 lines.append("")
                 for gap in medium_gaps:
-                    lines.append(
-                        f"- **{gap.area} → {gap.divio_type}**: {gap.reason}"
-                    )
+                    lines.append(f"- **{gap.area} → {gap.divio_type}**: {gap.reason}")
                 lines.append("")
 
             if low_gaps:
                 lines.append("### Low Priority")
                 lines.append("")
                 for gap in low_gaps:
-                    lines.append(
-                        f"- **{gap.area} → {gap.divio_type}**: {gap.reason}"
-                    )
+                    lines.append(f"- **{gap.area} → {gap.divio_type}**: {gap.reason}")
                 lines.append("")
 
         # Existing documentation inventory
@@ -814,7 +808,7 @@ def analyze_documentation_gaps(
     classified = {}
     for doc_file in doc_files:
         try:
-            content = doc_file.read_text(encoding='utf-8')
+            content = doc_file.read_text(encoding="utf-8")
             divio_type, confidence = classify_divio_type(content)
             classified[doc_file] = (divio_type, confidence)
         except Exception:
@@ -884,7 +878,7 @@ def generate_gap_analysis_report(
 
     # Write to file
     output_file.parent.mkdir(parents=True, exist_ok=True)
-    output_file.write_text(report_content, encoding='utf-8')
+    output_file.write_text(report_content, encoding="utf-8")
 
     return analysis
 

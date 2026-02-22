@@ -22,13 +22,32 @@ runner = CliRunner()
 
 def _init_git_repo(path: Path) -> None:
     """Initialize a bare git repo at *path* so feature detection works."""
-    subprocess.run(["git", "init", "--initial-branch=main"], cwd=path, capture_output=True, check=True)
-    subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=path, capture_output=True, check=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=path, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "init", "--initial-branch=main"],
+        cwd=path,
+        capture_output=True,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=path,
+        capture_output=True,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=path,
+        capture_output=True,
+        check=True,
+    )
     # Initial commit so branch exists
     (path / "README.md").write_text("# test", encoding="utf-8")
-    subprocess.run(["git", "add", "README.md"], cwd=path, capture_output=True, check=True)
-    subprocess.run(["git", "commit", "-m", "init"], cwd=path, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "add", "README.md"], cwd=path, capture_output=True, check=True
+    )
+    subprocess.run(
+        ["git", "commit", "-m", "init"], cwd=path, capture_output=True, check=True
+    )
 
 
 def _scaffold_project(
@@ -49,7 +68,8 @@ def _scaffold_project(
     feature_dir = repo_root / "kitty-specs" / feature_slug
     feature_dir.mkdir(parents=True)
     (feature_dir / "meta.json").write_text(
-        json.dumps({"mission": mission_key}), encoding="utf-8",
+        json.dumps({"mission": mission_key}),
+        encoding="utf-8",
     )
 
     return repo_root
@@ -106,14 +126,28 @@ def _advance_runtime_to_step(
     mission_key = get_feature_mission_key(feature_dir)
     run_ref = get_or_start_run(feature_slug, repo_root, mission_key)
 
-    step_order = ["discovery", "specify", "plan", "tasks_outline", "tasks_packages", "tasks_finalize", "implement", "review", "accept"]
-    target_idx = step_order.index(target_step_id) if target_step_id in step_order else -1
+    step_order = [
+        "discovery",
+        "specify",
+        "plan",
+        "tasks_outline",
+        "tasks_packages",
+        "tasks_finalize",
+        "implement",
+        "review",
+        "accept",
+    ]
+    target_idx = (
+        step_order.index(target_step_id) if target_step_id in step_order else -1
+    )
 
     for _ in range(target_idx + 2):
         snapshot = _read_snapshot(Path(run_ref.run_dir))
         if snapshot.issued_step_id == target_step_id:
             return
-        runtime_next_step(run_ref, agent_id=agent, result="success", emitter=NullEmitter())
+        runtime_next_step(
+            run_ref, agent_id=agent, result="success", emitter=NullEmitter()
+        )
         snapshot = _read_snapshot(Path(run_ref.run_dir))
         if snapshot.issued_step_id == target_step_id:
             return
@@ -134,7 +168,9 @@ def _complete_all_steps(
     run_ref = get_or_start_run(feature_slug, repo_root, mission_key)
 
     for _ in range(20):
-        decision = runtime_next_step(run_ref, agent_id=agent, result="success", emitter=NullEmitter())
+        decision = runtime_next_step(
+            run_ref, agent_id=agent, result="success", emitter=NullEmitter()
+        )
         if decision.kind == "terminal":
             return
 
@@ -170,7 +206,9 @@ class TestNextCommandJSON:
         decision = decide_next("test-agent", "042-test-feature", "success", repo_root)
         assert decision.kind == DecisionKind.terminal
 
-    def test_failed_result_flows_through_runtime_as_blocked(self, tmp_path: Path) -> None:
+    def test_failed_result_flows_through_runtime_as_blocked(
+        self, tmp_path: Path
+    ) -> None:
         repo_root = _scaffold_project(tmp_path)
 
         from specify_cli.next.decision import decide_next
@@ -211,11 +249,14 @@ class TestNextCommandImplementState:
     def test_implement_state_picks_planned_wp(self, tmp_path: Path) -> None:
         repo_root = _scaffold_project(tmp_path)
         feature_dir = repo_root / "kitty-specs" / "042-test-feature"
-        _add_wp_files(feature_dir, {
-            "WP01": "done",
-            "WP02": "planned",
-            "WP03": "planned",
-        })
+        _add_wp_files(
+            feature_dir,
+            {
+                "WP01": "done",
+                "WP02": "planned",
+                "WP03": "planned",
+            },
+        )
         # Advance runtime to implement step
         _advance_runtime_to_step(repo_root, "042-test-feature", "implement")
 
@@ -230,10 +271,13 @@ class TestNextCommandImplementState:
     def test_implement_state_no_planned_checks_for_review(self, tmp_path: Path) -> None:
         repo_root = _scaffold_project(tmp_path)
         feature_dir = repo_root / "kitty-specs" / "042-test-feature"
-        _add_wp_files(feature_dir, {
-            "WP01": "done",
-            "WP02": "for_review",
-        })
+        _add_wp_files(
+            feature_dir,
+            {
+                "WP01": "done",
+                "WP02": "for_review",
+            },
+        )
         # Advance runtime to implement step
         _advance_runtime_to_step(repo_root, "042-test-feature", "implement")
 
@@ -247,10 +291,13 @@ class TestNextCommandImplementState:
     def test_all_wps_done_advances_to_review(self, tmp_path: Path) -> None:
         repo_root = _scaffold_project(tmp_path)
         feature_dir = repo_root / "kitty-specs" / "042-test-feature"
-        _add_wp_files(feature_dir, {
-            "WP01": "done",
-            "WP02": "done",
-        })
+        _add_wp_files(
+            feature_dir,
+            {
+                "WP01": "done",
+                "WP02": "done",
+            },
+        )
         # Advance runtime to implement step
         _advance_runtime_to_step(repo_root, "042-test-feature", "implement")
 
@@ -267,11 +314,14 @@ class TestNextCommandProgress:
     def test_progress_in_decision(self, tmp_path: Path) -> None:
         repo_root = _scaffold_project(tmp_path)
         feature_dir = repo_root / "kitty-specs" / "042-test-feature"
-        _add_wp_files(feature_dir, {
-            "WP01": "done",
-            "WP02": "doing",
-            "WP03": "planned",
-        })
+        _add_wp_files(
+            feature_dir,
+            {
+                "WP01": "done",
+                "WP02": "doing",
+                "WP03": "planned",
+            },
+        )
 
         from specify_cli.next.decision import decide_next
 
@@ -339,7 +389,9 @@ class TestNextCommandKnownBlockedMissions:
             "issue-plan-mission-next-mapping.md"
         ),
     )
-    def test_plan_mission_should_return_runnable_step_when_mapped(self, tmp_path: Path) -> None:
+    def test_plan_mission_should_return_runnable_step_when_mapped(
+        self, tmp_path: Path
+    ) -> None:
         repo_root = _scaffold_project(
             tmp_path,
             feature_slug="043-plan-feature",
@@ -359,7 +411,9 @@ class TestNextCommandKnownBlockedMissions:
             "issue-documentation-mission-next-mapping.md"
         ),
     )
-    def test_documentation_mission_should_return_runnable_step_when_mapped(self, tmp_path: Path) -> None:
+    def test_documentation_mission_should_return_runnable_step_when_mapped(
+        self, tmp_path: Path
+    ) -> None:
         repo_root = _scaffold_project(
             tmp_path,
             feature_slug="044-docs-feature",
@@ -381,14 +435,23 @@ class TestNextCommandKnownBlockedMissions:
 class TestNextCommandCLI:
     """Test the ``next`` command via CliRunner (real CLI routing)."""
 
-    def test_json_output_valid(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_json_output_valid(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """--json flag produces valid JSON with required fields."""
         repo_root = _scaffold_project(tmp_path)
         monkeypatch.chdir(repo_root)
 
         result = runner.invoke(
             cli_app,
-            ["next", "--agent", "test-agent", "--feature", "042-test-feature", "--json"],
+            [
+                "next",
+                "--agent",
+                "test-agent",
+                "--feature",
+                "042-test-feature",
+                "--json",
+            ],
         )
         assert result.exit_code == 0, f"stderr: {result.output}"
         data = json.loads(result.output)
@@ -403,18 +466,30 @@ class TestNextCommandCLI:
         assert "run_id" in data
         assert "step_id" in data
 
-    def test_invalid_result_flag(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_invalid_result_flag(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Invalid --result value causes exit code 1."""
         repo_root = _scaffold_project(tmp_path)
         monkeypatch.chdir(repo_root)
 
         result = runner.invoke(
             cli_app,
-            ["next", "--agent", "test", "--feature", "042-test-feature", "--result", "bogus"],
+            [
+                "next",
+                "--agent",
+                "test",
+                "--feature",
+                "042-test-feature",
+                "--result",
+                "bogus",
+            ],
         )
         assert result.exit_code == 1
 
-    def test_blocked_result_exit_code(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_blocked_result_exit_code(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """--result blocked produces exit code 1."""
         repo_root = _scaffold_project(tmp_path)
         monkeypatch.chdir(repo_root)
@@ -428,13 +503,24 @@ class TestNextCommandCLI:
 
         result = runner.invoke(
             cli_app,
-            ["next", "--agent", "test", "--feature", "042-test-feature", "--result", "blocked", "--json"],
+            [
+                "next",
+                "--agent",
+                "test",
+                "--feature",
+                "042-test-feature",
+                "--result",
+                "blocked",
+                "--json",
+            ],
         )
         assert result.exit_code == 1
         data = json.loads(result.output)
         assert data["kind"] == "blocked"
 
-    def test_terminal_state_exit_code_zero(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_terminal_state_exit_code_zero(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Terminal state returns exit code 0."""
         repo_root = _scaffold_project(tmp_path)
         # Complete all steps via runtime
@@ -449,7 +535,9 @@ class TestNextCommandCLI:
         data = json.loads(result.output)
         assert data["kind"] == "terminal"
 
-    def test_human_output_mode(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_human_output_mode(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Without --json, outputs human-readable text."""
         repo_root = _scaffold_project(tmp_path)
         monkeypatch.chdir(repo_root)
@@ -462,7 +550,9 @@ class TestNextCommandCLI:
         # Human output should contain the mission state
         assert "software-dev" in result.output
 
-    def test_nonexistent_feature_blocked(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_nonexistent_feature_blocked(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Non-existent feature returns blocked with exit code 1."""
         repo_root = _scaffold_project(tmp_path)
         monkeypatch.chdir(repo_root)
@@ -472,9 +562,15 @@ class TestNextCommandCLI:
             ["next", "--agent", "test", "--feature", "999-nonexistent", "--json"],
         )
         # Feature detection may fail before decide_next, or decide_next returns blocked
-        assert result.exit_code != 0 or "blocked" in result.output or "not found" in result.output.lower()
+        assert (
+            result.exit_code != 0
+            or "blocked" in result.output
+            or "not found" in result.output.lower()
+        )
 
-    def test_state_advancement_persists(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_state_advancement_persists(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """P0: calling next advances state and persists it for next call."""
         repo_root = _scaffold_project(tmp_path)
         monkeypatch.chdir(repo_root)
@@ -502,17 +598,27 @@ class TestNextCommandCLI:
         assert feature_runs.exists(), "Feature-runs index should exist"
 
         # Verify the step has progressed
-        assert d1["step_id"] != d2["step_id"] or d1["step_id"] is None, \
+        assert d1["step_id"] != d2["step_id"] or d1["step_id"] is None, (
             "Steps should advance between calls"
+        )
 
-    def test_json_output_includes_runtime_fields(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_json_output_includes_runtime_fields(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """JSON output includes new runtime fields."""
         repo_root = _scaffold_project(tmp_path)
         monkeypatch.chdir(repo_root)
 
         result = runner.invoke(
             cli_app,
-            ["next", "--agent", "test-agent", "--feature", "042-test-feature", "--json"],
+            [
+                "next",
+                "--agent",
+                "test-agent",
+                "--feature",
+                "042-test-feature",
+                "--json",
+            ],
         )
         assert result.exit_code == 0
         data = json.loads(result.output)
@@ -527,8 +633,9 @@ class TestNextCommandCLI:
 
 
 class TestNextCommandAnswerJSON:
-
-    def test_answer_json_single_document(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_answer_json_single_document(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Successful answer flow emits one JSON document with merged answer fields."""
         repo_root = _scaffold_project(tmp_path, mission_key="input-mission")
         _write_runtime_input_mission(repo_root, mission_key="input-mission")
@@ -548,8 +655,14 @@ class TestNextCommandAnswerJSON:
         r = runner.invoke(
             cli_app,
             [
-                "next", "--agent", "test", "--feature", "042-test-feature",
-                "--answer", "yes", "--json",
+                "next",
+                "--agent",
+                "test",
+                "--feature",
+                "042-test-feature",
+                "--answer",
+                "yes",
+                "--json",
             ],
         )
         assert r.exit_code == 0, r.output
@@ -559,7 +672,9 @@ class TestNextCommandAnswerJSON:
         assert data["answer"] == "yes"
         assert data["kind"] in {"step", "terminal", "blocked", "decision_required"}
 
-    def test_answer_json_never_emits_two_objects(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_answer_json_never_emits_two_objects(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Regression: stdout must be exactly one JSON document, no trailing object."""
         repo_root = _scaffold_project(tmp_path, mission_key="input-mission")
         _write_runtime_input_mission(repo_root, mission_key="input-mission")
@@ -569,7 +684,11 @@ class TestNextCommandAnswerJSON:
         first = runner.invoke(
             cli_app,
             [
-                "next", "--agent", "test", "--feature", "042-test-feature",
+                "next",
+                "--agent",
+                "test",
+                "--feature",
+                "042-test-feature",
                 "--json",
             ],
         )
@@ -578,8 +697,14 @@ class TestNextCommandAnswerJSON:
         r = runner.invoke(
             cli_app,
             [
-                "next", "--agent", "test", "--feature", "042-test-feature",
-                "--answer", "yes", "--json",
+                "next",
+                "--agent",
+                "test",
+                "--feature",
+                "042-test-feature",
+                "--answer",
+                "yes",
+                "--json",
             ],
         )
         assert r.exit_code == 0, r.output
@@ -598,7 +723,6 @@ class TestNextCommandAnswerJSON:
 
 
 class TestNextCommandDecisionRequired:
-
     def test_decision_required_has_question_field_in_json(self, tmp_path: Path) -> None:
         """JSON output includes question/options for real runtime decision_required."""
         repo_root = _scaffold_project(tmp_path, mission_key="input-mission")
@@ -632,8 +756,9 @@ class TestNextCommandDecisionRequired:
 
 
 class TestAtomicTaskTransitions:
-
-    def test_plan_to_tasks_outline_to_packages_to_finalize(self, tmp_path: Path) -> None:
+    def test_plan_to_tasks_outline_to_packages_to_finalize(
+        self, tmp_path: Path
+    ) -> None:
         """Advance through all 3 atomic task steps in the correct order."""
         repo_root = _scaffold_project(tmp_path)
         feature_dir = repo_root / "kitty-specs" / "042-test-feature"
@@ -655,16 +780,24 @@ class TestAtomicTaskTransitions:
 
         seen_steps = []
         for i in range(40):
-            decision = decide_next("test-agent", "042-test-feature", "success", repo_root)
+            decision = decide_next(
+                "test-agent", "042-test-feature", "success", repo_root
+            )
             if decision.kind == "terminal":
                 break
             if decision.step_id and decision.step_id not in seen_steps:
                 seen_steps.append(decision.step_id)
 
         # All 3 atomic task steps must be visited
-        assert "tasks_outline" in seen_steps, f"tasks_outline not visited; saw: {seen_steps}"
-        assert "tasks_packages" in seen_steps, f"tasks_packages not visited; saw: {seen_steps}"
-        assert "tasks_finalize" in seen_steps, f"tasks_finalize not visited; saw: {seen_steps}"
+        assert "tasks_outline" in seen_steps, (
+            f"tasks_outline not visited; saw: {seen_steps}"
+        )
+        assert "tasks_packages" in seen_steps, (
+            f"tasks_packages not visited; saw: {seen_steps}"
+        )
+        assert "tasks_finalize" in seen_steps, (
+            f"tasks_finalize not visited; saw: {seen_steps}"
+        )
 
         # Verify correct ordering: outline before packages before finalize
         outline_idx = seen_steps.index("tasks_outline")

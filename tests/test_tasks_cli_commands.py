@@ -13,7 +13,9 @@ from task_helpers import locate_work_package
 
 def assert_success(result) -> None:
     if result.returncode != 0:
-        raise AssertionError(f"Command failed: {result.stderr}\nSTDOUT: {result.stdout}")
+        raise AssertionError(
+            f"Command failed: {result.stderr}\nSTDOUT: {result.stdout}"
+        )
 
 
 def test_update_and_rollback(feature_repo: Path, feature_slug: str) -> None:
@@ -27,16 +29,22 @@ def test_update_and_rollback(feature_repo: Path, feature_slug: str) -> None:
     assert 'lane: "doing"' in updated_wp.frontmatter
 
     # File should still be in same location (flat tasks/)
-    assert updated_wp.path.parent.name == "tasks", "WP file should stay in tasks/ directory"
+    assert updated_wp.path.parent.name == "tasks", (
+        "WP file should stay in tasks/ directory"
+    )
 
-    rollback_result = run_tasks_cli(["rollback", feature_slug, "WP01", "--force"], cwd=feature_repo)
+    rollback_result = run_tasks_cli(
+        ["rollback", feature_slug, "WP01", "--force"], cwd=feature_repo
+    )
     assert_success(rollback_result)
 
     rolled_wp = locate_work_package(feature_repo, feature_slug, "WP01")
     assert rolled_wp.current_lane == "planned"
 
 
-def test_update_modifies_frontmatter_only(feature_repo: Path, feature_slug: str) -> None:
+def test_update_modifies_frontmatter_only(
+    feature_repo: Path, feature_slug: str
+) -> None:
     """Test that update only modifies frontmatter, not file location."""
     wp_path = feature_repo / "kitty-specs" / feature_slug / "tasks" / "WP01.md"
     original_text = wp_path.read_text(encoding="utf-8")
@@ -80,17 +88,23 @@ def test_history_appends_entry(feature_repo: Path, feature_slug: str) -> None:
 
 def test_acceptance_commands(feature_repo: Path, feature_slug: str) -> None:
     # Update to done lane to satisfy acceptance checks.
-    run_tasks_cli(["update", feature_slug, "WP01", "doing", "--force"], cwd=feature_repo)
+    run_tasks_cli(
+        ["update", feature_slug, "WP01", "doing", "--force"], cwd=feature_repo
+    )
     run(["git", "commit", "-am", "Update to doing"], cwd=feature_repo)
     run_tasks_cli(["update", feature_slug, "WP01", "done", "--force"], cwd=feature_repo)
     run(["git", "commit", "-am", "Update to done"], cwd=feature_repo)
 
-    status = run_tasks_cli(["status", "--feature", feature_slug, "--json"], cwd=feature_repo)
+    status = run_tasks_cli(
+        ["status", "--feature", feature_slug, "--json"], cwd=feature_repo
+    )
     assert_success(status)
     data = json.loads(status.stdout)
     assert data["feature"] == feature_slug
 
-    verify = run_tasks_cli(["verify", "--feature", feature_slug, "--json", "--lenient"], cwd=feature_repo)
+    verify = run_tasks_cli(
+        ["verify", "--feature", feature_slug, "--json", "--lenient"], cwd=feature_repo
+    )
     assert_success(verify)
     verify_data = json.loads(verify.stdout)
     assert "lanes" in verify_data
@@ -114,13 +128,17 @@ def test_acceptance_commands(feature_repo: Path, feature_slug: str) -> None:
 
 
 def _prepare_done_work_package(feature_repo: Path, feature_slug: str) -> None:
-    run_tasks_cli(["update", feature_slug, "WP01", "doing", "--force"], cwd=feature_repo)
+    run_tasks_cli(
+        ["update", feature_slug, "WP01", "doing", "--force"], cwd=feature_repo
+    )
     run(["git", "commit", "-am", "Update to doing"], cwd=feature_repo)
     run_tasks_cli(["update", feature_slug, "WP01", "done", "--force"], cwd=feature_repo)
     run(["git", "commit", "-am", "Update to done"], cwd=feature_repo)
 
 
-def test_accept_command_encoding_error_without_normalize(feature_repo: Path, feature_slug: str) -> None:
+def test_accept_command_encoding_error_without_normalize(
+    feature_repo: Path, feature_slug: str
+) -> None:
     _prepare_done_work_package(feature_repo, feature_slug)
 
     plan_path = feature_repo / "kitty-specs" / feature_slug / "plan.md"
@@ -142,7 +160,9 @@ def test_accept_command_encoding_error_without_normalize(feature_repo: Path, fea
     assert "Invalid UTF-8 encoding" in result.stderr
 
 
-def test_accept_command_with_normalize_flag(feature_repo: Path, feature_slug: str) -> None:
+def test_accept_command_with_normalize_flag(
+    feature_repo: Path, feature_slug: str
+) -> None:
     _prepare_done_work_package(feature_repo, feature_slug)
 
     plan_path = feature_repo / "kitty-specs" / feature_slug / "plan.md"
@@ -169,7 +189,9 @@ def test_accept_command_with_normalize_flag(feature_repo: Path, feature_slug: st
 
 def test_scenario_replay(feature_repo: Path, feature_slug: str) -> None:
     # Simulate an agent resolving an unknown, updating through lanes, and finishing back in done.
-    run_tasks_cli(["update", feature_slug, "WP01", "doing", "--force"], cwd=feature_repo)
+    run_tasks_cli(
+        ["update", feature_slug, "WP01", "doing", "--force"], cwd=feature_repo
+    )
     run(["git", "commit", "-am", "Update to doing"], cwd=feature_repo)
     run_tasks_cli(
         [
@@ -184,11 +206,15 @@ def test_scenario_replay(feature_repo: Path, feature_slug: str) -> None:
         cwd=feature_repo,
     )
     run(["git", "commit", "-am", "Add history"], cwd=feature_repo)
-    run_tasks_cli(["update", feature_slug, "WP01", "for_review", "--force"], cwd=feature_repo)
+    run_tasks_cli(
+        ["update", feature_slug, "WP01", "for_review", "--force"], cwd=feature_repo
+    )
     run(["git", "commit", "-am", "Update to review"], cwd=feature_repo)
     run_tasks_cli(["update", feature_slug, "WP01", "done", "--force"], cwd=feature_repo)
 
-    summary = run_tasks_cli(["status", "--feature", feature_slug, "--json"], cwd=feature_repo)
+    summary = run_tasks_cli(
+        ["status", "--feature", feature_slug, "--json"], cwd=feature_repo
+    )
     assert_success(summary)
     data = json.loads(summary.stdout)
     assert data["lanes"]["done"] == ["WP01"]
@@ -265,6 +291,7 @@ def test_refresh_script_upgrades_legacy_copy(temp_repo: Path) -> None:
 # Tests for WP ID exact matching (WP04 vs WP04b bug fix)
 # ============================================================================
 
+
 def test_exact_wp_id_matching_not_prefix(feature_repo: Path, feature_slug: str) -> None:
     """Test: WP04 should NOT match WP04b (prefix matching bug).
 
@@ -279,7 +306,9 @@ def test_exact_wp_id_matching_not_prefix(feature_repo: Path, feature_slug: str) 
     run(["git", "commit", "-m", "Add WP04 and WP04b"], cwd=feature_repo)
 
     # Update WP04
-    result = run_tasks_cli(["update", feature_slug, "WP04", "doing", "--force"], cwd=feature_repo)
+    result = run_tasks_cli(
+        ["update", feature_slug, "WP04", "doing", "--force"], cwd=feature_repo
+    )
     assert_success(result)
 
     # Verify WP04 is now "doing"
@@ -311,7 +340,9 @@ def test_exact_wp_id_matching_with_slug(feature_repo: Path, feature_slug: str) -
     run(["git", "commit", "-m", "Add slugged WP files"], cwd=feature_repo)
 
     # Update WP04
-    result = run_tasks_cli(["update", feature_slug, "WP04", "doing", "--force"], cwd=feature_repo)
+    result = run_tasks_cli(
+        ["update", feature_slug, "WP04", "doing", "--force"], cwd=feature_repo
+    )
     assert_success(result)
 
     # Verify via frontmatter
@@ -326,9 +357,12 @@ def test_exact_wp_id_matching_with_slug(feature_repo: Path, feature_slug: str) -
 # Tests for update stages changes properly
 # ============================================================================
 
+
 def test_update_stages_changes(feature_repo: Path, feature_slug: str) -> None:
     """Test: Update command stages the changes for commit."""
-    result = run_tasks_cli(["update", feature_slug, "WP01", "doing", "--force"], cwd=feature_repo)
+    result = run_tasks_cli(
+        ["update", feature_slug, "WP01", "doing", "--force"], cwd=feature_repo
+    )
     assert_success(result)
 
     # Check that changes are staged
@@ -336,11 +370,15 @@ def test_update_stages_changes(feature_repo: Path, feature_slug: str) -> None:
         ["git", "status", "--porcelain"],
         cwd=feature_repo,
         capture_output=True,
-        text=True
+        text=True,
     )
 
     # Should have WP01.md staged (M in first column for modified)
-    staged_lines = [line for line in status_result.stdout.strip().split('\n') if line and 'WP01' in line]
+    staged_lines = [
+        line
+        for line in status_result.stdout.strip().split("\n")
+        if line and "WP01" in line
+    ]
     assert len(staged_lines) > 0, "WP01 changes should be staged"
 
 
@@ -348,7 +386,10 @@ def test_update_stages_changes(feature_repo: Path, feature_slug: str) -> None:
 # Tests for multi-agent scenarios (frontmatter-based)
 # ============================================================================
 
-def test_update_ignores_other_wp_modifications(feature_repo: Path, feature_slug: str) -> None:
+
+def test_update_ignores_other_wp_modifications(
+    feature_repo: Path, feature_slug: str
+) -> None:
     """Test: Updating WP01 should not be blocked by modifications to WP02.
 
     GIVEN: WP02 has uncommitted modifications (simulating another agent's work)
@@ -363,10 +404,14 @@ def test_update_ignores_other_wp_modifications(feature_repo: Path, feature_slug:
     # Modify WP02 (simulating another agent editing it)
     wp02_path = feature_repo / "kitty-specs" / feature_slug / "tasks" / "WP02.md"
     original_content = wp02_path.read_text(encoding="utf-8")
-    wp02_path.write_text(original_content + "\n<!-- Agent B editing WP02 -->\n", encoding="utf-8")
+    wp02_path.write_text(
+        original_content + "\n<!-- Agent B editing WP02 -->\n", encoding="utf-8"
+    )
 
     # Update WP01 - should NOT be blocked by WP02 modifications
-    result = run_tasks_cli(["update", feature_slug, "WP01", "doing", "--force"], cwd=feature_repo)
+    result = run_tasks_cli(
+        ["update", feature_slug, "WP01", "doing", "--force"], cwd=feature_repo
+    )
     assert_success(result)
 
     # Verify WP01 updated
@@ -375,10 +420,14 @@ def test_update_ignores_other_wp_modifications(feature_repo: Path, feature_slug:
 
     # Verify WP02 still has its modifications
     wp02_content = wp02_path.read_text(encoding="utf-8")
-    assert "Agent B editing WP02" in wp02_content, "WP02 modifications should be preserved"
+    assert "Agent B editing WP02" in wp02_content, (
+        "WP02 modifications should be preserved"
+    )
 
 
-def test_update_with_staged_other_wp_changes(feature_repo: Path, feature_slug: str) -> None:
+def test_update_with_staged_other_wp_changes(
+    feature_repo: Path, feature_slug: str
+) -> None:
     """Test: Update succeeds even when other WP files are staged.
 
     GIVEN: WP02 is staged (modified and git added)
@@ -393,11 +442,15 @@ def test_update_with_staged_other_wp_changes(feature_repo: Path, feature_slug: s
     # Modify and stage WP02
     wp02_path = feature_repo / "kitty-specs" / feature_slug / "tasks" / "WP02.md"
     original_content = wp02_path.read_text(encoding="utf-8")
-    wp02_path.write_text(original_content + "\n<!-- Agent B staged WP02 -->\n", encoding="utf-8")
+    wp02_path.write_text(
+        original_content + "\n<!-- Agent B staged WP02 -->\n", encoding="utf-8"
+    )
     run(["git", "add", str(wp02_path.relative_to(feature_repo))], cwd=feature_repo)
 
     # Update WP01 with --force
-    result = run_tasks_cli(["update", feature_slug, "WP01", "doing", "--force"], cwd=feature_repo)
+    result = run_tasks_cli(
+        ["update", feature_slug, "WP01", "doing", "--force"], cwd=feature_repo
+    )
     assert_success(result)
 
     # Verify WP01 updated
@@ -405,7 +458,9 @@ def test_update_with_staged_other_wp_changes(feature_repo: Path, feature_slug: s
     assert wp01.current_lane == "doing", "WP01 should have updated to doing"
 
 
-def test_sequential_updates_by_different_agents(feature_repo: Path, feature_slug: str) -> None:
+def test_sequential_updates_by_different_agents(
+    feature_repo: Path, feature_slug: str
+) -> None:
     """Test: Two agents can update their WPs sequentially without conflicts.
 
     GIVEN: WP01 and WP02 both exist with lane=planned
@@ -418,11 +473,15 @@ def test_sequential_updates_by_different_agents(feature_repo: Path, feature_slug
     run(["git", "commit", "-m", "Add WP02"], cwd=feature_repo)
 
     # Agent A updates WP01
-    result_a = run_tasks_cli(["update", feature_slug, "WP01", "doing", "--force"], cwd=feature_repo)
+    result_a = run_tasks_cli(
+        ["update", feature_slug, "WP01", "doing", "--force"], cwd=feature_repo
+    )
     assert_success(result_a)
 
     # Agent B updates WP02 (without committing WP01 update first - simulates race)
-    result_b = run_tasks_cli(["update", feature_slug, "WP02", "doing", "--force"], cwd=feature_repo)
+    result_b = run_tasks_cli(
+        ["update", feature_slug, "WP02", "doing", "--force"], cwd=feature_repo
+    )
     assert_success(result_b)
 
     # Both should be in doing now

@@ -137,7 +137,9 @@ class PrimitiveExecutionContext:
                 # Unknown string value -> treat as enabled (safe default)
                 return True
             else:
-                return True  # Any explicit non-null, non-bool, non-string value = enabled
+                return (
+                    True  # Any explicit non-null, non-bool, non-string value = enabled
+                )
 
         # Mission config
         if "glossary" in self.config:

@@ -65,7 +65,9 @@ def prompt_conflict_resolution_safe(
         print(f"\nConflict: term '{term_name}' is ambiguous.")
         print("Candidate senses:")
         for idx, sense in enumerate(candidates):
-            print(f"  [{idx + 1}] {sense.definition} (scope={sense.scope}, confidence={sense.confidence})")
+            print(
+                f"  [{idx + 1}] {sense.definition} (scope={sense.scope}, confidence={sense.confidence})"
+            )
         print("  [c] Provide a custom definition")
         print("  [d] Defer resolution")
 

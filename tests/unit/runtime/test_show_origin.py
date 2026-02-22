@@ -22,6 +22,7 @@ from specify_cli.runtime.show_origin import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _create_file(path: Path, content: str = "placeholder") -> Path:
     """Create a file (and any missing parent dirs), return its path."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -44,7 +45,12 @@ class TestCollectOriginsBasic:
         pkg_root = tmp_path / "pkg"
 
         # Create a minimal package layout so dynamic discovery works
-        for name in ["spec-template.md", "plan-template.md", "tasks-template.md", "task-prompt-template.md"]:
+        for name in [
+            "spec-template.md",
+            "plan-template.md",
+            "tasks-template.md",
+            "task-prompt-template.md",
+        ]:
             _create_file(pkg_root / "software-dev" / "templates" / name)
         for name in ["specify.md", "plan.md", "tasks.md", "implement.md"]:
             _create_file(pkg_root / "software-dev" / "command-templates" / name)
@@ -98,7 +104,9 @@ class TestCollectOriginsBasic:
         for entry in entries:
             assert isinstance(entry, OriginEntry)
 
-    def test_missing_resolver_assets_have_error_and_no_path(self, tmp_path: Path) -> None:
+    def test_missing_resolver_assets_have_error_and_no_path(
+        self, tmp_path: Path
+    ) -> None:
         """When no tier provides a resolver-based asset, error is set and path/tier are None."""
         project = tmp_path / "project"
         (project / ".kittify").mkdir(parents=True)
@@ -157,7 +165,9 @@ class TestCollectOriginsBasic:
         # Dynamic discovery falls back to hardcoded lists when package not available
         assert len(template_entries) >= 4  # At least the 4 fallback templates
         assert len(command_entries) >= 8  # At least the 8 fallback commands
-        assert len(mission_entries) >= 3  # At least software-dev, research, documentation
+        assert (
+            len(mission_entries) >= 3
+        )  # At least software-dev, research, documentation
         assert len(file_entries) >= 1  # AGENTS.md
 
 
@@ -206,7 +216,11 @@ class TestShowOriginTierLabels:
         global_home = tmp_path / "global_home"
 
         global_path = _create_file(
-            global_home / "missions" / "software-dev" / "templates" / "plan-template.md",
+            global_home
+            / "missions"
+            / "software-dev"
+            / "templates"
+            / "plan-template.md",
             content="global",
         )
 
@@ -268,7 +282,9 @@ class TestShowOriginTierLabels:
 
         # Ensure all 3 templates exist at package level so dynamic discovery finds them
         for name in ["spec-template.md", "plan-template.md", "tasks-template.md"]:
-            _create_file(pkg_root / "software-dev" / "templates" / name, content="package")
+            _create_file(
+                pkg_root / "software-dev" / "templates" / name, content="package"
+            )
 
         # spec-template.md at override tier (wins over package)
         _create_file(
@@ -278,7 +294,11 @@ class TestShowOriginTierLabels:
 
         # plan-template.md at global tier (wins over package)
         _create_file(
-            global_home / "missions" / "software-dev" / "templates" / "plan-template.md",
+            global_home
+            / "missions"
+            / "software-dev"
+            / "templates"
+            / "plan-template.md",
             content="global",
         )
 
@@ -357,7 +377,12 @@ class TestShowOriginTierLabels:
 
         # software-dev at override (wins over package)
         _create_file(
-            project / ".kittify" / "overrides" / "missions" / "software-dev" / "mission.yaml",
+            project
+            / ".kittify"
+            / "overrides"
+            / "missions"
+            / "software-dev"
+            / "mission.yaml",
         )
 
         with (

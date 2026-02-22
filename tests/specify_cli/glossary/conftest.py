@@ -5,8 +5,14 @@ from unittest.mock import MagicMock
 from datetime import datetime
 from typing import List
 from specify_cli.glossary.models import (
-    TermSurface, TermSense, Provenance, SenseStatus,
-    SemanticConflict, ConflictType, Severity, SenseRef,
+    TermSurface,
+    TermSense,
+    Provenance,
+    SenseStatus,
+    SemanticConflict,
+    ConflictType,
+    Severity,
+    SenseRef,
 )
 
 
@@ -94,8 +100,12 @@ def make_conflict(
     if candidates is None and conflict_type == ConflictType.AMBIGUOUS:
         # Default candidates for ambiguous conflicts
         candidates = [
-            SenseRef(surface_text, "team_domain", f"Definition 1 of {surface_text}", 0.9),
-            SenseRef(surface_text, "team_domain", f"Definition 2 of {surface_text}", 0.7),
+            SenseRef(
+                surface_text, "team_domain", f"Definition 1 of {surface_text}", 0.9
+            ),
+            SenseRef(
+                surface_text, "team_domain", f"Definition 2 of {surface_text}", 0.7
+            ),
         ]
 
     return SemanticConflict(

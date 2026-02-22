@@ -135,7 +135,9 @@ def test_resolver_does_not_read_mission_files(tmp_path: Path) -> None:
         tmp_path,
         governance="doctrine: {}\n",
     )
-    mission_file = tmp_path / "src" / "doctrine" / "missions" / "software-dev" / "mission.yaml"
+    mission_file = (
+        tmp_path / "src" / "doctrine" / "missions" / "software-dev" / "mission.yaml"
+    )
     mission_file.parent.mkdir(parents=True)
     mission_file.write_text("::invalid-yaml::\n\tbad")
 

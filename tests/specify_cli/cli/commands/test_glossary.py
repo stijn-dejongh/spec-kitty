@@ -572,12 +572,12 @@ class TestGlossaryConflicts:
         assert "workspace" not in result.stdout
         assert "Total: 1 conflict(s)" in result.stdout
 
-    def test_conflicts_strictness_filter(self, mock_event_log_multi_mission, monkeypatch):
+    def test_conflicts_strictness_filter(
+        self, mock_event_log_multi_mission, monkeypatch
+    ):
         """Verify --strictness filter restricts to specific strictness level."""
         monkeypatch.chdir(mock_event_log_multi_mission)
-        result = runner.invoke(
-            glossary_app, ["conflicts", "--strictness", "max"]
-        )
+        result = runner.invoke(glossary_app, ["conflicts", "--strictness", "max"])
 
         assert result.exit_code == 0
         assert "tutorial" in result.stdout
@@ -587,9 +587,7 @@ class TestGlossaryConflicts:
     def test_conflicts_invalid_strictness(self, mock_event_log, monkeypatch):
         """Verify error on invalid --strictness value."""
         monkeypatch.chdir(mock_event_log)
-        result = runner.invoke(
-            glossary_app, ["conflicts", "--strictness", "invalid"]
-        )
+        result = runner.invoke(glossary_app, ["conflicts", "--strictness", "invalid"])
 
         assert result.exit_code == 1
         assert "Invalid strictness" in result.stdout
@@ -718,7 +716,10 @@ class TestGlossaryConflicts:
 
         result = runner.invoke(glossary_app, ["conflicts"])
         assert result.exit_code == 0
-        assert "No events found" not in result.stdout or "No conflicts found" in result.stdout
+        assert (
+            "No events found" not in result.stdout
+            or "No conflicts found" in result.stdout
+        )
 
 
 # =============================================================================
@@ -792,13 +793,19 @@ class TestGlossaryResolve:
         # Second-to-last: GlossaryClarificationResolved
         resolved_event = json.loads(lines[-2])
         assert resolved_event["event_type"] == "GlossaryClarificationResolved"
-        assert resolved_event["selected_sense"]["definition"] == "My custom definition for workspace"
+        assert (
+            resolved_event["selected_sense"]["definition"]
+            == "My custom definition for workspace"
+        )
         assert resolved_event["selected_sense"]["scope"] == "team_domain"
 
         # Last: GlossarySenseUpdated
         sense_event = json.loads(lines[-1])
         assert sense_event["event_type"] == "GlossarySenseUpdated"
-        assert sense_event["new_sense"]["definition"] == "My custom definition for workspace"
+        assert (
+            sense_event["new_sense"]["definition"]
+            == "My custom definition for workspace"
+        )
         assert sense_event["term_surface"] == "workspace"
 
     def test_resolve_defer(self, mock_event_log_unresolved, monkeypatch):
@@ -893,7 +900,9 @@ class TestGlossaryResolve:
         last_event = json.loads(lines[-1])
         assert last_event["event_type"] == "GlossaryClarificationResolved"
 
-    def test_resolve_shows_conflict_details(self, mock_event_log_unresolved, monkeypatch):
+    def test_resolve_shows_conflict_details(
+        self, mock_event_log_unresolved, monkeypatch
+    ):
         """Verify conflict details are displayed before prompting."""
         monkeypatch.chdir(mock_event_log_unresolved)
 
@@ -972,7 +981,11 @@ class TestExtractConflicts:
                 "blocked": True,
                 "effective_strictness": "medium",
                 "findings": [
-                    {"term": {"surface_text": "test"}, "conflict_type": "unknown", "severity": "low"}
+                    {
+                        "term": {"surface_text": "test"},
+                        "conflict_type": "unknown",
+                        "severity": "low",
+                    }
                 ],
             },
             {
@@ -1008,7 +1021,11 @@ class TestExtractConflicts:
                 "blocked": True,
                 "effective_strictness": "medium",
                 "findings": [
-                    {"term": {"surface_text": "test"}, "conflict_type": "ambiguous", "severity": "high"}
+                    {
+                        "term": {"surface_text": "test"},
+                        "conflict_type": "ambiguous",
+                        "severity": "high",
+                    }
                 ],
             },
             {
@@ -1083,7 +1100,13 @@ class TestExtractConflicts:
                 "timestamp": "2026-01-01T00:00:00Z",
                 "blocked": True,
                 "effective_strictness": "medium",
-                "findings": [{"term": {"surface_text": "a"}, "conflict_type": "unknown", "severity": "low"}],
+                "findings": [
+                    {
+                        "term": {"surface_text": "a"},
+                        "conflict_type": "unknown",
+                        "severity": "low",
+                    }
+                ],
             },
             {
                 "event_type": "GlossaryClarificationRequested",
@@ -1103,7 +1126,13 @@ class TestExtractConflicts:
                 "timestamp": "2026-01-01T00:00:00Z",
                 "blocked": True,
                 "effective_strictness": "max",
-                "findings": [{"term": {"surface_text": "b"}, "conflict_type": "unknown", "severity": "low"}],
+                "findings": [
+                    {
+                        "term": {"surface_text": "b"},
+                        "conflict_type": "unknown",
+                        "severity": "low",
+                    }
+                ],
             },
             {
                 "event_type": "GlossaryClarificationRequested",
@@ -1134,7 +1163,13 @@ class TestExtractConflicts:
                 "timestamp": "2026-01-01T00:00:00Z",
                 "blocked": True,
                 "effective_strictness": "medium",
-                "findings": [{"term": {"surface_text": "a"}, "conflict_type": "unknown", "severity": "low"}],
+                "findings": [
+                    {
+                        "term": {"surface_text": "a"},
+                        "conflict_type": "unknown",
+                        "severity": "low",
+                    }
+                ],
             },
             {
                 "event_type": "GlossaryClarificationRequested",
@@ -1154,7 +1189,13 @@ class TestExtractConflicts:
                 "timestamp": "2026-01-01T00:00:00Z",
                 "blocked": True,
                 "effective_strictness": "max",
-                "findings": [{"term": {"surface_text": "b"}, "conflict_type": "unknown", "severity": "low"}],
+                "findings": [
+                    {
+                        "term": {"surface_text": "b"},
+                        "conflict_type": "unknown",
+                        "severity": "low",
+                    }
+                ],
             },
             {
                 "event_type": "GlossaryClarificationRequested",
@@ -1453,7 +1494,9 @@ class TestRegressionRealConflictIds:
             # Must NOT be the old synthesized format "test-001-workspace"
             assert not conflict["conflict_id"].startswith("test-001-")
 
-    def test_resolve_finds_conflict_by_uuid(self, mock_event_log_unresolved, monkeypatch):
+    def test_resolve_finds_conflict_by_uuid(
+        self, mock_event_log_unresolved, monkeypatch
+    ):
         """Verify resolve command can find a conflict by its UUID conflict_id."""
         monkeypatch.chdir(mock_event_log_unresolved)
 
@@ -1467,7 +1510,9 @@ class TestRegressionRealConflictIds:
         assert result.exit_code == 0
         assert "workspace" in result.stdout
 
-    def test_resolve_rejects_synthesized_id(self, mock_event_log_unresolved, monkeypatch):
+    def test_resolve_rejects_synthesized_id(
+        self, mock_event_log_unresolved, monkeypatch
+    ):
         """Verify resolve command does NOT find conflicts by old synthesized IDs."""
         monkeypatch.chdir(mock_event_log_unresolved)
 
@@ -1489,7 +1534,9 @@ class TestRegressionSenseUpdatedOnCustomResolve:
     GlossarySenseUpdated emission to match ClarificationMiddleware behavior.
     """
 
-    def test_custom_resolve_emits_both_events(self, mock_event_log_unresolved, monkeypatch):
+    def test_custom_resolve_emits_both_events(
+        self, mock_event_log_unresolved, monkeypatch
+    ):
         """Verify custom resolution emits both Resolved and SenseUpdated events."""
         monkeypatch.chdir(mock_event_log_unresolved)
 
@@ -1517,9 +1564,13 @@ class TestRegressionSenseUpdatedOnCustomResolve:
         assert "GlossarySenseUpdated" in event_types
 
         # Verify SenseUpdated has the custom definition
-        sense_events = [e for e in new_events if e["event_type"] == "GlossarySenseUpdated"]
+        sense_events = [
+            e for e in new_events if e["event_type"] == "GlossarySenseUpdated"
+        ]
         assert len(sense_events) >= 1
-        assert sense_events[-1]["new_sense"]["definition"] == "Custom workspace definition"
+        assert (
+            sense_events[-1]["new_sense"]["definition"] == "Custom workspace definition"
+        )
         assert sense_events[-1]["term_surface"] == "workspace"
 
     def test_candidate_resolve_does_not_emit_sense_updated(
@@ -1547,7 +1598,9 @@ class TestRegressionSenseUpdatedOnCustomResolve:
         new_events = [json.loads(line) for line in lines]
 
         # Only GlossaryClarificationResolved should be added, not SenseUpdated
-        sense_events = [e for e in new_events if e["event_type"] == "GlossarySenseUpdated"]
+        sense_events = [
+            e for e in new_events if e["event_type"] == "GlossarySenseUpdated"
+        ]
         assert len(sense_events) == 0
 
 
@@ -1648,7 +1701,9 @@ class TestRegressionDeprecatedStatus:
         event_file = events_dir / "test.events.jsonl"
         event_file.write_text(json.dumps(event) + "\n")
 
-        result = runner.invoke(glossary_app, ["list", "--status", "deprecated", "--json"])
+        result = runner.invoke(
+            glossary_app, ["list", "--status", "deprecated", "--json"]
+        )
         assert result.exit_code == 0
         data = json.loads(result.stdout)
         assert len(data) == 1
@@ -1688,7 +1743,9 @@ class TestRegressionDeprecatedStatus:
         assert data[0]["status"] == "draft"
 
         # --status deprecated returns only deprecated
-        result = runner.invoke(glossary_app, ["list", "--status", "deprecated", "--json"])
+        result = runner.invoke(
+            glossary_app, ["list", "--status", "deprecated", "--json"]
+        )
         assert result.exit_code == 0
         data = json.loads(result.stdout)
         assert len(data) == 1

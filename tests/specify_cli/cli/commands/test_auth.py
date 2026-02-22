@@ -94,7 +94,14 @@ url = "https://test.example.com"
 
         result = runner.invoke(
             cli_app,
-            ["auth", "login", "--username", "ignored@example.com", "--password", "ignored"],
+            [
+                "auth",
+                "login",
+                "--username",
+                "ignored@example.com",
+                "--password",
+                "ignored",
+            ],
         )
 
         assert result.exit_code == 0

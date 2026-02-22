@@ -329,8 +329,7 @@ class TestEdgeCases:
         mission_dir = tmp_path / "many-phases"
         mission_dir.mkdir()
         phases = [
-            {"name": f"phase_{i}", "description": f"Phase {i}"}
-            for i in range(20)
+            {"name": f"phase_{i}", "description": f"Phase {i}"} for i in range(20)
         ]
         config = _make_mission_yaml(phases, name="Many Phases")
         (mission_dir / "mission.yaml").write_text(yaml.dump(config))

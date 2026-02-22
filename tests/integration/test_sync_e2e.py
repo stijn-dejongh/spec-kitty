@@ -97,10 +97,12 @@ def reset_singletons():
     """Reset singletons before and after each test."""
     reset_runtime()
     from specify_cli.sync.events import reset_emitter
+
     reset_emitter()
     yield
     reset_runtime()
     from specify_cli.sync.events import reset_emitter
+
     reset_emitter()
 
 
@@ -495,7 +497,7 @@ class TestNoDuplicateEmissions:
                 wp_id=f"WP{i:02d}",
                 title=f"Work Package {i}",
                 feature_slug="032-identity-aware",
-                dependencies=[f"WP{i-1:02d}"] if i > 1 else [],
+                dependencies=[f"WP{i - 1:02d}"] if i > 1 else [],
                 causation_id=causation_id,
             )
 

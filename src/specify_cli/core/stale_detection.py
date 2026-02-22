@@ -78,7 +78,9 @@ def get_default_branch(repo_path: Path) -> str:
     return "main"
 
 
-def get_last_meaningful_commit_time(worktree_path: Path) -> tuple[datetime | None, bool]:
+def get_last_meaningful_commit_time(
+    worktree_path: Path,
+) -> tuple[datetime | None, bool]:
     """
     Get the timestamp of the most recent meaningful commit in a worktree.
 
@@ -214,7 +216,9 @@ def check_wp_staleness(
                 last_commit_time=None,
                 minutes_since_commit=None,
                 worktree_exists=True,
-                error=None if not has_own_commits else "Could not determine last commit time",
+                error=None
+                if not has_own_commits
+                else "Could not determine last commit time",
             )
 
         now = datetime.now(timezone.utc)

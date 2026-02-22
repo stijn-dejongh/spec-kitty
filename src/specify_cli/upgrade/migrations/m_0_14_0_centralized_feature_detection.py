@@ -171,7 +171,9 @@ class CentralizedFeatureDetectionMigration(BaseMigration):
             dest = agent_dir / self.TEMPLATE_FILE
 
             if dry_run:
-                changes.append(f"Would update {agent_root}/{subdir}/{self.TEMPLATE_FILE}")
+                changes.append(
+                    f"Would update {agent_root}/{subdir}/{self.TEMPLATE_FILE}"
+                )
             else:
                 try:
                     # Ensure directory exists
@@ -179,9 +181,13 @@ class CentralizedFeatureDetectionMigration(BaseMigration):
 
                     # Copy updated template
                     shutil.copy2(package_template, dest)
-                    changes.append(f"Updated {agent_root}/{subdir}/{self.TEMPLATE_FILE}")
+                    changes.append(
+                        f"Updated {agent_root}/{subdir}/{self.TEMPLATE_FILE}"
+                    )
                 except OSError as e:
-                    errors.append(f"Failed to update {agent_root}/{subdir}/{self.TEMPLATE_FILE}: {e}")
+                    errors.append(
+                        f"Failed to update {agent_root}/{subdir}/{self.TEMPLATE_FILE}: {e}"
+                    )
 
         success = len(errors) == 0
         return MigrationResult(
@@ -228,8 +234,13 @@ class CentralizedFeatureDetectionMigration(BaseMigration):
             cwd = Path.cwd()
             for parent in [cwd] + list(cwd.parents):
                 template_file = (
-                    parent / "src" / "specify_cli" / "missions" / "software-dev" /
-                    "command-templates" / "plan.md"
+                    parent
+                    / "src"
+                    / "specify_cli"
+                    / "missions"
+                    / "software-dev"
+                    / "command-templates"
+                    / "plan.md"
                 )
                 pyproject = parent / "pyproject.toml"
                 if template_file.exists() and pyproject.exists():

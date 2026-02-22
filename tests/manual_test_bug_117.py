@@ -32,11 +32,12 @@ def simulate_slow_health_check_scenario():
     mock_pid = 99999
     mock_port = 9237
 
-    with patch("specify_cli.dashboard.lifecycle.start_dashboard") as mock_start, \
-         patch("specify_cli.dashboard.lifecycle._check_dashboard_health") as mock_health, \
-         patch("specify_cli.dashboard.lifecycle._is_process_alive") as mock_alive, \
-         patch("specify_cli.dashboard.lifecycle._write_dashboard_file") as mock_write:
-
+    with (
+        patch("specify_cli.dashboard.lifecycle.start_dashboard") as mock_start,
+        patch("specify_cli.dashboard.lifecycle._check_dashboard_health") as mock_health,
+        patch("specify_cli.dashboard.lifecycle._is_process_alive") as mock_alive,
+        patch("specify_cli.dashboard.lifecycle._write_dashboard_file") as mock_write,
+    ):
         # Setup: Process starts successfully
         mock_start.return_value = (mock_port, mock_pid)
 
@@ -54,7 +55,9 @@ def simulate_slow_health_check_scenario():
         start_time = time.time()
 
         try:
-            url, port, started = ensure_dashboard_running(test_dir, preferred_port=mock_port)
+            url, port, started = ensure_dashboard_running(
+                test_dir, preferred_port=mock_port
+            )
             elapsed = time.time() - start_time
 
             print("\n✅ RESULT: SUCCESS")
@@ -64,7 +67,9 @@ def simulate_slow_health_check_scenario():
             print(f"  - Elapsed time: {elapsed:.2f}s")
 
             # Verify we wrote the dashboard file (process is alive)
-            assert mock_write.called, "Should write dashboard file when process is alive"
+            assert mock_write.called, (
+                "Should write dashboard file when process is alive"
+            )
 
             print("\n🎉 Bug #117 FIX VERIFIED:")
             print("  - Dashboard detected as RUNNING (not failed)")
@@ -80,6 +85,7 @@ def simulate_slow_health_check_scenario():
 
     # Cleanup
     import shutil
+
     shutil.rmtree(test_dir, ignore_errors=True)
 
 
@@ -95,7 +101,9 @@ def test_specific_error_messages():
     # Test 1: Missing .kittify directory
     print("\nTest 1: Missing .kittify directory")
     with patch("specify_cli.dashboard.lifecycle.start_dashboard") as mock_start:
-        mock_start.side_effect = FileNotFoundError("No such file or directory: '.kittify'")
+        mock_start.side_effect = FileNotFoundError(
+            "No such file or directory: '.kittify'"
+        )
 
         try:
             ensure_dashboard_running(test_dir)
@@ -121,6 +129,7 @@ def test_specific_error_messages():
 
     # Cleanup
     import shutil
+
     shutil.rmtree(test_dir, ignore_errors=True)
 
     print("\n✅ All error message tests passed!")

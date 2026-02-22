@@ -166,7 +166,12 @@ class TestMissionDossierArtifactMissingPayload:
 
     def test_all_valid_reason_codes(self):
         """All valid reason codes should construct successfully."""
-        for reason_code in ["not_found", "unreadable", "invalid_format", "deleted_after_scan"]:
+        for reason_code in [
+            "not_found",
+            "unreadable",
+            "invalid_format",
+            "deleted_after_scan",
+        ]:
             payload = MissionDossierArtifactMissingPayload(
                 feature_slug="042-feature",
                 artifact_key="output.tasks.per_wp",
@@ -413,7 +418,10 @@ class TestEmitArtifactIndexed:
     def test_emit_artifact_indexed_with_minimal_fields(self, mock_get_emitter):
         """emit_artifact_indexed should work with minimal fields."""
         mock_emitter = MagicMock()
-        mock_event = {"event_id": "event-001", "event_type": "MissionDossierArtifactIndexed"}
+        mock_event = {
+            "event_id": "event-001",
+            "event_type": "MissionDossierArtifactIndexed",
+        }
         mock_emitter._emit.return_value = mock_event
         mock_get_emitter.return_value = mock_emitter
 
@@ -616,7 +624,10 @@ class TestEmitParityDriftDetected:
     def test_emit_parity_drift_detected_error_severity(self, mock_get_emitter):
         """emit_parity_drift_detected should emit with error severity."""
         mock_emitter = MagicMock()
-        mock_event = {"event_id": "event-004", "event_type": "MissionDossierParityDriftDetected"}
+        mock_event = {
+            "event_id": "event-004",
+            "event_type": "MissionDossierParityDriftDetected",
+        }
         mock_emitter._emit.return_value = mock_event
         mock_get_emitter.return_value = mock_emitter
 

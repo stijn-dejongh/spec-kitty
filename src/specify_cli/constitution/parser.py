@@ -26,7 +26,9 @@ class ConstitutionSection:
     heading: str  # Section heading text
     level: int  # Heading level (2 = ##, 3 = ###, 0 = preamble)
     content: str  # Raw markdown content
-    structured_data: dict[str, Any] = field(default_factory=dict)  # Extracted key-value pairs
+    structured_data: dict[str, Any] = field(
+        default_factory=dict
+    )  # Extracted key-value pairs
     requires_ai: bool = True  # True if only prose (needs AI extraction)
 
 
@@ -103,7 +105,11 @@ class ConstitutionParser:
 
             # Extract content between this heading and next (or end of document)
             start = match.end()
-            end = heading_matches[i + 1].start() if i + 1 < len(heading_matches) else len(content)
+            end = (
+                heading_matches[i + 1].start()
+                if i + 1 < len(heading_matches)
+                else len(content)
+            )
             section_content = content[start:end].strip()
 
             section = ConstitutionSection(

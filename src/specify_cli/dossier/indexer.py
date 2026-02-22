@@ -153,18 +153,14 @@ class Indexer:
                 except (OSError, FileNotFoundError):
                     size_bytes = 0
 
-                logger.warning(
-                    f"Artifact unreadable {relative_path}: {error_reason}"
-                )
+                logger.warning(f"Artifact unreadable {relative_path}: {error_reason}")
                 return ArtifactRef(
                     artifact_key=artifact_key,
                     artifact_class=artifact_class,
                     relative_path=relative_path,
                     content_hash_sha256="",
                     size_bytes=size_bytes,
-                    required_status=self._get_required_status(
-                        artifact_key, manifest
-                    ),
+                    required_status=self._get_required_status(artifact_key, manifest),
                     is_present=False,
                     error_reason=error_reason,
                 )
@@ -176,9 +172,7 @@ class Indexer:
                 relative_path=relative_path,
                 content_hash_sha256=file_hash,
                 size_bytes=file_path.stat().st_size,
-                required_status=self._get_required_status(
-                    artifact_key, manifest
-                ),
+                required_status=self._get_required_status(artifact_key, manifest),
                 is_present=True,
                 error_reason=None,
             )
@@ -191,9 +185,7 @@ class Indexer:
                 relative_path=relative_path,
                 content_hash_sha256="",
                 size_bytes=0,
-                required_status=self._get_required_status(
-                    artifact_key, manifest
-                ),
+                required_status=self._get_required_status(artifact_key, manifest),
                 is_present=False,
                 error_reason="unreadable",
             )
@@ -205,9 +197,7 @@ class Indexer:
                 relative_path=relative_path,
                 content_hash_sha256="",
                 size_bytes=0,
-                required_status=self._get_required_status(
-                    artifact_key, manifest
-                ),
+                required_status=self._get_required_status(artifact_key, manifest),
                 is_present=False,
                 error_reason="unreadable",
             )
@@ -307,9 +297,7 @@ class Indexer:
             True if file_path matches pattern, False otherwise
         """
         relative = (
-            str(file_path.relative_to(feature_dir))
-            if feature_dir
-            else file_path.name
+            str(file_path.relative_to(feature_dir)) if feature_dir else file_path.name
         )
         return fnmatch.fnmatch(relative, pattern)
 

@@ -64,7 +64,6 @@ class PythonOnlyMigration(BaseMigration):
         r"scripts/bash/accept-feature\.sh": "spec-kitty agent feature accept",
         r"\.kittify/scripts/bash/merge-feature\.sh": "spec-kitty agent feature merge",
         r"scripts/bash/merge-feature\.sh": "spec-kitty agent feature merge",
-
         # Task workflow
         r"\.kittify/scripts/bash/tasks-move-to-lane\.sh": "spec-kitty agent move-task",
         r"scripts/bash/tasks-move-to-lane\.sh": "spec-kitty agent move-task",
@@ -80,7 +79,6 @@ class PythonOnlyMigration(BaseMigration):
         r"scripts/bash/validate-task-workflow\.sh": "spec-kitty agent validate-workflow",
         r"\.kittify/scripts/bash/move-task-to-doing\.sh": "spec-kitty agent move-task",
         r"scripts/bash/move-task-to-doing\.sh": "spec-kitty agent move-task",
-
         # Legacy tasks_cli.py references
         r"tasks_cli\.py move": "spec-kitty agent move-task",
         r"tasks_cli\.py list": "spec-kitty agent list-tasks",
@@ -113,16 +111,12 @@ class PythonOnlyMigration(BaseMigration):
         errors: List[str] = []
 
         # Step 1: Detect and remove bash scripts from .kittify
-        bash_changes, bash_warnings = self._remove_bash_scripts(
-            project_path, dry_run
-        )
+        bash_changes, bash_warnings = self._remove_bash_scripts(project_path, dry_run)
         changes.extend(bash_changes)
         warnings.extend(bash_warnings)
 
         # Step 2: Clean up bash scripts in worktrees
-        worktree_changes = self._cleanup_worktree_bash_scripts(
-            project_path, dry_run
-        )
+        worktree_changes = self._cleanup_worktree_bash_scripts(project_path, dry_run)
         changes.extend(worktree_changes)
 
         # Step 2.5: Remove obsolete task helpers
@@ -160,12 +154,16 @@ class PythonOnlyMigration(BaseMigration):
         kittify_bash = project_path / ".kittify" / "scripts" / "bash"
 
         if not kittify_bash.exists():
-            warnings.append("No .kittify/scripts/bash/ directory found - already migrated?")
+            warnings.append(
+                "No .kittify/scripts/bash/ directory found - already migrated?"
+            )
             return changes, warnings
 
         # First, detect custom scripts (not in PACKAGE_SCRIPTS) and warn user
         all_bash_scripts = list(kittify_bash.glob("*.sh"))
-        custom_scripts = [s for s in all_bash_scripts if s.name not in self.PACKAGE_SCRIPTS]
+        custom_scripts = [
+            s for s in all_bash_scripts if s.name not in self.PACKAGE_SCRIPTS
+        ]
 
         if custom_scripts:
             custom_names = [s.name for s in custom_scripts]
@@ -193,10 +191,14 @@ class PythonOnlyMigration(BaseMigration):
             if ps_scripts:
                 for ps_script in ps_scripts:
                     if dry_run:
-                        changes.append(f"Would remove: .kittify/scripts/powershell/{ps_script.name}")
+                        changes.append(
+                            f"Would remove: .kittify/scripts/powershell/{ps_script.name}"
+                        )
                     else:
                         ps_script.unlink()
-                        changes.append(f"Removed: .kittify/scripts/powershell/{ps_script.name}")
+                        changes.append(
+                            f"Removed: .kittify/scripts/powershell/{ps_script.name}"
+                        )
                     scripts_removed += 1
 
         # Remove directories if empty
@@ -236,13 +238,17 @@ class PythonOnlyMigration(BaseMigration):
             scripts_found = list(wt_bash.glob("*.sh"))
             if scripts_found:
                 if dry_run:
-                    changes.append(f"Would remove {len(scripts_found)} scripts from worktree: {worktree.name}")
+                    changes.append(
+                        f"Would remove {len(scripts_found)} scripts from worktree: {worktree.name}"
+                    )
                 else:
                     for script in scripts_found:
                         script.unlink()
                     if not any(wt_bash.iterdir()):
                         wt_bash.rmdir()
-                    changes.append(f"Removed {len(scripts_found)} scripts from worktree: {worktree.name}")
+                    changes.append(
+                        f"Removed {len(scripts_found)} scripts from worktree: {worktree.name}"
+                    )
 
         return changes
 
@@ -258,7 +264,9 @@ class PythonOnlyMigration(BaseMigration):
             return changes, warnings
 
         if dry_run:
-            changes.append("Would remove .kittify/scripts/tasks/ (obsolete task helpers)")
+            changes.append(
+                "Would remove .kittify/scripts/tasks/ (obsolete task helpers)"
+            )
             return changes, warnings
 
         try:
@@ -299,9 +307,13 @@ class PythonOnlyMigration(BaseMigration):
                 if updated:
                     templates_updated += 1
                     if dry_run:
-                        changes.append(f"Would update: {template_path.name} ({replacements} replacements)")
+                        changes.append(
+                            f"Would update: {template_path.name} ({replacements} replacements)"
+                        )
                     else:
-                        changes.append(f"Updated: {template_path.name} ({replacements} replacements)")
+                        changes.append(
+                            f"Updated: {template_path.name} ({replacements} replacements)"
+                        )
             except Exception as e:
                 errors.append(f"Error updating {template_path.name}: {e}")
 

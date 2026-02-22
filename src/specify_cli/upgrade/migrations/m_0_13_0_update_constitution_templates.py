@@ -54,7 +54,9 @@ class UpdateConstitutionTemplatesMigration(BaseMigration):
         """Check if we can read the template from packaged missions."""
         try:
             data_root = files("specify_cli")
-            template_path = data_root.joinpath("missions", self.MISSION_NAME, "command-templates", self.TEMPLATE_FILE)
+            template_path = data_root.joinpath(
+                "missions", self.MISSION_NAME, "command-templates", self.TEMPLATE_FILE
+            )
             if template_path.is_file():
                 return True, ""
         except Exception as e:
@@ -70,7 +72,9 @@ class UpdateConstitutionTemplatesMigration(BaseMigration):
         # Load template from packaged missions
         try:
             data_root = files("specify_cli")
-            template_path = data_root.joinpath("missions", self.MISSION_NAME, "command-templates", self.TEMPLATE_FILE)
+            template_path = data_root.joinpath(
+                "missions", self.MISSION_NAME, "command-templates", self.TEMPLATE_FILE
+            )
 
             if not template_path.is_file():
                 errors.append("Constitution template not found in packaged missions")
@@ -111,20 +115,29 @@ class UpdateConstitutionTemplatesMigration(BaseMigration):
                     continue  # Already up to date
 
                 # Only update if it has the old reference
-                if "run /spec-kitty.plan" in current_content and "Next steps" in current_content:
+                if (
+                    "run /spec-kitty.plan" in current_content
+                    and "Next steps" in current_content
+                ):
                     if dry_run:
-                        changes.append(f"Would update: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}")
+                        changes.append(
+                            f"Would update: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}"
+                        )
                     else:
                         try:
                             slash_cmd.write_text(template_content, encoding="utf-8")
-                            changes.append(f"Updated: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}")
+                            changes.append(
+                                f"Updated: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}"
+                            )
                             agents_updated += 1
                         except Exception as e:
                             errors.append(f"Failed to update {agent_dir}/{subdir}: {e}")
 
         if agents_updated > 0:
             if dry_run:
-                changes.append(f"Would update {agents_updated} agent constitution templates")
+                changes.append(
+                    f"Would update {agents_updated} agent constitution templates"
+                )
             else:
                 changes.append(f"Updated {agents_updated} agent constitution templates")
         else:

@@ -115,15 +115,13 @@ class PopulateSlashCommandsMigration(BaseMigration):
             # Only process if parent directory exists (agent was configured during init)
             if agent_dir.parent.exists():
                 created = self._populate_agent_commands(
-                    command_templates_dir,
-                    agent_dir,
-                    "md",
-                    dry_run,
-                    changes
+                    command_templates_dir, agent_dir, "md", dry_run, changes
                 )
                 if created > 0:
                     agent_name = agent_root.strip(".")
-                    changes.append(f"Created {created} slash commands for {agent_name} from {mission_name}")
+                    changes.append(
+                        f"Created {created} slash commands for {agent_name} from {mission_name}"
+                    )
                     total_created += created
 
         success = len(errors) == 0
@@ -140,7 +138,7 @@ class PopulateSlashCommandsMigration(BaseMigration):
         output_dir: Path,
         extension: str,
         dry_run: bool,
-        changes: List[str]
+        changes: List[str],
     ) -> int:
         """Copy command templates to agent directory."""
         created_count = 0
@@ -155,7 +153,11 @@ class PopulateSlashCommandsMigration(BaseMigration):
 
         # Copy each template
         for template_path in sorted(templates_dir.glob("*.md")):
-            filename = f"spec-kitty.{template_path.stem}.{extension}" if extension else f"spec-kitty.{template_path.stem}"
+            filename = (
+                f"spec-kitty.{template_path.stem}.{extension}"
+                if extension
+                else f"spec-kitty.{template_path.stem}"
+            )
             dest_path = output_dir / filename
 
             # Skip if already exists
@@ -166,7 +168,9 @@ class PopulateSlashCommandsMigration(BaseMigration):
                 changes.append(f"Would create: {dest_path.name}")
             else:
                 # Simple copy - no variable substitution needed for basic setup
-                dest_path.write_text(template_path.read_text(encoding="utf-8"), encoding="utf-8")
+                dest_path.write_text(
+                    template_path.read_text(encoding="utf-8"), encoding="utf-8"
+                )
                 changes.append(f"Created: {dest_path.name}")
 
             created_count += 1

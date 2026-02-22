@@ -50,8 +50,18 @@ def high_severity_conflict():
         severity=Severity.HIGH,
         confidence=0.9,
         candidate_senses=[
-            SenseRef(surface="workspace", scope="mission", definition="test def 1", confidence=0.9),
-            SenseRef(surface="workspace", scope="global", definition="test def 2", confidence=0.8),
+            SenseRef(
+                surface="workspace",
+                scope="mission",
+                definition="test def 1",
+                confidence=0.9,
+            ),
+            SenseRef(
+                surface="workspace",
+                scope="global",
+                definition="test def 2",
+                confidence=0.8,
+            ),
         ],
         context="term 'workspace' has multiple active senses",
     )
@@ -68,8 +78,18 @@ def medium_severity_conflict():
         severity=Severity.MEDIUM,
         confidence=0.6,
         candidate_senses=[
-            SenseRef(surface="utility", scope="mission", definition="test def 1", confidence=0.7),
-            SenseRef(surface="utility", scope="global", definition="test def 2", confidence=0.6),
+            SenseRef(
+                surface="utility",
+                scope="mission",
+                definition="test def 1",
+                confidence=0.7,
+            ),
+            SenseRef(
+                surface="utility",
+                scope="global",
+                definition="test def 2",
+                confidence=0.6,
+            ),
         ],
         context="term 'utility' has multiple active senses",
     )
@@ -131,7 +151,11 @@ class TestOffModeNeverBlocks:
         assert result.effective_strictness == Strictness.OFF
 
     def test_off_allows_mixed_severity(
-        self, mock_context, low_severity_conflict, medium_severity_conflict, high_severity_conflict
+        self,
+        mock_context,
+        low_severity_conflict,
+        medium_severity_conflict,
+        high_severity_conflict,
     ):
         """OFF mode allows generation with mixed-severity conflicts."""
         gate = GenerationGateMiddleware(runtime_override=Strictness.OFF)
@@ -168,7 +192,9 @@ class TestMediumModeBlocksHighSeverity:
 
         assert result == mock_context
 
-    def test_medium_allows_medium_severity(self, mock_context, medium_severity_conflict):
+    def test_medium_allows_medium_severity(
+        self, mock_context, medium_severity_conflict
+    ):
         """MEDIUM mode allows generation with medium-severity conflicts."""
         gate = GenerationGateMiddleware(runtime_override=Strictness.MEDIUM)
         mock_context.conflicts = [medium_severity_conflict]
@@ -190,7 +216,11 @@ class TestMediumModeBlocksHighSeverity:
         assert "high-severity" in str(exc_info.value).lower()
 
     def test_medium_blocks_mixed_with_high(
-        self, mock_context, low_severity_conflict, medium_severity_conflict, high_severity_conflict
+        self,
+        mock_context,
+        low_severity_conflict,
+        medium_severity_conflict,
+        high_severity_conflict,
     ):
         """MEDIUM mode blocks if ANY conflict is high-severity."""
         gate = GenerationGateMiddleware(runtime_override=Strictness.MEDIUM)
@@ -301,7 +331,12 @@ class TestPrecedenceResolution:
                 severity=Severity.HIGH,
                 confidence=0.9,
                 candidate_senses=[
-                    SenseRef(surface="test", scope="mission", definition="def1", confidence=0.9),
+                    SenseRef(
+                        surface="test",
+                        scope="mission",
+                        definition="def1",
+                        confidence=0.9,
+                    ),
                 ],
                 context="test",
             )
@@ -374,7 +409,9 @@ class TestPrecedenceResolution:
         with pytest.raises(BlockedByConflict):
             gate.process(mock_context)
 
-    def test_fallback_to_medium_when_no_config(self, mock_context, high_severity_conflict):
+    def test_fallback_to_medium_when_no_config(
+        self, mock_context, high_severity_conflict
+    ):
         """When no config exists, defaults to MEDIUM."""
         gate = GenerationGateMiddleware(repo_root=Path("/nonexistent"))
         mock_context.conflicts = [high_severity_conflict]
@@ -387,7 +424,9 @@ class TestPrecedenceResolution:
 class TestEventEmission:
     """Test event emission behavior."""
 
-    def test_event_emitted_before_blocking(self, mock_context, high_severity_conflict, monkeypatch):
+    def test_event_emitted_before_blocking(
+        self, mock_context, high_severity_conflict, monkeypatch
+    ):
         """Verify event is emitted BEFORE exception is raised."""
         from specify_cli.glossary import events
 
@@ -409,7 +448,9 @@ class TestEventEmission:
         # Event should be emitted before exception
         assert emission_order == ["event", "exception"]
 
-    def test_event_includes_context_info(self, mock_context, high_severity_conflict, monkeypatch):
+    def test_event_includes_context_info(
+        self, mock_context, high_severity_conflict, monkeypatch
+    ):
         """Event emission includes step_id, mission_id, conflicts, and strictness."""
         from specify_cli.glossary import events
 
@@ -435,7 +476,9 @@ class TestEventEmission:
         assert len(captured_args["conflicts"]) == 1
         assert captured_args["strictness_mode"] == Strictness.MEDIUM
 
-    def test_no_event_when_not_blocking(self, mock_context, low_severity_conflict, monkeypatch):
+    def test_no_event_when_not_blocking(
+        self, mock_context, low_severity_conflict, monkeypatch
+    ):
         """Event is not emitted when generation is allowed."""
         from specify_cli.glossary import events
 
@@ -468,7 +511,9 @@ class TestErrorMessages:
             severity=Severity.HIGH,
             confidence=0.9,
             candidate_senses=[
-                SenseRef(surface="test1", scope="mission", definition="def1", confidence=0.9),
+                SenseRef(
+                    surface="test1", scope="mission", definition="def1", confidence=0.9
+                ),
             ],
             context="test",
         )
@@ -478,7 +523,9 @@ class TestErrorMessages:
             severity=Severity.HIGH,
             confidence=0.9,
             candidate_senses=[
-                SenseRef(surface="test2", scope="mission", definition="def2", confidence=0.9),
+                SenseRef(
+                    surface="test2", scope="mission", definition="def2", confidence=0.9
+                ),
             ],
             context="test",
         )
@@ -524,13 +571,18 @@ class TestErrorMessages:
         message = str(exc_info.value)
         assert "3 unresolved semantic conflict(s)" in message
         # Should NOT mention high-severity (since there are none)
-        assert "high-severity" not in message.lower() or "0 high-severity" in message.lower()
+        assert (
+            "high-severity" not in message.lower()
+            or "0 high-severity" in message.lower()
+        )
 
 
 class TestEdgeCases:
     """Test edge cases and error conditions."""
 
-    def test_no_repo_root_uses_medium_default(self, mock_context, high_severity_conflict):
+    def test_no_repo_root_uses_medium_default(
+        self, mock_context, high_severity_conflict
+    ):
         """When repo_root is None, uses MEDIUM as global default."""
         gate = GenerationGateMiddleware(repo_root=None)
         mock_context.conflicts = [high_severity_conflict]

@@ -39,7 +39,7 @@ class WorktreeAgentsSymlinkMigration(BaseMigration):
             return False
 
         for worktree in worktrees_dir.iterdir():
-            if worktree.is_dir() and not worktree.name.startswith('.'):
+            if worktree.is_dir() and not worktree.name.startswith("."):
                 wt_agents = worktree / ".kittify" / "AGENTS.md"
                 # Check if missing or broken symlink
                 if not wt_agents.exists() and not wt_agents.is_symlink():
@@ -57,7 +57,7 @@ class WorktreeAgentsSymlinkMigration(BaseMigration):
         if not main_agents.exists():
             return (
                 False,
-                "Main repo .kittify/AGENTS.md must exist before creating symlinks"
+                "Main repo .kittify/AGENTS.md must exist before creating symlinks",
             )
 
         return True, ""
@@ -82,7 +82,7 @@ class WorktreeAgentsSymlinkMigration(BaseMigration):
 
         if worktrees_dir.exists():
             for worktree in worktrees_dir.iterdir():
-                if worktree.is_dir() and not worktree.name.startswith('.'):
+                if worktree.is_dir() and not worktree.name.startswith("."):
                     wt_kittify = worktree / ".kittify"
                     wt_agents = wt_kittify / "AGENTS.md"
 

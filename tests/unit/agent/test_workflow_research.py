@@ -37,11 +37,15 @@ def research_task_file(tmp_path: Path) -> Path:
 
     # Create meta.json with research mission and deliverables_path
     meta_file = feature_dir / "meta.json"
-    meta_file.write_text(json.dumps({
-        "mission": "research",
-        "slug": "008-research-feature",
-        "deliverables_path": "docs/research/008-research-feature/"
-    }))
+    meta_file.write_text(
+        json.dumps(
+            {
+                "mission": "research",
+                "slug": "008-research-feature",
+                "deliverables_path": "docs/research/008-research-feature/",
+            }
+        )
+    )
 
     # Create task file
     task_file = tasks_dir / "WP01-research-task.md"
@@ -80,13 +84,14 @@ class TestResearchImplementCommand:
         mock_slug.return_value = "008-research-feature"
 
         # Execute
-        result = runner.invoke(
-            app, ["implement", "WP01", "--agent", "test-agent"]
-        )
+        result = runner.invoke(app, ["implement", "WP01", "--agent", "test-agent"])
 
         # Verify deliverables path is shown in output
         assert result.exit_code == 0
-        assert "docs/research/008-research-feature/" in result.stdout or "research deliverables" in result.stdout.lower()
+        assert (
+            "docs/research/008-research-feature/" in result.stdout
+            or "research deliverables" in result.stdout.lower()
+        )
 
     @patch("specify_cli.cli.commands.agent.workflow.locate_project_root")
     @patch("specify_cli.cli.commands.agent.workflow._find_feature_slug")
@@ -99,9 +104,7 @@ class TestResearchImplementCommand:
         mock_slug.return_value = "008-research-feature"
 
         # Execute
-        result = runner.invoke(
-            app, ["implement", "WP01", "--agent", "test-agent"]
-        )
+        result = runner.invoke(app, ["implement", "WP01", "--agent", "test-agent"])
 
         # Verify warning about kitty-specs
         assert result.exit_code == 0
@@ -119,14 +122,16 @@ class TestResearchImplementCommand:
         mock_slug.return_value = "008-research-feature"
 
         # Execute
-        result = runner.invoke(
-            app, ["implement", "WP01", "--agent", "test-agent"]
-        )
+        result = runner.invoke(app, ["implement", "WP01", "--agent", "test-agent"])
 
         # Should succeed and show research-specific info
         assert result.exit_code == 0
         # Research missions should show deliverables path
-        assert "Research" in result.stdout or "research" in result.stdout.lower() or "docs/research" in result.stdout
+        assert (
+            "Research" in result.stdout
+            or "research" in result.stdout.lower()
+            or "docs/research" in result.stdout
+        )
 
 
 class TestResearchMissionDetection:
@@ -148,10 +153,9 @@ class TestResearchMissionDetection:
 
         # Create meta.json with software-dev mission
         meta_file = feature_dir / "meta.json"
-        meta_file.write_text(json.dumps({
-            "mission": "software-dev",
-            "slug": "008-sw-feature"
-        }))
+        meta_file.write_text(
+            json.dumps({"mission": "software-dev", "slug": "008-sw-feature"})
+        )
 
         # Create task file
         task_file = tasks_dir / "WP01-code-task.md"
@@ -175,9 +179,7 @@ Content
         mock_slug.return_value = "008-sw-feature"
 
         # Execute
-        result = runner.invoke(
-            app, ["implement", "WP01", "--agent", "test-agent"]
-        )
+        result = runner.invoke(app, ["implement", "WP01", "--agent", "test-agent"])
 
         # Should succeed but not show research-specific deliverables info
         assert result.exit_code == 0
@@ -201,20 +203,19 @@ class TestDeliverablesPathInPrompt:
         mock_slug.return_value = "008-research-feature"
 
         # Execute
-        result = runner.invoke(
-            app, ["implement", "WP01", "--agent", "test-agent"]
-        )
+        result = runner.invoke(app, ["implement", "WP01", "--agent", "test-agent"])
 
         assert result.exit_code == 0
 
         # Find the prompt file path from output
         # The output should contain a path to a temp file
         prompt_file_path = None
-        for line in result.stdout.split('\n'):
-            if 'spec-kitty-implement-WP01.md' in line:
+        for line in result.stdout.split("\n"):
+            if "spec-kitty-implement-WP01.md" in line:
                 # Extract the path
                 import re
-                match = re.search(r'(/[^\s]+spec-kitty-implement-WP01\.md)', line)
+
+                match = re.search(r"(/[^\s]+spec-kitty-implement-WP01\.md)", line)
                 if match:
                     prompt_file_path = Path(match.group(1))
                     break
@@ -240,11 +241,15 @@ class TestDeliverablesPathInPrompt:
 
         # Create meta.json with research mission but NO deliverables_path
         meta_file = feature_dir / "meta.json"
-        meta_file.write_text(json.dumps({
-            "mission": "research",
-            "slug": "009-research-no-path"
-            # Note: no deliverables_path field
-        }))
+        meta_file.write_text(
+            json.dumps(
+                {
+                    "mission": "research",
+                    "slug": "009-research-no-path",
+                    # Note: no deliverables_path field
+                }
+            )
+        )
 
         # Create task file
         task_file = tasks_dir / "WP01-task.md"
@@ -268,10 +273,11 @@ Content
         mock_slug.return_value = "009-research-no-path"
 
         # Execute
-        result = runner.invoke(
-            app, ["implement", "WP01", "--agent", "test-agent"]
-        )
+        result = runner.invoke(app, ["implement", "WP01", "--agent", "test-agent"])
 
         assert result.exit_code == 0
         # Should show default path pattern
-        assert "docs/research/009-research-no-path/" in result.stdout or "research" in result.stdout.lower()
+        assert (
+            "docs/research/009-research-no-path/" in result.stdout
+            or "research" in result.stdout.lower()
+        )

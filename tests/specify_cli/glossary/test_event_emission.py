@@ -290,10 +290,23 @@ class TestEventPayloadBuilders:
         event = build_clarification_resolved(
             conflict_id="uuid-1234",
             term_surface="workspace",
-            selected_sense={"surface": "workspace", "scope": "team_domain", "definition": "Git worktree", "confidence": 0.9},
-            actor={"actor_id": "user:alice", "actor_type": "human", "display_name": "Alice"},
+            selected_sense={
+                "surface": "workspace",
+                "scope": "team_domain",
+                "definition": "Git worktree",
+                "confidence": 0.9,
+            },
+            actor={
+                "actor_id": "user:alice",
+                "actor_type": "human",
+                "display_name": "Alice",
+            },
             resolution_mode="interactive",
-            provenance={"source": "user_clarification", "timestamp": "2026-02-16T12:00:00+00:00", "actor_id": "user:alice"},
+            provenance={
+                "source": "user_clarification",
+                "timestamp": "2026-02-16T12:00:00+00:00",
+                "actor_id": "user:alice",
+            },
         )
         assert event["event_type"] == "GlossaryClarificationResolved"
         assert event["conflict_id"] == "uuid-1234"
@@ -304,10 +317,24 @@ class TestEventPayloadBuilders:
         event = build_sense_updated(
             term_surface="workspace",
             scope="team_domain",
-            new_sense={"surface": "workspace", "scope": "team_domain", "definition": "Git worktree", "confidence": 1.0, "status": "active"},
-            actor={"actor_id": "user:alice", "actor_type": "human", "display_name": "Alice"},
+            new_sense={
+                "surface": "workspace",
+                "scope": "team_domain",
+                "definition": "Git worktree",
+                "confidence": 1.0,
+                "status": "active",
+            },
+            actor={
+                "actor_id": "user:alice",
+                "actor_type": "human",
+                "display_name": "Alice",
+            },
             update_type="create",
-            provenance={"source": "user_clarification", "timestamp": "2026-02-16T12:00:00+00:00", "actor_id": "user:alice"},
+            provenance={
+                "source": "user_clarification",
+                "timestamp": "2026-02-16T12:00:00+00:00",
+                "actor_id": "user:alice",
+            },
         )
         assert event["event_type"] == "GlossarySenseUpdated"
         assert event["update_type"] == "create"
@@ -333,13 +360,26 @@ class TestEventPayloadBuilders:
         """All event builders generate a timestamp if not provided."""
         builders = [
             lambda: build_glossary_scope_activated("s", "v", "m", "r"),
-            lambda: build_term_candidate_observed("t", "s", "a", 0.5, "m", "c", "m", "r"),
-            lambda: build_semantic_check_evaluated("s", "m", "r", [], "low", 1.0, "medium", "proceed", False),
+            lambda: build_term_candidate_observed(
+                "t", "s", "a", 0.5, "m", "c", "m", "r"
+            ),
+            lambda: build_semantic_check_evaluated(
+                "s", "m", "r", [], "low", 1.0, "medium", "proceed", False
+            ),
             lambda: build_generation_blocked("s", "m", "r", [], "medium", "medium"),
             lambda: build_clarification_requested("q", "t", [], "low", "m", "r", "s"),
             lambda: build_clarification_resolved("c", "t", {}, {}, "interactive", {}),
             lambda: build_sense_updated("t", "s", {}, {}, "create", {}),
-            lambda: build_step_checkpointed("m", "r", "s", "medium", [], "a" * 64, "pre_generation_gate", str(uuid.uuid4())),
+            lambda: build_step_checkpointed(
+                "m",
+                "r",
+                "s",
+                "medium",
+                [],
+                "a" * 64,
+                "pre_generation_gate",
+                str(uuid.uuid4()),
+            ),
         ]
         for builder in builders:
             event = builder()
@@ -351,12 +391,23 @@ class TestEventPayloadBuilders:
         events = [
             build_glossary_scope_activated("s", "v", "m", "r"),
             build_term_candidate_observed("t", "s", "a", 0.5, "m", "c", "m", "r"),
-            build_semantic_check_evaluated("s", "m", "r", [], "low", 1.0, "medium", "proceed", False),
+            build_semantic_check_evaluated(
+                "s", "m", "r", [], "low", 1.0, "medium", "proceed", False
+            ),
             build_generation_blocked("s", "m", "r", [], "medium", "medium"),
             build_clarification_requested("q", "t", [], "low", "m", "r", "s"),
             build_clarification_resolved("c", "t", {}, {}, "interactive", {}),
             build_sense_updated("t", "s", {}, {}, "create", {}),
-            build_step_checkpointed("m", "r", "s", "medium", [], "a" * 64, "pre_generation_gate", str(uuid.uuid4())),
+            build_step_checkpointed(
+                "m",
+                "r",
+                "s",
+                "medium",
+                [],
+                "a" * 64,
+                "pre_generation_gate",
+                str(uuid.uuid4()),
+            ),
         ]
         for event in events:
             # Must not raise
@@ -400,7 +451,9 @@ class TestEventPersistence:
     def test_local_append_sorted_keys(self, tmp_path):
         """Events are written with sorted keys for deterministic output."""
         log_path = tmp_path / "test.events.jsonl"
-        _local_append_event({"z_field": 1, "a_field": 2, "event_type": "Test"}, log_path)
+        _local_append_event(
+            {"z_field": 1, "a_field": 2, "event_type": "Test"}, log_path
+        )
 
         line = log_path.read_text().strip()
         parsed = json.loads(line)
@@ -450,7 +503,7 @@ class TestEventPersistence:
         log_path = tmp_path / "test.events.jsonl"
         log_path.write_text(
             '{"event_type": "A", "val": 1}\n'
-            'not valid json\n'
+            "not valid json\n"
             '{"event_type": "B", "val": 2}\n'
         )
         events = list(read_events(log_path))
@@ -459,12 +512,7 @@ class TestEventPersistence:
     def test_read_events_skips_blank_lines(self, tmp_path):
         """Blank lines are skipped."""
         log_path = tmp_path / "test.events.jsonl"
-        log_path.write_text(
-            '{"event_type": "A"}\n'
-            '\n'
-            '   \n'
-            '{"event_type": "B"}\n'
-        )
+        log_path.write_text('{"event_type": "A"}\n\n   \n{"event_type": "B"}\n')
         events = list(read_events(log_path))
         assert len(events) == 2
 
@@ -521,7 +569,9 @@ class TestFallbackLocalPersistence:
         assert len(events) == 1
         assert events[0]["event_type"] == "TestEvent"
 
-    def test_emit_with_repo_root_writes_jsonl(self, tmp_path, sample_extracted_term, mock_context):
+    def test_emit_with_repo_root_writes_jsonl(
+        self, tmp_path, sample_extracted_term, mock_context
+    ):
         assert EVENTS_AVAILABLE is False
         emit_term_candidate_observed(
             term=sample_extracted_term,
@@ -532,7 +582,9 @@ class TestFallbackLocalPersistence:
         jsonl_files = list(events_dir.glob("*.events.jsonl"))
         assert len(jsonl_files) == 1
 
-    def test_emit_without_repo_root_does_not_write(self, sample_extracted_term, mock_context, tmp_path):
+    def test_emit_without_repo_root_does_not_write(
+        self, sample_extracted_term, mock_context, tmp_path
+    ):
         assert EVENTS_AVAILABLE is False
         emit_term_candidate_observed(
             term=sample_extracted_term,
@@ -551,7 +603,9 @@ class TestFallbackLocalPersistence:
 class TestTermCandidateObservedEmission:
     """Tests for emit_term_candidate_observed()."""
 
-    def test_emits_event_returns_dict(self, tmp_path, sample_extracted_term, mock_context):
+    def test_emits_event_returns_dict(
+        self, tmp_path, sample_extracted_term, mock_context
+    ):
         """TermCandidateObserved returns event dict."""
         event = emit_term_candidate_observed(
             term=sample_extracted_term,
@@ -573,7 +627,9 @@ class TestTermCandidateObservedEmission:
         assert event is not None
         assert event["event_type"] == "TermCandidateObserved"
 
-    def test_event_has_correct_fields(self, tmp_path, sample_extracted_term, mock_context):
+    def test_event_has_correct_fields(
+        self, tmp_path, sample_extracted_term, mock_context
+    ):
         """Event payload has all Feature 007 required fields."""
         event = emit_term_candidate_observed(
             term=sample_extracted_term,
@@ -581,9 +637,16 @@ class TestTermCandidateObservedEmission:
             repo_root=tmp_path,
         )
         required_fields = [
-            "event_type", "term", "source_step", "actor_id",
-            "confidence", "extraction_method", "context",
-            "mission_id", "run_id", "timestamp",
+            "event_type",
+            "term",
+            "source_step",
+            "actor_id",
+            "confidence",
+            "extraction_method",
+            "context",
+            "mission_id",
+            "run_id",
+            "timestamp",
         ]
         for field_name in required_fields:
             assert field_name in event, f"Missing field: {field_name}"
@@ -825,7 +888,9 @@ class TestClarificationEmission:
 class TestEventOrdering:
     """Tests for event ordering across middleware pipeline."""
 
-    def test_pipeline_event_order_returns_correct_types(self, tmp_path, mock_context, sample_extracted_term, sample_conflict):
+    def test_pipeline_event_order_returns_correct_types(
+        self, tmp_path, mock_context, sample_extracted_term, sample_conflict
+    ):
         """Events are emitted in pipeline order: extraction -> check -> gate."""
         # 1. Extraction emits TermCandidateObserved
         e1 = emit_term_candidate_observed(
@@ -856,7 +921,9 @@ class TestEventOrdering:
         assert e2["event_type"] == "SemanticCheckEvaluated"
         assert e3["event_type"] == "GenerationBlockedBySemanticConflict"
 
-    def test_full_pipeline_with_clarification_types(self, tmp_path, mock_context, sample_extracted_term, sample_conflict):
+    def test_full_pipeline_with_clarification_types(
+        self, tmp_path, mock_context, sample_extracted_term, sample_conflict
+    ):
         """Full pipeline returns all 5 event types in correct order."""
         # 1. Scope activation
         e1 = emit_scope_activated(
@@ -943,14 +1010,18 @@ class TestClarificationMiddlewareEmitsEvents:
     - GlossarySenseUpdated when user provides custom sense
     """
 
-    def test_deferred_emits_clarification_requested(self, tmp_path, mock_context, sample_conflict):
+    def test_deferred_emits_clarification_requested(
+        self, tmp_path, mock_context, sample_conflict
+    ):
         """ClarificationMiddleware emits GlossaryClarificationRequested when deferring."""
         from specify_cli.glossary.clarification import ClarificationMiddleware
 
         mock_context.conflicts = [sample_conflict]
 
         # Patch at the events module level (clarification.py uses local imports)
-        with patch("specify_cli.glossary.events.emit_clarification_requested") as mock_emit:
+        with patch(
+            "specify_cli.glossary.events.emit_clarification_requested"
+        ) as mock_emit:
             mock_emit.return_value = {"event_type": "GlossaryClarificationRequested"}
             middleware = ClarificationMiddleware(repo_root=tmp_path)
             middleware.process(mock_context)
@@ -959,7 +1030,9 @@ class TestClarificationMiddlewareEmitsEvents:
             assert call_kwargs[1]["conflict"] == sample_conflict
             assert call_kwargs[1]["repo_root"] == tmp_path
 
-    def test_select_emits_clarification_resolved(self, tmp_path, mock_context, sample_conflict):
+    def test_select_emits_clarification_resolved(
+        self, tmp_path, mock_context, sample_conflict
+    ):
         """ClarificationMiddleware emits GlossaryClarificationResolved on selection."""
         from specify_cli.glossary.clarification import ClarificationMiddleware
 
@@ -971,9 +1044,17 @@ class TestClarificationMiddlewareEmitsEvents:
         middleware = ClarificationMiddleware(repo_root=tmp_path, prompt_fn=fake_prompt)
 
         # Patch at the events module level (clarification.py uses local imports)
-        with patch("specify_cli.glossary.events.emit_clarification_requested") as mock_requested, \
-             patch("specify_cli.glossary.events.emit_clarification_resolved") as mock_emit:
-            mock_requested.return_value = {"event_type": "GlossaryClarificationRequested"}
+        with (
+            patch(
+                "specify_cli.glossary.events.emit_clarification_requested"
+            ) as mock_requested,
+            patch(
+                "specify_cli.glossary.events.emit_clarification_resolved"
+            ) as mock_emit,
+        ):
+            mock_requested.return_value = {
+                "event_type": "GlossaryClarificationRequested"
+            }
             mock_emit.return_value = {"event_type": "GlossaryClarificationResolved"}
             middleware.process(mock_context)
             mock_requested.assert_called_once()
@@ -983,7 +1064,9 @@ class TestClarificationMiddlewareEmitsEvents:
             assert call_kwargs["resolution_mode"] == "interactive"
             assert call_kwargs["repo_root"] == tmp_path
 
-    def test_custom_sense_emits_sense_updated(self, tmp_path, mock_context, sample_conflict):
+    def test_custom_sense_emits_sense_updated(
+        self, tmp_path, mock_context, sample_conflict
+    ):
         """ClarificationMiddleware emits GlossarySenseUpdated on custom definition."""
         from specify_cli.glossary.clarification import ClarificationMiddleware
 
@@ -1030,7 +1113,9 @@ class TestClarificationMiddlewareEmitsEvents:
         senses = store.lookup("workspace", ("team_domain",))
         assert any(s.definition == "My custom definition" for s in senses)
 
-    def test_middleware_removes_resolved_conflicts(self, tmp_path, mock_context, sample_conflict):
+    def test_middleware_removes_resolved_conflicts(
+        self, tmp_path, mock_context, sample_conflict
+    ):
         """Resolved conflicts are removed from context.conflicts."""
         from specify_cli.glossary.clarification import ClarificationMiddleware
 
@@ -1123,6 +1208,7 @@ class TestCanonicalEventContracts:
         """EVENTS_AVAILABLE reflects whether spec-kitty-events glossary is importable."""
         try:
             import spec_kitty_events.glossary.events  # noqa: F401
+
             pkg_available = True
         except (ImportError, ModuleNotFoundError):
             pkg_available = False
@@ -1134,8 +1220,10 @@ class TestCanonicalEventContracts:
 
         # Simulate EVENTS_AVAILABLE = True by temporarily adding _pkg_append_event
         mock_pkg_append = MagicMock()
-        with patch.object(events_mod, "EVENTS_AVAILABLE", True), \
-             patch.object(events_mod, "_pkg_append_event", mock_pkg_append, create=True):
+        with (
+            patch.object(events_mod, "EVENTS_AVAILABLE", True),
+            patch.object(events_mod, "_pkg_append_event", mock_pkg_append, create=True),
+        ):
             event_dict = {"event_type": "Test"}
             log_path = Path("/fake/path.jsonl")
             append_event(event_dict, log_path)
@@ -1144,6 +1232,7 @@ class TestCanonicalEventContracts:
     def test_append_event_writes_disk_when_unavailable(self, tmp_path):
         """When EVENTS_AVAILABLE is False, append_event falls back to local JSONL."""
         import specify_cli.glossary.events as events_mod
+
         with patch.object(events_mod, "EVENTS_AVAILABLE", False):
             log_path = tmp_path / "test.jsonl"
             append_event({"event_type": "Test"}, log_path)
@@ -1158,11 +1247,14 @@ class TestCanonicalEventContracts:
         mock_instance = MagicMock()
         mock_canonical_cls.return_value = mock_instance
 
-        with patch.object(events_mod, "EVENTS_AVAILABLE", True), \
-             patch.object(events_mod, "_pkg_append_event", mock_pkg_append, create=True):
+        with (
+            patch.object(events_mod, "EVENTS_AVAILABLE", True),
+            patch.object(events_mod, "_pkg_append_event", mock_pkg_append, create=True),
+        ):
             event_dict = {"event_type": "TermCandidateObserved", "term": "workspace"}
-            _persist_event(event_dict, tmp_path, "test-mission",
-                           canonical_cls=mock_canonical_cls)
+            _persist_event(
+                event_dict, tmp_path, "test-mission", canonical_cls=mock_canonical_cls
+            )
 
             # Verify canonical class was instantiated with the event dict
             mock_canonical_cls.assert_called_once_with(**event_dict)
@@ -1191,10 +1283,16 @@ class TestCanonicalEventContracts:
         mock_instance = MagicMock()
         mock_canonical_cls.return_value = mock_instance
 
-        with patch.object(events_mod, "EVENTS_AVAILABLE", True), \
-             patch.object(events_mod, "_pkg_append_event", mock_pkg_append, create=True), \
-             patch.object(events_mod, "_CanonicTermCandidateObserved",
-                          mock_canonical_cls, create=True):
+        with (
+            patch.object(events_mod, "EVENTS_AVAILABLE", True),
+            patch.object(events_mod, "_pkg_append_event", mock_pkg_append, create=True),
+            patch.object(
+                events_mod,
+                "_CanonicTermCandidateObserved",
+                mock_canonical_cls,
+                create=True,
+            ),
+        ):
             event = emit_term_candidate_observed(
                 term=sample_extracted_term,
                 context=mock_context,
@@ -1220,10 +1318,16 @@ class TestCanonicalEventContracts:
         mock_instance = MagicMock()
         mock_canonical_cls.return_value = mock_instance
 
-        with patch.object(events_mod, "EVENTS_AVAILABLE", True), \
-             patch.object(events_mod, "_pkg_append_event", mock_pkg_append, create=True), \
-             patch.object(events_mod, "_CanonicGenerationBlockedBySemanticConflict",
-                          mock_canonical_cls, create=True):
+        with (
+            patch.object(events_mod, "EVENTS_AVAILABLE", True),
+            patch.object(events_mod, "_pkg_append_event", mock_pkg_append, create=True),
+            patch.object(
+                events_mod,
+                "_CanonicGenerationBlockedBySemanticConflict",
+                mock_canonical_cls,
+                create=True,
+            ),
+        ):
             event = emit_generation_blocked_event(
                 step_id="s",
                 mission_id="m",
@@ -1247,10 +1351,16 @@ class TestCanonicalEventContracts:
         mock_instance = MagicMock()
         mock_canonical_cls.return_value = mock_instance
 
-        with patch.object(events_mod, "EVENTS_AVAILABLE", True), \
-             patch.object(events_mod, "_pkg_append_event", mock_pkg_append, create=True), \
-             patch.object(events_mod, "_CanonicGlossaryScopeActivated",
-                          mock_canonical_cls, create=True):
+        with (
+            patch.object(events_mod, "EVENTS_AVAILABLE", True),
+            patch.object(events_mod, "_pkg_append_event", mock_pkg_append, create=True),
+            patch.object(
+                events_mod,
+                "_CanonicGlossaryScopeActivated",
+                mock_canonical_cls,
+                create=True,
+            ),
+        ):
             event = emit_scope_activated(
                 scope_id="team_domain",
                 glossary_version_id="v3",
@@ -1267,6 +1377,7 @@ class TestCanonicalEventContracts:
     def test_canonical_import_path_correct(self):
         """The import path for canonical classes is spec_kitty_events.glossary.events."""
         import specify_cli.glossary.events as mod
+
         assert hasattr(mod, "EVENTS_AVAILABLE")
         assert mod.EVENTS_AVAILABLE is False
 
@@ -1348,7 +1459,9 @@ class TestAll8EventTypes:
         assert callable(events.emit_sense_updated)
         assert callable(events.emit_step_checkpointed)
 
-    def test_all_8_event_types_return_correct_event_type(self, tmp_path, mock_context, sample_conflict, sample_extracted_term):
+    def test_all_8_event_types_return_correct_event_type(
+        self, tmp_path, mock_context, sample_conflict, sample_extracted_term
+    ):
         """Each emitter returns dict with correct event_type field."""
         from specify_cli.glossary.checkpoint import create_checkpoint
 
@@ -1356,48 +1469,62 @@ class TestAll8EventTypes:
 
         # 1. GlossaryScopeActivated
         events_returned["scope"] = emit_scope_activated(
-            scope_id="team_domain", glossary_version_id="v1",
-            mission_id="m", run_id="r",
+            scope_id="team_domain",
+            glossary_version_id="v1",
+            mission_id="m",
+            run_id="r",
         )
 
         # 2. TermCandidateObserved
         events_returned["term"] = emit_term_candidate_observed(
-            term=sample_extracted_term, context=mock_context,
+            term=sample_extracted_term,
+            context=mock_context,
         )
 
         # 3. SemanticCheckEvaluated
         events_returned["check"] = emit_semantic_check_evaluated(
-            context=mock_context, conflicts=[],
+            context=mock_context,
+            conflicts=[],
         )
 
         # 4. GenerationBlockedBySemanticConflict
         events_returned["blocked"] = emit_generation_blocked_event(
-            step_id="s", mission_id="m",
-            conflicts=[sample_conflict], strictness_mode="medium",
+            step_id="s",
+            mission_id="m",
+            conflicts=[sample_conflict],
+            strictness_mode="medium",
         )
 
         # 5. GlossaryClarificationRequested
         events_returned["requested"] = emit_clarification_requested(
-            conflict=sample_conflict, context=mock_context,
+            conflict=sample_conflict,
+            context=mock_context,
         )
 
         # 6. GlossaryClarificationResolved
         events_returned["resolved"] = emit_clarification_resolved(
-            conflict_id="c-1", conflict=sample_conflict,
+            conflict_id="c-1",
+            conflict=sample_conflict,
             selected_sense=sample_conflict.candidate_senses[0],
             context=mock_context,
         )
 
         # 7. GlossarySenseUpdated
         events_returned["sense"] = emit_sense_updated(
-            conflict=sample_conflict, custom_definition="Custom def",
-            scope_value="team_domain", context=mock_context,
+            conflict=sample_conflict,
+            custom_definition="Custom def",
+            scope_value="team_domain",
+            context=mock_context,
         )
 
         # 8. StepCheckpointed
         ckpt = create_checkpoint(
-            mission_id="m", run_id="r", step_id="s",
-            strictness=Strictness.MEDIUM, scope_refs=[], inputs={},
+            mission_id="m",
+            run_id="r",
+            step_id="s",
+            strictness=Strictness.MEDIUM,
+            scope_refs=[],
+            inputs={},
             cursor="pre_generation_gate",
         )
         events_returned["checkpoint"] = emit_step_checkpointed(ckpt)
@@ -1428,7 +1555,9 @@ class TestAll8EventTypes:
 class TestEventEmissionErrorHandling:
     """Tests for error handling in event emission."""
 
-    def test_emission_does_not_crash_on_error(self, mock_context, sample_extracted_term):
+    def test_emission_does_not_crash_on_error(
+        self, mock_context, sample_extracted_term
+    ):
         """Event emission failure returns None, does not raise.
 
         In fallback mode, emit_* attempts local JSONL writes. Bad paths
@@ -1446,17 +1575,25 @@ class TestEventEmissionErrorHandling:
         assert event is not None
         assert event["event_type"] == "TermCandidateObserved"
 
-    def test_emission_error_when_available_falls_back_local(self, mock_context, sample_extracted_term, tmp_path):
+    def test_emission_error_when_available_falls_back_local(
+        self, mock_context, sample_extracted_term, tmp_path
+    ):
         """When canonical persistence fails, local JSONL fallback still returns an event."""
         import specify_cli.glossary.events as events_mod
 
         mock_pkg_append = MagicMock(side_effect=OSError("disk full"))
         mock_canonical_cls = MagicMock()
 
-        with patch.object(events_mod, "EVENTS_AVAILABLE", True), \
-             patch.object(events_mod, "_pkg_append_event", mock_pkg_append, create=True), \
-             patch.object(events_mod, "_CanonicTermCandidateObserved",
-                          mock_canonical_cls, create=True):
+        with (
+            patch.object(events_mod, "EVENTS_AVAILABLE", True),
+            patch.object(events_mod, "_pkg_append_event", mock_pkg_append, create=True),
+            patch.object(
+                events_mod,
+                "_CanonicTermCandidateObserved",
+                mock_canonical_cls,
+                create=True,
+            ),
+        ):
             event = emit_term_candidate_observed(
                 term=sample_extracted_term,
                 context=mock_context,
@@ -1496,7 +1633,11 @@ class TestEventLogEdgeCases:
     def test_unicode_in_events(self, tmp_path):
         """Unicode characters are handled correctly."""
         log_path = tmp_path / "unicode.events.jsonl"
-        event = {"event_type": "Test", "term": "Arbeitsbereich", "notes": "Glossar-Eintrag"}
+        event = {
+            "event_type": "Test",
+            "term": "Arbeitsbereich",
+            "notes": "Glossar-Eintrag",
+        }
         _local_append_event(event, log_path)
 
         events = list(read_events(log_path))

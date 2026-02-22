@@ -5,7 +5,9 @@ from pathlib import Path
 import pytest
 
 from specify_cli.core.git_ops import run_command
-from specify_cli.upgrade.migrations.m_0_13_1_exclude_worktrees import ExcludeWorktreesMigration
+from specify_cli.upgrade.migrations.m_0_13_1_exclude_worktrees import (
+    ExcludeWorktreesMigration,
+)
 
 
 @pytest.fixture(name="_git_identity")

@@ -50,7 +50,9 @@ class TestCharacterDetection:
 
         # Each issue should be a tuple of (line_number, column, character, replacement)
         for issue in issues:
-            assert len(issue) == 4, f"Issue should be 4-tuple, got {len(issue)}: {issue}"
+            assert len(issue) == 4, (
+                f"Issue should be 4-tuple, got {len(issue)}: {issue}"
+            )
             line_num, col, char, repl = issue
             assert isinstance(line_num, int), "Line number should be int"
             assert isinstance(col, int), "Column should be int"
@@ -62,21 +64,43 @@ class TestCharacterDetection:
         issue_map = {char: repl for _, _, char, repl in issues}
 
         # Smart quotes
-        assert '\u2019' in issue_map and issue_map['\u2019'] == "'", "RIGHT SINGLE QUOTE should map to '"
-        assert '\u201c' in issue_map and issue_map['\u201c'] == '"', "LEFT DOUBLE QUOTE should map to \""
-        assert '\u201d' in issue_map and issue_map['\u201d'] == '"', "RIGHT DOUBLE QUOTE should map to \""
+        assert "\u2019" in issue_map and issue_map["\u2019"] == "'", (
+            "RIGHT SINGLE QUOTE should map to '"
+        )
+        assert "\u201c" in issue_map and issue_map["\u201c"] == '"', (
+            'LEFT DOUBLE QUOTE should map to "'
+        )
+        assert "\u201d" in issue_map and issue_map["\u201d"] == '"', (
+            'RIGHT DOUBLE QUOTE should map to "'
+        )
 
         # Mathematical symbols
-        assert '\u00b1' in issue_map and issue_map['\u00b1'] == "+/-", "PLUS-MINUS should map to '+/-'"
-        assert '\u00b0' in issue_map and issue_map['\u00b0'] == " degrees", "DEGREE should map to ' degrees'"
-        assert '\u00d7' in issue_map and issue_map['\u00d7'] == "x", "MULTIPLICATION should map to 'x'"
+        assert "\u00b1" in issue_map and issue_map["\u00b1"] == "+/-", (
+            "PLUS-MINUS should map to '+/-'"
+        )
+        assert "\u00b0" in issue_map and issue_map["\u00b0"] == " degrees", (
+            "DEGREE should map to ' degrees'"
+        )
+        assert "\u00d7" in issue_map and issue_map["\u00d7"] == "x", (
+            "MULTIPLICATION should map to 'x'"
+        )
 
         # Other symbols
-        assert '\u2026' in issue_map and issue_map['\u2026'] == "...", "ELLIPSIS should map to '...'"
-        assert '\u2022' in issue_map and issue_map['\u2022'] == "*", "BULLET should map to '*'"
-        assert '\u00a9' in issue_map and issue_map['\u00a9'] == "(C)", "COPYRIGHT should map to '(C)'"
-        assert '\u2122' in issue_map and issue_map['\u2122'] == "(TM)", "TRADEMARK should map to '(TM)'"
-        assert '\u00ae' in issue_map and issue_map['\u00ae'] == "(R)", "REGISTERED should map to '(R)'"
+        assert "\u2026" in issue_map and issue_map["\u2026"] == "...", (
+            "ELLIPSIS should map to '...'"
+        )
+        assert "\u2022" in issue_map and issue_map["\u2022"] == "*", (
+            "BULLET should map to '*'"
+        )
+        assert "\u00a9" in issue_map and issue_map["\u00a9"] == "(C)", (
+            "COPYRIGHT should map to '(C)'"
+        )
+        assert "\u2122" in issue_map and issue_map["\u2122"] == "(TM)", (
+            "TRADEMARK should map to '(TM)'"
+        )
+        assert "\u00ae" in issue_map and issue_map["\u00ae"] == "(R)", (
+            "REGISTERED should map to '(R)'"
+        )
 
 
 class TestTextSanitization:
@@ -93,16 +117,20 @@ class TestTextSanitization:
         assert result == expected, f"Expected: {expected!r}\nGot: {result!r}"
 
         # No extra whitespace added
-        assert result.count(' ') == expected.count(' '), "Whitespace count should match"
+        assert result.count(" ") == expected.count(" "), "Whitespace count should match"
 
         # No content lost (all words preserved)
         original_words = original.split()
         result_words = result.split()
-        assert len(result_words) >= len(original_words) - 2, "Should preserve most words"
+        assert len(result_words) >= len(original_words) - 2, (
+            "Should preserve most words"
+        )
 
     def test_sanitization_is_idempotent(self):
         """Verify running sanitization twice produces same result."""
-        original = "User\u2019s \u201ctest\u201d \u2014 with 72\u00b0F and \u00b1 symbols"
+        original = (
+            "User\u2019s \u201ctest\u201d \u2014 with 72\u00b0F and \u00b1 symbols"
+        )
 
         first_pass = sanitize_markdown_text(original)
         second_pass = sanitize_markdown_text(first_pass)
@@ -118,7 +146,7 @@ class TestFileSanitization:
         """Verify file sanitization creates .bak file before modifying."""
         with TemporaryDirectory() as tmpdir:
             test_file = Path(tmpdir) / "test.md"
-            test_file.write_text("User\u2019s test", encoding='utf-8')
+            test_file.write_text("User\u2019s test", encoding="utf-8")
 
             # Sanitize with backup
             was_modified, error = sanitize_file(test_file, backup=True, dry_run=False)
@@ -128,14 +156,18 @@ class TestFileSanitization:
             assert error is None, f"Should not have error, got: {error}"
 
             # Backup file should exist
-            backup = test_file.with_suffix(test_file.suffix + '.bak')
+            backup = test_file.with_suffix(test_file.suffix + ".bak")
             assert backup.exists(), "Backup file should exist"
 
             # Backup should contain original content
-            assert backup.read_text() == "User\u2019s test", "Backup should have original content"
+            assert backup.read_text() == "User\u2019s test", (
+                "Backup should have original content"
+            )
 
             # Main file should contain sanitized content
-            assert test_file.read_text() == "User's test", "Main file should be sanitized"
+            assert test_file.read_text() == "User's test", (
+                "Main file should be sanitized"
+            )
 
 
 class TestCp1252Encoding:
@@ -148,11 +180,11 @@ class TestCp1252Encoding:
 
             # Write file with Windows-1252 encoding
             bad_content = "User\u2019s \u201ctest\u201d"
-            test_file.write_bytes(bad_content.encode('cp1252'))
+            test_file.write_bytes(bad_content.encode("cp1252"))
 
             # Verify it's broken for UTF-8
             with pytest.raises(UnicodeDecodeError):
-                test_file.read_text(encoding='utf-8')
+                test_file.read_text(encoding="utf-8")
 
             # Sanitize the file
             was_modified, error = sanitize_file(test_file, backup=True, dry_run=False)
@@ -161,11 +193,13 @@ class TestCp1252Encoding:
             assert error is None, f"Should not have error, got: {error}"
 
             # File should now be valid UTF-8
-            fixed_content = test_file.read_text(encoding='utf-8')
-            assert fixed_content == 'User\'s "test"', f"Content should be fixed, got: {fixed_content!r}"
+            fixed_content = test_file.read_text(encoding="utf-8")
+            assert fixed_content == 'User\'s "test"', (
+                f"Content should be fixed, got: {fixed_content!r}"
+            )
 
             # Backup should exist
-            backup = test_file.with_suffix('.md.bak')
+            backup = test_file.with_suffix(".md.bak")
             assert backup.exists(), "Backup should exist"
 
 
@@ -194,23 +228,31 @@ class TestDirectorySanitization:
             (base / "ignore.txt").write_text("User\u2019s test")
 
             # Sanitize directory
-            results = sanitize_directory(base, pattern="**/*.md", backup=False, dry_run=False)
+            results = sanitize_directory(
+                base, pattern="**/*.md", backup=False, dry_run=False
+            )
 
             # Should find all 3 markdown files
-            assert len(results) == 3, f"Expected 3 files, got {len(results)}: {list(results.keys())}"
+            assert len(results) == 3, (
+                f"Expected 3 files, got {len(results)}: {list(results.keys())}"
+            )
 
             # All files should be modified
-            assert all(was_modified for was_modified, _ in results.values()), \
+            assert all(was_modified for was_modified, _ in results.values()), (
                 "All files should be marked as modified"
+            )
 
             # Verify all files are fixed
             for f in files:
                 content = f.read_text()
-                assert content == "User's test", f"File {f} should be fixed, got: {content!r}"
+                assert content == "User's test", (
+                    f"File {f} should be fixed, got: {content!r}"
+                )
 
             # Verify .txt file was not modified
-            assert (base / "ignore.txt").read_text() == "User\u2019s test", \
+            assert (base / "ignore.txt").read_text() == "User\u2019s test", (
                 ".txt file should not be sanitized"
+            )
 
 
 class TestDryRunMode:
@@ -233,11 +275,15 @@ class TestDryRunMode:
             assert error is None, f"Should not have error, got: {error}"
 
             # File should be unchanged
-            assert test_file.read_text() == original_content, "File content should not change"
-            assert test_file.stat().st_mtime == original_mtime, "File mtime should not change"
+            assert test_file.read_text() == original_content, (
+                "File content should not change"
+            )
+            assert test_file.stat().st_mtime == original_mtime, (
+                "File mtime should not change"
+            )
 
             # No backup should be created
-            backup = test_file.with_suffix('.md.bak')
+            backup = test_file.with_suffix(".md.bak")
             assert not backup.exists(), "Backup should not be created in dry-run mode"
 
 
@@ -259,7 +305,9 @@ class TestPerformance:
             sanitize_file(test_file, backup=False, dry_run=True)
             elapsed = (time.time() - start) * 1000  # Convert to ms
 
-            assert elapsed < 50, f"Single file validation took {elapsed:.1f}ms, should be < 50ms"
+            assert elapsed < 50, (
+                f"Single file validation took {elapsed:.1f}ms, should be < 50ms"
+            )
 
     def test_directory_scan_performance(self):
         """Verify directory scan of 100 files completes in < 2 seconds."""
@@ -276,7 +324,9 @@ class TestPerformance:
                 file.write_text(f"File {i} with User\u2019s test")
 
             start = time.time()
-            results = sanitize_directory(base, pattern="**/*.md", backup=False, dry_run=True)
+            results = sanitize_directory(
+                base, pattern="**/*.md", backup=False, dry_run=True
+            )
             elapsed = time.time() - start
 
             assert len(results) == 100, f"Should find 100 files, got {len(results)}"
@@ -291,15 +341,18 @@ class TestEdgeCases:
         """Verify sanitizer handles binary files gracefully."""
         with TemporaryDirectory() as tmpdir:
             binary_file = Path(tmpdir) / "image.md"  # .md extension but binary content
-            binary_file.write_bytes(b'\x00\x01\x02\xff\xfe\xfd')
+            binary_file.write_bytes(b"\x00\x01\x02\xff\xfe\xfd")
 
             # Should not crash
-            was_modified, error = sanitize_file(binary_file, backup=False, dry_run=False)
+            was_modified, error = sanitize_file(
+                binary_file, backup=False, dry_run=False
+            )
 
             # Should either handle gracefully or report error
             if error:
-                assert "encoding" in error.lower() or "decode" in error.lower(), \
+                assert "encoding" in error.lower() or "decode" in error.lower(), (
                     f"Error should mention encoding issue: {error}"
+                )
             else:
                 # If no error, file should still exist
                 assert binary_file.exists()
@@ -343,12 +396,17 @@ class TestEdgeCases:
             readonly_file.chmod(stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
 
             try:
-                was_modified, error = sanitize_file(readonly_file, backup=False, dry_run=False)
+                was_modified, error = sanitize_file(
+                    readonly_file, backup=False, dry_run=False
+                )
 
                 # Should report error
                 assert error is not None, "Should report permission error"
-                assert "permission" in error.lower() or "denied" in error.lower() or "read-only" in error.lower(), \
-                    f"Error should mention permission issue: {error}"
+                assert (
+                    "permission" in error.lower()
+                    or "denied" in error.lower()
+                    or "read-only" in error.lower()
+                ), f"Error should mention permission issue: {error}"
             finally:
                 # Restore permissions for cleanup
                 try:
@@ -365,7 +423,9 @@ class TestRegressions:
         """Verify existing clean files remain untouched by validation."""
         with TemporaryDirectory() as tmpdir:
             clean_file = Path(tmpdir) / "clean.md"
-            original_content = "This is clean ASCII content with no problematic characters."
+            original_content = (
+                "This is clean ASCII content with no problematic characters."
+            )
             clean_file.write_text(original_content)
 
             original_mtime = clean_file.stat().st_mtime
@@ -375,7 +435,9 @@ class TestRegressions:
 
             assert was_modified is False, "Clean file should not be marked as modified"
             assert error is None, "Clean file should not produce error"
-            assert clean_file.read_text() == original_content, "Content should be identical"
+            assert clean_file.read_text() == original_content, (
+                "Content should be identical"
+            )
             # Note: mtime may change even if content unchanged due to file access
 
     def test_backup_never_overwrites_existing(self):
@@ -384,7 +446,7 @@ class TestRegressions:
             test_file = Path(tmpdir) / "test.md"
             test_file.write_text("User\u2019s test")
 
-            backup_file = test_file.with_suffix('.md.bak')
+            backup_file = test_file.with_suffix(".md.bak")
             existing_backup_content = "EXISTING BACKUP CONTENT"
             backup_file.write_text(existing_backup_content)
 

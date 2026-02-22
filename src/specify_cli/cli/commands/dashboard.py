@@ -7,7 +7,11 @@ from typing import Optional
 
 import typer
 
-from specify_cli.cli.helpers import check_version_compatibility, console, get_project_root_or_exit
+from specify_cli.cli.helpers import (
+    check_version_compatibility,
+    console,
+    get_project_root_or_exit,
+)
 from specify_cli.dashboard import ensure_dashboard_running, stop_dashboard
 
 
@@ -31,17 +35,25 @@ def dashboard(
 
     if kill:
         stopped, message = stop_dashboard(project_root)
-        console.print(f"[green]✅ {message}[/green]" if stopped else f"[yellow]⚠️  {message}[/yellow]")
+        console.print(
+            f"[green]✅ {message}[/green]"
+            if stopped
+            else f"[yellow]⚠️  {message}[/yellow]"
+        )
         console.print()
         return
 
     if port is not None and not (1 <= port <= 65535):
-        console.print("[red]❌ Invalid port specified. Use a value between 1 and 65535.[/red]")
+        console.print(
+            "[red]❌ Invalid port specified. Use a value between 1 and 65535.[/red]"
+        )
         console.print()
         raise typer.Exit(1)
 
     try:
-        dashboard_url, active_port, started = ensure_dashboard_running(project_root, preferred_port=port)
+        dashboard_url, active_port, started = ensure_dashboard_running(
+            project_root, preferred_port=port
+        )
     except FileNotFoundError as exc:  # Missing .kittify directory
         console.print("[red]❌ Dashboard metadata not found[/red]")
         console.print(f"   {exc}")
@@ -59,10 +71,16 @@ def dashboard(
             console.print()
             console.print("[yellow]💡 Try these steps:[/yellow]")
             if port:
-                console.print(f"  1. Use a different port: [cyan]spec-kitty dashboard --port {port + 1}[/cyan]")
+                console.print(
+                    f"  1. Use a different port: [cyan]spec-kitty dashboard --port {port + 1}[/cyan]"
+                )
             else:
-                console.print("  1. Use a specific port: [cyan]spec-kitty dashboard --port 9238[/cyan]")
-            console.print("  2. Or kill existing dashboard: [cyan]spec-kitty dashboard --kill[/cyan]")
+                console.print(
+                    "  1. Use a specific port: [cyan]spec-kitty dashboard --port 9238[/cyan]"
+                )
+            console.print(
+                "  2. Or kill existing dashboard: [cyan]spec-kitty dashboard --kill[/cyan]"
+            )
             console.print()
         else:
             console.print("[red]❌ Unable to start dashboard[/red]")
@@ -86,7 +104,9 @@ def dashboard(
     console.print(f"  [bold cyan]URL:[/bold cyan] {dashboard_url}")
     console.print(f"  [bold cyan]Port:[/bold cyan] {active_port}")
     if port is not None and port != active_port:
-        console.print(f"  [yellow]⚠️ Requested port {port} was unavailable; using {active_port} instead.[/yellow]")
+        console.print(
+            f"  [yellow]⚠️ Requested port {port} was unavailable; using {active_port} instead.[/yellow]"
+        )
     console.print()
 
     status_msg = (

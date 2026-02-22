@@ -110,32 +110,24 @@ class TestLockExclusive:
 class TestPopulateFromPackage:
     """populate_from_package() copies package assets to target."""
 
-    def test_copies_missions(
-        self, tmp_path: Path, fake_assets: Path
-    ) -> None:
+    def test_copies_missions(self, tmp_path: Path, fake_assets: Path) -> None:
         target = tmp_path / "staging"
         populate_from_package(target)
         assert (target / "missions" / "software-dev" / "mission.yaml").exists()
         assert (target / "missions" / "research" / "mission.yaml").exists()
 
-    def test_copies_scripts(
-        self, tmp_path: Path, fake_assets: Path
-    ) -> None:
+    def test_copies_scripts(self, tmp_path: Path, fake_assets: Path) -> None:
         target = tmp_path / "staging"
         populate_from_package(target)
         assert (target / "scripts" / "validate.py").exists()
 
-    def test_copies_agents_md(
-        self, tmp_path: Path, fake_assets: Path
-    ) -> None:
+    def test_copies_agents_md(self, tmp_path: Path, fake_assets: Path) -> None:
         target = tmp_path / "staging"
         populate_from_package(target)
         assert (target / "AGENTS.md").exists()
         assert (target / "AGENTS.md").read_text() == "# Agents"
 
-    def test_creates_target_dir(
-        self, tmp_path: Path, fake_assets: Path
-    ) -> None:
+    def test_creates_target_dir(self, tmp_path: Path, fake_assets: Path) -> None:
         target = tmp_path / "nonexistent" / "staging"
         populate_from_package(target)
         assert target.is_dir()
@@ -167,9 +159,7 @@ class TestEnsureRuntimeFastPath:
         (cache_dir / "version.lock").write_text(FAKE_VERSION)
 
         # Track whether populate_from_package is called
-        with patch(
-            "specify_cli.runtime.bootstrap.populate_from_package"
-        ) as mock_pop:
+        with patch("specify_cli.runtime.bootstrap.populate_from_package") as mock_pop:
             ensure_runtime()
             mock_pop.assert_not_called()
 
@@ -189,9 +179,7 @@ class TestEnsureRuntimeFastPath:
         cache_dir.mkdir(parents=True)
         (cache_dir / "version.lock").write_text(FAKE_VERSION)
 
-        with patch(
-            "specify_cli.runtime.bootstrap._lock_exclusive"
-        ) as mock_lock:
+        with patch("specify_cli.runtime.bootstrap._lock_exclusive") as mock_lock:
             ensure_runtime()
             mock_lock.assert_not_called()
 
@@ -302,9 +290,7 @@ class TestEnsureRuntimeSlowPath:
             lock_that_creates_version,
         )
 
-        with patch(
-            "specify_cli.runtime.bootstrap.populate_from_package"
-        ) as mock_pop:
+        with patch("specify_cli.runtime.bootstrap.populate_from_package") as mock_pop:
             ensure_runtime()
             # populate_from_package should NOT be called -- double-check caught it
             mock_pop.assert_not_called()
@@ -388,7 +374,9 @@ class TestEnsureRuntimeVersionLockWrittenLast:
             write_order.append("merge")
             # At this point version.lock should NOT exist yet
             version_file = fake_home / "cache" / "version.lock"
-            assert not version_file.exists(), "version.lock written before merge completed"
+            assert not version_file.exists(), (
+                "version.lock written before merge completed"
+            )
 
         monkeypatch.setattr(
             "specify_cli.runtime.bootstrap.merge_package_assets",
@@ -458,7 +446,9 @@ class TestInterruptedUpdateRecovery:
 
         # User data preserved
         assert (fake_home / "config.yaml").read_text() == "user: settings"
-        assert (fake_home / "missions" / "custom" / "mine.yaml").read_text() == "my mission"
+        assert (
+            fake_home / "missions" / "custom" / "mine.yaml"
+        ).read_text() == "my mission"
 
     def test_empty_kittify_treated_as_needing_bootstrap(
         self,

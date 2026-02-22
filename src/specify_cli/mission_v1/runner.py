@@ -93,7 +93,9 @@ class MissionModel:
         )
 
 
-def _sanitize_transition_guards(transitions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _sanitize_transition_guards(
+    transitions: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     """Sanitize transition guard entries for MarkupMachine runtime.
 
     Keep only compiled callables. Drop string guards (both expression strings
@@ -132,6 +134,7 @@ def _sanitize_states(states: list[Any]) -> list[Any]:
             cleaned_state["on_exit"] = state["on_exit"]
         cleaned_states.append(cleaned_state)
     return cleaned_states
+
 
 class StateMachineMission:
     """v1 state machine mission backed by ``transitions.MarkupMachine``.

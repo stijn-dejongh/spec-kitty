@@ -46,7 +46,10 @@ class UpdateSlashCommandsMigration(BaseMigration):
                 # Check for bash/PowerShell scripts
                 if ".kittify/scripts/bash/" in content or "scripts/bash/" in content:
                     return True
-                if ".kittify/scripts/powershell/" in content or "scripts/powershell/" in content:
+                if (
+                    ".kittify/scripts/powershell/" in content
+                    or "scripts/powershell/" in content
+                ):
                     return True
                 # Check for subdirectory violations (feature 007)
                 if "tasks/planned/" in content or "tasks/doing/" in content:
@@ -129,18 +132,26 @@ class UpdateSlashCommandsMigration(BaseMigration):
                 if dry_run:
                     changes.append(f"Would update {agent_root}: {dest_path.name}")
                 else:
-                    dest_path.write_text(template_path.read_text(encoding="utf-8"), encoding="utf-8")
+                    dest_path.write_text(
+                        template_path.read_text(encoding="utf-8"), encoding="utf-8"
+                    )
                     updated_count += 1
 
             if updated_count > 0:
                 agent_name = agent_root.strip(".")
-                changes.append(f"Updated {updated_count} slash commands for {agent_name}")
+                changes.append(
+                    f"Updated {updated_count} slash commands for {agent_name}"
+                )
                 total_updated += updated_count
 
         if total_updated > 0:
-            changes.append(f"Total: Updated {total_updated} slash commands from {mission_name} mission")
+            changes.append(
+                f"Total: Updated {total_updated} slash commands from {mission_name} mission"
+            )
             changes.append("Slash commands now use Python CLI (no bash scripts)")
-            changes.append("Slash commands now enforce flat tasks/ structure (feature 007)")
+            changes.append(
+                "Slash commands now enforce flat tasks/ structure (feature 007)"
+            )
 
         commands_dir = project_path / ".kittify" / "commands"
         if commands_dir.exists():

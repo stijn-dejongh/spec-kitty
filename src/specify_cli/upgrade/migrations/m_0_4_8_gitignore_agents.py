@@ -74,7 +74,9 @@ class GitignoreAgentsMigration(BaseMigration):
         existing_content = ""
         if gitignore.exists():
             try:
-                existing_content = gitignore.read_text(encoding="utf-8-sig", errors="ignore")
+                existing_content = gitignore.read_text(
+                    encoding="utf-8-sig", errors="ignore"
+                )
             except OSError as e:
                 errors.append(f"Failed to read .gitignore: {e}")
                 return MigrationResult(success=False, errors=errors)

@@ -50,7 +50,8 @@ def missing_columns_csv(tmp_path: Path) -> Path:
     """CSV file with missing columns."""
     csv_file = tmp_path / "test.csv"
     csv_file.write_text(
-        "timestamp,citation,key_finding\n" "2025-01-25T10:00:00,Citation,Finding\n", encoding="utf-8"
+        "timestamp,citation,key_finding\n2025-01-25T10:00:00,Citation,Finding\n",
+        encoding="utf-8",
     )
     return csv_file
 
@@ -88,7 +89,14 @@ def csv_with_comments(tmp_path: Path) -> Path:
     return csv_file
 
 
-EXPECTED_COLUMNS = ["timestamp", "source_type", "citation", "key_finding", "confidence", "notes"]
+EXPECTED_COLUMNS = [
+    "timestamp",
+    "source_type",
+    "citation",
+    "key_finding",
+    "confidence",
+    "notes",
+]
 
 
 def test_validate_correct_schema(correct_schema_csv):

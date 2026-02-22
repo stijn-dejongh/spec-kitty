@@ -32,7 +32,11 @@ from specify_cli.dossier.api import (
     SnapshotExportResponse,
 )
 from specify_cli.dossier.snapshot import save_snapshot, compute_snapshot
-from specify_cli.dossier.models import ArtifactRef, MissionDossier, MissionDossierSnapshot
+from specify_cli.dossier.models import (
+    ArtifactRef,
+    MissionDossier,
+    MissionDossierSnapshot,
+)
 
 
 class TestDossierHTTPRuntime:
@@ -149,7 +153,9 @@ class TestDossierHTTPRuntime:
         for item in response.artifacts:
             assert item.required_status == "required"
 
-    def test_artifact_detail_endpoint_reconstructs_from_snapshot(self, temp_feature_dir):
+    def test_artifact_detail_endpoint_reconstructs_from_snapshot(
+        self, temp_feature_dir
+    ):
         """Verify detail endpoint can reconstruct artifact from snapshot."""
         handler = DossierAPIHandler(temp_feature_dir.parent.parent)
         response = handler.handle_dossier_artifact_detail(
@@ -212,5 +218,10 @@ class TestDossierHTTPRuntime:
             for field in required_fields:
                 assert field in summary, f"Summary missing field: {field}"
                 # Verify non-None for critical fields
-                if field in ("artifact_key", "artifact_class", "relative_path", "required_status"):
+                if field in (
+                    "artifact_key",
+                    "artifact_class",
+                    "relative_path",
+                    "required_status",
+                ):
                     assert summary[field] is not None, f"Field {field} is None"

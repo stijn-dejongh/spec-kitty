@@ -289,7 +289,9 @@ def test_check_wp_staleness_old_commit(git_repo_with_main: Path):
     )
 
     # Calculate timestamp 12 hours ago as Unix timestamp
-    old_timestamp = str(int((datetime.now(timezone.utc) - timedelta(hours=12)).timestamp()))
+    old_timestamp = str(
+        int((datetime.now(timezone.utc) - timedelta(hours=12)).timestamp())
+    )
 
     env = os.environ.copy()
     env["GIT_AUTHOR_DATE"] = f"@{old_timestamp}"
@@ -335,7 +337,9 @@ def test_check_wp_staleness_recent_commit(git_repo_with_main: Path):
     )
 
     # Calculate timestamp 2 minutes ago as Unix timestamp
-    recent_timestamp = str(int((datetime.now(timezone.utc) - timedelta(minutes=2)).timestamp()))
+    recent_timestamp = str(
+        int((datetime.now(timezone.utc) - timedelta(minutes=2)).timestamp())
+    )
 
     env = os.environ.copy()
     env["GIT_AUTHOR_DATE"] = f"@{recent_timestamp}"
@@ -393,7 +397,9 @@ def test_stale_detection_with_master_branch_old_commit(git_repo_with_master: Pat
     )
 
     # Calculate timestamp 15 minutes ago as Unix timestamp
-    old_timestamp = str(int((datetime.now(timezone.utc) - timedelta(minutes=15)).timestamp()))
+    old_timestamp = str(
+        int((datetime.now(timezone.utc) - timedelta(minutes=15)).timestamp())
+    )
 
     env = os.environ.copy()
     env["GIT_AUTHOR_DATE"] = f"@{old_timestamp}"

@@ -4,11 +4,19 @@ import pytest
 from datetime import datetime
 
 from specify_cli.glossary.models import (
-    TermSurface, TermSense, Provenance, SenseStatus, ConflictType, Severity
+    TermSurface,
+    TermSense,
+    Provenance,
+    SenseStatus,
+    ConflictType,
+    Severity,
 )
 from specify_cli.glossary.extraction import ExtractedTerm
 from specify_cli.glossary.conflict import (
-    classify_conflict, score_severity, create_conflict, make_sense_ref
+    classify_conflict,
+    score_severity,
+    create_conflict,
+    make_sense_ref,
 )
 
 
@@ -139,8 +147,12 @@ def test_classify_conflict_inconsistent(
     assert conflict_type is None
 
     # With LLM output but no contradiction (conservative heuristic), should be None
-    llm_output = "The workspace is a git worktree directory used for feature development."
-    conflict_type = classify_conflict(sample_term, single_sense, llm_output_text=llm_output)
+    llm_output = (
+        "The workspace is a git worktree directory used for feature development."
+    )
+    conflict_type = classify_conflict(
+        sample_term, single_sense, llm_output_text=llm_output
+    )
     assert conflict_type is None  # Conservative: heuristic returns False for now
 
     # Note: Full INCONSISTENT detection will be enhanced in WP06

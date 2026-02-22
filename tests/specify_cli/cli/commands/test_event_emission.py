@@ -58,7 +58,9 @@ class DummyVCS:
 def _force_main_repo(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "specify_cli.core.context_validation.get_current_context",
-        lambda: SimpleNamespace(location=ExecutionContext.MAIN_REPO, worktree_name=None),
+        lambda: SimpleNamespace(
+            location=ExecutionContext.MAIN_REPO, worktree_name=None
+        ),
     )
 
 
@@ -89,7 +91,9 @@ def _write_wp(path: Path, wp_id: str, lane: str = "planned") -> None:
     )
 
 
-def test_implement_emits_wp_status_changed(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_implement_emits_wp_status_changed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
     (repo_root / ".kittify").mkdir()
@@ -101,7 +105,9 @@ def test_implement_emits_wp_status_changed(monkeypatch: pytest.MonkeyPatch, tmp_
     (feature_dir / "meta.json").write_text("{}\n", encoding="utf-8")
 
     _force_main_repo(monkeypatch)
-    monkeypatch.setattr("specify_cli.cli.commands.implement.find_repo_root", lambda: repo_root)
+    monkeypatch.setattr(
+        "specify_cli.cli.commands.implement.find_repo_root", lambda: repo_root
+    )
     monkeypatch.setattr(
         "specify_cli.cli.commands.implement.detect_feature_context",
         lambda _feature=None: ("001", "001-demo-feature"),
@@ -152,14 +158,18 @@ def test_implement_emits_wp_status_changed(monkeypatch: pytest.MonkeyPatch, tmp_
     assert kwargs["to_lane"] == "in_progress"
 
 
-def test_merge_emits_wp_status_changed(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_merge_emits_wp_status_changed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
     (repo_root / ".git").mkdir()
     (repo_root / ".worktrees").mkdir()
 
     _force_main_repo(monkeypatch)
-    monkeypatch.setattr("specify_cli.cli.commands.merge.find_repo_root", lambda: repo_root)
+    monkeypatch.setattr(
+        "specify_cli.cli.commands.merge.find_repo_root", lambda: repo_root
+    )
     monkeypatch.setattr(
         "specify_cli.cli.commands.merge.detect_worktree_structure",
         lambda _repo_root, _feature_slug: "workspace-per-wp",
@@ -167,7 +177,11 @@ def test_merge_emits_wp_status_changed(monkeypatch: pytest.MonkeyPatch, tmp_path
     monkeypatch.setattr(
         "specify_cli.cli.commands.merge.find_wp_worktrees",
         lambda _repo_root, _feature_slug: [
-            (repo_root / ".worktrees" / "001-demo-feature-WP01", "WP01", "001-demo-feature-WP01"),
+            (
+                repo_root / ".worktrees" / "001-demo-feature-WP01",
+                "WP01",
+                "001-demo-feature-WP01",
+            ),
         ],
     )
     monkeypatch.setattr(
@@ -204,7 +218,9 @@ def test_merge_emits_wp_status_changed(monkeypatch: pytest.MonkeyPatch, tmp_path
     emit_mock = MagicMock()
     monkeypatch.setattr("specify_cli.sync.events.emit_wp_status_changed", emit_mock)
 
-    result = runner.invoke(cli_app, ["merge", "--feature", "001-demo-feature", "--target", "main"])
+    result = runner.invoke(
+        cli_app, ["merge", "--feature", "001-demo-feature", "--target", "main"]
+    )
     assert result.exit_code == 0
     emit_mock.assert_called_once()
     kwargs = emit_mock.call_args.kwargs
@@ -213,12 +229,16 @@ def test_merge_emits_wp_status_changed(monkeypatch: pytest.MonkeyPatch, tmp_path
     assert kwargs["to_lane"] == "for_review"
 
 
-def test_accept_emits_wp_status_changed(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_accept_emits_wp_status_changed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
 
     _force_main_repo(monkeypatch)
-    monkeypatch.setattr("specify_cli.cli.commands.accept.find_repo_root", lambda: repo_root)
+    monkeypatch.setattr(
+        "specify_cli.cli.commands.accept.find_repo_root", lambda: repo_root
+    )
     monkeypatch.setattr(
         "specify_cli.cli.commands.accept.detect_feature_slug",
         lambda _repo_root: "001-demo-feature",
@@ -260,7 +280,9 @@ def test_accept_emits_wp_status_changed(monkeypatch: pytest.MonkeyPatch, tmp_pat
     emit_mock = MagicMock()
     monkeypatch.setattr("specify_cli.sync.events.emit_wp_status_changed", emit_mock)
 
-    result = runner.invoke(cli_app, ["accept", "--feature", "001-demo-feature", "--allow-fail"])
+    result = runner.invoke(
+        cli_app, ["accept", "--feature", "001-demo-feature", "--allow-fail"]
+    )
     assert result.exit_code == 0
     emit_mock.assert_called_once()
     kwargs = emit_mock.call_args.kwargs
@@ -269,12 +291,16 @@ def test_accept_emits_wp_status_changed(monkeypatch: pytest.MonkeyPatch, tmp_pat
     assert kwargs["to_lane"] == "done"
 
 
-def test_accept_error_emits_error_logged(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_accept_error_emits_error_logged(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
 
     _force_main_repo(monkeypatch)
-    monkeypatch.setattr("specify_cli.cli.commands.accept.find_repo_root", lambda: repo_root)
+    monkeypatch.setattr(
+        "specify_cli.cli.commands.accept.find_repo_root", lambda: repo_root
+    )
     monkeypatch.setattr(
         "specify_cli.cli.commands.accept.detect_feature_slug",
         lambda _repo_root: "001-demo-feature",
@@ -296,7 +322,9 @@ def test_accept_error_emits_error_logged(monkeypatch: pytest.MonkeyPatch, tmp_pa
     emit_mock.assert_called_once()
 
 
-def test_finalize_tasks_emits_wp_created_only(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_finalize_tasks_emits_wp_created_only(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     """finalize-tasks emits WPCreated but NOT FeatureCreated (moved to create-feature)."""
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
@@ -307,7 +335,9 @@ def test_finalize_tasks_emits_wp_created_only(monkeypatch: pytest.MonkeyPatch, t
     wp_path = tasks_dir / "WP01-test.md"
     _write_wp(wp_path, "WP01")
 
-    monkeypatch.setattr("specify_cli.cli.commands.agent.feature.locate_project_root", lambda: repo_root)
+    monkeypatch.setattr(
+        "specify_cli.cli.commands.agent.feature.locate_project_root", lambda: repo_root
+    )
     monkeypatch.setattr(
         "specify_cli.cli.commands.agent.feature._find_feature_directory",
         lambda _repo_root, _cwd: feature_dir,
@@ -331,8 +361,12 @@ def test_finalize_tasks_emits_wp_created_only(monkeypatch: pytest.MonkeyPatch, t
 
     feature_created = MagicMock()
     wp_created = MagicMock()
-    monkeypatch.setattr("specify_cli.cli.commands.agent.feature.emit_feature_created", feature_created)
-    monkeypatch.setattr("specify_cli.cli.commands.agent.feature.emit_wp_created", wp_created)
+    monkeypatch.setattr(
+        "specify_cli.cli.commands.agent.feature.emit_feature_created", feature_created
+    )
+    monkeypatch.setattr(
+        "specify_cli.cli.commands.agent.feature.emit_wp_created", wp_created
+    )
 
     result = runner.invoke(cli_app, ["agent", "feature", "finalize-tasks"])
     assert result.exit_code == 0
@@ -340,7 +374,9 @@ def test_finalize_tasks_emits_wp_created_only(monkeypatch: pytest.MonkeyPatch, t
     wp_created.assert_called_once()
 
 
-def test_orchestrate_emits_wp_assigned_and_dependency_resolved(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_orchestrate_emits_wp_assigned_and_dependency_resolved(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     assigned = MagicMock()
     resolved = MagicMock()
     monkeypatch.setattr("specify_cli.sync.events.emit_wp_assigned", assigned)
@@ -350,7 +386,9 @@ def test_orchestrate_emits_wp_assigned_and_dependency_resolved(monkeypatch: pyte
         assigned(wp_id="WP01", agent_id="agent", phase="implementation", retry_count=0)
         resolved(wp_id="WP02", dependency_wp_id="WP01", resolution_type="completed")
 
-    monkeypatch.setattr("specify_cli.cli.commands.orchestrate.start_orchestration", fake_start)
+    monkeypatch.setattr(
+        "specify_cli.cli.commands.orchestrate.start_orchestration", fake_start
+    )
 
     result = runner.invoke(cli_app, ["orchestrate", "--feature", "001-demo-feature"])
     assert result.exit_code == 0

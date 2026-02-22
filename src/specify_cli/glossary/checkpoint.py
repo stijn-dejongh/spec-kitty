@@ -173,7 +173,10 @@ def load_checkpoint(
                 continue
             if mission_id is not None and event_payload.get("mission_id") != mission_id:
                 continue
-            if retry_token is not None and event_payload.get("retry_token") != retry_token:
+            if (
+                retry_token is not None
+                and event_payload.get("retry_token") != retry_token
+            ):
                 continue
 
             try:

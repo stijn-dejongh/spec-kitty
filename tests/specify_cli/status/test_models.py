@@ -246,9 +246,7 @@ class TestStatusEvent:
 
 
 class TestStatusSnapshot:
-    def test_to_dict_round_trip(
-        self, sample_status_snapshot: StatusSnapshot
-    ) -> None:
+    def test_to_dict_round_trip(self, sample_status_snapshot: StatusSnapshot) -> None:
         d = sample_status_snapshot.to_dict()
         restored = StatusSnapshot.from_dict(d)
         assert restored.feature_slug == sample_status_snapshot.feature_slug

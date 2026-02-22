@@ -446,7 +446,9 @@ class TestEdgeCases:
     def test_worktree_name_with_hyphens(self, tmp_path: Path):
         """Test worktree detection with complex names."""
         (tmp_path / ".kittify").mkdir()
-        worktree_path = tmp_path / ".worktrees" / "015-first-class-jujutsu-vcs-integration-WP08"
+        worktree_path = (
+            tmp_path / ".worktrees" / "015-first-class-jujutsu-vcs-integration-WP08"
+        )
         worktree_path.mkdir(parents=True)
 
         ctx = detect_execution_context(cwd=worktree_path)

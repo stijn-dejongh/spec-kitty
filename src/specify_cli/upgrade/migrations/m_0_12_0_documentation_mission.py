@@ -98,7 +98,9 @@ class InstallDocumentationMission(BaseMigration):
         source_mission = self._find_source_mission()
 
         if source_mission is None:
-            errors.append("Could not find documentation mission source in spec-kitty installation")
+            errors.append(
+                "Could not find documentation mission source in spec-kitty installation"
+            )
             return MigrationResult(success=False, errors=errors)
 
         # Destination
@@ -106,7 +108,10 @@ class InstallDocumentationMission(BaseMigration):
 
         # Check if destination already exists
         if dest_mission.exists() and (dest_mission / "mission.yaml").exists():
-            return MigrationResult(success=True, changes_made=["Documentation mission already installed (skipped)"])
+            return MigrationResult(
+                success=True,
+                changes_made=["Documentation mission already installed (skipped)"],
+            )
 
         # Ensure missions directory exists
         if not missions_dir.exists():
@@ -118,7 +123,9 @@ class InstallDocumentationMission(BaseMigration):
 
         # Copy mission directory
         if dry_run:
-            changes.append("Would copy documentation mission to .kittify/missions/documentation/")
+            changes.append(
+                "Would copy documentation mission to .kittify/missions/documentation/"
+            )
         else:
             try:
                 shutil.copytree(source_mission, dest_mission)

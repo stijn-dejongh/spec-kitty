@@ -3,6 +3,7 @@
 Provides per-event error parsing, categorization, actionable summaries,
 and JSON failure report export.
 """
+
 import gzip
 import json
 from collections import Counter
@@ -53,6 +54,7 @@ def categorize_error(error_string: str) -> str:
 # Per-event result
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class BatchEventResult:
     """Result of a single event within a batch response.
@@ -63,6 +65,7 @@ class BatchEventResult:
         error: Human-readable error message (only for rejected events).
         error_category: Categorised reason (only for rejected events).
     """
+
     event_id: str
     status: str  # "success", "duplicate", "rejected"
     error: Optional[str] = None
@@ -72,6 +75,7 @@ class BatchEventResult:
 # ---------------------------------------------------------------------------
 # Aggregate result
 # ---------------------------------------------------------------------------
+
 
 class BatchSyncResult:
     """Result of a batch sync operation.
@@ -113,6 +117,7 @@ class BatchSyncResult:
 # Actionable summary
 # ---------------------------------------------------------------------------
 
+
 def format_sync_summary(result: BatchSyncResult) -> str:
     """Build a human-readable, actionable summary string.
 
@@ -145,6 +150,7 @@ def format_sync_summary(result: BatchSyncResult) -> str:
 # ---------------------------------------------------------------------------
 # Report generation
 # ---------------------------------------------------------------------------
+
 
 def generate_failure_report(result: BatchSyncResult) -> dict:
     """Build a JSON-serialisable failure report dictionary.
@@ -181,6 +187,7 @@ def write_failure_report(report_path: Path, result: BatchSyncResult) -> None:
 # ---------------------------------------------------------------------------
 # Core sync
 # ---------------------------------------------------------------------------
+
 
 def _parse_event_results(
     raw_results: list[dict],

@@ -283,8 +283,9 @@ class TestWorkspaceOperations:
             text=True,
         )
 
-        assert "feature-WP01" in bookmark_result.stdout, \
+        assert "feature-WP01" in bookmark_result.stdout, (
             f"Bookmark 'feature-WP01' not found in: {bookmark_result.stdout}"
+        )
 
     def test_create_workspace_bookmark_usable_as_base(self, jj_repo, jj_vcs):
         """Bookmark created by workspace should be usable as base for dependent WPs.
@@ -310,19 +311,21 @@ class TestWorkspaceOperations:
             repo_root=jj_repo,
         )
 
-        assert r6.success is True, \
-            f"WP06 based on WP01 bookmark failed: {r6.error}"
+        assert r6.success is True, f"WP06 based on WP01 bookmark failed: {r6.error}"
 
         # Verify WP06 has WP01's content
-        assert (wp06_path / "wp01_file.txt").exists(), \
+        assert (wp06_path / "wp01_file.txt").exists(), (
             "WP06 should inherit files from WP01"
+        )
 
     def test_remove_workspace_deletes_bookmark(self, jj_repo, jj_vcs):
         """remove_workspace should also delete the associated bookmark."""
         workspace_path = jj_repo / ".worktrees" / "feature-WP-remove"
 
         # Create workspace (which creates bookmark)
-        r = jj_vcs.create_workspace(workspace_path, "feature-WP-remove", repo_root=jj_repo)
+        r = jj_vcs.create_workspace(
+            workspace_path, "feature-WP-remove", repo_root=jj_repo
+        )
         assert r.success is True, f"Create failed: {r.error}"
 
         # Verify bookmark exists
@@ -344,8 +347,9 @@ class TestWorkspaceOperations:
             capture_output=True,
             text=True,
         )
-        assert "feature-WP-remove" not in list_result2.stdout, \
+        assert "feature-WP-remove" not in list_result2.stdout, (
             f"Bookmark should have been deleted but found in: {list_result2.stdout}"
+        )
 
 
 # =============================================================================
@@ -707,7 +711,7 @@ Caused by: No such file or directory (os error 2)"""
 
     def test_ignores_hint_messages(self):
         """Should ignore 'Hint:' messages."""
-        stderr = 'Hint: Inspect the changes with `jj diff --from abc123`.'
+        stderr = "Hint: Inspect the changes with `jj diff --from abc123`."
         error = _extract_jj_error(stderr)
         assert error is None
 

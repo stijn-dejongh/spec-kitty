@@ -302,7 +302,9 @@ We believe in clear specifications."""
 
         # Verify some expected sections exist
         section_headings = [s.heading for s in result]
-        assert "Purpose" in section_headings or "Technical Standards" in section_headings
+        assert (
+            "Purpose" in section_headings or "Technical Standards" in section_headings
+        )
 
         # Verify at least some sections have structured data
         structured_sections = [s for s in result if not s.requires_ai]

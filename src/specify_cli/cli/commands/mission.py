@@ -9,7 +9,11 @@ import typer
 from rich.panel import Panel
 from rich.table import Table
 
-from specify_cli.cli.helpers import check_version_compatibility, console, get_project_root_or_exit
+from specify_cli.cli.helpers import (
+    check_version_compatibility,
+    console,
+    get_project_root_or_exit,
+)
 from specify_cli.mission import (
     Mission,
     MissionError,
@@ -65,7 +69,9 @@ def _list_active_worktrees(repo_root: Path) -> List[str]:
     return active
 
 
-def _mission_details_lines(mission: Mission, include_description: bool = True) -> List[str]:
+def _mission_details_lines(
+    mission: Mission, include_description: bool = True
+) -> List[str]:
     """Return formatted mission details."""
     details: List[str] = [
         f"[cyan]Name:[/cyan] {mission.name}",
@@ -105,9 +111,15 @@ def _mission_details_lines(mission: Mission, include_description: bool = True) -
 
     if mission.config.mcp_tools:
         details.extend(["", "[cyan]MCP Tools:[/cyan]"])
-        details.append(f"  • Required: {', '.join(mission.config.mcp_tools.required) or 'none'}")
-        details.append(f"  • Recommended: {', '.join(mission.config.mcp_tools.recommended) or 'none'}")
-        details.append(f"  • Optional: {', '.join(mission.config.mcp_tools.optional) or 'none'}")
+        details.append(
+            f"  • Required: {', '.join(mission.config.mcp_tools.required) or 'none'}"
+        )
+        details.append(
+            f"  • Recommended: {', '.join(mission.config.mcp_tools.recommended) or 'none'}"
+        )
+        details.append(
+            f"  • Optional: {', '.join(mission.config.mcp_tools.optional) or 'none'}"
+        )
 
     return details
 
@@ -137,7 +149,9 @@ def _print_available_missions(project_root: Path) -> None:
 
     console.print(table)
     console.print()
-    console.print("[dim]Missions are selected per-feature during /spec-kitty.specify[/dim]")
+    console.print(
+        "[dim]Missions are selected per-feature during /spec-kitty.specify[/dim]"
+    )
 
 
 @app.command("list")
@@ -147,8 +161,12 @@ def list_cmd() -> None:
     check_version_compatibility(project_root, "mission")
     kittify_dir = project_root / ".kittify"
     if not kittify_dir.exists():
-        console.print(f"[red]Spec Kitty project not initialized at:[/red] {project_root}")
-        console.print("[dim]Run 'spec-kitty init <project-name>' or execute this command from a feature worktree created under .worktrees/<feature>/.[/dim]")
+        console.print(
+            f"[red]Spec Kitty project not initialized at:[/red] {project_root}"
+        )
+        console.print(
+            "[dim]Run 'spec-kitty init <project-name>' or execute this command from a feature worktree created under .worktrees/<feature>/.[/dim]"
+        )
         raise typer.Exit(1)
 
     try:
@@ -175,7 +193,7 @@ def _detect_current_feature(project_root: Path) -> Optional[str]:
         ctx = detect_feature(
             project_root,
             cwd=Path.cwd(),
-            mode="lenient"  # Return None instead of raising error
+            mode="lenient",  # Return None instead of raising error
         )
         return ctx.slug if ctx else None
     except Exception:
@@ -190,7 +208,7 @@ def current_cmd(
         "--feature",
         "-f",
         help="Feature slug (auto-detects from current directory if omitted)",
-    )
+    ),
 ) -> None:
     """Show currently active mission for a feature (auto-detects feature from cwd)."""
     project_root = get_project_root_or_exit()
@@ -277,9 +295,13 @@ def switch_cmd(
     force: bool = typer.Option(False, "--force", help="(ignored)"),
 ) -> None:
     """[REMOVED] Switch active mission - this command was removed in v0.8.0."""
-    console.print("[bold red]Error:[/bold red] The 'mission switch' command was removed in v0.8.0.")
+    console.print(
+        "[bold red]Error:[/bold red] The 'mission switch' command was removed in v0.8.0."
+    )
     console.print()
-    console.print("Missions are now selected [bold]per-feature[/bold] during [cyan]/spec-kitty.specify[/cyan].")
+    console.print(
+        "Missions are now selected [bold]per-feature[/bold] during [cyan]/spec-kitty.specify[/cyan]."
+    )
     console.print()
     console.print("[cyan]New workflow:[/cyan]")
     console.print("  1. Run [bold]/spec-kitty.specify[/bold] to start a new feature")
@@ -289,5 +311,7 @@ def switch_cmd(
     console.print("[cyan]To see available missions:[/cyan]")
     console.print("  spec-kitty mission list")
     console.print()
-    console.print("[dim]See: https://github.com/your-org/spec-kitty#per-feature-missions[/dim]")
+    console.print(
+        "[dim]See: https://github.com/your-org/spec-kitty#per-feature-missions[/dim]"
+    )
     raise typer.Exit(1)

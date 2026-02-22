@@ -19,12 +19,31 @@ from spec_kitty_runtime import DiscoveryContext
 
 def _init_git_repo(path: Path) -> None:
     """Initialize a bare git repo at *path*."""
-    subprocess.run(["git", "init", "--initial-branch=main"], cwd=path, capture_output=True, check=True)
-    subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=path, capture_output=True, check=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=path, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "init", "--initial-branch=main"],
+        cwd=path,
+        capture_output=True,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=path,
+        capture_output=True,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=path,
+        capture_output=True,
+        check=True,
+    )
     (path / "README.md").write_text("# test", encoding="utf-8")
-    subprocess.run(["git", "add", "README.md"], cwd=path, capture_output=True, check=True)
-    subprocess.run(["git", "commit", "-m", "init"], cwd=path, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "add", "README.md"], cwd=path, capture_output=True, check=True
+    )
+    subprocess.run(
+        ["git", "commit", "-m", "init"], cwd=path, capture_output=True, check=True
+    )
 
 
 def _scaffold_project(
@@ -42,7 +61,8 @@ def _scaffold_project(
     feature_dir = repo_root / "kitty-specs" / feature_slug
     feature_dir.mkdir(parents=True)
     (feature_dir / "meta.json").write_text(
-        json.dumps({"mission": mission_key}), encoding="utf-8",
+        json.dumps({"mission": mission_key}),
+        encoding="utf-8",
     )
 
     return repo_root
@@ -64,7 +84,6 @@ def _add_wp_files(feature_dir: Path, wps: dict[str, str]) -> None:
 
 
 class TestRuntimeTemplateKey:
-
     def test_project_override_takes_precedence(self, tmp_path: Path) -> None:
         """Project-level mission-runtime.yaml shadows the built-in."""
         repo_root = _scaffold_project(tmp_path)
@@ -86,14 +105,18 @@ class TestRuntimeTemplateKey:
         )
 
     def test_env_takes_precedence_over_project_override(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """SPEC_KITTY_MISSION_PATHS outranks project override for runtime templates."""
         repo_root = _scaffold_project(tmp_path)
         from specify_cli.next.runtime_bridge import _runtime_template_key
 
         # Project override exists
-        override_dir = repo_root / ".kittify" / "overrides" / "missions" / "software-dev"
+        override_dir = (
+            repo_root / ".kittify" / "overrides" / "missions" / "software-dev"
+        )
         override_dir.mkdir(parents=True)
         (override_dir / "mission-runtime.yaml").write_text(
             "mission:\n  key: software-dev\n  name: override\n  version: '1.0.0'\nsteps:\n  - id: o\n    title: o\n",
@@ -120,7 +143,9 @@ class TestRuntimeTemplateKey:
 
         import specify_cli.next.runtime_bridge as runtime_bridge
 
-        builtin_root = Path(runtime_bridge.__file__).resolve().parent.parent / "missions"
+        builtin_root = (
+            Path(runtime_bridge.__file__).resolve().parent.parent / "missions"
+        )
 
         # Force deterministic discovery context for this test so user-global
         # ~/.kittify content cannot shadow the builtin fallback tier.
@@ -160,7 +185,6 @@ class TestRuntimeTemplateKey:
 
 
 class TestGetOrStartRun:
-
     def test_creates_new_run(self, tmp_path: Path) -> None:
         repo_root = _scaffold_project(tmp_path)
 
@@ -188,7 +212,9 @@ class TestGetOrStartRun:
         # Create second feature
         feature_dir2 = repo_root / "kitty-specs" / "043-other-feature"
         feature_dir2.mkdir(parents=True)
-        (feature_dir2 / "meta.json").write_text('{"mission": "software-dev"}', encoding="utf-8")
+        (feature_dir2 / "meta.json").write_text(
+            '{"mission": "software-dev"}', encoding="utf-8"
+        )
 
         from specify_cli.next.runtime_bridge import get_or_start_run
 
@@ -213,52 +239,73 @@ class TestGetOrStartRun:
 
 
 class TestWPIteration:
-
     def test_wp_iteration_does_not_advance_runtime(self, tmp_path: Path) -> None:
         """When WPs remain, runtime step should not advance."""
         repo_root = _scaffold_project(tmp_path)
         feature_dir = repo_root / "kitty-specs" / "042-test-feature"
-        _add_wp_files(feature_dir, {
-            "WP01": "planned",
-            "WP02": "planned",
-        })
+        _add_wp_files(
+            feature_dir,
+            {
+                "WP01": "planned",
+                "WP02": "planned",
+            },
+        )
 
         from specify_cli.next.runtime_bridge import (
-            get_or_start_run, decide_next_via_runtime,
+            get_or_start_run,
+            decide_next_via_runtime,
         )
         from spec_kitty_runtime import next_step as runtime_next_step, NullEmitter
         from spec_kitty_runtime.engine import _read_snapshot
 
         # Advance runtime to implement step
         run_ref = get_or_start_run("042-test-feature", repo_root, "software-dev")
-        step_order = ["discovery", "specify", "plan", "tasks_outline", "tasks_packages", "tasks_finalize", "implement"]
+        step_order = [
+            "discovery",
+            "specify",
+            "plan",
+            "tasks_outline",
+            "tasks_packages",
+            "tasks_finalize",
+            "implement",
+        ]
         for _ in range(len(step_order)):
             snapshot = _read_snapshot(Path(run_ref.run_dir))
             if snapshot.issued_step_id == "implement":
                 break
-            runtime_next_step(run_ref, agent_id="test", result="success", emitter=NullEmitter())
+            runtime_next_step(
+                run_ref, agent_id="test", result="success", emitter=NullEmitter()
+            )
 
         # Now decide_next should keep us in implement with WP01
-        decision = decide_next_via_runtime("test", "042-test-feature", "success", repo_root)
+        decision = decide_next_via_runtime(
+            "test", "042-test-feature", "success", repo_root
+        )
         assert decision.kind == DecisionKind.step
         assert decision.action == "implement"
         assert decision.wp_id == "WP01"
 
         # Call again — should still be in implement with same WP (not advanced)
-        decision2 = decide_next_via_runtime("test", "042-test-feature", "success", repo_root)
+        decision2 = decide_next_via_runtime(
+            "test", "042-test-feature", "success", repo_root
+        )
         assert decision2.step_id == "implement"
 
     def test_all_wps_done_advances_runtime(self, tmp_path: Path) -> None:
         """When all WPs are done, runtime should advance past implement."""
         repo_root = _scaffold_project(tmp_path)
         feature_dir = repo_root / "kitty-specs" / "042-test-feature"
-        _add_wp_files(feature_dir, {
-            "WP01": "done",
-            "WP02": "done",
-        })
+        _add_wp_files(
+            feature_dir,
+            {
+                "WP01": "done",
+                "WP02": "done",
+            },
+        )
 
         from specify_cli.next.runtime_bridge import (
-            get_or_start_run, decide_next_via_runtime,
+            get_or_start_run,
+            decide_next_via_runtime,
         )
         from spec_kitty_runtime import next_step as runtime_next_step, NullEmitter
         from spec_kitty_runtime.engine import _read_snapshot
@@ -269,10 +316,14 @@ class TestWPIteration:
             snapshot = _read_snapshot(Path(run_ref.run_dir))
             if snapshot.issued_step_id == "implement":
                 break
-            runtime_next_step(run_ref, agent_id="test", result="success", emitter=NullEmitter())
+            runtime_next_step(
+                run_ref, agent_id="test", result="success", emitter=NullEmitter()
+            )
 
         # All WPs done — decide_next should advance past implement
-        decision = decide_next_via_runtime("test", "042-test-feature", "success", repo_root)
+        decision = decide_next_via_runtime(
+            "test", "042-test-feature", "success", repo_root
+        )
         # Should either be in review or later step (not implement)
         assert decision.step_id != "implement" or decision.kind != DecisionKind.step
 
@@ -283,7 +334,6 @@ class TestWPIteration:
 
 
 class TestRuntimeResultFlow:
-
     @staticmethod
     def _read_run_events(run_dir: Path) -> list[dict]:
         event_file = run_dir / "run.events.jsonl"
@@ -295,47 +345,73 @@ class TestRuntimeResultFlow:
                 events.append(json.loads(line))
         return events
 
-    def test_failed_result_flows_through_runtime_event_log(self, tmp_path: Path) -> None:
+    def test_failed_result_flows_through_runtime_event_log(
+        self, tmp_path: Path
+    ) -> None:
         """A failed result must call runtime next_step and append canonical events."""
         repo_root = _scaffold_project(tmp_path)
-        from specify_cli.next.runtime_bridge import decide_next_via_runtime, get_or_start_run
+        from specify_cli.next.runtime_bridge import (
+            decide_next_via_runtime,
+            get_or_start_run,
+        )
 
         # Issue a first step so runtime has a prior issued_step_id to complete.
-        first = decide_next_via_runtime("test", "042-test-feature", "success", repo_root)
+        first = decide_next_via_runtime(
+            "test", "042-test-feature", "success", repo_root
+        )
         assert first.run_id is not None
 
         run_ref = get_or_start_run("042-test-feature", repo_root, "software-dev")
         run_dir = Path(run_ref.run_dir)
         before = self._read_run_events(run_dir)
 
-        failed = decide_next_via_runtime("test", "042-test-feature", "failed", repo_root)
+        failed = decide_next_via_runtime(
+            "test", "042-test-feature", "failed", repo_root
+        )
         after = self._read_run_events(run_dir)
 
         assert failed.kind == DecisionKind.blocked
         assert failed.run_id == run_ref.run_id
-        assert len(after) > len(before), "failed path must append runtime lifecycle event(s)"
-        assert any(evt["event_type"] == "NextStepAutoCompleted" for evt in after[len(before):])
+        assert len(after) > len(before), (
+            "failed path must append runtime lifecycle event(s)"
+        )
+        assert any(
+            evt["event_type"] == "NextStepAutoCompleted" for evt in after[len(before) :]
+        )
 
-    def test_blocked_result_flows_through_runtime_event_log(self, tmp_path: Path) -> None:
+    def test_blocked_result_flows_through_runtime_event_log(
+        self, tmp_path: Path
+    ) -> None:
         """A blocked result must call runtime next_step and append canonical events."""
         repo_root = _scaffold_project(tmp_path)
-        from specify_cli.next.runtime_bridge import decide_next_via_runtime, get_or_start_run
+        from specify_cli.next.runtime_bridge import (
+            decide_next_via_runtime,
+            get_or_start_run,
+        )
 
         # Issue a first step so runtime has a prior issued_step_id to complete.
-        first = decide_next_via_runtime("test", "042-test-feature", "success", repo_root)
+        first = decide_next_via_runtime(
+            "test", "042-test-feature", "success", repo_root
+        )
         assert first.run_id is not None
 
         run_ref = get_or_start_run("042-test-feature", repo_root, "software-dev")
         run_dir = Path(run_ref.run_dir)
         before = self._read_run_events(run_dir)
 
-        blocked = decide_next_via_runtime("test", "042-test-feature", "blocked", repo_root)
+        blocked = decide_next_via_runtime(
+            "test", "042-test-feature", "blocked", repo_root
+        )
         after = self._read_run_events(run_dir)
 
         assert blocked.kind == DecisionKind.blocked
         assert blocked.run_id == run_ref.run_id
-        assert len(after) > len(before), "blocked path must append runtime lifecycle event(s)"
-        assert any(evt["event_type"] == "NextStepAutoCompleted" for evt in after[len(before):])
+        assert len(after) > len(before), (
+            "blocked path must append runtime lifecycle event(s)"
+        )
+        assert any(
+            evt["event_type"] == "NextStepAutoCompleted" for evt in after[len(before) :]
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -344,7 +420,6 @@ class TestRuntimeResultFlow:
 
 
 class TestGuardChecks:
-
     def test_specify_guard_blocks_without_spec(self, tmp_path: Path) -> None:
         repo_root = _scaffold_project(tmp_path)
 
@@ -372,7 +447,9 @@ class TestGuardChecks:
         from specify_cli.next.runtime_bridge import _check_cli_guards
 
         failures = _check_cli_guards("plan", feature_dir)
-        assert len(failures) == 1  # plan.md only (tasks.md moved to tasks_outline guard)
+        assert (
+            len(failures) == 1
+        )  # plan.md only (tasks.md moved to tasks_outline guard)
 
     def test_implement_guard_blocks_with_planned_wps(self, tmp_path: Path) -> None:
         repo_root = _scaffold_project(tmp_path)
@@ -401,14 +478,15 @@ class TestGuardChecks:
 
 
 class TestMapRuntimeDecision:
-
     def test_map_preserves_json_contract(self, tmp_path: Path) -> None:
         """Mapped decisions have all required JSON fields."""
         repo_root = _scaffold_project(tmp_path)
 
         from specify_cli.next.runtime_bridge import decide_next_via_runtime
 
-        decision = decide_next_via_runtime("test", "042-test-feature", "success", repo_root)
+        decision = decide_next_via_runtime(
+            "test", "042-test-feature", "success", repo_root
+        )
         d = decision.to_dict()
 
         # Original fields
@@ -435,7 +513,6 @@ class TestMapRuntimeDecision:
 
 
 class TestAnswerDecision:
-
     def test_answer_without_pending_raises(self, tmp_path: Path) -> None:
         """Answering when no decisions pending raises error."""
         repo_root = _scaffold_project(tmp_path)
@@ -445,7 +522,11 @@ class TestAnswerDecision:
 
         with pytest.raises(MissionRuntimeError, match="not found"):
             answer_decision_via_runtime(
-                "042-test-feature", "nonexistent", "yes", "test", repo_root,
+                "042-test-feature",
+                "nonexistent",
+                "yes",
+                "test",
+                repo_root,
             )
 
 
@@ -455,7 +536,6 @@ class TestAnswerDecision:
 
 
 class TestFullLoop:
-
     def test_full_loop_step_to_terminal(self, tmp_path: Path) -> None:
         """Drive mission from start to terminal through all steps."""
         repo_root = _scaffold_project(tmp_path)
@@ -477,7 +557,9 @@ class TestFullLoop:
 
         seen_steps = []
         for i in range(40):  # 9 steps need more iterations
-            decision = decide_next_via_runtime("test", "042-test-feature", "success", repo_root)
+            decision = decide_next_via_runtime(
+                "test", "042-test-feature", "success", repo_root
+            )
             if decision.kind == DecisionKind.terminal:
                 break
             if decision.step_id:
@@ -508,7 +590,9 @@ class TestFullLoop:
         from specify_cli.next.runtime_bridge import decide_next_via_runtime
 
         # This should work without any network access
-        decision = decide_next_via_runtime("test", "042-test-feature", "success", repo_root)
+        decision = decide_next_via_runtime(
+            "test", "042-test-feature", "success", repo_root
+        )
         assert decision.kind in ("step", "terminal", "blocked", "decision_required")
 
 
@@ -518,7 +602,6 @@ class TestFullLoop:
 
 
 class TestWPStepHelpers:
-
     def test_is_wp_iteration_step(self) -> None:
         from specify_cli.next.runtime_bridge import _is_wp_iteration_step
 
@@ -569,7 +652,6 @@ class TestWPStepHelpers:
 
 
 class TestAtomicTaskSteps:
-
     def test_tasks_outline_guard_blocks_without_tasks_md(self, tmp_path: Path) -> None:
         repo_root = _scaffold_project(tmp_path)
         feature_dir = repo_root / "kitty-specs" / "042-test-feature"
@@ -610,7 +692,9 @@ class TestAtomicTaskSteps:
         failures = _check_cli_guards("tasks_packages", feature_dir)
         assert len(failures) == 0
 
-    def test_tasks_finalize_guard_blocks_without_raw_dependencies(self, tmp_path: Path) -> None:
+    def test_tasks_finalize_guard_blocks_without_raw_dependencies(
+        self, tmp_path: Path
+    ) -> None:
         """WP files exist but no explicit dependencies: in raw frontmatter."""
         repo_root = _scaffold_project(tmp_path)
         feature_dir = repo_root / "kitty-specs" / "042-test-feature"
@@ -623,7 +707,9 @@ class TestAtomicTaskSteps:
         assert len(failures) == 1
         assert "dependencies" in failures[0]
 
-    def test_tasks_finalize_guard_passes_with_raw_dependencies(self, tmp_path: Path) -> None:
+    def test_tasks_finalize_guard_passes_with_raw_dependencies(
+        self, tmp_path: Path
+    ) -> None:
         """WP files have dependencies: [...] explicitly written."""
         repo_root = _scaffold_project(tmp_path)
         feature_dir = repo_root / "kitty-specs" / "042-test-feature"
@@ -639,7 +725,9 @@ class TestAtomicTaskSteps:
         failures = _check_cli_guards("tasks_finalize", feature_dir)
         assert len(failures) == 0
 
-    def test_tasks_finalize_guard_rejects_auto_injected_dependencies(self, tmp_path: Path) -> None:
+    def test_tasks_finalize_guard_rejects_auto_injected_dependencies(
+        self, tmp_path: Path
+    ) -> None:
         """WP file with NO dependencies line — read_frontmatter would inject [],
         but raw check correctly rejects."""
         repo_root = _scaffold_project(tmp_path)

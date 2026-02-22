@@ -27,13 +27,17 @@ def test_doctrine_structure_paths_exist() -> None:
 
 
 def test_curation_readme_documents_pull_based_flow() -> None:
-    readme = (REPO_ROOT / "src" / "doctrine" / "curation" / "README.md").read_text(encoding="utf-8")
+    readme = (REPO_ROOT / "src" / "doctrine" / "curation" / "README.md").read_text(
+        encoding="utf-8"
+    )
     assert "pull-based" in readme.lower()
     assert "ZOMBIES TDD" in readme
 
 
 def test_import_candidate_schema_contains_adoption_gate() -> None:
-    schema_path = REPO_ROOT / "src" / "doctrine" / "schemas" / "import-candidate.schema.yaml"
+    schema_path = (
+        REPO_ROOT / "src" / "doctrine" / "schemas" / "import-candidate.schema.yaml"
+    )
     yaml = YAML(typ="safe")
     schema = yaml.load(schema_path.read_text(encoding="utf-8"))
 

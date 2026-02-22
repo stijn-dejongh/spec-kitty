@@ -44,7 +44,7 @@ from specify_cli.sync.events import emit_feature_created, emit_wp_created, get_e
 app = typer.Typer(
     name="feature",
     help="Feature lifecycle commands for AI agents",
-    no_args_is_help=True
+    no_args_is_help=True,
 )
 
 console = Console()
@@ -56,6 +56,7 @@ def _resolve_primary_branch(repo_root: Path) -> str:
     Delegates to the centralized implementation in core.git_ops.
     """
     from specify_cli.core.git_ops import resolve_primary_branch
+
     return resolve_primary_branch(repo_root)
 
 
@@ -92,7 +93,9 @@ def _ensure_branch_checked_out(
     if current_branch is None:
         raise RuntimeError("Not in a git repository")
     if current_branch == "HEAD":
-        raise RuntimeError("Planning repo is in detached HEAD state; checkout a branch before continuing")
+        raise RuntimeError(
+            "Planning repo is in detached HEAD state; checkout a branch before continuing"
+        )
 
     # If branches differ, show notification (no auto-checkout)
     if current_branch != target_branch:
@@ -145,20 +148,28 @@ def _commit_to_branch(
             raise RuntimeError(error_msg)
 
         if not json_output:
-            console.print(f"[green]✓[/green] {artifact_type.capitalize()} committed to {current_branch}")
+            console.print(
+                f"[green]✓[/green] {artifact_type.capitalize()} committed to {current_branch}"
+            )
 
     except subprocess.CalledProcessError as e:
         # Check if it's just "nothing to commit" (benign)
-        stderr = e.stderr if hasattr(e, 'stderr') and e.stderr else ""
+        stderr = e.stderr if hasattr(e, "stderr") and e.stderr else ""
         if "nothing to commit" in stderr or "nothing added to commit" in stderr:
             # Benign - file unchanged
             if not json_output:
-                console.print(f"[dim]{artifact_type.capitalize()} unchanged, no commit needed[/dim]")
+                console.print(
+                    f"[dim]{artifact_type.capitalize()} unchanged, no commit needed[/dim]"
+                )
         else:
             # Actual error
             if not json_output:
-                console.print(f"[yellow]Warning:[/yellow] Failed to commit {artifact_type}: {e}")
-                console.print(f"[yellow]You may need to commit manually:[/yellow] git add {file_path} && git commit")
+                console.print(
+                    f"[yellow]Warning:[/yellow] Failed to commit {artifact_type}: {e}"
+                )
+                console.print(
+                    f"[yellow]You may need to commit manually:[/yellow] git add {file_path} && git commit"
+                )
             raise
 
 
@@ -203,7 +214,9 @@ def _get_main_repo_root(repo_root: Path) -> Path:
     """Resolve the main repository root when running from worktree context."""
     git_marker = repo_root / ".git"
     if git_marker.is_file():
-        git_dir_content = git_marker.read_text(encoding="utf-8", errors="replace").strip()
+        git_dir_content = git_marker.read_text(
+            encoding="utf-8", errors="replace"
+        ).strip()
         if git_dir_content.startswith("gitdir: "):
             git_dir = Path(git_dir_content[8:])
             if len(git_dir.parents) >= 2:
@@ -284,9 +297,18 @@ def _build_setup_plan_detection_error(
 
 @app.command(name="create-feature")
 def create_feature(
-    feature_slug: Annotated[str, typer.Argument(help="Feature slug (e.g., 'user-auth')")],
-    mission: Annotated[Optional[str], typer.Option("--mission", help="Mission type (e.g., 'documentation', 'software-dev')")] = None,
-    json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
+    feature_slug: Annotated[
+        str, typer.Argument(help="Feature slug (e.g., 'user-auth')")
+    ],
+    mission: Annotated[
+        Optional[str],
+        typer.Option(
+            "--mission", help="Mission type (e.g., 'documentation', 'software-dev')"
+        ),
+    ] = None,
+    json_output: Annotated[
+        bool, typer.Option("--json", help="Output JSON format")
+    ] = False,
 ) -> None:
     """Create new feature directory structure in planning repository.
 
@@ -297,7 +319,7 @@ def create_feature(
         spec-kitty agent create-feature "new-dashboard" --json
     """
     # Validate kebab-case format early (before any operations)
-    KEBAB_CASE_PATTERN = r'^[a-z][a-z0-9]*(-[a-z0-9]+)*$'
+    KEBAB_CASE_PATTERN = r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
     if not re.match(KEBAB_CASE_PATTERN, feature_slug):
         error_msg = (
             f"Invalid feature slug '{feature_slug}'. "
@@ -330,15 +352,21 @@ def create_feature(
                 for i, part in enumerate(cwd.parts):
                     if part == ".worktrees":
                         main_repo = Path(*cwd.parts[:i])
-                        console.print(f"\n[cyan]Run from the main repository instead:[/cyan]")
+                        console.print(
+                            f"\n[cyan]Run from the main repository instead:[/cyan]"
+                        )
                         console.print(f"  cd {main_repo}")
-                        console.print(f"  spec-kitty agent create-feature {feature_slug}")
+                        console.print(
+                            f"  spec-kitty agent create-feature {feature_slug}"
+                        )
                         break
             raise typer.Exit(1)
 
         repo_root = locate_project_root()
         if repo_root is None:
-            error_msg = "Could not locate project root. Run from within spec-kitty repository."
+            error_msg = (
+                "Could not locate project root. Run from within spec-kitty repository."
+            )
             if json_output:
                 print(json.dumps({"error": error_msg}))
             else:
@@ -357,7 +385,9 @@ def create_feature(
         # Verify we're on a branch (not detached HEAD)
         current_branch = get_current_branch(repo_root)
         if not current_branch or current_branch == "HEAD":
-            error_msg = "Must be on a branch to create features (detached HEAD detected)."
+            error_msg = (
+                "Must be on a branch to create features (detached HEAD detected)."
+            )
             if json_output:
                 print(json.dumps({"error": error_msg}))
             else:
@@ -396,7 +426,7 @@ def create_feature(
         (tasks_dir / ".gitkeep").touch()
 
         # Create tasks/README.md (using same content from setup_feature_directory)
-        tasks_readme_content = '''# Tasks Directory
+        tasks_readme_content = """# Tasks Directory
 
 This directory contains work package (WP) prompt files with lane status in frontmatter.
 
@@ -465,8 +495,8 @@ spec-kitty agent tasks move-task WP01 --to doing
 
 - Format: `WP01-kebab-case-slug.md`
 - Examples: `WP01-setup-infrastructure.md`, `WP02-user-auth.md`
-'''
-        (tasks_dir / "README.md").write_text(tasks_readme_content, encoding='utf-8')
+"""
+        (tasks_dir / "README.md").write_text(tasks_readme_content, encoding="utf-8")
 
         # Copy spec template if it exists
         spec_file = feature_dir / "spec.md"
@@ -485,7 +515,14 @@ spec-kitty agent tasks move-task WP01 --to doing
                 spec_file.touch()
 
         # Commit spec.md to planning branch
-        _commit_to_branch(spec_file, feature_slug_formatted, "spec", repo_root, planning_branch, json_output)
+        _commit_to_branch(
+            spec_file,
+            feature_slug_formatted,
+            "spec",
+            repo_root,
+            planning_branch,
+            json_output,
+        )
 
         # Ensure baseline feature metadata exists for downstream commands
         # (implement/merge/mission detection rely on meta.json in every mission).
@@ -544,7 +581,9 @@ spec-kitty agent tasks move-task WP01 --to doing
             except Exception:
                 pass
             if not json_output:
-                console.print("[cyan]→ Documentation state initialized in meta.json[/cyan]")
+                console.print(
+                    "[cyan]→ Documentation state initialized in meta.json[/cyan]"
+                )
 
         # Emit FeatureCreated event (non-blocking)
         try:
@@ -558,11 +597,15 @@ spec-kitty agent tasks move-task WP01 --to doing
             pass  # Non-blocking, event emission failures are not fatal
 
         if json_output:
-            print(json.dumps({
-                "result": "success",
-                "feature": feature_slug_formatted,
-                "feature_dir": str(feature_dir)
-            }))
+            print(
+                json.dumps(
+                    {
+                        "result": "success",
+                        "feature": feature_slug_formatted,
+                        "feature_dir": str(feature_dir),
+                    }
+                )
+            )
         else:
             console.print(f"[green]✓[/green] Feature created: {feature_slug_formatted}")
             console.print(f"   Directory: {feature_dir}")
@@ -578,10 +621,19 @@ spec-kitty agent tasks move-task WP01 --to doing
 
 @app.command(name="check-prerequisites")
 def check_prerequisites(
-    feature: Annotated[Optional[str], typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')")] = None,
-    json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
-    paths_only: Annotated[bool, typer.Option("--paths-only", help="Only output path variables")] = False,
-    include_tasks: Annotated[bool, typer.Option("--include-tasks", help="Include tasks.md in validation")] = False,
+    feature: Annotated[
+        Optional[str],
+        typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')"),
+    ] = None,
+    json_output: Annotated[
+        bool, typer.Option("--json", help="Output JSON format")
+    ] = False,
+    paths_only: Annotated[
+        bool, typer.Option("--paths-only", help="Only output path variables")
+    ] = False,
+    include_tasks: Annotated[
+        bool, typer.Option("--include-tasks", help="Include tasks.md in validation")
+    ] = False,
 ) -> None:
     """Validate feature structure and prerequisites.
 
@@ -594,7 +646,9 @@ def check_prerequisites(
     try:
         repo_root = locate_project_root()
         if repo_root is None:
-            error_msg = "Could not locate project root. Run from within spec-kitty repository."
+            error_msg = (
+                "Could not locate project root. Run from within spec-kitty repository."
+            )
             if json_output:
                 print(json.dumps({"error": error_msg}))
             else:
@@ -637,7 +691,9 @@ def check_prerequisites(
                     console.print(f"  {cmd}")
             raise typer.Exit(1)
 
-        validation_result = validate_feature_structure(feature_dir, check_tasks=include_tasks)
+        validation_result = validate_feature_structure(
+            feature_dir, check_tasks=include_tasks
+        )
 
         if json_output:
             if paths_only:
@@ -668,8 +724,13 @@ def check_prerequisites(
 
 @app.command(name="setup-plan")
 def setup_plan(
-    feature: Annotated[Optional[str], typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')")] = None,
-    json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
+    feature: Annotated[
+        Optional[str],
+        typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')"),
+    ] = None,
+    json_output: Annotated[
+        bool, typer.Option("--json", help="Output JSON format")
+    ] = False,
 ) -> None:
     """Scaffold implementation plan template in planning repository.
 
@@ -683,7 +744,9 @@ def setup_plan(
     try:
         repo_root = locate_project_root()
         if repo_root is None:
-            error_msg = "Could not locate project root. Run from within spec-kitty repository."
+            error_msg = (
+                "Could not locate project root. Run from within spec-kitty repository."
+            )
             if json_output:
                 print(json.dumps({"error": error_msg}))
             else:
@@ -702,7 +765,9 @@ def setup_plan(
                 allow_latest_incomplete_fallback=False,
             )
         except ValueError as detection_error:
-            payload = _build_setup_plan_detection_error(repo_root, str(detection_error), feature)
+            payload = _build_setup_plan_detection_error(
+                repo_root, str(detection_error), feature
+            )
             if json_output:
                 print(json.dumps(payload))
             else:
@@ -756,14 +821,20 @@ def setup_plan(
         if plan_template is not None:
             shutil.copy2(plan_template, plan_file)
         else:
-            package_template = files("specify_cli").joinpath("templates", "plan-template.md")
+            package_template = files("specify_cli").joinpath(
+                "templates", "plan-template.md"
+            )
             if not package_template.exists():
-                raise FileNotFoundError("Plan template not found in repository or package")
+                raise FileNotFoundError(
+                    "Plan template not found in repository or package"
+                )
             with package_template.open("rb") as src, open(plan_file, "wb") as dst:
                 shutil.copyfileobj(src, dst)
 
         # Commit plan.md to target branch
-        _commit_to_branch(plan_file, feature_slug, "plan", repo_root, target_branch, json_output)
+        _commit_to_branch(
+            plan_file, feature_slug, "plan", repo_root, target_branch, json_output
+        )
 
         # T014 + T016: Documentation mission wiring for plan
         mission_key = get_feature_mission_key(feature_dir)
@@ -788,7 +859,11 @@ def setup_plan(
             # T014: Run gap analysis for gap_filling or feature_specific modes
             if meta_file.exists():
                 doc_state = read_documentation_state(meta_file)
-                iteration_mode = doc_state.get("iteration_mode", "initial") if doc_state else "initial"
+                iteration_mode = (
+                    doc_state.get("iteration_mode", "initial")
+                    if doc_state
+                    else "initial"
+                )
 
                 if iteration_mode in ("gap_filling", "feature_specific"):
                     docs_dir = repo_root / "docs"
@@ -816,7 +891,10 @@ def setup_plan(
                             except Exception:
                                 pass  # Non-fatal: agent can commit separately
                             if not json_output:
-                                coverage_pct = analysis.coverage_matrix.get_coverage_percentage() * 100
+                                coverage_pct = (
+                                    analysis.coverage_matrix.get_coverage_percentage()
+                                    * 100
+                                )
                                 console.print(
                                     f"[cyan]→ Gap analysis generated: {gap_analysis_output.name} "
                                     f"(coverage: {coverage_pct:.1f}%)[/cyan]"
@@ -837,11 +915,13 @@ def setup_plan(
             for gen in all_generators:
                 try:
                     if gen.detect(repo_root):
-                        generators_detected.append({
-                            "name": gen.name,
-                            "language": gen.languages[0],
-                            "config_path": "",
-                        })
+                        generators_detected.append(
+                            {
+                                "name": gen.name,
+                                "language": gen.languages[0],
+                                "config_path": "",
+                            }
+                        )
                         if not json_output:
                             console.print(
                                 f"[cyan]→ Detected {gen.name} generator "
@@ -868,13 +948,17 @@ def setup_plan(
                             f"[yellow]Warning:[/yellow] Failed to save generator config: {gen_err}"
                         )
         if json_output:
-            print(json.dumps({
-                "result": "success",
-                "feature_slug": feature_slug,
-                "plan_file": str(plan_file),
-                "feature_dir": str(feature_dir),
-                "spec_file": str(spec_file),
-            }))
+            print(
+                json.dumps(
+                    {
+                        "result": "success",
+                        "feature_slug": feature_slug,
+                        "plan_file": str(plan_file),
+                        "feature_dir": str(feature_dir),
+                        "spec_file": str(spec_file),
+                    }
+                )
+            )
         else:
             console.print(f"[green]✓[/green] Plan scaffolded: {plan_file}")
 
@@ -884,6 +968,7 @@ def setup_plan(
         else:
             console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1)
+
 
 def _find_latest_feature_worktree(repo_root: Path) -> Optional[Path]:
     """Find the latest feature worktree by number.
@@ -934,9 +1019,13 @@ def _get_current_branch(repo_root: Path) -> str:
         text=True,
         encoding="utf-8",
         errors="replace",
-        check=False
+        check=False,
     )
-    return result.stdout.strip() if result.returncode == 0 else _resolve_primary_branch(repo_root)
+    return (
+        result.stdout.strip()
+        if result.returncode == 0
+        else _resolve_primary_branch(repo_root)
+    )
 
 
 @app.command(name="accept")
@@ -944,37 +1033,20 @@ def accept_feature(
     feature: Annotated[
         Optional[str],
         typer.Option(
-            "--feature",
-            help="Feature directory slug (auto-detected if not specified)"
-        )
+            "--feature", help="Feature directory slug (auto-detected if not specified)"
+        ),
     ] = None,
     mode: Annotated[
-        str,
-        typer.Option(
-            "--mode",
-            help="Acceptance mode: auto, pr, local, checklist"
-        )
+        str, typer.Option("--mode", help="Acceptance mode: auto, pr, local, checklist")
     ] = "auto",
     json_output: Annotated[
-        bool,
-        typer.Option(
-            "--json",
-            help="Output results as JSON for agent parsing"
-        )
+        bool, typer.Option("--json", help="Output results as JSON for agent parsing")
     ] = False,
     lenient: Annotated[
-        bool,
-        typer.Option(
-            "--lenient",
-            help="Skip strict metadata validation"
-        )
+        bool, typer.Option("--lenient", help="Skip strict metadata validation")
     ] = False,
     no_commit: Annotated[
-        bool,
-        typer.Option(
-            "--no-commit",
-            help="Skip auto-commit (report only)"
-        )
+        bool, typer.Option("--no-commit", help="Skip auto-commit (report only)")
     ] = False,
 ) -> None:
     """Perform feature acceptance workflow.
@@ -1026,58 +1098,43 @@ def merge_feature(
     feature: Annotated[
         Optional[str],
         typer.Option(
-            "--feature",
-            help="Feature directory slug (auto-detected if not specified)"
-        )
+            "--feature", help="Feature directory slug (auto-detected if not specified)"
+        ),
     ] = None,
     target: Annotated[
         Optional[str],
         typer.Option(
             "--target",
-            help="Target branch to merge into (auto-detected if not specified)"
-        )
+            help="Target branch to merge into (auto-detected if not specified)",
+        ),
     ] = None,
     strategy: Annotated[
-        str,
-        typer.Option(
-            "--strategy",
-            help="Merge strategy: merge, squash, rebase"
-        )
+        str, typer.Option("--strategy", help="Merge strategy: merge, squash, rebase")
     ] = "merge",
     push: Annotated[
-        bool,
-        typer.Option(
-            "--push",
-            help="Push to origin after merging"
-        )
+        bool, typer.Option("--push", help="Push to origin after merging")
     ] = False,
     dry_run: Annotated[
-        bool,
-        typer.Option(
-            "--dry-run",
-            help="Show actions without executing"
-        )
+        bool, typer.Option("--dry-run", help="Show actions without executing")
     ] = False,
     keep_branch: Annotated[
         bool,
         typer.Option(
-            "--keep-branch",
-            help="Keep feature branch after merge (default: delete)"
-        )
+            "--keep-branch", help="Keep feature branch after merge (default: delete)"
+        ),
     ] = False,
     keep_worktree: Annotated[
         bool,
         typer.Option(
-            "--keep-worktree",
-            help="Keep worktree after merge (default: remove)"
-        )
+            "--keep-worktree", help="Keep worktree after merge (default: remove)"
+        ),
     ] = False,
     auto_retry: Annotated[
         bool,
         typer.Option(
             "--auto-retry/--no-auto-retry",
-            help="Auto-navigate to latest worktree if in wrong location"
-        )
+            help="Auto-navigate to latest worktree if in wrong location",
+        ),
     ] = True,
 ) -> None:
     """Merge feature branch into target branch.
@@ -1188,8 +1245,13 @@ def merge_feature(
 
 @app.command(name="finalize-tasks")
 def finalize_tasks(
-    feature: Annotated[Optional[str], typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')")] = None,
-    json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
+    feature: Annotated[
+        Optional[str],
+        typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')"),
+    ] = None,
+    json_output: Annotated[
+        bool, typer.Option("--json", help="Output JSON format")
+    ] = False,
 ) -> None:
     """Parse dependencies from tasks.md and update WP frontmatter, then commit to target branch.
 
@@ -1278,9 +1340,15 @@ def finalize_tasks(
                 if not is_valid:
                     error_msg = f"Invalid dependencies for {wp_id}: {errors}"
                     if json_output:
-                        print(json.dumps({"error": error_msg, "wp_id": wp_id, "errors": errors}))
+                        print(
+                            json.dumps(
+                                {"error": error_msg, "wp_id": wp_id, "errors": errors}
+                            )
+                        )
                     else:
-                        console.print(f"[red]Error:[/red] Invalid dependencies for {wp_id}:")
+                        console.print(
+                            f"[red]Error:[/red] Invalid dependencies for {wp_id}:"
+                        )
                         for err in errors:
                             console.print(f"  - {err}")
                     raise typer.Exit(1)
@@ -1305,15 +1373,20 @@ def finalize_tasks(
                 parts = raw_content.split("---", 2)
                 if len(parts) >= 3:
                     frontmatter_text = parts[1]
-                    has_dependencies_line = re.search(
-                        r"^\s*dependencies\s*:", frontmatter_text, re.MULTILINE
-                    ) is not None
+                    has_dependencies_line = (
+                        re.search(
+                            r"^\s*dependencies\s*:", frontmatter_text, re.MULTILINE
+                        )
+                        is not None
+                    )
 
             # Read current frontmatter
             try:
                 frontmatter, body = read_frontmatter(wp_file)
             except Exception as e:
-                console.print(f"[yellow]Warning:[/yellow] Could not read {wp_file.name}: {e}")
+                console.print(
+                    f"[yellow]Warning:[/yellow] Could not read {wp_file.name}: {e}"
+                )
                 continue
 
             # Get dependencies for this WP (default to empty list)
@@ -1347,7 +1420,9 @@ def finalize_tasks(
                     f"[yellow]Warning:[/yellow] Failed to read meta.json for event emission: {exc}"
                 )
         else:
-            console.print("[yellow]Warning:[/yellow] meta.json missing; skipping FeatureCreated emission")
+            console.print(
+                "[yellow]Warning:[/yellow] meta.json missing; skipping FeatureCreated emission"
+            )
 
         # Commit tasks.md and WP files to target branch
         commit_created = False
@@ -1409,21 +1484,29 @@ def finalize_tasks(
                         ["git", "rev-parse", "HEAD"],
                         check_return=True,
                         capture=True,
-                        cwd=repo_root
+                        cwd=repo_root,
                     )
                     commit_hash = stdout.strip()
                     commit_created = True
 
                     if not json_output:
-                        console.print(f"[green]✓[/green] Tasks committed to {target_branch}")
+                        console.print(
+                            f"[green]✓[/green] Tasks committed to {target_branch}"
+                        )
                         console.print(f"[dim]Commit: {commit_hash[:7]}[/dim]")
-                        console.print(f"[dim]Updated {updated_count} WP files with dependencies[/dim]")
+                        console.print(
+                            f"[dim]Updated {updated_count} WP files with dependencies[/dim]"
+                        )
                 else:
                     error_output = "Failed to commit tasks updates"
                     if json_output:
-                        print(json.dumps({"error": f"Git commit failed: {error_output}"}))
+                        print(
+                            json.dumps({"error": f"Git commit failed: {error_output}"})
+                        )
                     else:
-                        console.print(f"[red]Error:[/red] Git commit failed: {error_output}")
+                        console.print(
+                            f"[red]Error:[/red] Git commit failed: {error_output}"
+                        )
                     raise typer.Exit(1)
 
         except typer.Exit:
@@ -1455,14 +1538,18 @@ def finalize_tasks(
                 )
 
         if json_output:
-            print(json.dumps({
-                "result": "success",
-                "updated_wp_count": updated_count,
-                "tasks_dir": str(tasks_dir),
-                "commit_created": commit_created,
-                "commit_hash": commit_hash,
-                "files_committed": files_committed
-            }))
+            print(
+                json.dumps(
+                    {
+                        "result": "success",
+                        "updated_wp_count": updated_count,
+                        "tasks_dir": str(tasks_dir),
+                        "commit_created": commit_created,
+                        "commit_hash": commit_hash,
+                        "files_committed": files_committed,
+                    }
+                )
+            )
 
     except typer.Exit:
         raise
@@ -1491,7 +1578,7 @@ def _parse_dependencies_from_tasks_md(tasks_content: str) -> dict[str, list[str]
     # Split into WP sections - handle both formats:
     # - "## Work Package WP01" (older format)
     # - "### WP01: ..." (newer format)
-    wp_sections = re.split(r'(?:##\s+Work Package\s+|###\s+)(WP\d{2})', tasks_content)
+    wp_sections = re.split(r"(?:##\s+Work Package\s+|###\s+)(WP\d{2})", tasks_content)
 
     # Process sections (they come in pairs: WP ID, then content)
     for i in range(1, len(wp_sections), 2):
@@ -1505,14 +1592,18 @@ def _parse_dependencies_from_tasks_md(tasks_content: str) -> dict[str, list[str]
         explicit_deps = []
 
         # Pattern: "Depends on WP01" or "Depends on WP01, WP02"
-        depends_matches = re.findall(r'Depends?\s+on\s+(WP\d{2}(?:\s*,\s*WP\d{2})*)', section_content, re.IGNORECASE)
+        depends_matches = re.findall(
+            r"Depends?\s+on\s+(WP\d{2}(?:\s*,\s*WP\d{2})*)",
+            section_content,
+            re.IGNORECASE,
+        )
         for match in depends_matches:
-            explicit_deps.extend(re.findall(r'WP\d{2}', match))
+            explicit_deps.extend(re.findall(r"WP\d{2}", match))
 
         # Pattern: "**Dependencies**: WP01" or "Dependencies: WP01, WP02" (handle bold markdown)
-        deps_line = re.search(r'\*?\*?Dependencies\*?\*?\s*:\s*(.+)', section_content)
+        deps_line = re.search(r"\*?\*?Dependencies\*?\*?\s*:\s*(.+)", section_content)
         if deps_line:
-            explicit_deps.extend(re.findall(r'WP\d{2}', deps_line.group(1)))
+            explicit_deps.extend(re.findall(r"WP\d{2}", deps_line.group(1)))
 
         if explicit_deps:
             # Remove duplicates and sort

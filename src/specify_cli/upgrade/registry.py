@@ -16,12 +16,10 @@ class MigrationRegistry:
     _migrations: Dict[str, Type["BaseMigration"]] = {}
 
     # Required fields for all migrations
-    REQUIRED_FIELDS = ['migration_id', 'description', 'target_version']
+    REQUIRED_FIELDS = ["migration_id", "description", "target_version"]
 
     @classmethod
-    def register(
-        cls, migration_class: Type["BaseMigration"]
-    ) -> Type["BaseMigration"]:
+    def register(cls, migration_class: Type["BaseMigration"]) -> Type["BaseMigration"]:
         """Decorator to register a migration class.
 
         Args:
@@ -81,6 +79,7 @@ class MigrationRegistry:
             List of applicable migrations in order
         """
         from pathlib import Path
+
         from_v = Version(from_version)
         to_v = Version(to_version)
 
@@ -92,7 +91,11 @@ class MigrationRegistry:
                 applicable.append(migration)
             # ALSO include migrations at current version if detect() returns True
             elif target == from_v and project_path is not None:
-                if migration.detect(Path(project_path) if isinstance(project_path, str) else project_path):
+                if migration.detect(
+                    Path(project_path)
+                    if isinstance(project_path, str)
+                    else project_path
+                ):
                     applicable.append(migration)
 
         return applicable

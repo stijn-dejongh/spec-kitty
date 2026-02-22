@@ -171,9 +171,7 @@ def prompt_conflict_resolution(
                     f"Enter 1-{num_candidates}, C, or D."
                 )
             else:
-                typer.echo(
-                    f"Error: Invalid choice '{response}'. Enter C or D."
-                )
+                typer.echo(f"Error: Invalid choice '{response}'. Enter C or D.")
 
         except typer.Abort:
             typer.echo("\nAborted by user.")

@@ -59,7 +59,9 @@ def list_agents():
 
     if not config.available:
         console.print("[yellow]No agents configured.[/yellow]")
-        console.print("\nRun 'spec-kitty init' or use 'spec-kitty agent config add' to add agents.")
+        console.print(
+            "\nRun 'spec-kitty init' or use 'spec-kitty agent config add' to add agents."
+        )
         return
 
     # Display configured agents
@@ -86,7 +88,9 @@ def list_agents():
 
 @app.command(name="add")
 def add_agents(
-    agents: List[str] = typer.Argument(..., help="Agent keys to add (e.g., claude codex)"),
+    agents: List[str] = typer.Argument(
+        ..., help="Agent keys to add (e.g., claude codex)"
+    ),
 ):
     """Add agents to the project.
 
@@ -136,7 +140,13 @@ def add_agents(
 
             # Generate templates for this agent
             # Copy from mission templates
-            missions_dir = repo_root / ".kittify" / "missions" / "software-dev" / "command-templates"
+            missions_dir = (
+                repo_root
+                / ".kittify"
+                / "missions"
+                / "software-dev"
+                / "command-templates"
+            )
 
             if missions_dir.exists():
                 for template_file in missions_dir.glob("*.md"):
@@ -156,7 +166,9 @@ def add_agents(
         console.print(f"\n[cyan]Updated config.yaml:[/cyan] added {', '.join(added)}")
 
     if already_configured:
-        console.print(f"\n[dim]Already configured:[/dim] {', '.join(already_configured)}")
+        console.print(
+            f"\n[dim]Already configured:[/dim] {', '.join(already_configured)}"
+        )
 
     if errors:
         console.print("\n[red]Errors:[/red]")
@@ -228,7 +240,9 @@ def remove_agents(
     # Save updated config
     if not keep_config and (removed or any(a in config.available for a in agents)):
         save_agent_config(repo_root, config)
-        console.print(f"\n[cyan]Updated config.yaml:[/cyan] removed {', '.join(removed)}")
+        console.print(
+            f"\n[cyan]Updated config.yaml:[/cyan] removed {', '.join(removed)}"
+        )
 
     if errors:
         console.print("\n[yellow]Warnings:[/yellow]")
@@ -292,7 +306,8 @@ def agent_status():
     orphaned = [
         key
         for key in all_agent_keys
-        if key not in config.available and (repo_root / KEY_TO_AGENT_DIR[key][0]).exists()
+        if key not in config.available
+        and (repo_root / KEY_TO_AGENT_DIR[key][0]).exists()
     ]
 
     if orphaned:
@@ -300,7 +315,9 @@ def agent_status():
             f"\n[yellow]⚠ {len(orphaned)} orphaned directories found[/yellow] "
             f"(present but not configured)"
         )
-        console.print(f"Run 'spec-kitty agent config sync --remove-orphaned' to clean up")
+        console.print(
+            f"Run 'spec-kitty agent config sync --remove-orphaned' to clean up"
+        )
 
 
 @app.command(name="sync")
@@ -339,7 +356,8 @@ def sync_agents(
         orphaned = [
             key
             for key in all_agent_keys
-            if key not in config.available and (repo_root / KEY_TO_AGENT_DIR[key][0]).exists()
+            if key not in config.available
+            and (repo_root / KEY_TO_AGENT_DIR[key][0]).exists()
         ]
 
         for agent_key in orphaned:
@@ -356,7 +374,9 @@ def sync_agents(
     # Create missing directories
     if create_missing:
         console.print("\n[cyan]Checking for missing directories...[/cyan]")
-        missions_dir = repo_root / ".kittify" / "missions" / "software-dev" / "command-templates"
+        missions_dir = (
+            repo_root / ".kittify" / "missions" / "software-dev" / "command-templates"
+        )
 
         for agent_key in config.available:
             agent_dir_info = KEY_TO_AGENT_DIR.get(agent_key)
@@ -380,7 +400,9 @@ def sync_agents(
                     console.print(f"  [green]✓[/green] Created {agent_root}/{subdir}/")
                     changes_made = True
                 except OSError as e:
-                    console.print(f"  [red]✗[/red] Failed to create {agent_root}/{subdir}/: {e}")
+                    console.print(
+                        f"  [red]✗[/red] Failed to create {agent_root}/{subdir}/: {e}"
+                    )
 
     if not changes_made:
         console.print("[dim]No changes needed - filesystem matches config[/dim]")

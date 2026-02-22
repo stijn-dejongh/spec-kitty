@@ -132,12 +132,16 @@ def mock_project_one_agent(tmp_path):
 class TestDetection:
     """Tests for migration detection logic."""
 
-    def test_detect_broken_placeholder(self, mock_project_all_agents_broken_placeholder):
+    def test_detect_broken_placeholder(
+        self, mock_project_all_agents_broken_placeholder
+    ):
         """Test detection returns True when templates have broken placeholder."""
         migration = FixClarifyTemplateMigration()
         assert migration.detect(mock_project_all_agents_broken_placeholder) is True
 
-    def test_detect_old_manual_detection(self, mock_project_all_agents_old_manual_detection):
+    def test_detect_old_manual_detection(
+        self, mock_project_all_agents_old_manual_detection
+    ):
         """Test detection returns True when templates have old manual detection logic."""
         migration = FixClarifyTemplateMigration()
         assert migration.detect(mock_project_all_agents_old_manual_detection) is True
@@ -180,7 +184,9 @@ class TestMigrationApply:
     ):
         """Test migration updates clarify templates for all 12 agents (broken placeholder)."""
         migration = FixClarifyTemplateMigration()
-        result = migration.apply(mock_project_all_agents_broken_placeholder, dry_run=False)
+        result = migration.apply(
+            mock_project_all_agents_broken_placeholder, dry_run=False
+        )
 
         assert result.success is True
         assert len(result.errors) == 0
@@ -195,7 +201,10 @@ class TestMigrationApply:
         content = template_path.read_text()
 
         # Should have correct command
-        assert "spec-kitty agent feature check-prerequisites --json --paths-only" in content
+        assert (
+            "spec-kitty agent feature check-prerequisites --json --paths-only"
+            in content
+        )
 
         # Should NOT have broken placeholder
         assert "(Missing script command for sh)" not in content
@@ -213,7 +222,9 @@ class TestMigrationApply:
     ):
         """Test migration updates clarify templates for all 12 agents (old manual detection)."""
         migration = FixClarifyTemplateMigration()
-        result = migration.apply(mock_project_all_agents_old_manual_detection, dry_run=False)
+        result = migration.apply(
+            mock_project_all_agents_old_manual_detection, dry_run=False
+        )
 
         assert result.success is True
         assert len(result.errors) == 0
@@ -228,7 +239,10 @@ class TestMigrationApply:
         content = template_path.read_text()
 
         # Should have correct command
-        assert "spec-kitty agent feature check-prerequisites --json --paths-only" in content
+        assert (
+            "spec-kitty agent feature check-prerequisites --json --paths-only"
+            in content
+        )
 
         # Should NOT have manual detection logic
         assert "Check git branch name for pattern" not in content
@@ -253,7 +267,9 @@ class TestMigrationApply:
         claude = tmp_path / ".claude" / "commands"
         claude.mkdir(parents=True)
         claude_template = claude / "spec-kitty.clarify.md"
-        claude_template.write_text("1. Run `(Missing script command for sh)` from repo root\n")
+        claude_template.write_text(
+            "1. Run `(Missing script command for sh)` from repo root\n"
+        )
         original_claude_content = claude_template.read_text()
 
         (tmp_path / "kitty-specs").mkdir()
@@ -348,7 +364,10 @@ class TestTemplateContent:
         content = template_path.read_text()
 
         # Should have correct command
-        assert "spec-kitty agent feature check-prerequisites --json --paths-only" in content
+        assert (
+            "spec-kitty agent feature check-prerequisites --json --paths-only"
+            in content
+        )
 
         # Should NOT have broken placeholder
         assert "(Missing script command for sh)" not in content
@@ -361,7 +380,9 @@ class TestTemplateContent:
         clarify_path = Path(
             "src/specify_cli/missions/software-dev/command-templates/clarify.md"
         )
-        tasks_path = Path("src/specify_cli/missions/software-dev/command-templates/tasks.md")
+        tasks_path = Path(
+            "src/specify_cli/missions/software-dev/command-templates/tasks.md"
+        )
 
         clarify_content = clarify_path.read_text()
         tasks_content = tasks_path.read_text()
@@ -372,7 +393,9 @@ class TestTemplateContent:
 
         # Clarify should NOT have --include-tasks flag (that's only for tasks.md)
         clarify_lines = [
-            line for line in clarify_content.split("\n") if "check-prerequisites" in line
+            line
+            for line in clarify_content.split("\n")
+            if "check-prerequisites" in line
         ]
         for line in clarify_lines:
             assert "--include-tasks" not in line

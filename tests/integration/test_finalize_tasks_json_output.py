@@ -45,15 +45,10 @@ def create_test_feature(repo: Path) -> Path:
     kittify = repo / ".kittify"
     kittify.mkdir(exist_ok=True)
 
-    config = {
-        "vcs": {"type": "git"},
-        "agents": {"available": ["claude"]}
-    }
+    config = {"vcs": {"type": "git"}, "agents": {"available": ["claude"]}}
     (kittify / "config.yaml").write_text(yaml.dump(config))
 
-    metadata = {
-        "spec_kitty": {"version": "0.13.8"}
-    }
+    metadata = {"spec_kitty": {"version": "0.13.8"}}
     (kittify / "metadata.yaml").write_text(yaml.dump(metadata))
 
     # Create feature
@@ -80,11 +75,7 @@ def create_test_feature(repo: Path) -> Path:
     for wp_id in ["WP01", "WP02"]:
         wp_file = tasks_dir / f"{wp_id}-test.md"
         wp_file.write_text(
-            f"---\n"
-            f"work_package_id: {wp_id}\n"
-            f"lane: planned\n"
-            f"---\n\n"
-            f"# {wp_id}\n"
+            f"---\nwork_package_id: {wp_id}\nlane: planned\n---\n\n# {wp_id}\n"
         )
 
     # Commit base state
@@ -110,7 +101,9 @@ def test_finalize_tasks_json_includes_commit_hash(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
 
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "config", "user.name", "Test"],
         cwd=repo,
@@ -140,7 +133,9 @@ def test_finalize_tasks_json_includes_commit_hash(tmp_path):
     # Verify hash is valid SHA
     commit_hash = output["commit_hash"]
     assert len(commit_hash) == 40, "commit_hash should be 40-char SHA"
-    assert all(c in "0123456789abcdef" for c in commit_hash), "commit_hash should be hex"
+    assert all(c in "0123456789abcdef" for c in commit_hash), (
+        "commit_hash should be hex"
+    )
 
     # Verify hash matches actual HEAD
     result_head = subprocess.run(
@@ -166,7 +161,9 @@ def test_finalize_tasks_json_includes_commit_created_flag(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
 
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "config", "user.name", "Test"],
         cwd=repo,
@@ -190,7 +187,9 @@ def test_finalize_tasks_json_includes_commit_created_flag(tmp_path):
 
     # Verify commit_created is true
     assert "commit_created" in output, "JSON should include commit_created"
-    assert isinstance(output["commit_created"], bool), "commit_created should be boolean"
+    assert isinstance(output["commit_created"], bool), (
+        "commit_created should be boolean"
+    )
     assert output["commit_created"] is True, "Should create commit on first run"
 
     # Clean up any side-effect dirty files (e.g. config.yaml modified by runtime)
@@ -221,7 +220,9 @@ def test_finalize_tasks_json_includes_files_committed(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
 
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "config", "user.name", "Test"],
         cwd=repo,
@@ -268,7 +269,9 @@ def test_finalize_tasks_with_unrelated_dirty_files(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
 
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "config", "user.name", "Test"],
         cwd=repo,
@@ -292,7 +295,9 @@ def test_finalize_tasks_with_unrelated_dirty_files(tmp_path):
     for i in range(5):
         (templates_dir / f"template{i}.md").write_text(f"Template {i}\n")
 
-    subprocess.run(["git", "add", str(templates_dir)], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", str(templates_dir)], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", "Add templates"],
         cwd=repo,
@@ -321,7 +326,9 @@ def test_finalize_tasks_with_unrelated_dirty_files(tmp_path):
     output = json.loads(result.stdout)
 
     # CRITICAL: Should clearly indicate commit was created
-    assert output["commit_created"] is True, "Should create commit for tasks despite dirty templates"
+    assert output["commit_created"] is True, (
+        "Should create commit for tasks despite dirty templates"
+    )
     assert output["commit_hash"] is not None, "Should have commit hash"
 
     # Verify tasks are actually committed
@@ -342,7 +349,9 @@ def test_finalize_tasks_with_unrelated_dirty_files(tmp_path):
         text=True,
         check=True,
     )
-    assert " D " in overall_status.stdout, "Templates should still be dirty (separate concern)"
+    assert " D " in overall_status.stdout, (
+        "Templates should still be dirty (separate concern)"
+    )
 
 
 def test_json_output_prevents_agent_confusion(tmp_path):
@@ -365,7 +374,9 @@ def test_json_output_prevents_agent_confusion(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
 
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "config", "user.name", "Test"],
         cwd=repo,
@@ -445,7 +456,9 @@ def test_json_output_schema_complete(tmp_path):
     repo = tmp_path / "repo"
     repo.mkdir()
 
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "config", "user.name", "Test"],
         cwd=repo,

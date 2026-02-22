@@ -263,7 +263,9 @@ class TestClassifyAsset:
         result = classify_asset(f, global_home, kittify)
         assert result == AssetDisposition.UNKNOWN
 
-    def test_filecmp_uses_shallow_false(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_filecmp_uses_shallow_false(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Verify filecmp.cmp is called with shallow=False (byte comparison, not just stat)."""
         import filecmp as _filecmp
 
@@ -298,7 +300,9 @@ class TestClassifyAsset:
 class TestExecuteMigration:
     """Test the execute_migration() function."""
 
-    def test_returns_migration_report(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_returns_migration_report(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """execute_migration returns a MigrationReport instance."""
         global_home = tmp_path / "global"
         _setup_global(global_home)
@@ -313,7 +317,9 @@ class TestExecuteMigration:
         report = execute_migration(project, dry_run=True)
         assert isinstance(report, MigrationReport)
 
-    def test_mixed_dispositions(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_mixed_dispositions(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """Reports correct counts for mixed file types."""
         global_home = tmp_path / "global"
         _setup_global(global_home)
@@ -585,9 +591,8 @@ class TestCustomizedFilesMovedToOverrides:
         # Verify on filesystem
         assert (kittify / "overrides" / "templates" / "spec.md").exists()
         assert (
-            (kittify / "overrides" / "templates" / "spec.md").read_text()
-            == "customized content"
-        )
+            kittify / "overrides" / "templates" / "spec.md"
+        ).read_text() == "customized content"
         # Verify: original location removed
         assert not (kittify / "templates" / "spec.md").exists()
 
@@ -620,17 +625,14 @@ class TestCustomizedFilesMovedToOverrides:
 
         # Content preserved
         assert (
-            (kittify / "overrides" / "templates" / "spec.md").read_text()
-            == "custom spec"
-        )
+            kittify / "overrides" / "templates" / "spec.md"
+        ).read_text() == "custom spec"
         assert (
-            (kittify / "overrides" / "command-templates" / "implement.md").read_text()
-            == "custom implement"
-        )
+            kittify / "overrides" / "command-templates" / "implement.md"
+        ).read_text() == "custom implement"
         assert (
-            (kittify / "overrides" / "scripts" / "deploy.sh").read_text()
-            == "custom deploy"
-        )
+            kittify / "overrides" / "scripts" / "deploy.sh"
+        ).read_text() == "custom deploy"
 
     def test_customized_agents_md_moved(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -650,7 +652,9 @@ class TestCustomizedFilesMovedToOverrides:
 
         assert len(report.moved) == 1
         assert (kittify / "overrides" / "AGENTS.md").exists()
-        assert (kittify / "overrides" / "AGENTS.md").read_text() == "my custom agents list"
+        assert (
+            kittify / "overrides" / "AGENTS.md"
+        ).read_text() == "my custom agents list"
         assert not (kittify / "AGENTS.md").exists()
 
     def test_mix_of_identical_and_customized(
@@ -678,7 +682,9 @@ class TestCustomizedFilesMovedToOverrides:
         # Customized moved
         assert len(report.moved) == 1
         assert (kittify / "overrides" / "templates" / "plan.md").exists()
-        assert (kittify / "overrides" / "templates" / "plan.md").read_text() == "my custom plan"
+        assert (
+            kittify / "overrides" / "templates" / "plan.md"
+        ).read_text() == "my custom plan"
 
         # Project-specific kept
         assert len(report.kept) == 1

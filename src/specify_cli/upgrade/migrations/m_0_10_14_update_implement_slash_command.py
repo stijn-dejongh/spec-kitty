@@ -59,7 +59,10 @@ class UpdateImplementSlashCommandMigration_0_10_14(BaseMigration):
             if slash_cmd.exists():
                 content = slash_cmd.read_text(encoding="utf-8")
                 # If it has the old single-command pattern and NOT the two-step section
-                if old_pattern in content and "CRITICAL: This is a TWO-STEP Command" not in content:
+                if (
+                    old_pattern in content
+                    and "CRITICAL: This is a TWO-STEP Command" not in content
+                ):
                     return True
                 # If it's missing step 2 entirely
                 if "spec-kitty implement WP##" not in content:
@@ -81,7 +84,14 @@ class UpdateImplementSlashCommandMigration_0_10_14(BaseMigration):
             return False, f"Cannot access packaged missions: {e}"
 
         # Fallback: Try legacy .kittify location (pre-0.11.0)
-        legacy_path = project_path / ".kittify" / "missions" / self.MISSION_NAME / "command-templates" / self.TEMPLATE_FILE
+        legacy_path = (
+            project_path
+            / ".kittify"
+            / "missions"
+            / self.MISSION_NAME
+            / "command-templates"
+            / self.TEMPLATE_FILE
+        )
         if legacy_path.exists():
             return True, ""
 
@@ -112,7 +122,14 @@ class UpdateImplementSlashCommandMigration_0_10_14(BaseMigration):
 
         # Fallback to legacy location (pre-0.11.0)
         if not template_content:
-            legacy_path = project_path / ".kittify" / "missions" / self.MISSION_NAME / "command-templates" / self.TEMPLATE_FILE
+            legacy_path = (
+                project_path
+                / ".kittify"
+                / "missions"
+                / self.MISSION_NAME
+                / "command-templates"
+                / self.TEMPLATE_FILE
+            )
             if legacy_path.exists():
                 template_content = legacy_path.read_text(encoding="utf-8")
                 template_source = "legacy .kittify/missions"
@@ -150,11 +167,15 @@ class UpdateImplementSlashCommandMigration_0_10_14(BaseMigration):
 
             if needs_update:
                 if dry_run:
-                    changes.append(f"Would update: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}")
+                    changes.append(
+                        f"Would update: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}"
+                    )
                 else:
                     try:
                         slash_cmd.write_text(template_content, encoding="utf-8")
-                        changes.append(f"Updated: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}")
+                        changes.append(
+                            f"Updated: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}"
+                        )
                         agents_updated += 1
                     except Exception as e:
                         errors.append(f"Failed to update {agent_dir}/{subdir}: {e}")

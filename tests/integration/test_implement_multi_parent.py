@@ -162,7 +162,13 @@ def test_implement_linear_dependency_chain(feature_repo: Path, monkeypatch):
     assert (feature_repo / ".worktrees" / "010-multi-parent-test-WP01").exists()
 
     # Verify frontmatter updated with base_branch
-    wp01_file = feature_repo / "kitty-specs" / "010-multi-parent-test" / "tasks" / "WP01-database.md"
+    wp01_file = (
+        feature_repo
+        / "kitty-specs"
+        / "010-multi-parent-test"
+        / "tasks"
+        / "WP01-database.md"
+    )
     fm01, _ = read_frontmatter(wp01_file)
     assert fm01["base_branch"] == "main"
     assert "base_commit" in fm01
@@ -178,7 +184,9 @@ def test_implement_linear_dependency_chain(feature_repo: Path, monkeypatch):
     # Make a commit in WP01 workspace
     wp01_workspace = feature_repo / ".worktrees" / "010-multi-parent-test-WP01"
     (wp01_workspace / "database.sql").write_text("CREATE TABLE users;\n")
-    subprocess.run(["git", "add", "."], cwd=wp01_workspace, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "."], cwd=wp01_workspace, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", "Add database schema"],
         cwd=wp01_workspace,
@@ -192,7 +200,13 @@ def test_implement_linear_dependency_chain(feature_repo: Path, monkeypatch):
     assert "010-multi-parent-test-WP02" in result.stdout
 
     # Verify WP02 base tracking
-    wp02_file = feature_repo / "kitty-specs" / "010-multi-parent-test" / "tasks" / "WP02-user-api.md"
+    wp02_file = (
+        feature_repo
+        / "kitty-specs"
+        / "010-multi-parent-test"
+        / "tasks"
+        / "WP02-user-api.md"
+    )
     fm02, _ = read_frontmatter(wp02_file)
     assert fm02["base_branch"] == "010-multi-parent-test-WP01"
     assert "base_commit" in fm02
@@ -217,7 +231,9 @@ def test_implement_multi_parent_auto_merge(feature_repo: Path, monkeypatch):
 
     wp01_workspace = feature_repo / ".worktrees" / "010-multi-parent-test-WP01"
     (wp01_workspace / "database.sql").write_text("CREATE TABLE users;\n")
-    subprocess.run(["git", "add", "."], cwd=wp01_workspace, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "."], cwd=wp01_workspace, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", "Add database"],
         cwd=wp01_workspace,
@@ -231,7 +247,9 @@ def test_implement_multi_parent_auto_merge(feature_repo: Path, monkeypatch):
 
     wp02_workspace = feature_repo / ".worktrees" / "010-multi-parent-test-WP02"
     (wp02_workspace / "user-api.py").write_text("# User API\n")
-    subprocess.run(["git", "add", "."], cwd=wp02_workspace, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "."], cwd=wp02_workspace, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", "Add user API"],
         cwd=wp02_workspace,
@@ -245,7 +263,9 @@ def test_implement_multi_parent_auto_merge(feature_repo: Path, monkeypatch):
 
     wp03_workspace = feature_repo / ".worktrees" / "010-multi-parent-test-WP03"
     (wp03_workspace / "auth-api.py").write_text("# Auth API\n")
-    subprocess.run(["git", "add", "."], cwd=wp03_workspace, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "."], cwd=wp03_workspace, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", "Add auth API"],
         cwd=wp03_workspace,
@@ -266,7 +286,13 @@ def test_implement_multi_parent_auto_merge(feature_repo: Path, monkeypatch):
     assert wp04_workspace.exists()
 
     # Verify WP04 frontmatter has merge base branch
-    wp04_file = feature_repo / "kitty-specs" / "010-multi-parent-test" / "tasks" / "WP04-admin-dashboard.md"
+    wp04_file = (
+        feature_repo
+        / "kitty-specs"
+        / "010-multi-parent-test"
+        / "tasks"
+        / "WP04-admin-dashboard.md"
+    )
     fm04, _ = read_frontmatter(wp04_file)
     assert fm04["base_branch"] == "010-multi-parent-test-WP04-merge-base"
     assert "base_commit" in fm04
@@ -310,7 +336,9 @@ def test_implement_multi_parent_with_conflicts(feature_repo: Path, monkeypatch):
 
     wp01_workspace = feature_repo / ".worktrees" / "010-multi-parent-test-WP01"
     (wp01_workspace / "config.py").write_text("# Config from WP01\n")
-    subprocess.run(["git", "add", "."], cwd=wp01_workspace, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "."], cwd=wp01_workspace, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", "Add config"],
         cwd=wp01_workspace,
@@ -324,7 +352,9 @@ def test_implement_multi_parent_with_conflicts(feature_repo: Path, monkeypatch):
 
     wp02_workspace = feature_repo / ".worktrees" / "010-multi-parent-test-WP02"
     (wp02_workspace / "config.py").write_text("# Config from WP02 (DIFFERENT)\n")
-    subprocess.run(["git", "add", "."], cwd=wp02_workspace, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "."], cwd=wp02_workspace, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", "Update config in WP02"],
         cwd=wp02_workspace,
@@ -338,7 +368,9 @@ def test_implement_multi_parent_with_conflicts(feature_repo: Path, monkeypatch):
 
     wp03_workspace = feature_repo / ".worktrees" / "010-multi-parent-test-WP03"
     (wp03_workspace / "config.py").write_text("# Config from WP03 (ALSO DIFFERENT)\n")
-    subprocess.run(["git", "add", "."], cwd=wp03_workspace, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "."], cwd=wp03_workspace, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", "Update config in WP03"],
         cwd=wp03_workspace,

@@ -7,7 +7,15 @@ class TestLaneExpansion:
         assert len(LANES) == 7
 
     def test_lanes_tuple_values(self):
-        assert LANES == ("planned", "claimed", "in_progress", "for_review", "done", "blocked", "canceled")
+        assert LANES == (
+            "planned",
+            "claimed",
+            "in_progress",
+            "for_review",
+            "done",
+            "blocked",
+            "canceled",
+        )
 
     def test_doing_not_in_lanes(self):
         assert "doing" not in LANES

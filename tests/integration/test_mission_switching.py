@@ -28,7 +28,9 @@ def test_mission_switch_shows_helpful_error(clean_project: Path, run_cli) -> Non
     assert "/spec-kitty.specify" in output
 
 
-def test_mission_switch_blocked_by_worktrees_via_cli(project_with_worktree: Path, run_cli) -> None:
+def test_mission_switch_blocked_by_worktrees_via_cli(
+    project_with_worktree: Path, run_cli
+) -> None:
     """Mission switch should show per-feature error even with worktrees."""
     result = run_cli(project_with_worktree, "mission", "switch", "research")
 
@@ -40,7 +42,9 @@ def test_mission_switch_blocked_by_worktrees_via_cli(project_with_worktree: Path
 
 
 @pytest.mark.skipif(IS_2X_BRANCH, reason=LEGACY_0X_ONLY_REASON)
-def test_mission_list_shows_both_missions_with_source(clean_project: Path, run_cli) -> None:
+def test_mission_list_shows_both_missions_with_source(
+    clean_project: Path, run_cli
+) -> None:
     """Mission list should show all available missions with source indicators."""
     result = run_cli(clean_project, "mission", "list")
 
@@ -51,7 +55,9 @@ def test_mission_list_shows_both_missions_with_source(clean_project: Path, run_c
     # Should show source column (per-feature model)
     assert "Source" in result.stdout or "project" in result.stdout
     # Should mention per-feature selection
-    assert "/spec-kitty.specify" in result.stdout or "per-feature" in result.stdout.lower()
+    assert (
+        "/spec-kitty.specify" in result.stdout or "per-feature" in result.stdout.lower()
+    )
 
 
 @pytest.mark.skipif(IS_2X_BRANCH, reason=LEGACY_0X_ONLY_REASON)

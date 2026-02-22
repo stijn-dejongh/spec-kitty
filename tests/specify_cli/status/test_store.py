@@ -177,9 +177,7 @@ def test_blank_lines_skipped(tmp_path: Path) -> None:
     good_line = json.dumps(event.to_dict(), sort_keys=True)
 
     events_file = tmp_path / EVENTS_FILENAME
-    events_file.write_text(
-        f"\n{good_line}\n\n{good_line}\n\n", encoding="utf-8"
-    )
+    events_file.write_text(f"\n{good_line}\n\n{good_line}\n\n", encoding="utf-8")
 
     events = read_events(tmp_path)
     assert len(events) == 2

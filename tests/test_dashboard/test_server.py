@@ -8,7 +8,7 @@ def test_find_free_port_returns_available_port():
     port = server.find_free_port(start_port=15000, max_attempts=50)
     assert isinstance(port, int)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(('127.0.0.1', port))
+        sock.bind(("127.0.0.1", port))
 
 
 def test_start_dashboard_background_invokes_subprocess(monkeypatch, tmp_path):
@@ -21,8 +21,12 @@ def test_start_dashboard_background_invokes_subprocess(monkeypatch, tmp_path):
             calls["args"] = args
             calls["kwargs"] = kwargs
 
-    monkeypatch.setattr(server, "subprocess", type("S", (), {"Popen": FakeProcess, "DEVNULL": None}))
-    port, pid = server.start_dashboard(tmp_path, port=12345, background_process=True, project_token="abc")
+    monkeypatch.setattr(
+        server, "subprocess", type("S", (), {"Popen": FakeProcess, "DEVNULL": None})
+    )
+    port, pid = server.start_dashboard(
+        tmp_path, port=12345, background_process=True, project_token="abc"
+    )
     assert port == 12345
     assert pid == 12345  # Changed from thread to pid
     assert calls["args"][0] == server.sys.executable

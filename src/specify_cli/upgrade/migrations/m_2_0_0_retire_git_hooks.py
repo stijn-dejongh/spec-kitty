@@ -148,4 +148,3 @@ class RetireGitHooksMigration(BaseMigration):
             errors=errors,
             warnings=warnings,
         )
-

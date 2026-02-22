@@ -1,4 +1,5 @@
 """Migration Robustness Tests."""
+
 from __future__ import annotations
 
 import multiprocessing
@@ -19,7 +20,9 @@ from specify_cli.upgrade.registry import MigrationRegistry
 from specify_cli.upgrade.runner import MigrationRunner
 
 # Get migrations directory path
-MIGRATIONS_DIR = Path(__file__).parents[3] / "src" / "specify_cli" / "upgrade" / "migrations"
+MIGRATIONS_DIR = (
+    Path(__file__).parents[3] / "src" / "specify_cli" / "upgrade" / "migrations"
+)
 
 pytestmark = [pytest.mark.adversarial]
 
@@ -129,7 +132,9 @@ def _run_upgrade_concurrent(
 
 
 class TestAtomicWrites:
-    def test_metadata_save_interruption_leaves_partial_file(self, tmp_path: Path, monkeypatch):
+    def test_metadata_save_interruption_leaves_partial_file(
+        self, tmp_path: Path, monkeypatch
+    ):
         kittify_dir = tmp_path / ".kittify"
         kittify_dir.mkdir(parents=True)
         metadata = ProjectMetadata(
@@ -161,7 +166,9 @@ class TestAtomicWrites:
 
 @pytest.mark.slow
 class TestConcurrentMigration:
-    def test_concurrent_upgrade_handled(self, migration_project: Path, registry_restore: Any):
+    def test_concurrent_upgrade_handled(
+        self, migration_project: Path, registry_restore: Any
+    ):
         ctx = multiprocessing.get_context("spawn")
         ready_queue: multiprocessing.Queue = ctx.Queue()
         result_queue: multiprocessing.Queue = ctx.Queue()
@@ -199,7 +206,9 @@ class TestConcurrentMigration:
 
 
 class TestPartialMigrationRecovery:
-    def test_failed_migration_can_retry(self, migration_project: Path, registry_restore: Any):
+    def test_failed_migration_can_retry(
+        self, migration_project: Path, registry_restore: Any
+    ):
         _register_migrations(FlakyMigration)
         runner = MigrationRunner(migration_project)
 
@@ -245,10 +254,9 @@ class TestMigrationRegistryCompleteness:
         Bug prevented: 0.13.2 release blocker (4 migrations missing from registry)
         """
         # Find all migration files (m_*.py, excluding __init__.py)
-        migration_files = sorted([
-            f.stem for f in MIGRATIONS_DIR.glob("m_*.py")
-            if f.stem != "__init__"
-        ])
+        migration_files = sorted(
+            [f.stem for f in MIGRATIONS_DIR.glob("m_*.py") if f.stem != "__init__"]
+        )
 
         # Get all registered migrations
         registered_migrations = MigrationRegistry.get_all()

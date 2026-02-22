@@ -191,7 +191,9 @@ class ManifestRegistry:
         try:
             manifest = ExpectedArtifactManifest.from_yaml_file(manifest_path)
             ManifestRegistry._cache[mission_type] = manifest
-            logger.info(f"Loaded manifest for {mission_type}: {len(manifest.get_step_ids())} steps")
+            logger.info(
+                f"Loaded manifest for {mission_type}: {len(manifest.get_step_ids())} steps"
+            )
             return manifest
         except Exception as e:
             logger.error(f"Failed to load manifest for {mission_type}: {e}")
@@ -234,7 +236,9 @@ class ManifestRegistry:
         return [s for s in specs if s.blocking]
 
     @staticmethod
-    def get_optional_artifacts(manifest: ExpectedArtifactManifest) -> List[ExpectedArtifactSpec]:
+    def get_optional_artifacts(
+        manifest: ExpectedArtifactManifest,
+    ) -> List[ExpectedArtifactSpec]:
         """Get optional artifact specs for a mission.
 
         Args:

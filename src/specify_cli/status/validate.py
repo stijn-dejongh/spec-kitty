@@ -91,7 +91,9 @@ def validate_event_schema(event: dict) -> list[str]:
     # force must be boolean
     force_val = event.get("force")
     if force_val is not None and not isinstance(force_val, bool):
-        findings.append(f"Event {event_id}: force must be boolean, got {type(force_val).__name__}")
+        findings.append(
+            f"Event {event_id}: force must be boolean, got {type(force_val).__name__}"
+        )
 
     # execution_mode check
     exec_mode = event.get("execution_mode")
@@ -105,10 +107,7 @@ def validate_event_schema(event: dict) -> list[str]:
         findings.append(f"Event {event_id}: force=true without reason")
 
     # Review ref check: for_review -> in_progress requires review_ref
-    if (
-        event.get("from_lane") == "for_review"
-        and event.get("to_lane") == "in_progress"
-    ):
+    if event.get("from_lane") == "for_review" and event.get("to_lane") == "in_progress":
         if not event.get("review_ref"):
             findings.append(
                 f"Event {event_id}: for_review->in_progress without review_ref"
@@ -175,36 +174,26 @@ def validate_done_evidence(events: list[dict]) -> list[str]:
 
         evidence = event.get("evidence")
         if not evidence:
-            findings.append(
-                f"Event {event_id}: done without evidence (not forced)"
-            )
+            findings.append(f"Event {event_id}: done without evidence (not forced)")
             continue
 
         # Check evidence structure
         if not isinstance(evidence, dict):
-            findings.append(
-                f"Event {event_id}: done evidence is not a dict"
-            )
+            findings.append(f"Event {event_id}: done evidence is not a dict")
             continue
 
         review = evidence.get("review")
         if not review:
-            findings.append(
-                f"Event {event_id}: done evidence missing review section"
-            )
+            findings.append(f"Event {event_id}: done evidence missing review section")
         elif not isinstance(review, dict):
-            findings.append(
-                f"Event {event_id}: done evidence review is not a dict"
-            )
+            findings.append(f"Event {event_id}: done evidence review is not a dict")
         else:
             if not review.get("reviewer"):
                 findings.append(
                     f"Event {event_id}: done evidence missing reviewer identity"
                 )
             if not review.get("verdict"):
-                findings.append(
-                    f"Event {event_id}: done evidence missing verdict"
-                )
+                findings.append(f"Event {event_id}: done evidence missing verdict")
             if not review.get("reference"):
                 findings.append(
                     f"Event {event_id}: done evidence missing approval reference"
@@ -229,9 +218,7 @@ def validate_materialization_drift(feature_dir: Path) -> list[str]:
 
     if not events_path.exists():
         if status_path.exists():
-            findings.append(
-                "status.json exists but status.events.jsonl is missing"
-            )
+            findings.append("status.json exists but status.events.jsonl is missing")
         return findings
 
     if not status_path.exists():
@@ -407,7 +394,7 @@ def _extract_tasks_status_lines(content: str) -> list[str] | None:
     end_idx = content.find(STATUS_BLOCK_END, start_idx)
     if end_idx == -1:
         return None
-    block = content[start_idx + len(STATUS_BLOCK_START):end_idx]
+    block = content[start_idx + len(STATUS_BLOCK_START) : end_idx]
     lines = [line.strip() for line in block.strip().splitlines() if line.strip()]
     if not lines:
         return []

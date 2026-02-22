@@ -125,13 +125,15 @@ def extract_wp_id(worktree_path: Path) -> str | None:
     Example: .worktrees/010-feature-WP01/ → WP01
     """
     name = worktree_path.name
-    match = re.search(r'-(WP\d{2})$', name)
+    match = re.search(r"-(WP\d{2})$", name)
     if match:
         return match.group(1)
     return None
 
 
-def find_wp_worktrees(repo_root: Path, feature_slug: str) -> list[tuple[Path, str, str]]:
+def find_wp_worktrees(
+    repo_root: Path, feature_slug: str
+) -> list[tuple[Path, str, str]]:
     """Find all WP worktrees for a feature.
 
     Returns: List of (worktree_path, wp_id, branch_name) tuples, sorted by WP ID.
@@ -160,20 +162,22 @@ def extract_feature_slug(branch_name: str) -> str:
 
     Example: 010-workspace-per-wp-WP01 → 010-workspace-per-wp
     """
-    match = re.match(r'(.*?)-WP\d{2}$', branch_name)
+    match = re.match(r"(.*?)-WP\d{2}$", branch_name)
     if match:
         return match.group(1)
     return branch_name  # Return as-is for legacy branches
 
 
-def validate_wp_ready_for_merge(repo_root: Path, worktree_path: Path, branch_name: str) -> tuple[bool, str]:
+def validate_wp_ready_for_merge(
+    repo_root: Path, worktree_path: Path, branch_name: str
+) -> tuple[bool, str]:
     """Validate WP workspace is ready to merge."""
     # Check 1: Branch exists in git (check from repo root)
     result = subprocess.run(
         ["git", "rev-parse", "--verify", branch_name],
         cwd=str(repo_root),
         capture_output=True,
-        check=False
+        check=False,
     )
     if result.returncode != 0:
         return False, f"Branch {branch_name} does not exist"
@@ -185,7 +189,7 @@ def validate_wp_ready_for_merge(repo_root: Path, worktree_path: Path, branch_nam
         capture_output=True,
         text=True,
         encoding="utf-8",
-        errors="replace"
+        errors="replace",
     )
     if result.stdout.strip():
         return False, f"Worktree {worktree_path.name} has uncommitted changes"
@@ -226,15 +230,21 @@ def merge_workspace_per_wp(
             for wt_path, wp_id, branch in wp_workspaces
             if wp_id not in completed_set
         ]
-        console.print(f"[cyan]Resuming merge:[/cyan] {len(resume_state.completed_wps)} WPs already merged")
+        console.print(
+            f"[cyan]Resuming merge:[/cyan] {len(resume_state.completed_wps)} WPs already merged"
+        )
 
     if not wp_workspaces:
         console.print(tracker.render())
-        console.print(f"\n[yellow]Warning:[/yellow] No WP worktrees found for feature {feature_slug}")
+        console.print(
+            f"\n[yellow]Warning:[/yellow] No WP worktrees found for feature {feature_slug}"
+        )
         console.print("Feature may already be merged or not yet implemented")
         raise typer.Exit(1)
 
-    console.print(f"\n[cyan]Workspace-per-WP feature detected:[/cyan] {len(wp_workspaces)} work packages")
+    console.print(
+        f"\n[cyan]Workspace-per-WP feature detected:[/cyan] {len(wp_workspaces)} work packages"
+    )
     for wt_path, wp_id, branch in wp_workspaces:
         console.print(f"  - {wp_id}: {branch}")
 
@@ -266,12 +276,16 @@ def merge_workspace_per_wp(
         ]
         for wt_path, wp_id, branch in wp_workspaces:
             if strategy == "squash":
-                steps.extend([
-                    f"git merge --squash {branch}",
-                    f"git commit -m 'Merge {wp_id} from {feature_slug}'",
-                ])
+                steps.extend(
+                    [
+                        f"git merge --squash {branch}",
+                        f"git commit -m 'Merge {wp_id} from {feature_slug}'",
+                    ]
+                )
             else:
-                steps.append(f"git merge --no-ff {branch} -m 'Merge {wp_id} from {feature_slug}'")
+                steps.append(
+                    f"git merge --no-ff {branch} -m 'Merge {wp_id} from {feature_slug}'"
+                )
 
         if push:
             steps.append(f"git push origin {target_branch}")
@@ -298,7 +312,9 @@ def merge_workspace_per_wp(
             cwd=merge_root,
         )
         if target_status.strip():
-            raise RuntimeError(f"Target repository at {merge_root} has uncommitted changes.")
+            raise RuntimeError(
+                f"Target repository at {merge_root} has uncommitted changes."
+            )
         run_command(["git", "checkout", target_branch], cwd=merge_root)
         tracker.complete("checkout", f"using {merge_root}")
     except Exception as exc:
@@ -320,7 +336,9 @@ def merge_workspace_per_wp(
     except Exception as exc:
         tracker.error("pull", str(exc))
         console.print(tracker.render())
-        console.print(f"\n[yellow]Warning:[/yellow] Could not fast-forward {target_branch}.")
+        console.print(
+            f"\n[yellow]Warning:[/yellow] Could not fast-forward {target_branch}."
+        )
         console.print("You may need to resolve conflicts manually.")
         raise typer.Exit(1)
 
@@ -337,14 +355,23 @@ def merge_workspace_per_wp(
                     cwd=merge_root,
                 )
             elif strategy == "rebase":
-                console.print("\n[yellow]Note:[/yellow] Rebase strategy not supported for workspace-per-WP.")
+                console.print(
+                    "\n[yellow]Note:[/yellow] Rebase strategy not supported for workspace-per-WP."
+                )
                 console.print("Use 'merge' or 'squash' strategy instead.")
                 tracker.skip("merge", "rebase not supported for workspace-per-WP")
                 console.print(tracker.render())
                 raise typer.Exit(1)
             else:  # merge (default)
                 run_command(
-                    ["git", "merge", "--no-ff", branch, "-m", f"Merge {wp_id} from {feature_slug}"],
+                    [
+                        "git",
+                        "merge",
+                        "--no-ff",
+                        branch,
+                        "-m",
+                        f"Merge {wp_id} from {feature_slug}",
+                    ],
                     cwd=merge_root,
                 )
 
@@ -372,7 +399,9 @@ def merge_workspace_per_wp(
         except Exception as exc:
             tracker.error("push", str(exc))
             console.print(tracker.render())
-            console.print(f"\n[yellow]Warning:[/yellow] Merge succeeded but push failed.")
+            console.print(
+                f"\n[yellow]Warning:[/yellow] Merge succeeded but push failed."
+            )
             console.print(f"Run manually: git push origin {target_branch}")
 
     # Remove worktrees
@@ -390,9 +419,13 @@ def merge_workspace_per_wp(
                 failed_removals.append((wp_id, wt_path))
 
         if failed_removals:
-            tracker.error("worktree", f"could not remove {len(failed_removals)} worktrees")
+            tracker.error(
+                "worktree", f"could not remove {len(failed_removals)} worktrees"
+            )
             console.print(tracker.render())
-            console.print(f"\n[yellow]Warning:[/yellow] Could not remove some worktrees:")
+            console.print(
+                f"\n[yellow]Warning:[/yellow] Could not remove some worktrees:"
+            )
             for wp_id, wt_path in failed_removals:
                 console.print(f"  {wp_id}: git worktree remove {wt_path}")
         else:
@@ -415,28 +448,50 @@ def merge_workspace_per_wp(
                     failed_deletions.append((wp_id, branch))
 
         if failed_deletions:
-            tracker.error("branch", f"could not delete {len(failed_deletions)} branches")
+            tracker.error(
+                "branch", f"could not delete {len(failed_deletions)} branches"
+            )
             console.print(tracker.render())
-            console.print(f"\n[yellow]Warning:[/yellow] Could not delete some branches:")
+            console.print(
+                f"\n[yellow]Warning:[/yellow] Could not delete some branches:"
+            )
             for wp_id, branch in failed_deletions:
                 console.print(f"  {wp_id}: git branch -D {branch}")
         else:
             tracker.complete("branch", f"deleted {len(wp_workspaces)} branches")
 
     console.print(tracker.render())
-    console.print(f"\n[bold green]✓ Feature {feature_slug} ({len(wp_workspaces)} WPs) successfully merged into {target_branch}[/bold green]")
+    console.print(
+        f"\n[bold green]✓ Feature {feature_slug} ({len(wp_workspaces)} WPs) successfully merged into {target_branch}[/bold green]"
+    )
 
 
 @require_main_repo
 def merge(
-    strategy: str = typer.Option("merge", "--strategy", help="Merge strategy: merge, squash, or rebase"),
-    delete_branch: bool = typer.Option(True, "--delete-branch/--keep-branch", help="Delete feature branch after merge"),
-    remove_worktree: bool = typer.Option(True, "--remove-worktree/--keep-worktree", help="Remove feature worktree after merge"),
+    strategy: str = typer.Option(
+        "merge", "--strategy", help="Merge strategy: merge, squash, or rebase"
+    ),
+    delete_branch: bool = typer.Option(
+        True, "--delete-branch/--keep-branch", help="Delete feature branch after merge"
+    ),
+    remove_worktree: bool = typer.Option(
+        True,
+        "--remove-worktree/--keep-worktree",
+        help="Remove feature worktree after merge",
+    ),
     push: bool = typer.Option(False, "--push", help="Push to origin after merge"),
-    target_branch: str = typer.Option(None, "--target", help="Target branch to merge into (auto-detected)"),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be done without executing"),
-    feature: str = typer.Option(None, "--feature", help="Feature slug when merging from main branch"),
-    resume: bool = typer.Option(False, "--resume", help="Resume an interrupted merge from saved state"),
+    target_branch: str = typer.Option(
+        None, "--target", help="Target branch to merge into (auto-detected)"
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show what would be done without executing"
+    ),
+    feature: str = typer.Option(
+        None, "--feature", help="Feature slug when merging from main branch"
+    ),
+    resume: bool = typer.Option(
+        False, "--resume", help="Resume an interrupted merge from saved state"
+    ),
     abort: bool = typer.Option(False, "--abort", help="Abort and clear merge state"),
 ) -> None:
     """Merge a completed feature branch into the target branch and clean up resources.
@@ -466,8 +521,12 @@ def merge(
             console.print("[yellow]No merge state to abort[/yellow]")
         else:
             clear_state(main_repo)
-            console.print(f"[green]✓[/green] Merge state cleared for {state.feature_slug}")
-            console.print(f"  Progress was: {len(state.completed_wps)}/{len(state.wp_order)} WPs complete")
+            console.print(
+                f"[green]✓[/green] Merge state cleared for {state.feature_slug}"
+            )
+            console.print(
+                f"  Progress was: {len(state.completed_wps)}/{len(state.wp_order)} WPs complete"
+            )
 
         # Also abort git merge if in progress
         if abort_git_merge(main_repo):
@@ -493,16 +552,22 @@ def merge(
                 clear_state(main_repo)
                 console.print("[yellow]⚠ Invalid merge state file cleared[/yellow]")
             console.print("[red]Error:[/red] No merge state to resume")
-            console.print("Run 'spec-kitty merge --feature <slug>' to start a new merge.")
+            console.print(
+                "Run 'spec-kitty merge --feature <slug>' to start a new merge."
+            )
             raise typer.Exit(1)
 
         console.print(f"[cyan]Resuming merge of {resume_state.feature_slug}[/cyan]")
-        console.print(f"  Progress: {len(resume_state.completed_wps)}/{len(resume_state.wp_order)} WPs")
+        console.print(
+            f"  Progress: {len(resume_state.completed_wps)}/{len(resume_state.wp_order)} WPs"
+        )
         console.print(f"  Remaining: {', '.join(resume_state.remaining_wps)}")
 
         # Check for pending git merge
         if detect_git_merge_state(main_repo):
-            console.print("[yellow]⚠ Git merge in progress - resolve conflicts first[/yellow]")
+            console.print(
+                "[yellow]⚠ Git merge in progress - resolve conflicts first[/yellow]"
+            )
             console.print("Then run 'spec-kitty merge --resume' again.")
             raise typer.Exit(1)
 
@@ -520,6 +585,7 @@ def merge(
     # Resolve target branch dynamically if not specified
     if target_branch is None:
         from specify_cli.core.git_ops import resolve_primary_branch
+
         target_branch = resolve_primary_branch(repo_root)
 
     tracker = StepTracker("Feature Merge")
@@ -529,9 +595,12 @@ def merge(
     tracker.add("checkout", f"Switch to {target_branch}")
     tracker.add("pull", f"Update {target_branch}")
     tracker.add("merge", "Merge feature branch")
-    if push: tracker.add("push", "Push to origin")
-    if remove_worktree: tracker.add("worktree", "Remove feature worktree")
-    if delete_branch: tracker.add("branch", "Delete feature branch")
+    if push:
+        tracker.add("push", "Push to origin")
+    if remove_worktree:
+        tracker.add("worktree", "Remove feature worktree")
+    if delete_branch:
+        tracker.add("branch", "Delete feature branch")
     console.print()
 
     check_version_compatibility(repo_root, "merge")
@@ -550,19 +619,27 @@ def merge(
     feature_worktree_path = merge_root = repo_root
     tracker.start("detect")
     try:
-        _, current_branch, _ = run_command(["git", "rev-parse", "--abbrev-ref", "HEAD"], capture=True)
+        _, current_branch, _ = run_command(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"], capture=True
+        )
         if current_branch == target_branch:
             # Check if --feature flag was provided
             if feature:
                 # Validate feature exists by checking for worktrees
                 main_repo = get_main_repo_root(repo_root)
                 worktrees_dir = main_repo / ".worktrees"
-                wp_pattern = list(worktrees_dir.glob(f"{feature}-WP*")) if worktrees_dir.exists() else []
+                wp_pattern = (
+                    list(worktrees_dir.glob(f"{feature}-WP*"))
+                    if worktrees_dir.exists()
+                    else []
+                )
 
                 if not wp_pattern:
                     tracker.error("detect", f"no WP worktrees found for {feature}")
                     console.print(tracker.render())
-                    console.print(f"\n[red]Error:[/red] No WP worktrees found for feature '{feature}'.")
+                    console.print(
+                        f"\n[red]Error:[/red] No WP worktrees found for feature '{feature}'."
+                    )
                     console.print("Check the feature slug or create workspaces first.")
                     raise typer.Exit(1)
 
@@ -613,7 +690,9 @@ def merge(
                 console.print("Use --feature <slug> to specify the feature to merge.")
                 raise typer.Exit(1)
 
-        _, git_dir_output, _ = run_command(["git", "rev-parse", "--git-dir"], capture=True)
+        _, git_dir_output, _ = run_command(
+            ["git", "rev-parse", "--git-dir"], capture=True
+        )
         git_dir_path = Path(git_dir_output).resolve()
         in_worktree = "worktrees" in git_dir_path.parts
         if in_worktree:
@@ -622,7 +701,8 @@ def merge(
                 raise RuntimeError(f"Primary repository path not found: {merge_root}")
         tracker.complete(
             "detect",
-            f"on {current_branch}" + (f" (worktree → operating from {merge_root})" if in_worktree else ""),
+            f"on {current_branch}"
+            + (f" (worktree → operating from {merge_root})" if in_worktree else ""),
         )
     except Exception as exc:
         tracker.error("detect", str(exc))
@@ -677,11 +757,15 @@ def merge(
     tracker.skip("preflight", "legacy single-worktree merge")
     tracker.start("verify")
     try:
-        _, status_output, _ = run_command(["git", "status", "--porcelain"], capture=True)
+        _, status_output, _ = run_command(
+            ["git", "status", "--porcelain"], capture=True
+        )
         if status_output.strip():
             tracker.error("verify", "uncommitted changes")
             console.print(tracker.render())
-            console.print(f"\n[red]Error:[/red] Working directory has uncommitted changes.")
+            console.print(
+                f"\n[red]Error:[/red] Working directory has uncommitted changes."
+            )
             console.print("Commit or stash your changes before merging.")
             raise typer.Exit(1)
         tracker.complete("verify", "clean working directory")
@@ -690,7 +774,10 @@ def merge(
         console.print(tracker.render())
         raise typer.Exit(1)
 
-    merge_root, feature_worktree_path = merge_root.resolve(), feature_worktree_path.resolve()
+    merge_root, feature_worktree_path = (
+        merge_root.resolve(),
+        feature_worktree_path.resolve(),
+    )
     if dry_run:
         console.print(tracker.render())
         console.print("\n[cyan]Dry run - would execute:[/cyan]")
@@ -700,10 +787,12 @@ def merge(
             "git pull --ff-only",
         ]
         if strategy == "squash":
-            steps.extend([
-                f"git merge --squash {current_branch}",
-                f"git commit -m 'Merge feature {current_branch}'",
-            ])
+            steps.extend(
+                [
+                    f"git merge --squash {current_branch}",
+                    f"git commit -m 'Merge feature {current_branch}'",
+                ]
+            )
         elif strategy == "rebase":
             steps.append(f"git merge --ff-only {current_branch} (after rebase)")
         else:
@@ -721,14 +810,18 @@ def merge(
     tracker.start("checkout")
     try:
         if in_worktree:
-            console.print(f"[cyan]Detected worktree. Merge operations will run from {merge_root}[/cyan]")
+            console.print(
+                f"[cyan]Detected worktree. Merge operations will run from {merge_root}[/cyan]"
+            )
         _, target_status, _ = run_command(
             ["git", "status", "--porcelain"],
             capture=True,
             cwd=merge_root,
         )
         if target_status.strip():
-            raise RuntimeError(f"Target repository at {merge_root} has uncommitted changes.")
+            raise RuntimeError(
+                f"Target repository at {merge_root} has uncommitted changes."
+            )
         run_command(["git", "checkout", target_branch], cwd=merge_root)
         tracker.complete("checkout", f"using {merge_root}")
     except Exception as exc:
@@ -750,7 +843,9 @@ def merge(
     except Exception as exc:
         tracker.error("pull", str(exc))
         console.print(tracker.render())
-        console.print(f"\n[yellow]Warning:[/yellow] Could not fast-forward {target_branch}.")
+        console.print(
+            f"\n[yellow]Warning:[/yellow] Could not fast-forward {target_branch}."
+        )
         console.print("You may need to resolve conflicts manually.")
         raise typer.Exit(1)
 
@@ -764,14 +859,25 @@ def merge(
             )
             tracker.complete("merge", "squashed")
         elif strategy == "rebase":
-            console.print("\n[yellow]Note:[/yellow] Rebase strategy requires manual intervention.")
-            console.print(f"Please run: git checkout {current_branch} && git rebase {target_branch}")
+            console.print(
+                "\n[yellow]Note:[/yellow] Rebase strategy requires manual intervention."
+            )
+            console.print(
+                f"Please run: git checkout {current_branch} && git rebase {target_branch}"
+            )
             tracker.skip("merge", "requires manual rebase")
             console.print(tracker.render())
             raise typer.Exit(0)
         else:
             run_command(
-                ["git", "merge", "--no-ff", current_branch, "-m", f"Merge feature {current_branch}"],
+                [
+                    "git",
+                    "merge",
+                    "--no-ff",
+                    current_branch,
+                    "-m",
+                    f"Merge feature {current_branch}",
+                ],
                 cwd=merge_root,
             )
             tracker.complete("merge", "merged with merge commit")
@@ -789,7 +895,9 @@ def merge(
         except Exception as exc:
             tracker.error("push", str(exc))
             console.print(tracker.render())
-            console.print(f"\n[yellow]Warning:[/yellow] Merge succeeded but push failed.")
+            console.print(
+                f"\n[yellow]Warning:[/yellow] Merge succeeded but push failed."
+            )
             console.print(f"Run manually: git push origin {target_branch}")
 
     if in_worktree and remove_worktree:
@@ -818,9 +926,15 @@ def merge(
             except Exception:
                 tracker.error("branch", str(exc))
                 console.print(tracker.render())
-                console.print(f"\n[yellow]Warning:[/yellow] Could not delete branch {current_branch}.")
+                console.print(
+                    f"\n[yellow]Warning:[/yellow] Could not delete branch {current_branch}."
+                )
                 console.print(f"Run manually: git branch -d {current_branch}")
 
     console.print(tracker.render())
-    console.print(f"\n[bold green]✓ Feature {current_branch} successfully merged into {target_branch}[/bold green]")
+    console.print(
+        f"\n[bold green]✓ Feature {current_branch} successfully merged into {target_branch}[/bold green]"
+    )
+
+
 __all__ = ["merge"]

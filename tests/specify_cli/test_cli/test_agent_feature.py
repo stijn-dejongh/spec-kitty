@@ -24,8 +24,13 @@ class TestCreateFeatureCommand:
     @patch("specify_cli.cli.commands.agent.feature.get_next_feature_number")
     @patch("specify_cli.cli.commands.agent.feature._commit_to_branch")
     def test_creates_feature_with_json_output(
-        self, mock_commit: Mock, mock_get_number: Mock, mock_branch: Mock,
-        mock_is_git: Mock, mock_locate: Mock, tmp_path: Path
+        self,
+        mock_commit: Mock,
+        mock_get_number: Mock,
+        mock_branch: Mock,
+        mock_is_git: Mock,
+        mock_locate: Mock,
+        tmp_path: Path,
     ):
         """Should create feature and output JSON format."""
         # Setup
@@ -36,7 +41,9 @@ class TestCreateFeatureCommand:
 
         # Create necessary directories
         (tmp_path / ".kittify" / "templates").mkdir(parents=True)
-        (tmp_path / ".kittify" / "templates" / "spec-template.md").write_text("# Spec Template")
+        (tmp_path / ".kittify" / "templates" / "spec-template.md").write_text(
+            "# Spec Template"
+        )
 
         # Execute
         result = runner.invoke(app, ["create-feature", "test-feature", "--json"])
@@ -62,14 +69,20 @@ class TestCreateFeatureCommand:
         assert meta["feature_slug"] == "001-test-feature"
         assert meta["mission"] == "software-dev"
         assert meta["target_branch"] == "main"
+
     @patch("specify_cli.cli.commands.agent.feature.locate_project_root")
     @patch("specify_cli.cli.commands.agent.feature.is_git_repo")
     @patch("specify_cli.cli.commands.agent.feature.get_current_branch")
     @patch("specify_cli.cli.commands.agent.feature.get_next_feature_number")
     @patch("specify_cli.cli.commands.agent.feature._commit_to_branch")
     def test_creates_feature_with_human_output(
-        self, mock_commit: Mock, mock_get_number: Mock, mock_branch: Mock,
-        mock_is_git: Mock, mock_locate: Mock, tmp_path: Path
+        self,
+        mock_commit: Mock,
+        mock_get_number: Mock,
+        mock_branch: Mock,
+        mock_is_git: Mock,
+        mock_locate: Mock,
+        tmp_path: Path,
     ):
         """Should create feature and output human-readable format."""
         # Setup
@@ -80,7 +93,9 @@ class TestCreateFeatureCommand:
 
         # Create necessary directories
         (tmp_path / ".kittify" / "templates").mkdir(parents=True)
-        (tmp_path / ".kittify" / "templates" / "spec-template.md").write_text("# Spec Template")
+        (tmp_path / ".kittify" / "templates" / "spec-template.md").write_text(
+            "# Spec Template"
+        )
 
         # Execute
         result = runner.invoke(app, ["create-feature", "test-feature"])
@@ -102,7 +117,7 @@ class TestCreateFeatureCommand:
         # Verify
         assert result.exit_code == 1
         # Parse only the first line (JSON output)
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert "error" in output
         assert "Could not locate project root" in output["error"]
@@ -138,7 +153,7 @@ class TestCreateFeatureCommand:
         # Verify
         assert result.exit_code == 1
         # Parse only the first line (JSON output)
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert "error" in output
         assert "git" in output["error"].lower()
@@ -150,8 +165,14 @@ class TestCreateFeatureCommand:
     @patch("specify_cli.cli.commands.agent.feature._commit_to_branch")
     @patch("specify_cli.cli.commands.agent.feature._resolve_primary_branch")
     def test_blocks_feature_creation_from_non_primary_branch(
-        self, mock_primary: Mock, mock_commit: Mock, mock_get_number: Mock, mock_branch: Mock,
-        mock_is_git: Mock, mock_locate: Mock, tmp_path: Path
+        self,
+        mock_primary: Mock,
+        mock_commit: Mock,
+        mock_get_number: Mock,
+        mock_branch: Mock,
+        mock_is_git: Mock,
+        mock_locate: Mock,
+        tmp_path: Path,
     ):
         """Should block feature creation when not on the primary branch."""
         # Setup: On non-primary branch
@@ -166,7 +187,7 @@ class TestCreateFeatureCommand:
 
         # Verify - should fail outside primary branch
         assert result.exit_code == 1
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert "error" in output
         assert "must run on 'main' branch" in output["error"]
@@ -178,8 +199,14 @@ class TestCreateFeatureCommand:
     @patch("specify_cli.cli.commands.agent.feature._commit_to_branch")
     @patch("specify_cli.cli.commands.agent.feature._resolve_primary_branch")
     def test_creates_feature_on_primary_branch(
-        self, mock_primary: Mock, mock_commit: Mock, mock_get_number: Mock, mock_branch: Mock,
-        mock_is_git: Mock, mock_locate: Mock, tmp_path: Path
+        self,
+        mock_primary: Mock,
+        mock_commit: Mock,
+        mock_get_number: Mock,
+        mock_branch: Mock,
+        mock_is_git: Mock,
+        mock_locate: Mock,
+        tmp_path: Path,
     ):
         """Should allow feature creation on the primary branch."""
         # Setup: On primary branch
@@ -191,14 +218,16 @@ class TestCreateFeatureCommand:
 
         # Create necessary directories
         (tmp_path / ".kittify" / "templates").mkdir(parents=True)
-        (tmp_path / ".kittify" / "templates" / "spec-template.md").write_text("# Spec Template")
+        (tmp_path / ".kittify" / "templates" / "spec-template.md").write_text(
+            "# Spec Template"
+        )
 
         # Execute
         result = runner.invoke(app, ["create-feature", "test-feature", "--json"])
 
         # Verify
         assert result.exit_code == 0
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert output["result"] == "success"
 
@@ -362,7 +391,9 @@ class TestCheckPrerequisitesCommand:
         }
 
         # Execute
-        result = runner.invoke(app, ["check-prerequisites", "--include-tasks", "--json"])
+        result = runner.invoke(
+            app, ["check-prerequisites", "--include-tasks", "--json"]
+        )
 
         # Verify
         assert result.exit_code == 0
@@ -432,7 +463,10 @@ class TestCheckPrerequisitesCommand:
         payload = json.loads(result.stdout.strip().split("\n")[0])
         assert payload["error_code"] == "FEATURE_CONTEXT_UNRESOLVED"
         assert len(payload["candidate_features"]) == 2
-        assert all(entry["spec_file"].startswith("/") for entry in payload["candidate_features"])
+        assert all(
+            entry["spec_file"].startswith("/")
+            for entry in payload["candidate_features"]
+        )
         assert any(
             "check-prerequisites --feature" in command
             for command in payload["suggested_commands"]
@@ -450,7 +484,7 @@ class TestCheckPrerequisitesCommand:
         # Verify
         assert result.exit_code == 1
         # Parse only the first line (JSON output)
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert "error" in output
 
@@ -476,7 +510,9 @@ class TestFinalizeTasksCommand:
         feature_dir = tmp_path / "kitty-specs" / "001-test"
         mock_find.return_value = feature_dir
 
-        result = runner.invoke(app, ["finalize-tasks", "--feature", "001-test", "--json"])
+        result = runner.invoke(
+            app, ["finalize-tasks", "--feature", "001-test", "--json"]
+        )
 
         # Command exits because tasks/ is missing, but detection should be explicit and strict.
         assert result.exit_code == 1
@@ -509,7 +545,10 @@ class TestFinalizeTasksCommand:
         payload = json.loads(result.stdout.strip().split("\n")[0])
         assert payload["error_code"] == "FEATURE_CONTEXT_UNRESOLVED"
         assert len(payload["candidate_features"]) == 2
-        assert all(entry["spec_file"].startswith("/") for entry in payload["candidate_features"])
+        assert all(
+            entry["spec_file"].startswith("/")
+            for entry in payload["candidate_features"]
+        )
         assert any(
             "finalize-tasks --feature" in command
             for command in payload["suggested_commands"]
@@ -668,7 +707,7 @@ class TestSetupPlanCommand:
 
         # Verify
         assert result.exit_code == 1
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert output["error_code"] == "SPEC_FILE_MISSING"
         assert output["feature_slug"] == "001-test"
@@ -687,7 +726,7 @@ class TestSetupPlanCommand:
         # Verify
         assert result.exit_code == 1
         # Parse only the first line (JSON output)
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert "error" in output
 

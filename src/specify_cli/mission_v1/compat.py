@@ -79,11 +79,13 @@ class PhaseMission:
         all_states = self._phases + ["done"]
 
         for i in range(len(all_states) - 1):
-            transitions.append({
-                "trigger": "advance",
-                "source": all_states[i],
-                "dest": all_states[i + 1],
-            })
+            transitions.append(
+                {
+                    "trigger": "advance",
+                    "source": all_states[i],
+                    "dest": all_states[i + 1],
+                }
+            )
 
         return transitions
 

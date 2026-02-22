@@ -301,9 +301,7 @@ def migrate_feature(
 
         # Validate canonical lane
         if canonical_lane not in CANONICAL_LANES:
-            wp_errors.append(
-                f"{wp_file.name}: unrecognized lane '{raw_lane_str}'"
-            )
+            wp_errors.append(f"{wp_file.name}: unrecognized lane '{raw_lane_str}'")
             wp_details.append(
                 WPMigrationDetail(
                     wp_id=wp_id,

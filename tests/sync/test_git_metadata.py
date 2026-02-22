@@ -149,9 +149,7 @@ class TestBranchAndShaResolution:
             MagicMock(
                 returncode=0, stdout="abc123def456789012345678901234567890\n"
             ),  # SHA
-            MagicMock(
-                returncode=0, stdout="git@github.com:acme/repo.git\n"
-            ),  # remote
+            MagicMock(returncode=0, stdout="git@github.com:acme/repo.git\n"),  # remote
         ]
         resolver = GitMetadataResolver(repo_root=tmp_path)
         meta = resolver.resolve()
@@ -280,9 +278,7 @@ class TestTTLCache:
         mock_run.side_effect = [
             MagicMock(returncode=0, stdout="main\n"),
             MagicMock(returncode=0, stdout="aaa111\n"),
-            MagicMock(
-                returncode=0, stdout="git@github.com:acme/repo.git\n"
-            ),
+            MagicMock(returncode=0, stdout="git@github.com:acme/repo.git\n"),
         ]
         # First at t=1.0, second at exactly t=2.99 (diff=1.99 < 2.0 TTL)
         mock_time.side_effect = [1.0, 2.99]
@@ -306,7 +302,9 @@ class TestParseRepoSlug:
 
     def test_ssh_standard(self):
         """Standard SSH URL: git@github.com:owner/repo.git"""
-        assert parse_repo_slug("git@github.com:acme/spec-kitty.git") == "acme/spec-kitty"
+        assert (
+            parse_repo_slug("git@github.com:acme/spec-kitty.git") == "acme/spec-kitty"
+        )
 
     def test_https_standard(self):
         """Standard HTTPS URL: https://github.com/owner/repo.git"""
@@ -339,8 +337,7 @@ class TestParseRepoSlug:
     def test_ssh_url_gitlab_subgroup(self):
         """SSH URL supports GitLab subgroups."""
         assert (
-            parse_repo_slug("ssh://git@gitlab.com/org/team/repo.git")
-            == "org/team/repo"
+            parse_repo_slug("ssh://git@gitlab.com/org/team/repo.git") == "org/team/repo"
         )
 
     def test_bitbucket_ssh(self):
@@ -352,13 +349,13 @@ class TestParseRepoSlug:
 
     def test_self_hosted_https(self):
         """Self-hosted HTTPS URL."""
-        assert (
-            parse_repo_slug("https://git.internal.co/acme/repo.git") == "acme/repo"
-        )
+        assert parse_repo_slug("https://git.internal.co/acme/repo.git") == "acme/repo"
 
     def test_https_with_trailing_slash(self):
         """Trailing slash is normalized away."""
-        assert parse_repo_slug("https://github.com/acme/spec-kitty/") == "acme/spec-kitty"
+        assert (
+            parse_repo_slug("https://github.com/acme/spec-kitty/") == "acme/spec-kitty"
+        )
 
     def test_no_path_returns_none(self):
         """URL without owner/repo path returns None."""
@@ -526,9 +523,7 @@ class TestRepoSlugPrecedence:
                 returncode=0, stdout="git@github.com:auto/derived.git\n"
             ),  # remote
         ]
-        resolver = GitMetadataResolver(
-            repo_root=tmp_path, repo_slug_override="invalid"
-        )
+        resolver = GitMetadataResolver(repo_root=tmp_path, repo_slug_override="invalid")
         meta = resolver.resolve()
         assert meta.repo_slug == "auto/derived"
 
@@ -552,13 +547,9 @@ class TestRepoSlugPrecedence:
         mock_run.side_effect = [
             MagicMock(returncode=0, stdout="main\n"),
             MagicMock(returncode=0, stdout="abc123\n"),
-            MagicMock(
-                returncode=0, stdout="git@github.com:auto/derived.git\n"
-            ),
+            MagicMock(returncode=0, stdout="git@github.com:auto/derived.git\n"),
         ]
-        resolver = GitMetadataResolver(
-            repo_root=tmp_path, repo_slug_override="invalid"
-        )
+        resolver = GitMetadataResolver(repo_root=tmp_path, repo_slug_override="invalid")
         with caplog.at_level(logging.WARNING):
             resolver.resolve()
         assert "Invalid repo_slug override" in caplog.text
@@ -703,9 +694,7 @@ class TestGracefulDegradation:
     @patch("specify_cli.sync.git_metadata.subprocess.run")
     def test_all_calls_fail_gracefully(self, mock_run, tmp_path):
         """All subprocess calls returning errors still produces a valid GitMetadata."""
-        mock_run.return_value = MagicMock(
-            returncode=128, stdout="", stderr="fatal"
-        )
+        mock_run.return_value = MagicMock(returncode=128, stdout="", stderr="fatal")
         resolver = GitMetadataResolver(repo_root=tmp_path)
         meta = resolver.resolve()
         assert isinstance(meta, GitMetadata)

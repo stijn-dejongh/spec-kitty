@@ -33,7 +33,11 @@ from specify_cli.glossary.models import (
     TermSense,
     TermSurface,
 )
-from specify_cli.glossary.scope import GlossaryScope, _parse_sense_status, load_seed_file
+from specify_cli.glossary.scope import (
+    GlossaryScope,
+    _parse_sense_status,
+    load_seed_file,
+)
 from specify_cli.glossary.store import GlossaryStore
 from specify_cli.glossary.strictness import Strictness
 
@@ -68,7 +72,9 @@ def _load_store_from_seeds(repo_root: Path) -> GlossaryStore:
     from specify_cli.glossary.models import Provenance, SenseStatus
 
     # Create a dummy event log path (store needs it but we read from seeds)
-    event_log_path = repo_root / ".kittify" / "events" / "glossary" / "_cli.events.jsonl"
+    event_log_path = (
+        repo_root / ".kittify" / "events" / "glossary" / "_cli.events.jsonl"
+    )
     store = GlossaryStore(event_log_path)
 
     for scope in GlossaryScope:
@@ -86,16 +92,22 @@ def _load_store_from_seeds(repo_root: Path) -> GlossaryStore:
                 if event_type == "GlossarySenseUpdated":
                     # A new or updated sense from event log
                     new_sense_data = event.get("new_sense", {})
-                    surface_text = new_sense_data.get("surface", event.get("term_surface", ""))
+                    surface_text = new_sense_data.get(
+                        "surface", event.get("term_surface", "")
+                    )
                     if not surface_text:
                         continue
                     try:
                         sense = TermSense(
                             surface=TermSurface(surface_text),
-                            scope=new_sense_data.get("scope", event.get("scope", "team_domain")),
+                            scope=new_sense_data.get(
+                                "scope", event.get("scope", "team_domain")
+                            ),
                             definition=new_sense_data.get("definition", ""),
                             provenance=Provenance(
-                                actor_id=event.get("actor", {}).get("actor_id", "system:event_log"),
+                                actor_id=event.get("actor", {}).get(
+                                    "actor_id", "system:event_log"
+                                ),
                                 timestamp=datetime.fromisoformat(
                                     event.get("timestamp", datetime.now().isoformat())
                                 ),
@@ -106,12 +118,16 @@ def _load_store_from_seeds(repo_root: Path) -> GlossaryStore:
                         )
                         store.add_sense(sense)
                     except (ValueError, KeyError) as exc:
-                        logger.warning("Skipping malformed GlossarySenseUpdated event: %s", exc)
+                        logger.warning(
+                            "Skipping malformed GlossarySenseUpdated event: %s", exc
+                        )
 
                 elif event_type == "GlossaryClarificationResolved":
                     # A resolved clarification may introduce a sense
                     selected = event.get("selected_sense", {})
-                    surface_text = selected.get("surface", event.get("term_surface", ""))
+                    surface_text = selected.get(
+                        "surface", event.get("term_surface", "")
+                    )
                     if not surface_text or not selected.get("definition"):
                         continue
                     try:
@@ -120,7 +136,9 @@ def _load_store_from_seeds(repo_root: Path) -> GlossaryStore:
                             scope=selected.get("scope", "team_domain"),
                             definition=selected["definition"],
                             provenance=Provenance(
-                                actor_id=event.get("actor", {}).get("actor_id", "system:event_log"),
+                                actor_id=event.get("actor", {}).get(
+                                    "actor_id", "system:event_log"
+                                ),
                                 timestamp=datetime.fromisoformat(
                                     event.get("timestamp", datetime.now().isoformat())
                                 ),
@@ -131,7 +149,10 @@ def _load_store_from_seeds(repo_root: Path) -> GlossaryStore:
                         )
                         store.add_sense(sense)
                     except (ValueError, KeyError) as exc:
-                        logger.warning("Skipping malformed GlossaryClarificationResolved event: %s", exc)
+                        logger.warning(
+                            "Skipping malformed GlossaryClarificationResolved event: %s",
+                            exc,
+                        )
 
     return store
 
@@ -232,16 +253,22 @@ def _extract_conflicts_from_events(
             finding = finding_index.get((step_id, term_text), {})
             check_event = check_event_index.get(step_id, {})
 
-            conflict_events.append({
-                "conflict_id": cid,
-                "term": term_text,
-                "type": finding.get("conflict_type", "unknown"),
-                "severity": event.get("urgency", finding.get("severity", "unknown")),
-                "mission_id": event.get("mission_id", ""),
-                "timestamp": event.get("timestamp", ""),
-                "status": "unresolved",
-                "effective_strictness": check_event.get("effective_strictness", "unknown"),
-            })
+            conflict_events.append(
+                {
+                    "conflict_id": cid,
+                    "term": term_text,
+                    "type": finding.get("conflict_type", "unknown"),
+                    "severity": event.get(
+                        "urgency", finding.get("severity", "unknown")
+                    ),
+                    "mission_id": event.get("mission_id", ""),
+                    "timestamp": event.get("timestamp", ""),
+                    "status": "unresolved",
+                    "effective_strictness": check_event.get(
+                        "effective_strictness", "unknown"
+                    ),
+                }
+            )
 
         elif event_type == "GlossaryClarificationResolved":
             cid = event.get("conflict_id", "")
@@ -260,16 +287,18 @@ def _extract_conflicts_from_events(
             # it was resolved immediately (no Requested event)
             existing_ids = {c["conflict_id"] for c in conflict_events}
             if cid and cid not in existing_ids:
-                conflict_events.append({
-                    "conflict_id": cid,
-                    "term": term_text,
-                    "type": "unknown",
-                    "severity": "unknown",
-                    "mission_id": "",
-                    "timestamp": event.get("timestamp", ""),
-                    "status": "resolved",
-                    "effective_strictness": "unknown",
-                })
+                conflict_events.append(
+                    {
+                        "conflict_id": cid,
+                        "term": term_text,
+                        "type": "unknown",
+                        "severity": "unknown",
+                        "mission_id": "",
+                        "timestamp": event.get("timestamp", ""),
+                        "status": "resolved",
+                        "effective_strictness": "unknown",
+                    }
+                )
 
     # Mark resolved conflicts
     for conflict in conflict_events:
@@ -278,15 +307,16 @@ def _extract_conflicts_from_events(
 
     # Apply filters
     if mission_filter:
-        conflict_events = [c for c in conflict_events if c["mission_id"] == mission_filter]
+        conflict_events = [
+            c for c in conflict_events if c["mission_id"] == mission_filter
+        ]
 
     if unresolved_only:
         conflict_events = [c for c in conflict_events if c["status"] == "unresolved"]
 
     if strictness_filter:
         conflict_events = [
-            c for c in conflict_events
-            if c["effective_strictness"] == strictness_filter
+            c for c in conflict_events if c["effective_strictness"] == strictness_filter
         ]
 
     return conflict_events
@@ -588,7 +618,9 @@ def resolve(
     )
 
     if resolved:
-        console.print(f"[yellow]Warning: Conflict '{conflict_id}' already resolved[/yellow]")
+        console.print(
+            f"[yellow]Warning: Conflict '{conflict_id}' already resolved[/yellow]"
+        )
         if not typer.confirm("Resolve again?"):
             raise typer.Exit(0)
 
@@ -613,7 +645,12 @@ def resolve(
         # Build candidates from requested event options
         options = requested_event.get("options", [])
         candidates = [
-            {"surface": term_text, "scope": "unknown", "definition": opt, "confidence": 0.5}
+            {
+                "surface": term_text,
+                "scope": "unknown",
+                "definition": opt,
+                "confidence": 0.5,
+            }
             for opt in options
         ]
 

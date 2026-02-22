@@ -109,7 +109,9 @@ def test_feature_025_complete_workflow(dual_branch_repo):
     # ========================================================================
 
     # Start on main branch (planning happens here)
-    subprocess.run(["git", "checkout", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "checkout", "main"], cwd=repo, check=True, capture_output=True
+    )
 
     feature_dir = repo / "kitty-specs" / feature_slug
     tasks_dir = feature_dir / "tasks"
@@ -177,7 +179,9 @@ It is NOT part of the 1.x product line.
     )
 
     # Commit planning artifacts to main
-    subprocess.run(["git", "add", str(feature_dir)], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", str(feature_dir)], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", f"Add planning for {feature_slug}"],
         cwd=repo,
@@ -189,7 +193,9 @@ It is NOT part of the 1.x product line.
     main_commits_after_planning = get_commits_on_branch(repo, "main")
 
     # Merge planning to 2.x (required for status commits to work on 2.x)
-    subprocess.run(["git", "checkout", "2.x"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "checkout", "2.x"], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "merge", "main", "--no-ff", "-m", "Merge planning from main"],
         cwd=repo,
@@ -226,7 +232,9 @@ It is NOT part of the 1.x product line.
     assert result.stdout.strip() == wp01_branch
 
     # Verify branch ancestry: 2.x should be ancestor
-    assert verify_ancestry(repo, "2.x", wp01_branch), "WP01 branch should descend from 2.x"
+    assert verify_ancestry(repo, "2.x", wp01_branch), (
+        "WP01 branch should descend from 2.x"
+    )
     # Note: main may not be direct ancestor if 2.x has diverged, but both came from initial commit
 
     # ========================================================================
@@ -234,19 +242,24 @@ It is NOT part of the 1.x product line.
     # ========================================================================
 
     # Go back to main repo context
-    subprocess.run(["git", "checkout", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "checkout", "main"], cwd=repo, check=True, capture_output=True
+    )
 
     # Move task to doing
     result = run_cli(repo, "agent", "tasks", "move-task", "WP01", "--to", "doing")
-    assert result.returncode == 0, f"Failed to move to doing: {result.stderr}\n{result.stdout}"
+    assert result.returncode == 0, (
+        f"Failed to move to doing: {result.stderr}\n{result.stdout}"
+    )
 
     # CRITICAL ASSERTION: Status commit should be on 2.x, NOT main
     assert_commit_on_branch(repo, "2.x", "Move WP01 to doing")
 
     # Verify main branch does NOT have this commit
     commits_main_after_doing = get_commits_on_branch(repo, "main")
-    assert len(commits_main_after_doing) == len(main_commits_after_planning), \
+    assert len(commits_main_after_doing) == len(main_commits_after_planning), (
         "Main branch should not have new commits after status change to 2.x feature"
+    )
 
     # ========================================================================
     # Step 4: Make Implementation Commits
@@ -254,9 +267,13 @@ It is NOT part of the 1.x product line.
 
     # Add implementation work in worktree
     impl_file = wp01_worktree / "event_logger.py"
-    impl_file.write_text("# Event logger implementation\nclass EventLogger:\n    pass\n")
+    impl_file.write_text(
+        "# Event logger implementation\nclass EventLogger:\n    pass\n"
+    )
 
-    subprocess.run(["git", "add", "."], cwd=wp01_worktree, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", "."], cwd=wp01_worktree, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", "Implement event logger"],
         cwd=wp01_worktree,
@@ -399,7 +416,9 @@ def test_wp02_depends_on_wp01_with_2x_target(dual_branch_repo):
     feature_slug = "033-dependency-chain"
 
     # Create feature on main
-    subprocess.run(["git", "checkout", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "checkout", "main"], cwd=repo, check=True, capture_output=True
+    )
 
     feature_dir = repo / "kitty-specs" / feature_slug
     tasks_dir = feature_dir / "tasks"
@@ -444,7 +463,9 @@ def test_wp02_depends_on_wp01_with_2x_target(dual_branch_repo):
     )
 
     # Commit planning to main
-    subprocess.run(["git", "add", str(feature_dir)], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", str(feature_dir)], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", f"Add planning for {feature_slug}"],
         cwd=repo,
@@ -453,7 +474,9 @@ def test_wp02_depends_on_wp01_with_2x_target(dual_branch_repo):
     )
 
     # Merge planning to 2.x (required for status commits to work on 2.x)
-    subprocess.run(["git", "checkout", "2.x"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "checkout", "2.x"], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "merge", "main", "--no-ff", "-m", "Merge planning from main"],
         cwd=repo,
@@ -497,12 +520,18 @@ def test_wp02_depends_on_wp01_with_2x_target(dual_branch_repo):
     wp01_status_on_main = count_commits_matching(repo, "main", "Move WP01")
     wp02_status_on_main = count_commits_matching(repo, "main", "Move WP02")
 
-    assert wp01_status_on_main == 0, f"WP01 status commits leaked to main: {wp01_status_on_main}"
-    assert wp02_status_on_main == 0, f"WP02 status commits leaked to main: {wp02_status_on_main}"
+    assert wp01_status_on_main == 0, (
+        f"WP01 status commits leaked to main: {wp01_status_on_main}"
+    )
+    assert wp02_status_on_main == 0, (
+        f"WP02 status commits leaked to main: {wp02_status_on_main}"
+    )
 
     # 2.x should have all status commits
     status_2x = count_commits_matching(repo, "2.x", "Move WP")
-    assert status_2x >= 3, f"Expected at least 3 status commits on 2.x, found {status_2x}"
+    assert status_2x >= 3, (
+        f"Expected at least 3 status commits on 2.x, found {status_2x}"
+    )
 
 
 def test_review_rework_commits_to_correct_branch(dual_branch_repo):
@@ -520,7 +549,9 @@ def test_review_rework_commits_to_correct_branch(dual_branch_repo):
     feature_slug = "034-review-rework"
 
     # Create feature on main
-    subprocess.run(["git", "checkout", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "checkout", "main"], cwd=repo, check=True, capture_output=True
+    )
 
     feature_dir = repo / "kitty-specs" / feature_slug
     tasks_dir = feature_dir / "tasks"
@@ -539,16 +570,13 @@ def test_review_rework_commits_to_correct_branch(dual_branch_repo):
     # Create WP file
     wp_file = tasks_dir / "WP01-test.md"
     wp_file.write_text(
-        "---\n"
-        "work_package_id: WP01\n"
-        "lane: planned\n"
-        "dependencies: []\n"
-        "---\n\n"
-        "# WP01\n"
+        "---\nwork_package_id: WP01\nlane: planned\ndependencies: []\n---\n\n# WP01\n"
     )
 
     # Commit planning
-    subprocess.run(["git", "add", str(feature_dir)], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", str(feature_dir)], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "commit", "-m", f"Add {feature_slug}"],
         cwd=repo,
@@ -557,7 +585,9 @@ def test_review_rework_commits_to_correct_branch(dual_branch_repo):
     )
 
     # Merge planning to 2.x
-    subprocess.run(["git", "checkout", "2.x"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "checkout", "2.x"], cwd=repo, check=True, capture_output=True
+    )
     subprocess.run(
         ["git", "merge", "main", "--no-ff", "-m", "Merge planning"],
         cwd=repo,
@@ -600,14 +630,17 @@ def test_review_rework_commits_to_correct_branch(dual_branch_repo):
     # ========================================================================
 
     main_final_commits = get_commits_on_branch(repo, "main")
-    assert len(main_final_commits) == main_planning_commit_count, \
+    assert len(main_final_commits) == main_planning_commit_count, (
         "Main should have NO new commits during entire review workflow"
+    )
 
     # All status transitions should be on 2.x only
     status_count_2x = count_commits_matching(repo, "2.x", "Move WP01")
-    assert status_count_2x >= 5, \
+    assert status_count_2x >= 5, (
         f"Expected at least 5 status commits on 2.x (full workflow), found {status_count_2x}"
+    )
 
     status_count_main = count_commits_matching(repo, "main", "Move WP01")
-    assert status_count_main == 0, \
+    assert status_count_main == 0, (
         f"Main should have ZERO status commits, found {status_count_main}"
+    )

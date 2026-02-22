@@ -114,9 +114,7 @@ def _validate_envelope(event_data: dict[str, Any], errors: list[str]) -> None:
             errors.append(f"{loc}: {err['msg']}")
 
 
-def _validate_extended_envelope(
-    event_data: dict[str, Any], errors: list[str]
-) -> None:
+def _validate_extended_envelope(event_data: dict[str, Any], errors: list[str]) -> None:
     """Check envelope fields that the Pydantic model does not cover.
 
     These are fields required by the server contract but absent from the
@@ -158,8 +156,7 @@ def _validate_payload(
     missing = required - set(payload.keys())
     if missing:
         errors.append(
-            f"payload: missing required field(s) {sorted(missing)} "
-            f"for {event_type}"
+            f"payload: missing required field(s) {sorted(missing)} for {event_type}"
         )
 
     # Per-field validators
@@ -173,6 +170,5 @@ def _validate_payload(
                 ok = False
             if not ok:
                 errors.append(
-                    f"payload.{field_name}: invalid value {value!r} "
-                    f"for {event_type}"
+                    f"payload.{field_name}: invalid value {value!r} for {event_type}"
                 )

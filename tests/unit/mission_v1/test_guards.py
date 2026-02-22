@@ -28,7 +28,9 @@ from specify_cli.mission_v1.schema import MissionValidationError
 # ---------------------------------------------------------------------------
 
 
-def _make_model(feature_dir: Path | None = None, inputs: dict | None = None) -> MagicMock:
+def _make_model(
+    feature_dir: Path | None = None, inputs: dict | None = None
+) -> MagicMock:
     """Create a mock model with optional feature_dir and inputs."""
     model = MagicMock()
     model.feature_dir = feature_dir
@@ -152,9 +154,7 @@ class TestGatePassedGuard:
 
     def test_gate_not_found(self, tmp_path: Path) -> None:
         log = tmp_path / "mission-events.jsonl"
-        log.write_text(
-            json.dumps({"type": "gate_passed", "name": "other_gate"}) + "\n"
-        )
+        log.write_text(json.dumps({"type": "gate_passed", "name": "other_gate"}) + "\n")
         factory = GUARD_REGISTRY["gate_passed"]
         guard = factory(["planning_complete"])
         model = _make_model(feature_dir=tmp_path)
@@ -537,7 +537,9 @@ class TestUnknownGuardRejection:
                 },
             ],
         }
-        with pytest.raises(MissionValidationError, match="Unknown guard expression.*unknown_guard"):
+        with pytest.raises(
+            MissionValidationError, match="Unknown guard expression.*unknown_guard"
+        ):
             compile_guards(config)
 
     def test_unknown_guard_shows_supported(self) -> None:
@@ -565,7 +567,9 @@ class TestUnknownGuardRejection:
                 },
             ],
         }
-        with pytest.raises(MissionValidationError, match="Unknown guard expression.*custom_check"):
+        with pytest.raises(
+            MissionValidationError, match="Unknown guard expression.*custom_check"
+        ):
             compile_guards(config)
 
 

@@ -24,7 +24,9 @@ class TestEmptyBranchDetection:
         repo.mkdir()
 
         # Initialize git repo with explicit branch name
-        subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "config", "user.email", "test@example.com"],
             cwd=repo,
@@ -68,7 +70,9 @@ class TestEmptyBranchDetection:
             capture_output=True,
         )
         (git_repo / "wp02.txt").write_text("WP02 work\n")
-        subprocess.run(["git", "add", "."], cwd=git_repo, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=git_repo, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP02 implementation"],
             cwd=git_repo,
@@ -92,9 +96,16 @@ class TestEmptyBranchDetection:
 
         # Verify warning was printed (to stderr, not stdout)
         captured = capsys.readouterr()
-        assert "⚠️  Warning: Dependency branch '017-feature-WP01' has no commits beyond main" in captured.err
-        assert "This may indicate incomplete work or uncommitted changes" in captured.err
-        assert "The merge-base will not include any work from this branch" in captured.err
+        assert (
+            "⚠️  Warning: Dependency branch '017-feature-WP01' has no commits beyond main"
+            in captured.err
+        )
+        assert (
+            "This may indicate incomplete work or uncommitted changes" in captured.err
+        )
+        assert (
+            "The merge-base will not include any work from this branch" in captured.err
+        )
 
         # Result should still succeed (warning is non-blocking)
         assert result.success
@@ -109,7 +120,9 @@ class TestEmptyBranchDetection:
             capture_output=True,
         )
         (git_repo / "wp01.txt").write_text("WP01 changes\n")
-        subprocess.run(["git", "add", "."], cwd=git_repo, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=git_repo, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP01 work"],
             cwd=git_repo,
@@ -133,7 +146,9 @@ class TestEmptyBranchDetection:
             capture_output=True,
         )
         (git_repo / "wp02.txt").write_text("WP02 changes\n")
-        subprocess.run(["git", "add", "."], cwd=git_repo, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=git_repo, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP02 work"],
             cwd=git_repo,
@@ -186,7 +201,9 @@ class TestEmptyBranchDetection:
             capture_output=True,
         )
         (git_repo / "wp03.txt").write_text("WP03 changes\n")
-        subprocess.run(["git", "add", "."], cwd=git_repo, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=git_repo, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP03 work"],
             cwd=git_repo,
@@ -234,7 +251,9 @@ class TestEmptyBranchDetection:
             capture_output=True,
         )
         (git_repo / "wp02.txt").write_text("WP02 work\n")
-        subprocess.run(["git", "add", "."], cwd=git_repo, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=git_repo, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP02 implementation"],
             cwd=git_repo,
@@ -272,7 +291,9 @@ class TestEmptyBranchDetection:
             capture_output=True,
         )
         (git_repo / "wp01.txt").write_text("WP01 work\n")
-        subprocess.run(["git", "add", "."], cwd=git_repo, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=git_repo, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP01 implementation"],
             cwd=git_repo,

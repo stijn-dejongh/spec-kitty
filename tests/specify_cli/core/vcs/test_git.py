@@ -215,7 +215,9 @@ class TestWorkspaceOperations:
             check=True,
         )
         (git_repo / "feature.txt").write_text("feature content")
-        subprocess.run(["git", "add", "."], cwd=git_repo, capture_output=True, check=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=git_repo, capture_output=True, check=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "Feature commit"],
             cwd=git_repo,
@@ -237,7 +239,15 @@ class TestWorkspaceOperations:
 
         # Run worktree add from the git repo directory
         wt_result = subprocess.run(
-            ["git", "worktree", "add", "-b", "test-WP02", str(workspace_path), "feature-base"],
+            [
+                "git",
+                "worktree",
+                "add",
+                "-b",
+                "test-WP02",
+                str(workspace_path),
+                "feature-base",
+            ],
             cwd=git_repo,
             capture_output=True,
             text=True,
@@ -265,7 +275,9 @@ class TestWorkspaceOperations:
         workspace_path = git_repo / ".worktrees" / "test-remove"
 
         # Create workspace first
-        create_result = git_vcs.create_workspace(workspace_path, "test-remove", repo_root=git_repo)
+        create_result = git_vcs.create_workspace(
+            workspace_path, "test-remove", repo_root=git_repo
+        )
         assert create_result.success is True, f"Create failed: {create_result.error}"
         assert workspace_path.exists()
 
@@ -278,7 +290,9 @@ class TestWorkspaceOperations:
     def test_get_workspace_info(self, git_repo, git_vcs):
         """get_workspace_info should return workspace details."""
         workspace_path = git_repo / ".worktrees" / "test-info"
-        create_result = git_vcs.create_workspace(workspace_path, "test-info", repo_root=git_repo)
+        create_result = git_vcs.create_workspace(
+            workspace_path, "test-info", repo_root=git_repo
+        )
         assert create_result.success is True, f"Create failed: {create_result.error}"
 
         info = git_vcs.get_workspace_info(workspace_path)
@@ -373,7 +387,9 @@ class TestCommitOperations:
                 capture_output=True,
             )
 
-        changes = git_vcs.get_changes(git_repo, revision_range=f"{initial_commit}..HEAD")
+        changes = git_vcs.get_changes(
+            git_repo, revision_range=f"{initial_commit}..HEAD"
+        )
 
         assert len(changes) == 2
 

@@ -28,7 +28,9 @@ class FrontmatterOnlyLanesMigration(BaseMigration):
     """
 
     migration_id = "0.9.0_frontmatter_only_lanes"
-    description = "Flatten task lanes to frontmatter-only (no more directory-based lanes)"
+    description = (
+        "Flatten task lanes to frontmatter-only (no more directory-based lanes)"
+    )
     target_version = "0.9.0"
 
     LANE_DIRS: Tuple[str, ...] = ("planned", "doing", "for_review", "done")
@@ -36,14 +38,16 @@ class FrontmatterOnlyLanesMigration(BaseMigration):
     # System files to ignore when determining if a directory is empty
     # These files are created automatically by operating systems and should not
     # prevent lane directory cleanup
-    IGNORE_FILES = frozenset({
-        ".gitkeep",      # Git placeholder
-        ".DS_Store",     # macOS Finder metadata
-        "Thumbs.db",     # Windows thumbnail cache
-        "desktop.ini",   # Windows folder settings
-        ".directory",    # KDE folder settings
-        "._*",           # macOS resource fork prefix (pattern)
-    })
+    IGNORE_FILES = frozenset(
+        {
+            ".gitkeep",  # Git placeholder
+            ".DS_Store",  # macOS Finder metadata
+            "Thumbs.db",  # Windows thumbnail cache
+            "desktop.ini",  # Windows folder settings
+            ".directory",  # KDE folder settings
+            "._*",  # macOS resource fork prefix (pattern)
+        }
+    )
 
     @classmethod
     def _should_ignore_file(cls, filename: str) -> bool:
@@ -102,7 +106,9 @@ class FrontmatterOnlyLanesMigration(BaseMigration):
                     wt_specs = worktree / "kitty-specs"
                     if wt_specs.exists():
                         for feature_dir in wt_specs.iterdir():
-                            if feature_dir.is_dir() and self._is_legacy_format(feature_dir):
+                            if feature_dir.is_dir() and self._is_legacy_format(
+                                feature_dir
+                            ):
                                 return True
 
         return False
@@ -143,7 +149,9 @@ class FrontmatterOnlyLanesMigration(BaseMigration):
         features_found = self._find_features_to_migrate(project_path)
 
         if not features_found:
-            warnings.append("No features need migration - all already use flat structure")
+            warnings.append(
+                "No features need migration - all already use flat structure"
+            )
             return MigrationResult(
                 success=True,
                 changes_made=changes,
@@ -165,12 +173,18 @@ class FrontmatterOnlyLanesMigration(BaseMigration):
             total_skipped += skipped
 
         if dry_run:
-            changes.append(f"Would migrate {total_migrated} WP files across {len(features_found)} features")
+            changes.append(
+                f"Would migrate {total_migrated} WP files across {len(features_found)} features"
+            )
         else:
-            changes.append(f"Migrated {total_migrated} WP files across {len(features_found)} features")
+            changes.append(
+                f"Migrated {total_migrated} WP files across {len(features_found)} features"
+            )
 
         if total_skipped > 0:
-            warnings.append(f"Skipped {total_skipped} files (already exist or conflicts)")
+            warnings.append(
+                f"Skipped {total_skipped} files (already exist or conflicts)"
+            )
 
         success = len(errors) == 0
         return MigrationResult(
@@ -199,8 +213,12 @@ class FrontmatterOnlyLanesMigration(BaseMigration):
                     wt_specs = worktree / "kitty-specs"
                     if wt_specs.exists():
                         for feature_dir in sorted(wt_specs.iterdir()):
-                            if feature_dir.is_dir() and self._is_legacy_format(feature_dir):
-                                features.append((feature_dir, f"worktree:{worktree.name}"))
+                            if feature_dir.is_dir() and self._is_legacy_format(
+                                feature_dir
+                            ):
+                                features.append(
+                                    (feature_dir, f"worktree:{worktree.name}")
+                                )
 
         return features
 
@@ -247,11 +265,15 @@ class FrontmatterOnlyLanesMigration(BaseMigration):
 
                 try:
                     if dry_run:
-                        changes.append(f"  Would move: {lane}/{md_file.name} → tasks/{md_file.name}")
+                        changes.append(
+                            f"  Would move: {lane}/{md_file.name} → tasks/{md_file.name}"
+                        )
                     else:
                         # Read and update content
                         content = md_file.read_text(encoding="utf-8-sig")
-                        updated_content = self._ensure_lane_in_frontmatter(content, lane)
+                        updated_content = self._ensure_lane_in_frontmatter(
+                            content, lane
+                        )
 
                         # Write to new location
                         target.write_text(updated_content, encoding="utf-8")
@@ -259,7 +281,9 @@ class FrontmatterOnlyLanesMigration(BaseMigration):
                         # Remove original
                         md_file.unlink()
 
-                        changes.append(f"  Moved: {lane}/{md_file.name} → tasks/{md_file.name}")
+                        changes.append(
+                            f"  Moved: {lane}/{md_file.name} → tasks/{md_file.name}"
+                        )
 
                     migrated += 1
 
@@ -312,10 +336,10 @@ class FrontmatterOnlyLanesMigration(BaseMigration):
             return f'---\nlane: "{expected_lane}"\n---\n{content}'
 
         frontmatter_lines = lines[1:closing_idx]
-        body_lines = lines[closing_idx + 1:]
+        body_lines = lines[closing_idx + 1 :]
 
         # Check if lane field exists
-        lane_pattern = re.compile(r'^lane:\s*(.*)$')
+        lane_pattern = re.compile(r"^lane:\s*(.*)$")
         lane_found = False
         updated_lines = []
 
@@ -323,7 +347,7 @@ class FrontmatterOnlyLanesMigration(BaseMigration):
             match = lane_pattern.match(line)
             if match:
                 lane_found = True
-                current_value = match.group(1).strip().strip('"\'')
+                current_value = match.group(1).strip().strip("\"'")
                 if current_value != expected_lane:
                     # Replace with expected lane from directory
                     updated_lines.append(f'lane: "{expected_lane}"')

@@ -135,9 +135,7 @@ class TestIllegalTransitions:
             ("blocked", "done"),
         ],
     )
-    def test_illegal_transition_rejected(
-        self, from_lane: str, to_lane: str
-    ) -> None:
+    def test_illegal_transition_rejected(self, from_lane: str, to_lane: str) -> None:
         ok, error = validate_transition(from_lane, to_lane)
         assert ok is False
         assert error is not None
@@ -164,9 +162,7 @@ class TestForceOverride:
         assert "actor and reason" in error
 
     def test_force_without_reason_rejected(self) -> None:
-        ok, error = validate_transition(
-            "done", "planned", force=True, actor="admin"
-        )
+        ok, error = validate_transition("done", "planned", force=True, actor="admin")
         assert ok is False
         assert "actor and reason" in error
 
@@ -217,13 +213,9 @@ class TestGuardConditions:
 
     def test_evidence_for_done_with_evidence(self) -> None:
         evidence = DoneEvidence(
-            review=ReviewApproval(
-                reviewer="r", verdict="approved", reference="ref"
-            )
+            review=ReviewApproval(reviewer="r", verdict="approved", reference="ref")
         )
-        ok, error = validate_transition(
-            "for_review", "done", evidence=evidence
-        )
+        ok, error = validate_transition("for_review", "done", evidence=evidence)
         assert ok is True
 
     def test_workspace_context_required_for_claimed_to_in_progress(self) -> None:
@@ -248,7 +240,9 @@ class TestGuardConditions:
         assert ok is False
         assert "completed subtasks" in error.lower()
 
-    def test_implementation_evidence_required_for_in_progress_to_for_review(self) -> None:
+    def test_implementation_evidence_required_for_in_progress_to_for_review(
+        self,
+    ) -> None:
         ok, error = validate_transition(
             "in_progress",
             "for_review",

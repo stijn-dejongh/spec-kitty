@@ -62,7 +62,10 @@ class AddCommitWorkflowToTemplatesMigration(BaseMigration):
                     "missions", mission, "command-templates", self.TEMPLATE_FILE
                 )
                 if not template_path.exists():
-                    return False, f"Template not found: missions/{mission}/command-templates/{self.TEMPLATE_FILE}"
+                    return (
+                        False,
+                        f"Template not found: missions/{mission}/command-templates/{self.TEMPLATE_FILE}",
+                    )
             return True, ""
         except Exception as e:
             return False, f"Cannot access packaged missions: {e}"
@@ -127,22 +130,34 @@ class AddCommitWorkflowToTemplatesMigration(BaseMigration):
                     # Check if needs migration (missing commit workflow)
                     if "Commit Workflow" not in current_content:
                         if dry_run:
-                            changes.append(f"Would update: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}")
+                            changes.append(
+                                f"Would update: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}"
+                            )
                         else:
                             try:
                                 slash_cmd.write_text(template_content, encoding="utf-8")
-                                changes.append(f"Updated: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}")
+                                changes.append(
+                                    f"Updated: {agent_dir}/{subdir}/{self.SLASH_COMMAND_FILE}"
+                                )
                                 agents_updated += 1
                             except Exception as e:
-                                errors.append(f"Failed to update {agent_dir}/{subdir}: {e}")
+                                errors.append(
+                                    f"Failed to update {agent_dir}/{subdir}: {e}"
+                                )
 
             if agents_updated > 0:
                 if dry_run:
-                    changes.append(f"Would update {agents_updated} agent implement templates ({mission_name})")
+                    changes.append(
+                        f"Would update {agents_updated} agent implement templates ({mission_name})"
+                    )
                 else:
-                    changes.append(f"Updated {agents_updated} agent implement templates ({mission_name})")
+                    changes.append(
+                        f"Updated {agents_updated} agent implement templates ({mission_name})"
+                    )
             elif not warnings:  # Only log if we tried to update this mission
-                changes.append(f"No agent implement templates needed updates ({mission_name})")
+                changes.append(
+                    f"No agent implement templates needed updates ({mission_name})"
+                )
 
         return MigrationResult(
             success=len(errors) == 0,

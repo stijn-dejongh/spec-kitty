@@ -161,7 +161,14 @@ class JujutsuVCS:
                     )
 
             # Build the jj workspace add command
-            cmd = ["jj", "workspace", "add", str(workspace_path), "--name", workspace_name]
+            cmd = [
+                "jj",
+                "workspace",
+                "add",
+                str(workspace_path),
+                "--name",
+                workspace_name,
+            ]
 
             # Add revision if specified
             if base_commit:
@@ -185,7 +192,9 @@ class JujutsuVCS:
 
             if result.returncode != 0:
                 # Prefer extracted error over raw stderr
-                error_msg = jj_error or result.stderr.strip() or "Failed to create workspace"
+                error_msg = (
+                    jj_error or result.stderr.strip() or "Failed to create workspace"
+                )
                 return WorkspaceCreateResult(
                     success=False,
                     workspace=None,
@@ -219,7 +228,11 @@ class JujutsuVCS:
             bookmark_error = _extract_jj_error(bookmark_result.stderr)
             if bookmark_result.returncode != 0 or bookmark_error:
                 # Workspace was created but bookmark failed - clean up and report
-                error_msg = bookmark_error or bookmark_result.stderr.strip() or "Failed to create bookmark"
+                error_msg = (
+                    bookmark_error
+                    or bookmark_result.stderr.strip()
+                    or "Failed to create bookmark"
+                )
                 # Try to clean up the workspace
                 try:
                     subprocess.run(
@@ -359,7 +372,11 @@ class JujutsuVCS:
                 return None
 
             # Parse the log output
-            line = log_result.stdout.strip().split("\n")[0] if log_result.stdout.strip() else ""
+            line = (
+                log_result.stdout.strip().split("\n")[0]
+                if log_result.stdout.strip()
+                else ""
+            )
             parts = line.split("|") if line else []
 
             current_change_id = parts[0] if len(parts) > 0 else None
@@ -517,7 +534,10 @@ class JujutsuVCS:
                 )
 
             # Determine status based on output and conflicts
-            if "Nothing to do" in result.stdout or "already up to date" in result.stdout.lower():
+            if (
+                "Nothing to do" in result.stdout
+                or "already up to date" in result.stdout.lower()
+            ):
                 status = SyncStatus.UP_TO_DATE
             elif conflicts:
                 status = SyncStatus.CONFLICTS
@@ -525,7 +545,9 @@ class JujutsuVCS:
                 status = SyncStatus.SYNCED
 
             # Parse file changes from output (if available)
-            files_updated, files_added, files_deleted = self._parse_sync_stats(result.stdout)
+            files_updated, files_added, files_deleted = self._parse_sync_stats(
+                result.stdout
+            )
 
             return SyncResult(
                 status=status,
@@ -637,7 +659,15 @@ class JujutsuVCS:
 
             # Also check the log for conflict indicator
             log_result = subprocess.run(
-                ["jj", "log", "-r", "@", "--no-graph", "-T", 'if(conflict, "conflict", "") ++ "\n"'],
+                [
+                    "jj",
+                    "log",
+                    "-r",
+                    "@",
+                    "--no-graph",
+                    "-T",
+                    'if(conflict, "conflict", "") ++ "\n"',
+                ],
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
@@ -681,7 +711,15 @@ class JujutsuVCS:
         try:
             # Check current commit for conflict marker
             result = subprocess.run(
-                ["jj", "log", "-r", "@", "--no-graph", "-T", 'if(conflict, "yes", "no") ++ "\n"'],
+                [
+                    "jj",
+                    "log",
+                    "-r",
+                    "@",
+                    "--no-graph",
+                    "-T",
+                    'if(conflict, "yes", "no") ++ "\n"',
+                ],
                 capture_output=True,
                 text=True,
                 encoding="utf-8",

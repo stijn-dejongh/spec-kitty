@@ -167,9 +167,7 @@ def _event_test_id(event_data: dict) -> str:
 class TestFixtureValidation:
     """Validate that every fixture event passes the Pydantic Event model."""
 
-    @pytest.mark.parametrize(
-        "event_data", FIXTURE_EVENTS, ids=_event_test_id
-    )
+    @pytest.mark.parametrize("event_data", FIXTURE_EVENTS, ids=_event_test_id)
     def test_fixture_validates_against_event_model(self, event_data: dict):
         """Each fixture event must parse successfully via the Pydantic Event model."""
         event = Event(**event_data)
@@ -179,34 +177,27 @@ class TestFixtureValidation:
         assert event.lamport_clock == event_data["lamport_clock"]
         assert event.node_id == event_data["node_id"]
 
-    @pytest.mark.parametrize(
-        "event_data", FIXTURE_EVENTS, ids=_event_test_id
-    )
+    @pytest.mark.parametrize("event_data", FIXTURE_EVENTS, ids=_event_test_id)
     def test_fixture_event_id_is_valid_ulid(self, event_data: dict):
         """event_id must be exactly 26 Crockford Base32 characters."""
         import re
+
         ulid_pattern = re.compile(r"^[0-9A-HJKMNP-TV-Z]{26}$")
         assert ulid_pattern.match(event_data["event_id"]), (
             f"event_id {event_data['event_id']!r} does not match ULID pattern"
         )
 
-    @pytest.mark.parametrize(
-        "event_data", FIXTURE_EVENTS, ids=_event_test_id
-    )
+    @pytest.mark.parametrize("event_data", FIXTURE_EVENTS, ids=_event_test_id)
     def test_fixture_payload_passes_emitter_rules(self, event_data: dict):
         """Each fixture payload must satisfy _PAYLOAD_RULES from the emitter."""
         event_type = event_data["event_type"]
         payload = event_data["payload"]
         rules = _PAYLOAD_RULES.get(event_type)
-        assert rules is not None, (
-            f"No payload rules found for event type: {event_type}"
-        )
+        assert rules is not None, f"No payload rules found for event type: {event_type}"
 
         # Check required fields
         missing = rules["required"] - set(payload.keys())
-        assert not missing, (
-            f"{event_type} payload missing required fields: {missing}"
-        )
+        assert not missing, f"{event_type} payload missing required fields: {missing}"
 
         # Run field-level validators
         for field_name, validator in rules["validators"].items():
@@ -258,9 +249,7 @@ class TestFixtureJsonFiles:
     """Validate the fixture JSON files in contracts/fixtures/."""
 
     FIXTURES_DIR = (
-        Path(__file__).resolve().parent.parent.parent
-        / "contracts"
-        / "fixtures"
+        Path(__file__).resolve().parent.parent.parent / "contracts" / "fixtures"
     )
 
     def _load_fixture(self, filename: str) -> dict:
@@ -335,7 +324,15 @@ class TestLaneMapping:
 
     def test_wp_status_changed_uses_canonical_7_lane_values(self):
         """WPStatusChanged fixture events use canonical 7-lane values."""
-        valid_lanes = {"planned", "claimed", "in_progress", "for_review", "done", "blocked", "canceled"}
+        valid_lanes = {
+            "planned",
+            "claimed",
+            "in_progress",
+            "for_review",
+            "done",
+            "blocked",
+            "canceled",
+        }
         for event_data in FIXTURE_EVENTS:
             if event_data["event_type"] == "WPStatusChanged":
                 payload = event_data["payload"]

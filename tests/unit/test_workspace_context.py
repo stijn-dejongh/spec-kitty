@@ -49,7 +49,9 @@ class TestOrphanedContext:
 class TestCorruptedContext:
     def test_invalid_json_handled(self, kittify_project: Path) -> None:
         """Invalid JSON in context should be handled gracefully."""
-        context_file = kittify_project / ".kittify" / "workspaces" / "001-feature-WP01.json"
+        context_file = (
+            kittify_project / ".kittify" / "workspaces" / "001-feature-WP01.json"
+        )
         context_file.write_text("{invalid json", encoding="utf-8")
 
         loaded = load_context(kittify_project, "001-feature-WP01")

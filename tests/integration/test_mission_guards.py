@@ -53,7 +53,9 @@ class TestGatePassedGuard:
         feature_dir = tmp_path / "feature"
         feature_dir.mkdir()
         log = feature_dir / "mission-events.jsonl"
-        log.write_text(json.dumps({"type": "other", "name": "X"}) + "\n", encoding="utf-8")
+        log.write_text(
+            json.dumps({"type": "other", "name": "X"}) + "\n", encoding="utf-8"
+        )
         guard = GUARD_REGISTRY["gate_passed"](["G1"])
         assert guard(_event_data(MissionModel(feature_dir=feature_dir))) is False
 
@@ -70,7 +72,9 @@ class TestAllWpStatusGuard:
         tasks_dir = feature_dir / "tasks"
         tasks_dir.mkdir(parents=True)
         for wp in ("WP01", "WP02", "WP03"):
-            (tasks_dir / f"{wp}.md").write_text("---\nlane: done\n---\n", encoding="utf-8")
+            (tasks_dir / f"{wp}.md").write_text(
+                "---\nlane: done\n---\n", encoding="utf-8"
+            )
 
         guard = GUARD_REGISTRY["all_wp_status"](["done"])
         assert guard(_event_data(MissionModel(feature_dir=feature_dir))) is True
@@ -96,7 +100,9 @@ class TestAnyWpStatusGuard:
         feature_dir = tmp_path / "feature"
         tasks_dir = feature_dir / "tasks"
         tasks_dir.mkdir(parents=True)
-        (tasks_dir / "WP01.md").write_text("---\nlane: planned\n---\n", encoding="utf-8")
+        (tasks_dir / "WP01.md").write_text(
+            "---\nlane: planned\n---\n", encoding="utf-8"
+        )
         (tasks_dir / "WP02.md").write_text("---\nlane: done\n---\n", encoding="utf-8")
 
         guard = GUARD_REGISTRY["any_wp_status"](["done"])
@@ -106,7 +112,9 @@ class TestAnyWpStatusGuard:
         feature_dir = tmp_path / "feature"
         tasks_dir = feature_dir / "tasks"
         tasks_dir.mkdir(parents=True)
-        (tasks_dir / "WP01.md").write_text("---\nlane: planned\n---\n", encoding="utf-8")
+        (tasks_dir / "WP01.md").write_text(
+            "---\nlane: planned\n---\n", encoding="utf-8"
+        )
         (tasks_dir / "WP02.md").write_text("---\nlane: doing\n---\n", encoding="utf-8")
 
         guard = GUARD_REGISTRY["any_wp_status"](["done"])
@@ -136,10 +144,7 @@ class TestEventCountGuard:
         feature_dir.mkdir()
         log = feature_dir / "mission-events.jsonl"
         log.write_text(
-            "\n".join(
-                json.dumps({"type": "checkpoint"}) for _ in range(3)
-            )
-            + "\n",
+            "\n".join(json.dumps({"type": "checkpoint"}) for _ in range(3)) + "\n",
             encoding="utf-8",
         )
         guard = GUARD_REGISTRY["event_count"](["checkpoint", 3])
@@ -150,10 +155,7 @@ class TestEventCountGuard:
         feature_dir.mkdir()
         log = feature_dir / "mission-events.jsonl"
         log.write_text(
-            "\n".join(
-                json.dumps({"type": "checkpoint"}) for _ in range(2)
-            )
-            + "\n",
+            "\n".join(json.dumps({"type": "checkpoint"}) for _ in range(2)) + "\n",
             encoding="utf-8",
         )
         guard = GUARD_REGISTRY["event_count"](["checkpoint", 3])
@@ -164,4 +166,3 @@ class TestEventCountGuard:
         feature_dir.mkdir()
         guard = GUARD_REGISTRY["event_count"](["checkpoint", 1])
         assert guard(_event_data(MissionModel(feature_dir=feature_dir))) is False
-

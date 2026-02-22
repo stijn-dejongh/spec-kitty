@@ -44,7 +44,10 @@ class WorkflowSimplificationMigration(BaseMigration):
             if implement_file.exists():
                 content = implement_file.read_text(encoding="utf-8")
                 # Old template has "Work Package Selection" or "Setup (Do This First)"
-                if "Work Package Selection" in content or "Setup (Do This First)" in content:
+                if (
+                    "Work Package Selection" in content
+                    or "Setup (Do This First)" in content
+                ):
                     return True
                 # Or doesn't have the new workflow command
                 if "spec-kitty agent workflow implement" not in content:
@@ -55,7 +58,10 @@ class WorkflowSimplificationMigration(BaseMigration):
             if review_file.exists():
                 content = review_file.read_text(encoding="utf-8")
                 # Old template has complex outline
-                if "Location Pre-flight Check" in content or "Conduct the review:" in content:
+                if (
+                    "Location Pre-flight Check" in content
+                    or "Conduct the review:" in content
+                ):
                     return True
                 # Or doesn't have the new workflow command
                 if "spec-kitty agent workflow review" not in content:
@@ -95,7 +101,13 @@ class WorkflowSimplificationMigration(BaseMigration):
         pkg_root = Path(specify_cli.__file__).parent
         pkg_templates = pkg_root / "missions" / "software-dev" / "command-templates"
         if not pkg_templates.exists():
-            pkg_templates = pkg_root / ".kittify" / "missions" / "software-dev" / "command-templates"
+            pkg_templates = (
+                pkg_root
+                / ".kittify"
+                / "missions"
+                / "software-dev"
+                / "command-templates"
+            )
 
         if pkg_templates.exists():
             if not dry_run:
@@ -106,13 +118,19 @@ class WorkflowSimplificationMigration(BaseMigration):
                     warnings.append(f"Package template missing: {template_name}")
                     continue
                 if dry_run:
-                    changes.append(f"Would update mission template: software-dev/{template_name}")
+                    changes.append(
+                        f"Would update mission template: software-dev/{template_name}"
+                    )
                 else:
                     try:
                         shutil.copy2(src, software_dev_templates / template_name)
-                        changes.append(f"Updated mission template: software-dev/{template_name}")
+                        changes.append(
+                            f"Updated mission template: software-dev/{template_name}"
+                        )
                     except OSError as e:
-                        warnings.append(f"Failed to copy mission template {template_name}: {e}")
+                        warnings.append(
+                            f"Failed to copy mission template {template_name}: {e}"
+                        )
         else:
             warnings.append(
                 "Mission templates not found in package. "
@@ -149,7 +167,9 @@ class WorkflowSimplificationMigration(BaseMigration):
                         )
                         updated_count += 1
                     except OSError as e:
-                        warnings.append(f"Failed to update {agent_root}/{dest_filename}: {e}")
+                        warnings.append(
+                            f"Failed to update {agent_root}/{dest_filename}: {e}"
+                        )
 
             if updated_count > 0:
                 agent_name = agent_root.strip(".")

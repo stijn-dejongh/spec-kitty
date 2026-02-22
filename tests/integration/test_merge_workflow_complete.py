@@ -28,7 +28,9 @@ from specify_cli.merge.state import (
 class TestPreflightBlocking:
     """Tests for preflight validation blocking merge operations."""
 
-    def test_preflight_blocks_dirty_worktree(self, dirty_worktree_repo: tuple[Path, Path]):
+    def test_preflight_blocks_dirty_worktree(
+        self, dirty_worktree_repo: tuple[Path, Path]
+    ):
         """Test that preflight blocks merge when worktree has uncommitted changes."""
         repo_root, dirty_worktree = dirty_worktree_repo
 
@@ -108,7 +110,9 @@ dependencies: []
             capture_output=True,
         )
         (worktree_dir / "WP01.txt").write_text("WP01 work")
-        subprocess.run(["git", "add", "."], cwd=worktree_dir, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=worktree_dir, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP01"],
             cwd=worktree_dir,
@@ -132,7 +136,9 @@ dependencies: []
         assert wp02_statuses[0].is_clean is False
         assert "Missing worktree" in wp02_statuses[0].error
 
-    @pytest.mark.xfail(reason="CI git environment does not have user configured for commits")
+    @pytest.mark.xfail(
+        reason="CI git environment does not have user configured for commits"
+    )
     def test_preflight_blocks_diverged_target(self, tmp_path: Path):
         """Test that preflight blocks merge when target branch is behind origin."""
         # Create origin repo
@@ -213,7 +219,9 @@ dependencies: []
             capture_output=True,
         )
         (worktree_dir / "WP01.txt").write_text("work")
-        subprocess.run(["git", "add", "."], cwd=worktree_dir, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=worktree_dir, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP01"],
             cwd=worktree_dir,
@@ -249,7 +257,9 @@ dependencies: []
 class TestDryRunConflictForecasting:
     """Tests for dry-run conflict forecasting."""
 
-    def test_dry_run_shows_conflict_forecast(self, conflicting_wps_repo: tuple[Path, list]):
+    def test_dry_run_shows_conflict_forecast(
+        self, conflicting_wps_repo: tuple[Path, list]
+    ):
         """Test that dry-run mode shows conflict predictions."""
         repo_root, wp_workspaces = conflicting_wps_repo
 

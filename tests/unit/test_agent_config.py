@@ -49,7 +49,9 @@ class TestUnknownAgentKey:
 
 
 class TestStrategyRemoval:
-    def test_save_agent_config_does_not_persist_selection_strategy(self, tmp_path: Path) -> None:
+    def test_save_agent_config_does_not_persist_selection_strategy(
+        self, tmp_path: Path
+    ) -> None:
         """Persisted agent config should not include a selection.strategy field."""
         config = AgentConfig(
             available=["claude", "codex"],

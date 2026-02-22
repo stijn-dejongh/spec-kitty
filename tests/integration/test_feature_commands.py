@@ -382,7 +382,9 @@ class TestEndToEndFeatureWorkflow:
 
         # Verify we can check prerequisites with tasks
         (feature_dir / "tasks.md").write_text("# Tasks")
-        result4 = runner.invoke(app, ["check-prerequisites", "--include-tasks", "--json"])
+        result4 = runner.invoke(
+            app, ["check-prerequisites", "--include-tasks", "--json"]
+        )
         assert result4.exit_code == 0
         output4 = json.loads(result4.stdout)
         assert output4["valid"] is True

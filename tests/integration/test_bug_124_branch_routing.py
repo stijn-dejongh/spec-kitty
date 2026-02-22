@@ -27,10 +27,14 @@ def run_cli(project_path: Path, *args: str) -> subprocess.CompletedProcess:
 
     env = os.environ.copy()
     src_path = REPO_ROOT / "src"
-    env["PYTHONPATH"] = f"{src_path}{os.pathsep}{env.get('PYTHONPATH', '')}".rstrip(os.pathsep)
+    env["PYTHONPATH"] = f"{src_path}{os.pathsep}{env.get('PYTHONPATH', '')}".rstrip(
+        os.pathsep
+    )
     env.setdefault("SPEC_KITTY_TEMPLATE_ROOT", str(REPO_ROOT))
     command = [str(get_venv_python()), "-m", "specify_cli.__init__", *args]
-    return subprocess.run(command, cwd=str(project_path), capture_output=True, text=True, env=env)
+    return subprocess.run(
+        command, cwd=str(project_path), capture_output=True, text=True, env=env
+    )
 
 
 def get_current_branch(repo: Path) -> str:
@@ -52,8 +56,12 @@ def create_feature_on_main(repo: Path, feature_slug: str) -> Path:
     # Create .kittify
     kittify = repo / ".kittify"
     kittify.mkdir(exist_ok=True)
-    (kittify / "config.yaml").write_text(yaml.dump({"vcs": {"type": "git"}, "agents": {"available": ["claude"]}}))
-    (kittify / "metadata.yaml").write_text(yaml.dump({"spec_kitty": {"version": "0.15.0"}}))
+    (kittify / "config.yaml").write_text(
+        yaml.dump({"vcs": {"type": "git"}, "agents": {"available": ["claude"]}})
+    )
+    (kittify / "metadata.yaml").write_text(
+        yaml.dump({"spec_kitty": {"version": "0.15.0"}})
+    )
 
     # Create feature
     feature_dir = repo / "kitty-specs" / feature_slug
@@ -71,17 +79,17 @@ def create_feature_on_main(repo: Path, feature_slug: str) -> Path:
 
     # Create WP01
     (tasks_dir / "WP01-test.md").write_text(
-        "---\n"
-        "work_package_id: WP01\n"
-        "lane: planned\n"
-        "dependencies: []\n"
-        "---\n\n"
-        "# WP01\n"
+        "---\nwork_package_id: WP01\nlane: planned\ndependencies: []\n---\n\n# WP01\n"
     )
 
     # Commit
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", f"Add {feature_slug}"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", f"Add {feature_slug}"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
 
     return feature_dir
 
@@ -99,20 +107,39 @@ def test_implement_respects_current_branch(tmp_path):
     repo.mkdir()
 
     # Initialize git
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
 
     # Initial commit
     (repo / "README.md").write_text("# Test\n")
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True
+    )
 
     # Create feature targeting main
     create_feature_on_main(repo, "001-test-feature")
 
     # Create and switch to feature branch
-    subprocess.run(["git", "checkout", "-b", "feature/new-auth"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "checkout", "-b", "feature/new-auth"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
 
     # Verify we're on feature branch
     assert get_current_branch(repo) == "feature/new-auth"
@@ -124,7 +151,9 @@ def test_implement_respects_current_branch(tmp_path):
     assert result.returncode == 0, f"implement failed: {result.stderr}"
 
     # User should still be on feature branch (no auto-checkout)
-    assert get_current_branch(repo) == "feature/new-auth", "Command auto-switched branch unexpectedly"
+    assert get_current_branch(repo) == "feature/new-auth", (
+        "Command auto-switched branch unexpectedly"
+    )
 
     # Worktree should exist
     worktree = repo / ".worktrees" / "001-test-feature-WP01"
@@ -142,37 +171,61 @@ def test_worktree_base_branch_is_current(tmp_path):
     repo.mkdir()
 
     # Initialize git
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
 
     # Initial commit
     (repo / "README.md").write_text("# Test\n")
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True
+    )
 
     # Create feature targeting main
     create_feature_on_main(repo, "002-test-feature")
 
     # Create and switch to feature branch
-    subprocess.run(["git", "checkout", "-b", "develop"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "checkout", "-b", "develop"], cwd=repo, check=True, capture_output=True
+    )
 
     # Make a commit on develop to differentiate it
     (repo / "develop.txt").write_text("develop branch\n")
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "Develop commit"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Develop commit"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
 
     # Run implement command from develop
     result = run_cli(repo, "implement", "WP01")
     assert result.returncode == 0, f"implement failed: {result.stderr}"
 
     # Check workspace context to verify base branch
-    workspace_context_file = repo / ".kittify" / "workspaces" / "002-test-feature-WP01.json"
+    workspace_context_file = (
+        repo / ".kittify" / "workspaces" / "002-test-feature-WP01.json"
+    )
     if workspace_context_file.exists():
         context_data = json.loads(workspace_context_file.read_text())
         # Base branch should be 'develop' (current), not 'main' (target)
-        assert context_data.get("base_branch") == "develop", \
+        assert context_data.get("base_branch") == "develop", (
             f"Base branch should be 'develop', got {context_data.get('base_branch')}"
+        )
 
 
 def test_status_commits_respect_current_branch(tmp_path):
@@ -186,20 +239,36 @@ def test_status_commits_respect_current_branch(tmp_path):
     repo.mkdir()
 
     # Initialize git
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
 
     # Initial commit
     (repo / "README.md").write_text("# Test\n")
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True
+    )
 
     # Create feature targeting main
     create_feature_on_main(repo, "003-test-feature")
 
     # Create and switch to feature branch
-    subprocess.run(["git", "checkout", "-b", "staging"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "checkout", "-b", "staging"], cwd=repo, check=True, capture_output=True
+    )
 
     # Get commit count before status change
     result = subprocess.run(
@@ -212,7 +281,17 @@ def test_status_commits_respect_current_branch(tmp_path):
     commits_before = int(result.stdout.strip())
 
     # Move task to doing (triggers status commit)
-    result = run_cli(repo, "agent", "tasks", "move-task", "WP01", "--to", "doing", "--feature", "003-test-feature")
+    result = run_cli(
+        repo,
+        "agent",
+        "tasks",
+        "move-task",
+        "WP01",
+        "--to",
+        "doing",
+        "--feature",
+        "003-test-feature",
+    )
 
     # Command should succeed
     assert result.returncode == 0, f"move-task failed: {result.stderr}"
@@ -254,20 +333,36 @@ def test_notification_when_current_differs_from_target(tmp_path):
     repo.mkdir()
 
     # Initialize git
-    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "test@test.com"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Test"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
 
     # Initial commit
     (repo / "README.md").write_text("# Test\n")
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Initial"], cwd=repo, check=True, capture_output=True
+    )
 
     # Create feature targeting main
     create_feature_on_main(repo, "004-test-feature")
 
     # Create and switch to feature branch
-    subprocess.run(["git", "checkout", "-b", "develop"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "checkout", "-b", "develop"], cwd=repo, check=True, capture_output=True
+    )
 
     # Run implement command
     result = run_cli(repo, "implement", "WP01")
@@ -279,8 +374,11 @@ def test_notification_when_current_differs_from_target(tmp_path):
     output = result.stdout + result.stderr
     # Should mention something about branches (exact message may vary)
     # This is a loose check - the specific notification format can be decided during implementation
-    assert "develop" in output.lower() or "main" in output.lower() or "branch" in output.lower(), \
-        "No branch notification in output"
+    assert (
+        "develop" in output.lower()
+        or "main" in output.lower()
+        or "branch" in output.lower()
+    ), "No branch notification in output"
 
 
 if __name__ == "__main__":

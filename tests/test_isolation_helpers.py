@@ -49,7 +49,11 @@ def get_installed_version() -> str | None:
     env.pop("PYTHONPATH", None)
     try:
         result = subprocess.run(
-            [str(python), "-c", "from importlib.metadata import version; print(version('spec-kitty-cli'))"],
+            [
+                str(python),
+                "-c",
+                "from importlib.metadata import version; print(version('spec-kitty-cli'))",
+            ],
             capture_output=True,
             text=True,
             check=False,
@@ -88,9 +92,7 @@ def assert_test_isolation() -> None:
 
 
 def run_cli_subprocess(
-    project_path: Path,
-    *args: str,
-    check: bool = False
+    project_path: Path, *args: str, check: bool = False
 ) -> subprocess.CompletedProcess[str]:
     """Run CLI in subprocess with guaranteed source version.
 

@@ -20,7 +20,7 @@ def run_enhanced_verify(
     feature: Optional[str],
     json_output: bool,
     check_files: bool,
-    console: Console
+    console: Console,
 ) -> Dict:
     """
     Run the enhanced verification with manifest checking and worktree status.
@@ -33,7 +33,7 @@ def run_enhanced_verify(
         "worktree_status": {},
         "file_integrity": {},
         "feature_analysis": {},
-        "recommendations": []
+        "recommendations": [],
     }
 
     # Initialize helpers
@@ -42,7 +42,7 @@ def run_enhanced_verify(
     worktree_status = WorktreeStatus(repo_root)
 
     # 1. Environment Information
-    in_worktree = '.worktrees' in str(cwd)
+    in_worktree = ".worktrees" in str(cwd)
 
     try:
         current_branch = subprocess.run(
@@ -52,7 +52,7 @@ def run_enhanced_verify(
             text=True,
             encoding="utf-8",
             errors="replace",
-            check=True
+            check=True,
         ).stdout.strip()
     except subprocess.CalledProcessError:
         current_branch = None
@@ -63,7 +63,7 @@ def run_enhanced_verify(
         "project_root": str(project_root),
         "in_worktree": in_worktree,
         "current_branch": current_branch,
-        "active_mission": manifest.active_mission
+        "active_mission": manifest.active_mission,
     }
 
     if not json_output:
@@ -101,7 +101,7 @@ def run_enhanced_verify(
             "total_present": total_present,
             "total_missing": total_missing,
             "missing_files": file_check["missing"],
-            "categories": {}
+            "categories": {},
         }
 
         # Count by category
@@ -110,7 +110,7 @@ def run_enhanced_verify(
             output_data["file_integrity"]["categories"][category] = {
                 "expected": len(files),
                 "present": present_in_category,
-                "missing": len(files) - present_in_category
+                "missing": len(files) - present_in_category,
             }
 
         if not json_output:
@@ -118,13 +118,19 @@ def run_enhanced_verify(
             console.print(f"   Active mission: {manifest.active_mission}")
 
             if total_missing == 0:
-                console.print(f"   [green]✓[/green] All {total_expected} expected files present")
+                console.print(
+                    f"   [green]✓[/green] All {total_expected} expected files present"
+                )
             else:
-                console.print(f"   [yellow]⚠[/yellow] {total_missing} of {total_expected} files missing")
+                console.print(
+                    f"   [yellow]⚠[/yellow] {total_missing} of {total_expected} files missing"
+                )
 
                 # Show missing by category
                 for category in ["commands", "templates", "scripts"]:
-                    cat_missing = [f for f, c in file_check["missing"].items() if c == category]
+                    cat_missing = [
+                        f for f, c in file_check["missing"].items() if c == category
+                    ]
                     if cat_missing:
                         console.print(f"   Missing {category}:")
                         for file in cat_missing[:3]:  # Show first 3
@@ -146,12 +152,10 @@ def run_enhanced_verify(
     # 4. Feature Detection and Analysis
     try:
         from .acceptance import detect_feature_slug, AcceptanceError
+
         feature_slug = (feature or detect_feature_slug(repo_root, cwd=cwd)).strip()
 
-        output_data["feature_detection"] = {
-            "detected": True,
-            "feature": feature_slug
-        }
+        output_data["feature_detection"] = {"detected": True, "feature": feature_slug}
 
         # Get detailed status for this feature
         feature_status = worktree_status.get_feature_status(feature_slug)
@@ -170,15 +174,21 @@ def run_enhanced_verify(
                 console.print(f"   [dim]○[/dim] No branch")
 
             if feature_status["worktree_exists"]:
-                console.print(f"   [green]✓[/green] Worktree at: {feature_status['worktree_path']}")
+                console.print(
+                    f"   [green]✓[/green] Worktree at: {feature_status['worktree_path']}"
+                )
             else:
                 console.print(f"   [dim]○[/dim] No worktree")
 
             # Artifacts
             if feature_status["artifacts_in_main"]:
-                console.print(f"   Artifacts in main: {', '.join(feature_status['artifacts_in_main'])}")
+                console.print(
+                    f"   Artifacts in main: {', '.join(feature_status['artifacts_in_main'])}"
+                )
             if feature_status["artifacts_in_worktree"]:
-                console.print(f"   Artifacts in worktree: {', '.join(feature_status['artifacts_in_worktree'])}")
+                console.print(
+                    f"   Artifacts in worktree: {', '.join(feature_status['artifacts_in_worktree'])}"
+                )
 
             # State-based observations
             if feature_status["state"] == "merged":
@@ -189,10 +199,7 @@ def run_enhanced_verify(
                 console.print("   [dim]○[/dim] Feature not yet started")
 
     except AcceptanceError as exc:
-        output_data["feature_detection"] = {
-            "detected": False,
-            "error": str(exc)
-        }
+        output_data["feature_detection"] = {"detected": False, "error": str(exc)}
 
         if not json_output:
             console.print("\n[cyan]4. Feature Detection[/cyan]")
@@ -220,7 +227,7 @@ def run_enhanced_verify(
                 "in_development": "[yellow]ACTIVE[/yellow]",
                 "ready_to_merge": "[blue]READY[/blue]",
                 "not_started": "[dim]NOT STARTED[/dim]",
-                "unknown": "[dim]?[/dim]"
+                "unknown": "[dim]?[/dim]",
             }.get(feat_status["state"], feat_status["state"])
 
             branch_display = "✓" if feat_status["branch_exists"] else "-"
@@ -229,21 +236,21 @@ def run_enhanced_verify(
 
             worktree_display = "✓" if feat_status["worktree_exists"] else "-"
 
-            artifact_count = len(feat_status["artifacts_in_main"]) + len(feat_status["artifacts_in_worktree"])
+            artifact_count = len(feat_status["artifacts_in_main"]) + len(
+                feat_status["artifacts_in_worktree"]
+            )
             artifacts_display = str(artifact_count) if artifact_count > 0 else "-"
 
             table.add_row(
-                feat,
-                state_display,
-                branch_display,
-                worktree_display,
-                artifacts_display
+                feat, state_display, branch_display, worktree_display, artifacts_display
             )
 
         console.print(table)
 
         if len(all_features) > 10:
-            console.print(f"   [dim]... and {len(all_features) - 10} more features[/dim]")
+            console.print(
+                f"   [dim]... and {len(all_features) - 10} more features[/dim]"
+            )
 
     # 6. Observations (not recommendations)
     observations = []
@@ -253,10 +260,14 @@ def run_enhanced_verify(
 
     if output_data.get("feature_analysis", {}).get("state") == "in_development":
         if not output_data["feature_analysis"].get("worktree_exists"):
-            observations.append(f"Feature {feature_slug} has no worktree but has development artifacts")
+            observations.append(
+                f"Feature {feature_slug} has no worktree but has development artifacts"
+            )
 
     if total_missing > 0 and check_files:
-        observations.append(f"Mission integrity: {total_missing} expected files not found")
+        observations.append(
+            f"Mission integrity: {total_missing} expected files not found"
+        )
 
     output_data["observations"] = observations
 

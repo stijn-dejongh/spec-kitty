@@ -110,10 +110,17 @@ class TestIsInteractive:
         mock_sys.stdin.isatty.return_value = True
         # Clear all CI env vars
         env_clean = {
-            k: v for k, v in os.environ.items()
-            if k not in [
-                "CI", "GITHUB_ACTIONS", "JENKINS_HOME",
-                "GITLAB_CI", "CIRCLECI", "TRAVIS", "BUILDKITE",
+            k: v
+            for k, v in os.environ.items()
+            if k
+            not in [
+                "CI",
+                "GITHUB_ACTIONS",
+                "JENKINS_HOME",
+                "GITLAB_CI",
+                "CIRCLECI",
+                "TRAVIS",
+                "BUILDKITE",
             ]
         }
         with patch.dict(os.environ, env_clean, clear=True):
@@ -173,14 +180,19 @@ class TestPromptConflictResolution:
         assert choice == PromptChoice.DEFER
         assert value is None
 
-    @patch("specify_cli.glossary.prompts.typer.prompt", side_effect=["C", "My custom definition"])
+    @patch(
+        "specify_cli.glossary.prompts.typer.prompt",
+        side_effect=["C", "My custom definition"],
+    )
     def test_custom_sense(self, mock_prompt, ambiguous_conflict):
         """Selecting 'C' then providing definition returns (CUSTOM_SENSE, definition)."""
         choice, value = prompt_conflict_resolution(ambiguous_conflict)
         assert choice == PromptChoice.CUSTOM_SENSE
         assert value == "My custom definition"
 
-    @patch("specify_cli.glossary.prompts.typer.prompt", side_effect=["c", "A definition"])
+    @patch(
+        "specify_cli.glossary.prompts.typer.prompt", side_effect=["c", "A definition"]
+    )
     def test_custom_sense_lowercase(self, mock_prompt, ambiguous_conflict):
         """Lowercase 'c' is accepted for custom sense."""
         choice, value = prompt_conflict_resolution(ambiguous_conflict)
@@ -188,16 +200,20 @@ class TestPromptConflictResolution:
         assert value == "A definition"
 
     @patch("specify_cli.glossary.prompts.typer.echo")
-    @patch("specify_cli.glossary.prompts.typer.prompt", side_effect=["C", "  ", "C", "Valid definition"])
-    def test_empty_custom_definition_rejected(self, mock_prompt, mock_echo, ambiguous_conflict):
+    @patch(
+        "specify_cli.glossary.prompts.typer.prompt",
+        side_effect=["C", "  ", "C", "Valid definition"],
+    )
+    def test_empty_custom_definition_rejected(
+        self, mock_prompt, mock_echo, ambiguous_conflict
+    ):
         """Empty custom definition is rejected and re-prompts."""
         choice, value = prompt_conflict_resolution(ambiguous_conflict)
         assert choice == PromptChoice.CUSTOM_SENSE
         assert value == "Valid definition"
         # Verify error message was shown
         error_calls = [
-            str(c) for c in mock_echo.call_args_list
-            if "empty" in str(c).lower()
+            str(c) for c in mock_echo.call_args_list if "empty" in str(c).lower()
         ]
         assert len(error_calls) > 0
 
@@ -209,21 +225,23 @@ class TestPromptConflictResolution:
         assert choice == PromptChoice.DEFER
         # Verify error message was shown for 'X'
         error_calls = [
-            str(c) for c in mock_echo.call_args_list
-            if "invalid" in str(c).lower()
+            str(c) for c in mock_echo.call_args_list if "invalid" in str(c).lower()
         ]
         assert len(error_calls) > 0
 
     @patch("specify_cli.glossary.prompts.typer.echo")
     @patch("specify_cli.glossary.prompts.typer.prompt", side_effect=["99", "1"])
-    def test_out_of_range_number_reprompts(self, mock_prompt, mock_echo, ambiguous_conflict):
+    def test_out_of_range_number_reprompts(
+        self, mock_prompt, mock_echo, ambiguous_conflict
+    ):
         """Number > num_candidates shows error and re-prompts."""
         choice, value = prompt_conflict_resolution(ambiguous_conflict)
         assert choice == PromptChoice.SELECT_CANDIDATE
         assert value == 0
         # Verify error message was shown for '99'
         error_calls = [
-            str(c) for c in mock_echo.call_args_list
+            str(c)
+            for c in mock_echo.call_args_list
             if "between 1 and" in str(c).lower() or "enter" in str(c).lower()
         ]
         assert len(error_calls) > 0

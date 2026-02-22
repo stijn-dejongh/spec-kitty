@@ -9,6 +9,7 @@ Tests for CSV validation to ensure:
 
 Target: src/specify_cli/validators/csv_schema.py
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -20,8 +21,22 @@ from specify_cli.validators.csv_schema import validate_csv_schema
 pytestmark = [pytest.mark.adversarial]
 
 # Expected columns for evidence-log.csv (from ADR 8)
-EVIDENCE_COLUMNS = ["timestamp", "source_type", "citation", "key_finding", "confidence", "notes"]
-SOURCE_COLUMNS = ["source_id", "citation", "url", "accessed_date", "relevance", "status"]
+EVIDENCE_COLUMNS = [
+    "timestamp",
+    "source_type",
+    "citation",
+    "key_finding",
+    "confidence",
+    "notes",
+]
+SOURCE_COLUMNS = [
+    "source_id",
+    "citation",
+    "url",
+    "accessed_date",
+    "relevance",
+    "status",
+]
 
 
 class TestFormulaInjection:
@@ -43,15 +58,17 @@ class TestFormulaInjection:
             ("+1+1", "Plus formula"),
             ("-1+1", "Minus formula"),
             ("@SUM(A1:A10)", "At-sign function"),
-            ("=HYPERLINK(\"http://evil.com\",\"Click\")", "Hyperlink injection"),
+            ('=HYPERLINK("http://evil.com","Click")', "Hyperlink injection"),
         ],
     )
-    def test_formula_in_cell_handled(self, tmp_path: Path, formula: str, description: str):
+    def test_formula_in_cell_handled(
+        self, tmp_path: Path, formula: str, description: str
+    ):
         """CSV with formula injection should be validated without execution."""
         csv_path = tmp_path / "test.csv"
         content = (
             f"{','.join(EVIDENCE_COLUMNS)}\n"
-            f"2025-01-25T10:00:00,journal,\"{formula}\",Finding,high,Notes\n"
+            f'2025-01-25T10:00:00,journal,"{formula}",Finding,high,Notes\n'
         )
         csv_path.write_text(content, encoding="utf-8")
 
@@ -89,7 +106,10 @@ class TestEncodingAttacks:
         assert not result.schema_valid, "Invalid UTF-8 should fail validation"
         assert result.error_message, "Should have error message"
         # Error should mention encoding, not raw exception
-        assert "exception" not in result.error_message.lower() or "encoding" in result.error_message.lower()
+        assert (
+            "exception" not in result.error_message.lower()
+            or "encoding" in result.error_message.lower()
+        )
 
     def test_latin1_encoding_handled(self, tmp_path: Path):
         """Latin-1 encoded file should be handled gracefully."""
@@ -150,7 +170,9 @@ class TestSchemaViolations:
     def test_extra_columns_rejected(self, tmp_path: Path):
         """Extra columns beyond schema should be rejected."""
         csv_path = tmp_path / "test.csv"
-        content = "timestamp,source_type,citation,key_finding,confidence,notes,extra_col\n"
+        content = (
+            "timestamp,source_type,citation,key_finding,confidence,notes,extra_col\n"
+        )
         csv_path.write_text(content, encoding="utf-8")
 
         result = validate_csv_schema(csv_path, EVIDENCE_COLUMNS)
@@ -182,7 +204,9 @@ class TestSchemaViolations:
     def test_whitespace_in_column_names(self, tmp_path: Path):
         """Whitespace in column names should be normalized."""
         csv_path = tmp_path / "test.csv"
-        content = " timestamp , source_type , citation , key_finding , confidence , notes \n"
+        content = (
+            " timestamp , source_type , citation , key_finding , confidence , notes \n"
+        )
         csv_path.write_text(content, encoding="utf-8")
 
         result = validate_csv_schema(csv_path, EVIDENCE_COLUMNS)
@@ -239,7 +263,10 @@ class TestEmptyAndMalformed:
 
         assert not result.schema_valid
         assert result.error_message
-        assert "not found" in result.error_message.lower() or "does not exist" in result.error_message.lower()
+        assert (
+            "not found" in result.error_message.lower()
+            or "does not exist" in result.error_message.lower()
+        )
 
     def test_directory_instead_of_file(self, tmp_path: Path):
         """Directory path instead of file should produce clear error."""

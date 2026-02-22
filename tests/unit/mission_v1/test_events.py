@@ -288,8 +288,7 @@ class TestMissionModelCallbackWiring:
         events = read_events(tmp_path)
         # Filter to only transition events (exit alpha + enter beta)
         transition_events = [
-            e for e in events
-            if e["type"] in ("phase_exited", "phase_entered")
+            e for e in events if e["type"] in ("phase_exited", "phase_entered")
         ]
         assert len(transition_events) == 2
         assert transition_events[0]["type"] == "phase_exited"
@@ -313,8 +312,8 @@ class TestMissionModelCallbackWiring:
         assert len(events) == 4
         types = [e["type"] for e in events]
         assert types == [
-            "phase_exited",   # exit alpha
+            "phase_exited",  # exit alpha
             "phase_entered",  # enter beta
-            "phase_exited",   # exit beta
+            "phase_exited",  # exit beta
             "phase_entered",  # enter done
         ]

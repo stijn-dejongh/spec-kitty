@@ -61,7 +61,9 @@ def get_package_asset_root() -> Path:
         root = Path(env_root)
         if root.is_dir():
             return root
-        raise FileNotFoundError(f"SPEC_KITTY_TEMPLATE_ROOT path does not exist: {env_root}")
+        raise FileNotFoundError(
+            f"SPEC_KITTY_TEMPLATE_ROOT path does not exist: {env_root}"
+        )
 
     # Installed package - try doctrine package first
     try:

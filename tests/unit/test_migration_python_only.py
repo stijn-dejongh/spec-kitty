@@ -156,10 +156,24 @@ def test_cleanup_worktree_scripts(migration, mock_project_with_worktrees):
     assert result.success is True
 
     # Verify worktree bash scripts removed
-    wt1_bash = mock_project_with_worktrees / ".worktrees" / "001-feature-one" / ".kittify" / "scripts" / "bash"
+    wt1_bash = (
+        mock_project_with_worktrees
+        / ".worktrees"
+        / "001-feature-one"
+        / ".kittify"
+        / "scripts"
+        / "bash"
+    )
     assert not wt1_bash.exists() or not any(wt1_bash.iterdir())
 
-    wt2_bash = mock_project_with_worktrees / ".worktrees" / "002-feature-two" / ".kittify" / "scripts" / "bash"
+    wt2_bash = (
+        mock_project_with_worktrees
+        / ".worktrees"
+        / "002-feature-two"
+        / ".kittify"
+        / "scripts"
+        / "bash"
+    )
     assert not wt2_bash.exists() or not any(wt2_bash.iterdir())
 
 
@@ -170,7 +184,13 @@ def test_update_command_templates(migration, mock_project_with_bash):
     assert result.success is True
 
     # Verify specify.md updated
-    specify_md = mock_project_with_bash / ".kittify" / "templates" / "command-templates" / "specify.md"
+    specify_md = (
+        mock_project_with_bash
+        / ".kittify"
+        / "templates"
+        / "command-templates"
+        / "specify.md"
+    )
     content = specify_md.read_text()
 
     assert "spec-kitty agent create-feature" in content
@@ -188,7 +208,13 @@ def test_update_templates_dry_run(migration, mock_project_with_bash):
     assert any("Would update" in change for change in result.changes_made)
 
     # Verify templates NOT updated
-    specify_md = mock_project_with_bash / ".kittify" / "templates" / "command-templates" / "specify.md"
+    specify_md = (
+        mock_project_with_bash
+        / ".kittify"
+        / "templates"
+        / "command-templates"
+        / "specify.md"
+    )
     content = specify_md.read_text()
 
     assert ".kittify/scripts/bash/create-new-feature.sh" in content
@@ -265,7 +291,9 @@ def test_migration_with_missing_templates_dir(migration, tmp_path):
     # (Behavior changed in v0.10.9 to defer to repair migration)
     assert result.success is True
     assert len(result.errors) == 0
-    assert any("Templates directory not found" in change for change in result.changes_made)
+    assert any(
+        "Templates directory not found" in change for change in result.changes_made
+    )
 
 
 def test_migration_result_structure(migration, mock_project_with_bash):
@@ -312,7 +340,9 @@ def test_command_replacements_mapping(migration):
     assert any("create-new-feature" in pattern for pattern in replacements.keys())
     assert any("check-prerequisites" in pattern for pattern in replacements.keys())
     assert any("tasks-move-to-lane" in pattern for pattern in replacements.keys())
-    assert any("tasks_cli" in pattern and "move" in pattern for pattern in replacements.keys())
+    assert any(
+        "tasks_cli" in pattern and "move" in pattern for pattern in replacements.keys()
+    )
 
     # Test all map to spec-kitty agent commands
     assert all(value.startswith("spec-kitty agent") for value in replacements.values())

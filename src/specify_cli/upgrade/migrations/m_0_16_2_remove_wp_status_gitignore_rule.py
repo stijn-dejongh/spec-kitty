@@ -23,9 +23,7 @@ from .base import BaseMigration, MigrationResult
 
 MIGRATION_ID = "2.0.0a5_remove_wp_status_gitignore_rule"
 MIGRATION_VERSION = "2.0.0a5"
-MIGRATION_DESCRIPTION = (
-    "Remove stale WP status ignore rules from tracked .gitignore"
-)
+MIGRATION_DESCRIPTION = "Remove stale WP status ignore rules from tracked .gitignore"
 
 # Patterns to remove from tracked .gitignore.
 PATTERNS_TO_REMOVE = [
@@ -103,7 +101,8 @@ def remove_wp_status_entries(
 
     if dry_run:
         changes.insert(
-            0, f"Would remove {removed_count} stale WP status ignore entries from .gitignore"
+            0,
+            f"Would remove {removed_count} stale WP status ignore entries from .gitignore",
         )
         return changes, errors
 

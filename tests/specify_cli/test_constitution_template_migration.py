@@ -31,7 +31,9 @@ ALL_AGENTS = [
 
 
 @pytest.mark.parametrize("agent_key,agent_dir,subdir", ALL_AGENTS)
-def test_constitution_template_updated_for_agent(tmp_path, migration, agent_key, agent_dir, subdir):
+def test_constitution_template_updated_for_agent(
+    tmp_path, migration, agent_key, agent_dir, subdir
+):
     """Test that constitution template is updated for a specific agent."""
     # Setup: Create .kittify directory
     kittify_dir = tmp_path / ".kittify"
@@ -39,7 +41,9 @@ def test_constitution_template_updated_for_agent(tmp_path, migration, agent_key,
 
     # Create config with this agent
     config_file = kittify_dir / "config.yaml"
-    config_file.write_text(f"agents:\n  available:\n    - {agent_key}\n", encoding="utf-8")
+    config_file.write_text(
+        f"agents:\n  available:\n    - {agent_key}\n", encoding="utf-8"
+    )
 
     # Create agent directory with old constitution template
     agent_path = tmp_path / agent_dir / subdir
@@ -71,7 +75,10 @@ After writing, provide:
     # Verify file updated
     updated_content = slash_cmd.read_text(encoding="utf-8")
     assert "run /spec-kitty.specify" in updated_content
-    assert "run /spec-kitty.plan" not in updated_content or "Next steps" not in updated_content
+    assert (
+        "run /spec-kitty.plan" not in updated_content
+        or "Next steps" not in updated_content
+    )
 
 
 def test_migration_skips_already_updated(tmp_path, migration):
@@ -131,12 +138,16 @@ def test_migration_respects_agent_config(tmp_path, migration):
 
     old_content = """Next steps (review, share with team, run /spec-kitty.plan)"""
 
-    (opencode_path / "spec-kitty.constitution.md").write_text(old_content, encoding="utf-8")
+    (opencode_path / "spec-kitty.constitution.md").write_text(
+        old_content, encoding="utf-8"
+    )
 
     # 2. NOT configured: claude (should be skipped - orphaned)
     claude_path = tmp_path / ".claude" / "commands"
     claude_path.mkdir(parents=True)
-    (claude_path / "spec-kitty.constitution.md").write_text(old_content, encoding="utf-8")
+    (claude_path / "spec-kitty.constitution.md").write_text(
+        old_content, encoding="utf-8"
+    )
 
     # Apply migration
     result = migration.apply(tmp_path, dry_run=False)

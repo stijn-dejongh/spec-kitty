@@ -36,7 +36,9 @@ def build_http_client(*, skip_tls: bool = False) -> httpx.Client:
 
 def _github_token(cli_token: str | None = None) -> str | None:
     """Return sanitized GitHub token (CLI argument takes precedence)."""
-    token = (cli_token or os.getenv("GH_TOKEN") or os.getenv("GITHUB_TOKEN") or "").strip()
+    token = (
+        cli_token or os.getenv("GH_TOKEN") or os.getenv("GITHUB_TOKEN") or ""
+    ).strip()
     return token or None
 
 
@@ -50,7 +52,9 @@ def parse_repo_slug(slug: str) -> tuple[str, str]:
     """Return (owner, repo) tuple for strings like 'owner/name'."""
     parts = slug.strip().split("/")
     if len(parts) != 2 or not all(parts):
-        raise ValueError(f"Invalid GitHub repo slug '{slug}'. Expected format owner/name")
+        raise ValueError(
+            f"Invalid GitHub repo slug '{slug}'. Expected format owner/name"
+        )
     return parts[0], parts[1]
 
 
@@ -105,7 +109,9 @@ def download_template_from_github(
     assets = release_data.get("assets", [])
     pattern = f"spec-kitty-template-{ai_assistant}-{script_type}"
     matching_assets = [
-        asset for asset in assets if pattern in asset.get("name", "") and asset.get("name", "").endswith(".zip")
+        asset
+        for asset in assets
+        if pattern in asset.get("name", "") and asset.get("name", "").endswith(".zip")
     ]
     asset = matching_assets[0] if matching_assets else None
     if asset is None:
@@ -114,7 +120,13 @@ def download_template_from_github(
             f"[red]No matching release asset found[/red] for [bold]{ai_assistant}[/bold] "
             f"(expected pattern: [bold]{pattern}[/bold])"
         )
-        console.print(Panel("\n".join(asset_names) or "(no assets)", title="Available Assets", border_style="yellow"))
+        console.print(
+            Panel(
+                "\n".join(asset_names) or "(no assets)",
+                title="Available Assets",
+                border_style="yellow",
+            )
+        )
         raise GitHubClientError("No matching release asset found")
 
     download_url = asset["browser_download_url"]
@@ -224,7 +236,9 @@ def download_and_extract_template(
             console=console,
         )
         if tracker:
-            tracker.complete(tk("fetch"), f"release {meta['release']} ({meta['size']:,} bytes)")
+            tracker.complete(
+                tk("fetch"), f"release {meta['release']} ({meta['size']:,} bytes)"
+            )
             tracker.add(tk("download"), "Download template")
             tracker.complete(tk("download"), meta["filename"])
     except GitHubClientError:
@@ -257,11 +271,19 @@ def download_and_extract_template(
             extracted_items = list(temp_dir.iterdir())
             if tracker:
                 tracker.start(tk("extracted-summary"))
-                tracker.complete(tk("extracted-summary"), f"temp {len(extracted_items)} items")
+                tracker.complete(
+                    tk("extracted-summary"), f"temp {len(extracted_items)} items"
+                )
             elif verbose:
-                console.print(f"[cyan]Extracted {len(extracted_items)} items to temp location[/cyan]")
+                console.print(
+                    f"[cyan]Extracted {len(extracted_items)} items to temp location[/cyan]"
+                )
 
-            source_dir = extracted_items[0] if len(extracted_items) == 1 and extracted_items[0].is_dir() else temp_dir
+            source_dir = (
+                extracted_items[0]
+                if len(extracted_items) == 1 and extracted_items[0].is_dir()
+                else temp_dir
+            )
             if source_dir is not temp_dir:
                 if tracker:
                     tracker.add(tk("flatten"), "Flatten nested directory")
@@ -305,13 +327,16 @@ def download_and_extract_template(
     if tracker:
         tracker.complete(tk("extract"), "done")
     elif verbose:
-        console.print(f"[cyan]Template files {'merged' if is_current_dir else 'extracted'}[/cyan]")
+        console.print(
+            f"[cyan]Template files {'merged' if is_current_dir else 'extracted'}[/cyan]"
+        )
 
     return project_path
 
 
-
-def _merge_tree(source_dir: Path, dest_dir: Path, console: Console, verbose: bool) -> None:
+def _merge_tree(
+    source_dir: Path, dest_dir: Path, console: Console, verbose: bool
+) -> None:
     """Merge directory contents from source into destination."""
     for item in source_dir.iterdir():
         dest_path = dest_dir / item.name

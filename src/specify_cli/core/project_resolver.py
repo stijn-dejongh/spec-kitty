@@ -26,7 +26,9 @@ def locate_project_root(start: Path | None = None) -> Optional[Path]:
     return None
 
 
-def resolve_template_path(project_root: Path, mission_key: str, template_subpath: str | Path) -> Optional[Path]:
+def resolve_template_path(
+    project_root: Path, mission_key: str, template_subpath: str | Path
+) -> Optional[Path]:
     """Resolve a template path through a 5-tier precedence chain.
 
     Resolution order:
@@ -57,7 +59,9 @@ def resolve_template_path(project_root: Path, mission_key: str, template_subpath
     # 3. Global mission-specific + 4. Global generic
     try:
         global_home = get_kittify_home()
-        candidates.append(global_home / "missions" / mission_key / "templates" / subpath)
+        candidates.append(
+            global_home / "missions" / mission_key / "templates" / subpath
+        )
         candidates.append(global_home / "templates" / subpath)
     except RuntimeError:
         pass
@@ -83,21 +87,31 @@ def resolve_worktree_aware_feature_dir(
 
     parts = current_dir.parts
     for idx, part in enumerate(parts):
-        if part == ".worktrees" and idx + 1 < len(parts) and parts[idx + 1] == feature_slug:
+        if (
+            part == ".worktrees"
+            and idx + 1 < len(parts)
+            and parts[idx + 1] == feature_slug
+        ):
             worktree_root = Path(*parts[: idx + 2])
             feature_dir = worktree_root / "kitty-specs" / feature_slug
-            resolved_console.print(f"[green]✓[/green] Using worktree location: {feature_dir}")
+            resolved_console.print(
+                f"[green]✓[/green] Using worktree location: {feature_dir}"
+            )
             return feature_dir
 
     worktree_path = repo_root / ".worktrees" / feature_slug
     if worktree_path.exists():
         feature_dir = worktree_path / "kitty-specs" / feature_slug
         resolved_console.print(f"[green]✓[/green] Found worktree, using: {feature_dir}")
-        resolved_console.print(f"[yellow]Tip:[/yellow] Run commands from {worktree_path} for better isolation")
+        resolved_console.print(
+            f"[yellow]Tip:[/yellow] Run commands from {worktree_path} for better isolation"
+        )
         return feature_dir
 
     feature_dir = repo_root / "kitty-specs" / feature_slug
-    resolved_console.print(f"[yellow]⚠[/yellow] No worktree found, using root location: {feature_dir}")
+    resolved_console.print(
+        f"[yellow]⚠[/yellow] No worktree found, using root location: {feature_dir}"
+    )
     resolved_console.print(
         f"[yellow]Tip:[/yellow] Consider creating a worktree with: git worktree add .worktrees/{feature_slug} {feature_slug}"
     )

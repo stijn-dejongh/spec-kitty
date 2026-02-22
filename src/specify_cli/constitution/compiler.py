@@ -10,7 +10,11 @@ import re
 
 from ruamel.yaml import YAML
 
-from specify_cli.constitution.catalog import DoctrineCatalog, load_doctrine_catalog, resolve_doctrine_root
+from specify_cli.constitution.catalog import (
+    DoctrineCatalog,
+    load_doctrine_catalog,
+    resolve_doctrine_root,
+)
 from specify_cli.constitution.interview import ConstitutionInterview
 from specify_cli.constitution.resolver import DEFAULT_TOOL_REGISTRY
 
@@ -60,7 +64,9 @@ def compile_constitution(
     catalog = doctrine_catalog or load_doctrine_catalog()
     diagnostics: list[str] = []
 
-    template = _resolve_template_set(mission=mission, requested_template_set=template_set, catalog=catalog)
+    template = _resolve_template_set(
+        mission=mission, requested_template_set=template_set, catalog=catalog
+    )
     selected_paradigms = _sanitize_catalog_selection(
         values=interview.selected_paradigms,
         allowed=set(catalog.paradigms),
@@ -123,7 +129,9 @@ def write_compiled_constitution(
     constitution_path = output_dir / "constitution.md"
 
     if constitution_path.exists() and not force:
-        raise FileExistsError(f"Constitution already exists at {constitution_path}. Use --force to overwrite.")
+        raise FileExistsError(
+            f"Constitution already exists at {constitution_path}. Use --force to overwrite."
+        )
 
     files_written: list[str] = []
 
@@ -162,7 +170,10 @@ def _resolve_template_set(
     catalog: DoctrineCatalog,
 ) -> str:
     if requested_template_set:
-        if catalog.template_sets and requested_template_set not in catalog.template_sets:
+        if (
+            catalog.template_sets
+            and requested_template_set not in catalog.template_sets
+        ):
             options = ", ".join(sorted(catalog.template_sets))
             raise ValueError(
                 f"Unknown template set '{requested_template_set}'. Available template sets: {options}"
@@ -225,8 +236,12 @@ def _build_references(
     references: list[ConstitutionReference] = []
     references.append(_user_profile_reference(interview))
 
-    paradigm_sources = _index_yaml_assets(doctrine_root / "paradigms", "*.paradigm.yaml")
-    directive_sources = _index_yaml_assets(doctrine_root / "directives", "*.directive.yaml")
+    paradigm_sources = _index_yaml_assets(
+        doctrine_root / "paradigms", "*.paradigm.yaml"
+    )
+    directive_sources = _index_yaml_assets(
+        doctrine_root / "directives", "*.directive.yaml"
+    )
 
     for paradigm in paradigms:
         references.append(
@@ -246,11 +261,17 @@ def _build_references(
             )
         )
 
-    references.append(_template_reference(doctrine_root=doctrine_root, mission=mission, template_set=template_set))
+    references.append(
+        _template_reference(
+            doctrine_root=doctrine_root, mission=mission, template_set=template_set
+        )
+    )
 
     language_hints = interview.answers.get("languages_frameworks", "").lower()
     if "python" in language_hints:
-        styleguide_path = doctrine_root / "styleguides" / "python-implementation.styleguide.yaml"
+        styleguide_path = (
+            doctrine_root / "styleguides" / "python-implementation.styleguide.yaml"
+        )
         if styleguide_path.exists():
             references.append(
                 _doctrine_yaml_reference(
@@ -299,15 +320,17 @@ def _doctrine_yaml_reference(
     raw_id: str,
     source: dict[str, object] | None,
 ) -> ConstitutionReference:
-    source = source or {"id": raw_id, "title": raw_id, "summary": "Definition unavailable in bundled doctrine."}
+    source = source or {
+        "id": raw_id,
+        "title": raw_id,
+        "summary": "Definition unavailable in bundled doctrine.",
+    }
 
     source_path = str(source.get("_source_path", ""))
     display_path = _trim_source_path(source_path)
     title = str(source.get("title") or source.get("name") or raw_id)
     summary = str(
-        source.get("summary")
-        or source.get("intent")
-        or "No summary provided."
+        source.get("summary") or source.get("intent") or "No summary provided."
     )
 
     source_yaml = _dump_yaml(source)
@@ -335,9 +358,13 @@ def _doctrine_yaml_reference(
     )
 
 
-def _template_reference(*, doctrine_root: Path, mission: str, template_set: str) -> ConstitutionReference:
+def _template_reference(
+    *, doctrine_root: Path, mission: str, template_set: str
+) -> ConstitutionReference:
     mission_path = doctrine_root / "missions" / mission / "mission.yaml"
-    source = _load_yaml_asset(mission_path) if mission_path.exists() else {"name": mission}
+    source = (
+        _load_yaml_asset(mission_path) if mission_path.exists() else {"name": mission}
+    )
 
     summary = str(source.get("description") or f"Mission template set for {mission}.")
     content = (
@@ -377,7 +404,9 @@ def _user_profile_reference(interview: ConstitutionInterview) -> ConstitutionRef
     lines.append("## Selected Doctrine")
     lines.append("")
     lines.append(f"- Paradigms: {', '.join(interview.selected_paradigms) or '(none)'}")
-    lines.append(f"- Directives: {', '.join(interview.selected_directives) or '(none)'}")
+    lines.append(
+        f"- Directives: {', '.join(interview.selected_directives) or '(none)'}"
+    )
     lines.append(f"- Tools: {', '.join(interview.available_tools) or '(none)'}")
     lines.append("")
 
@@ -404,11 +433,21 @@ def _render_constitution_markdown(
 ) -> str:
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    testing = interview.answers.get("testing_requirements", "Use pytest with measurable coverage goals.")
-    quality = interview.answers.get("quality_gates", "Tests, lint, and type checks must pass before merge.")
-    performance = interview.answers.get("performance_targets", "No explicit performance policy provided.")
-    deployment = interview.answers.get("deployment_constraints", "No deployment constraints provided.")
-    review_policy = interview.answers.get("review_policy", "At least one reviewer validates changes.")
+    testing = interview.answers.get(
+        "testing_requirements", "Use pytest with measurable coverage goals."
+    )
+    quality = interview.answers.get(
+        "quality_gates", "Tests, lint, and type checks must pass before merge."
+    )
+    performance = interview.answers.get(
+        "performance_targets", "No explicit performance policy provided."
+    )
+    deployment = interview.answers.get(
+        "deployment_constraints", "No deployment constraints provided."
+    )
+    review_policy = interview.answers.get(
+        "review_policy", "At least one reviewer validates changes."
+    )
 
     policy_summary_lines = [
         f"- Intent: {interview.answers.get('project_intent', 'Not specified.')}",
@@ -422,7 +461,10 @@ def _render_constitution_markdown(
 
     numbered_directives = _render_directives(interview, selected_directives)
 
-    reference_rows = ["| Reference ID | Kind | Summary | Local Doc |", "|---|---|---|---|"]
+    reference_rows = [
+        "| Reference ID | Kind | Summary | Local Doc |",
+        "|---|---|---|---|",
+    ]
     for reference in references:
         reference_rows.append(
             f"| `{reference.id}` | {reference.kind} | {reference.summary} | `{reference.local_path}` |"
@@ -449,15 +491,9 @@ def _render_constitution_markdown(
         f"available_tools: {_yaml_inline_list(available_tools)}\n"
         f"template_set: {template_set}\n"
         "```\n\n"
-        "## Policy Summary\n\n"
-        + "\n".join(policy_summary_lines)
-        + "\n\n"
-        "## Project Directives\n\n"
-        + numbered_directives
-        + "\n\n"
-        "## Reference Index\n\n"
-        + "\n".join(reference_rows)
-        + "\n\n"
+        "## Policy Summary\n\n" + "\n".join(policy_summary_lines) + "\n\n"
+        "## Project Directives\n\n" + numbered_directives + "\n\n"
+        "## Reference Index\n\n" + "\n".join(reference_rows) + "\n\n"
         "## Amendment Process\n\n"
         f"{interview.answers.get('amendment_process', 'Amendments are proposed by PR and reviewed before adoption.')}\n\n"
         "## Exception Policy\n\n"
@@ -465,12 +501,16 @@ def _render_constitution_markdown(
     )
 
 
-def _render_directives(interview: ConstitutionInterview, selected_directives: list[str]) -> str:
+def _render_directives(
+    interview: ConstitutionInterview, selected_directives: list[str]
+) -> str:
     lines: list[str] = []
     index = 1
 
     for directive in selected_directives:
-        lines.append(f"{index}. Apply doctrine directive `{directive}` to planning and implementation decisions.")
+        lines.append(
+            f"{index}. Apply doctrine directive `{directive}` to planning and implementation decisions."
+        )
         index += 1
 
     risk = interview.answers.get("risk_boundaries")
@@ -480,11 +520,15 @@ def _render_directives(interview: ConstitutionInterview, selected_directives: li
 
     docs = interview.answers.get("documentation_policy")
     if docs:
-        lines.append(f"{index}. Keep documentation synchronized with workflow and behavior changes.")
+        lines.append(
+            f"{index}. Keep documentation synchronized with workflow and behavior changes."
+        )
         index += 1
 
     if not lines:
-        lines.append("1. Keep specification, plan, tasks, implementation, and review artifacts consistent.")
+        lines.append(
+            "1. Keep specification, plan, tasks, implementation, and review artifacts consistent."
+        )
 
     return "\n".join(lines)
 
@@ -528,7 +572,7 @@ def _trim_source_path(source_path: str) -> str:
         return ""
     marker = "src/doctrine/"
     if marker in source_path:
-        return source_path[source_path.index(marker):]
+        return source_path[source_path.index(marker) :]
     return source_path
 
 

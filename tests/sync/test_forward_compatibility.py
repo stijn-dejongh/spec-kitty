@@ -26,6 +26,7 @@ from specify_cli.sync.client import WebSocketClient, ConnectionStatus
 # Sample SaaS-originated event messages (wrapped in WebSocket 'event' envelope)
 # ---------------------------------------------------------------------------
 
+
 def _gate_passed_message(lamport_clock: int = 42) -> dict:
     """Build a WebSocket message containing a GatePassed event from SaaS."""
     return {
@@ -94,6 +95,7 @@ def _unknown_message_type() -> dict:
 # T023: Lamport clock receive() handles GatePassed/GateFailed values
 # ---------------------------------------------------------------------------
 
+
 class TestLamportClockReceiveConnectorEvents:
     """Verify clock.receive() correctly updates for connector event clock values.
 
@@ -104,7 +106,9 @@ class TestLamportClockReceiveConnectorEvents:
 
     def test_receive_updates_for_gate_passed_clock_value(self, tmp_path: Path):
         """clock.receive() updates correctly with a GatePassed event's lamport_clock."""
-        clock = LamportClock(value=5, node_id="cli-node", _storage_path=tmp_path / "c.json")
+        clock = LamportClock(
+            value=5, node_id="cli-node", _storage_path=tmp_path / "c.json"
+        )
         msg = _gate_passed_message(lamport_clock=42)
 
         result = clock.receive(msg["lamport_clock"])
@@ -114,7 +118,9 @@ class TestLamportClockReceiveConnectorEvents:
 
     def test_receive_updates_for_gate_failed_clock_value(self, tmp_path: Path):
         """clock.receive() updates correctly with a GateFailed event's lamport_clock."""
-        clock = LamportClock(value=10, node_id="cli-node", _storage_path=tmp_path / "c.json")
+        clock = LamportClock(
+            value=10, node_id="cli-node", _storage_path=tmp_path / "c.json"
+        )
         msg = _gate_failed_message(lamport_clock=55)
 
         result = clock.receive(msg["lamport_clock"])
@@ -124,7 +130,9 @@ class TestLamportClockReceiveConnectorEvents:
 
     def test_receive_updates_for_unknown_event_clock_value(self, tmp_path: Path):
         """clock.receive() updates correctly with an unknown event's lamport_clock."""
-        clock = LamportClock(value=50, node_id="cli-node", _storage_path=tmp_path / "c.json")
+        clock = LamportClock(
+            value=50, node_id="cli-node", _storage_path=tmp_path / "c.json"
+        )
         msg = _unknown_future_event_message(lamport_clock=99)
 
         result = clock.receive(msg["lamport_clock"])
@@ -134,7 +142,9 @@ class TestLamportClockReceiveConnectorEvents:
 
     def test_receive_when_local_clock_is_ahead_of_connector(self, tmp_path: Path):
         """clock.receive() still increments when local clock > connector clock."""
-        clock = LamportClock(value=200, node_id="cli-node", _storage_path=tmp_path / "c.json")
+        clock = LamportClock(
+            value=200, node_id="cli-node", _storage_path=tmp_path / "c.json"
+        )
         msg = _gate_passed_message(lamport_clock=42)
 
         result = clock.receive(msg["lamport_clock"])
@@ -158,6 +168,7 @@ class TestLamportClockReceiveConnectorEvents:
 # ---------------------------------------------------------------------------
 # T024: WebSocket client doesn't crash on unknown event types
 # ---------------------------------------------------------------------------
+
 
 class TestWebSocketClientForwardCompatibility:
     """Verify the WebSocket client handles unknown event/message types gracefully.
@@ -255,6 +266,7 @@ class TestWebSocketClientForwardCompatibility:
 # T025: End-to-end: message handler wired to clock updates for all event types
 # ---------------------------------------------------------------------------
 
+
 class TestClockUpdateViaMessageHandler:
     """Verify a message handler that wires clock.receive() works for all event types.
 
@@ -266,7 +278,9 @@ class TestClockUpdateViaMessageHandler:
     @pytest.mark.asyncio
     async def test_gate_passed_updates_clock_via_handler(self, tmp_path: Path):
         """End-to-end: GatePassed event updates Lamport clock via wired handler."""
-        clock = LamportClock(value=10, node_id="cli-node", _storage_path=tmp_path / "c.json")
+        clock = LamportClock(
+            value=10, node_id="cli-node", _storage_path=tmp_path / "c.json"
+        )
         client = WebSocketClient("ws://localhost:8000", "test-token")
 
         async def clock_updating_handler(data: dict):
@@ -283,7 +297,9 @@ class TestClockUpdateViaMessageHandler:
     @pytest.mark.asyncio
     async def test_gate_failed_updates_clock_via_handler(self, tmp_path: Path):
         """End-to-end: GateFailed event updates Lamport clock via wired handler."""
-        clock = LamportClock(value=10, node_id="cli-node", _storage_path=tmp_path / "c.json")
+        clock = LamportClock(
+            value=10, node_id="cli-node", _storage_path=tmp_path / "c.json"
+        )
         client = WebSocketClient("ws://localhost:8000", "test-token")
 
         async def clock_updating_handler(data: dict):
@@ -300,7 +316,9 @@ class TestClockUpdateViaMessageHandler:
     @pytest.mark.asyncio
     async def test_unknown_event_updates_clock_via_handler(self, tmp_path: Path):
         """End-to-end: Unknown future event updates Lamport clock via wired handler."""
-        clock = LamportClock(value=50, node_id="cli-node", _storage_path=tmp_path / "c.json")
+        clock = LamportClock(
+            value=50, node_id="cli-node", _storage_path=tmp_path / "c.json"
+        )
         client = WebSocketClient("ws://localhost:8000", "test-token")
 
         async def clock_updating_handler(data: dict):
@@ -315,9 +333,13 @@ class TestClockUpdateViaMessageHandler:
         assert clock.value == 100  # max(50, 99) + 1
 
     @pytest.mark.asyncio
-    async def test_multiple_connector_events_advance_clock_monotonically(self, tmp_path: Path):
+    async def test_multiple_connector_events_advance_clock_monotonically(
+        self, tmp_path: Path
+    ):
         """Clock advances monotonically through a sequence of connector events."""
-        clock = LamportClock(value=0, node_id="cli-node", _storage_path=tmp_path / "c.json")
+        clock = LamportClock(
+            value=0, node_id="cli-node", _storage_path=tmp_path / "c.json"
+        )
         client = WebSocketClient("ws://localhost:8000", "test-token")
 
         async def clock_updating_handler(data: dict):
@@ -330,7 +352,9 @@ class TestClockUpdateViaMessageHandler:
         events = [
             _gate_passed_message(lamport_clock=10),
             _gate_failed_message(lamport_clock=15),
-            _gate_passed_message(lamport_clock=12),  # Out of order -- lower than previous
+            _gate_passed_message(
+                lamport_clock=12
+            ),  # Out of order -- lower than previous
             _unknown_future_event_message(lamport_clock=20),
         ]
 
@@ -347,9 +371,13 @@ class TestClockUpdateViaMessageHandler:
         assert clock_values == [11, 16, 17, 21]
 
     @pytest.mark.asyncio
-    async def test_handler_without_lamport_clock_field_does_not_crash(self, tmp_path: Path):
+    async def test_handler_without_lamport_clock_field_does_not_crash(
+        self, tmp_path: Path
+    ):
         """Message missing lamport_clock field does not crash the handler."""
-        clock = LamportClock(value=10, node_id="cli-node", _storage_path=tmp_path / "c.json")
+        clock = LamportClock(
+            value=10, node_id="cli-node", _storage_path=tmp_path / "c.json"
+        )
         client = WebSocketClient("ws://localhost:8000", "test-token")
 
         async def clock_updating_handler(data: dict):
@@ -377,6 +405,7 @@ class TestClockUpdateViaMessageHandler:
 # T024 supplement: VALID_EVENT_TYPES only gates outgoing events
 # ---------------------------------------------------------------------------
 
+
 class TestValidEventTypesOnlyGatesOutgoing:
     """Verify VALID_EVENT_TYPES allowlist only applies to outgoing event emission.
 
@@ -388,19 +417,27 @@ class TestValidEventTypesOnlyGatesOutgoing:
     def test_gate_passed_not_in_valid_event_types(self):
         """GatePassed is not in VALID_EVENT_TYPES (and that's fine for incoming)."""
         from specify_cli.sync.emitter import VALID_EVENT_TYPES
+
         assert "GatePassed" not in VALID_EVENT_TYPES
 
     def test_gate_failed_not_in_valid_event_types(self):
         """GateFailed is not in VALID_EVENT_TYPES (and that's fine for incoming)."""
         from specify_cli.sync.emitter import VALID_EVENT_TYPES
+
         assert "GateFailed" not in VALID_EVENT_TYPES
 
     def test_valid_event_types_only_contains_cli_originated_types(self):
         """VALID_EVENT_TYPES contains only CLI-originated event types."""
         from specify_cli.sync.emitter import VALID_EVENT_TYPES
+
         expected = {
-            "WPStatusChanged", "WPCreated", "WPAssigned",
-            "FeatureCreated", "FeatureCompleted", "HistoryAdded",
-            "ErrorLogged", "DependencyResolved",
+            "WPStatusChanged",
+            "WPCreated",
+            "WPAssigned",
+            "FeatureCreated",
+            "FeatureCompleted",
+            "HistoryAdded",
+            "ErrorLogged",
+            "DependencyResolved",
         }
         assert VALID_EVENT_TYPES == expected

@@ -23,7 +23,13 @@ class TestAutoDiscovery:
         MigrationRegistry.clear()
 
         # Count migration files in directory
-        migrations_dir = Path(__file__).parent.parent.parent.parent / "src" / "specify_cli" / "upgrade" / "migrations"
+        migrations_dir = (
+            Path(__file__).parent.parent.parent.parent
+            / "src"
+            / "specify_cli"
+            / "upgrade"
+            / "migrations"
+        )
         migration_files = list(migrations_dir.glob("m_*.py"))
         expected_count = len(migration_files)
 
@@ -124,9 +130,12 @@ class TestAutoDiscovery:
 
         # Verify they're in ascending order
         from packaging.version import Version
+
         sorted_versions = sorted(versions, key=Version)
 
-        assert versions == sorted_versions, "Migrations should be sorted by target_version"
+        assert versions == sorted_versions, (
+            "Migrations should be sorted by target_version"
+        )
 
     def test_auto_discover_called_on_module_import(self):
         """Auto-discovery runs automatically when migrations module is imported."""
@@ -142,7 +151,13 @@ class TestAutoDiscovery:
 
     def test_all_migration_files_have_registration_decorator(self):
         """All m_*.py files use @MigrationRegistry.register decorator."""
-        migrations_dir = Path(__file__).parent.parent.parent.parent / "src" / "specify_cli" / "upgrade" / "migrations"
+        migrations_dir = (
+            Path(__file__).parent.parent.parent.parent
+            / "src"
+            / "specify_cli"
+            / "upgrade"
+            / "migrations"
+        )
 
         for migration_file in migrations_dir.glob("m_*.py"):
             # Read file content
@@ -178,7 +193,7 @@ class TestAutoDiscoveryIntegration:
         applicable = MigrationRegistry.get_applicable(
             from_version="0.1.0",
             to_version="999.0.0",  # Get all migrations
-            project_path=tmp_path
+            project_path=tmp_path,
         )
 
         # Should have many migrations

@@ -14,10 +14,12 @@ from specify_cli.frontmatter import (
 @pytest.fixture
 def temp_wp_file(tmp_path):
     """Create a temporary work package file."""
+
     def _create_file(content: str, filename: str = "WP01.md") -> Path:
         file_path = tmp_path / filename
         file_path.write_text(content)
         return file_path
+
     return _create_file
 
 
@@ -221,8 +223,12 @@ subtasks:
 
         # Find line indices
         lane_line = next(i for i, line in enumerate(lines) if line.startswith("lane:"))
-        dep_line = next(i for i, line in enumerate(lines) if line.startswith("dependencies:"))
-        subtasks_line = next(i for i, line in enumerate(lines) if line.startswith("subtasks:"))
+        dep_line = next(
+            i for i, line in enumerate(lines) if line.startswith("dependencies:")
+        )
+        subtasks_line = next(
+            i for i, line in enumerate(lines) if line.startswith("subtasks:")
+        )
 
         # dependencies should come after lane and before subtasks
         assert dep_line > lane_line, "dependencies should come after lane"

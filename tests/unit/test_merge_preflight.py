@@ -314,7 +314,9 @@ class TestCheckTargetDivergence:
         assert "behind origin" in msg
         assert "git pull" in msg
 
-    @pytest.mark.xfail(reason="CI git environment does not have user configured for commits")
+    @pytest.mark.xfail(
+        reason="CI git environment does not have user configured for commits"
+    )
     def test_target_ahead_of_origin(self, tmp_path: Path):
         """Test target branch that is ahead of origin (should not be diverged)."""
         # Create origin and clone
@@ -516,7 +518,14 @@ dependencies: []
         # Create worktree
         worktree_dir = repo / ".worktrees" / "001-test-feature-WP01"
         subprocess.run(
-            ["git", "worktree", "add", str(worktree_dir), "-b", "001-test-feature-WP01"],
+            [
+                "git",
+                "worktree",
+                "add",
+                str(worktree_dir),
+                "-b",
+                "001-test-feature-WP01",
+            ],
             cwd=repo,
             check=True,
             capture_output=True,
@@ -666,7 +675,9 @@ dependencies: []
         assert result.passed is True
         assert result.errors == []
         assert result.wp_statuses == []
-        assert any("Skipping missing worktree check for WP01" in w for w in result.warnings)
+        assert any(
+            "Skipping missing worktree check for WP01" in w for w in result.warnings
+        )
 
     def test_detects_uncommitted_changes(self, tmp_path: Path):
         """Test preflight detects uncommitted changes."""
@@ -714,7 +725,14 @@ dependencies: []
 
         worktree_dir = repo / ".worktrees" / "001-test-feature-WP01"
         subprocess.run(
-            ["git", "worktree", "add", str(worktree_dir), "-b", "001-test-feature-WP01"],
+            [
+                "git",
+                "worktree",
+                "add",
+                str(worktree_dir),
+                "-b",
+                "001-test-feature-WP01",
+            ],
             cwd=repo,
             check=True,
             capture_output=True,
@@ -738,7 +756,9 @@ dependencies: []
         assert "Uncommitted changes" in result.wp_statuses[0].error
         assert len(result.errors) >= 1
 
-    @pytest.mark.xfail(reason="CI git environment does not have user configured for commits")
+    @pytest.mark.xfail(
+        reason="CI git environment does not have user configured for commits"
+    )
     def test_detects_target_divergence(self, tmp_path: Path):
         """Test preflight detects target branch divergence."""
         # Create origin
@@ -822,7 +842,14 @@ dependencies: []
 
         worktree_dir = repo / ".worktrees" / "001-test-feature-WP01"
         subprocess.run(
-            ["git", "worktree", "add", str(worktree_dir), "-b", "001-test-feature-WP01"],
+            [
+                "git",
+                "worktree",
+                "add",
+                str(worktree_dir),
+                "-b",
+                "001-test-feature-WP01",
+            ],
             cwd=repo,
             check=True,
             capture_output=True,
@@ -915,7 +942,14 @@ dependencies: []
         # Create worktree for WP01 with uncommitted changes
         worktree_dir = repo / ".worktrees" / "001-test-feature-WP01"
         subprocess.run(
-            ["git", "worktree", "add", str(worktree_dir), "-b", "001-test-feature-WP01"],
+            [
+                "git",
+                "worktree",
+                "add",
+                str(worktree_dir),
+                "-b",
+                "001-test-feature-WP01",
+            ],
             cwd=repo,
             check=True,
             capture_output=True,

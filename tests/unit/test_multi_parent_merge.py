@@ -68,7 +68,9 @@ class TestMultiParentMerge:
             capture_output=True,
         )
         (git_repo / "wp01.txt").write_text("WP01 changes\n")
-        subprocess.run(["git", "add", "."], cwd=git_repo, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=git_repo, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP01 work"],
             cwd=git_repo,
@@ -90,7 +92,9 @@ class TestMultiParentMerge:
             capture_output=True,
         )
         (git_repo / "wp02.txt").write_text("WP02 changes\n")
-        subprocess.run(["git", "add", "."], cwd=git_repo, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=git_repo, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP02 work"],
             cwd=git_repo,
@@ -169,7 +173,9 @@ class TestMultiParentMerge:
                 capture_output=True,
             )
             (git_repo / f"wp0{i}.txt").write_text(f"WP0{i} changes\n")
-            subprocess.run(["git", "add", "."], cwd=git_repo, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "add", "."], cwd=git_repo, check=True, capture_output=True
+            )
             subprocess.run(
                 ["git", "commit", "-m", f"WP0{i} work"],
                 cwd=git_repo,
@@ -219,7 +225,9 @@ class TestMultiParentMerge:
             capture_output=True,
         )
         (git_repo / "shared.txt").write_text("WP01 version\n")
-        subprocess.run(["git", "add", "."], cwd=git_repo, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=git_repo, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP01 work"],
             cwd=git_repo,
@@ -241,7 +249,9 @@ class TestMultiParentMerge:
             capture_output=True,
         )
         (git_repo / "shared.txt").write_text("WP02 version\n")
-        subprocess.run(["git", "add", "."], cwd=git_repo, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=git_repo, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP02 work"],
             cwd=git_repo,
@@ -290,7 +300,9 @@ class TestMultiParentMerge:
             capture_output=True,
         )
         (git_repo / "wp01.txt").write_text("WP01 changes\n")
-        subprocess.run(["git", "add", "."], cwd=git_repo, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=git_repo, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "WP01 work"],
             cwd=git_repo,
@@ -349,7 +361,9 @@ class TestMultiParentMerge:
                 capture_output=True,
             )
             (git_repo / f"wp0{i}.txt").write_text(f"WP0{i} changes\n")
-            subprocess.run(["git", "add", "."], cwd=git_repo, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "add", "."], cwd=git_repo, check=True, capture_output=True
+            )
             subprocess.run(
                 ["git", "commit", "-m", f"WP0{i} work"],
                 cwd=git_repo,

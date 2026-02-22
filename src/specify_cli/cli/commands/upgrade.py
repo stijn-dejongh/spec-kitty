@@ -53,9 +53,7 @@ def upgrade(
             console.print(json.dumps({"error": "Not a Spec Kitty project"}))
         else:
             console.print("[red]Error:[/red] Not a Spec Kitty project.")
-            console.print(
-                "[dim]Run 'spec-kitty init' to initialize a project.[/dim]"
-            )
+            console.print("[dim]Run 'spec-kitty init' to initialize a project.[/dim]")
         raise typer.Exit(1)
 
     # Import upgrade system (lazy to avoid circular imports)
@@ -86,7 +84,9 @@ def upgrade(
     # Get needed migrations
     # Handle "unknown" version by treating it as very old (0.0.0)
     version_for_migration = "0.0.0" if current_version == "unknown" else current_version
-    migrations_needed = MigrationRegistry.get_applicable(version_for_migration, target_version, project_path=project_path)
+    migrations_needed = MigrationRegistry.get_applicable(
+        version_for_migration, target_version, project_path=project_path
+    )
 
     if not migrations_needed:
         # Still stamp the version even when no migrations are needed
@@ -137,7 +137,11 @@ def upgrade(
             for migration in migrations_needed:
                 detected = migration.detect(project_path)
                 can_apply, reason = migration.can_apply(project_path)
-                status = "[green]ready[/green]" if detected and can_apply else "[yellow]skipped[/yellow]"
+                status = (
+                    "[green]ready[/green]"
+                    if detected and can_apply
+                    else "[yellow]skipped[/yellow]"
+                )
                 console.print(f"  {migration.migration_id}: {status}")
                 if not can_apply and reason:
                     console.print(f"    [dim]{reason}[/dim]")
@@ -166,15 +170,23 @@ def upgrade(
         # Build detailed migrations array
         migrations_detail = []
         for migration in migrations_needed:
-            status = "applied" if migration.migration_id in result.migrations_applied else (
-                "skipped" if migration.migration_id in result.migrations_skipped else "pending"
+            status = (
+                "applied"
+                if migration.migration_id in result.migrations_applied
+                else (
+                    "skipped"
+                    if migration.migration_id in result.migrations_skipped
+                    else "pending"
+                )
             )
-            migrations_detail.append({
-                "id": migration.migration_id,
-                "description": migration.description,
-                "target_version": migration.target_version,
-                "status": status,
-            })
+            migrations_detail.append(
+                {
+                    "id": migration.migration_id,
+                    "description": migration.description,
+                    "target_version": migration.target_version,
+                    "status": status,
+                }
+            )
 
         output = {
             "status": "success" if result.success else "failed",

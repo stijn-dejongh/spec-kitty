@@ -23,12 +23,8 @@ class TestValidateAndResolveBase:
         # Create WP file with no dependencies
         wp_file = tmp_path / "WP01-task.md"
         wp_file.write_text(
-            "---\n"
-            "work_package_id: WP01\n"
-            "dependencies: []\n"
-            "---\n"
-            "Task content\n",
-            encoding="utf-8"
+            "---\nwork_package_id: WP01\ndependencies: []\n---\nTask content\n",
+            encoding="utf-8",
         )
 
         # Should return (None, False) - branch from main, no auto-merge
@@ -37,7 +33,7 @@ class TestValidateAndResolveBase:
             wp_file=wp_file,
             base=None,
             feature_slug="001-test",
-            repo_root=tmp_path
+            repo_root=tmp_path,
         )
 
         assert base is None
@@ -48,12 +44,8 @@ class TestValidateAndResolveBase:
         # Create WP file with no dependencies
         wp_file = tmp_path / "WP02-task.md"
         wp_file.write_text(
-            "---\n"
-            "work_package_id: WP02\n"
-            "dependencies: []\n"
-            "---\n"
-            "Task content\n",
-            encoding="utf-8"
+            "---\nwork_package_id: WP02\ndependencies: []\n---\nTask content\n",
+            encoding="utf-8",
         )
 
         # Should accept provided base (even if not declared)
@@ -62,7 +54,7 @@ class TestValidateAndResolveBase:
             wp_file=wp_file,
             base="WP01",
             feature_slug="001-test",
-            repo_root=tmp_path
+            repo_root=tmp_path,
         )
 
         assert base == "WP01"
@@ -73,12 +65,8 @@ class TestValidateAndResolveBase:
         # Create WP file with single dependency
         wp_file = tmp_path / "WP02-task.md"
         wp_file.write_text(
-            "---\n"
-            "work_package_id: WP02\n"
-            "dependencies: [WP01]\n"
-            "---\n"
-            "Task content\n",
-            encoding="utf-8"
+            "---\nwork_package_id: WP02\ndependencies: [WP01]\n---\nTask content\n",
+            encoding="utf-8",
         )
 
         # Should raise typer.Exit
@@ -88,7 +76,7 @@ class TestValidateAndResolveBase:
                 wp_file=wp_file,
                 base=None,
                 feature_slug="001-test",
-                repo_root=tmp_path
+                repo_root=tmp_path,
             )
 
         # Check error message suggests --base
@@ -101,12 +89,8 @@ class TestValidateAndResolveBase:
         # Create WP file with single dependency
         wp_file = tmp_path / "WP02-task.md"
         wp_file.write_text(
-            "---\n"
-            "work_package_id: WP02\n"
-            "dependencies: [WP01]\n"
-            "---\n"
-            "Task content\n",
-            encoding="utf-8"
+            "---\nwork_package_id: WP02\ndependencies: [WP01]\n---\nTask content\n",
+            encoding="utf-8",
         )
 
         # Should return provided base
@@ -115,7 +99,7 @@ class TestValidateAndResolveBase:
             wp_file=wp_file,
             base="WP01",
             feature_slug="001-test",
-            repo_root=tmp_path
+            repo_root=tmp_path,
         )
 
         assert base == "WP01"
@@ -126,12 +110,8 @@ class TestValidateAndResolveBase:
         # Create WP file declaring dependency on WP01
         wp_file = tmp_path / "WP03-task.md"
         wp_file.write_text(
-            "---\n"
-            "work_package_id: WP03\n"
-            "dependencies: [WP01]\n"
-            "---\n"
-            "Task content\n",
-            encoding="utf-8"
+            "---\nwork_package_id: WP03\ndependencies: [WP01]\n---\nTask content\n",
+            encoding="utf-8",
         )
 
         # User provides --base WP02 (doesn't match WP01)
@@ -140,7 +120,7 @@ class TestValidateAndResolveBase:
             wp_file=wp_file,
             base="WP02",
             feature_slug="001-test",
-            repo_root=tmp_path
+            repo_root=tmp_path,
         )
 
         # Should warn but allow
@@ -161,7 +141,7 @@ class TestValidateAndResolveBase:
             "dependencies: [WP02, WP03]\n"
             "---\n"
             "Task content\n",
-            encoding="utf-8"
+            encoding="utf-8",
         )
 
         # Should return (None, True) - auto-merge mode
@@ -170,7 +150,7 @@ class TestValidateAndResolveBase:
             wp_file=wp_file,
             base=None,
             feature_slug="001-test",
-            repo_root=tmp_path
+            repo_root=tmp_path,
         )
 
         assert base is None
@@ -190,7 +170,7 @@ class TestValidateAndResolveBase:
             "dependencies: [WP02, WP03]\n"
             "---\n"
             "Task content\n",
-            encoding="utf-8"
+            encoding="utf-8",
         )
 
         # User provides explicit base (overrides auto-merge)
@@ -199,7 +179,7 @@ class TestValidateAndResolveBase:
             wp_file=wp_file,
             base="WP03",
             feature_slug="001-test",
-            repo_root=tmp_path
+            repo_root=tmp_path,
         )
 
         assert base == "WP03"
@@ -215,7 +195,7 @@ class TestValidateAndResolveBase:
             "dependencies: [WP02, WP03]\n"
             "---\n"
             "Task content\n",
-            encoding="utf-8"
+            encoding="utf-8",
         )
 
         # User provides --base WP01 (not in dependencies)
@@ -224,7 +204,7 @@ class TestValidateAndResolveBase:
             wp_file=wp_file,
             base="WP01",
             feature_slug="001-test",
-            repo_root=tmp_path
+            repo_root=tmp_path,
         )
 
         assert base == "WP01"
@@ -243,9 +223,7 @@ class TestValidateBaseWorkspaceExists:
         # No .worktrees/001-test-WP01/ directory
         with pytest.raises(typer.Exit):
             validate_base_workspace_exists(
-                base="WP01",
-                feature_slug="001-test",
-                repo_root=tmp_path
+                base="WP01", feature_slug="001-test", repo_root=tmp_path
             )
 
         captured = capsys.readouterr()
@@ -261,14 +239,14 @@ class TestValidateBaseWorkspaceExists:
 
         with pytest.raises(typer.Exit):
             validate_base_workspace_exists(
-                base="WP01",
-                feature_slug="001-test",
-                repo_root=tmp_path
+                base="WP01", feature_slug="001-test", repo_root=tmp_path
             )
 
         captured = capsys.readouterr()
         # Check for error message (normalize whitespace due to Rich formatting)
-        output = re.sub(r'\s+', ' ', captured.out)  # Normalize all whitespace to single spaces
+        output = re.sub(
+            r"\s+", " ", captured.out
+        )  # Normalize all whitespace to single spaces
         assert "exists but is not a valid worktree" in output
         assert "rm -rf" in output
 
@@ -284,9 +262,7 @@ class TestValidateBaseWorkspaceExists:
 
         # Should not raise
         validate_base_workspace_exists(
-            base="WP01",
-            feature_slug="001-test",
-            repo_root=tmp_path
+            base="WP01", feature_slug="001-test", repo_root=tmp_path
         )
 
         # Verify git rev-parse was called in base workspace

@@ -411,7 +411,9 @@ def test_detect_feature_slug_wrapper_raises_on_error(repo_empty: Path):
 
 def test_detect_feature_directory_wrapper(repo_with_features: Path):
     """Test detect_feature_directory() wrapper returns just the Path."""
-    directory = detect_feature_directory(repo_with_features, explicit_feature="020-feature-a")
+    directory = detect_feature_directory(
+        repo_with_features, explicit_feature="020-feature-a"
+    )
 
     assert isinstance(directory, Path)
     assert directory.name == "020-feature-a"
@@ -441,7 +443,7 @@ def test_allow_single_auto_disabled(repo_with_single_feature: Path):
             detect_feature(
                 repo_with_single_feature,
                 cwd=repo_with_single_feature,
-                allow_single_auto=False
+                allow_single_auto=False,
             )
 
 
@@ -503,7 +505,9 @@ def test_worktree_context_with_main_repo_root(tmp_path: Path):
 
     # Create .git file pointing to main repo (simulates worktree)
     git_file = worktree / ".git"
-    git_file.write_text(f"gitdir: {main_repo / '.git' / 'worktrees' / '020-feature-a-WP01'}")
+    git_file.write_text(
+        f"gitdir: {main_repo / '.git' / 'worktrees' / '020-feature-a-WP01'}"
+    )
 
     # Mock git command
     with patch("subprocess.run") as mock_run:
@@ -872,6 +876,7 @@ def test_detect_fallback_respects_priority_order(tmp_path: Path):
         assert ctx.slug == "020-feature-a"
         assert ctx.detection_method == "cwd_path"
 
+
 # ============================================================================
 # Target Branch Detection Tests
 # ============================================================================
@@ -987,7 +992,9 @@ def test_get_feature_target_branch_from_worktree(tmp_path: Path):
     worktree = tmp_path / "worktrees" / "025-cli-event-log-integration-WP01"
     worktree.mkdir(parents=True)
     git_file = worktree / ".git"
-    git_file.write_text(f"gitdir: {main_repo}/.git/worktrees/025-cli-event-log-integration-WP01")
+    git_file.write_text(
+        f"gitdir: {main_repo}/.git/worktrees/025-cli-event-log-integration-WP01"
+    )
 
     # Call from worktree context (should resolve to main repo)
     target = get_feature_target_branch(worktree, "025-cli-event-log-integration")

@@ -45,7 +45,9 @@ class GlossaryStore:
         # Clear lookup cache when sense is added (cache invalidation)
         self._lookup_cached.cache_clear()
 
-    def _lookup_impl(self, surface: str, scopes: tuple[str, ...]) -> tuple[TermSense, ...]:
+    def _lookup_impl(
+        self, surface: str, scopes: tuple[str, ...]
+    ) -> tuple[TermSense, ...]:
         """
         Internal cached lookup implementation.
 

@@ -228,12 +228,14 @@ class TestGlossaryAwarePrimitiveRunner:
 
     def test_runner_creates_successfully(self, tmp_path):
         from specify_cli.glossary.attachment import GlossaryAwarePrimitiveRunner
+
         (tmp_path / ".kittify").mkdir()
         runner = GlossaryAwarePrimitiveRunner(repo_root=tmp_path)
         assert runner is not None
 
     def test_runner_execute_calls_pipeline_then_primitive(self, tmp_path):
         from specify_cli.glossary.attachment import GlossaryAwarePrimitiveRunner
+
         (tmp_path / ".kittify").mkdir()
 
         runner = GlossaryAwarePrimitiveRunner(repo_root=tmp_path)
@@ -251,6 +253,7 @@ class TestGlossaryAwarePrimitiveRunner:
 
     def test_runner_passes_extra_args_to_primitive(self, tmp_path):
         from specify_cli.glossary.attachment import GlossaryAwarePrimitiveRunner
+
         (tmp_path / ".kittify").mkdir()
 
         runner = GlossaryAwarePrimitiveRunner(
@@ -269,4 +272,5 @@ class TestGlossaryAwarePrimitiveRunner:
     def test_runner_is_importable_from_glossary_package(self):
         """GlossaryAwarePrimitiveRunner is exported from glossary package."""
         from specify_cli.glossary import GlossaryAwarePrimitiveRunner
+
         assert GlossaryAwarePrimitiveRunner is not None

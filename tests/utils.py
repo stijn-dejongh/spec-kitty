@@ -14,24 +14,34 @@ if str(TASKS_DIR) not in sys.path:
     sys.path.insert(0, str(TASKS_DIR))
 
 
-def run(cmd: list[str], *, cwd: Path, env: Optional[dict[str, str]] = None) -> subprocess.CompletedProcess:
+def run(
+    cmd: list[str], *, cwd: Path, env: Optional[dict[str, str]] = None
+) -> subprocess.CompletedProcess:
     process_env = os.environ.copy()
     if env:
         process_env.update(env)
-    result = subprocess.run(cmd, cwd=cwd, env=process_env, text=True, capture_output=True)
+    result = subprocess.run(
+        cmd, cwd=cwd, env=process_env, text=True, capture_output=True
+    )
     result.check_returncode()
     return result
 
 
-def run_python_script(script: Path, args: list[str], *, cwd: Path, env: Optional[dict[str, str]] = None) -> subprocess.CompletedProcess:
+def run_python_script(
+    script: Path, args: list[str], *, cwd: Path, env: Optional[dict[str, str]] = None
+) -> subprocess.CompletedProcess:
     process_env = os.environ.copy()
     if env:
         process_env.update(env)
     command = [sys.executable, str(script), *args]
-    return subprocess.run(command, cwd=cwd, env=process_env, text=True, capture_output=True)
+    return subprocess.run(
+        command, cwd=cwd, env=process_env, text=True, capture_output=True
+    )
 
 
-def run_tasks_cli(args: list[str], *, cwd: Path, env: Optional[dict[str, str]] = None) -> subprocess.CompletedProcess:
+def run_tasks_cli(
+    args: list[str], *, cwd: Path, env: Optional[dict[str, str]] = None
+) -> subprocess.CompletedProcess:
     return run_python_script(TASKS_DIR / "tasks_cli.py", args, cwd=cwd, env=env)
 
 
@@ -54,7 +64,12 @@ def write_wp(
         legacy: If True, create in subdirectory (tasks/planned/WP01.md).
                 If False (default), create in flat structure (tasks/WP01.md).
     """
-    from task_helpers import append_activity_log, build_document, set_scalar, split_frontmatter
+    from task_helpers import (
+        append_activity_log,
+        build_document,
+        set_scalar,
+        split_frontmatter,
+    )
 
     if legacy:
         # Legacy format: tasks/<lane>/WP01.md
@@ -84,6 +99,16 @@ def write_wp(
         body,
         f"- {timestamp} – {agent} – shell_pid={shell_pid} – lane={lane} – {note}",
     )
-    updated_front = set_scalar(set_scalar(set_scalar(set_scalar(front, "lane", lane), "agent", agent), "assignee", assignee), "shell_pid", shell_pid)
-    path.write_text(build_document(updated_front, updated_body, padding), encoding="utf-8")
+    updated_front = set_scalar(
+        set_scalar(
+            set_scalar(set_scalar(front, "lane", lane), "agent", agent),
+            "assignee",
+            assignee,
+        ),
+        "shell_pid",
+        shell_pid,
+    )
+    path.write_text(
+        build_document(updated_front, updated_body, padding), encoding="utf-8"
+    )
     return path

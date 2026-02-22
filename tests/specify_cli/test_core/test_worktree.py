@@ -125,7 +125,9 @@ class TestCreateFeatureWorktree:
         )
         # Create initial commit
         (tmp_path / "README.md").write_text("test")
-        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=tmp_path, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "initial"],
             cwd=tmp_path,
@@ -168,7 +170,9 @@ class TestCreateFeatureWorktree:
             capture_output=True,
         )
         (tmp_path / "README.md").write_text("test")
-        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=tmp_path, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "initial"],
             cwd=tmp_path,
@@ -210,7 +214,9 @@ class TestCreateFeatureWorktree:
             capture_output=True,
         )
         (tmp_path / "README.md").write_text("test")
-        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=tmp_path, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "initial"],
             cwd=tmp_path,
@@ -251,7 +257,9 @@ class TestSetupFeatureDirectory:
         repo_root = tmp_path
 
         # Execute
-        setup_feature_directory(feature_dir, worktree_path, repo_root, create_symlinks=False)
+        setup_feature_directory(
+            feature_dir, worktree_path, repo_root, create_symlinks=False
+        )
 
         # Verify
         assert (feature_dir / "checklists").exists()
@@ -269,7 +277,9 @@ class TestSetupFeatureDirectory:
         repo_root = tmp_path
 
         # Execute
-        setup_feature_directory(feature_dir, worktree_path, repo_root, create_symlinks=False)
+        setup_feature_directory(
+            feature_dir, worktree_path, repo_root, create_symlinks=False
+        )
 
         # Verify
         assert (feature_dir / "tasks" / ".gitkeep").exists()
@@ -283,7 +293,9 @@ class TestSetupFeatureDirectory:
         repo_root = tmp_path
 
         # Execute
-        setup_feature_directory(feature_dir, worktree_path, repo_root, create_symlinks=False)
+        setup_feature_directory(
+            feature_dir, worktree_path, repo_root, create_symlinks=False
+        )
 
         # Verify
         readme = feature_dir / "tasks" / "README.md"
@@ -307,7 +319,9 @@ class TestSetupFeatureDirectory:
         template_file.write_text("# Feature Specification Template")
 
         # Execute
-        setup_feature_directory(feature_dir, worktree_path, repo_root, create_symlinks=False)
+        setup_feature_directory(
+            feature_dir, worktree_path, repo_root, create_symlinks=False
+        )
 
         # Verify
         spec_file = feature_dir / "spec.md"
@@ -322,7 +336,9 @@ class TestSetupFeatureDirectory:
         repo_root = tmp_path
 
         # Execute
-        setup_feature_directory(feature_dir, worktree_path, repo_root, create_symlinks=False)
+        setup_feature_directory(
+            feature_dir, worktree_path, repo_root, create_symlinks=False
+        )
 
         # Verify
         spec_file = feature_dir / "spec.md"
@@ -343,14 +359,18 @@ class TestSetupFeatureDirectory:
         (memory_dir / "constitution.md").write_text("Constitution content")
 
         # Execute
-        setup_feature_directory(feature_dir, worktree_path, repo_root, create_symlinks=False)
+        setup_feature_directory(
+            feature_dir, worktree_path, repo_root, create_symlinks=False
+        )
 
         # Verify
         worktree_memory = worktree_path / ".kittify" / "memory"
         assert worktree_memory.exists()
         assert worktree_memory.is_dir()
         assert not worktree_memory.is_symlink()
-        assert (worktree_memory / "constitution.md").read_text() == "Constitution content"
+        assert (
+            worktree_memory / "constitution.md"
+        ).read_text() == "Constitution content"
 
     @patch("platform.system")
     def test_uses_copy_on_windows(self, mock_system: Mock, tmp_path: Path):
@@ -368,7 +388,9 @@ class TestSetupFeatureDirectory:
         (memory_dir / "test.md").write_text("test")
 
         # Execute (with create_symlinks=True, but Windows should override)
-        setup_feature_directory(feature_dir, worktree_path, repo_root, create_symlinks=True)
+        setup_feature_directory(
+            feature_dir, worktree_path, repo_root, create_symlinks=True
+        )
 
         # Verify
         worktree_memory = worktree_path / ".kittify" / "memory"
@@ -399,7 +421,9 @@ class TestSetupFeatureDirectory:
         (worktree_memory / "old.md").write_text("old")
 
         # Execute - should replace the directory with symlink/copy
-        setup_feature_directory(feature_dir, worktree_path, repo_root, create_symlinks=False)
+        setup_feature_directory(
+            feature_dir, worktree_path, repo_root, create_symlinks=False
+        )
 
         # Verify memory was replaced
         assert worktree_memory.exists()
@@ -526,7 +550,9 @@ class TestVCSAbstraction:
             capture_output=True,
         )
         (tmp_path / "README.md").write_text("test")
-        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=tmp_path, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "initial"],
             cwd=tmp_path,
@@ -569,7 +595,9 @@ class TestVCSAbstraction:
             capture_output=True,
         )
         (tmp_path / "README.md").write_text("test")
-        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=tmp_path, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "initial"],
             cwd=tmp_path,
@@ -578,7 +606,9 @@ class TestVCSAbstraction:
         )
 
         # Mock VCS to fail
-        with patch("specify_cli.core.worktree.get_vcs", side_effect=Exception("VCS failed")):
+        with patch(
+            "specify_cli.core.worktree.get_vcs", side_effect=Exception("VCS failed")
+        ):
             # Capture deprecation warning
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter("always")
@@ -862,7 +892,9 @@ class TestExcludeFromGit:
             capture_output=True,
         )
         (tmp_path / "README.md").write_text("test")
-        subprocess.run(["git", "add", "."], cwd=tmp_path, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "."], cwd=tmp_path, check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", "initial"],
             cwd=tmp_path,
@@ -887,7 +919,9 @@ class TestExcludeFromGit:
 
         # Execute: setup_feature_directory should call _exclude_from_git
         feature_dir = worktree_path / "kitty-specs" / "001-test"
-        setup_feature_directory(feature_dir, worktree_path, tmp_path, create_symlinks=True)
+        setup_feature_directory(
+            feature_dir, worktree_path, tmp_path, create_symlinks=True
+        )
 
         # Verify: Symlinks should be excluded
         # Find the git dir from .git file

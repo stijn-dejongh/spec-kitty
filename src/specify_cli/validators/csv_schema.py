@@ -59,7 +59,9 @@ class CSVSchemaValidation:
         return "\n".join(lines)
 
 
-def validate_csv_schema(csv_path: Path, expected_columns: list[str]) -> CSVSchemaValidation:
+def validate_csv_schema(
+    csv_path: Path, expected_columns: list[str]
+) -> CSVSchemaValidation:
     """Validate CSV headers match expected schema exactly.
 
     Checks that:
@@ -98,7 +100,9 @@ def validate_csv_schema(csv_path: Path, expected_columns: list[str]) -> CSVSchem
                 ]
 
             # Validate exact match (names and order)
-            schema_valid = actual_columns is not None and actual_columns == expected_columns
+            schema_valid = (
+                actual_columns is not None and actual_columns == expected_columns
+            )
 
             return CSVSchemaValidation(
                 file_path=csv_path,
