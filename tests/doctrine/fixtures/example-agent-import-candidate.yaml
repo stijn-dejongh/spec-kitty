@@ -1,0 +1,21 @@
+id: "imp-doctrine-ref-agent-profile-001"
+source:
+  title: "Agent Profile Import Example"
+  type: "internal"
+  url: "doctrine_ref/agents/"
+  accessed_on: "2026-02-22"
+classification:
+  target_concepts:
+    - "agent-profile"
+  rationale: "External agent profile to import into doctrine"
+adaptation:
+  summary: "Convert .agent.md format to .agent.yaml for schema validation"
+  notes:
+    - "Map frontmatter fields to top-level YAML keys"
+    - "Map markdown sections to YAML structure"
+status: "proposed"
+source_references:
+  - kind: "local"
+    path: "doctrine_ref/agents/example.agent.md"
+    lines: "1-50"
+    note: "Source agent profile definition"
