@@ -35,10 +35,10 @@ from specify_cli.core.vcs import (
 )
 from specify_cli.dashboard import ensure_dashboard_running
 from specify_cli.gitignore_manager import GitignoreManager
-from specify_cli.core.agent_config import (
-    AgentConfig,
-    AgentSelectionConfig,
-    save_agent_config,
+from specify_cli.core.tool_config import (
+    ToolConfig as AgentConfig,
+    ToolSelectionConfig as AgentSelectionConfig,
+    save_tool_config as save_agent_config,
 )
 from .init_help import INIT_COMMAND_DOC
 from specify_cli.template import (
