@@ -5,8 +5,8 @@ This package provides the AgentProfile domain entity and related value objects
 for defining agent behavioral identities in spec-kitty.
 """
 
-from src.doctrine.agent_profiles.capabilities import DEFAULT_ROLE_CAPABILITIES, RoleCapabilities, get_capabilities
-from src.doctrine.agent_profiles.profile import (
+from doctrine.agent_profiles.capabilities import DEFAULT_ROLE_CAPABILITIES, RoleCapabilities, get_capabilities
+from doctrine.agent_profiles.profile import (
     AgentProfile,
     CollaborationContract,
     ContextSources,
@@ -17,7 +17,7 @@ from src.doctrine.agent_profiles.profile import (
     SpecializationContext,
     TaskContext,
 )
-from src.doctrine.agent_profiles.repository import AgentProfileRepository
+from doctrine.agent_profiles.repository import AgentProfileRepository
 
 __all__ = [
     # Main domain model

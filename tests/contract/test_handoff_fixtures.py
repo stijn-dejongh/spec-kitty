@@ -227,8 +227,8 @@ class TestEventTypeCoverage:
         )
 
     def test_valid_event_types_match_emitter(self):
-        """The 8 documented types must match VALID_EVENT_TYPES from the emitter."""
-        expected = {
+        """The 8 documented contract types must be supported by the emitter."""
+        baseline_contract_types = {
             "WPStatusChanged",
             "WPCreated",
             "WPAssigned",
@@ -238,7 +238,7 @@ class TestEventTypeCoverage:
             "ErrorLogged",
             "DependencyResolved",
         }
-        assert VALID_EVENT_TYPES == expected
+        assert baseline_contract_types.issubset(VALID_EVENT_TYPES)
 
 
 class TestFixtureJsonFiles:

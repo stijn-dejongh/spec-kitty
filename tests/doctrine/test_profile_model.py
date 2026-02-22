@@ -16,7 +16,7 @@ import warnings
 import pytest
 from pydantic import ValidationError
 
-from src.doctrine.agent_profiles.profile import (
+from doctrine.agent_profiles.profile import (
     AgentProfile,
     CollaborationContract,
     ContextSources,

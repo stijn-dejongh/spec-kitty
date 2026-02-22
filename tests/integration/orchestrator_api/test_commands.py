@@ -106,7 +106,7 @@ class TestContractVersion:
     def test_envelope_shape_and_version(self, tmp_path):
         result = runner.invoke(app, ["contract-version"])
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is True
         assert data["error_code"] is None
         assert data["data"]["api_version"] == CONTRACT_VERSION
@@ -134,7 +134,7 @@ class TestFeatureState:
             result = runner.invoke(app, ["feature-state", "--feature", feature_slug])
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is True
         assert data["data"]["feature_slug"] == feature_slug
         wps = {wp["wp_id"]: wp for wp in data["data"]["work_packages"]}
@@ -152,7 +152,7 @@ class TestFeatureState:
             result = runner.invoke(app, ["feature-state", "--feature", "nonexistent-feature"])
 
         assert result.exit_code == 1
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is False
         assert data["error_code"] == "FEATURE_NOT_FOUND"
 
@@ -172,7 +172,7 @@ class TestListReady:
             result = runner.invoke(app, ["list-ready", "--feature", feature_slug])
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is True
         ready = {wp["wp_id"] for wp in data["data"]["ready_work_packages"]}
         # Both WP01 and WP02 have no deps, so both should be ready
@@ -195,7 +195,7 @@ class TestListReady:
             result = runner.invoke(app, ["list-ready", "--feature", feature_slug])
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         ready_ids = {wp["wp_id"] for wp in data["data"]["ready_work_packages"]}
         assert "WP01" not in ready_ids
         assert "WP02" in ready_ids
@@ -217,7 +217,7 @@ class TestStartImplementation:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["error_code"] == "POLICY_METADATA_REQUIRED"
 
     def test_planned_wp_composite_transition(self, tmp_path):
@@ -244,7 +244,7 @@ class TestStartImplementation:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is True
         assert data["data"]["from_lane"] == "planned"
         assert data["data"]["to_lane"] == "in_progress"
@@ -281,7 +281,7 @@ class TestStartImplementation:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is True
         assert data["data"]["no_op"] is True
 
@@ -314,7 +314,7 @@ class TestStartImplementation:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["error_code"] == "WP_ALREADY_CLAIMED"
 
 
@@ -344,7 +344,7 @@ class TestStartReview:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["error_code"] == "TRANSITION_REJECTED"
 
     def test_valid_start_review(self, tmp_path):
@@ -380,7 +380,7 @@ class TestStartReview:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is True
         assert data["data"]["to_lane"] == "in_progress"
         assert data["data"]["policy_metadata_recorded"] is True
@@ -415,7 +415,7 @@ class TestTransition:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["error_code"] == "TRANSITION_REJECTED"
 
     def test_terminal_transition_no_policy_required(self, tmp_path):
@@ -443,7 +443,7 @@ class TestTransition:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is True
         assert data["data"]["to_lane"] == "canceled"
         assert data["data"]["policy_metadata_recorded"] is False
@@ -473,7 +473,7 @@ class TestTransition:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["error_code"] == "POLICY_METADATA_REQUIRED"
 
 
@@ -511,7 +511,7 @@ class TestAppendHistory:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is True
         assert data["data"]["history_entry_id"].startswith("hist-")
         assert data["data"]["wp_id"] == "WP01"
@@ -538,7 +538,7 @@ class TestAppendHistory:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["error_code"] == "WP_NOT_FOUND"
 
 
@@ -570,7 +570,7 @@ class TestAcceptFeature:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is True
         assert data["data"]["accepted"] is True
 
@@ -602,7 +602,7 @@ class TestAcceptFeature:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["error_code"] == "FEATURE_NOT_READY"
         assert "WP02" in data["data"]["incomplete_wps"]
 
@@ -645,7 +645,7 @@ class TestMergeFeature:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["error_code"] == "PREFLIGHT_FAILED"
         assert "Missing worktree" in data["data"]["errors"][0]
 
@@ -685,7 +685,7 @@ class TestMergeFeature:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is True
         assert data["data"]["merged"] is True
         assert data["data"]["target_branch"] == "main"
@@ -727,7 +727,7 @@ class TestMergeFeature:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is True
         assert data["data"]["strategy"] == "rebase"
 
@@ -753,7 +753,7 @@ class TestMergeFeature:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["error_code"] == "UNSUPPORTED_STRATEGY"
         assert data["data"]["strategy"] == "octopus"
         assert "merge" in data["data"]["supported"]
@@ -771,7 +771,7 @@ class TestContractVersionMismatch:
             ["contract-version", "--provider-version", MIN_PROVIDER_VERSION],
         )
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is True
         assert data["data"]["api_version"] is not None
 
@@ -781,7 +781,7 @@ class TestContractVersionMismatch:
             ["contract-version", "--provider-version", "0.0.1"],
         )
         assert result.exit_code == 1
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["error_code"] == "CONTRACT_VERSION_MISMATCH"
         assert "provider_version" in data["data"]
         assert "min_supported_provider_version" in data["data"]
@@ -792,7 +792,7 @@ class TestContractVersionMismatch:
             ["contract-version", "--provider-version", "not-a-version"],
         )
         assert result.exit_code == 1
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["error_code"] == "CONTRACT_VERSION_MISMATCH"
 
 
@@ -822,7 +822,7 @@ class TestWPNotFound:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["error_code"] == "WP_NOT_FOUND"
 
     def test_start_review_ghost_wp_rejected(self, tmp_path):
@@ -849,7 +849,7 @@ class TestWPNotFound:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["error_code"] == "WP_NOT_FOUND"
 
     def test_transition_ghost_wp_rejected(self, tmp_path):
@@ -874,7 +874,7 @@ class TestWPNotFound:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["error_code"] == "WP_NOT_FOUND"
 
 
@@ -895,7 +895,7 @@ class TestFeatureStateNoEvents:
             result = runner.invoke(app, ["feature-state", "--feature", feature_slug])
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is True
         wps = {wp["wp_id"]: wp for wp in data["data"]["work_packages"]}
         assert "WP01" in wps
@@ -957,7 +957,7 @@ class TestSuffixedWPFilenames:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is True
         assert data["data"]["wp_id"] == "WP07"
         # prompt_path must point to the real (suffixed) file
@@ -991,7 +991,7 @@ class TestSuffixedWPFilenames:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is True
         assert data["data"]["wp_id"] == "WP07"
         assert data["data"]["to_lane"] == "canceled"
@@ -1006,7 +1006,7 @@ class TestSuffixedWPFilenames:
             result = runner.invoke(app, ["feature-state", "--feature", "040-test-feature"])
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output)
+        data = json.loads(result.stdout)
         assert data["success"] is True
         wp_ids = {wp["wp_id"] for wp in data["data"]["work_packages"]}
 
