@@ -1,0 +1,38 @@
+{
+  "event_count": 9,
+  "feature_slug": "047-agent-profile-domain-model",
+  "last_event_id": "01KJ0G8GN473AHZXT2ZM53GEA4",
+  "materialized_at": "2026-02-21T16:24:26.020302+00:00",
+  "summary": {
+    "blocked": 0,
+    "canceled": 0,
+    "claimed": 0,
+    "done": 3,
+    "for_review": 0,
+    "in_progress": 0,
+    "planned": 0
+  },
+  "work_packages": {
+    "WP01": {
+      "actor": "user",
+      "force_count": 2,
+      "lane": "done",
+      "last_event_id": "01KJ0G6GWKRZPX28A66RPNVMF5",
+      "last_transition_at": "2026-02-21T16:23:20.723773+00:00"
+    },
+    "WP02": {
+      "actor": "user",
+      "force_count": 2,
+      "lane": "done",
+      "last_event_id": "01KJ0G7P3B11CQFSFVDDX2HCJT",
+      "last_transition_at": "2026-02-21T16:23:58.827090+00:00"
+    },
+    "WP03": {
+      "actor": "user",
+      "force_count": 2,
+      "lane": "done",
+      "last_event_id": "01KJ0G8GN473AHZXT2ZM53GEA4",
+      "last_transition_at": "2026-02-21T16:24:26.020116+00:00"
+    }
+  }
+}
