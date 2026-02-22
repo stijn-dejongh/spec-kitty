@@ -1,8 +1,8 @@
 # Develop -> 2.x Branch Alignment Plan
 
 **Date:** 2026-02-22
-**Status:** In Progress
-**Branch:** `2.x` (target), `develop` -> `develop_reference` (source)
+**Status:** Complete
+**Branch:** `2.x` (target), `develop_reference` (archived source)
 
 ---
 
@@ -10,7 +10,7 @@
 
 The `develop` branch diverged from `2.x` with 30 commits (23 unique after deduplication).
 The `2.x` branch advanced 165 commits ahead of the merge base. To prevent further divergence,
-we align develop onto 2.x by renaming the old develop to `develop_reference` and creating a
+we aligned develop onto 2.x by renaming the old develop to `develop_reference` and creating a
 new `develop` from the current `2.x` HEAD, then selectively cherry-picking valuable changes.
 
 **Merge base:** `2cf1ccd446aaa7ce67db27d1facadaec322185d3`
@@ -19,69 +19,81 @@ new `develop` from the current `2.x` HEAD, then selectively cherry-picking valua
 
 ## Step 1: Branch Housekeeping
 
-- [ ] Rename local `develop` to `develop_reference`
-- [ ] Rename remote `origin/develop` to `origin/develop_reference`
-- [ ] Create new local `develop` from `2.x` HEAD
-- [ ] Push new `develop` to origin
+- [x] Rename local `develop` to `develop_reference`
+- [x] Rename remote `origin/develop` to `origin/develop_reference`
+- [x] Create new local `develop` from `2.x` HEAD
+- [x] Push new `develop` to origin
 
 ---
 
-## Step 2: Cherry-Pick Commits (14 commits, in dependency order)
+## Step 2: Cherry-Pick / Extract Commits
 
 ### Feature Implementations
 
-| Order | Hash | Message | Group | Status |
-|---|---|---|---|---|
-| 1 | `2247ff8e` | feat(agent-profile): feature 047 model + terminology | A4 | [ ] |
-| 2 | `20ec1756` | feat(doctrine): governance layer + feature 053 | A6 | [ ] |
-| 3 | `80cde0e9` | feat(doctrine): template ownership consolidation | A7 | [ ] |
+| Order | Hash | Message | Group | Status | Notes |
+|---|---|---|---|---|---|
+| 1 | `45d774ed` | feat(agent-profile): feature 047 model + terminology | A4 | [x] | Clean cherry-pick |
+| 2 | `3dc89963` | feat(doctrine): selective extraction from A6+A7 | A6+A7 | [x] | 73 files extracted (specs 048-053, doctrine structure, design templates, tracking docs). Skipped telemetry, conflicting glossary/constitution changes |
 
 ### CI/Quality Infrastructure
 
-| Order | Hash | Message | Group | Status |
-|---|---|---|---|---|
-| 4 | `d922de51` | ci(quality): staged test execution + commitlint fix | C1 | [ ] |
-| 5 | `73449358` | chore(quality): tiered domain coverage | C3 | [ ] |
-| 6 | `c0be4e86` | ci(quality): unit-tests if: always() | C4 | [ ] |
-| 7 | `5c7a0259` | fix(ci): skip sonarcloud on test failure | C5 | [ ] |
-| 8 | `741dbe26` | ci(workflow): decouple tests from lint | C6 | [ ] |
-| 9 | `7badf6fe` | fix(ci): test failures + deprecation warnings | C7 | [ ] |
+| Order | Hash | Message | Group | Status | Notes |
+|---|---|---|---|---|---|
+| 3 | `18b65e9e` | ci(quality): staged test execution + commitlint fix | C1 | [x] | Resolved CI workflow conflicts (kept 2.x security scans, added doctrine test paths) |
+| 4 | `b10c244a` | chore(quality): tiered domain coverage | C3 | [x] | Resolved pyproject.toml, CI, glossary conflicts |
+| 5 | - | ci(quality): unit-tests if: always() | C4 | [x] | Skipped (already applied in C1 resolution) |
+| 6 | - | fix(ci): skip sonarcloud on test failure | C5 | [x] | Skipped (already applied in C1 resolution) |
+| 7 | - | ci(workflow): decouple tests from lint | C6 | [x] | Skipped (already applied in C1 resolution) |
+| 8 | `5787a5a5` | fix(ci): test failures + deprecation warnings | C7 | [x] | Kept 2.x test files, accepted non-test changes |
 
 ### Tests & Documentation
 
-| Order | Hash | Message | Group | Status |
-|---|---|---|---|---|
-| 10 | `b8036582` | test(doctrine): behavioral tests for missions | E1 | [ ] |
-| 11 | `93cc2e6a` | docs(test): architectural context (part 1) | E2 | [ ] |
-| 12 | `af46fcb6` | docs(test): architectural context (part 2) | E3 | [ ] |
-| 13 | `3877cf89` | doc(style): prefer absolute paths | E4 | [ ] |
+| Order | Hash | Message | Group | Status | Notes |
+|---|---|---|---|---|---|
+| 9 | `91367041` | test(doctrine): behavioral tests for missions | E1 | [x] | Resolved add/add conflicts |
+| 10 | `2ae01121` | docs(test): architectural context (part 1) | E2 | [x] | Clean cherry-pick |
+| 11 | `440b613c` | docs(test): architectural context (part 2) | E3 | [x] | Resolved queue.py formatting conflict (kept nosec annotations) |
+| 12 | - | doc(style): prefer absolute paths | E4 | [x] | Skipped (empty after glossary conflict resolution) |
 
 ### Cleanup
 
-| Order | Hash | Message | Group | Status |
-|---|---|---|---|---|
-| 14 | `8fbaca2b` | chore: clean up stale agent-strategy remnants | F1 | [ ] |
+| Order | Hash | Message | Group | Status | Notes |
+|---|---|---|---|---|---|
+| 13 | `a8ca6be4` | chore: clean up stale agent-strategy remnants | F1 | [x] | Resolved init.py formatting conflicts |
+
+### Step 3: Architecture Docs
+
+- [x] Extract journey docs (A1b) from `d82a9db8` -> `d0c93f02`
+- [x] Include journey 004 (curation governance) from A6
+
+### Step 4: Fresh Formatting
+
+- [x] `ruff format` -> `87969f06` (467 files reformatted)
+- [x] `markdownlint --fix` -> `93ef1966` (337 files reformatted)
+- [ ] mypy strict typing pass (deferred - requires code changes, not just formatting)
 
 ---
 
-## Step 3: Partial Extraction from A1
+## Final Result
 
-- [ ] Extract architecture journey docs (A1b) from `d82a9db8`:
-  - `architecture/journeys/README.md`
-  - `architecture/journeys/001-project-onboarding-bootstrap.md`
-  - `architecture/journeys/002-system-architecture-design.md`
-  - `architecture/journeys/003-system-design-and-shared-understanding.md`
-- [ ] Extract design templates (A1d) from `d82a9db8`:
-  - `architecture/design/templates/stakeholder-persona-template.md`
-  - `architecture/design/templates/user-journey-template.md`
+**12 commits** on new `develop` ahead of `2.x`:
 
----
+```text
+93ef1966 style: apply markdownlint auto-fix to documentation
+87969f06 style: apply ruff format (Black-compatible) to entire codebase
+a8ca6be4 chore(rebase): clean up stale agent-strategy remnants and lint errors
+440b613c docs(test): enhance test documentation with architectural context
+2ae01121 docs(test): enhance test documentation with architectural context
+91367041 test(doctrine): add behavioral tests for missions package
+5787a5a5 fix(ci): resolve test failures and deprecation warnings
+b10c244a chore(quality): implement tiered domain coverage enforcement
+18b65e9e ci(quality): split test execution into staged groups and fix commitlint
+d0c93f02 docs(architecture): add journey docs and curation governance journey
+3dc89963 feat(doctrine): selective extraction of governance specs, doctrine structure, and design templates
+45d774ed feat(agent-profile): add feature 047 model and terminology alignment
+```
 
-## Step 4: Reapply Fresh (separate commits, NOT cherry-pick)
-
-- [ ] Run `ruff format` on 2.x codebase
-- [ ] Run `markdownlint --fix` on 2.x codebase
-- [ ] Run mypy strict typing pass on 2.x codebase
+**891 files changed**, +29,362 / -9,524 (vs 2.x)
 
 ---
 
@@ -96,13 +108,21 @@ new `develop` from the current `2.x` HEAD, then selectively cherry-picking valua
 | A5 `6052ca31` (telemetry lifecycle) | Rejected design |
 | C2 `ec322583` (markdownlint/commitlint config) | Overlaps with hooks decision; bundled with doctrine git hooks |
 | D1 `ecfbcc9b` (git hooks) | 2.x retired hooks via `m_2_0_0_retire_git_hooks.py` |
-| B1-B3 (formatting/typing) | Reapply fresh instead of cherry-pick (Step 4) |
+| A6/A7 telemetry code | Selectively excluded from extraction |
+| A6/A7 glossary rewrites | Already on 2.x with different (more current) content |
+| A6/A7 constitution conflicts | 2.x has its own constitution implementation |
 
 ---
 
-## Risk Notes
+## Conflict Resolution Summary
 
-- A6 (`20ec1756`, +15,627 lines) is the largest cherry-pick. Expect conflicts in `src/doctrine/` and agent template directories.
-- A7 depends on A6 content. Must cherry-pick in order.
-- C1 modifies `ci-quality.yml` which already exists on 2.x. Manual conflict resolution likely needed.
-- C7 fixes test names and schemas that may differ between branches. Verify applicability.
+| File | Resolution |
+|---|---|
+| `.github/workflows/ci-quality.yml` | Merged: kept 2.x security scans + `if: always()`, added doctrine test/cov paths from develop |
+| `pyproject.toml` | Merged: added test dependencies (mypy, ruff, bandit, pip-audit), skipped poetry section |
+| `glossary/contexts/*.md` | Kept 2.x versions (more current) |
+| `.kittify/memory/contexts/*.yml` | Removed (don't exist on 2.x) |
+| `src/specify_cli/sync/queue.py` | Accepted develop formatting + nosec annotations |
+| `src/specify_cli/cli/commands/init.py` | Kept 2.x multi-line formatting |
+| `tests/specify_cli/constitution/test_schemas.py` | Kept 2.x version (different test structure) |
+| `tests/specify_cli/test_cli/test_agent_feature.py` | Kept 2.x version (different test structure) |
