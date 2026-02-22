@@ -310,7 +310,7 @@ def test_finalize_tasks_emits_wp_created_only(monkeypatch: pytest.MonkeyPatch, t
     monkeypatch.setattr("specify_cli.cli.commands.agent.feature.locate_project_root", lambda: repo_root)
     monkeypatch.setattr(
         "specify_cli.cli.commands.agent.feature._find_feature_directory",
-        lambda _repo_root, _cwd: feature_dir,
+        lambda _repo_root, _cwd, **_kwargs: feature_dir,
     )
     monkeypatch.setattr(
         "specify_cli.cli.commands.agent.feature._resolve_planning_branch",

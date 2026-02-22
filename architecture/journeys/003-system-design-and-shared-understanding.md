@@ -44,7 +44,7 @@ but a set of continuously-referenced resources that downstream commands
 
 1. Project has been initialized with `spec-kitty init`.
 2. Bootstrap completed — `.kittify/memory/vision.md` exists with project purpose and scope.
-3. Constitution exists — `.kittify/memory/constitution.md` with technical standards and governance.
+3. Constitution exists — `.kittify/constitution/constitution.md` with technical standards and governance.
 4. At least one supported AI agent is configured.
 5. Git repository is initialized.
 

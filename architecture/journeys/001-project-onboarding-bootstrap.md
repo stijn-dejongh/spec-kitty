@@ -122,7 +122,7 @@ and constitution into a single guided onboarding, replacing the standalone
 
 3. **Artifact generation**:
    - `.kittify/memory/vision.md` (new)
-   - `.kittify/memory/constitution.md` (existing format)
+   - `.kittify/constitution/constitution.md` (existing format)
 
 ### Out of Scope (Deferred)
 
@@ -155,7 +155,7 @@ and constitution into a single guided onboarding, replacing the standalone
 1. **Fresh project bootstrap**
    Given an empty directory and spec-kitty installed,
    when the user runs `spec-kitty init` followed by `/spec-kitty.bootstrap`,
-   then `.kittify/memory/vision.md` and `.kittify/memory/constitution.md` are created
+   then `.kittify/memory/vision.md` and `.kittify/constitution/constitution.md` are created
    and committed to the current branch.
 
 2. **Vision informs feature specification**

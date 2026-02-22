@@ -253,7 +253,7 @@ Syntax format in this reference:
 
 **Creates/updates**:
 
-- `.kittify/memory/constitution.md`
+- `.kittify/constitution/constitution.md`
 
 **Related**: `/spec-kitty.specify`, `/spec-kitty.plan`
 
