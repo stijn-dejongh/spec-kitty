@@ -65,35 +65,35 @@ class Specialization(BaseModel):
 class CollaborationContract(BaseModel):
     """Agent collaboration patterns and outputs."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
 
-    handoff_to: list[str] = Field(default_factory=list)
-    handoff_from: list[str] = Field(default_factory=list)
-    works_with: list[str] = Field(default_factory=list)
-    output_artifacts: list[str] = Field(default_factory=list)
-    operating_procedures: list[str] = Field(default_factory=list)
-    canonical_verbs: list[str] = Field(default_factory=list)
+    handoff_to: list[str] = Field(default_factory=list, alias="handoff-to")
+    handoff_from: list[str] = Field(default_factory=list, alias="handoff-from")
+    works_with: list[str] = Field(default_factory=list, alias="works-with")
+    output_artifacts: list[str] = Field(default_factory=list, alias="output-artifacts")
+    operating_procedures: list[str] = Field(default_factory=list, alias="operating-procedures")
+    canonical_verbs: list[str] = Field(default_factory=list, alias="canonical-verbs")
 
 
 class SpecializationContext(BaseModel):
     """Declarative conditions defining when a specialist is preferred."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     languages: list[str] = Field(default_factory=list)
     frameworks: list[str] = Field(default_factory=list)
-    file_patterns: list[str] = Field(default_factory=list)
-    domain_keywords: list[str] = Field(default_factory=list)
-    writing_style: list[str] = Field(default_factory=list)
-    complexity_preference: list[str] = Field(default_factory=list)
+    file_patterns: list[str] = Field(default_factory=list, alias="file-patterns")
+    domain_keywords: list[str] = Field(default_factory=list, alias="domain-keywords")
+    writing_style: list[str] = Field(default_factory=list, alias="writing-style")
+    complexity_preference: list[str] = Field(default_factory=list, alias="complexity-preference")
 
 
 class ContextSources(BaseModel):
     """Doctrine context sources this agent loads."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
 
-    doctrine_layers: list[str] = Field(default_factory=list)
+    doctrine_layers: list[str] = Field(default_factory=list, alias="doctrine-layers")
     directives: list[str] = Field(default_factory=list)
     additional: list[str] = Field(default_factory=list)
 
@@ -101,11 +101,11 @@ class ContextSources(BaseModel):
 class ModeDefault(BaseModel):
     """Available reasoning mode with description."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     mode: str
     description: str
-    use_case: str
+    use_case: str = Field(alias="use-case")
 
 
 class DirectiveRef(BaseModel):
