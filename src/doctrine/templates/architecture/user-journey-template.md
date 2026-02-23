@@ -24,11 +24,13 @@
   (actor attribution), Locality of Change (scope boundaries)
 -->
 
-**Status**: DRAFT | REVIEW | ACCEPTED
-**Date**: YYYY-MM-DD
-**Primary Contexts**: [Domain contexts this journey lives in]
-**Supporting Contexts**: [Domain contexts this journey touches]
-**Related Spec**: [Link to spec.md or domain spec, if applicable]
+| Field | Value |
+|---|---|
+| **Status** | DRAFT \| REVIEW \| ACCEPTED |
+| **Date** | YYYY-MM-DD |
+| **Primary Contexts** | [Domain contexts this journey lives in] |
+| **Supporting Contexts** | [Domain contexts this journey touches] |
+| **Related Spec / ADR** | [Link to spec.md, ADR, or domain reference if applicable] |
 
 ---
 

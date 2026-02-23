@@ -1,0 +1,18 @@
+schema_version: "1.0"
+id: work-log-template-usage
+name: Work Log Template Usage
+purpose: Standardize work-log entries so execution traces are consistent and reviewable.
+steps:
+  - title: Load the doctrine work-log template
+    description: Open `src/doctrine/templates/generic/work-log-template.md` and keep its section order unchanged.
+    examples:
+      - "Use the template headings as-is and fill placeholders with task-specific values."
+  - title: Capture execution and directive context
+    description: Populate Context, Approach, and Guidelines sections with concrete references to directives, decisions, and inputs used during work.
+    examples:
+      - "List Directive 014 in the directive refs field when producing work-log output."
+  - title: Record outcomes and operational metadata
+    description: Complete Outcomes, Lessons Learned, and Metadata sections before handoff so reviewers can reconstruct the execution path.
+    examples:
+      - "Include token and context size estimates in Metadata before marking the task complete."
+

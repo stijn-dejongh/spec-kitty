@@ -1,0 +1,11 @@
+schema_version: "1.0"
+id: doctrine-update-workflow
+name: Doctrine Update Workflow
+purpose: Apply governance updates in a traceable sequence across doctrine artifacts.
+steps:
+  - title: Classify change type
+    description: Determine whether the update affects paradigms, directives, tactics, or templates.
+  - title: Apply minimal coordinated updates
+    description: Update only the artifacts required to keep doctrine internally consistent.
+  - title: Validate and log outcomes
+    description: Run relevant validation checks and capture rationale in curation artifacts.

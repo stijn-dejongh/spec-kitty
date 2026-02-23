@@ -9,6 +9,7 @@ required:
   - id
   - title
   - intent
+  - fetch_policy
   - enforcement
 properties:
   schema_version:
@@ -25,11 +26,69 @@ properties:
     minLength: 1
   tactic_refs:
     type: array
+    minItems: 1
     items:
       type: string
       pattern: '^[a-z][a-z0-9-]*$'
+  paradigm_refs:
+    type: array
+    minItems: 1
+    items:
+      type: string
+      pattern: '^[a-z][a-z0-9-]*$'
+  styleguide_refs:
+    type: array
+    minItems: 1
+    items:
+      type: string
+      pattern: '^[a-z][a-z0-9-]*$'
+  toolguide_refs:
+    type: array
+    minItems: 1
+    items:
+      type: string
+      pattern: '^[a-z][a-z0-9-]*$'
+  fetch_policy:
+    type: object
+    additionalProperties: false
+    required:
+      - strategy
+      - token_discipline
+      - fetch_order
+    properties:
+      strategy:
+        type: string
+        enum:
+          - lazy_fetch
+      token_discipline:
+        type: string
+        enum:
+          - on_demand
+      fetch_order:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items:
+          type: string
+          enum:
+            - paradigms
+            - tactics
+            - toolguides
+            - styleguides
+      note:
+        type: string
+        minLength: 1
   enforcement:
     type: string
     enum:
       - required
       - advisory
+anyOf:
+  - required:
+      - tactic_refs
+  - required:
+      - paradigm_refs
+  - required:
+      - styleguide_refs
+  - required:
+      - toolguide_refs

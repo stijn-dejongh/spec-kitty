@@ -1,0 +1,11 @@
+schema_version: "1.0"
+id: code-review-checklist
+name: Code Review Checklist
+purpose: Review code changes incrementally with emphasis on correctness, maintainability, and risk.
+steps:
+  - title: Summarize change intent
+    description: Identify the intended outcome and scope before commenting.
+  - title: Check correctness and boundaries
+    description: Validate behavior, edge cases, and boundary constraints.
+  - title: Evaluate maintainability impact
+    description: Flag readability, complexity, and follow-up risk concerns.

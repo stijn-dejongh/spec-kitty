@@ -1,0 +1,21 @@
+schema_version: "1.0"
+id: TEST_DRIVEN_DEVELOPMENT
+title: Test Driven Development
+intent: Require implementation-level test-first behavior with scope/risk-appropriate Red-Green-Refactor tactics.
+tactic_refs:
+- tdd-red-green-refactor
+- zombies-tdd
+enforcement: required
+paradigm_refs:
+- spec-driven-development
+styleguide_refs:
+- python-implementation
+fetch_policy:
+  strategy: lazy_fetch
+  token_discipline: on_demand
+  fetch_order:
+  - paradigms
+  - tactics
+  - toolguides
+  - styleguides
+  note: Load only the minimum required entrypoints for the current task context.

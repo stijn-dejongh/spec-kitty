@@ -1,0 +1,19 @@
+schema_version: "1.0"
+id: RISK_AND_ESCALATION
+title: Risk and Escalation
+intent: Surface risk signals early and escalate critical uncertainty before avoidable downstream failures occur.
+enforcement: advisory
+paradigm_refs:
+- spec-driven-development
+tactic_refs:
+- security-review-process
+- spike-timebox-policy
+fetch_policy:
+  strategy: lazy_fetch
+  token_discipline: on_demand
+  fetch_order:
+  - paradigms
+  - tactics
+  - toolguides
+  - styleguides
+  note: Load only the minimum required entrypoints for the current task context.

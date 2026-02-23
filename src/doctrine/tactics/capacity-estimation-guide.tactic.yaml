@@ -1,0 +1,11 @@
+schema_version: "1.0"
+id: capacity-estimation-guide
+name: Capacity Estimation Guide
+purpose: Estimate realistic work throughput using scope, uncertainty, and team constraints.
+steps:
+  - title: Estimate baseline effort
+    description: Size work packages by expected complexity and known dependencies.
+  - title: Apply risk buffers
+    description: Adjust estimates for uncertainty, blockers, and coordination overhead.
+  - title: Validate against available capacity
+    description: Compare planned effort to effective delivery bandwidth.

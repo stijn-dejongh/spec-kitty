@@ -1,0 +1,16 @@
+schema_version: "1.0"
+id: ROLE_CAPABILITIES
+title: Role Capabilities
+intent: Keep role-specific capabilities and action boundaries explicit to avoid overlap, ambiguity, and scope creep.
+enforcement: advisory
+paradigm_refs:
+- spec-driven-development
+fetch_policy:
+  strategy: lazy_fetch
+  token_discipline: on_demand
+  fetch_order:
+  - paradigms
+  - tactics
+  - toolguides
+  - styleguides
+  note: Load only the minimum required entrypoints for the current task context.

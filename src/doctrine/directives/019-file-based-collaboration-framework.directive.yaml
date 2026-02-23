@@ -1,0 +1,18 @@
+schema_version: "1.0"
+id: FILE_BASED_COLLABORATION_FRAMEWORK
+title: File-Based Collaboration Framework
+intent: Coordinate asynchronous multi-agent workflows through explicit, file-based state and artifact updates.
+enforcement: advisory
+paradigm_refs:
+- spec-driven-development
+tactic_refs:
+- dependency-validation-process
+fetch_policy:
+  strategy: lazy_fetch
+  token_discipline: on_demand
+  fetch_order:
+  - paradigms
+  - tactics
+  - toolguides
+  - styleguides
+  note: Load only the minimum required entrypoints for the current task context.

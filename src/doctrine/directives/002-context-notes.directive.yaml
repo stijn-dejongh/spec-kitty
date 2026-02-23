@@ -1,0 +1,16 @@
+schema_version: "1.0"
+id: CONTEXT_NOTES
+title: Context Notes
+intent: Capture and maintain concise context notes so decisions, constraints, and ambiguities are visible during execution.
+enforcement: advisory
+paradigm_refs:
+- spec-driven-development
+fetch_policy:
+  strategy: lazy_fetch
+  token_discipline: on_demand
+  fetch_order:
+  - paradigms
+  - tactics
+  - toolguides
+  - styleguides
+  note: Load only the minimum required entrypoints for the current task context.

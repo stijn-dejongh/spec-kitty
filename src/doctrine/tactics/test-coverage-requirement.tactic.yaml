@@ -1,0 +1,11 @@
+schema_version: "1.0"
+id: test-coverage-requirement
+name: Test Coverage Requirement
+purpose: Choose test levels proportionate to risk and impact, with explicit coverage rationale.
+steps:
+  - title: Classify scope and risk
+    description: Determine whether change risk is low, medium, or high and identify impact surface.
+  - title: Select test levels
+    description: Use unit, integration, and system tests in the minimal combination that provides confidence.
+  - title: Document intentional gaps
+    description: Explicitly record any untested areas and why they are acceptable.

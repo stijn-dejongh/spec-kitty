@@ -1,0 +1,11 @@
+schema_version: "1.0"
+id: spike-timebox-policy
+name: Spike Timebox Policy
+purpose: Bound exploratory spikes to preserve delivery flow while still reducing uncertainty.
+steps:
+  - title: Define explicit timebox
+    description: Set duration and stopping criteria before starting exploration.
+  - title: Track learning against objectives
+    description: Record what was learned and what remains uncertain.
+  - title: Produce decision-ready output
+    description: End spike with recommendation to proceed, pivot, or defer.

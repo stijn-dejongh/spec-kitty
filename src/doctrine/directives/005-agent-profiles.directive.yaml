@@ -1,0 +1,18 @@
+schema_version: "1.0"
+id: AGENT_PROFILES
+title: Agent Profiles
+intent: Define consistent structure and usage for agent profiles so specialization, boundaries, and handoff expectations remain explicit.
+enforcement: advisory
+paradigm_refs:
+- spec-driven-development
+styleguide_refs:
+- python-implementation
+fetch_policy:
+  strategy: lazy_fetch
+  token_discipline: on_demand
+  fetch_order:
+  - paradigms
+  - tactics
+  - toolguides
+  - styleguides
+  note: Load only the minimum required entrypoints for the current task context.

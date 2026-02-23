@@ -1,0 +1,16 @@
+schema_version: "1.0"
+id: MODE_PROTOCOL
+title: Mode Protocol
+intent: Standardize mode transitions so reasoning and execution behavior remain traceable and consistent.
+enforcement: advisory
+paradigm_refs:
+- spec-driven-development
+fetch_policy:
+  strategy: lazy_fetch
+  token_discipline: on_demand
+  fetch_order:
+  - paradigms
+  - tactics
+  - toolguides
+  - styleguides
+  note: Load only the minimum required entrypoints for the current task context.

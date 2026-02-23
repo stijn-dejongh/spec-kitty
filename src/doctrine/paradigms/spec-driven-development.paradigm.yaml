@@ -1,0 +1,8 @@
+schema_version: "1.0"
+id: spec-driven-development
+name: Spec-Driven Development
+summary: Plan and validate changes through explicit specifications before implementation.
+principles:
+  - Define the requested change clearly before coding.
+  - Keep planning artifacts traceable to implementation and review evidence.
+  - Use iterative clarification when scope or intent is ambiguous.

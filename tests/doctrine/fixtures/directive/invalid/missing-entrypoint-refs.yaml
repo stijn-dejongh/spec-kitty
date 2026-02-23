@@ -7,4 +7,3 @@ fetch_policy:
   token_discipline: on_demand
   fetch_order: [paradigms, tactics]
 enforcement: required
-tactic_refs: [schema-validation]
