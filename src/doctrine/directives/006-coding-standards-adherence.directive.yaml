@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: DIRECTIVE_006
+title: Coding Standards Adherence
+intent: Ensure compliance with Coding Standards Adherence.
+tactic_refs: []
+enforcement: required

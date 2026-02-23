@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: DIRECTIVE_014
+title: Acceptance Criteria Completeness
+intent: Ensure compliance with Acceptance Criteria Completeness.
+tactic_refs: []
+enforcement: required

@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: DIRECTIVE_015
+title: Research Time-boxing Requirement
+intent: Ensure compliance with Research Time-boxing Requirement.
+tactic_refs: []
+enforcement: required

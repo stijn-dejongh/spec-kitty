@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: DIRECTIVE_019
+title: Documentation Gap Prioritization
+intent: Ensure compliance with Documentation Gap Prioritization.
+tactic_refs: []
+enforcement: required

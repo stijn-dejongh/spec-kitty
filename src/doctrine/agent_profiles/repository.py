@@ -335,7 +335,7 @@ class AgentProfileRepository:
             return None
         
         # Filter by required_role if specified
-        candidates = list(self._profiles.values())
+        candidates = [self.resolve_profile(profile_id) for profile_id in self._profiles]
         if context.required_role:
             role_str = context.required_role.lower() if isinstance(context.required_role, str) else context.required_role
             candidates = [
@@ -437,6 +437,63 @@ class AgentProfileRepository:
         # Find profile with highest score
         best_profile = max(candidates, key=calculate_score)
         return best_profile
+
+    def resolve_profile(self, profile_id: str) -> AgentProfile:
+        """Resolve a profile with inherited fields from its ancestor chain.
+
+        Merge semantics are intentionally shallow within sections:
+        - scalar/list fields: child replaces parent
+        - dict section fields: child keys override one level deep,
+          parent keys not present in child are preserved
+        """
+        profile = self.get(profile_id)
+        if profile is None:
+            raise KeyError(f"Profile '{profile_id}' not found")
+
+        chain: list[AgentProfile] = [profile]
+        visited: set[str] = {profile.profile_id}
+        current = profile
+
+        while current.specializes_from:
+            parent_id = current.specializes_from
+            if parent_id in visited:
+                raise ValueError(f"Cycle detected while resolving profile '{profile_id}'")
+
+            parent = self.get(parent_id)
+            if parent is None:
+                warnings.warn(
+                    (
+                        f"Profile '{profile_id}' references missing parent "
+                        f"'{parent_id}'; returning child profile without inheritance"
+                    ),
+                    UserWarning,
+                    stacklevel=2,
+                )
+                return profile
+
+            visited.add(parent.profile_id)
+            chain.append(parent)
+            current = parent
+
+        def shallow_merge(parent_data: dict[str, Any], child_data: dict[str, Any]) -> dict[str, Any]:
+            merged = parent_data.copy()
+            for key, child_value in child_data.items():
+                parent_value = merged.get(key)
+                if isinstance(parent_value, dict) and isinstance(child_value, dict):
+                    nested = parent_value.copy()
+                    nested.update(child_value)
+                    merged[key] = nested
+                else:
+                    merged[key] = child_value
+            return merged
+
+        # Build from root -> ... -> child.
+        merged: dict[str, Any] = {}
+        for node in reversed(chain):
+            node_data = node.model_dump(by_alias=True, exclude_unset=True)
+            merged = shallow_merge(merged, node_data)
+
+        return AgentProfile.model_validate(merged)
     
     def save(self, profile: AgentProfile) -> None:
         """Save profile to project directory.

@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: DIRECTIVE_007
+title: Scalability Assessment Protocol
+intent: Ensure compliance with Scalability Assessment Protocol.
+tactic_refs: []
+enforcement: required

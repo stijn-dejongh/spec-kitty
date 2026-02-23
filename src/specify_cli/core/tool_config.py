@@ -4,8 +4,9 @@ This module manages tool configuration that is set during `spec-kitty init`
 and used by commands and migrations to select AI tools for implementation
 and review.
 
-The configuration is stored in .kittify/config.yaml under the `agents` key
-(kept for backward compatibility with existing projects).
+The canonical configuration key in `.kittify/config.yaml` is `tools`.
+Legacy projects may still use `agents`; that key is read as a fallback with
+deprecation warning.
 
 Previously named agent_config.py. The rename reflects that "agents" in this
 context refers to AI tools/assistants, not autonomous agents in the
@@ -14,6 +15,7 @@ multi-agent orchestration sense.
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -125,26 +127,41 @@ def load_tool_config(repo_root: Path) -> ToolConfig:
         logger.error(f"Failed to load config: {e}")
         raise ToolConfigError(f"Invalid YAML in {config_file}: {e}") from e
 
-    agents_data = data.get("agents", {})
-    if not agents_data:
-        logger.info("No agents section in config.yaml")
+    tools_data = data.get("tools")
+    legacy_agents_data = data.get("agents")
+
+    if tools_data is None and legacy_agents_data is None:
+        logger.info("No tools/agents section in config.yaml")
         return ToolConfig()
 
+    if tools_data is None and legacy_agents_data is not None:
+        warnings.warn(
+            "Config key '.kittify/config.yaml: agents' is deprecated; use 'tools' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        tools_data = legacy_agents_data
+    elif tools_data is None:
+        tools_data = {}
+
     # Parse available tools
-    available = agents_data.get("available", [])
+    available = tools_data.get("available", [])
     if isinstance(available, str):
         available = [available]
     if not isinstance(available, list):
-        raise ToolConfigError("Invalid agents.available in config.yaml: expected a list of agent keys")
+        raise ToolConfigError("Invalid tools.available in config.yaml: expected a list of tool keys")
 
     invalid_agents = [agent for agent in available if agent not in AI_CHOICES]
     if invalid_agents:
         valid_agents = ", ".join(sorted(AI_CHOICES.keys()))
         unknown = ", ".join(sorted(invalid_agents))
-        raise ToolConfigError(f"Unknown agent key(s) in config.yaml: {unknown}. Valid agents: {valid_agents}")
+        raise ToolConfigError(
+            f"Unknown tool key(s) in config.yaml: {unknown}. "
+            f"Valid tools/agents: {valid_agents}"
+        )
 
     # Parse selection config (legacy strategy field ignored)
-    selection_data = agents_data.get("selection", {})
+    selection_data = tools_data.get("selection", {})
     if not isinstance(selection_data, dict):
         selection_data = {}
 
@@ -179,14 +196,17 @@ def save_tool_config(repo_root: Path, config: ToolConfig) -> None:
         data = {}
         config_dir.mkdir(parents=True, exist_ok=True)
 
-    # Update agents section (keep key as "agents" for backward compat)
-    data["agents"] = {
+    # Update canonical tools section.
+    data["tools"] = {
         "available": config.available,
         "selection": {
             "preferred_implementer": config.selection.preferred_implementer,
             "preferred_reviewer": config.selection.preferred_reviewer,
         },
     }
+    # Remove legacy key on save to complete migration in-place.
+    if "agents" in data:
+        del data["agents"]
 
     # Write back
     with open(config_file, "w") as f:

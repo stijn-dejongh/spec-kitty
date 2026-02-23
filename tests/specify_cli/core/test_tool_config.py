@@ -187,20 +187,26 @@ class TestLoadToolConfig:
         assert isinstance(config, ToolConfig)
         assert config.available == []
 
-    def test_loads_available_agents(self, tmp_path: Path) -> None:
-        _write_config(tmp_path, "agents:\n  available:\n    - claude\n    - codex\n")
+    def test_loads_available_tools(self, tmp_path: Path) -> None:
+        _write_config(tmp_path, "tools:\n  available:\n    - claude\n    - codex\n")
         config = load_tool_config(tmp_path)
         assert config.available == ["claude", "codex"]
 
-    def test_loads_selection_preferences(self, tmp_path: Path) -> None:
+    def test_loads_selection_preferences_from_tools_key(self, tmp_path: Path) -> None:
         _write_config(
             tmp_path,
-            "agents:\n  available:\n    - claude\n    - codex\n"
+            "tools:\n  available:\n    - claude\n    - codex\n"
             "  selection:\n    preferred_implementer: claude\n    preferred_reviewer: codex\n",
         )
         config = load_tool_config(tmp_path)
         assert config.selection.preferred_implementer == "claude"
         assert config.selection.preferred_reviewer == "codex"
+
+    def test_loads_legacy_agents_key_with_deprecation_warning(self, tmp_path: Path) -> None:
+        _write_config(tmp_path, "agents:\n  available:\n    - claude\n")
+        with pytest.deprecated_call(match="deprecated"):
+            config = load_tool_config(tmp_path)
+        assert config.available == ["claude"]
 
     def test_raises_tool_config_error_on_corrupt_yaml(self, tmp_path: Path) -> None:
         _write_config(tmp_path, "invalid: yaml: [unterminated")
@@ -209,11 +215,11 @@ class TestLoadToolConfig:
         assert "Invalid YAML" in str(exc_info.value)
 
     def test_raises_tool_config_error_on_unknown_agent(self, tmp_path: Path) -> None:
-        _write_config(tmp_path, "agents:\n  available:\n    - nonexistent_agent_xyz\n")
+        _write_config(tmp_path, "tools:\n  available:\n    - nonexistent_agent_xyz\n")
         with pytest.raises(ToolConfigError) as exc_info:
             load_tool_config(tmp_path)
         assert "nonexistent_agent_xyz" in str(exc_info.value)
-        assert "Valid agents" in str(exc_info.value)
+        assert "Valid tools/agents" in str(exc_info.value)
 
 
 class TestSaveToolConfig:
@@ -249,12 +255,21 @@ class TestSaveToolConfig:
         assert "vcs:" in content
         assert "git" in content
 
-    def test_uses_agents_yaml_key(self, tmp_path: Path) -> None:
-        """YAML key must remain 'agents' for backward compatibility."""
+    def test_uses_tools_yaml_key(self, tmp_path: Path) -> None:
+        """YAML key should be canonicalized to 'tools'."""
         config = ToolConfig(available=["claude"])
         save_tool_config(tmp_path, config)
         content = (tmp_path / ".kittify" / "config.yaml").read_text(encoding="utf-8")
-        assert "agents:" in content
+        assert "tools:" in content
+        assert "agents:" not in content
+
+    def test_save_removes_legacy_agents_key(self, tmp_path: Path) -> None:
+        _write_config(tmp_path, "agents:\n  available:\n    - codex\nvcs:\n  type: git\n")
+        save_tool_config(tmp_path, ToolConfig(available=["claude"]))
+        content = (tmp_path / ".kittify" / "config.yaml").read_text(encoding="utf-8")
+        assert "tools:" in content
+        assert "agents:" not in content
+        assert "vcs:" in content
 
 
 class TestGetConfiguredTools:
@@ -263,7 +278,7 @@ class TestGetConfiguredTools:
         assert tools == []
 
     def test_returns_configured_tools(self, tmp_path: Path) -> None:
-        _write_config(tmp_path, "agents:\n  available:\n    - claude\n    - gemini\n")
+        _write_config(tmp_path, "tools:\n  available:\n    - claude\n    - gemini\n")
         tools = get_configured_tools(tmp_path)
         assert tools == ["claude", "gemini"]
 

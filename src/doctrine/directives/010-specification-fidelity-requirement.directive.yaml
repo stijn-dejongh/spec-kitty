@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: DIRECTIVE_010
+title: Specification Fidelity Requirement
+intent: Ensure compliance with Specification Fidelity Requirement.
+tactic_refs: []
+enforcement: required

@@ -1,26 +1,26 @@
 ---
-work_package_id: "WP14"
-subtasks:
-  - "T026"
-  - "T027"
-  - "T028"
-  - "T029"
-title: "Mission Schema Agent-Profile Compatibility"
-phase: "Phase 2 - Foundation Wave"
-lane: "planned"
+work_package_id: WP14
+title: Mission Schema Agent-Profile Compatibility
+lane: "done"
 dependencies:
-  - "WP05"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
+- WP05
+subtasks:
+- T026
+- T027
+- T028
+- T029
+phase: Phase 2 - Foundation Wave
+assignee: codex
+agent: "codex"
+shell_pid: ''
+review_status: "approved"
+reviewed_by: "codex"
 history:
-  - timestamp: "2026-02-23T20:24:30Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-23T20:24:30Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP14 - Mission Schema Agent-Profile Compatibility
@@ -92,3 +92,6 @@ history:
 
 ## Activity Log
 - 2026-02-23T20:24:30Z - system - lane=planned - Prompt created.
+- 2026-02-23T20:51:13Z – codex – lane=in_progress – Implementation started
+- 2026-02-23T20:51:14Z – codex – lane=for_review – Implementation complete
+- 2026-02-23T20:51:15Z – codex – lane=done – Implemented and validated
