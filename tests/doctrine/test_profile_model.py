@@ -16,7 +16,7 @@ import warnings
 import pytest
 from pydantic import ValidationError
 
-from src.doctrine.agent_profiles.profile import (
+from doctrine.agent_profiles.profile import (
     AgentProfile,
     CollaborationContract,
     ContextSources,
@@ -391,3 +391,8 @@ class TestTaskContext:
         """Invalid complexity value raises ValidationError."""
         with pytest.raises(ValidationError, match="complexity"):
             TaskContext(complexity="ultra-high")
+
+    def test_required_role_none_stays_none(self):
+        """required_role=None must remain None, not become string 'None'."""
+        ctx = TaskContext(required_role=None)
+        assert ctx.required_role is None

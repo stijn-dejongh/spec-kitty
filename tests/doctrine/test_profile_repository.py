@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from src.doctrine.agent_profiles.profile import AgentProfile, Role, TaskContext
-from src.doctrine.agent_profiles.repository import AgentProfileRepository
+from doctrine.agent_profiles.profile import AgentProfile, Role, TaskContext
+from doctrine.agent_profiles.repository import AgentProfileRepository
 
 
 @pytest.fixture

@@ -4,7 +4,7 @@ RoleCapabilities mapping - defines default capabilities and canonical verbs per 
 
 from dataclasses import dataclass
 
-from src.doctrine.agent_profiles.profile import Role
+from doctrine.agent_profiles.profile import Role
 
 
 @dataclass(frozen=True)

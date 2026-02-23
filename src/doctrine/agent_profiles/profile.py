@@ -28,8 +28,10 @@ class Role(StrEnum):
     MANAGER = "manager"
 
 
-def _coerce_role(value: Any) -> Role | str:
+def _coerce_role(value: Any) -> Role | str | None:
     """Coerce known role strings to Role enum, pass custom roles through."""
+    if value is None:
+        return None
     if isinstance(value, Role):
         return value
     if isinstance(value, str):
