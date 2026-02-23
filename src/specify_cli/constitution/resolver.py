@@ -2,43 +2,20 @@
 
 Resolves active governance from constitution selections and validates
 selected references against available profile/tool catalogs.
-
-Two profile paths are supported:
-
-1. **Legacy / agents.yaml path** (default): ``profile_catalog`` is a
-   ``dict[str, AgentEntry]`` keyed by ``agent_key``, built from the
-   shallow YAML entries in ``.kittify/constitution/agents.yaml``.
-
-2. **Rich doctrine path** (opt-in): pass ``profile_repository`` (an
-   ``AgentProfileRepository``) to have ``resolve_governance`` build the
-   catalog from the doctrine's rich ``AgentProfile`` objects (keyed by
-   ``profile_id``).  This enables access to the full 6-section model
-   (specialization, collaboration contracts, etc.) in the resolution
-   result.
-
-If both ``profile_catalog`` and ``profile_repository`` are provided,
-``profile_catalog`` takes precedence so callers can fully control the
-catalog without the repository being consulted.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Union
 
-from doctrine.agent_profiles.profile import AgentProfile
-from doctrine.agent_profiles.repository import AgentProfileRepository
+from specify_cli.constitution.catalog import load_doctrine_catalog
 from specify_cli.constitution.schemas import AgentEntry
 from specify_cli.constitution.sync import (
     load_agents_config,
     load_directives_config,
     load_governance_config,
 )
-
-# A catalog entry can be either the legacy shallow AgentEntry (from agents.yaml)
-# or the rich doctrine AgentProfile.
-_AnyProfile = Union[AgentEntry, AgentProfile]
 
 DEFAULT_TEMPLATE_SET = "software-dev-default"
 DEFAULT_TOOL_REGISTRY: frozenset[str] = frozenset({"spec-kitty", "git", "python", "pytest", "ruff", "mypy", "poetry"})
@@ -55,17 +32,11 @@ class GovernanceResolutionError(ValueError):
 
 @dataclass(frozen=True)
 class GovernanceResolution:
-    """Resolved governance activation result.
-
-    ``agent_profiles`` holds whatever profile objects were present in the
-    resolved catalog – either ``AgentEntry`` (legacy / agents.yaml path) or
-    the rich ``AgentProfile`` (doctrine path, when ``profile_repository`` is
-    supplied to ``resolve_governance``).
-    """
+    """Resolved governance activation result."""
 
     paradigms: list[str]
     directives: list[str]
-    agent_profiles: list[_AnyProfile]
+    agent_profiles: list[AgentEntry]
     tools: list[str]
     template_set: str
     metadata: dict[str, str]
@@ -75,44 +46,31 @@ class GovernanceResolution:
 def resolve_governance(
     repo_root: Path,
     *,
-    profile_catalog: dict[str, _AnyProfile] | None = None,
-    profile_repository: AgentProfileRepository | None = None,
+    profile_catalog: dict[str, AgentEntry] | None = None,
     tool_registry: set[str] | None = None,
     fallback_template_set: str = DEFAULT_TEMPLATE_SET,
 ) -> GovernanceResolution:
-    """Resolve active governance from constitution-first selection data.
-
-    Args:
-        repo_root: Repository root directory.
-        profile_catalog: Optional explicit catalog mapping profile key to
-            profile object.  When provided it takes precedence over both
-            ``profile_repository`` and the agents.yaml fallback.
-        profile_repository: Optional ``AgentProfileRepository`` for the rich
-            doctrine path.  When provided (and ``profile_catalog`` is *not*),
-            the catalog is built from
-            ``{p.profile_id: p for p in repository.list_all()}``.
-        tool_registry: Set of available tool names.  Falls back to
-            ``DEFAULT_TOOL_REGISTRY``.
-        fallback_template_set: Template set name used when the constitution
-            does not select one.
-    """
+    """Resolve active governance from constitution-first selection data."""
     governance = load_governance_config(repo_root)
     agents = load_agents_config(repo_root)
     directives_cfg = load_directives_config(repo_root)
+    doctrine_catalog = load_doctrine_catalog()
     doctrine = governance.doctrine
-
-    if profile_catalog is not None:
-        # Caller-supplied catalog wins unconditionally.
-        catalog: dict[str, _AnyProfile] = profile_catalog
-    elif profile_repository is not None:
-        # Rich doctrine path: key by profile_id.
-        catalog = {p.profile_id: p for p in profile_repository.list_all()}
-    else:
-        # Legacy path: shallow AgentEntry objects from agents.yaml.
-        catalog = {p.agent_key: p for p in agents.profiles}
-    selected_profiles = doctrine.selected_agent_profiles
     diagnostics: list[str] = []
 
+    selected_paradigms = list(doctrine.selected_paradigms)
+    if selected_paradigms and doctrine_catalog.paradigms:
+        missing_paradigms = sorted(p for p in selected_paradigms if p not in doctrine_catalog.paradigms)
+        if missing_paradigms:
+            raise GovernanceResolutionError(
+                [
+                    "Constitution selected unavailable paradigms: " + ", ".join(missing_paradigms),
+                    "Update constitution selected_paradigms to values present in doctrine/paradigms.",
+                ]
+            )
+
+    catalog = profile_catalog or {p.agent_key: p for p in agents.profiles}
+    selected_profiles = doctrine.selected_agent_profiles
     if selected_profiles:
         missing_profiles = sorted(profile for profile in selected_profiles if profile not in catalog)
         if missing_profiles:
@@ -147,11 +105,28 @@ def resolve_governance(
         tools_source = "registry_fallback"
         diagnostics.append("No available_tools selection provided; using runtime tool registry fallback.")
 
+    directive_catalog_ids = {directive.id for directive in directives_cfg.directives}
+    if doctrine_catalog.directives:
+        directive_catalog_ids.update(doctrine_catalog.directives)
+
     if doctrine.selected_directives:
+        missing_directives = sorted(
+            directive for directive in doctrine.selected_directives if directive not in directive_catalog_ids
+        )
+        if missing_directives:
+            raise GovernanceResolutionError(
+                [
+                    "Constitution selected unavailable directives: " + ", ".join(missing_directives),
+                    "Update constitution selected_directives to values present in directives.yaml or doctrine/directives.",
+                ]
+            )
         resolved_directives = list(doctrine.selected_directives)
         directives_source = "constitution"
     else:
-        resolved_directives = [directive.id for directive in directives_cfg.directives]
+        if directives_cfg.directives:
+            resolved_directives = [directive.id for directive in directives_cfg.directives]
+        else:
+            resolved_directives = sorted(doctrine_catalog.directives)
         directives_source = "catalog_fallback"
 
     if doctrine.template_set:
@@ -163,7 +138,7 @@ def resolve_governance(
         diagnostics.append(f"Template set not selected in constitution; fallback '{template_set}' applied.")
 
     return GovernanceResolution(
-        paradigms=list(doctrine.selected_paradigms),
+        paradigms=selected_paradigms,
         directives=resolved_directives,
         agent_profiles=resolved_profiles,
         tools=resolved_tools,
@@ -181,8 +156,7 @@ def resolve_governance(
 def collect_governance_diagnostics(
     repo_root: Path,
     *,
-    profile_catalog: dict[str, _AnyProfile] | None = None,
-    profile_repository: AgentProfileRepository | None = None,
+    profile_catalog: dict[str, AgentEntry] | None = None,
     tool_registry: set[str] | None = None,
     fallback_template_set: str = DEFAULT_TEMPLATE_SET,
 ) -> list[str]:
@@ -191,7 +165,6 @@ def collect_governance_diagnostics(
         resolution = resolve_governance(
             repo_root,
             profile_catalog=profile_catalog,
-            profile_repository=profile_repository,
             tool_registry=tool_registry,
             fallback_template_set=fallback_template_set,
         )

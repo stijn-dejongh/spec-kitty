@@ -6,7 +6,6 @@ from pathlib import Path
 
 from specify_cli.constitution.schemas import (
     AgentEntry,
-    AgentProfile,
     AgentsConfig,
     AgentSelectionConfig,
     BranchStrategyConfig,
@@ -174,32 +173,6 @@ class TestAgentsConfig:
             ]
         )
         assert len(config.profiles) == 2
-
-
-class TestAgentProfileReExport:
-    """AgentProfile imported from schemas is the rich doctrine model."""
-
-    def test_agent_profile_is_doctrine_model(self):
-        """T038b: AgentProfile re-exported from schemas IS the doctrine model."""
-        from doctrine.agent_profiles.profile import AgentProfile as DoctrineAgentProfile
-
-        assert AgentProfile is DoctrineAgentProfile
-
-    def test_agent_profile_has_profile_id_not_agent_key(self):
-        """T038c: Re-exported AgentProfile uses profile_id (rich model field)."""
-        # The rich model requires profile_id, name, purpose, and specialization.
-        from doctrine.agent_profiles.profile import Specialization
-
-        profile = AgentProfile(
-            **{
-                "profile-id": "test-agent",
-                "name": "Test Agent",
-                "purpose": "Testing purposes",
-                "specialization": {"primary-focus": "Testing"},
-            }
-        )
-        assert profile.profile_id == "test-agent"
-        assert not hasattr(profile, "agent_key")
 
 
 class TestDirective:
