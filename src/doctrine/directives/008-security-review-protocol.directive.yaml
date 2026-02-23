@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: DIRECTIVE_008
+title: Security Review Protocol
+intent: Ensure compliance with Security Review Protocol.
+tactic_refs: []
+enforcement: required

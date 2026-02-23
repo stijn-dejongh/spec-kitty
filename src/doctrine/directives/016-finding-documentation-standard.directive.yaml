@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: DIRECTIVE_016
+title: Finding Documentation Standard
+intent: Ensure compliance with Finding Documentation Standard.
+tactic_refs: []
+enforcement: required

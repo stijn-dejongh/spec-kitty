@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: DIRECTIVE_002
+title: Accessibility First Principle
+intent: Ensure compliance with Accessibility First Principle.
+tactic_refs: []
+enforcement: required

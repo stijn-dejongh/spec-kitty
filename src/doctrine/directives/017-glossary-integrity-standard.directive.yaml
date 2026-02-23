@@ -1,0 +1,6 @@
+schema_version: "1.0"
+id: DIRECTIVE_017
+title: Glossary Integrity Standard
+intent: Ensure compliance with Glossary Integrity Standard.
+tactic_refs: []
+enforcement: required

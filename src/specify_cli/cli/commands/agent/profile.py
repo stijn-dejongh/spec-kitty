@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import typer
 from rich.console import Console
@@ -16,8 +16,12 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.tree import Tree
 
-from doctrine.agent_profiles import AgentProfileRepository
+from doctrine.agent_profiles import AgentProfileRepository, get_capabilities
 from doctrine.agent_profiles.profile import AgentProfile
+from doctrine.agent_profiles.validation import validate_agent_profile_yaml
+from ruamel.yaml import YAML
+
+from specify_cli.core.tool_config import load_tool_config
 
 app = typer.Typer(
     name="profile",
@@ -28,6 +32,18 @@ console = Console()
 
 # Default project profile directory relative to .kittify
 _DEFAULT_PROJECT_SUBDIR = Path(".kittify") / "constitution" / "agents"
+
+_TOOL_CONTEXT_PATHS: dict[str, Path] = {
+    "claude": Path(".claude/commands/spec-kitty.profile-context.md"),
+    "codex": Path(".codex/prompts/spec-kitty.profile-context.md"),
+    "opencode": Path(".opencode/command/spec-kitty.profile-context.md"),
+    "cursor": Path(".cursor/commands/spec-kitty.profile-context.md"),
+    "gemini": Path(".gemini/commands/spec-kitty.profile-context.md"),
+    "qwen": Path(".qwen/commands/spec-kitty.profile-context.md"),
+    "windsurf": Path(".windsurf/workflows/spec-kitty.profile-context.md"),
+    "copilot": Path(".github/prompts/spec-kitty.profile-context.md"),
+    "q": Path(".amazonq/prompts/spec-kitty.profile-context.md"),
+}
 
 
 def _get_repository(project_dir: Path | None = None) -> AgentProfileRepository:
@@ -199,15 +215,25 @@ def show_profile(
 
 @app.command(name="create")
 def create_profile(
-    from_template: str = typer.Option(
-        ...,
+    from_template: str | None = typer.Option(
+        None,
         "--from-template",
         help="Source profile ID to copy as template",
     ),
-    profile_id: str = typer.Option(
-        ...,
+    profile_id: str | None = typer.Option(
+        None,
         "--profile-id",
         help="New profile ID for the project profile",
+    ),
+    interview: bool = typer.Option(
+        False,
+        "--interview",
+        help="Create profile via guided interview flow",
+    ),
+    defaults: bool = typer.Option(
+        False,
+        "--defaults",
+        help="Fast interview path: ask only required questions",
     ),
     project_dir: Optional[Path] = typer.Option(
         None,
@@ -229,6 +255,25 @@ def create_profile(
         effective_project_dir = project_dir
     else:
         effective_project_dir = Path(".") / _DEFAULT_PROJECT_SUBDIR
+
+    if interview:
+        _run_profile_interview_create(
+            effective_project_dir=effective_project_dir,
+            profile_id=profile_id,
+            defaults=defaults,
+        )
+        return
+
+    if defaults and not interview:
+        console.print("[red]Error:[/red] --defaults requires --interview.")
+        raise typer.Exit(1)
+
+    if not from_template or not profile_id:
+        console.print(
+            "[red]Error:[/red] Template mode requires --from-template and --profile-id, "
+            "or use --interview."
+        )
+        raise typer.Exit(1)
 
     repo = _get_repository(project_dir)
 
@@ -373,6 +418,187 @@ def show_hierarchy(
         f"\n[dim]{total_count} total profiles, "
         f"{root_count} root profiles, "
         f"{specialized_count} specialized[/dim]"
+    )
+
+
+@app.command(name="init")
+def init_profile(
+    profile_id: str = typer.Argument(..., help="Profile ID to initialize"),
+    project_dir: Optional[Path] = typer.Option(
+        None,
+        "--project-dir",
+        help="Project profiles directory (default: .kittify/constitution/agents)",
+        show_default=False,
+    ),
+) -> None:
+    """Initialize the active tool context from a profile's governance artifacts."""
+    effective_project_dir = project_dir or (
+        Path(".") / _DEFAULT_PROJECT_SUBDIR if (Path(".") / _DEFAULT_PROJECT_SUBDIR).exists() else None
+    )
+    repo = _get_repository(project_dir)
+
+    try:
+        profile = repo.resolve_profile(profile_id)
+    except KeyError:
+        console.print(f"[red]Error:[/red] Profile '{profile_id}' not found.")
+        raise typer.Exit(1)
+    except ValueError as exc:
+        console.print(f"[red]Error:[/red] Failed resolving profile '{profile_id}': {exc}")
+        raise typer.Exit(1)
+
+    tool_config = load_tool_config(Path(".").resolve())
+    active_tools = tool_config.available
+    if not active_tools:
+        console.print("[red]Error:[/red] No configured tools found in .kittify/config.yaml.")
+        raise typer.Exit(1)
+
+    target_tool = active_tools[0]
+    target_rel = _TOOL_CONTEXT_PATHS.get(target_tool, Path(f".{target_tool}/spec-kitty.profile-context.md"))
+    target_path = Path(".") / target_rel
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+
+    content = _render_profile_context_fragment(profile)
+    target_path.write_text(content, encoding="utf-8")
+
+    source = _source_label(profile, effective_project_dir)
+    console.print(
+        f"[green]Initialized[/green] profile '[cyan]{profile.profile_id}[/cyan]' "
+        f"(source: {source}) for tool '[cyan]{target_tool}[/cyan]'."
+    )
+    console.print(f"[dim]Context file:[/dim] {target_path}")
+
+
+def _prompt_csv(prompt: str) -> list[str]:
+    raw = typer.prompt(prompt, default="")
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
+
+def _run_profile_interview_create(
+    *,
+    effective_project_dir: Path,
+    profile_id: str | None,
+    defaults: bool,
+) -> None:
+    """Run guided interview and create a project profile file."""
+    profile_id_value = profile_id or typer.prompt("Profile ID (kebab-case)")
+    name = typer.prompt("Profile name")
+    purpose = typer.prompt("Purpose")
+    role = typer.prompt("Role", default="implementer")
+    primary_focus = typer.prompt("Primary focus")
+
+    specializes_from: str | None = None
+    secondary_awareness = ""
+    avoidance_boundary = ""
+    success_definition = ""
+    languages: list[str] = []
+    frameworks: list[str] = []
+    domain_keywords: list[str] = []
+    handoff_to: list[str] = []
+    handoff_from: list[str] = []
+    works_with: list[str] = []
+    directives: list[str] = []
+    directive_refs: list[dict[str, str]] = []
+
+    if not defaults:
+        specializes_from = typer.prompt("specializes-from (optional)", default="").strip() or None
+        secondary_awareness = typer.prompt("Secondary awareness (optional)", default="")
+        avoidance_boundary = typer.prompt("Avoidance boundary (optional)", default="")
+        success_definition = typer.prompt("Success definition (optional)", default="")
+        languages = _prompt_csv("Specialization languages (comma-separated, optional)")
+        frameworks = _prompt_csv("Specialization frameworks (comma-separated, optional)")
+        domain_keywords = _prompt_csv("Specialization keywords (comma-separated, optional)")
+        handoff_to = _prompt_csv("Collaboration handoff-to (comma-separated, optional)")
+        handoff_from = _prompt_csv("Collaboration handoff-from (comma-separated, optional)")
+        works_with = _prompt_csv("Collaboration works-with (comma-separated, optional)")
+        directives = _prompt_csv("Directive codes (comma-separated, optional)")
+
+    capabilities_cfg = get_capabilities(role)
+    capabilities = capabilities_cfg.default_capabilities if capabilities_cfg else []
+    canonical_verbs = capabilities_cfg.canonical_verbs if capabilities_cfg else []
+
+    for code in directives:
+        directive_refs.append(
+            {
+                "code": code,
+                "name": f"Directive {code}",
+                "rationale": "Added via interview",
+            }
+        )
+
+    payload: dict[str, Any] = {
+        "profile-id": profile_id_value,
+        "name": name,
+        "purpose": purpose,
+        "role": role,
+        "capabilities": capabilities,
+        "specialization": {
+            "primary-focus": primary_focus,
+            "secondary-awareness": secondary_awareness,
+            "avoidance-boundary": avoidance_boundary,
+            "success-definition": success_definition,
+        },
+        "collaboration": {
+            "handoff-to": handoff_to,
+            "handoff-from": handoff_from,
+            "works-with": works_with,
+            "canonical-verbs": canonical_verbs,
+        },
+    }
+
+    if specializes_from:
+        payload["specializes-from"] = specializes_from
+
+    if languages or frameworks or domain_keywords:
+        payload["specialization-context"] = {
+            "languages": languages,
+            "frameworks": frameworks,
+            "domain-keywords": domain_keywords,
+        }
+
+    if directive_refs:
+        payload["directive-references"] = directive_refs
+
+    errors = validate_agent_profile_yaml(payload)
+    if errors:
+        console.print("[red]Error:[/red] Generated profile failed schema validation:")
+        for err in errors:
+            console.print(f"  - {err}")
+        raise typer.Exit(1)
+
+    effective_project_dir.mkdir(parents=True, exist_ok=True)
+    dest_file = effective_project_dir / f"{profile_id_value}.agent.yaml"
+    if dest_file.exists():
+        console.print(f"[red]Error:[/red] Profile already exists at {dest_file}")
+        raise typer.Exit(1)
+
+    yaml = YAML()
+    yaml.default_flow_style = False
+    with dest_file.open("w", encoding="utf-8") as fh:
+        yaml.dump(payload, fh)
+
+    console.print(f"[green]Created[/green] profile '{profile_id_value}' via interview")
+    console.print(f"  File: {dest_file}")
+
+
+def _render_profile_context_fragment(profile: AgentProfile) -> str:
+    """Render profile context fragment consumed by tool integrations."""
+    directives = ", ".join(d.code for d in profile.directive_references) or "none"
+    role = profile.role.value if hasattr(profile.role, "value") else str(profile.role)
+    specialization = profile.specialization.primary_focus
+    collaboration = ", ".join(profile.collaboration.works_with) or "none"
+    modes = ", ".join(m.mode for m in profile.mode_defaults) or "none"
+
+    return (
+        f"# Spec Kitty Agent Profile Context\n\n"
+        f"- profile_id: {profile.profile_id}\n"
+        f"- name: {profile.name}\n"
+        f"- role: {role}\n"
+        f"- purpose: {profile.purpose}\n"
+        f"- specialization: {specialization}\n"
+        f"- directives: {directives}\n"
+        f"- collaboration_partners: {collaboration}\n"
+        f"- mode_defaults: {modes}\n"
+        f"- initialization_declaration: {profile.initialization_declaration or 'none'}\n"
     )
 
 

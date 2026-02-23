@@ -319,3 +319,16 @@
 | T042 | Build resolved governance payload | WP12 | P2 | No |
 | T043 | Tool detection + fragment writing | WP12 | P2 | No |
 | T044 | Init command test suite | WP12 | P2 | Yes |
+
+<!-- status-model:start -->
+## Canonical Status (Generated)
+- WP05: done
+- WP08: done
+- WP09: done
+- WP10: done
+- WP11: done
+- WP12: done
+- WP13: done
+- WP14: done
+- WP15: done
+<!-- status-model:end -->
