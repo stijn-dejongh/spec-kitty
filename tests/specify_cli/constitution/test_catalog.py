@@ -5,7 +5,7 @@ from specify_cli.constitution.catalog import load_doctrine_catalog
 
 def test_catalog_loads_packaged_directives_and_paradigms() -> None:
     catalog = load_doctrine_catalog()
-    assert "TEST_FIRST" in catalog.directives
+    assert "TEST_DRIVEN_DEVELOPMENT" in catalog.directives
     assert "test-first" in catalog.paradigms
 
 
