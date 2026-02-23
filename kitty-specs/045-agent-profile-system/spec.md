@@ -202,17 +202,17 @@ The shipped agent profiles reference 19 directive codes (001-019) by code and na
 
 ### User Story 10 - Agent Initialization via CLI (Priority: P2)
 
-A user wants to initialize an agent session with a specific profile, loading its doctrine references, specialization boundaries, and initialization declaration into the active session context.
+A user wants to initialize an agent with a specific profile so that the active tool (e.g., Claude Code, Codex) adheres to the profile's governance context. Initialization configures the tool to operate within the profile's directives, specialization boundaries, collaboration contracts, and mode defaults — not merely display them.
 
-**Why this priority**: Direct invocation is the primary way users interact with agent profiles outside of mission execution. It makes governance context available for ad-hoc work.
+**Why this priority**: Direct invocation is the primary way users interact with agent profiles outside of mission execution. It makes governance context enforceable for ad-hoc work.
 
-**Independent Test**: Running `spec-kitty agent profile init <profile-id>` emits the profile's initialization declaration and loads its context sources into the session.
+**Independent Test**: Running `spec-kitty agent profile init <profile-id>` configures the active tool to adhere to the profile's governance artifacts (directives, specialization, collaboration, mode defaults).
 
 **Acceptance Scenarios**:
 
-1. **Given** a valid profile ID, **When** the user runs `spec-kitty agent profile init implementer`, **Then** the initialization declaration is displayed and the profile's doctrine references are available in the session context
+1. **Given** a valid profile ID, **When** the user runs `spec-kitty agent profile init implementer`, **Then** the active tool is configured to adhere to the profile's directives, specialization boundaries, collaboration contracts, and mode defaults
 2. **Given** an invalid profile ID, **When** the user runs `spec-kitty agent profile init nonexistent`, **Then** an error message indicates the profile was not found
-3. **Given** a profile with `specializes-from: implementer`, **When** initialized, **Then** the inherited context from the parent profile is merged into the session
+3. **Given** a profile with `specializes-from: implementer`, **When** initialized, **Then** the inherited context from the parent profile is resolved and the tool is configured with the merged governance context
 
 ---
 
@@ -259,7 +259,7 @@ A project owner creates a specialized agent profile (e.g., "Python Pedro") that 
 1. **Given** a child profile that only declares `specializes-from`, `profile-id`, `name`, `purpose`, `primary-focus`, and `specialization-context`, **When** resolved, **Then** all other sections (collaboration, mode-defaults, initialization, directive-references) are inherited from the parent
 2. **Given** a child profile that overrides `mode-defaults.autonomy-level: high` while the parent has `medium`, **When** resolved, **Then** the child's override wins and all other mode-defaults come from the parent
 3. **Given** a three-level chain (grandchild → child → parent), **When** the grandchild is resolved, **Then** fields cascade correctly: grandchild overrides child overrides parent
-4. **Given** a child profile that declares `specialization-context.languages: [python]` while the parent has `languages: [python, javascript]`, **When** resolved, **Then** the child's specialization-context replaces (not merges with) the parent's at the section level
+4. **Given** a child profile that declares `specialization-context.languages: [python]` while the parent has `languages: [python, javascript]` and `frameworks: [django]`, **When** resolved, **Then** the child's `languages` key overrides the parent's (`[python]`), while the parent's `frameworks` key is preserved (`[django]`) — shallow merge within the section
 5. **Given** a child profile with an orphaned `specializes-from` reference, **When** resolved, **Then** a warning is emitted and the child is returned as-is without inheritance
 6. **Given** a resolved specialist profile, **When** used in weighted matching, **Then** the inherited `specialization-context` fields participate in scoring alongside the child's own fields
 
@@ -271,7 +271,7 @@ A project owner creates a specialized agent profile (e.g., "Python Pedro") that 
 - What happens when a project profile references a `specializes-from` ID that doesn't exist? Hierarchy validation reports it as an orphaned reference; resolution returns the child as-is with a warning.
 - What happens when profile hierarchy contains a cycle? `validate_hierarchy()` detects and reports the cycle; resolution raises an error rather than looping.
 - What happens when a custom role string is used instead of a known Role enum value? The role is accepted with a warning; the profile remains functional.
-- What happens when a child profile overrides a nested section partially? The child's section-level value replaces the parent's entirely (section-level override, not deep merge). This matches the existing two-source merge semantics.
+- What happens when a child profile overrides a nested section partially? Shallow merge applies: child keys override parent keys one level deep within the section, parent keys absent from the child are preserved.
 
 ## Requirements *(mandatory)*
 
@@ -293,14 +293,14 @@ A project owner creates a specialized agent profile (e.g., "Python Pedro") that 
 - **FR-014**: The interview flow MUST support a fast path (`--defaults`) that pre-populates sensible defaults and only asks required questions
 - **FR-015**: The interview flow MUST persist answers and produce a valid `.agent.yaml` that passes JSON Schema validation
 - **FR-016**: When a role is selected during the interview, default capabilities MUST be pre-populated from the shipped role capabilities mapping
-- **FR-017**: The doctrine package MUST ship directive YAML files in `src/doctrine/directives/` for all 19 codes referenced by shipped profiles (001-019)
+- **FR-017**: The doctrine package MUST ship directive YAML files in `src/doctrine/directives/` for all 19 codes referenced by shipped profiles (001-019), conforming to `directive.schema.yaml` (schema_version, id, title, intent, tactic_refs, enforcement)
 - **FR-018**: A consistency test MUST verify that every directive code referenced by shipped profiles resolves to a directive file whose title matches the declared name
-- **FR-019**: System MUST provide a CLI command (`spec-kitty agent profile init <profile-id>`) that initializes an agent session by loading the profile's initialization declaration, doctrine references, and specialization context
+- **FR-019**: System MUST provide a CLI command (`spec-kitty agent profile init <profile-id>`) that configures the active tool to adhere to the profile's governance artifacts (directives, specialization boundaries, collaboration contracts, mode defaults)
 - **FR-020**: The doctrine package MUST ship template files for `REPO_MAP.md` and `SURFACES.md` in `src/doctrine/templates/structure/`
 - **FR-021**: Templates MUST use placeholder markers (e.g., `{{DATE}}`, `{{TREE_SNIPPET}}`) that can be populated by agents or users for project-specific generation
 - **FR-022**: The `spec-kitty init` bootstrap process MUST offer to generate `REPO_MAP.md` and `SURFACES.md` from the shipped doctrine templates as part of project onboarding
 - **FR-023**: The mission schema (`mission.schema.yaml`) and runtime DAG format MUST accept an optional `agent-profile` field on states/steps, constrained to the kebab-case profile ID pattern, with no impact on existing missions that omit the field
-- **FR-024**: The repository MUST provide a `resolve_profile()` method that walks the `specializes-from` ancestor chain and produces a fully merged profile where child fields override parent fields at the section level
+- **FR-024**: The repository MUST provide a `resolve_profile()` method that walks the `specializes-from` ancestor chain and produces a fully merged profile using shallow merge: child keys override parent keys one level deep within each section, parent keys absent from the child are preserved
 - **FR-025**: Profile inheritance resolution MUST support multi-level chains (grandchild → child → parent) with correct cascading precedence (closest descendant wins)
 - **FR-026**: The weighted matching algorithm MUST use the resolved (inherited) profile fields when scoring, so that a child profile benefits from its parent's specialization context for any fields it does not override
 
@@ -329,10 +329,18 @@ A project owner creates a specialized agent profile (e.g., "Python Pedro") that 
 - **SC-008**: Interactive interview creates a valid `.agent.yaml` that passes schema validation
 - **SC-009**: Fast-path interview (`--defaults`) completes with only 5 required answers
 - **SC-010**: All 19 directive files exist in `src/doctrine/directives/` and pass the consistency test against shipped profile references
-- **SC-011**: Agent initialization via CLI loads the profile and emits the initialization declaration
+- **SC-011**: Agent initialization via CLI configures the active tool to adhere to the profile's governance artifacts
 - **SC-012**: REPO_MAP and SURFACES templates are present in the doctrine package and contain valid placeholder structure
 - **SC-013**: Mission schema accepts optional `agent-profile` on states/steps; existing missions validate without modification
 - **SC-014**: A child profile declaring only its delta from the parent resolves to a complete profile with all inherited fields; multi-level chains resolve correctly
+
+## Clarifications
+
+### Session 2026-02-23
+
+- Q: What does "session" mean when `spec-kitty agent profile init` loads profile context? → A: The tool is configured to adhere to the artifacts described in the agent profile — directives, specialization boundaries, collaboration contracts, and mode defaults are enforced in the active tool session, not merely displayed.
+- Q: What merge granularity applies when a child profile inherits from a parent? → A: Shallow merge within sections — child keys override parent keys one level deep, parent keys not present in the child are preserved. Consistent across all sections.
+- Q: What format should the 19 shipped directive files follow? → A: Follow the established `directive.schema.yaml` pattern (schema_version, id, title, intent, tactic_refs, enforcement) as demonstrated by `test-first.directive.yaml`. All implementation WPs must follow ATDD/TDD (test-first).
 
 ## Assumptions
 
@@ -340,6 +348,7 @@ A project owner creates a specialized agent profile (e.g., "Python Pedro") that 
 - Agent profiles are read-only doctrine artifacts at the shipped level; project-level profiles are the customization mechanism
 - The weighted matching algorithm is implemented but not yet integrated into runtime orchestration (future feature)
 - The ToolConfig rename migration renames the `agents` YAML key to `tools` in config.yaml, with a backward-compatible fallback that reads the legacy key during the transition period
+- All remaining WPs follow ATDD/TDD (test-first) methodology per the test-first directive
 
 ## Work Package Summary
 
