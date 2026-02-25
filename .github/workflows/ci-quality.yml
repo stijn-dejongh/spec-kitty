@@ -7,9 +7,8 @@ on:
       - 2.x
   push:
     branches:
-      - main
-      - develop
       - 2.x
+      - feature/*
   workflow_dispatch:
     inputs:
       run_extended:
