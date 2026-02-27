@@ -70,3 +70,7 @@ migrations:
       Updated: .opencode/command/spec-kitty.checklist.md; Updated: .opencode/command/spec-kitty.merge.md;
       Updated: .codex/prompts/spec-kitty.accept.md; Updated: .codex/prompts/spec-kitty.analyze.md;
       Updated: .codex/prompts/spec-kitty.checklist.md; Updated: .codex/prompts/spec-kitty.merge.md'
+  - id: 2.0.1_tool_config_key_rename
+    applied_at: '2026-02-27T19:37:17.118436'
+    result: success
+    notes: Renamed .kittify/config.yaml key `agents` -> `tools`

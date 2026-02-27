@@ -3,7 +3,6 @@
 from typing import Annotated
 
 import typer
-from typing import Annotated
 
 from . import config, context, feature, profile, release, status, tasks, workflow
 
