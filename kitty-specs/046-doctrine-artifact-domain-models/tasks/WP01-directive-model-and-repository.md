@@ -15,7 +15,7 @@ subtasks:
 - T006
 phase: Phase 1 - Foundation
 assignee: ''
-agent: ''
+agent: "claude-opus"
 shell_pid: "16652"
 review_status: ''
 reviewed_by: ''
@@ -259,3 +259,4 @@ No dependencies — branch from target branch:
 ```bash
 spec-kitty implement WP01
 ```
+- 2026-02-27T18:47:20Z – claude-opus – shell_pid=16652 – lane=doing – Assigned agent via workflow command
