@@ -1,5 +1,7 @@
 """Agent command namespace for AI agents to execute spec-kitty workflows programmatically."""
 
+from typing import Annotated
+
 import typer
 
 from . import config, context, feature, profile, release, status, tasks, workflow
