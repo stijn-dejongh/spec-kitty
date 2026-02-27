@@ -1,27 +1,30 @@
 ---
-work_package_id: "WP01"
-subtasks:
-  - "T001"
-  - "T002"
-  - "T003"
-  - "T004"
-  - "T005"
-  - "T006"
-title: "Directive Model & Repository"
-phase: "Phase 1 - Foundation"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
+work_package_id: WP01
+title: Directive Model & Repository
+lane: "doing"
 dependencies: []
+base_branch: feature/agent-profile-implementation
+base_commit: 36e93d77a380d95a374f9a9f32281ebd688886b8
+created_at: '2026-02-27T18:47:20.298002+00:00'
+subtasks:
+- T001
+- T002
+- T003
+- T004
+- T005
+- T006
+phase: Phase 1 - Foundation
+assignee: ''
+agent: ''
+shell_pid: "16652"
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-26T04:36:22Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-26T04:36:22Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP01 – Directive Model & Repository
