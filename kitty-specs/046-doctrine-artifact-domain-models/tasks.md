@@ -3,31 +3,39 @@
 **Inputs**: Design documents from `kitty-specs/046-doctrine-artifact-domain-models/`
 **Prerequisites**: plan.md (required), spec.md (user stories), research.md, data-model.md, quickstart.md
 **Organization**: Fine-grained subtasks (`Txxx`) roll up into work packages (`WPxx`). Each work package must be independently deliverable and testable. All WPs follow ATDD/TDD methodology.
+**Invariant**: The test suite MUST be green after every WP merge. Each WP that moves files updates affected test paths.
 
 ---
 
-## Work Package WP01: Directive Model & Repository (Priority: P1)
+## Work Package WP01: Directive Model, Repository & Schema Extension (Priority: P1)
 
-**Goal**: Create the `Directive` Pydantic model, `DirectiveRepository`, and schema validation for directives. Move existing directive YAML files into `shipped/` subdirectory. This is the most complex artifact type (enrichment fields, ID normalization).
-**Independent Test**: `DirectiveRepository().list_all()` returns all shipped directives as `Directive` objects; `get("004")` normalizes to `DIRECTIVE_004`.
+**Goal**: Create the `Directive` Pydantic model (including enrichment fields), `DirectiveRepository`, schema validation, and extend `directive.schema.yaml` — all as one atomic unit. Move existing directive YAML files into `shipped/` subdirectory. Update existing tests that reference directive paths.
+**Independent Test**: `DirectiveRepository().list_all()` returns all shipped directives as `Directive` objects; `get("004")` normalizes to `DIRECTIVE_004`; both minimal and enriched directive formats validate against the updated schema.
 **Prompt**: `tasks/WP01-directive-model-and-repository.md`
-**Estimated size**: ~450 lines
+**Estimated size**: ~550 lines
 
 ### Included Subtasks
 
-- [ ] T001 Create `src/doctrine/directives/__init__.py` with public exports
-- [ ] T002 Create `src/doctrine/directives/models.py` with `Directive`, `Enforcement` enum
-- [ ] T003 Create `src/doctrine/directives/repository.py` with `DirectiveRepository`
-- [ ] T004 Create `src/doctrine/directives/validation.py` with schema validation utility
-- [ ] T005 Move directive YAML files into `src/doctrine/directives/shipped/`
-- [ ] T006 Write ATDD/TDD tests in `tests/doctrine/directives/`
+- [ ] T001 Update `src/doctrine/schemas/directive.schema.yaml`: remove `additionalProperties: false`, add optional fields (`scope`, `procedures`, `integrity_rules`, `validation_criteria`)
+- [ ] T002 Create `src/doctrine/directives/__init__.py` with public exports
+- [ ] T003 Create `src/doctrine/directives/models.py` with `Directive` (including enrichment fields), `Enforcement` enum
+- [ ] T004 Create `src/doctrine/directives/repository.py` with `DirectiveRepository`
+- [ ] T005 Create `src/doctrine/directives/validation.py` with schema validation utility
+- [ ] T006 Move directive YAML files into `src/doctrine/directives/shipped/`
+- [ ] T007 Update `tests/doctrine/test_directive_consistency.py`: change `DIRECTIVES_DIR` to point to `shipped/` subdirectory
+- [ ] T008 Update `tests/doctrine/test_artifact_compliance.py`: change directive entry in path mapping to `shipped/`
+- [ ] T009 Update `tests/doctrine/test_tactic_compliance.py`: change `"directive"` entry in `ARTIFACT_DIRS` dict to `shipped/`
+- [ ] T010 Write ATDD/TDD tests in `tests/doctrine/directives/` (model, repository, schema backward-compat + enriched format)
 
 ### Implementation Notes
 
 - Follow `agent_profiles` pattern exactly for repository structure
 - `DirectiveRepository.get()` must accept both `"004"` and `"DIRECTIVE_004"` and normalize
 - Use `Draft202012Validator` (not Draft7) per research.md R-005
-- Move existing `.directive.yaml` files into `shipped/` subdirectory
+- The schema currently has `additionalProperties: false` — this MUST be removed in T001 before enrichment fields work
+- All new enrichment fields are optional: `scope` (string), `procedures` (array of strings), `integrity_rules` (array of strings), `validation_criteria` (array of strings)
+- Use YAML keys with underscores per existing schema convention (match `tactic_refs` pattern)
+- Existing minimal directives must continue to validate unchanged after schema update
 - Update `README.md` in `src/doctrine/directives/` to reflect subpackage status
 
 ### Dependencies
@@ -36,31 +44,34 @@
 
 ### Risks & Mitigations
 
-- Moving YAML files may break existing `test_schema_validation.py` → update test paths in WP10
+- Schema change is backward-compatible (all new fields optional, `additionalProperties` removal is additive)
 
 ---
 
 ## Work Package WP02: Tactic Model & Repository (Priority: P1)
 
-**Goal**: Create the `Tactic`, `TacticStep`, `TacticReference` Pydantic models and `TacticRepository`. Move tactic YAML files into `shipped/`.
+**Goal**: Create the `Tactic`, `TacticStep`, `TacticReference` Pydantic models and `TacticRepository`. Move tactic YAML files into `shipped/`. Update existing tests that reference tactic paths.
 **Independent Test**: `TacticRepository().get("zombies-tdd")` returns a `Tactic` with 7 steps.
 **Prompt**: `tasks/WP02-tactic-model-and-repository.md`
-**Estimated size**: ~400 lines
+**Estimated size**: ~450 lines
 
 ### Included Subtasks
 
-- [ ] T007 Create `src/doctrine/tactics/__init__.py` with public exports
-- [ ] T008 Create `src/doctrine/tactics/models.py` with `Tactic`, `TacticStep`, `TacticReference`, `ReferenceType` enum
-- [ ] T009 Create `src/doctrine/tactics/repository.py` with `TacticRepository`
-- [ ] T010 Create `src/doctrine/tactics/validation.py` with schema validation utility
-- [ ] T011 Move tactic YAML files into `src/doctrine/tactics/shipped/`
-- [ ] T012 Write ATDD/TDD tests in `tests/doctrine/tactics/`
+- [ ] T011 Create `src/doctrine/tactics/__init__.py` with public exports
+- [ ] T012 Create `src/doctrine/tactics/models.py` with `Tactic`, `TacticStep`, `TacticReference`, `ReferenceType` enum
+- [ ] T013 Create `src/doctrine/tactics/repository.py` with `TacticRepository`
+- [ ] T014 Create `src/doctrine/tactics/validation.py` with schema validation utility
+- [ ] T015 Move tactic YAML files into `src/doctrine/tactics/shipped/`
+- [ ] T016 Update `tests/doctrine/test_tactic_compliance.py`: change `TACTICS_DIR` and `"tactic"` entry in `ARTIFACT_DIRS` to point to `shipped/`
+- [ ] T017 Update `tests/doctrine/test_artifact_compliance.py`: change tactic path references to `shipped/`
+- [ ] T018 Write ATDD/TDD tests in `tests/doctrine/tactics/`
 
 ### Implementation Notes
 
 - `TacticStep` has optional `description`, `examples`, and `references` fields
 - `TacticReference` has `name`, `type` (enum), `id`, `when` — all required per schema
-- Schema uses `$defs` for reference objects; model `references` field at both tactic and step level
+- Schema uses `definitions` for reference objects (valid in Draft 2020-12); model `references` field at both tactic and step level
+- `test_tactic_compliance.py` has a comprehensive `ARTIFACT_DIRS` dict — update the `"tactic"` entry path, and if WP01 hasn't already updated `"directive"`, update that too
 
 ### Dependencies
 
@@ -70,23 +81,25 @@
 
 ## Work Package WP03: Styleguide Model & Repository (Priority: P1)
 
-**Goal**: Create `Styleguide`, `AntiPattern` models and `StyleguideRepository`. Move styleguide YAML files into `shipped/`.
+**Goal**: Create `Styleguide`, `AntiPattern` models and `StyleguideRepository`. Move styleguide YAML files into `shipped/`. Update existing tests.
 **Independent Test**: `StyleguideRepository().get("kitty-glossary-writing")` returns a `Styleguide` with `scope == "glossary"`.
 **Prompt**: `tasks/WP03-styleguide-model-and-repository.md`
-**Estimated size**: ~350 lines
+**Estimated size**: ~400 lines
 
 ### Included Subtasks
 
-- [ ] T013 Create `src/doctrine/styleguides/__init__.py` with public exports
-- [ ] T014 Create `src/doctrine/styleguides/models.py` with `Styleguide`, `AntiPattern`, `StyleguideScope` enum
-- [ ] T015 Create `src/doctrine/styleguides/repository.py` with `StyleguideRepository`
-- [ ] T016 Create `src/doctrine/styleguides/validation.py` with schema validation utility
-- [ ] T017 Move styleguide YAML files into `src/doctrine/styleguides/shipped/` (including `writing/` subdirectory)
-- [ ] T018 Write ATDD/TDD tests in `tests/doctrine/styleguides/`
+- [ ] T019 Create `src/doctrine/styleguides/__init__.py` with public exports
+- [ ] T020 Create `src/doctrine/styleguides/models.py` with `Styleguide`, `AntiPattern`, `StyleguideScope` enum
+- [ ] T021 Create `src/doctrine/styleguides/repository.py` with `StyleguideRepository`
+- [ ] T022 Create `src/doctrine/styleguides/validation.py` with schema validation utility
+- [ ] T023 Move styleguide YAML files into `src/doctrine/styleguides/shipped/` (including `writing/` subdirectory)
+- [ ] T024 Update `tests/doctrine/test_artifact_compliance.py`: change styleguide path references to `shipped/`
+- [ ] T025 Update `tests/doctrine/test_tactic_compliance.py`: change `"styleguide"` entry in `ARTIFACT_DIRS` to `shipped/`
+- [ ] T026 Write ATDD/TDD tests in `tests/doctrine/styleguides/`
 
 ### Implementation Notes
 
-- `writing/kitty-glossary-writing.styleguide.yaml` lives in a subdirectory — repository must scan recursively or use `**/*.styleguide.yaml`
+- `writing/kitty-glossary-writing.styleguide.yaml` lives in a subdirectory — repository must scan recursively using `**/*.styleguide.yaml`
 - `AntiPattern` has 4 required fields: `name`, `description`, `bad_example`, `good_example`
 - `Scope` enum: `code | docs | architecture | testing | operations | glossary`
 
@@ -98,25 +111,30 @@
 
 ## Work Package WP04: Toolguide & Paradigm Models (Priority: P1)
 
-**Goal**: Create `Toolguide` and `Paradigm` models with repositories. These are the simplest artifact types.
+**Goal**: Create `Toolguide` and `Paradigm` models with repositories. Create `paradigm.schema.yaml` (does not currently exist). Move files into `shipped/`. Update existing tests.
 **Independent Test**: `ToolguideRepository().get("powershell-syntax")` returns a `Toolguide`; `ParadigmRepository().get("test-first")` returns a `Paradigm`.
 **Prompt**: `tasks/WP04-toolguide-and-paradigm-models.md`
-**Estimated size**: ~400 lines
+**Estimated size**: ~500 lines
 
 ### Included Subtasks
 
-- [ ] T019 Create `src/doctrine/toolguides/__init__.py`, `models.py`, `repository.py`, `validation.py`
-- [ ] T020 Move toolguide YAML and companion MD files into `src/doctrine/toolguides/shipped/`
-- [ ] T021 Create `src/doctrine/paradigms/__init__.py`, `models.py`, `repository.py`, `validation.py`
-- [ ] T022 Create `src/doctrine/schemas/paradigm.schema.yaml` (new schema)
-- [ ] T023 Move paradigm YAML files into `src/doctrine/paradigms/shipped/`
-- [ ] T024 Write ATDD/TDD tests in `tests/doctrine/toolguides/` and `tests/doctrine/paradigms/`
+- [ ] T027 Create `src/doctrine/schemas/paradigm.schema.yaml` (new schema: `schema_version`, `id`, `name`, `summary` — all required)
+- [ ] T028 Create `src/doctrine/toolguides/__init__.py`, `models.py`, `repository.py`, `validation.py`
+- [ ] T029 Move toolguide YAML and companion MD files into `src/doctrine/toolguides/shipped/`
+- [ ] T030 Create `src/doctrine/paradigms/__init__.py`, `models.py`, `repository.py`, `validation.py`
+- [ ] T031 Move paradigm YAML files into `src/doctrine/paradigms/shipped/`
+- [ ] T032 Update `tests/doctrine/test_artifact_compliance.py`: change toolguide path references to `shipped/`
+- [ ] T033 Update `tests/doctrine/test_tactic_compliance.py`: change `"toolguide"` entry in `ARTIFACT_DIRS` to `shipped/`
+- [ ] T034 Create paradigm test fixtures in `tests/doctrine/fixtures/paradigm/{valid,invalid}/`
+- [ ] T035 Write ATDD/TDD tests in `tests/doctrine/toolguides/` and `tests/doctrine/paradigms/`
 
 ### Implementation Notes
 
 - Toolguide `guide_path` pattern: `^src/doctrine/.+\.md$` — companion markdown files move into `shipped/` too
 - Paradigm schema is new (DD-003): `schema_version`, `id`, `name`, `summary` — all required
 - Both are simple models with no nested value objects
+- No existing `paradigm.schema.yaml` or paradigm test fixtures exist — T027 and T034 create them from scratch
+- After T027, update `test_schema_validation.py` if it has a `SCHEMA_FILES` dict to include paradigm
 
 ### Dependencies
 
@@ -124,45 +142,18 @@
 
 ---
 
-## Work Package WP05: Directive Schema Extension (Priority: P1)
-
-**Goal**: Extend `directive.schema.yaml` with optional enrichment fields (`scope`, `procedures`, `integrity_rules`, `validation_criteria`) while maintaining backward compatibility.
-**Independent Test**: Both minimal `test-first.directive.yaml` and an enriched test directive validate against the updated schema.
-**Prompt**: `tasks/WP05-directive-schema-extension.md`
-**Estimated size**: ~250 lines
-
-### Included Subtasks
-
-- [ ] T025 Update `src/doctrine/schemas/directive.schema.yaml` with optional enrichment fields
-- [ ] T026 Update `Directive` model in `src/doctrine/directives/models.py` to include enrichment fields
-- [ ] T027 Write backward-compatibility tests (minimal format still validates)
-- [ ] T028 Write enriched-format tests (new fields validate correctly)
-
-### Implementation Notes
-
-- All new fields are optional: `scope` (string), `procedures` (array of strings), `integrity_rules` (array of strings), `validation_criteria` (array of strings)
-- Use YAML keys with underscores per existing schema convention (not kebab-case for these fields — match `tactic_refs` pattern)
-- `additionalProperties: false` must be removed or updated to allow new fields
-- Existing minimal directives must continue to validate unchanged
-
-### Dependencies
-
-- Depends on WP01 (Directive model must exist before extending it)
-
----
-
-## Work Package WP06: DoctrineService (Priority: P1)
+## Work Package WP05: DoctrineService (Priority: P1)
 
 **Goal**: Create `DoctrineService` as the lazy aggregation point that holds references to all repositories.
 **Independent Test**: `DoctrineService().directives.list_all()` returns directives; `service.agent_profiles.get("implementer")` reuses existing `AgentProfileRepository`.
-**Prompt**: `tasks/WP06-doctrine-service.md`
+**Prompt**: `tasks/WP05-doctrine-service.md`
 **Estimated size**: ~300 lines
 
 ### Included Subtasks
 
-- [ ] T029 Create `src/doctrine/service.py` with `DoctrineService` class
-- [ ] T030 Update `src/doctrine/__init__.py` to export `DoctrineService`
-- [ ] T031 Write ATDD/TDD tests in `tests/doctrine/test_service.py`
+- [ ] T036 Create `src/doctrine/service.py` with `DoctrineService` class
+- [ ] T037 Update `src/doctrine/__init__.py` to export `DoctrineService`
+- [ ] T038 Write ATDD/TDD tests in `tests/doctrine/test_service.py`
 
 ### Implementation Notes
 
@@ -178,25 +169,25 @@
 
 ---
 
-## Work Package WP07: Enrich Existing Directives 001-010 (Priority: P2)
+## Work Package WP06: Enrich Existing Directives 001-010 (Priority: P2)
 
 **Goal**: Enrich shipped directives 001-010 with substantive content (scope, procedures, integrity_rules, validation_criteria, populated tactic_refs).
 **Independent Test**: Loading directive 004 returns a `Directive` with non-empty `scope`, `procedures`, and `tactic_refs` fields.
-**Prompt**: `tasks/WP07-enrich-directives-001-010.md`
+**Prompt**: `tasks/WP06-enrich-directives-001-010.md`
 **Estimated size**: ~500 lines
 
 ### Included Subtasks
 
-- [ ] T032 Enrich 001-architectural-integrity-standard
-- [ ] T033 Enrich 002-accessibility-first-principle
-- [ ] T034 Enrich 003-decision-documentation-requirement (incorporate doctrine_ref/018 traceable decisions)
-- [ ] T035 Enrich 004-test-driven-implementation-standard (incorporate doctrine_ref/016 ATDD + 017 TDD)
-- [ ] T036 Enrich 005-design-system-consistency-standard
-- [ ] T037 Enrich 006-coding-standards-adherence
-- [ ] T038 Enrich 007-scalability-assessment-protocol
-- [ ] T039 Enrich 008-security-review-protocol
-- [ ] T040 Enrich 009-user-centered-validation-requirement
-- [ ] T041 Enrich 010-specification-fidelity-requirement (incorporate doctrine_ref/034 spec-driven dev)
+- [ ] T039 Enrich 001-architectural-integrity-standard
+- [ ] T040 Enrich 002-accessibility-first-principle
+- [ ] T041 Enrich 003-decision-documentation-requirement (incorporate doctrine_ref/018 traceable decisions)
+- [ ] T042 Enrich 004-test-driven-implementation-standard (incorporate doctrine_ref/016 ATDD + 017 TDD)
+- [ ] T043 Enrich 005-design-system-consistency-standard
+- [ ] T044 Enrich 006-coding-standards-adherence
+- [ ] T045 Enrich 007-scalability-assessment-protocol
+- [ ] T046 Enrich 008-security-review-protocol
+- [ ] T047 Enrich 009-user-centered-validation-requirement
+- [ ] T048 Enrich 010-specification-fidelity-requirement (incorporate doctrine_ref/034 spec-driven dev)
 
 ### Implementation Notes
 
@@ -204,141 +195,137 @@
 - Each directive must have: expanded `intent` (>1 sentence), `scope`, at least `procedures` or `validation_criteria`
 - Wire `tactic_refs` to existing tactics where applicable (e.g., 004 → acceptance-test-first, tdd-red-green-refactor, zombies-tdd)
 - Maintain `enforcement` values unchanged
-- All enriched files must validate against updated schema (WP05)
+- All enriched files must validate against updated schema (already extended in WP01)
+- Files are already in `shipped/` directory (moved in WP01)
 
 ### Dependencies
 
-- Depends on WP05 (schema must support enrichment fields)
-- Depends on WP01 (YAML files must be in `shipped/` directory)
+- Depends on WP01 (schema extended + YAML files in `shipped/`)
 
 ---
 
-## Work Package WP08: Enrich Existing Directives 011-019 + test-first (Priority: P2)
+## Work Package WP07: Enrich Existing Directives 011-019 + test-first (Priority: P2)
 
 **Goal**: Enrich shipped directives 011-019 and `test-first` with substantive content.
 **Independent Test**: Loading any directive returns non-stub content; all directives validate against schema.
-**Prompt**: `tasks/WP08-enrich-directives-011-019.md`
+**Prompt**: `tasks/WP07-enrich-directives-011-019.md`
 **Estimated size**: ~450 lines
 
 ### Included Subtasks
 
-- [ ] T042 Enrich 011-feedback-clarity-standard
-- [ ] T043 Enrich 012-work-package-granularity-standard
-- [ ] T044 Enrich 013-dependency-validation-requirement
-- [ ] T045 Enrich 014-acceptance-criteria-completeness
-- [ ] T046 Enrich 015-research-time-boxing-requirement
-- [ ] T047 Enrich 016-finding-documentation-standard
-- [ ] T048 Enrich 017-glossary-integrity-standard
-- [ ] T049 Enrich 018-doctrine-versioning-requirement
-- [ ] T050 Enrich 019-documentation-gap-prioritization
-- [ ] T051 Verify test-first.directive.yaml enrichment (already has tactic_refs; add scope/procedures)
+- [ ] T049 Enrich 011-feedback-clarity-standard
+- [ ] T050 Enrich 012-work-package-granularity-standard
+- [ ] T051 Enrich 013-dependency-validation-requirement
+- [ ] T052 Enrich 014-acceptance-criteria-completeness
+- [ ] T053 Enrich 015-research-time-boxing-requirement
+- [ ] T054 Enrich 016-finding-documentation-standard
+- [ ] T055 Enrich 017-glossary-integrity-standard
+- [ ] T056 Enrich 018-doctrine-versioning-requirement
+- [ ] T057 Enrich 019-documentation-gap-prioritization
+- [ ] T058 Verify test-first.directive.yaml enrichment (already has tactic_refs; add scope/procedures)
 
 ### Implementation Notes
 
-- Same enrichment approach as WP07
+- Same enrichment approach as WP06
 - Directive 017 already links to glossary-related tactics/styleguides; expand those references
 - `test-first.directive.yaml` already has populated `tactic_refs` — add `scope` and `procedures` only
 
 ### Dependencies
 
-- Depends on WP05 (schema must support enrichment fields)
-- Depends on WP01 (YAML files must be in `shipped/` directory)
+- Depends on WP01 (schema extended + YAML files in `shipped/`)
 
 ### Parallel Opportunities
 
-- WP07 and WP08 can run in parallel (different directive files, no overlap)
+- WP06 and WP07 can run in parallel (different directive files, no overlap)
 
 ---
 
-## Work Package WP09: Create New Shipped Directives (Priority: P2)
+## Work Package WP08: Create New Shipped Directives (Priority: P2)
 
 **Goal**: Create new shipped directives (020-026) for `doctrine_ref` concepts not yet represented.
 **Independent Test**: `DirectiveRepository().list_all()` returns 27+ directives (19 existing + `test-first` + 7 new).
-**Prompt**: `tasks/WP09-create-new-directives.md`
+**Prompt**: `tasks/WP08-create-new-directives.md`
 **Estimated size**: ~500 lines
 
 ### Included Subtasks
 
-- [ ] T052 Create 020-worklog-creation.directive.yaml (from doctrine_ref/014)
-- [ ] T053 Create 021-prompt-storage.directive.yaml (from doctrine_ref/015)
-- [ ] T054 Create 022-commit-protocol.directive.yaml (from doctrine_ref/026)
-- [ ] T055 Create 023-clarification-before-execution.directive.yaml (from doctrine_ref/023)
-- [ ] T056 Create 024-locality-of-change.directive.yaml (from doctrine_ref/021)
-- [ ] T057 Create 025-boy-scout-rule.directive.yaml (from doctrine_ref/036)
-- [ ] T058 Create 026-hic-escalation-protocol.directive.yaml (from doctrine_ref/040)
+- [ ] T059 Create 020-worklog-creation.directive.yaml (from doctrine_ref/014)
+- [ ] T060 Create 021-prompt-storage.directive.yaml (from doctrine_ref/015)
+- [ ] T061 Create 022-commit-protocol.directive.yaml (from doctrine_ref/026)
+- [ ] T062 Create 023-clarification-before-execution.directive.yaml (from doctrine_ref/023)
+- [ ] T063 Create 024-locality-of-change.directive.yaml (from doctrine_ref/021)
+- [ ] T064 Create 025-boy-scout-rule.directive.yaml (from doctrine_ref/036)
+- [ ] T065 Create 026-hic-escalation-protocol.directive.yaml (from doctrine_ref/040)
 
 ### Implementation Notes
 
 - Each new directive uses the enriched format from the start (scope, procedures, integrity_rules, validation_criteria)
 - Adapt `doctrine_ref` content to fit YAML schema; strip markdown formatting, convert to structured fields
-- Wire `tactic_refs` where applicable — may require creating new tactics (see WP11)
+- Wire `tactic_refs` where applicable — may require creating new tactics (see WP10)
 - IDs follow pattern: `DIRECTIVE_020`, `DIRECTIVE_021`, etc.
 - Files placed in `src/doctrine/directives/shipped/`
 
 ### Dependencies
 
-- Depends on WP05 (schema must support enrichment fields)
-- Depends on WP01 (repository must exist to validate)
+- Depends on WP01 (schema extended + repository exists)
 
 ### Parallel Opportunities
 
-- Can run parallel with WP07, WP08 (different files)
+- Can run parallel with WP06, WP07 (different files)
 
 ---
 
-## Work Package WP10: Consistency Tests & Existing Test Updates (Priority: P2)
+## Work Package WP09: Consistency Tests & Enriched Directive Validation (Priority: P2)
 
-**Goal**: Create cross-artifact consistency tests; update existing tests broken by file relocation.
-**Independent Test**: `pytest tests/doctrine/test_consistency.py` passes; every `tactic_ref` in every shipped directive resolves to an existing tactic.
-**Prompt**: `tasks/WP10-consistency-tests.md`
-**Estimated size**: ~350 lines
+**Goal**: Extend existing cross-artifact consistency tests with tactic_ref resolution; create enriched directive content validation tests.
+**Independent Test**: `pytest tests/doctrine/test_directive_consistency.py` passes; every `tactic_ref` in every shipped directive resolves to an existing tactic.
+**Prompt**: `tasks/WP09-consistency-tests.md`
+**Estimated size**: ~300 lines
 
 ### Included Subtasks
 
-- [ ] T059 Create `tests/doctrine/test_consistency.py` — cross-artifact reference integrity
-- [ ] T060 Create `tests/doctrine/test_enriched_directives.py` — enriched content validation
-- [ ] T061 Update `tests/doctrine/test_schema_validation.py` for new file paths
-- [ ] T062 Update `tests/doctrine/test_artifact_compliance.py` for new file paths
-- [ ] T063 Verify all existing doctrine tests pass with relocated files
+- [ ] T066 Extend `tests/doctrine/test_directive_consistency.py` with tactic_ref resolution tests (scan all shipped directives, verify each `tactic_ref` resolves to an existing tactic file in `shipped/`)
+- [ ] T067 Create `tests/doctrine/test_enriched_directives.py` — verify no shipped directive has single-sentence `intent`, all have `scope` field
+- [ ] T068 Verify all existing doctrine tests pass with relocated files (full test suite run)
 
 ### Implementation Notes
 
-- Consistency test: scan all shipped directives, extract `tactic_refs`, verify each resolves to a tactic file
-- Enriched directive test: verify no shipped directive has single-sentence `intent`, all have `scope` field
-- Update path references in existing tests from `src/doctrine/directives/*.yaml` to `src/doctrine/directives/shipped/*.yaml`
+- **Do NOT create a new `test_consistency.py`** — extend the existing `test_directive_consistency.py` which already tests profile-to-directive cross-references and schema validation
+- The existing file has `DIRECTIVES_DIR` pointing to `shipped/` (updated in WP01) — add new test functions for tactic_ref resolution
+- Enriched directive test: parametrize over all shipped directive files, assert `intent` is multi-sentence and `scope` is present
 
 ### Dependencies
 
 - Depends on WP01-WP04 (file relocation must be complete)
-- Depends on WP07, WP08, WP09 (enriched directives must exist)
+- Depends on WP06, WP07, WP08 (enriched directives must exist)
 
 ---
 
-## Work Package WP11: New Tactics & Supporting Artifacts (Priority: P3)
+## Work Package WP10: New Tactics & Supporting Artifacts (Priority: P3)
 
 **Goal**: Create new tactic, styleguide, or toolguide YAML files where directive enrichment or new directives reference operational patterns not yet captured.
 **Independent Test**: Every `tactic_ref` in every shipped directive resolves to a tactic file in `src/doctrine/tactics/shipped/`.
-**Prompt**: `tasks/WP11-new-tactics-and-supporting-artifacts.md`
+**Prompt**: `tasks/WP10-new-tactics-and-supporting-artifacts.md`
 **Estimated size**: ~400 lines
 
 ### Included Subtasks
 
-- [ ] T064 Audit all enriched and new directives for unresolved `tactic_refs`
-- [ ] T065 [P] Create new tactic YAML files in `src/doctrine/tactics/shipped/` for unresolved references
-- [ ] T066 [P] Create new styleguide YAML files in `src/doctrine/styleguides/shipped/` if needed
-- [ ] T067 [P] Create new toolguide YAML files in `src/doctrine/toolguides/shipped/` if needed
-- [ ] T068 Validate all new artifacts against their respective schemas
+- [ ] T069 Audit all enriched and new directives for unresolved `tactic_refs`
+- [ ] T070 [P] Create new tactic YAML files in `src/doctrine/tactics/shipped/` for unresolved references
+- [ ] T071 [P] Create new styleguide YAML files in `src/doctrine/styleguides/shipped/` if needed
+- [ ] T072 [P] Create new toolguide YAML files in `src/doctrine/toolguides/shipped/` if needed
+- [ ] T073 Validate all new artifacts against their respective schemas
 
 ### Implementation Notes
 
-- Audit output from WP07/WP08/WP09 drives this WP
+- Audit output from WP06/WP07/WP08 drives this WP
 - New tactics follow `doctrine_ref/tactics/` as reference material — adapt to existing tactic schema
 - Minimum viable tactic: `schema_version`, `id`, `name`, `steps` (at least 1 step)
 - Only create artifacts that are actually referenced by a directive — don't speculatively create unused artifacts
 
 ### Dependencies
 
-- Depends on WP07, WP08, WP09 (enriched directives must be finalized to know which refs are needed)
+- Depends on WP06, WP07, WP08 (enriched directives must be finalized to know which refs are needed)
 - Depends on WP02, WP03, WP04 (repositories must exist for validation)
 
 ---
@@ -347,24 +334,30 @@
 
 ```
 Phase 1 (Foundation - parallel):
-  WP01 ─┐
-  WP02 ─┤
-  WP03 ─┼──→ WP06 (DoctrineService, needs all repos)
-  WP04 ─┘
-  WP05 ────→ (depends on WP01)
+  WP01 ─┐  (directive model + schema extension + file move + test path updates)
+  WP02 ─┤  (tactic model + file move + test path updates)
+  WP03 ─┼──→ WP05 (DoctrineService, needs all repos)
+  WP04 ─┘  (toolguide/paradigm models + paradigm schema + file move + test path updates)
 
-Phase 2 (Content - parallel after WP05):
-  WP07 ─┐
-  WP08 ─┼──→ WP10 (Consistency tests, needs enriched content)
-  WP09 ─┘──→ WP11 (New tactics, needs directive audit)
+Phase 2 (Content - parallel after WP01):
+  WP06 ─┐
+  WP07 ─┼──→ WP09 (Consistency tests, needs enriched content)
+  WP08 ─┘──→ WP10 (New tactics, needs directive audit)
 
 Execution order:
-  [WP01, WP02, WP03, WP04] → [WP05, WP06] → [WP07, WP08, WP09] → [WP10, WP11]
+  [WP01, WP02, WP03, WP04] → [WP05] → [WP06, WP07, WP08] → [WP09, WP10]
 ```
 
-- **Parallelization**: WP01-WP04 can all run simultaneously. WP07-WP09 can run simultaneously.
-- **MVP Scope**: WP01-WP06 deliver the core domain models, repositories, and service (User Stories 1-4, 6).
-- **Content Scope**: WP07-WP11 deliver directive enrichment and consistency (User Stories 5, 7).
+**Key changes from v1**:
+- WP05 (schema extension) merged into WP01 — eliminates the gap where enriched directives can't validate
+- Each WP updates affected test paths — test suite stays green after every merge
+- WP09 extends existing `test_directive_consistency.py` instead of creating a new file
+- WP numbers shifted: old WP06→WP05, old WP07→WP06, old WP08→WP07, old WP09→WP08, old WP10→WP09, old WP11→WP10
+
+**Parallelization**: WP01-WP04 can all run simultaneously. WP06-WP08 can run simultaneously. WP05 can start as soon as WP01-04 complete. WP06-08 only need WP01 (not WP05).
+
+**MVP Scope**: WP01-WP05 deliver the core domain models, repositories, and service (User Stories 1-4, 6).
+**Content Scope**: WP06-WP10 deliver directive enrichment and consistency (User Stories 5, 7).
 
 ---
 
@@ -372,71 +365,76 @@ Execution order:
 
 | Subtask | Summary | WP |
 |---------|---------|-----|
-| T001 | Create `directives/__init__.py` | WP01 |
-| T002 | Create `directives/models.py` (Directive, Enforcement) | WP01 |
-| T003 | Create `directives/repository.py` (DirectiveRepository) | WP01 |
-| T004 | Create `directives/validation.py` | WP01 |
-| T005 | Move directive YAML files into `shipped/` | WP01 |
-| T006 | Write ATDD/TDD tests for directives | WP01 |
-| T007 | Create `tactics/__init__.py` | WP02 |
-| T008 | Create `tactics/models.py` (Tactic, TacticStep, TacticReference) | WP02 |
-| T009 | Create `tactics/repository.py` (TacticRepository) | WP02 |
-| T010 | Create `tactics/validation.py` | WP02 |
-| T011 | Move tactic YAML files into `shipped/` | WP02 |
-| T012 | Write ATDD/TDD tests for tactics | WP02 |
-| T013 | Create `styleguides/__init__.py` | WP03 |
-| T014 | Create `styleguides/models.py` (Styleguide, AntiPattern, StyleguideScope) | WP03 |
-| T015 | Create `styleguides/repository.py` (StyleguideRepository) | WP03 |
-| T016 | Create `styleguides/validation.py` | WP03 |
-| T017 | Move styleguide YAML files into `shipped/` | WP03 |
-| T018 | Write ATDD/TDD tests for styleguides | WP03 |
-| T019 | Create `toolguides/__init__.py`, `models.py`, `repository.py`, `validation.py` | WP04 |
-| T020 | Move toolguide YAML + companion MD into `shipped/` | WP04 |
-| T021 | Create `paradigms/__init__.py`, `models.py`, `repository.py`, `validation.py` | WP04 |
-| T022 | Create `paradigm.schema.yaml` | WP04 |
-| T023 | Move paradigm YAML files into `shipped/` | WP04 |
-| T024 | Write ATDD/TDD tests for toolguides and paradigms | WP04 |
-| T025 | Update `directive.schema.yaml` with enrichment fields | WP05 |
-| T026 | Update Directive model with enrichment fields | WP05 |
-| T027 | Write backward-compatibility tests | WP05 |
-| T028 | Write enriched-format tests | WP05 |
-| T029 | Create `service.py` with DoctrineService | WP06 |
-| T030 | Update `doctrine/__init__.py` exports | WP06 |
-| T031 | Write ATDD/TDD tests for DoctrineService | WP06 |
-| T032 | Enrich directive 001 | WP07 |
-| T033 | Enrich directive 002 | WP07 |
-| T034 | Enrich directive 003 | WP07 |
-| T035 | Enrich directive 004 | WP07 |
-| T036 | Enrich directive 005 | WP07 |
-| T037 | Enrich directive 006 | WP07 |
-| T038 | Enrich directive 007 | WP07 |
-| T039 | Enrich directive 008 | WP07 |
-| T040 | Enrich directive 009 | WP07 |
-| T041 | Enrich directive 010 | WP07 |
-| T042 | Enrich directive 011 | WP08 |
-| T043 | Enrich directive 012 | WP08 |
-| T044 | Enrich directive 013 | WP08 |
-| T045 | Enrich directive 014 | WP08 |
-| T046 | Enrich directive 015 | WP08 |
-| T047 | Enrich directive 016 | WP08 |
-| T048 | Enrich directive 017 | WP08 |
-| T049 | Enrich directive 018 | WP08 |
-| T050 | Enrich directive 019 | WP08 |
-| T051 | Verify test-first directive enrichment | WP08 |
-| T052 | Create directive 020 (worklog creation) | WP09 |
-| T053 | Create directive 021 (prompt storage) | WP09 |
-| T054 | Create directive 022 (commit protocol) | WP09 |
-| T055 | Create directive 023 (clarification before execution) | WP09 |
-| T056 | Create directive 024 (locality of change) | WP09 |
-| T057 | Create directive 025 (boy scout rule) | WP09 |
-| T058 | Create directive 026 (HiC escalation protocol) | WP09 |
-| T059 | Create `test_consistency.py` | WP10 |
-| T060 | Create `test_enriched_directives.py` | WP10 |
-| T061 | Update `test_schema_validation.py` paths | WP10 |
-| T062 | Update `test_artifact_compliance.py` paths | WP10 |
-| T063 | Verify all existing tests pass | WP10 |
-| T064 | Audit directives for unresolved tactic_refs | WP11 |
-| T065 | Create new tactic YAML files | WP11 |
-| T066 | Create new styleguide YAML files | WP11 |
-| T067 | Create new toolguide YAML files | WP11 |
-| T068 | Validate all new artifacts against schemas | WP11 |
+| T001 | Update `directive.schema.yaml` (remove `additionalProperties: false`, add enrichment fields) | WP01 |
+| T002 | Create `directives/__init__.py` | WP01 |
+| T003 | Create `directives/models.py` (Directive with enrichment fields, Enforcement) | WP01 |
+| T004 | Create `directives/repository.py` (DirectiveRepository) | WP01 |
+| T005 | Create `directives/validation.py` | WP01 |
+| T006 | Move directive YAML files into `shipped/` | WP01 |
+| T007 | Update `test_directive_consistency.py` paths | WP01 |
+| T008 | Update `test_artifact_compliance.py` directive paths | WP01 |
+| T009 | Update `test_tactic_compliance.py` directive entry in `ARTIFACT_DIRS` | WP01 |
+| T010 | Write ATDD/TDD tests for directives (model + schema backward-compat + enriched) | WP01 |
+| T011 | Create `tactics/__init__.py` | WP02 |
+| T012 | Create `tactics/models.py` (Tactic, TacticStep, TacticReference) | WP02 |
+| T013 | Create `tactics/repository.py` (TacticRepository) | WP02 |
+| T014 | Create `tactics/validation.py` | WP02 |
+| T015 | Move tactic YAML files into `shipped/` | WP02 |
+| T016 | Update `test_tactic_compliance.py` tactic paths | WP02 |
+| T017 | Update `test_artifact_compliance.py` tactic paths | WP02 |
+| T018 | Write ATDD/TDD tests for tactics | WP02 |
+| T019 | Create `styleguides/__init__.py` | WP03 |
+| T020 | Create `styleguides/models.py` (Styleguide, AntiPattern, StyleguideScope) | WP03 |
+| T021 | Create `styleguides/repository.py` (StyleguideRepository) | WP03 |
+| T022 | Create `styleguides/validation.py` | WP03 |
+| T023 | Move styleguide YAML files into `shipped/` (including `writing/`) | WP03 |
+| T024 | Update `test_artifact_compliance.py` styleguide paths | WP03 |
+| T025 | Update `test_tactic_compliance.py` styleguide entry in `ARTIFACT_DIRS` | WP03 |
+| T026 | Write ATDD/TDD tests for styleguides | WP03 |
+| T027 | Create `paradigm.schema.yaml` | WP04 |
+| T028 | Create `toolguides/__init__.py`, `models.py`, `repository.py`, `validation.py` | WP04 |
+| T029 | Move toolguide YAML + companion MD into `shipped/` | WP04 |
+| T030 | Create `paradigms/__init__.py`, `models.py`, `repository.py`, `validation.py` | WP04 |
+| T031 | Move paradigm YAML files into `shipped/` | WP04 |
+| T032 | Update `test_artifact_compliance.py` toolguide paths | WP04 |
+| T033 | Update `test_tactic_compliance.py` toolguide entry in `ARTIFACT_DIRS` | WP04 |
+| T034 | Create paradigm test fixtures | WP04 |
+| T035 | Write ATDD/TDD tests for toolguides and paradigms | WP04 |
+| T036 | Create `service.py` with DoctrineService | WP05 |
+| T037 | Update `doctrine/__init__.py` exports | WP05 |
+| T038 | Write ATDD/TDD tests for DoctrineService | WP05 |
+| T039 | Enrich directive 001 | WP06 |
+| T040 | Enrich directive 002 | WP06 |
+| T041 | Enrich directive 003 | WP06 |
+| T042 | Enrich directive 004 | WP06 |
+| T043 | Enrich directive 005 | WP06 |
+| T044 | Enrich directive 006 | WP06 |
+| T045 | Enrich directive 007 | WP06 |
+| T046 | Enrich directive 008 | WP06 |
+| T047 | Enrich directive 009 | WP06 |
+| T048 | Enrich directive 010 | WP06 |
+| T049 | Enrich directive 011 | WP07 |
+| T050 | Enrich directive 012 | WP07 |
+| T051 | Enrich directive 013 | WP07 |
+| T052 | Enrich directive 014 | WP07 |
+| T053 | Enrich directive 015 | WP07 |
+| T054 | Enrich directive 016 | WP07 |
+| T055 | Enrich directive 017 | WP07 |
+| T056 | Enrich directive 018 | WP07 |
+| T057 | Enrich directive 019 | WP07 |
+| T058 | Verify test-first directive enrichment | WP07 |
+| T059 | Create directive 020 (worklog creation) | WP08 |
+| T060 | Create directive 021 (prompt storage) | WP08 |
+| T061 | Create directive 022 (commit protocol) | WP08 |
+| T062 | Create directive 023 (clarification before execution) | WP08 |
+| T063 | Create directive 024 (locality of change) | WP08 |
+| T064 | Create directive 025 (boy scout rule) | WP08 |
+| T065 | Create directive 026 (HiC escalation protocol) | WP08 |
+| T066 | Extend `test_directive_consistency.py` with tactic_ref resolution | WP09 |
+| T067 | Create `test_enriched_directives.py` | WP09 |
+| T068 | Verify all existing tests pass | WP09 |
+| T069 | Audit directives for unresolved tactic_refs | WP10 |
+| T070 | Create new tactic YAML files | WP10 |
+| T071 | Create new styleguide YAML files | WP10 |
+| T072 | Create new toolguide YAML files | WP10 |
+| T073 | Validate all new artifacts against schemas | WP10 |
