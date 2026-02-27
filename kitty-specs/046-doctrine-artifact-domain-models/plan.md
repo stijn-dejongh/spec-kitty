@@ -1,6 +1,6 @@
 # Implementation Plan: Doctrine Artifact Domain Models
 
-**Branch**: `feature/agent-profile-implementation` | **Date**: 2026-02-25 | **Spec**: [spec.md](spec.md)
+**Branch**: `feature/agent-profile-implementation` | **Date**: 2026-02-25 | **Updated**: 2026-02-27 | **Spec**: [spec.md](spec.md)
 **Input**: Feature specification from `kitty-specs/046-doctrine-artifact-domain-models/spec.md`
 
 ## Summary
@@ -62,7 +62,7 @@ src/doctrine/
 │   └── shipped/             # 7 shipped agent profiles
 ├── directives/              # NEW: Subpackage (currently just YAML files)
 │   ├── __init__.py          # NEW: Exports Directive, DirectiveRepository
-│   ├── models.py            # NEW: Directive Pydantic model
+│   ├── models.py            # NEW: Directive Pydantic model (includes enrichment fields)
 │   ├── repository.py        # NEW: DirectiveRepository
 │   ├── validation.py        # NEW: Schema validation utility
 │   └── shipped/             # MOVED+ENRICHED: directive YAML files
@@ -91,7 +91,7 @@ src/doctrine/
 │   ├── validation.py        # NEW: Schema validation utility
 │   └── shipped/             # MOVED: paradigm YAML files
 ├── schemas/                 # EXISTING: Extended
-│   ├── directive.schema.yaml  # UPDATED: New optional fields
+│   ├── directive.schema.yaml  # UPDATED: New optional fields, additionalProperties removed
 │   ├── paradigm.schema.yaml   # NEW: Formal schema for paradigms
 │   └── ...                    # Existing schemas unchanged
 ├── curation/                # EXISTING: No changes
@@ -100,9 +100,9 @@ src/doctrine/
 
 tests/doctrine/
 ├── directives/
-│   ├── test_models.py       # NEW: Directive model tests
+│   ├── test_models.py       # NEW: Directive model tests (minimal + enriched)
 │   ├── test_repository.py   # NEW: DirectiveRepository tests
-│   └── test_validation.py   # NEW: Schema validation tests
+│   └── test_validation.py   # NEW: Schema validation tests (backward compat + enriched)
 ├── tactics/
 │   ├── test_models.py       # NEW
 │   └── test_repository.py   # NEW
@@ -115,9 +115,9 @@ tests/doctrine/
 ├── paradigms/
 │   ├── test_models.py       # NEW
 │   └── test_repository.py   # NEW
-├── test_service.py          # NEW: DoctrineService tests
-├── test_consistency.py      # NEW: Cross-artifact reference integrity
-└── test_enriched_directives.py  # NEW: Enriched directive content tests
+├── test_service.py              # NEW: DoctrineService tests
+├── test_directive_consistency.py  # UPDATED: Extended with tactic_ref resolution tests
+└── test_enriched_directives.py    # NEW: Enriched directive content tests
 ```
 
 **Structure Decision**: Uniform subpackage per artifact type. Each gets `__init__.py`, `models.py`, `repository.py`, `validation.py` mirroring `agent_profiles/`. Shipped YAML files move into `shipped/` subdirectories within each subpackage (currently they sit loose in the type directories). The `DoctrineService` lives at `src/doctrine/service.py` as it orchestrates across subpackages.
@@ -127,6 +127,8 @@ tests/doctrine/
 ### DD-001: YAML Files Move into `shipped/` Subdirectories
 
 Currently, directive YAML files sit directly in `src/doctrine/directives/`. When converting to a Python subpackage (adding `__init__.py`, `models.py`, etc.), the YAML files move into `shipped/` — matching the `agent_profiles/shipped/` pattern. This separates package code from data files.
+
+**Each WP that moves files is responsible for updating any existing tests that reference the old paths.** This ensures every WP stays independently green — no dangling test failures between phases.
 
 ### DD-002: Pure YAML with Multiline Strings for Enriched Directives
 
@@ -188,6 +190,31 @@ Directive IDs use `SCREAMING_SNAKE_CASE` (e.g., `DIRECTIVE_004`), but consumers 
 ### DD-007: New Directives from doctrine_ref
 
 New shipped directives are created for `doctrine_ref` concepts not yet represented. The numbering continues from 020 onward. Each new directive uses the enriched format from the start. The `doctrine_ref` content is adapted to fit the YAML schema structure, not copied verbatim.
+
+### DD-008: Directive Schema Extension is Atomic with Model Creation
+
+The directive schema's `additionalProperties: false` blocks enrichment fields. Rather than treating schema extension as a separate work package with a dependency on WP01, the schema update, model creation (including enrichment fields), and file move are done together in WP01. This eliminates the gap where enriched directives cannot validate and ensures the directive subpackage is fully ready for enrichment work from the start.
+
+### DD-009: Existing Tests Updated Per-WP (No Red-Between-Phases)
+
+Each WP that moves YAML files into `shipped/` is responsible for updating any existing tests that reference the old paths. Affected test files:
+- `test_directive_consistency.py` — references `src/doctrine/directives/*.directive.yaml` (updated in WP01)
+- `test_tactic_compliance.py` — references `src/doctrine/tactics/*.tactic.yaml` (updated in WP02)
+- `test_artifact_compliance.py` — references directive, styleguide, toolguide, tactic paths (updated in WP01-WP04 respectively; each WP updates only its own artifact type's path entries)
+
+This ensures the test suite stays green after every WP merge, not just after a cleanup phase.
+
+## Existing Test Files Affected by File Relocation
+
+The following existing test files reference doctrine artifact paths that will change when YAML files move into `shipped/` subdirectories. Each WP must update the paths for its own artifact type:
+
+| Test File | Current Path Pattern | Affected Artifact Types |
+|-----------|---------------------|------------------------|
+| `tests/doctrine/test_directive_consistency.py` | `DOCTRINE_DIR / "directives"` + `*.directive.yaml` | Directives (WP01) |
+| `tests/doctrine/test_tactic_compliance.py` | `TACTICS_DIR` + `*.tactic.yaml`, also `ARTIFACT_DIRS` dict | Tactics, plus cross-refs to directives/styleguides/toolguides (WP02, update `ARTIFACT_DIRS` for all moved types) |
+| `tests/doctrine/test_artifact_compliance.py` | `DOCTRINE_DIR / "directives"`, `"tactics"`, `"styleguides"`, `"toolguides"` | All four types (each WP updates its own entries) |
+
+**Strategy for `test_tactic_compliance.py`**: This file has an `ARTIFACT_DIRS` dict mapping artifact types to `(directory, glob)` tuples. As each WP moves files, it updates the corresponding entry. WP01 updates the `"directive"` entry, WP02 updates `"tactic"`, WP03 updates `"styleguide"`, WP04 updates `"toolguide"`.
 
 ## Complexity Tracking
 
