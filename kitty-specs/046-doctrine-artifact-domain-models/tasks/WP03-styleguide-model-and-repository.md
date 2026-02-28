@@ -1,27 +1,27 @@
 ---
-work_package_id: "WP03"
-subtasks:
-  - "T013"
-  - "T014"
-  - "T015"
-  - "T016"
-  - "T017"
-  - "T018"
-title: "Styleguide Model & Repository"
-phase: "Phase 1 - Foundation"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
+work_package_id: WP03
+title: Styleguide Model & Repository
+lane: "in_progress"
 dependencies: []
+subtasks:
+- T013
+- T014
+- T015
+- T016
+- T017
+- T018
+phase: Phase 1 - Foundation
+assignee: ''
+agent: ''
+shell_pid: ''
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-26T04:36:22Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-26T04:36:22Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP03 – Styleguide Model & Repository
@@ -163,3 +163,4 @@ mypy src/doctrine/styleguides/ --strict
 ```bash
 spec-kitty implement WP03
 ```
+- 2026-02-28T04:31:40Z – unknown – lane=in_progress – Starting WP03: Styleguide Model & Repository
