@@ -1,24 +1,27 @@
 ---
-work_package_id: "WP06"
+work_package_id: WP06
+title: DoctrineService
+lane: "doing"
+dependencies: [WP01, WP02, WP03, WP04]
+base_branch: feature/agent-profile-implementation
+base_commit: 90feaf5c16d01c9d6ac526ce2f72538bc9e17226
+created_at: '2026-02-28T08:30:29.886028+00:00'
 subtasks:
-  - "T029"
-  - "T030"
-  - "T031"
-title: "DoctrineService"
-phase: "Phase 1 - Foundation"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
-dependencies: ["WP01", "WP02", "WP03", "WP04"]
+- T029
+- T030
+- T031
+phase: Phase 1 - Foundation
+assignee: ''
+agent: ''
+shell_pid: "112867"
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-26T04:36:22Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-26T04:36:22Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP06 – DoctrineService
