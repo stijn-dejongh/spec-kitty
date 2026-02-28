@@ -310,11 +310,11 @@
 
 ### Included Subtasks
 
-- [ ] T069 Audit all enriched and new directives for unresolved `tactic_refs`
-- [ ] T070 [P] Create new tactic YAML files in `src/doctrine/tactics/shipped/` for unresolved references
-- [ ] T071 [P] Create new styleguide YAML files in `src/doctrine/styleguides/shipped/` if needed
-- [ ] T072 [P] Create new toolguide YAML files in `src/doctrine/toolguides/shipped/` if needed
-- [ ] T073 Validate all new artifacts against their respective schemas
+- [x] T069 Audit all enriched and new directives for unresolved `tactic_refs`
+- [x] T070 [P] Create new tactic YAML files in `src/doctrine/tactics/shipped/` for unresolved references
+- [x] T071 [P] Create new styleguide YAML files in `src/doctrine/styleguides/shipped/` if needed
+- [x] T072 [P] Create new toolguide YAML files in `src/doctrine/toolguides/shipped/` if needed
+- [x] T073 Validate all new artifacts against their respective schemas
 
 ### Implementation Notes
 
