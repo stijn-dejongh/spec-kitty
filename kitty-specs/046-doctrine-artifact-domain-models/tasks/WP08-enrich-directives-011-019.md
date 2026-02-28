@@ -19,7 +19,7 @@ subtasks:
 - T051
 phase: Phase 2 - Content
 assignee: ''
-agent: ''
+agent: "codex"
 shell_pid: "112867"
 review_status: ''
 reviewed_by: ''
@@ -158,3 +158,4 @@ Depends on WP01 and WP05 (parallel with WP07):
 ```bash
 spec-kitty implement WP08 --base WP05
 ```
+- 2026-02-28T08:36:11Z – codex – shell_pid=112867 – lane=doing – Assigned agent via workflow command
