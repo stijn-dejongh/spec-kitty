@@ -1,14 +1,14 @@
 {
-  "event_count": 20,
+  "event_count": 22,
   "feature_slug": "046-doctrine-artifact-domain-models",
-  "last_event_id": "01KJHPZ803ZB84D8QNC12ADD6S",
-  "materialized_at": "2026-02-28T08:48:47.619820+00:00",
+  "last_event_id": "01KJHQ32BW9QKTGJZXEF1G5X4J",
+  "materialized_at": "2026-02-28T08:50:52.925074+00:00",
   "summary": {
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 3,
-    "for_review": 6,
+    "for_review": 7,
     "in_progress": 0,
     "planned": 0
   },
@@ -75,6 +75,13 @@
       "lane": "for_review",
       "last_event_id": "01KJHPZ803ZB84D8QNC12ADD6S",
       "last_transition_at": "2026-02-28T08:48:47.619577+00:00"
+    },
+    "WP10": {
+      "actor": "codex",
+      "force_count": 1,
+      "lane": "for_review",
+      "last_event_id": "01KJHQ32BW9QKTGJZXEF1G5X4J",
+      "last_transition_at": "2026-02-28T08:50:52.924830+00:00"
     }
   }
 }
