@@ -94,8 +94,8 @@
 - [ ] T022 Create `src/doctrine/styleguides/validation.py` with schema validation utility
 - [ ] T023 Move styleguide YAML files into `src/doctrine/styleguides/shipped/` (including `writing/` subdirectory)
 - [ ] T024 Update `tests/doctrine/test_artifact_compliance.py`: change styleguide path references to `shipped/`
-- [ ] T025 Update `tests/doctrine/test_tactic_compliance.py`: change `"styleguide"` entry in `ARTIFACT_DIRS` to `shipped/`
-- [ ] T026 Write ATDD/TDD tests in `tests/doctrine/styleguides/`
+- [x] T025 Update `tests/doctrine/test_tactic_compliance.py`: change `"styleguide"` entry in `ARTIFACT_DIRS` to `shipped/`
+- [x] T026 Write ATDD/TDD tests in `tests/doctrine/styleguides/`
 
 ### Implementation Notes
 
