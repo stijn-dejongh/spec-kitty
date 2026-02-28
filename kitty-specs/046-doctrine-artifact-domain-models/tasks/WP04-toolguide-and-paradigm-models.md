@@ -1,27 +1,27 @@
 ---
-work_package_id: "WP04"
-subtasks:
-  - "T019"
-  - "T020"
-  - "T021"
-  - "T022"
-  - "T023"
-  - "T024"
-title: "Toolguide & Paradigm Models"
-phase: "Phase 1 - Foundation"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
+work_package_id: WP04
+title: Toolguide & Paradigm Models
+lane: "in_progress"
 dependencies: []
+subtasks:
+- T019
+- T020
+- T021
+- T022
+- T023
+- T024
+phase: Phase 1 - Foundation
+assignee: ''
+agent: ''
+shell_pid: ''
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-26T04:36:22Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-26T04:36:22Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP04 – Toolguide & Paradigm Models
@@ -196,3 +196,4 @@ mypy src/doctrine/toolguides/ src/doctrine/paradigms/ --strict
 ```bash
 spec-kitty implement WP04
 ```
+- 2026-02-28T04:35:22Z – unknown – lane=in_progress – Starting WP04: Toolguide & Paradigm Models
