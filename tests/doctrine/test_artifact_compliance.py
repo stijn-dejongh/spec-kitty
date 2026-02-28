@@ -37,7 +37,7 @@ def _error_message(file_path: Path, error) -> str:
 
 
 ARTIFACT_GLOBS: dict[str, tuple[Path, str]] = {
-    "directive": (DOCTRINE_DIR / "directives", "*.directive.yaml"),
+    "directive": (DOCTRINE_DIR / "directives" / "shipped", "*.directive.yaml"),
     "styleguide": (DOCTRINE_DIR / "styleguides", "**/*.styleguide.yaml"),
     "toolguide": (DOCTRINE_DIR / "toolguides", "*.toolguide.yaml"),
 }
@@ -78,7 +78,7 @@ def tactic_ids() -> set[str]:
 
 @pytest.mark.parametrize(
     "directive_path",
-    sorted((DOCTRINE_DIR / "directives").glob("*.directive.yaml")),
+    sorted((DOCTRINE_DIR / "directives" / "shipped").glob("*.directive.yaml")),
     ids=lambda p: str(p.relative_to(REPO_ROOT)),
 )
 def test_directive_tactic_refs_resolve(
