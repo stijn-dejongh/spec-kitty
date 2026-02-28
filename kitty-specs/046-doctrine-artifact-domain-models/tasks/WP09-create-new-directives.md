@@ -1,28 +1,31 @@
 ---
-work_package_id: "WP09"
+work_package_id: WP09
+title: Create New Shipped Directives
+lane: "doing"
+dependencies: [WP01, WP05]
+base_branch: 046-doctrine-artifact-domain-models-WP09-merge-base
+base_commit: cbe21d3c6309586e1a0d1ee6a47177fc7308bc51
+created_at: '2026-02-28T08:46:50.884956+00:00'
 subtasks:
-  - "T052"
-  - "T053"
-  - "T054"
-  - "T055"
-  - "T056"
-  - "T057"
-  - "T058"
-title: "Create New Shipped Directives"
-phase: "Phase 2 - Content"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
-dependencies: ["WP01", "WP05"]
+- T052
+- T053
+- T054
+- T055
+- T056
+- T057
+- T058
+phase: Phase 2 - Content
+assignee: ''
+agent: ''
+shell_pid: "112867"
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-26T04:36:22Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-26T04:36:22Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP09 – Create New Shipped Directives
