@@ -1,31 +1,34 @@
 ---
-work_package_id: "WP08"
+work_package_id: WP08
+title: Enrich Existing Directives 011-019 + test-first
+lane: "doing"
+dependencies: [WP01, WP05]
+base_branch: feature/agent-profile-implementation
+base_commit: f6306beadf9e7f0d90c8a37954abf1f3555a4350
+created_at: '2026-02-28T08:36:11.456737+00:00'
 subtasks:
-  - "T042"
-  - "T043"
-  - "T044"
-  - "T045"
-  - "T046"
-  - "T047"
-  - "T048"
-  - "T049"
-  - "T050"
-  - "T051"
-title: "Enrich Existing Directives 011-019 + test-first"
-phase: "Phase 2 - Content"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
-dependencies: ["WP01", "WP05"]
+- T042
+- T043
+- T044
+- T045
+- T046
+- T047
+- T048
+- T049
+- T050
+- T051
+phase: Phase 2 - Content
+assignee: ''
+agent: ''
+shell_pid: "112867"
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-26T04:36:22Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-26T04:36:22Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP08 – Enrich Existing Directives 011-019 + test-first
