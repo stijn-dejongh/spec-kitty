@@ -1,7 +1,7 @@
 ---
 work_package_id: WP01
 title: Directive Model & Repository
-lane: "for_review"
+lane: "doing"
 dependencies: []
 base_branch: feature/agent-profile-implementation
 base_commit: 36e93d77a380d95a374f9a9f32281ebd688886b8
@@ -15,8 +15,8 @@ subtasks:
 - T006
 phase: Phase 1 - Foundation
 assignee: ''
-agent: claude-opus
-shell_pid: '16652'
+agent: "claude-opus"
+shell_pid: "121229"
 review_status: ''
 reviewed_by: ''
 history:
@@ -261,3 +261,4 @@ spec-kitty implement WP01
 ```
 - 2026-02-27T18:47:20Z – claude-opus – shell_pid=16652 – lane=doing – Assigned agent via workflow command
 - 2026-02-28T04:02:22Z – claude-opus – shell_pid=16652 – lane=for_review – 23 new tests + 62 existing tests pass. Schema extended, files relocated, test paths updated.
+- 2026-02-28T04:06:06Z – claude-opus – shell_pid=121229 – lane=doing – Started review via workflow command
