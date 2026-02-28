@@ -17,7 +17,7 @@ from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
 
 DOCTRINE_DIR = Path(__file__).resolve().parents[2] / "src" / "doctrine"
 SCHEMA_DIR = DOCTRINE_DIR / "schemas"
-TACTICS_DIR = DOCTRINE_DIR / "tactics"
+TACTICS_DIR = DOCTRINE_DIR / "tactics" / "shipped"
 
 # Artifact type → (directory, glob pattern) for resolution scanning.
 # Styleguides use recursive glob because subdirectories are allowed.

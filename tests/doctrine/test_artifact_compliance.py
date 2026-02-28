@@ -68,7 +68,7 @@ def test_artifact_files_validate_schema(artifact_type: str, artifact_path: Path)
 @pytest.fixture(scope="module")
 def tactic_ids() -> set[str]:
     ids: set[str] = set()
-    for tactic_path in sorted((DOCTRINE_DIR / "tactics").glob("*.tactic.yaml")):
+    for tactic_path in sorted((DOCTRINE_DIR / "tactics" / "shipped").glob("*.tactic.yaml")):
         tactic = _load_yaml(tactic_path)
         tactic_id = tactic.get("id")
         if isinstance(tactic_id, str) and tactic_id:
