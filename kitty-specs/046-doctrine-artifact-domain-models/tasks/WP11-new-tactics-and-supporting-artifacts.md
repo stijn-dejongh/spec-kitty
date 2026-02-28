@@ -1,7 +1,7 @@
 ---
 work_package_id: WP11
 title: New Tactics & Supporting Artifacts
-lane: planned
+lane: "canceled"
 dependencies:
 - WP01
 - WP02
@@ -18,7 +18,7 @@ subtasks:
 - T068
 phase: Phase 2 - Content
 assignee: ''
-agent: ''
+agent: "codex"
 shell_pid: ''
 review_status: ''
 reviewed_by: ''
@@ -190,3 +190,4 @@ git merge <WP02-branch>
 git merge <WP03-branch>
 git merge <WP04-branch>
 ```
+- 2026-02-28T08:51:00Z – codex – lane=canceled – Obsolete after WP renumbering: tasks.md canonical scope ends at WP10
