@@ -1,7 +1,7 @@
 ---
 work_package_id: WP07
 title: Enrich Existing Directives 001-010
-lane: "doing"
+lane: "for_review"
 dependencies: [WP01, WP05]
 base_branch: feature/agent-profile-implementation
 base_commit: 79cfabb61acb3e08614228c4bd7ae0a7b95c5bab
@@ -20,7 +20,7 @@ subtasks:
 phase: Phase 2 - Content
 assignee: ''
 agent: "codex"
-shell_pid: "112867"
+shell_pid: '112867'
 review_status: ''
 reviewed_by: ''
 history:
@@ -222,3 +222,4 @@ Depends on WP01 and WP05:
 spec-kitty implement WP07 --base WP05
 ```
 - 2026-02-28T08:33:57Z – codex – shell_pid=112867 – lane=doing – Assigned agent via workflow command
+- 2026-02-28T08:36:03Z – codex – shell_pid=112867 – lane=for_review – Ready for review: directives 011-019 + test-first enriched
