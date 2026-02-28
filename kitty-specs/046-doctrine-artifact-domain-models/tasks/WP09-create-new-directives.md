@@ -1,7 +1,7 @@
 ---
 work_package_id: WP09
 title: Create New Shipped Directives
-lane: "doing"
+lane: "for_review"
 dependencies: [WP01, WP05]
 base_branch: 046-doctrine-artifact-domain-models-WP09-merge-base
 base_commit: cbe21d3c6309586e1a0d1ee6a47177fc7308bc51
@@ -16,8 +16,8 @@ subtasks:
 - T058
 phase: Phase 2 - Content
 assignee: ''
-agent: ''
-shell_pid: "112867"
+agent: "codex"
+shell_pid: '112867'
 review_status: ''
 reviewed_by: ''
 history:
@@ -201,3 +201,4 @@ Depends on WP01 and WP05 (parallel with WP07, WP08):
 ```bash
 spec-kitty implement WP09 --base WP05
 ```
+- 2026-02-28T08:48:47Z – codex – shell_pid=112867 – lane=for_review – Moved to for_review
