@@ -1,9 +1,8 @@
 $schema: "https://json-schema.org/draft/2020-12/schema"
 $id: "https://spec-kitty.dev/schemas/doctrine/directive.schema.yaml"
 title: Directive
-description: Minimal schema for governance directives.
+description: Schema for governance directives with optional enrichment fields.
 type: object
-additionalProperties: false
 required:
   - schema_version
   - id
@@ -33,3 +32,18 @@ properties:
     enum:
       - required
       - advisory
+  scope:
+    type: string
+    minLength: 1
+  procedures:
+    type: array
+    items:
+      type: string
+  integrity_rules:
+    type: array
+    items:
+      type: string
+  validation_criteria:
+    type: array
+    items:
+      type: string
