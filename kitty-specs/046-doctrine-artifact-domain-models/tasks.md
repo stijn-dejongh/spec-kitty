@@ -16,16 +16,16 @@
 
 ### Included Subtasks
 
-- [ ] T001 Update `src/doctrine/schemas/directive.schema.yaml`: remove `additionalProperties: false`, add optional fields (`scope`, `procedures`, `integrity_rules`, `validation_criteria`)
-- [ ] T002 Create `src/doctrine/directives/__init__.py` with public exports
-- [ ] T003 Create `src/doctrine/directives/models.py` with `Directive` (including enrichment fields), `Enforcement` enum
-- [ ] T004 Create `src/doctrine/directives/repository.py` with `DirectiveRepository`
-- [ ] T005 Create `src/doctrine/directives/validation.py` with schema validation utility
-- [ ] T006 Move directive YAML files into `src/doctrine/directives/shipped/`
-- [ ] T007 Update `tests/doctrine/test_directive_consistency.py`: change `DIRECTIVES_DIR` to point to `shipped/` subdirectory
-- [ ] T008 Update `tests/doctrine/test_artifact_compliance.py`: change directive entry in path mapping to `shipped/`
-- [ ] T009 Update `tests/doctrine/test_tactic_compliance.py`: change `"directive"` entry in `ARTIFACT_DIRS` dict to `shipped/`
-- [ ] T010 Write ATDD/TDD tests in `tests/doctrine/directives/` (model, repository, schema backward-compat + enriched format)
+- [x] T001 Update `src/doctrine/schemas/directive.schema.yaml`: remove `additionalProperties: false`, add optional fields (`scope`, `procedures`, `integrity_rules`, `validation_criteria`)
+- [x] T002 Create `src/doctrine/directives/__init__.py` with public exports
+- [x] T003 Create `src/doctrine/directives/models.py` with `Directive` (including enrichment fields), `Enforcement` enum
+- [x] T004 Create `src/doctrine/directives/repository.py` with `DirectiveRepository`
+- [x] T005 Create `src/doctrine/directives/validation.py` with schema validation utility
+- [x] T006 Move directive YAML files into `src/doctrine/directives/shipped/`
+- [x] T007 Update `tests/doctrine/test_directive_consistency.py`: change `DIRECTIVES_DIR` to point to `shipped/` subdirectory
+- [x] T008 Update `tests/doctrine/test_artifact_compliance.py`: change directive entry in path mapping to `shipped/`
+- [x] T009 Update `tests/doctrine/test_tactic_compliance.py`: change `"directive"` entry in `ARTIFACT_DIRS` dict to `shipped/`
+- [x] T010 Write ATDD/TDD tests in `tests/doctrine/directives/` (model, repository, schema backward-compat + enriched format)
 
 ### Implementation Notes
 
