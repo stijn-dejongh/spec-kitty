@@ -38,7 +38,7 @@ def _error_message(file_path: Path, error) -> str:
 
 ARTIFACT_GLOBS: dict[str, tuple[Path, str]] = {
     "directive": (DOCTRINE_DIR / "directives" / "shipped", "*.directive.yaml"),
-    "styleguide": (DOCTRINE_DIR / "styleguides", "**/*.styleguide.yaml"),
+    "styleguide": (DOCTRINE_DIR / "styleguides" / "shipped", "**/*.styleguide.yaml"),
     "toolguide": (DOCTRINE_DIR / "toolguides", "*.toolguide.yaml"),
 }
 

@@ -25,8 +25,8 @@ TACTICS_DIR = DOCTRINE_DIR / "tactics" / "shipped"
 ARTIFACT_DIRS: dict[str, list[tuple[Path, str]]] = {
     "tactic": [(TACTICS_DIR, "*.tactic.yaml")],
     "styleguide": [
-        (DOCTRINE_DIR / "styleguides", "*.styleguide.yaml"),
-        (DOCTRINE_DIR / "styleguides", "**/*.styleguide.yaml"),
+        (DOCTRINE_DIR / "styleguides" / "shipped", "*.styleguide.yaml"),
+        (DOCTRINE_DIR / "styleguides" / "shipped", "**/*.styleguide.yaml"),
     ],
     "directive": [(DOCTRINE_DIR / "directives" / "shipped", "*.directive.yaml")],
     "toolguide": [(DOCTRINE_DIR / "toolguides", "*.toolguide.yaml")],
