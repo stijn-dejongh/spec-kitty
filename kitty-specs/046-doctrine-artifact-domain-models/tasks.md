@@ -442,5 +442,5 @@ Execution order:
 <!-- status-model:start -->
 ## Canonical Status (Generated)
 - WP01: done
-- WP02: in_progress
+- WP02: done
 <!-- status-model:end -->
