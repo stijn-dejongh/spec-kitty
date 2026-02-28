@@ -1,6 +1,6 @@
 ---
 work_package_id: WP11
-title: New Tactics & Supporting Artifacts
+title: Obsolete WP (Superseded by WP10)
 lane: "canceled"
 dependencies:
 - WP01
@@ -30,7 +30,7 @@ history:
   action: Prompt generated via /spec-kitty.tasks
 ---
 
-# Work Package Prompt: WP11 – New Tactics & Supporting Artifacts
+# Work Package Prompt: WP11 – Obsolete WP (Superseded by WP10)
 
 ## ⚠️ IMPORTANT: Review Feedback Status
 

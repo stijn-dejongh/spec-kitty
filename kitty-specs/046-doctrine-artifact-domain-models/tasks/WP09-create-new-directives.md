@@ -1,19 +1,19 @@
 ---
 work_package_id: WP09
-title: Create New Shipped Directives
+title: Consistency Tests & Existing Test Updates
 lane: "for_review"
-dependencies: [WP01, WP05]
+dependencies:
+- WP01
+- WP06
+- WP07
+- WP08
 base_branch: 046-doctrine-artifact-domain-models-WP09-merge-base
 base_commit: cbe21d3c6309586e1a0d1ee6a47177fc7308bc51
 created_at: '2026-02-28T08:46:50.884956+00:00'
 subtasks:
-- T052
-- T053
-- T054
-- T055
-- T056
-- T057
-- T058
+- T066
+- T067
+- T068
 phase: Phase 2 - Content
 assignee: ''
 agent: "codex"
@@ -28,7 +28,7 @@ history:
   action: Prompt generated via /spec-kitty.tasks
 ---
 
-# Work Package Prompt: WP09 – Create New Shipped Directives
+# Work Package Prompt: WP09 – Consistency Tests & Existing Test Updates
 
 ## ⚠️ IMPORTANT: Review Feedback Status
 

@@ -1,22 +1,19 @@
 ---
 work_package_id: WP08
-title: Enrich Existing Directives 011-019 + test-first
+title: Create New Shipped Directives
 lane: "for_review"
-dependencies: [WP01, WP05]
+dependencies: [WP01]
 base_branch: feature/agent-profile-implementation
 base_commit: f6306beadf9e7f0d90c8a37954abf1f3555a4350
 created_at: '2026-02-28T08:36:11.456737+00:00'
 subtasks:
-- T042
-- T043
-- T044
-- T045
-- T046
-- T047
-- T048
-- T049
-- T050
-- T051
+- T059
+- T060
+- T061
+- T062
+- T063
+- T064
+- T065
 phase: Phase 2 - Content
 assignee: ''
 agent: "codex"
@@ -31,7 +28,7 @@ history:
   action: Prompt generated via /spec-kitty.tasks
 ---
 
-# Work Package Prompt: WP08 – Enrich Existing Directives 011-019 + test-first
+# Work Package Prompt: WP08 – Create New Shipped Directives
 
 ## ⚠️ IMPORTANT: Review Feedback Status
 

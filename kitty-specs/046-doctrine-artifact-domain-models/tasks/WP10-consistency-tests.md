@@ -1,9 +1,12 @@
 ---
 work_package_id: WP10
-title: Consistency Tests & Existing Test Updates
+title: New Tactics & Supporting Artifacts
 lane: "for_review"
 dependencies:
-- WP01
+- WP02
+- WP03
+- WP04
+- WP06
 - WP07
 - WP08
 - WP09
@@ -11,11 +14,11 @@ base_branch: 046-doctrine-artifact-domain-models-WP10-merge-base
 base_commit: 643edddb5686a4c3167d340d4ae0aa99c5043479
 created_at: '2026-02-28T08:49:49.478869+00:00'
 subtasks:
-- T059
-- T060
-- T061
-- T062
-- T063
+- T069
+- T070
+- T071
+- T072
+- T073
 phase: Phase 2 - Content
 assignee: ''
 agent: "codex"
@@ -30,7 +33,7 @@ history:
   action: Prompt generated via /spec-kitty.tasks
 ---
 
-# Work Package Prompt: WP10 – Consistency Tests & Existing Test Updates
+# Work Package Prompt: WP10 – New Tactics & Supporting Artifacts
 
 ## ⚠️ IMPORTANT: Review Feedback Status
 
