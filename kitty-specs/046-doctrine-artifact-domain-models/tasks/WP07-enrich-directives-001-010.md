@@ -1,31 +1,34 @@
 ---
-work_package_id: "WP07"
+work_package_id: WP07
+title: Enrich Existing Directives 001-010
+lane: "for_review"
+dependencies: [WP01, WP05]
+base_branch: feature/agent-profile-implementation
+base_commit: 79cfabb61acb3e08614228c4bd7ae0a7b95c5bab
+created_at: '2026-02-28T08:33:57.728017+00:00'
 subtasks:
-  - "T032"
-  - "T033"
-  - "T034"
-  - "T035"
-  - "T036"
-  - "T037"
-  - "T038"
-  - "T039"
-  - "T040"
-  - "T041"
-title: "Enrich Existing Directives 001-010"
-phase: "Phase 2 - Content"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
-dependencies: ["WP01", "WP05"]
+- T032
+- T033
+- T034
+- T035
+- T036
+- T037
+- T038
+- T039
+- T040
+- T041
+phase: Phase 2 - Content
+assignee: ''
+agent: "codex"
+shell_pid: '112867'
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-26T04:36:22Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-26T04:36:22Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP07 – Enrich Existing Directives 001-010
@@ -218,3 +221,5 @@ Depends on WP01 and WP05:
 ```bash
 spec-kitty implement WP07 --base WP05
 ```
+- 2026-02-28T08:33:57Z – codex – shell_pid=112867 – lane=doing – Assigned agent via workflow command
+- 2026-02-28T08:36:03Z – codex – shell_pid=112867 – lane=for_review – Ready for review: directives 011-019 + test-first enriched

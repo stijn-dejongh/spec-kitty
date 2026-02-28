@@ -1,0 +1,21 @@
+schema_version: "1.0"
+id: DIRECTIVE_021
+title: Prompt Storage Standard
+intent: >
+  Prompt inputs that materially influence planning, implementation, or review
+  outcomes should be retained to support reproducibility and auditability.
+tactic_refs: []
+enforcement: advisory
+scope: >
+  Applies to prompts used for feature planning, work package execution, code
+  review, and research synthesis.
+procedures:
+  - Store the effective prompt and key context in the configured report location.
+  - Include links to the related work package and resulting artifacts.
+  - Redact secrets or sensitive data before storing prompt content.
+integrity_rules:
+  - Stored prompt records must not contain unredacted credentials.
+  - Prompt records should preserve enough context to explain output decisions.
+validation_criteria:
+  - Prompt records for completed sessions can be discovered from feature metadata.
+  - Stored prompts are traceable to generated outputs and activity logs.

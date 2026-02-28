@@ -13,8 +13,8 @@ class TestDirectiveRepository:
         """Acceptance: list_all returns all shipped directives."""
         repo = DirectiveRepository()
         directives = repo.list_all()
-        # We have 20 shipped directives (001-019 + test-first)
-        assert len(directives) >= 20
+        # We have at least 27 shipped directives (001-019 + test-first + 020-026)
+        assert len(directives) >= 27
 
     def test_get_by_full_id(self) -> None:
         """get() with full ID returns the directive."""

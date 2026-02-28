@@ -213,16 +213,16 @@
 
 ### Included Subtasks
 
-- [ ] T049 Enrich 011-feedback-clarity-standard
-- [ ] T050 Enrich 012-work-package-granularity-standard
-- [ ] T051 Enrich 013-dependency-validation-requirement
-- [ ] T052 Enrich 014-acceptance-criteria-completeness
-- [ ] T053 Enrich 015-research-time-boxing-requirement
-- [ ] T054 Enrich 016-finding-documentation-standard
-- [ ] T055 Enrich 017-glossary-integrity-standard
-- [ ] T056 Enrich 018-doctrine-versioning-requirement
-- [ ] T057 Enrich 019-documentation-gap-prioritization
-- [ ] T058 Verify test-first.directive.yaml enrichment (already has tactic_refs; add scope/procedures)
+- [x] T049 Enrich 011-feedback-clarity-standard
+- [x] T050 Enrich 012-work-package-granularity-standard
+- [x] T051 Enrich 013-dependency-validation-requirement
+- [x] T052 Enrich 014-acceptance-criteria-completeness
+- [x] T053 Enrich 015-research-time-boxing-requirement
+- [x] T054 Enrich 016-finding-documentation-standard
+- [x] T055 Enrich 017-glossary-integrity-standard
+- [x] T056 Enrich 018-doctrine-versioning-requirement
+- [x] T057 Enrich 019-documentation-gap-prioritization
+- [x] T058 Verify test-first.directive.yaml enrichment (already has tactic_refs; add scope/procedures)
 
 ### Implementation Notes
 
@@ -447,4 +447,5 @@ Execution order:
 - WP04: for_review
 - WP05: for_review
 - WP06: for_review
+- WP07: for_review
 <!-- status-model:end -->
