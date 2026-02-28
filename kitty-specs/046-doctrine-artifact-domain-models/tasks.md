@@ -249,13 +249,13 @@
 
 ### Included Subtasks
 
-- [ ] T059 Create 020-worklog-creation.directive.yaml (from doctrine_ref/014)
-- [ ] T060 Create 021-prompt-storage.directive.yaml (from doctrine_ref/015)
-- [ ] T061 Create 022-commit-protocol.directive.yaml (from doctrine_ref/026)
-- [ ] T062 Create 023-clarification-before-execution.directive.yaml (from doctrine_ref/023)
-- [ ] T063 Create 024-locality-of-change.directive.yaml (from doctrine_ref/021)
-- [ ] T064 Create 025-boy-scout-rule.directive.yaml (from doctrine_ref/036)
-- [ ] T065 Create 026-hic-escalation-protocol.directive.yaml (from doctrine_ref/040)
+- [x] T059 Create 020-worklog-creation.directive.yaml (from doctrine_ref/014)
+- [x] T060 Create 021-prompt-storage.directive.yaml (from doctrine_ref/015)
+- [x] T061 Create 022-commit-protocol.directive.yaml (from doctrine_ref/026)
+- [x] T062 Create 023-clarification-before-execution.directive.yaml (from doctrine_ref/023)
+- [x] T063 Create 024-locality-of-change.directive.yaml (from doctrine_ref/021)
+- [x] T064 Create 025-boy-scout-rule.directive.yaml (from doctrine_ref/036)
+- [x] T065 Create 026-hic-escalation-protocol.directive.yaml (from doctrine_ref/040)
 
 ### Implementation Notes
 
