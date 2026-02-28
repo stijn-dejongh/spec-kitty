@@ -151,9 +151,9 @@
 
 ### Included Subtasks
 
-- [ ] T036 Create `src/doctrine/service.py` with `DoctrineService` class
-- [ ] T037 Update `src/doctrine/__init__.py` to export `DoctrineService`
-- [ ] T038 Write ATDD/TDD tests in `tests/doctrine/test_service.py`
+- [x] T036 Create `src/doctrine/service.py` with `DoctrineService` class
+- [x] T037 Update `src/doctrine/__init__.py` to export `DoctrineService`
+- [x] T038 Write ATDD/TDD tests in `tests/doctrine/test_service.py`
 
 ### Implementation Notes
 
