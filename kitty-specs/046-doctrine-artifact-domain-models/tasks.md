@@ -284,9 +284,9 @@
 
 ### Included Subtasks
 
-- [ ] T066 Extend `tests/doctrine/test_directive_consistency.py` with tactic_ref resolution tests (scan all shipped directives, verify each `tactic_ref` resolves to an existing tactic file in `shipped/`)
-- [ ] T067 Create `tests/doctrine/test_enriched_directives.py` — verify no shipped directive has single-sentence `intent`, all have `scope` field
-- [ ] T068 Verify all existing doctrine tests pass with relocated files (full test suite run)
+- [x] T066 Extend `tests/doctrine/test_directive_consistency.py` with tactic_ref resolution tests (scan all shipped directives, verify each `tactic_ref` resolves to an existing tactic file in `shipped/`)
+- [x] T067 Create `tests/doctrine/test_enriched_directives.py` — verify no shipped directive has single-sentence `intent`, all have `scope` field
+- [x] T068 Verify all existing doctrine tests pass with relocated files (full test suite run)
 
 ### Implementation Notes
 
