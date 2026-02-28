@@ -438,3 +438,8 @@ Execution order:
 | T071 | Create new styleguide YAML files | WP10 |
 | T072 | Create new toolguide YAML files | WP10 |
 | T073 | Validate all new artifacts against schemas | WP10 |
+
+<!-- status-model:start -->
+## Canonical Status (Generated)
+- WP01: for_review
+<!-- status-model:end -->
