@@ -178,16 +178,16 @@
 
 ### Included Subtasks
 
-- [ ] T039 Enrich 001-architectural-integrity-standard
-- [ ] T040 Enrich 002-accessibility-first-principle
-- [ ] T041 Enrich 003-decision-documentation-requirement (incorporate doctrine_ref/018 traceable decisions)
-- [ ] T042 Enrich 004-test-driven-implementation-standard (incorporate doctrine_ref/016 ATDD + 017 TDD)
-- [ ] T043 Enrich 005-design-system-consistency-standard
-- [ ] T044 Enrich 006-coding-standards-adherence
-- [ ] T045 Enrich 007-scalability-assessment-protocol
-- [ ] T046 Enrich 008-security-review-protocol
-- [ ] T047 Enrich 009-user-centered-validation-requirement
-- [ ] T048 Enrich 010-specification-fidelity-requirement (incorporate doctrine_ref/034 spec-driven dev)
+- [x] T039 Enrich 001-architectural-integrity-standard
+- [x] T040 Enrich 002-accessibility-first-principle
+- [x] T041 Enrich 003-decision-documentation-requirement (incorporate doctrine_ref/018 traceable decisions)
+- [x] T042 Enrich 004-test-driven-implementation-standard (incorporate doctrine_ref/016 ATDD + 017 TDD)
+- [x] T043 Enrich 005-design-system-consistency-standard
+- [x] T044 Enrich 006-coding-standards-adherence
+- [x] T045 Enrich 007-scalability-assessment-protocol
+- [x] T046 Enrich 008-security-review-protocol
+- [x] T047 Enrich 009-user-centered-validation-requirement
+- [x] T048 Enrich 010-specification-fidelity-requirement (incorporate doctrine_ref/034 spec-driven dev)
 
 ### Implementation Notes
 
