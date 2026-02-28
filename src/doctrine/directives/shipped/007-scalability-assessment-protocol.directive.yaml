@@ -1,6 +1,21 @@
 schema_version: "1.0"
 id: DIRECTIVE_007
 title: Scalability Assessment Protocol
-intent: Ensure compliance with Scalability Assessment Protocol.
+intent: >
+  Changes with potential scale impact must include an explicit assessment of
+  load behavior, bottlenecks, and degradation risks before release.
 tactic_refs: []
 enforcement: required
+scope: >
+  Applies to data access, concurrency, background execution, and request-path
+  changes that can materially affect performance under growth conditions.
+procedures:
+  - Identify anticipated load dimensions (traffic, data size, concurrency).
+  - Evaluate hotspots introduced by the change and mitigation options.
+  - Record monitoring or rollback expectations for post-deploy verification.
+integrity_rules:
+  - Scalability risk cannot remain implicit for high-impact paths.
+  - Performance trade-offs must be documented when accepted intentionally.
+validation_criteria:
+  - Scale assumptions and risk notes are present in implementation or review artifacts.
+  - Planned observability signals are defined for the impacted pathway.

@@ -12,6 +12,7 @@ from ruamel.yaml import YAML
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PROFILES_DIR = REPO_ROOT / "src" / "doctrine" / "agent_profiles" / "shipped"
 DIRECTIVES_DIR = REPO_ROOT / "src" / "doctrine" / "directives" / "shipped"
+TACTICS_DIR = REPO_ROOT / "src" / "doctrine" / "tactics" / "shipped"
 DIRECTIVE_SCHEMA = REPO_ROOT / "src" / "doctrine" / "schemas" / "directive.schema.yaml"
 
 
@@ -66,3 +67,36 @@ def test_directive_files_validate_against_schema() -> None:
         data = _load_yaml(path)
         errors = sorted(validator.iter_errors(data), key=lambda e: e.path)
         assert not errors, f"Schema validation failed for {path.name}: {[e.message for e in errors]}"
+
+
+def _shipped_tactic_ids() -> set[str]:
+    tactic_ids: set[str] = set()
+    for path in sorted(TACTICS_DIR.glob("*.tactic.yaml")):
+        data = _load_yaml(path)
+        tactic_id = str(data.get("id", "")).strip()
+        if tactic_id:
+            tactic_ids.add(tactic_id)
+    return tactic_ids
+
+
+def test_all_directive_tactic_refs_resolve_to_shipped_tactics() -> None:
+    tactic_ids = _shipped_tactic_ids()
+    assert tactic_ids, "No shipped tactics found"
+
+    directive_files = sorted(DIRECTIVES_DIR.glob("*.directive.yaml"))
+    assert directive_files, "No directive files found"
+
+    unresolved: list[str] = []
+    for path in directive_files:
+        data = _load_yaml(path)
+        refs = data.get("tactic_refs", []) or []
+        if not isinstance(refs, list):
+            unresolved.append(f"{path.name}: tactic_refs is not a list")
+            continue
+
+        for ref in refs:
+            ref_str = str(ref).strip()
+            if ref_str and ref_str not in tactic_ids:
+                unresolved.append(f"{path.name}: unresolved tactic_ref '{ref_str}'")
+
+    assert not unresolved, "Unresolved tactic references:\n" + "\n".join(unresolved)

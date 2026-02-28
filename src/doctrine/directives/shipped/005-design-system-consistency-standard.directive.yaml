@@ -1,6 +1,21 @@
 schema_version: "1.0"
 id: DIRECTIVE_005
 title: Design System Consistency Standard
-intent: Ensure compliance with Design System Consistency Standard.
+intent: >
+  User-facing changes should align with approved design language, interaction
+  patterns, and content tone to preserve coherence across product surfaces.
 tactic_refs: []
 enforcement: required
+scope: >
+  Applies to UI components, interaction states, and copy changes that affect
+  user-visible consistency across workflows.
+procedures:
+  - Reuse established components and tokens before introducing custom variants.
+  - Document justified deviations and their migration path when unavoidable.
+  - Validate visual and interaction parity across primary viewport targets.
+integrity_rules:
+  - One-off UI patterns must not become undocumented long-term defaults.
+  - Design tokens and shared components remain the default implementation path.
+validation_criteria:
+  - Feature screens reflect the current design system baseline.
+  - Any approved exceptions include explicit rationale and follow-up actions.
