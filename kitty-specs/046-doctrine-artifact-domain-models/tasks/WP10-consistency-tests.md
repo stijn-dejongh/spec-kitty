@@ -1,12 +1,15 @@
 ---
 work_package_id: WP10
 title: Consistency Tests & Existing Test Updates
-lane: planned
+lane: "doing"
 dependencies:
 - WP01
 - WP07
 - WP08
 - WP09
+base_branch: 046-doctrine-artifact-domain-models-WP10-merge-base
+base_commit: 643edddb5686a4c3167d340d4ae0aa99c5043479
+created_at: '2026-02-28T08:49:49.478869+00:00'
 subtasks:
 - T059
 - T060
@@ -16,7 +19,7 @@ subtasks:
 phase: Phase 2 - Content
 assignee: ''
 agent: ''
-shell_pid: ''
+shell_pid: "112867"
 review_status: ''
 reviewed_by: ''
 history:
