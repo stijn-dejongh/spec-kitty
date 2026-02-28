@@ -1,27 +1,27 @@
 ---
-work_package_id: "WP02"
-subtasks:
-  - "T007"
-  - "T008"
-  - "T009"
-  - "T010"
-  - "T011"
-  - "T012"
-title: "Tactic Model & Repository"
-phase: "Phase 1 - Foundation"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
+work_package_id: WP02
+title: Tactic Model & Repository
+lane: "in_progress"
 dependencies: []
+subtasks:
+- T007
+- T008
+- T009
+- T010
+- T011
+- T012
+phase: Phase 1 - Foundation
+assignee: ''
+agent: ''
+shell_pid: ''
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-26T04:36:22Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-26T04:36:22Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP02 – Tactic Model & Repository
@@ -191,3 +191,4 @@ No dependencies — branch from target branch:
 ```bash
 spec-kitty implement WP02
 ```
+- 2026-02-28T04:26:32Z – unknown – lane=in_progress – Starting WP02: Tactic Model & Repository
