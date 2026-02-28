@@ -1,6 +1,22 @@
 schema_version: "1.0"
 id: DIRECTIVE_016
 title: Finding Documentation Standard
-intent: Ensure compliance with Finding Documentation Standard.
+intent: >
+  Findings discovered during implementation, review, or research must be
+  documented with evidence, impact, and recommended action so they can be
+  resolved predictably.
 tactic_refs: []
 enforcement: required
+scope: >
+  Applies to defect findings, architecture risks, and quality observations
+  generated during the feature lifecycle.
+procedures:
+  - Record each finding with clear statement, supporting evidence, and severity.
+  - Attach remediation guidance or explicit deferral reason.
+  - Maintain traceability from finding to resolution or accepted risk.
+integrity_rules:
+  - Findings must not be closed without an attributable outcome.
+  - Evidence is required for blocking findings.
+validation_criteria:
+  - Findings logs can be audited for evidence, status, and owner.
+  - Review handoff references all unresolved high-impact findings.

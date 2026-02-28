@@ -1,6 +1,21 @@
 schema_version: "1.0"
 id: DIRECTIVE_011
 title: Feedback Clarity Standard
-intent: Ensure compliance with Feedback Clarity Standard.
+intent: >
+  Review and handoff feedback must be specific, actionable, and traceable so
+  assignees can implement corrections without ambiguity.
 tactic_refs: []
 enforcement: required
+scope: >
+  Applies to review comments, blocker notes, and work-package feedback artifacts
+  recorded during implementation and review stages.
+procedures:
+  - State the observed issue, impacted artifact, and expected correction explicitly.
+  - Separate blocking findings from advisory suggestions.
+  - Include reproducible evidence or references for each blocking claim.
+integrity_rules:
+  - Feedback must not rely on implicit context known only to the reviewer.
+  - Blocking feedback requires sufficient detail to act without follow-up guessing.
+validation_criteria:
+  - Work-package feedback entries map each blocker to an actionable next step.
+  - Assignees can close findings without reinterpreting reviewer intent.
