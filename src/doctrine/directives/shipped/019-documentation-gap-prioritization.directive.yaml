@@ -1,6 +1,21 @@
 schema_version: "1.0"
 id: DIRECTIVE_019
 title: Documentation Gap Prioritization
-intent: Ensure compliance with Documentation Gap Prioritization.
+intent: >
+  Documentation gaps must be prioritized by execution risk and user impact so
+  missing guidance does not block safe delivery or long-term maintainability.
 tactic_refs: []
 enforcement: required
+scope: >
+  Applies to missing or outdated docs discovered during implementation, review,
+  and release readiness checks.
+procedures:
+  - Classify documentation gaps by severity, audience impact, and immediacy.
+  - Resolve high-impact gaps before marking related work complete.
+  - Track deferred lower-priority gaps with explicit follow-up ownership.
+integrity_rules:
+  - Critical runbook or workflow gaps cannot be deferred without risk acceptance.
+  - Documentation debt must remain visible in tracked artifacts.
+validation_criteria:
+  - High-priority documentation gaps are closed or formally risk-accepted.
+  - Deferred gaps include owner and target resolution window.

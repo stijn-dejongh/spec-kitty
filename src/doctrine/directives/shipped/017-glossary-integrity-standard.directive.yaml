@@ -1,6 +1,22 @@
 schema_version: "1.0"
 id: DIRECTIVE_017
 title: Glossary Integrity Standard
-intent: Ensure compliance with Glossary Integrity Standard.
-tactic_refs: []
+intent: >
+  Shared terminology must remain semantically consistent across doctrine,
+  missions, and implementation artifacts to prevent hidden meaning drift.
+tactic_refs:
+  - glossary-curation-interview
 enforcement: required
+scope: >
+  Applies to domain terms introduced or modified in specs, plans, prompts,
+  directives, tactics, and related documentation artifacts.
+procedures:
+  - Resolve conflicting term definitions before finalizing affected artifacts.
+  - Update glossary contexts when new domain terms are introduced.
+  - Flag ambiguous phrasing that can create multiple interpretations in execution.
+integrity_rules:
+  - Critical domain terms must map to one accepted meaning per context.
+  - Conflicting definitions require explicit resolution before merge.
+validation_criteria:
+  - Added or changed terms have glossary coverage or a documented rationale.
+  - Cross-artifact terminology remains consistent after review.

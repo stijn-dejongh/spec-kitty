@@ -1,6 +1,20 @@
 schema_version: "1.0"
 id: DIRECTIVE_013
 title: Dependency Validation Requirement
-intent: Ensure compliance with Dependency Validation Requirement.
+intent: >
+  Declared dependencies between work packages and artifacts must be validated
+  before execution to avoid hidden ordering errors and rework.
 tactic_refs: []
 enforcement: required
+scope: >
+  Applies to task graphs, base workspace selection, and merge ordering decisions.
+procedures:
+  - Validate that each declared dependency points to an existing work package.
+  - Confirm dependency readiness before moving a dependent package into active work.
+  - Re-evaluate dependency status when upstream package outcomes change.
+integrity_rules:
+  - No package may claim completion while unresolved required dependencies exist.
+  - Dependency metadata must remain consistent across status and task artifacts.
+validation_criteria:
+  - Dependency checks pass before implementation starts for dependent packages.
+  - Status transitions preserve a valid acyclic dependency graph.

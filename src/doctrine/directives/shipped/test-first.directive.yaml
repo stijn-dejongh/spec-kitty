@@ -7,3 +7,14 @@ tactic_refs:
   - tdd-red-green-refactor
   - zombies-tdd
 enforcement: required
+scope: >
+  Applies to behavior changes in planning and implementation where expected
+  outcomes can be represented as executable checks.
+procedures:
+  - Start with acceptance or behavior tests that define expected outcomes.
+  - Implement in red-green-refactor loops until targeted behavior stabilizes.
+  - Keep tests close to user-facing intent to reduce specification drift.
+integrity_rules:
+  - Behavior changes require accompanying tests before completion.
+validation_criteria:
+  - Test suites demonstrate failing-to-passing progression for new behavior.
