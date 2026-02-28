@@ -1,7 +1,7 @@
 ---
 work_package_id: WP04
 title: Toolguide & Paradigm Models
-lane: "in_progress"
+lane: "for_review"
 dependencies: []
 subtasks:
 - T019
@@ -12,7 +12,7 @@ subtasks:
 - T024
 phase: Phase 1 - Foundation
 assignee: ''
-agent: ''
+agent: "codex"
 shell_pid: ''
 review_status: ''
 reviewed_by: ''
@@ -197,3 +197,4 @@ mypy src/doctrine/toolguides/ src/doctrine/paradigms/ --strict
 spec-kitty implement WP04
 ```
 - 2026-02-28T04:35:22Z – unknown – lane=in_progress – Starting WP04: Toolguide & Paradigm Models
+- 2026-02-28T08:19:19Z – codex – lane=for_review – WP04 implementation complete; doctrine tests passing

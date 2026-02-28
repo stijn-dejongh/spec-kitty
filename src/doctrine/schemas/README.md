@@ -12,6 +12,7 @@ fast when invalid doctrine files are introduced.
 | `directive.schema.yaml` | Directive YAML (id, title, intent, tactic_refs, enforcement) |
 | `import-candidate.schema.yaml` | Curation import candidate YAML |
 | `mission.schema.yaml` | Mission definition YAML (states, transitions, guards, agent-profile on steps) |
+| `paradigm.schema.yaml` | Paradigm YAML (id, name, summary) |
 | `styleguide.schema.yaml` | Styleguide YAML (scope, principles, anti-patterns) |
 | `tactic.schema.yaml` | Tactic YAML (steps, references) |
 | `toolguide.schema.yaml` | Toolguide YAML (guide_path, commands) |

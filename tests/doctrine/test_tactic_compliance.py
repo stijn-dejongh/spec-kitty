@@ -29,7 +29,7 @@ ARTIFACT_DIRS: dict[str, list[tuple[Path, str]]] = {
         (DOCTRINE_DIR / "styleguides" / "shipped", "**/*.styleguide.yaml"),
     ],
     "directive": [(DOCTRINE_DIR / "directives" / "shipped", "*.directive.yaml")],
-    "toolguide": [(DOCTRINE_DIR / "toolguides", "*.toolguide.yaml")],
+    "toolguide": [(DOCTRINE_DIR / "toolguides" / "shipped", "*.toolguide.yaml")],
 }
 
 # Threshold: if a reference appears in this fraction of steps or more,

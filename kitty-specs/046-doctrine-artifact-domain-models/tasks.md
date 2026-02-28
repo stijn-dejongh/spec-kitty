@@ -118,15 +118,15 @@
 
 ### Included Subtasks
 
-- [ ] T027 Create `src/doctrine/schemas/paradigm.schema.yaml` (new schema: `schema_version`, `id`, `name`, `summary` — all required)
-- [ ] T028 Create `src/doctrine/toolguides/__init__.py`, `models.py`, `repository.py`, `validation.py`
-- [ ] T029 Move toolguide YAML and companion MD files into `src/doctrine/toolguides/shipped/`
-- [ ] T030 Create `src/doctrine/paradigms/__init__.py`, `models.py`, `repository.py`, `validation.py`
-- [ ] T031 Move paradigm YAML files into `src/doctrine/paradigms/shipped/`
-- [ ] T032 Update `tests/doctrine/test_artifact_compliance.py`: change toolguide path references to `shipped/`
-- [ ] T033 Update `tests/doctrine/test_tactic_compliance.py`: change `"toolguide"` entry in `ARTIFACT_DIRS` to `shipped/`
-- [ ] T034 Create paradigm test fixtures in `tests/doctrine/fixtures/paradigm/{valid,invalid}/`
-- [ ] T035 Write ATDD/TDD tests in `tests/doctrine/toolguides/` and `tests/doctrine/paradigms/`
+- [x] T027 Create `src/doctrine/schemas/paradigm.schema.yaml` (new schema: `schema_version`, `id`, `name`, `summary` — all required)
+- [x] T028 Create `src/doctrine/toolguides/__init__.py`, `models.py`, `repository.py`, `validation.py`
+- [x] T029 Move toolguide YAML and companion MD files into `src/doctrine/toolguides/shipped/`
+- [x] T030 Create `src/doctrine/paradigms/__init__.py`, `models.py`, `repository.py`, `validation.py`
+- [x] T031 Move paradigm YAML files into `src/doctrine/paradigms/shipped/`
+- [x] T032 Update `tests/doctrine/test_artifact_compliance.py`: change toolguide path references to `shipped/`
+- [x] T033 Update `tests/doctrine/test_tactic_compliance.py`: change `"toolguide"` entry in `ARTIFACT_DIRS` to `shipped/`
+- [x] T034 Create paradigm test fixtures in `tests/doctrine/fixtures/paradigm/{valid,invalid}/`
+- [x] T035 Write ATDD/TDD tests in `tests/doctrine/toolguides/` and `tests/doctrine/paradigms/`
 
 ### Implementation Notes
 
@@ -444,5 +444,5 @@ Execution order:
 - WP01: done
 - WP02: done
 - WP03: done
-- WP04: in_progress
+- WP04: for_review
 <!-- status-model:end -->
