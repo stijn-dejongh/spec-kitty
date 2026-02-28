@@ -1,6 +1,22 @@
 schema_version: "1.0"
 id: DIRECTIVE_009
 title: User-Centered Validation Requirement
-intent: Ensure compliance with User-Centered Validation Requirement.
+intent: >
+  Feature outcomes must be validated against user goals and task success
+  criteria so completion is measured by practical usability, not only
+  technical correctness.
 tactic_refs: []
 enforcement: required
+scope: >
+  Applies to specification acceptance criteria, quickstart validation paths,
+  and review outcomes for user-facing behavior.
+procedures:
+  - Translate requirements into user-observable validation scenarios.
+  - Confirm edge and failure-path behavior remains understandable to target users.
+  - Capture unresolved UX uncertainty as follow-up work rather than implicit assumptions.
+integrity_rules:
+  - Completion cannot be claimed if core user paths are unvalidated.
+  - Acceptance criteria must describe user outcomes, not implementation detail only.
+validation_criteria:
+  - Quickstart or acceptance scenarios cover primary user journeys.
+  - Review confirms that user-visible behavior matches intended outcomes.
