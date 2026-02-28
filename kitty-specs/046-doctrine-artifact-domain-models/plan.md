@@ -204,6 +204,10 @@ Each WP that moves YAML files into `shipped/` is responsible for updating any ex
 
 This ensures the test suite stays green after every WP merge, not just after a cleanup phase.
 
+### DD-010: Branch Simplicity
+
+When working inside a feature branch (and using non-conflicting WPs), prefer working directly on the feature branch instead of creating worktrees. This simplifies the merge effort.
+
 ## Existing Test Files Affected by File Relocation
 
 The following existing test files reference doctrine artifact paths that will change when YAML files move into `shipped/` subdirectories. Each WP must update the paths for its own artifact type:

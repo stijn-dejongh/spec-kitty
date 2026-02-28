@@ -39,7 +39,7 @@ def _error_message(file_path: Path, error) -> str:
 ARTIFACT_GLOBS: dict[str, tuple[Path, str]] = {
     "directive": (DOCTRINE_DIR / "directives" / "shipped", "*.directive.yaml"),
     "styleguide": (DOCTRINE_DIR / "styleguides" / "shipped", "**/*.styleguide.yaml"),
-    "toolguide": (DOCTRINE_DIR / "toolguides", "*.toolguide.yaml"),
+    "toolguide": (DOCTRINE_DIR / "toolguides" / "shipped", "*.toolguide.yaml"),
 }
 
 
@@ -97,7 +97,7 @@ def test_directive_tactic_refs_resolve(
 
 @pytest.mark.parametrize(
     "toolguide_path",
-    sorted((DOCTRINE_DIR / "toolguides").glob("*.toolguide.yaml")),
+    sorted((DOCTRINE_DIR / "toolguides" / "shipped").glob("*.toolguide.yaml")),
     ids=lambda p: str(p.relative_to(REPO_ROOT)),
 )
 def test_toolguide_guide_path_exists(toolguide_path: Path) -> None:

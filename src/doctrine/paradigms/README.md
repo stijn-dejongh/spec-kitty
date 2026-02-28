@@ -8,6 +8,7 @@ not executable step recipes themselves.
 
 Paradigm files conform to the doctrine YAML conventions with fields:
 
+- `schema_version` — Schema version string (currently `1.0`)
 - `id` — Unique identifier (e.g., `test-first`)
 - `name` — Human-readable name
 - `summary` — Brief description of the worldview stance
@@ -15,6 +16,10 @@ Paradigm files conform to the doctrine YAML conventions with fields:
 ## Naming Convention
 
 Files use the pattern `kebab-id.paradigm.yaml` (e.g., `test-first.paradigm.yaml`).
+
+Shipped paradigms live under:
+
+- `src/doctrine/paradigms/shipped/*.paradigm.yaml`
 
 ## Glossary Reference
 
