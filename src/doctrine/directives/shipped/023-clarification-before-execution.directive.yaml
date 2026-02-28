@@ -1,0 +1,21 @@
+schema_version: "1.0"
+id: DIRECTIVE_023
+title: Clarification Before Execution
+intent: >
+  Execution should pause when requirements are materially ambiguous so work does
+  not proceed on assumptions that can cause avoidable rework.
+tactic_refs: []
+enforcement: required
+scope: >
+  Applies to implementation, review, and release activities where missing or
+  conflicting requirements affect correctness or delivery risk.
+procedures:
+  - Identify ambiguity early and isolate the specific unresolved decision.
+  - Ask focused clarification questions before implementing irreversible changes.
+  - Record assumptions explicitly when proceeding under acknowledged uncertainty.
+integrity_rules:
+  - Work must not continue past a blocking ambiguity without user or reviewer direction.
+  - Clarification questions should be specific enough to produce actionable answers.
+validation_criteria:
+  - Blocking ambiguities are visible in task history before dependent work starts.
+  - Delivered changes align with clarified requirements rather than implicit guesses.
