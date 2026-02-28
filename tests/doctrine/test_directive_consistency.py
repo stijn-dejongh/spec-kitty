@@ -11,7 +11,7 @@ from ruamel.yaml import YAML
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PROFILES_DIR = REPO_ROOT / "src" / "doctrine" / "agent_profiles" / "shipped"
-DIRECTIVES_DIR = REPO_ROOT / "src" / "doctrine" / "directives"
+DIRECTIVES_DIR = REPO_ROOT / "src" / "doctrine" / "directives" / "shipped"
 DIRECTIVE_SCHEMA = REPO_ROOT / "src" / "doctrine" / "schemas" / "directive.schema.yaml"
 
 
