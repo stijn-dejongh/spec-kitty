@@ -696,6 +696,61 @@ jobs:
           name: dashboard-test-reports
           path: out/reports/
 
+  mutation-testing:
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    # Slow job: only runs on push or manual dispatch, never on pull_request (NFR-001).
+    # NOTE: Skipped on pull_request — keeps PR CI fast per spec constraint NFR-001.
+    if: always() && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.run_extended))
+    timeout-minutes: 75
+    env:
+      MUTATION_FLOOR: 0  # Raised to achieved baseline after squashing campaign (WP05)
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test]"
+
+      - name: Prepare report directories
+        run: mkdir -p out/reports/mutation
+
+      - name: Run mutation testing
+        run: mutmut run
+        continue-on-error: true  # Surviving mutants alone don't fail the job; floor check does
+
+      - name: Export mutation stats (JSON)
+        if: always()
+        run: |
+          mutmut export-cicd-stats --output out/reports/mutation/mutation-stats.json || \
+            echo '{"summary": {"killed": 0, "survived": 0}}' > out/reports/mutation/mutation-stats.json
+
+      - name: Export mutation report (HTML)
+        if: always()
+        run: mutmut html --output out/reports/mutation/ || true
+
+      - name: Enforce mutation score floor
+        if: always()
+        run: python scripts/check_mutation_floor.py
+
+      - name: Upload mutation artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-reports
+          path: out/reports/mutation/
+
   sonarcloud:
     runs-on: ubuntu-latest
     needs: [unit-tests, cli-tests, sync-tests, integration-smoke, dashboard-tests]
