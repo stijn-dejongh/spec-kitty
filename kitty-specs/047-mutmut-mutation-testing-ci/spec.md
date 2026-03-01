@@ -86,6 +86,35 @@ the CI job exits non-zero and the error message cites the floor.
 
 ---
 
+### User Story 4 — Developer inspects a surviving mutant and improves tests (Priority: P2)
+
+After a mutation run, a developer discovers that some mutants survived (their
+tests did not kill them). They inspect the surviving mutant, understand what
+production code variant was not caught, write a new or improved test that kills
+the mutant, re-run mutation testing, and confirm the mutant is now killed.
+
+**Why this priority**: The toolchain only delivers value if developers can act
+on the results. This story ensures the full fix-iteration loop is usable, not
+just the reporting step.
+
+**Independent Test**: Introduce a deliberate mutant-equivalent gap in a small
+module, run mutmut, confirm a surviving mutant is reported, write a test that
+kills it, re-run, and confirm the mutant is now dead.
+
+**Acceptance Scenarios**:
+
+1. **Given** a surviving mutant is reported, **When** the developer runs
+   `mutmut show <id>`, **Then** the tool displays the exact source diff that
+   represents the surviving mutant.
+2. **Given** the developer adds a test that exercises the mutated code path,
+   **When** they re-run `mutmut run`, **Then** the previously surviving mutant
+   is now listed as killed and the mutation score improves.
+3. **Given** the mutation score improves above the configured floor, **When**
+   the developer pushes the changes, **Then** the CI mutation-testing job exits
+   successfully.
+
+---
+
 ### Edge Cases
 
 - What happens when mutmut times out on a slow test? The job should continue
@@ -109,6 +138,8 @@ the CI job exits non-zero and the error message cites the floor.
 | FR-006 | Upload reports as CI artifacts | As a maintainer, I want mutation reports uploaded as CI artifacts so that they are accessible after the job completes. | Medium | Open |
 | FR-007 | Enforce configurable score floor | As a maintainer, I want a configurable mutation score floor so that the team can gradually raise the quality bar. | Medium | Open |
 | FR-008 | Run after unit-tests, before SonarCloud | As a maintainer, I want mutation testing to run after unit tests succeed and feed results to SonarCloud so that the pipeline stays logically ordered. | Medium | Open |
+| FR-009 | Inspect individual surviving mutants | As a developer, I want to be able to view the exact source diff for a surviving mutant so that I understand what code change the test suite missed. | High | Open |
+| FR-010 | Re-run mutation testing after test improvements | As a developer, I want to re-run mutation testing locally after adding or improving tests so that I can verify the mutant is now killed before pushing. | High | Open |
 
 ### Non-Functional Requirements
 
