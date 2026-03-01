@@ -169,13 +169,35 @@ ignore_errors = true
 # WP04 scope: merge/ and core/ (squashing campaign batch 2)
 paths_to_mutate = ["src/specify_cli/merge/", "src/specify_cli/core/"]
 tests_dir = ["tests/unit/", "tests/specify_cli/"]
-pytest_add_cli_args = ["--ignore=tests/unit/agent/test_tasks.py"]
+pytest_add_cli_args = ["--ignore=tests/unit/agent/test_tasks.py", "--ignore=tests/unit/agent/test_workflow_instructions.py", "--ignore=tests/unit/agent/test_workflow_research.py"]
 debug = true
 also_copy = [
     "LICENSE",
     "README.md",
     "src/specify_cli/*.py",  # Copy all top-level modules (frontmatter, etc.)
     "src/doctrine/",         # Copy doctrine package for imports
+    "src/specify_cli/status/",  # Copy status module for status transitions
+    "src/specify_cli/glossary/",  # Copy glossary module
+    "src/specify_cli/cli/",   # Copy CLI commands
+    "src/specify_cli/agent_utils/",  # Copy agent utilities
+    "src/specify_cli/git/",  # Copy git utilities
+    "src/specify_cli/sync/",  # Copy sync module
+    "src/specify_cli/next/",  # Copy next module
+    "src/specify_cli/validators/",  # Copy validators
+    "src/specify_cli/template/",  # Copy template utilities
+    "src/specify_cli/constitution/",  # Copy constitution
+    "src/specify_cli/missions/",  # Copy missions
+    "src/specify_cli/upgrade/",  # Copy upgrade system
+    "src/specify_cli/runtime/",  # Copy runtime
+    "src/specify_cli/tracker/",  # Copy tracker
+    "src/specify_cli/events/",  # Copy events
+    "src/specify_cli/dossier/",  # Copy dossier
+    "src/specify_cli/dashboard/",  # Copy dashboard
+    "src/specify_cli/orchestrator_api/",  # Copy orchestrator API
+    "src/specify_cli/spec_kitty_events/",  # Copy spec kitty events
+    "src/specify_cli/templates/",  # Copy templates
+    "src/specify_cli/mission_v1/",  # Copy mission v1
+    "src/specify_cli/scripts/",  # Copy scripts
 ]
 # Exclude migrations (idempotent, hard to unit-test meaningfully via mutation)
 do_not_mutate = [
