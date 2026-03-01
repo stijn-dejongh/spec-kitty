@@ -1,0 +1,117 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+.venv*/
+.uv-tools/
+.pytest_cache
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Project specific
+*.log
+.env
+.env.local
+.codex/
+.claudeignore
+*.lock
+.worktrees/
+.kittify/.dashboard
+.kittify/workspaces/
+.kittify/missions/
+.kittify/scripts/
+.kittify/constitution/context-state.json
+.kittify/constitution/directives.yaml
+.kittify/constitution/governance.yaml
+.kittify/constitution/metadata.yaml
+node_modules/
+
+# Spec Kit-specific files
+.genreleases/
+*.zip
+sdd-*/
+
+# Added by Spec Kitty CLI (auto-managed)
+.claude/*
+!.claude/skills/
+.opencode/
+.windsurf/
+.gemini/
+.cursor/
+.qwen/
+.kilocode/
+.augment/
+.github/
+.roo/
+.amazonq/
+.pytest_cache/
+# Note: kitty-specs/ is tracked in main repo but ignored in worktrees via .git/info/exclude
+.github/copilot/
+
+# User-managed glossaries (optional)
+.kittify/glossaries/team_domain.yaml
+.kittify/glossaries/audience_domain.yaml
+.kittify/glossaries/mission_local.yaml
+
+# Keep spec_kitty_core.yaml tracked (canonical terms)
+!.kittify/glossaries/spec_kitty_core.yaml
+doctrine_ref
+/work/
+
+# mutmut mutation testing
+mutmut.db
+mutmut-cache/
+.mutmut-cache
+mutants/  # mutmut 3.x working directory (SQLite, meta files, cicd-stats)
+
+# CI report outputs
+.coverage
+out/reports/**
+!out/reports/
+!out/reports/.gitkeep
+!out/reports/xunit-reports/
+!out/reports/xunit-reports/.gitkeep
+!out/reports/coverage/
+!out/reports/coverage/.gitkeep
+!out/reports/static-analysis/
+!out/reports/static-analysis/.gitkeep
+
+src/doctrine/curation/imports/**
+!src/doctrine/curation/imports/.gitkeep
+
+work
+out
+.nvimlog
+
+tmp/**
+!tmp/.gitkeep
+.kittify/missions/__pycache__/

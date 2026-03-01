@@ -1,0 +1,36 @@
+{
+    "exit_code_by_key": {
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_1": 1,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_2": 1,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_3": 1,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_4": 1,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_5": 1,
+        "specify_cli.glossary.exceptions.x\u01c1DeferredToAsync\u01c1__init____mutmut_1": 1,
+        "specify_cli.glossary.exceptions.x\u01c1DeferredToAsync\u01c1__init____mutmut_2": 1,
+        "specify_cli.glossary.exceptions.x\u01c1AbortResume\u01c1__init____mutmut_1": 1,
+        "specify_cli.glossary.exceptions.x\u01c1AbortResume\u01c1__init____mutmut_2": 1
+    },
+    "durations_by_key": {
+        "specify_cli.glossary.exceptions.x\u01c1DeferredToAsync\u01c1__init____mutmut_1": 0.155192,
+        "specify_cli.glossary.exceptions.x\u01c1DeferredToAsync\u01c1__init____mutmut_2": 0.158655,
+        "specify_cli.glossary.exceptions.x\u01c1AbortResume\u01c1__init____mutmut_1": 0.163249,
+        "specify_cli.glossary.exceptions.x\u01c1AbortResume\u01c1__init____mutmut_2": 0.16692,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_1": 0.228004,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_2": 0.240124,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_3": 0.220711,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_4": 0.21599,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_5": 0.223571
+    },
+    "type_check_error_by_key": {},
+    "estimated_durations_by_key": {
+        "specify_cli.glossary.exceptions.x\u01c1DeferredToAsync\u01c1__init____mutmut_1": 0.000865834000023824,
+        "specify_cli.glossary.exceptions.x\u01c1DeferredToAsync\u01c1__init____mutmut_2": 0.000865834000023824,
+        "specify_cli.glossary.exceptions.x\u01c1AbortResume\u01c1__init____mutmut_1": 0.004260151000039514,
+        "specify_cli.glossary.exceptions.x\u01c1AbortResume\u01c1__init____mutmut_2": 0.004260151000039514,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_1": 0.12105426799962515,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_2": 0.12105426799962515,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_3": 0.12105426799962515,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_4": 0.12105426799962515,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_5": 0.12105426799962515
+    }
+}

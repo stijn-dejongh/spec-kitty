@@ -339,3 +339,44 @@ class TestUnknownLanes:
         ok, error = validate_transition("planned", "nonexistent")
         assert ok is False
         assert "Unknown lane" in error
+
+
+class TestGuardActorRequired:
+    """Tests for _guard_actor_required to kill mutation survivors."""
+    
+    def test_empty_string_actor_fails(self) -> None:
+        """Empty string should fail - kills mutant changing 'or' to 'and'."""
+        ok, error = validate_transition("planned", "claimed", actor="")
+        assert ok is False
+        assert "actor identity" in error.lower()
+    
+    def test_whitespace_only_actor_fails(self) -> None:
+        """Whitespace-only actor should fail - kills mutations in strip() check."""
+        ok, error = validate_transition("planned", "claimed", actor="   ")
+        assert ok is False
+        assert "actor identity" in error.lower()
+    
+    def test_none_actor_fails(self) -> None:
+        """None actor should fail - kills mutations in None check."""
+        ok, error = validate_transition("planned", "claimed", actor=None)
+        assert ok is False
+        assert "actor identity" in error.lower()
+
+
+class TestResolveLaneAliasEdgeCases:
+    """Tests for resolve_lane_alias edge cases to kill survivors."""
+    
+    def test_unknown_alias_returns_normalized_input(self) -> None:
+        """Unknown aliases return normalized input - kills get(None) mutation."""
+        result = resolve_lane_alias("unknown")
+        assert result == "unknown"
+    
+    def test_empty_string_returns_empty(self) -> None:
+        """Empty string should return empty after normalization."""
+        result = resolve_lane_alias("")
+        assert result == ""
+    
+    def test_whitespace_becomes_empty(self) -> None:
+        """Whitespace-only input becomes empty after strip."""
+        result = resolve_lane_alias("   ")
+        assert result == ""
