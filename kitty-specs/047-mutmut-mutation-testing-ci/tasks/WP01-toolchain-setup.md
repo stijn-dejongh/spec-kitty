@@ -1,7 +1,7 @@
 ---
 work_package_id: WP01
 title: Toolchain Setup
-lane: "in_progress"
+lane: "done"
 dependencies: []
 subtasks:
 - T001
@@ -13,8 +13,8 @@ phase: Phase 1 - Foundation
 assignee: ''
 agent: ''
 shell_pid: ''
-review_status: ''
-reviewed_by: ''
+review_status: "approved"
+reviewed_by: "Stijn Dejongh"
 review_feedback: ''
 history:
 - timestamp: '2026-03-01T16:00:00Z'
@@ -223,3 +223,4 @@ codebase run happens in CI (WP02).
 
 - 2026-03-01T16:00:00Z – system – lane=planned – Prompt created.
 - 2026-03-01T06:40:44Z – unknown – lane=in_progress – Starting WP01 implementation
+- 2026-03-01T06:52:10Z – unknown – lane=done – T001-T005 complete, review fix applied. | Done override: No worktree model: all work committed directly to architecture/restructure_and_proposals per feature design decision

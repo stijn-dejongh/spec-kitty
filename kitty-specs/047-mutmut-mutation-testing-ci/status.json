@@ -1,24 +1,24 @@
 {
-  "event_count": 2,
+  "event_count": 3,
   "feature_slug": "047-mutmut-mutation-testing-ci",
-  "last_event_id": "01KJM21G07GRRAWEEM94QH40X2",
-  "materialized_at": "2026-03-01T06:40:44.553213+00:00",
+  "last_event_id": "01KJM2PDPQM8KVZPN5W5XQ0EC4",
+  "materialized_at": "2026-03-01T06:52:10.394495+00:00",
   "summary": {
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
-    "done": 0,
+    "done": 1,
     "for_review": 0,
-    "in_progress": 1,
+    "in_progress": 0,
     "planned": 0
   },
   "work_packages": {
     "WP01": {
       "actor": "user",
-      "force_count": 0,
-      "lane": "in_progress",
-      "last_event_id": "01KJM21G07GRRAWEEM94QH40X2",
-      "last_transition_at": "2026-03-01T06:40:44.551855+00:00"
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KJM2PDPQM8KVZPN5W5XQ0EC4",
+      "last_transition_at": "2026-03-01T06:52:10.327688+00:00"
     }
   }
 }
