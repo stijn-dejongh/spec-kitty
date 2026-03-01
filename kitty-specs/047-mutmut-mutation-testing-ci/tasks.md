@@ -285,3 +285,8 @@ job fails with a descriptive message.
 
 > Sequential execution model: start WP01, complete it fully, then move to WP02, and so on.
 > No worktrees are used for this feature — all work happens on the target branch directly.
+
+<!-- status-model:start -->
+## Canonical Status (Generated)
+- WP01: in_progress
+<!-- status-model:end -->

@@ -1,7 +1,7 @@
 ---
 work_package_id: WP01
 title: Toolchain Setup
-lane: planned
+lane: "in_progress"
 dependencies: []
 subtasks:
 - T001
@@ -222,3 +222,4 @@ codebase run happens in CI (WP02).
 ## Activity Log
 
 - 2026-03-01T16:00:00Z – system – lane=planned – Prompt created.
+- 2026-03-01T06:40:44Z – unknown – lane=in_progress – Starting WP01 implementation
