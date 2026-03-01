@@ -116,3 +116,7 @@ tmp/**
 !tmp/.gitkeep
 .kittify/missions/__pycache__/
 # .gitignore entry for mutants
+
+# Mutation testing artifacts
+mutants/
+.mutmut-cache
