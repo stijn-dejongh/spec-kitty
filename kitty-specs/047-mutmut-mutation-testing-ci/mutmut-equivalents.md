@@ -41,12 +41,52 @@ A mutant is considered **killable** if:
 
 ### merge/state.py
 
-*No equivalent mutants documented yet - awaiting T019 triage*
+**Killable Mutants Addressed**: ~15-20 high-priority mutants
 
-**Anticipated Patterns**:
-- Docstring modifications in MergeState dataclass
-- Type hint changes (e.g., `Optional[str]` to `Any`)
-- Logging message modifications
+#### Killable Patterns and Tests
+
+**Pattern 1: Operator Mutations** (Test: `test_get_state_path_returns_valid_path_object`)
+```python
+# Mutant: specify_cli.merge.state.x_get_state_path__mutmut_1
+# Original: return repo_root / STATE_FILE
+# Mutated: return repo_root * STATE_FILE
+```
+**Status**: Killed by verifying Path construction
+
+**Pattern 2: None Assignments** (Test: `test_save_state_path_not_none`)
+```python
+# Mutant: specify_cli.merge.state.x_save_state__mutmut_1
+# Original: state_path = get_state_path(repo_root)
+# Mutated: state_path = None
+```
+**Status**: Killed by verifying AttributeError doesn't occur
+
+**Pattern 3: Parameter Removal** (Test: `test_save_state_creates_deep_directory_structure`)
+```python
+# Mutant: specify_cli.merge.state.x_save_state__mutmut_5
+# Original: state_path.parent.mkdir(parents=True, exist_ok=True)
+# Mutated: state_path.parent.mkdir(exist_ok=True)
+```
+**Status**: Killed by testing deep directory creation
+
+#### Equivalent Mutants
+
+**Type 1: Docstring Modifications**
+```python
+# Original: """Save merge state to JSON file."""
+# Mutated: """ merge state to JSON file."""  (removed "Save")
+```
+**Rationale**: Docstrings are metadata, don't affect runtime behavior
+
+**Type 2: Type Hint Changes**
+```python
+# Original: def save_state(state: MergeState, repo_root: Path) -> None:
+# Mutated: def save_state(state: Any, repo_root: Path) -> None:
+```
+**Rationale**: Python doesn't enforce type hints at runtime
+
+**Type 3: Import Order**
+Mutations reordering import statements have no effect (no side effects in imports)
 
 ---
 
