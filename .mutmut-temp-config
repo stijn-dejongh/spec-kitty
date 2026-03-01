@@ -1,0 +1,7 @@
+[tool.mutmut]
+paths_to_mutate = ["src/specify_cli/merge/"]
+tests_dir = ["tests/unit/test_merge_state.py", "tests/unit/test_merge_preflight.py", "tests/unit/test_merge_forecast.py"]
+pytest_add_cli_args = []
+debug = true
+also_copy = ["LICENSE", "README.md", "src/specify_cli/*.py", "src/doctrine/"]
+do_not_mutate = ["src/specify_cli/upgrade/migrations/"]

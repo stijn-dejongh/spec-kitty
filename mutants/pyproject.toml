@@ -169,7 +169,7 @@ ignore_errors = true
 # WP04 scope: merge/ and core/ (squashing campaign batch 2)
 paths_to_mutate = ["src/specify_cli/merge/", "src/specify_cli/core/"]
 tests_dir = ["tests/unit/", "tests/specify_cli/"]
-pytest_add_cli_args = ["--timeout=30"]
+pytest_add_cli_args = []
 debug = true
 also_copy = [
     "LICENSE",
