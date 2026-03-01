@@ -166,9 +166,10 @@ module = [
 ignore_errors = true
 
 [tool.mutmut]
-paths_to_mutate = ["src/specify_cli/"]
+# WP03 scope: status/ and glossary/ (squashing campaign batch 1)
+paths_to_mutate = ["src/specify_cli/status/", "src/specify_cli/glossary/"]
 tests_dir = ["tests/"]
-pytest_add_cli_args = ["-x", "--timeout=30", "-q"]
+pytest_add_cli_args = ["--timeout=30"]
 # Exclude migrations (idempotent, hard to unit-test meaningfully via mutation)
 do_not_mutate = [
     "src/specify_cli/upgrade/migrations/",
