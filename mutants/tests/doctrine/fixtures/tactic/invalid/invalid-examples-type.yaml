@@ -1,6 +1,0 @@
-schema_version: "1.0"
-id: zombies-tdd
-name: ZOMBIES TDD
-steps:
-  - title: define zero case
-    examples: "Zero to One"
