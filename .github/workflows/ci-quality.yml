@@ -200,6 +200,27 @@ jobs:
             echo "has_failures=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Run architecture/docs consistency tests on changed markdown
+        if: always()
+        run: |
+          FROM_SHA="${{ steps.commit_range.outputs.from }}"
+          TO_SHA="${{ steps.commit_range.outputs.to }}"
+
+          if [ -z "$FROM_SHA" ] || [ -z "$TO_SHA" ]; then
+            echo "No commit range available for this trigger. Skipping docs consistency tests."
+            exit 0
+          fi
+
+          mapfile -d '' CHANGED_ARCH_DOC_MD < <(git diff --name-only -z --diff-filter=ACM "$FROM_SHA" "$TO_SHA" -- 'docs/*.md' 'docs/**/*.md' 'architecture/*.md' 'architecture/**/*.md')
+
+          if [ "${#CHANGED_ARCH_DOC_MD[@]}" -eq 0 ]; then
+            echo "No changed markdown files under docs/ or architecture/. Skipping docs consistency tests."
+            exit 0
+          fi
+
+          echo "Detected markdown changes in docs/architecture. Running consistency checks..."
+          python -m pytest -q tests/docs/test_architecture_docs_consistency.py tests/docs/test_versioned_docs_integrity.py
+
       - name: Run ruff report
         id: ruff
         if: always()

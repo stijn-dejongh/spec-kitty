@@ -9,6 +9,7 @@ Terms describing who performs work and who owns semantic decisions.
 | **Definition** | Logical collaborator identity used in workflow coordination (for example implementer, reviewer). |
 | **Context** | Identity |
 | **Status** | canonical |
+| **Applicable to** | `1.x`, `2.x` |
 | **Related terms** | [Tool](./execution.md#tool), [Role](#role) |
 
 ---
@@ -20,6 +21,7 @@ Terms describing who performs work and who owns semantic decisions.
 | **Definition** | Responsibility assignment for a step or work package (implementer, reviewer, planner, etc.). |
 | **Context** | Identity |
 | **Status** | canonical |
+| **Applicable to** | `1.x`, `2.x` |
 
 ---
 
@@ -30,6 +32,7 @@ Terms describing who performs work and who owns semantic decisions.
 | **Definition** | Human or tool-backed collaborator participating in a mission run. |
 | **Context** | Identity |
 | **Status** | canonical |
+| **Applicable to** | `1.x`, `2.x` |
 
 ---
 
@@ -40,6 +43,7 @@ Terms describing who performs work and who owns semantic decisions.
 | **Definition** | Participant responsible for tie-breaking unresolved semantic conflicts when collaborators disagree. |
 | **Context** | Identity |
 | **Status** | canonical |
+| **Applicable to** | `1.x`, `2.x` |
 | **Rule** | Tie-break only after normal participant resolution fails |
 
 ---
@@ -51,5 +55,6 @@ Terms describing who performs work and who owns semantic decisions.
 | **Definition** | The human who remains responsible and accountable for decisions made during a mission. Agents assist and propose, but the HiC owns the final call. This principle ensures that automation supports human judgement rather than replacing it. |
 | **Context** | Identity |
 | **Status** | candidate |
+| **Applicable to** | `1.x`, `2.x` |
 | **Related terms** | [Mission Owner](#mission-owner), [Collaboration Mode](./execution.md#collaboration-mode), [HiC cross-reference](./practices-principles.md#human-in-charge-cross-reference) |
 
