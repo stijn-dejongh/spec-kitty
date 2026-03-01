@@ -1,0 +1,31 @@
+{
+    "exit_code_by_key": {
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1__init____mutmut_1": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1__init____mutmut_2": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1__init____mutmut_3": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1__init____mutmut_4": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1__init____mutmut_5": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1__init____mutmut_6": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1add_sense__mutmut_1": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1add_sense__mutmut_2": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1add_sense__mutmut_3": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1add_sense__mutmut_4": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1add_sense__mutmut_5": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1add_sense__mutmut_6": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1add_sense__mutmut_7": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1_lookup_impl__mutmut_1": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1_lookup_impl__mutmut_2": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1_lookup_impl__mutmut_3": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1_lookup_impl__mutmut_4": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1_lookup_impl__mutmut_5": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1_lookup_impl__mutmut_6": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1lookup__mutmut_1": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1lookup__mutmut_2": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1lookup__mutmut_3": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1lookup__mutmut_4": null,
+        "specify_cli.glossary.store.x\u01c1GlossaryStore\u01c1lookup__mutmut_5": null
+    },
+    "durations_by_key": {},
+    "type_check_error_by_key": {},
+    "estimated_durations_by_key": {}
+}
