@@ -170,6 +170,7 @@ ignore_errors = true
 paths_to_mutate = ["src/specify_cli/status/", "src/specify_cli/glossary/"]
 tests_dir = ["tests/specify_cli/glossary/", "tests/specify_cli/status/", "tests/specify_cli/cli/commands/test_status_cli.py", "tests/specify_cli/cli/commands/test_status_validate.py", "tests/specify_cli/cli/commands/test_glossary.py"]
 pytest_add_cli_args = ["--timeout=30"]
+debug = true
 also_copy = ["LICENSE", "README.md"]
 # Exclude migrations (idempotent, hard to unit-test meaningfully via mutation)
 do_not_mutate = [
