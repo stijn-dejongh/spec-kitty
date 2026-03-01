@@ -1,0 +1,31 @@
+{
+    "exit_code_by_key": {
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_1": null,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_2": null,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_3": null,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_4": null,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_5": null,
+        "specify_cli.glossary.exceptions.x\u01c1DeferredToAsync\u01c1__init____mutmut_1": 1,
+        "specify_cli.glossary.exceptions.x\u01c1DeferredToAsync\u01c1__init____mutmut_2": 1,
+        "specify_cli.glossary.exceptions.x\u01c1AbortResume\u01c1__init____mutmut_1": 1,
+        "specify_cli.glossary.exceptions.x\u01c1AbortResume\u01c1__init____mutmut_2": 1
+    },
+    "durations_by_key": {
+        "specify_cli.glossary.exceptions.x\u01c1DeferredToAsync\u01c1__init____mutmut_1": 0.098927,
+        "specify_cli.glossary.exceptions.x\u01c1DeferredToAsync\u01c1__init____mutmut_2": 0.098337,
+        "specify_cli.glossary.exceptions.x\u01c1AbortResume\u01c1__init____mutmut_1": 0.101682,
+        "specify_cli.glossary.exceptions.x\u01c1AbortResume\u01c1__init____mutmut_2": 0.101437
+    },
+    "type_check_error_by_key": {},
+    "estimated_durations_by_key": {
+        "specify_cli.glossary.exceptions.x\u01c1DeferredToAsync\u01c1__init____mutmut_1": 0.0008810070000890846,
+        "specify_cli.glossary.exceptions.x\u01c1DeferredToAsync\u01c1__init____mutmut_2": 0.0008810070000890846,
+        "specify_cli.glossary.exceptions.x\u01c1AbortResume\u01c1__init____mutmut_1": 0.004410527999880287,
+        "specify_cli.glossary.exceptions.x\u01c1AbortResume\u01c1__init____mutmut_2": 0.004410527999880287,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_1": 0.12224573499975122,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_2": 0.12224573499975122,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_3": 0.12224573499975122,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_4": 0.12224573499975122,
+        "specify_cli.glossary.exceptions.x\u01c1BlockedByConflict\u01c1__init____mutmut_5": 0.12224573499975122
+    }
+}
