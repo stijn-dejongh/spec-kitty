@@ -1,7 +1,7 @@
 ---
 work_package_id: WP02
 title: CI Integration
-lane: planned
+lane: "in_progress"
 dependencies:
 - WP01
 subtasks:
@@ -334,3 +334,4 @@ skips it on pull_request events.
 ## Activity Log
 
 - 2026-03-01T16:00:00Z – system – lane=planned – Prompt created.
+- 2026-03-01T06:52:15Z – unknown – lane=in_progress – Starting WP02 CI integration
