@@ -50,67 +50,73 @@ Mutant names use module-path format: `specify_cli.status.transitions__mutmut_1`.
 
 ---
 
-## Finding 2 — mutmut 3.x CLI command sequence
+## Finding 2 — mutmut 3.x CLI command sequence (VERIFIED against 3.5.0)
 
-**Decision**: Use the following sequence to produce all required outputs.
+**Decision**: Use the following sequence. Note corrections from original research.
 
 ```bash
-# 1. Run mutation testing (writes to mutmut.db)
+# 1. Run mutation testing (writes metadata to mutants/ directory)
 mutmut run
 
-# 2. Export JSON stats for floor check and SonarCloud
-mutmut export-cicd-stats --output out/reports/mutation/mutation-stats.json
+# 2. Export JSON stats — writes to mutants/mutmut-cicd-stats.json (NO --output flag)
+mutmut export-cicd-stats
+# Then copy to report location:
+cp mutants/mutmut-cicd-stats.json out/reports/mutation/mutation-stats.json
 
-# 3. Generate HTML report
-mutmut html --output out/reports/mutation/
+# 3. HTML export: mutmut html does NOT exist in 3.5.0
+# mutmut browse is an interactive TUI (not an HTML file generator)
+# JSON report is the only machine-readable artifact in 3.5.0
 ```
 
-**Rationale**: `export-cicd-stats` is the standard 3.x command for machine-
-readable output. `mutmut html` generates the browsable report. Both are stable
-in mutmut>=3.5.0.
+**Corrections from original research**:
+- `mutmut export-cicd-stats --output <path>` is WRONG — `--output` flag does not exist;
+  output path is fixed: `mutants/mutmut-cicd-stats.json`
+- `mutmut html` command does NOT exist in mutmut 3.5.0 (only `mutmut browse` exists,
+  which is an interactive TUI browser)
+- `mutmut run` exit codes: exits 0 regardless of surviving mutants (confirmed for 3.5.0)
+- mutmut 3.x working directory: `mutants/` (not `mutmut.db` — SQLite is not used)
+  Add `mutants/` to `.gitignore`
 
-**mutmut exit codes**:
-- `mutmut run` exits 0 when complete regardless of surviving mutants
-- Surviving mutants do **not** cause a non-zero exit code by default
-- Floor enforcement must be done via a separate script reading the JSON stats
+**JSON schema** (flat, no `summary` wrapper):
+```json
+{"killed": 0, "survived": 0, "total": 60711, "no_tests": 0, "skipped": 0,
+ "suspicious": 0, "timeout": 0, "check_was_interrupted_by_user": 0, "segfault": 0}
+```
 
 **Alternatives considered**:
-- `mutmut junitxml` — rejected (JUnit format less informative for mutation; HTML + JSON sufficient)
 - Parsing `mutmut results` stdout — rejected (text parsing is fragile; JSON is canonical)
 
 ---
 
-## Finding 3 — mutation-stats.json schema (mutmut export-cicd-stats)
+## Finding 3 — mutation-stats.json schema (VERIFIED against mutmut 3.5.0)
 
-**Decision**: Parse `killed` and `survived` fields from the JSON output.
+**Decision**: Parse `killed` and `survived` fields from the flat JSON output.
 
-The JSON output from `mutmut export-cicd-stats` has the following structure:
+The actual JSON output from `mutmut export-cicd-stats` in 3.5.0 is **flat** (no `summary` wrapper):
 
 ```json
 {
-  "summary": {
-    "total": 120,
-    "killed": 95,
-    "survived": 18,
-    "timeout": 3,
-    "suspicious": 4
-  },
-  "mutation_score": 0.7917
+  "killed": 95,
+  "survived": 18,
+  "total": 120,
+  "no_tests": 0,
+  "skipped": 0,
+  "suspicious": 4,
+  "timeout": 3,
+  "check_was_interrupted_by_user": 0,
+  "segfault": 0
 }
 ```
 
-`mutation_score` is `killed / (total - timeout - suspicious)` or similar
-(exact formula may vary by 3.x patch). The floor check should use
-`killed / (killed + survived)` as the most conservative measure to avoid
-division-by-zero when all mutants time out.
+The floor check uses `killed / (killed + survived)` to avoid division-by-zero
+when all mutants time out or are skipped.
 
-**Zero-mutant edge case**: If `total == 0` (empty source scope), emit a warning
-and exit 0 — no score is computable.
+**Zero-mutant edge case**: If `killed + survived == 0` (empty source scope or all
+mutants timed out), emit a warning and exit 0.
 
-**Alternatives considered**:
-- Using `mutation_score` directly — not used as primary because its exact
-  denominator is undocumented across minor versions; recomputing from raw
-  counts is more robust
+**check_mutation_floor.py compatibility**: The script uses `data.get("summary", data)`
+which falls back to the top-level dict when "summary" key is absent, making it
+compatible with the actual flat schema.
 
 ---
 

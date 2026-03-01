@@ -91,6 +91,7 @@ doctrine_ref
 mutmut.db
 mutmut-cache/
 .mutmut-cache
+mutants/  # mutmut 3.x working directory (SQLite, meta files, cicd-stats)
 
 # CI report outputs
 .coverage

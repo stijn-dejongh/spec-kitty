@@ -733,12 +733,13 @@ jobs:
       - name: Export mutation stats (JSON)
         if: always()
         run: |
-          mutmut export-cicd-stats --output out/reports/mutation/mutation-stats.json || \
-            echo '{"summary": {"killed": 0, "survived": 0}}' > out/reports/mutation/mutation-stats.json
-
-      - name: Export mutation report (HTML)
-        if: always()
-        run: mutmut html --output out/reports/mutation/ || true
+          # mutmut 3.5.0 writes stats to mutants/mutmut-cicd-stats.json (no --output flag)
+          mutmut export-cicd-stats || true
+          if [ -f mutants/mutmut-cicd-stats.json ]; then
+            cp mutants/mutmut-cicd-stats.json out/reports/mutation/mutation-stats.json
+          else
+            echo '{"killed": 0, "survived": 0, "total": 0}' > out/reports/mutation/mutation-stats.json
+          fi
 
       - name: Enforce mutation score floor
         if: always()
