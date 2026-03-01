@@ -81,6 +81,7 @@ test = [
     "pytest>=7.4",
     "pytest-asyncio>=0.21.0",  # Required for async tests
     "pytest-cov>=4.1.0",  # Required by CI coverage flags
+    "pytest-timeout>=2.2.0",  # Required by mutmut pytest_add_cli_args --timeout flag
     "diff-cover>=10.0.0",  # Enforce changed-line coverage in CI
     "build>=1.0.0",  # Required for distribution tests (wheel building)
     "mutmut>=3.5.0",  # Mutation testing
