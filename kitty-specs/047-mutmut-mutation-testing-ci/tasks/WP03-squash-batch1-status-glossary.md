@@ -1,7 +1,7 @@
 ---
 work_package_id: WP03
 title: Squash Survivors — Batch 1 (status/, glossary/)
-lane: planned
+lane: "in_progress"
 dependencies:
 - WP02
 subtasks:
@@ -291,3 +291,4 @@ and why.
 ## Activity Log
 
 - 2026-03-01T16:00:00Z – system – lane=planned – Prompt created.
+- 2026-03-01T07:16:56Z – unknown – lane=in_progress – Starting WP03 squashing campaign: status/ and glossary/
