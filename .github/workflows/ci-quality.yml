@@ -221,6 +221,29 @@ jobs:
           echo "Detected markdown changes in docs/architecture. Running consistency checks..."
           python -m pytest -q tests/docs/test_architecture_docs_consistency.py tests/docs/test_versioned_docs_integrity.py
 
+      - name: Check Contextive glossary files are up-to-date
+        if: always()
+        run: |
+          FROM_SHA="${{ steps.commit_range.outputs.from }}"
+          TO_SHA="${{ steps.commit_range.outputs.to }}"
+
+          if [ -z "$FROM_SHA" ] || [ -z "$TO_SHA" ]; then
+            echo "No commit range available. Running Contextive check unconditionally."
+            python scripts/generate_contextive_glossaries.py check
+            exit $?
+          fi
+
+          mapfile -d '' CHANGED < <(git diff --name-only -z --diff-filter=ACM "$FROM_SHA" "$TO_SHA" \
+            -- 'glossary/**' 'src/specify_cli/**' '.kittify/traceability/**')
+
+          if [ "${#CHANGED[@]}" -eq 0 ]; then
+            echo "No changes in glossary/, src/specify_cli/, or .kittify/traceability/. Skipping Contextive check."
+            exit 0
+          fi
+
+          echo "Detected relevant changes. Verifying Contextive glossary files are up-to-date..."
+          python scripts/generate_contextive_glossaries.py check
+
       - name: Run ruff report
         id: ruff
         if: always()
