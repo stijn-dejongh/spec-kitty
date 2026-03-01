@@ -1,0 +1,9 @@
+{
+  "feature_number": "047",
+  "slug": "047-mutmut-mutation-testing-ci",
+  "feature_slug": "047-mutmut-mutation-testing-ci",
+  "friendly_name": "mutmut mutation testing ci",
+  "mission": "software-dev",
+  "target_branch": "architecture/restructure_and_proposals",
+  "created_at": "2026-03-01T06:10:27.411177+00:00"
+}
