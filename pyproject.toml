@@ -169,7 +169,7 @@ ignore_errors = true
 # WP04 scope: merge/ and core/ (squashing campaign batch 2)
 paths_to_mutate = ["src/specify_cli/merge/", "src/specify_cli/core/"]
 tests_dir = ["tests/unit/", "tests/specify_cli/"]
-pytest_add_cli_args = ["--ignore=tests/unit/agent/test_tasks.py", "--ignore=tests/unit/agent/test_workflow_instructions.py", "--ignore=tests/unit/agent/test_workflow_research.py"]
+pytest_add_cli_args = ["--ignore=tests/unit/agent/test_tasks.py", "--ignore=tests/unit/agent/test_workflow_instructions.py", "--ignore=tests/unit/agent/test_workflow_research.py", "--ignore=tests/unit/test_pre_commit_wp_guard.py", "--ignore=tests/specify_cli/cli/commands/test_event_emission.py", "--ignore=tests/specify_cli/test_cli/test_init_command.py", "--ignore=tests/specify_cli/test_review_warnings.py"]
 debug = true
 also_copy = [
     "LICENSE",

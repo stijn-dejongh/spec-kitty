@@ -149,7 +149,7 @@ class TestStatePersistenceEdgeCases:
         )
         
         # Save initial state
-        save_state(tmp_path, state)
+        save_state(state, tmp_path)
         initial_updated = state.updated_at
 
         # Small delay to ensure timestamp difference
@@ -157,7 +157,7 @@ class TestStatePersistenceEdgeCases:
 
         # Modify and save again
         state.mark_wp_complete("WP01")
-        save_state(tmp_path, state)
+        save_state(state, tmp_path)
 
         # Load and verify timestamp changed
         loaded = load_state(tmp_path)
@@ -194,7 +194,7 @@ class TestStatePersistenceEdgeCases:
             updated_at="2026-03-01T11:00:00+00:00",
         )
 
-        save_state(tmp_path, original)
+        save_state(original, tmp_path)
         loaded = load_state(tmp_path)
 
         assert loaded is not None
