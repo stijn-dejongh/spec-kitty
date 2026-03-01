@@ -1,9 +1,14 @@
 # Stakeholder Persona: Project Codebase
 
-**Category**: `INTERNAL Stakeholder`
-**Actor Type**: `system`
-**Primary Goal**: Preserve structural coherence while enabling safe, incremental change.
-**Referenced In**: [002-system-architecture-design](../../2.x/user_journey/002-system-architecture-design.md), [003-system-design-and-shared-understanding](../../2.x/user_journey/003-system-design-and-shared-understanding.md)
+| Field | Value |
+|---|---|
+| **Category** | `INTERNAL Stakeholder` |
+| **Actor Type** | `system` |
+| **Primary Goal** | Preserve structural coherence while enabling safe, incremental change. |
+| **Persona ID** | `aud-project-codebase` |
+| **Created / Updated** | `2026-02-28` |
+| **Domain / Context** | Spec Kitty architecture 2.x |
+| **Status** | canonical |
 
 ---
 
@@ -89,12 +94,3 @@ can evolve.
 
 ---
 
-## Metadata
-
-| Field | Value |
-|---|---|
-| **Persona ID** | `aud-project-codebase` |
-| **Created / Updated** | `2026-02-28` |
-| **Domain / Context** | Spec Kitty architecture 2.x |
-| **Linked Journeys** | `architecture/2.x/user_journey/002-system-architecture-design.md`, `architecture/2.x/user_journey/003-system-design-and-shared-understanding.md` |
-| **Linked ADRs** | `architecture/2.x/adr/2026-02-23-3-versioned-1x-2x-docs-site-without-hosted-platform-scope.md` |

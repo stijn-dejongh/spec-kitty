@@ -63,7 +63,6 @@ Terms describing operating principles for glossary-semantic-integrity execution.
 |---|---|
 | **Definition** | The principle that the human remains responsible and accountable for all decisions. Agents assist and propose; the HiC owns the final call. See full definition in Identity context. |
 | **Context** | Practices & Principles |
-| **Status** | candidate |
+| **Status** | canonical |
 | **Applicable to** | `1.x`, `2.x` |
 | **Canonical entry** | [Human-in-Charge (HiC)](./identity.md#human-in-charge-hic) |
-

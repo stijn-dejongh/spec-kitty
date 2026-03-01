@@ -1,9 +1,14 @@
 # Stakeholder Persona: Maintainer
 
-**Category**: `INTERNAL Stakeholder`
-**Actor Type**: `human`
-**Primary Goal**: Keep governance operations sustainable, auditable, and low-friction for contributors.
-**Referenced In**: [005-governance-mission-constitution-operations](../../2.x/user_journey/005-governance-mission-constitution-operations.md)
+| Field | Value |
+|---|---|
+| **Category** | `INTERNAL Stakeholder` |
+| **Actor Type** | `human` |
+| **Primary Goal** | Keep governance operations sustainable, auditable, and low-friction for contributors. |
+| **Persona ID** | `aud-maintainer` |
+| **Created / Updated** | `2026-02-28` |
+| **Domain / Context** | Spec Kitty architecture 2.x |
+| **Status** | canonical |
 
 ---
 
@@ -88,12 +93,3 @@ introducing hidden policy drift. Their baseline expectation is traceability.
 
 ---
 
-## Metadata
-
-| Field | Value |
-|---|---|
-| **Persona ID** | `aud-maintainer` |
-| **Created / Updated** | `2026-02-28` |
-| **Domain / Context** | Spec Kitty architecture 2.x |
-| **Linked Journeys** | `architecture/2.x/user_journey/005-governance-mission-constitution-operations.md` |
-| **Linked ADRs** | `architecture/2.x/adr/2026-02-23-1-doctrine-artifact-governance-model.md` |

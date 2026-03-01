@@ -1,9 +1,14 @@
 # Stakeholder Persona: Project Owner
 
-**Category**: `EXTERNAL Stakeholder`
-**Actor Type**: `human`
-**Primary Goal**: Ship meaningful outcomes quickly while keeping project direction coherent.
-**Referenced In**: [001-project-onboarding-bootstrap](../../2.x/user_journey/001-project-onboarding-bootstrap.md)
+| Field | Value |
+|---|---|
+| **Category** | `EXTERNAL Stakeholder` |
+| **Actor Type** | `human` |
+| **Primary Goal** | Ship meaningful outcomes quickly while keeping project direction coherent. |
+| **Persona ID** | `aud-project-owner` |
+| **Created / Updated** | `2026-02-28` |
+| **Domain / Context** | Spec Kitty architecture 2.x |
+| **Status** | canonical |
 
 ---
 
@@ -89,12 +94,3 @@ handoffs across human and agent actors.
 
 ---
 
-## Metadata
-
-| Field | Value |
-|---|---|
-| **Persona ID** | `aud-project-owner` |
-| **Created / Updated** | `2026-02-28` |
-| **Domain / Context** | Spec Kitty architecture 2.x |
-| **Linked Journeys** | `architecture/2.x/user_journey/001-project-onboarding-bootstrap.md` |
-| **Linked ADRs** | `architecture/2.x/adr/2026-02-17-1-canonical-next-command-runtime-loop.md` |

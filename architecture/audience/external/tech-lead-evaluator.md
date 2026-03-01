@@ -1,9 +1,14 @@
 # Stakeholder Persona: External Tech Lead Evaluator
 
-**Category**: `EXTERNAL Stakeholder`
-**Actor Type**: `human`
-**Primary Goal**: Determine whether Spec Kitty can improve team delivery quality and predictability without adding unsustainable process overhead.
-**Referenced In**: [Architecture 2.x](../../2.x/README.md), [Domain Breakdown](../../2.x/domain-breakdown.md)
+| Field | Value |
+|---|---|
+| **Category** | `EXTERNAL Stakeholder` |
+| **Actor Type** | `human` |
+| **Primary Goal** | Determine whether Spec Kitty can improve team delivery quality and predictability without adding unsustainable process overhead. |
+| **Persona ID** | `aud-ext-tech-lead-evaluator` |
+| **Created / Updated** | `2026-03-01` |
+| **Domain / Context** | Spec Kitty architecture 2.x |
+| **Status** | canonical |
 
 ---
 
@@ -89,12 +94,3 @@ and demonstrably useful under delivery pressure.
 
 ---
 
-## Metadata
-
-| Field | Value |
-|---|---|
-| **Persona ID** | `aud-ext-tech-lead-evaluator` |
-| **Created / Updated** | `2026-03-01` |
-| **Domain / Context** | Spec Kitty architecture 2.x |
-| **Linked Journeys** | `architecture/2.x/README.md` |
-| **Linked ADRs** | `architecture/2.x/adr/2026-02-17-1-canonical-next-command-runtime-loop.md`, `architecture/2.x/adr/2026-02-09-2-wp-lifecycle-state-machine.md` |

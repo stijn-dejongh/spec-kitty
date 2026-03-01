@@ -1,9 +1,14 @@
 # Stakeholder Persona: External Architect Evaluator
 
-**Category**: `EXTERNAL Stakeholder`
-**Actor Type**: `human`
-**Primary Goal**: Assess whether Spec Kitty architecture and decision model are robust enough for long-term organizational adoption.
-**Referenced In**: [Architecture 2.x](../../2.x/README.md), [C4 Components](../../2.x/03_components/README.md)
+| Field | Value |
+|---|---|
+| **Category** | `EXTERNAL Stakeholder` |
+| **Actor Type** | `human` |
+| **Primary Goal** | Assess whether Spec Kitty architecture and decision model are robust enough for long-term organizational adoption. |
+| **Persona ID** | `aud-ext-architect-evaluator` |
+| **Created / Updated** | `2026-03-01` |
+| **Domain / Context** | Spec Kitty architecture 2.x |
+| **Status** | canonical |
 
 ---
 
@@ -89,12 +94,3 @@ before recommending adoption.
 
 ---
 
-## Metadata
-
-| Field | Value |
-|---|---|
-| **Persona ID** | `aud-ext-architect-evaluator` |
-| **Created / Updated** | `2026-03-01` |
-| **Domain / Context** | Spec Kitty architecture 2.x |
-| **Linked Journeys** | `architecture/2.x/README.md`, `architecture/2.x/03_components/README.md` |
-| **Linked ADRs** | `architecture/2.x/adr/2026-02-23-1-doctrine-artifact-governance-model.md`, `architecture/2.x/adr/2026-02-23-3-versioned-1x-2x-docs-site-without-hosted-platform-scope.md` |

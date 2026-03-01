@@ -1,9 +1,14 @@
 # Stakeholder Persona: Lead Developer
 
-**Category**: `INTERNAL Stakeholder`
-**Actor Type**: `human`
-**Primary Goal**: Translate architecture and governance intent into practical implementation behavior.
-**Referenced In**: [004-curating-external-practice-into-governance](../../2.x/user_journey/004-curating-external-practice-into-governance.md)
+| Field | Value |
+|---|---|
+| **Category** | `INTERNAL Stakeholder` |
+| **Actor Type** | `human` |
+| **Primary Goal** | Translate architecture and governance intent into practical implementation behavior. |
+| **Persona ID** | `aud-lead-developer` |
+| **Created / Updated** | `2026-02-28` |
+| **Domain / Context** | Spec Kitty architecture 2.x |
+| **Status** | canonical |
 
 ---
 
@@ -89,12 +94,3 @@ change has a clear activation and validation path.
 
 ---
 
-## Metadata
-
-| Field | Value |
-|---|---|
-| **Persona ID** | `aud-lead-developer` |
-| **Created / Updated** | `2026-02-28` |
-| **Domain / Context** | Spec Kitty architecture 2.x |
-| **Linked Journeys** | `architecture/2.x/user_journey/004-curating-external-practice-into-governance.md` |
-| **Linked ADRs** | `architecture/2.x/adr/2026-02-23-1-doctrine-artifact-governance-model.md` |

@@ -1,9 +1,14 @@
 # Stakeholder Persona: Spec Kitty CLI Runtime
 
-**Category**: `INTERNAL Stakeholder`
-**Actor Type**: `system`
-**Primary Goal**: Enforce deterministic command behavior, artifact lifecycle rules, and governance boundaries.
-**Referenced In**: [001-project-onboarding-bootstrap](../../2.x/user_journey/001-project-onboarding-bootstrap.md), [002-system-architecture-design](../../2.x/user_journey/002-system-architecture-design.md), [003-system-design-and-shared-understanding](../../2.x/user_journey/003-system-design-and-shared-understanding.md), [004-curating-external-practice-into-governance](../../2.x/user_journey/004-curating-external-practice-into-governance.md), [005-governance-mission-constitution-operations](../../2.x/user_journey/005-governance-mission-constitution-operations.md)
+| Field | Value |
+|---|---|
+| **Category** | `INTERNAL Stakeholder` |
+| **Actor Type** | `system` |
+| **Primary Goal** | Enforce deterministic command behavior, artifact lifecycle rules, and governance boundaries. |
+| **Persona ID** | `aud-spec-kitty-cli-runtime` |
+| **Created / Updated** | `2026-02-28` |
+| **Domain / Context** | Spec Kitty architecture 2.x |
+| **Status** | canonical |
 
 ---
 
@@ -88,12 +93,3 @@ transitions are deterministic, boundaries are explicit, and failures are actiona
 
 ---
 
-## Metadata
-
-| Field | Value |
-|---|---|
-| **Persona ID** | `aud-spec-kitty-cli-runtime` |
-| **Created / Updated** | `2026-02-28` |
-| **Domain / Context** | Spec Kitty architecture 2.x |
-| **Linked Journeys** | `architecture/2.x/user_journey/001-project-onboarding-bootstrap.md`, `architecture/2.x/user_journey/002-system-architecture-design.md`, `architecture/2.x/user_journey/003-system-design-and-shared-understanding.md`, `architecture/2.x/user_journey/004-curating-external-practice-into-governance.md`, `architecture/2.x/user_journey/005-governance-mission-constitution-operations.md` |
-| **Linked ADRs** | `architecture/2.x/adr/2026-02-17-1-canonical-next-command-runtime-loop.md`, `architecture/2.x/adr/2026-02-09-2-wp-lifecycle-state-machine.md` |

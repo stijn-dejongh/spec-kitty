@@ -23,7 +23,7 @@ Terms describing the Doctrine domain model and doctrine artifact taxonomy.
 | **Context**       | Doctrine                                                                                                                                                                                                                                |
 | **Status**        | canonical                                                                                                                                                                                                                               |
 | **Applicable to** | `1.x`, `2.x` |
-| **Location**      | `src/doctrine/guidelines/` (target model)                                                                                                                                                                                              |
+| **Location**      | Precedence concept in governance model (no dedicated `src/doctrine/guidelines/` directory in current tree)                                                                                                                           |
 | **Related terms** | [Directive](#directive), [Constitution Selection](#constitution-selection), [Precedence Hierarchy](./governance.md)                                                                                                                  |
 
 ---
@@ -73,7 +73,7 @@ Terms describing the Doctrine domain model and doctrine artifact taxonomy.
 |-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Definition**    | A structured set of doctrine templates that shape output artifacts and interaction contracts for workflows. Template sets allow consistent behavior across missions while remaining configurable through constitution selections.         |
 | **Context**       | Doctrine                                                                                                                                                                                                                                |
-| **Status**        | candidate                                                                                                                                                                                                                               |
+| **Status**        | canonical                                                                                                                                                                                                                               |
 | **Applicable to** | `1.x`, `2.x` |
 | **Location**      | `src/doctrine/templates/sets/`                                                                                                                                                                                                         |
 | **Related terms** | [Tactic](#tactic), [Constitution Selection](#constitution-selection)                                                                                                                                                                   |
@@ -86,7 +86,7 @@ Terms describing the Doctrine domain model and doctrine artifact taxonomy.
 |-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Definition**    | A doctrine artifact defining cross-cutting quality and consistency conventions (for example coding, documentation, or testing style) that apply across missions and templates.                                                         |
 | **Context**       | Doctrine                                                                                                                                                                                                                                |
-| **Status**        | candidate                                                                                                                                                                                                                               |
+| **Status**        | canonical                                                                                                                                                                                                                               |
 | **Applicable to** | `1.x`, `2.x` |
 | **Location**      | `src/doctrine/styleguides/`                                                                                                                                                                                                            |
 | **Related terms** | [Toolguide](#toolguide), [Schema (Doctrine Artifact)](#schema-doctrine-artifact), [Constitution Selection](#constitution-selection)                                                                                                   |
@@ -99,7 +99,7 @@ Terms describing the Doctrine domain model and doctrine artifact taxonomy.
 |-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Definition**    | A doctrine artifact defining tool-specific operational guidance, syntax, and constraints (for example PowerShell usage conventions) used by agents and contributors during execution.                                                   |
 | **Context**       | Doctrine                                                                                                                                                                                                                                |
-| **Status**        | candidate                                                                                                                                                                                                                               |
+| **Status**        | canonical                                                                                                                                                                                                                               |
 | **Applicable to** | `1.x`, `2.x` |
 | **Location**      | `src/doctrine/toolguides/`                                                                                                                                                                                                             |
 | **Related terms** | [Styleguide](#styleguide), [Tactic](#tactic), [Execution](./execution.md)                                                                                                                                                             |
@@ -151,7 +151,7 @@ Terms describing the Doctrine domain model and doctrine artifact taxonomy.
 |-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Definition**    | The registry of all available paradigms, directives, template sets, and tools that the HiC can select from when building their constitution. The constitution compiler validates selections against this catalog.                       |
 | **Context**       | Doctrine                                                                                                                                                                                                                                |
-| **Status**        | candidate                                                                                                                                                                                                                               |
+| **Status**        | canonical                                                                                                                                                                                                                               |
 | **Applicable to** | `1.x`, `2.x` |
 | **Related terms** | [Constitution Selection](#constitution-selection), [Constitution Compiler](./governance.md#constitution-compiler), [Human-in-Charge (HiC)](./identity.md#human-in-charge-hic)                                                         |
 

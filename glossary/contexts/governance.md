@@ -68,7 +68,7 @@ Terms describing rule ownership, precedence, and policy controls in Spec Kitty.
 |---|---|
 | **Definition** | A guided question-and-answer process that walks the HiC through their project's preferences, constraints, and doctrine selections. Answers are saved to `answers.yaml` and used to compile the constitution. |
 | **Context** | Governance |
-| **Status** | candidate |
+| **Status** | canonical |
 | **Applicable to** | `1.x`, `2.x` |
 | **Related terms** | [Constitution](#constitution), [Constitution Compiler](#constitution-compiler), [Human-in-Charge (HiC)](./identity.md#human-in-charge-hic) |
 
@@ -80,7 +80,7 @@ Terms describing rule ownership, precedence, and policy controls in Spec Kitty.
 |---|---|
 | **Definition** | The processor that takes the HiC's interview answers and their selected doctrine artifacts, and combines them into a finalized constitution document and supporting governance files. |
 | **Context** | Governance |
-| **Status** | candidate |
+| **Status** | canonical |
 | **Applicable to** | `1.x`, `2.x` |
 | **Related terms** | [Constitution](#constitution), [Constitution Interview](#constitution-interview), [Doctrine Catalog](./doctrine.md#doctrine-catalog) |
 
@@ -92,6 +92,6 @@ Terms describing rule ownership, precedence, and policy controls in Spec Kitty.
 |---|---|
 | **Definition** | The result of checking the HiC's constitution selections against available doctrine catalogs — confirming that the referenced paradigms, directives, and tools actually exist and are compatible with each other. |
 | **Context** | Governance |
-| **Status** | candidate |
+| **Status** | canonical |
 | **Applicable to** | `1.x`, `2.x` |
 | **Related terms** | [Constitution Compiler](#constitution-compiler), [Doctrine Catalog](./doctrine.md#doctrine-catalog) |

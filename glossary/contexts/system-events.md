@@ -104,7 +104,7 @@ Terms describing Spec Kitty's append-only event model, replay behavior, and syst
 |---|---|
 | **Definition** | The standard event emitted when a work package moves from one lane to another (e.g., from `planned` to `in_progress`). Part of the status model's event contract. |
 | **Context** | System Events |
-| **Status** | candidate |
+| **Status** | canonical |
 | **Applicable to** | `1.x`, `2.x` |
 | **Related terms** | [Work Package](./orchestration.md#work-package), [Lane](./orchestration.md#lane), [Event Envelope](#event-envelope) |
 
@@ -116,6 +116,6 @@ Terms describing Spec Kitty's append-only event model, replay behavior, and syst
 |---|---|
 | **Definition** | A logical counter included in event envelopes that tracks the order events happened in, without relying on wall-clock time. Each new event increments the counter, ensuring events can be reliably ordered even across different machines. |
 | **Context** | System Events |
-| **Status** | candidate |
+| **Status** | canonical |
 | **Applicable to** | `1.x`, `2.x` |
 | **Related terms** | [Event Envelope](#event-envelope), [Replay](#replay) |

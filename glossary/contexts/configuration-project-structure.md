@@ -10,7 +10,7 @@ Terms describing where policy, runtime configuration, and mission artifacts live
 | **Context** | Configuration & Project Structure |
 | **Status** | canonical |
 | **Applicable to** | `1.x`, `2.x` |
-| **Key contents** | `config.yaml`, `memory/constitution.md`, command templates, migration metadata |
+| **Key contents** | `config.yaml`, `constitution/constitution.md` (canonical), command templates, migration metadata |
 | **Related terms** | [Constitution](./governance.md#constitution), [Mission](./orchestration.md#mission) |
 
 ---
@@ -69,7 +69,7 @@ Terms describing where policy, runtime configuration, and mission artifacts live
 |---|---|
 | **Definition** | The compiled, project-specific constitution containing the HiC's governance decisions, doctrine selections, interview answers, and reference manifest. Stored in `.kittify/constitution/`. Use "Project Constitution" when distinguishing from the Constitution Library. |
 | **Context** | Configuration & Project Structure |
-| **Status** | candidate |
+| **Status** | canonical |
 | **Applicable to** | `1.x`, `2.x` |
 | **Related terms** | [Constitution](./governance.md#constitution), [Constitution Library](#constitution-library), [Human-in-Charge (HiC)](./identity.md#human-in-charge-hic) |
 

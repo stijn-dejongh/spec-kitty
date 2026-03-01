@@ -1,9 +1,14 @@
 # Stakeholder Persona: External Product Manager Evaluator
 
-**Category**: `EXTERNAL Stakeholder`
-**Actor Type**: `human`
-**Primary Goal**: Evaluate whether Spec Kitty improves discovery-to-delivery flow while preserving product intent and decision accountability.
-**Referenced In**: [Architecture 2.x](../../2.x/README.md), [2.x User Journeys](../../2.x/user_journey/README.md)
+| Field | Value |
+|---|---|
+| **Category** | `EXTERNAL Stakeholder` |
+| **Actor Type** | `human` |
+| **Primary Goal** | Evaluate whether Spec Kitty improves discovery-to-delivery flow while preserving product intent and decision accountability. |
+| **Persona ID** | `aud-ext-product-manager-evaluator` |
+| **Created / Updated** | `2026-03-01` |
+| **Domain / Context** | Spec Kitty architecture 2.x |
+| **Status** | canonical |
 
 ---
 
@@ -89,12 +94,3 @@ execute priorities with less churn.
 
 ---
 
-## Metadata
-
-| Field | Value |
-|---|---|
-| **Persona ID** | `aud-ext-product-manager-evaluator` |
-| **Created / Updated** | `2026-03-01` |
-| **Domain / Context** | Spec Kitty architecture 2.x |
-| **Linked Journeys** | `architecture/2.x/README.md`, `architecture/2.x/user_journey/README.md` |
-| **Linked ADRs** | `architecture/2.x/adr/2026-02-09-1-canonical-wp-status-model.md`, `architecture/2.x/adr/2026-02-17-1-canonical-next-command-runtime-loop.md` |
