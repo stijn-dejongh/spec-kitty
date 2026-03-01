@@ -21,18 +21,28 @@ deprecated in favour of the standard PEP 517 approach. The project uses
 `pyproject.toml` for all tooling config (ruff, mypy, pytest) so this is
 consistent.
 
-**Key settings for this project**:
+**Key settings for this project** (verified against mutmut 3.5.0 source):
 ```toml
 [tool.mutmut]
 paths_to_mutate = ["src/specify_cli/"]
-runner = "python -m pytest -x --timeout=30 -q"
-tests_dir = "tests/"
-# Exclude generated files, migrations, and vendored code
-exclude = [
+tests_dir = ["tests/"]
+pytest_add_cli_args = ["-x", "--timeout=30", "-q"]
+# Exclude migrations (idempotent, hard to unit-test meaningfully via mutation)
+do_not_mutate = [
     "src/specify_cli/upgrade/migrations/",
-    "src/specify_cli/__pycache__/",
 ]
 ```
+
+**Verified correct key names** (from mutmut `__main__.py` `load_config()`):
+- `paths_to_mutate` — list of paths to mutate ✓
+- `do_not_mutate` — exclusion patterns (not `exclude` or `exclude_patterns`) ✓
+- `tests_dir` — list of test directories ✓
+- `pytest_add_cli_args` — extra pytest flags (not `runner` — runner is always pytest in 3.x) ✓
+- Note: `runner` is NOT a valid key in 3.x; pytest is hardcoded
+
+**CLI note**: `mutmut run` takes `MUTANT_NAMES` (specific mutant IDs), not file paths.
+To run specific files, configure `paths_to_mutate` in `pyproject.toml`.
+Mutant names use module-path format: `specify_cli.status.transitions__mutmut_1`.
 
 **Alternatives considered**:
 - `setup.cfg` `[mutmut]` section — rejected (deprecated, inconsistent with project tooling style)

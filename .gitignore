@@ -87,6 +87,11 @@ sdd-*/
 doctrine_ref
 /work/
 
+# mutmut mutation testing
+mutmut.db
+mutmut-cache/
+.mutmut-cache
+
 # CI report outputs
 .coverage
 out/reports/**
