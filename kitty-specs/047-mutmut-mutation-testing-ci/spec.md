@@ -115,6 +115,46 @@ kills it, re-run, and confirm the mutant is now dead.
 
 ---
 
+### User Story 5 — Maintainer runs a baseline squashing campaign on existing code (Priority: P1)
+
+Before the feature is considered done, a maintainer runs mutation testing
+against the existing codebase, identifies surviving mutants in the
+highest-value modules, writes targeted tests to kill those mutants, and then
+sets the mutation score floor to the achieved baseline. This transforms the
+initial 0% placeholder floor into a meaningful, enforced lower bound that
+protects the project going forward.
+
+**Why this priority**: Without this step the toolchain exists but provides no
+protection. A floor of 0% never fails, so it conveys no quality signal. Doing
+the squashing campaign as part of the feature delivery ensures the tool
+produces real value from day one, not just a green CI badge.
+
+**Independent Test**: After the squashing campaign, run the full mutation suite
+and verify the score meets or exceeds the agreed floor; verify the CI floor
+config reflects the agreed value.
+
+**Scoping rule**: The campaign focuses on modules with clear correctness
+invariants (state machines, transition guards, validation logic, event
+serialisation). Modules that are primarily CLI glue, thin wrappers, or
+already covered at integration level may be deferred to a later campaign.
+
+**Acceptance Scenarios**:
+
+1. **Given** the toolchain is configured, **When** the maintainer runs a full
+   mutation pass on the priority scope, **Then** a list of surviving mutants
+   and their locations is produced.
+2. **Given** the surviving mutant list, **When** the maintainer triages them
+   into "killable" and "equivalent" categories, **Then** all killable surviving
+   mutants in the priority scope are addressed by new or improved tests.
+3. **Given** all killable mutants in scope are killed, **When** the mutation
+   suite runs again, **Then** the mutation score for the priority scope is
+   measurably higher than the pre-campaign baseline.
+4. **Given** the final score after squashing, **When** the maintainer updates
+   the floor configuration, **Then** the floor is set to the achieved score
+   (rounded down to the nearest 5%) and CI enforces it going forward.
+
+---
+
 ### Edge Cases
 
 - What happens when mutmut times out on a slow test? The job should continue
@@ -140,6 +180,9 @@ kills it, re-run, and confirm the mutant is now dead.
 | FR-008 | Run after unit-tests, before SonarCloud | As a maintainer, I want mutation testing to run after unit tests succeed and feed results to SonarCloud so that the pipeline stays logically ordered. | Medium | Open |
 | FR-009 | Inspect individual surviving mutants | As a developer, I want to be able to view the exact source diff for a surviving mutant so that I understand what code change the test suite missed. | High | Open |
 | FR-010 | Re-run mutation testing after test improvements | As a developer, I want to re-run mutation testing locally after adding or improving tests so that I can verify the mutant is now killed before pushing. | High | Open |
+| FR-011 | Define priority scope for initial squashing | As a maintainer, I want a documented list of priority modules for the baseline squashing campaign so that effort is focused where correctness matters most. | High | Open |
+| FR-012 | Execute baseline squashing campaign | As a maintainer, I want surviving mutants in the priority scope killed by targeted tests so that the mutation score floor reflects real test quality, not just a 0% placeholder. | High | Open |
+| FR-013 | Set floor to achieved baseline after squashing | As a maintainer, I want the mutation score floor updated to the score achieved after the squashing campaign so that future regressions are automatically caught by CI. | High | Open |
 
 ### Non-Functional Requirements
 
@@ -154,7 +197,7 @@ kills it, re-run, and confirm the mutant is now dead.
 |----|-------|------------|----------|----------|--------|
 | C-001 | mutmut version | Must use `mutmut>=3.5.0` (3.x CLI, not 2.x). | Technical | High | Open |
 | C-002 | No new test runner | Must use the existing pytest suite; no second test framework introduced. | Technical | High | Open |
-| C-003 | Initial floor at 0% | The initial mutation score floor must be 0% to avoid blocking any current builds. | Business | High | Open |
+| C-003 | Initial floor at 0%, raised after squashing | The floor starts at 0% so no builds are blocked during setup. After the baseline squashing campaign completes it must be raised to the achieved score (rounded down to nearest 5%). The feature is not done while the floor remains at 0%. | Business | High | Open |
 | C-004 | Report path convention | Report output paths must follow the `out/reports/<category>/` convention already established in CI. | Technical | Medium | Open |
 
 ## Success Criteria
@@ -166,6 +209,8 @@ kills it, re-run, and confirm the mutant is now dead.
 - **SC-003**: HTML and JSON mutation reports appear as downloadable CI artifacts after every push run.
 - **SC-004**: Setting the mutation score floor above the actual score causes the CI job to exit non-zero with a descriptive message.
 - **SC-005**: PRs never trigger the mutation-testing job (verified by `if:` condition on the job).
+- **SC-006**: After the baseline squashing campaign, the mutation score for the priority scope is measurably higher than the pre-campaign baseline, and CI enforces a floor greater than 0%.
+- **SC-007**: All surviving mutants in the priority scope are either killed by targeted tests or explicitly classified as equivalent mutants with a written rationale.
 
 ## Assumptions
 
