@@ -1,7 +1,7 @@
 ---
 work_package_id: WP02
 title: CI Integration
-lane: "in_progress"
+lane: "done"
 dependencies:
 - WP01
 subtasks:
@@ -14,8 +14,8 @@ phase: Phase 1 - Foundation
 assignee: ''
 agent: ''
 shell_pid: ''
-review_status: ''
-reviewed_by: ''
+review_status: "approved"
+reviewed_by: "Stijn Dejongh"
 review_feedback: ''
 history:
 - timestamp: '2026-03-01T16:00:00Z'
@@ -335,3 +335,4 @@ skips it on pull_request events.
 
 - 2026-03-01T16:00:00Z – system – lane=planned – Prompt created.
 - 2026-03-01T06:52:15Z – unknown – lane=in_progress – Starting WP02 CI integration
+- 2026-03-01T07:16:50Z – unknown – lane=done – Done override: No worktree model: work committed directly on target branch. Review passed after fixing export-cicd-stats path and removing non-existent html command.
