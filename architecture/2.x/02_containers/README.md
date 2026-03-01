@@ -72,7 +72,7 @@ flowchart TB
 
 ## Domain-to-Container Allocation
 
-See [2.x Domain Breakdown](../domain-breakdown.md) for the domain-level model.
+See [2.x Domain Breakdown](../README.md#domain-breakdown) for the domain-level model.
 
 | Domain | Primary Containers | Secondary Containers |
 |---|---|---|
@@ -128,7 +128,7 @@ for canonical lifecycle FSM, transition guard summary, and execution/routing inv
 
 ## Traceability
 
-- Domain map: `../domain-breakdown.md`
+- Domain map: `../README.md#domain-breakdown`
 - Usage flow reference: `../README.md#usage-flow-high-level-user-journey`
 - Runtime/execution detail: `runtime-execution-domain.md`
 - Context view: `../01_context/README.md`

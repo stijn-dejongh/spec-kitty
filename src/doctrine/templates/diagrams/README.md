@@ -36,8 +36,8 @@ Planned templates to add:
 | System Map | [C4 Context](../architecture/c4-context-mermaid-template.md) | [`architecture/2.x/01_context/README.md`](../../../../architecture/2.x/01_context/README.md) |
 | Frontend Architecture | [C4 Containers](../architecture/c4-container-mermaid-template.md), [C4 Components](../architecture/c4-component-mermaid-template.md) | [`architecture/2.x/02_containers/README.md`](../../../../architecture/2.x/02_containers/README.md), [`architecture/2.x/03_components/README.md`](../../../../architecture/2.x/03_components/README.md) |
 | Request Lifecycle | [C4 Components](../architecture/c4-component-mermaid-template.md) | [`architecture/2.x/README.md#usage-flow-high-level-user-journey`](../../../../architecture/2.x/README.md#usage-flow-high-level-user-journey), [`architecture/2.x/02_containers/runtime-execution-domain.md`](../../../../architecture/2.x/02_containers/runtime-execution-domain.md) |
-| Structure Meta Model | [C4 Context](../architecture/c4-context-mermaid-template.md) | [`architecture/2.x/domain-breakdown.md`](../../../../architecture/2.x/domain-breakdown.md) |
-| Causal Map | [C4 Context](../architecture/c4-context-mermaid-template.md) | [`architecture/2.x/domain-breakdown.md`](../../../../architecture/2.x/domain-breakdown.md) |
+| Structure Meta Model | [C4 Context](../architecture/c4-context-mermaid-template.md) | [`architecture/2.x/README.md#domain-breakdown`](../../../../architecture/2.x/README.md#domain-breakdown) |
+| Causal Map | [C4 Context](../architecture/c4-context-mermaid-template.md) | [`architecture/2.x/README.md#domain-breakdown`](../../../../architecture/2.x/README.md#domain-breakdown) |
 | Content Map | [C4 Context](../architecture/c4-context-mermaid-template.md) | [`architecture/README.md`](../../../../architecture/README.md) |
 | Repo Content Graph | [C4 Context](../architecture/c4-context-mermaid-template.md) | [`architecture/README.md`](../../../../architecture/README.md) |
 

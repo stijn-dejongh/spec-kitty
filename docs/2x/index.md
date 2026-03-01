@@ -20,7 +20,7 @@ living glossary semantics, and runtime-owned mission execution.
 
 ## Architecture Repository Layout
 
-- 2.x domain map: `architecture/2.x/domain-breakdown.md`
+- 2.x domain map: `architecture/2.x/README.md#domain-breakdown`
 - 2.x C4 docs: `architecture/2.x/01_context/`, `architecture/2.x/02_containers/`, `architecture/2.x/03_components/`
 - 2.x ADRs: `architecture/2.x/adr/`
 - 2.x user journeys: `architecture/2.x/user_journey/`

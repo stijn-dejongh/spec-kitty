@@ -138,7 +138,7 @@ flowchart TB
 
 ## Domain Alignment Matrix
 
-See [2.x Domain Breakdown](../domain-breakdown.md) for domain-level definitions.
+See [2.x Domain Breakdown](../README.md#domain-breakdown) for domain-level definitions.
 
 | Domain | Primary Components |
 |---|---|
@@ -272,7 +272,7 @@ Guard summary:
 
 ## Traceability
 
-- Domain map: `../domain-breakdown.md`
+- Domain map: `../README.md#domain-breakdown`
 - Usage flow reference: `../README.md#usage-flow-high-level-user-journey`
 - Context view: `../01_context/README.md`
 - Container view: `../02_containers/README.md`

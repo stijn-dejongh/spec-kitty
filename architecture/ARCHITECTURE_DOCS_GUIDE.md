@@ -15,7 +15,7 @@ Code and tests remain the source of implementation detail.
 
 ## 2.x Modeling Layers
 
-1. Domain responsibility model: `architecture/2.x/domain-breakdown.md`
+1. Domain responsibility model: `architecture/2.x/README.md#domain-breakdown`
 2. C4 context boundary: `architecture/2.x/01_context/README.md`
 3. C4 container responsibilities: `architecture/2.x/02_containers/README.md`
 4. C4 component behavior: `architecture/2.x/03_components/README.md`

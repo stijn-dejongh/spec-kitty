@@ -13,7 +13,7 @@ ls -1 architecture/2.x/adr | sort
 
 ### Need the 2.x architecture model?
 
-1. `architecture/2.x/domain-breakdown.md`
+1. `architecture/2.x/README.md#domain-breakdown`
 2. `architecture/2.x/01_context/README.md`
 3. `architecture/2.x/02_containers/README.md`
 4. `architecture/2.x/03_components/README.md`

@@ -91,7 +91,7 @@ flowchart LR
 
 ## Traceability
 
-- Domain overview: `../domain-breakdown.md`
+- Domain overview: `../README.md#domain-breakdown`
 - Container map: `README.md`
 - Usage flow: `../README.md#usage-flow-high-level-user-journey`
 - Component model: `../03_components/README.md`

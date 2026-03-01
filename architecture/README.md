@@ -23,7 +23,7 @@ This directory is the canonical architecture corpus for Spec Kitty.
 
 2.x architecture docs are split intentionally:
 
-1. `architecture/2.x/domain-breakdown.md` - cross-cutting responsibility and behavior domains.
+1. `architecture/2.x/README.md#domain-breakdown` - cross-cutting responsibility and behavior domains.
 2. `architecture/2.x/01_context/README.md` - external boundaries and authority contracts.
 3. `architecture/2.x/02_containers/README.md` - runtime/governance container responsibilities.
 4. `architecture/2.x/03_components/README.md` - component-level behavior sequences.
@@ -39,7 +39,7 @@ Source corpus: `architecture/2.x/initiatives/2026-02-architecture-discovery-and-
    - Dedicated 2.x `user_journey/` area
    - Dedicated 2.x `initiatives/` area
    - C4-oriented 2.x directories (`01_context`, `02_containers`, `03_components`)
-   - Domain and audience expansion (`domain-breakdown.md`, `architecture/audience/`)
+   - Domain and audience expansion (`architecture/2.x/README.md#domain-breakdown`, `architecture/audience/`)
 2. Deferred:
    - `archive/` lifecycle structure (can be introduced later once process is formalized)
 3. Rejected for now:
