@@ -137,7 +137,7 @@ class SyncRuntime:
                 try:
                     asyncio.get_running_loop()
                     # Running event loop available: connect non-blocking.
-                    asyncio.ensure_future(self.ws_client.connect())
+                    self._connect_task = asyncio.ensure_future(self.ws_client.connect())
                 except RuntimeError:
                     # Synchronous CLI context: skip auto WebSocket connect.
                     # Creating a temporary event loop here spawns a background
@@ -185,7 +185,7 @@ class SyncRuntime:
                 import asyncio
                 try:
                     loop = asyncio.get_running_loop()
-                    asyncio.ensure_future(self.ws_client.disconnect())
+                    _task = asyncio.ensure_future(self.ws_client.disconnect())  # prevent GC
                 except RuntimeError:
                     loop = asyncio.new_event_loop()
                     try:
