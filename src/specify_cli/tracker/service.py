@@ -156,7 +156,7 @@ class TrackerService:
             connector, engine = self._build_engine(config, credentials, store)
             checkpoint = store.get_checkpoint(checkpoint_key=f"{config.provider}:{config.workspace}")
             if checkpoint is not None:
-                setattr(engine, "_checkpoint", checkpoint)
+                engine._checkpoint = checkpoint
 
             result = await engine.pull(limit=limit)
             store.set_checkpoint(engine.checkpoint, checkpoint_key=f"{config.provider}:{config.workspace}")
@@ -181,7 +181,7 @@ class TrackerService:
             connector, engine = self._build_engine(config, credentials, store)
             checkpoint = store.get_checkpoint(checkpoint_key=f"{config.provider}:{config.workspace}")
             if checkpoint is not None:
-                setattr(engine, "_checkpoint", checkpoint)
+                engine._checkpoint = checkpoint
 
             result = await engine.sync(limit=limit)
             store.set_checkpoint(engine.checkpoint, checkpoint_key=f"{config.provider}:{config.workspace}")

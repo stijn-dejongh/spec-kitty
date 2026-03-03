@@ -6,16 +6,15 @@ import json
 import os
 import re
 import shutil
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from importlib.resources import files
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
-from typing_extensions import Annotated
+from typing import Annotated
 
 from specify_cli import __version__ as SPEC_KITTY_VERSION
 from specify_cli.cli.commands.accept import accept as top_level_accept
@@ -402,9 +401,9 @@ def _build_setup_plan_detection_error(
 @app.command(name="create-feature")
 def create_feature(
     feature_slug: Annotated[str, typer.Argument(help="Feature slug (e.g., 'user-auth')")],
-    mission: Annotated[Optional[str], typer.Option("--mission", help="Mission type (e.g., 'documentation', 'software-dev')")] = None,
+    mission: Annotated[str | None, typer.Option("--mission", help="Mission type (e.g., 'documentation', 'software-dev')")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
-    target_branch: Annotated[Optional[str], typer.Option("--target-branch", help="Target branch (defaults to current branch)")] = None,
+    target_branch: Annotated[str | None, typer.Option("--target-branch", help="Target branch (defaults to current branch)")] = None,
 ) -> None:
     """Create new feature directory structure in planning repository.
 
@@ -624,7 +623,7 @@ spec-kitty agent tasks move-task WP01 --to doing
         meta.setdefault("friendly_name", feature_slug.replace("-", " ").strip())
         meta.setdefault("mission", mission or "software-dev")
         meta.setdefault("target_branch", planning_branch)
-        meta.setdefault("created_at", datetime.now(timezone.utc).isoformat())
+        meta.setdefault("created_at", datetime.now(UTC).isoformat())
 
         meta_file.write_text(json.dumps(meta, indent=2), encoding="utf-8")
         try:
@@ -718,7 +717,7 @@ spec-kitty agent tasks move-task WP01 --to doing
 
 @app.command(name="check-prerequisites")
 def check_prerequisites(
-    feature: Annotated[Optional[str], typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')")] = None,
+    feature: Annotated[str | None, typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
     paths_only: Annotated[bool, typer.Option("--paths-only", help="Only output path variables")] = False,
     include_tasks: Annotated[bool, typer.Option("--include-tasks", help="Include tasks.md in validation")] = False,
@@ -840,7 +839,7 @@ def check_prerequisites(
 
 @app.command(name="setup-plan")
 def setup_plan(
-    feature: Annotated[Optional[str], typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')")] = None,
+    feature: Annotated[str | None, typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
 ) -> None:
     """Scaffold implementation plan template in planning repository.
@@ -1079,7 +1078,7 @@ def setup_plan(
             console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1)
 
-def _find_latest_feature_worktree(repo_root: Path) -> Optional[Path]:
+def _find_latest_feature_worktree(repo_root: Path) -> Path | None:
     """Find the latest feature worktree by number.
 
     Migrated from find_latest_feature_worktree() in common.sh
@@ -1112,7 +1111,7 @@ def _find_latest_feature_worktree(repo_root: Path) -> Optional[Path]:
     return latest_worktree
 
 
-def _find_feature_worktree(repo_root: Path, feature_slug: str) -> Optional[Path]:
+def _find_feature_worktree(repo_root: Path, feature_slug: str) -> Path | None:
     """Find a deterministic worktree for a feature slug."""
     worktrees_dir = repo_root / ".worktrees"
     if not worktrees_dir.exists():
@@ -1157,7 +1156,7 @@ def _get_current_branch(repo_root: Path) -> str:
 @app.command(name="accept")
 def accept_feature(
     feature: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--feature",
             help="Feature directory slug (auto-detected if not specified)"
@@ -1239,14 +1238,14 @@ def accept_feature(
 @app.command(name="merge")
 def merge_feature(
     feature: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--feature",
             help="Feature directory slug (auto-detected if not specified)"
         )
     ] = None,
     target: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--target",
             help="Target branch to merge into (auto-detected if not specified)"
@@ -1416,7 +1415,7 @@ def merge_feature(
 
 @app.command(name="finalize-tasks")
 def finalize_tasks(
-    feature: Annotated[Optional[str], typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')")] = None,
+    feature: Annotated[str | None, typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
 ) -> None:
     """Parse dependencies from tasks.md and update WP frontmatter, then commit to target branch.

@@ -5,11 +5,9 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import Optional, cast
-
 import typer
 from rich.console import Console
-from typing_extensions import Annotated
+from typing import Annotated
 
 from specify_cli.core.paths import locate_project_root
 from specify_cli.core.agent_context import (
@@ -133,9 +131,9 @@ def resolve_context(
 
 @app.command(name="update-context")
 def update_context(
-    feature: Annotated[Optional[str], typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')")] = None,
+    feature: Annotated[str | None, typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')")] = None,
     agent_type: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--agent-type",
             "-a",
