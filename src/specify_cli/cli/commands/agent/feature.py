@@ -40,6 +40,7 @@ from specify_cli.core.worktree import (
 from specify_cli.frontmatter import read_frontmatter, write_frontmatter
 from specify_cli.mission import get_feature_mission_key
 from specify_cli.sync.events import emit_feature_created, emit_wp_created, get_emitter
+import contextlib
 
 app = typer.Typer(
     name="feature",
@@ -413,10 +414,7 @@ def create_feature(
             raise typer.Exit(1)
 
         # Use explicit --target-branch if provided, otherwise current branch
-        if target_branch:
-            planning_branch = target_branch
-        else:
-            planning_branch = current_branch
+        planning_branch = target_branch or current_branch
         if not json_output:
             console.print(
                 f"[bold cyan]Branch:[/bold cyan] {planning_branch} "
@@ -578,7 +576,7 @@ spec-kitty agent tasks move-task WP01 --to doing
                     "coverage_percentage": 0.0,
                 }
             meta_file.write_text(json.dumps(meta, indent=2), encoding="utf-8")
-            try:
+            with contextlib.suppress(Exception):
                 _commit_to_branch(
                     meta_file,
                     feature_slug_formatted,
@@ -587,8 +585,6 @@ spec-kitty agent tasks move-task WP01 --to doing
                     planning_branch,
                     json_output,
                 )
-            except Exception:
-                pass
             if not json_output:
                 console.print("[cyan]→ Documentation state initialized in meta.json[/cyan]")
 
@@ -619,7 +615,7 @@ spec-kitty agent tasks move-task WP01 --to doing
             print(json.dumps({"error": str(e)}))
         else:
             console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command(name="check-prerequisites")
@@ -696,7 +692,7 @@ def check_prerequisites(
                     console.print(f"  - {line}")
                 for cmd in payload.get("suggested_commands", [])[:3]:
                     console.print(f"  {cmd}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from detection_error
 
         validation_result = validate_feature_structure(feature_dir, check_tasks=include_tasks)
 
@@ -726,7 +722,7 @@ def check_prerequisites(
             print(json.dumps({"error": str(e)}))
         else:
             console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command(name="setup-plan")
@@ -780,7 +776,7 @@ def setup_plan(
                     console.print(f"  - {line}")
                 for cmd in payload.get("suggested_commands", [])[:3]:
                     console.print(f"  {cmd}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from detection_error
 
         feature_slug = feature_dir.name
         _, target_branch = _show_branch_context(repo_root, feature_slug, json_output)
@@ -951,7 +947,7 @@ def setup_plan(
             print(json.dumps({"error": str(e)}))
         else:
             console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 def _find_latest_feature_worktree(repo_root: Path) -> Path | None:
     """Find the latest feature worktree by number.
@@ -1107,7 +1103,7 @@ def accept_feature(
             print(json.dumps({"error": str(e), "success": False}))
         else:
             console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command(name="merge")
@@ -1281,11 +1277,11 @@ def merge_feature(
             raise
         except Exception as e:
             print(json.dumps({"error": str(e), "success": False}))
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
     except Exception as e:
         print(json.dumps({"error": str(e), "success": False}))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command(name="finalize-tasks")
@@ -1338,7 +1334,7 @@ def finalize_tasks(
                     console.print(f"  - {line}")
                 for cmd in payload.get("suggested_commands", [])[:3]:
                     console.print(f"  {cmd}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from detection_error
 
         feature_slug = feature_dir.name
         target_branch = _resolve_planning_branch(repo_root, feature_dir)
@@ -1631,7 +1627,7 @@ def finalize_tasks(
                 print(json.dumps({"error": str(e)}))
             else:
                 console.print(f"[red]Error:[/red] {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
         # Emit WPCreated events (non-blocking)
         # FeatureCreated is emitted earlier during create-feature
@@ -1671,7 +1667,7 @@ def finalize_tasks(
             print(json.dumps({"error": str(e)}))
         else:
             console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 def _parse_wp_sections_from_tasks_md(tasks_content: str) -> dict[str, str]:
