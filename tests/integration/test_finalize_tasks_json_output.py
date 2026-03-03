@@ -11,7 +11,6 @@ import os
 import subprocess
 from pathlib import Path
 
-import pytest
 
 from tests.branch_contract import IS_2X_BRANCH, LEGACY_0X_ONLY_REASON
 
@@ -160,7 +159,7 @@ def test_finalize_tasks_json_includes_commit_hash(tmp_path):
         capture_output=True,
     )
 
-    feature_dir = create_test_feature(repo)
+    create_test_feature(repo)
 
     # Run finalize-tasks
     result = run_cli(repo, "agent", "feature", "finalize-tasks", "--json")
@@ -216,7 +215,7 @@ def test_finalize_tasks_json_includes_commit_created_flag(tmp_path):
         capture_output=True,
     )
 
-    feature_dir = create_test_feature(repo)
+    create_test_feature(repo)
 
     # Run finalize-tasks (should create commit)
     result = run_cli(repo, "agent", "feature", "finalize-tasks", "--json")
@@ -271,7 +270,7 @@ def test_finalize_tasks_json_includes_files_committed(tmp_path):
         capture_output=True,
     )
 
-    feature_dir = create_test_feature(repo)
+    create_test_feature(repo)
 
     # Run finalize-tasks
     result = run_cli(repo, "agent", "feature", "finalize-tasks", "--json")
@@ -318,7 +317,7 @@ def test_finalize_tasks_with_unrelated_dirty_files(tmp_path):
         capture_output=True,
     )
 
-    feature_dir = create_test_feature(repo)
+    create_test_feature(repo)
 
     # Create unrelated dirty files (simulating template deletions)
     templates_dir = repo / ".kittify/templates"
@@ -415,7 +414,7 @@ def test_json_output_prevents_agent_confusion(tmp_path):
         capture_output=True,
     )
 
-    feature_dir = create_test_feature(repo)
+    create_test_feature(repo)
 
     # Get HEAD before finalize-tasks
     result_before = subprocess.run(
@@ -495,7 +494,7 @@ def test_json_output_schema_complete(tmp_path):
         capture_output=True,
     )
 
-    feature_dir = create_test_feature(repo)
+    create_test_feature(repo)
 
     # Run finalize-tasks
     result = run_cli(repo, "agent", "feature", "finalize-tasks", "--json")

@@ -13,7 +13,6 @@ import os
 import subprocess
 from pathlib import Path
 
-import pytest
 
 from tests.branch_contract import IS_2X_BRANCH, LEGACY_0X_ONLY_REASON
 

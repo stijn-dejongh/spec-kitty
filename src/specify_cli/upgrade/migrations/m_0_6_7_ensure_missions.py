@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
-from typing import List
 
 from ..compat import uses_centralized_runtime
 from ..registry import MigrationRegistry
