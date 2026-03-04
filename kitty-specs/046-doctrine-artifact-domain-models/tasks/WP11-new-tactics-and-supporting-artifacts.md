@@ -1,7 +1,7 @@
 ---
 work_package_id: WP11
 title: New Tactics & Supporting Artifacts
-lane: planned
+lane: "doing"
 dependencies:
 - WP01
 - WP02
@@ -10,6 +10,9 @@ dependencies:
 - WP07
 - WP08
 - WP09
+base_branch: feature/agent-profile-implementation
+base_commit: 1a7bcb7f34aa6169aba1725a434fe60f467978f3
+created_at: '2026-03-04T05:12:22.979944+00:00'
 subtasks:
 - T064
 - T065
@@ -19,7 +22,7 @@ subtasks:
 phase: Phase 2 - Content
 assignee: ''
 agent: ''
-shell_pid: ''
+shell_pid: "1539597"
 review_status: ''
 reviewed_by: ''
 history:
