@@ -1,7 +1,7 @@
 ---
 work_package_id: WP08
 title: Create New Shipped Directives
-lane: "doing"
+lane: "planned"
 dependencies: [WP01]
 base_branch: feature/agent-profile-implementation
 base_commit: f6306beadf9e7f0d90c8a37954abf1f3555a4350
@@ -16,10 +16,11 @@ subtasks:
 - T065
 phase: Phase 2 - Content
 assignee: ''
-agent: "claude-sonnet"
-shell_pid: "1520139"
-review_status: ''
-reviewed_by: ''
+agent: claude-sonnet
+shell_pid: '1520139'
+review_status: "has_feedback"
+reviewed_by: "Stijn Dejongh"
+review_feedback: "feedback://046-doctrine-artifact-domain-models/WP08/20260304T042931Z-6ee02237.md"
 history:
 - timestamp: '2026-02-26T04:36:22Z'
   lane: planned
@@ -158,3 +159,4 @@ spec-kitty implement WP08 --base WP05
 - 2026-02-28T08:36:11Z – codex – shell_pid=112867 – lane=doing – Assigned agent via workflow command
 - 2026-02-28T08:46:06Z – codex – shell_pid=194283 – lane=for_review – Moved to for_review
 - 2026-03-04T04:27:10Z – claude-sonnet – shell_pid=1520139 – lane=doing – Started review via workflow command
+- 2026-03-04T04:29:31Z – claude-sonnet – shell_pid=1520139 – lane=planned – Moved to planned
