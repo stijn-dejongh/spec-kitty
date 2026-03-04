@@ -446,7 +446,7 @@ Execution order:
 - WP03: done
 - WP04: done
 - WP05: in_progress
-- WP06: for_review
+- WP06: in_progress
 - WP07: for_review
 - WP08: for_review
 - WP09: for_review

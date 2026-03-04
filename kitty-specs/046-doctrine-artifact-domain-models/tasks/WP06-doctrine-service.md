@@ -1,7 +1,7 @@
 ---
 work_package_id: WP06
 title: DoctrineService
-lane: "for_review"
+lane: "doing"
 dependencies: [WP01, WP02, WP03, WP04]
 base_branch: feature/agent-profile-implementation
 base_commit: 90feaf5c16d01c9d6ac526ce2f72538bc9e17226
@@ -12,8 +12,8 @@ subtasks:
 - T031
 phase: Phase 1 - Foundation
 assignee: ''
-agent: "codex"
-shell_pid: '112867'
+agent: "claude-sonnet"
+shell_pid: "1519834"
 review_status: ''
 reviewed_by: ''
 history:
@@ -168,3 +168,4 @@ git merge feature/agent-profile-implementation-WP04
 ```
 - 2026-02-28T08:30:29Z – codex – shell_pid=112867 – lane=doing – Assigned agent via workflow command
 - 2026-02-28T08:33:48Z – codex – shell_pid=112867 – lane=for_review – Ready for review: directives 001-010 enriched and doctrine checks passing
+- 2026-03-04T04:27:02Z – claude-sonnet – shell_pid=1519834 – lane=doing – Started review via workflow command
