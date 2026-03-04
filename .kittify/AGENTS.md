@@ -107,6 +107,17 @@ spec-kitty validate-encoding --all --fix
 - Run all required tests before claiming work is complete.  
 - Be transparent: state what you did, what you didn’t, and why.
 
+### Pre-Review Quality Gate
+
+**Before moving any Work Package to `for_review`, you MUST run:**
+
+```bash
+ruff check .
+mypy src/ --strict
+```
+
+Both commands must pass (zero errors) before the WP is eligible for review. Do not move a WP to `for_review` with outstanding ruff or mypy violations.
+
 ---
 
 ## 5. Git Discipline Rule
@@ -177,6 +188,16 @@ ls -la .kittify/memory
 ```
 
 This is intentional and correct - it ensures a single source of truth for project principles.
+
+---
+
+## 7. Conceptual Alignment Rule
+
+**All software development work is to consider the existing relevant glossary and architecture files to ensure conceptual alignment.**
+
+- Before implementing, read the relevant sections of `.kittify/glossaries/` and `architecture/` for the area you are changing.
+- Use terminology consistent with the project glossary; do not introduce synonyms for established concepts.
+- Flag any proposed changes that deviate from documented architectural decisions before proceeding.
 
 ---
 
