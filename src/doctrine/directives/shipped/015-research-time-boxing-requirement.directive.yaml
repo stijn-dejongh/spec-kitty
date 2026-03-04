@@ -4,18 +4,19 @@ title: Research Time-boxing Requirement
 intent: >
   Research activities must be explicitly time-boxed to reduce uncertainty while
   preserving delivery momentum and decision accountability.
-tactic_refs: []
+tactic_refs:
+- stopping-conditions
 enforcement: required
 scope: >
   Applies to exploratory analysis, option comparison, and evidence gathering
   tasks that precede implementation decisions.
 procedures:
-  - Define a bounded research objective and stop condition before starting.
-  - Capture findings and confidence levels within the time-box window.
-  - Escalate unresolved uncertainty as a tracked follow-up decision.
+- Define a bounded research objective and stop condition before starting.
+- Capture findings and confidence levels within the time-box window.
+- Escalate unresolved uncertainty as a tracked follow-up decision.
 integrity_rules:
-  - Open-ended research cannot block execution indefinitely.
-  - Time-box outcomes must include actionable recommendation or explicit unknowns.
+- Open-ended research cannot block execution indefinitely.
+- Time-box outcomes must include actionable recommendation or explicit unknowns.
 validation_criteria:
-  - Research artifacts include time-box scope and resulting decision guidance.
-  - Planning can proceed with documented assumptions where uncertainty remains.
+- Research artifacts include time-box scope and resulting decision guidance.
+- Planning can proceed with documented assumptions where uncertainty remains.

@@ -4,18 +4,23 @@ title: Human-in-Command Escalation Protocol
 intent: >
   Agents and implementers must escalate to a human decision-maker when blockers,
   policy constraints, or risk thresholds prevent safe autonomous progress.
-tactic_refs: []
+tactic_refs:
+- stopping-conditions
+- autonomous-operation-protocol
 enforcement: required
 scope: >
   Applies to execution paths involving destructive operations, missing authority,
   unresolved policy conflicts, or uncertainty with high-impact consequences.
 procedures:
-  - Detect escalation triggers as soon as a blocked or high-risk condition appears.
-  - Provide a concise escalation note with context, options, and recommended action.
-  - Pause affected execution until explicit human direction is received.
+- Detect escalation triggers as soon as a blocked or high-risk condition 
+  appears.
+- Provide a concise escalation note with context, options, and recommended 
+  action.
+- Pause affected execution until explicit human direction is received.
 integrity_rules:
-  - Autonomous continuation is prohibited after a mandatory escalation trigger.
-  - Escalation records must preserve the reason, proposed options, and decision outcome.
+- Autonomous continuation is prohibited after a mandatory escalation trigger.
+- Escalation records must preserve the reason, proposed options, and decision 
+  outcome.
 validation_criteria:
-  - High-risk or permission-gated operations have documented human approval.
-  - Escalation decisions are traceable in task history and follow-up actions.
+- High-risk or permission-gated operations have documented human approval.
+- Escalation decisions are traceable in task history and follow-up actions.

@@ -9,6 +9,27 @@ required:
   - id
   - name
   - summary
+definitions:
+  contradiction:
+    type: object
+    additionalProperties: false
+    required:
+      - type
+      - id
+      - reason
+    properties:
+      type:
+        type: string
+        enum:
+          - directive
+          - tactic
+          - paradigm
+      id:
+        type: string
+        minLength: 1
+      reason:
+        type: string
+        minLength: 1
 properties:
   schema_version:
     type: string
@@ -22,4 +43,13 @@ properties:
   summary:
     type: string
     minLength: 1
+  tactic_refs:
+    type: array
+    items:
+      type: string
+      pattern: '^[a-z][a-z0-9-]*$'
+  opposed_by:
+    type: array
+    items:
+      $ref: '#/definitions/contradiction'
 

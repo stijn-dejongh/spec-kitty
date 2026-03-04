@@ -23,6 +23,11 @@ steps:
     description: After acceptance tests fail for the right reason, continue with Red-Green-Refactor cycles for implementation detail.
     examples:
       - "Use failing acceptance test as the outer guard while adding unit-level TDD increments."
+    references:
+      - name: Test Driven Development (TDD)
+        type: tactic
+        id: tdd-red-green-refactor
+        when: After the acceptance test fails for the right reason, drive implementation detail with Red-Green-Refactor cycles.
   - title: Document manual fallbacks
     description: When automation is not feasible, record the fallback procedure and rationale for review.
     examples:

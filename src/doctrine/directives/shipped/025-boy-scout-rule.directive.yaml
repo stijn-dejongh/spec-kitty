@@ -19,3 +19,10 @@ integrity_rules:
 validation_criteria:
   - Touched code is measurably clearer or more consistent after completion.
   - Advisory improvements do not delay or derail required deliverables.
+opposed_by:
+  - type: directive
+    id: DIRECTIVE_024
+    reason: >
+      Locality of Change constrains edits to the minimum required by the goal.
+      Opportunistic cleanup endorsed by the Boy Scout Rule expands the diff
+      beyond that minimum, increasing review complexity and regression risk.
