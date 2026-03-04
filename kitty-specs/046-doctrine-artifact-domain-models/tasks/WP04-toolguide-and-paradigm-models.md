@@ -1,7 +1,7 @@
 ---
 work_package_id: WP04
 title: Toolguide & Paradigm Models
-lane: "for_review"
+lane: "doing"
 dependencies: []
 subtasks:
 - T019
@@ -12,8 +12,8 @@ subtasks:
 - T024
 phase: Phase 1 - Foundation
 assignee: ''
-agent: "codex"
-shell_pid: ''
+agent: "claude-opus"
+shell_pid: "1515120"
 review_status: ''
 reviewed_by: ''
 history:
@@ -198,3 +198,4 @@ spec-kitty implement WP04
 ```
 - 2026-02-28T04:35:22Z – unknown – lane=in_progress – Starting WP04: Toolguide & Paradigm Models
 - 2026-02-28T08:19:19Z – codex – lane=for_review – WP04 implementation complete; doctrine tests passing
+- 2026-03-04T04:13:36Z – claude-opus – shell_pid=1515120 – lane=doing – Started review via workflow command
