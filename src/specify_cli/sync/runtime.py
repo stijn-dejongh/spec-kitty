@@ -103,6 +103,7 @@ class SyncRuntime:
 
         # Start background service (use existing singleton)
         from .background import get_sync_service
+
         self.background_service = get_sync_service()
 
         # Create body queue sharing same DB as event queue (C-001)
@@ -129,11 +130,13 @@ class SyncRuntime:
         if auth.is_authenticated():
             try:
                 from .client import WebSocketClient
+
                 self.ws_client = WebSocketClient(
                     server_url=config.get_server_url(),
                     auth_client=auth,
                 )
                 import asyncio
+
                 try:
                     asyncio.get_running_loop()
                     # Running event loop available: connect non-blocking.
@@ -143,10 +146,7 @@ class SyncRuntime:
                     # Creating a temporary event loop here spawns a background
                     # listener task that outlives the loop and triggers noisy
                     # "Task was destroyed but it is pending!" warnings.
-                    logger.debug(
-                        "No running event loop; skipping auto WebSocket connect "
-                        "in sync context"
-                    )
+                    logger.debug("No running event loop; skipping auto WebSocket connect in sync context")
                     logger.info("Events will be queued for batch sync")
                     return
 
@@ -183,6 +183,7 @@ class SyncRuntime:
         if self.ws_client:
             try:
                 import asyncio
+
                 try:
                     loop = asyncio.get_running_loop()
                     _task = asyncio.ensure_future(self.ws_client.disconnect())  # prevent GC
@@ -192,7 +193,7 @@ class SyncRuntime:
                         loop.run_until_complete(self.ws_client.disconnect())
                     finally:
                         loop.close()
-            except Exception:
+            except Exception:  # noqa: S110
                 pass
             self.ws_client = None
 

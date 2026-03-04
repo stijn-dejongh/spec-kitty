@@ -27,11 +27,7 @@ from specify_cli.core.execution_context import (
     resolve_action_context,
 )
 
-app = typer.Typer(
-    name="context",
-    help="Agent context management commands",
-    no_args_is_help=True
-)
+app = typer.Typer(name="context", help="Agent context management commands", no_args_is_help=True)
 
 console = Console()
 
@@ -59,7 +55,7 @@ def _find_feature_directory(repo_root: Path, cwd: Path, explicit_feature: str | 
             repo_root,
             explicit_feature=explicit_feature,
             cwd=cwd,
-            mode="strict"  # Raise error if ambiguous
+            mode="strict",  # Raise error if ambiguous
         )
     except FeatureDetectionError as e:
         # Convert to ValueError for backward compatibility
@@ -137,16 +133,10 @@ def update_context(
         typer.Option(
             "--agent-type",
             "-a",
-            help=f"Agent type to update. Supported: {', '.join(get_supported_agent_types())}. Defaults to 'claude'."
-        )
+            help=f"Agent type to update. Supported: {', '.join(get_supported_agent_types())}. Defaults to 'claude'.",
+        ),
     ] = "claude",
-    json_output: Annotated[
-        bool,
-        typer.Option(
-            "--json",
-            help="Output results as JSON for agent parsing"
-        )
-    ] = False,
+    json_output: Annotated[bool, typer.Option("--json", help="Output results as JSON for agent parsing")] = False,
 ) -> None:
     """Update agent context file with tech stack from plan.md.
 

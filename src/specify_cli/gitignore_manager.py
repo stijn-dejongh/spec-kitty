@@ -170,10 +170,10 @@ class GitignoreManager:
         Returns:
             Line ending string ('\r\n' for Windows, '\n' for Unix/Mac)
         """
-        if '\r\n' in content:
-            return '\r\n'
+        if "\r\n" in content:
+            return "\r\n"
         else:
-            return '\n'
+            return "\n"
 
     @classmethod
     def get_agent_directories(cls) -> list[AgentDirectory]:

@@ -157,8 +157,7 @@ def research(
         pass
 
     relative_paths = [
-        str(path.relative_to(feature_dir)) if path.is_relative_to(feature_dir) else str(path)
-        for path in created_paths
+        str(path.relative_to(feature_dir)) if path.is_relative_to(feature_dir) else str(path) for path in created_paths
     ]
     summary_lines = "\n".join(f"- [cyan]{rel}[/cyan]" for rel in sorted(set(relative_paths)))
     console.print()
