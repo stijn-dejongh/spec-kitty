@@ -1,7 +1,7 @@
 ---
 work_package_id: WP04
 title: Toolguide & Paradigm Models
-lane: "for_review"
+lane: "done"
 dependencies: []
 subtasks:
 - T019
@@ -12,10 +12,10 @@ subtasks:
 - T024
 phase: Phase 1 - Foundation
 assignee: ''
-agent: "codex"
+agent: codex
 shell_pid: ''
-review_status: ''
-reviewed_by: ''
+review_status: "approved"
+reviewed_by: "Stijn Dejongh"
 history:
 - timestamp: '2026-02-26T04:36:22Z'
   lane: planned
@@ -198,3 +198,4 @@ spec-kitty implement WP04
 ```
 - 2026-02-28T04:35:22Z – unknown – lane=in_progress – Starting WP04: Toolguide & Paradigm Models
 - 2026-02-28T08:19:19Z – codex – lane=for_review – WP04 implementation complete; doctrine tests passing
+- 2026-03-04T04:46:44Z – codex – lane=done – Reviewed and approved: Toolguide and Paradigm models complete, 33 tests passing.
