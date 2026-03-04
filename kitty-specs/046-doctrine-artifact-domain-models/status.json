@@ -1,15 +1,15 @@
 {
-  "event_count": 24,
+  "event_count": 25,
   "feature_slug": "046-doctrine-artifact-domain-models",
-  "last_event_id": "01KJVGT88D8NV05KE04TAB1KT9",
-  "materialized_at": "2026-03-04T04:13:36.909926+00:00",
+  "last_event_id": "01KJVH4Q89GK9W6G27NJ972M47",
+  "materialized_at": "2026-03-04T04:19:19.945936+00:00",
   "summary": {
     "blocked": 0,
     "canceled": 1,
     "claimed": 0,
-    "done": 3,
+    "done": 4,
     "for_review": 6,
-    "in_progress": 1,
+    "in_progress": 0,
     "planned": 0
   },
   "work_packages": {
@@ -35,11 +35,11 @@
       "last_transition_at": "2026-02-28T04:35:02.007120+00:00"
     },
     "WP04": {
-      "actor": "claude-opus",
-      "force_count": 3,
-      "lane": "in_progress",
-      "last_event_id": "01KJVGT88D8NV05KE04TAB1KT9",
-      "last_transition_at": "2026-03-04T04:13:36.909685+00:00"
+      "actor": "user",
+      "force_count": 4,
+      "lane": "done",
+      "last_event_id": "01KJVH4Q89GK9W6G27NJ972M47",
+      "last_transition_at": "2026-03-04T04:19:19.945683+00:00"
     },
     "WP05": {
       "actor": "codex",
