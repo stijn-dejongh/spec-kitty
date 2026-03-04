@@ -19,6 +19,7 @@ from .batch import BatchSyncResult, batch_sync, sync_all_queued_events
 from .config import SyncConfig
 from .feature_flags import is_saas_sync_enabled, saas_sync_disabled_message
 from .queue import OfflineQueue
+import contextlib
 
 if TYPE_CHECKING:
     from .body_queue import BodyUploadTask, OfflineBodyUploadQueue
@@ -75,8 +76,6 @@ class BackgroundSyncService:
         if self.queue.size() > 0 or body_queue_has_work:
             try:
                 self._perform_sync()
-            except Exception:
-                pass
         logger.debug("Background sync service stopped")
 
     @property

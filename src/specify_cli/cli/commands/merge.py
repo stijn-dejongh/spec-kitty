@@ -712,7 +712,7 @@ def merge(
             repo_root = find_repo_root()
         except TaskCliError as exc:
             console.print(f"[red]Error:[/red] {exc}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from exc
 
         main_repo = get_main_repo_root(repo_root)
         state = load_state(main_repo)
@@ -737,7 +737,7 @@ def merge(
             repo_root = find_repo_root()
         except TaskCliError as exc:
             console.print(f"[red]Error:[/red] {exc}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from exc
 
         main_repo = get_main_repo_root(repo_root)
         resume_state = load_state(main_repo)
@@ -770,7 +770,7 @@ def merge(
         repo_root = find_repo_root()
     except TaskCliError as exc:
         console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
     _enforce_git_preflight(repo_root, json_output=json_output)
 
@@ -977,7 +977,7 @@ def merge(
     except Exception as exc:
         tracker.error("detect", str(exc))
         console.print(tracker.render())
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
     # Detect workspace structure and extract feature slug
     feature_slug = extract_feature_slug(current_branch)
@@ -1039,7 +1039,7 @@ def merge(
     except Exception as exc:
         tracker.error("verify", str(exc))
         console.print(tracker.render())
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
     merge_root, feature_worktree_path = merge_root.resolve(), feature_worktree_path.resolve()
     if dry_run:
@@ -1085,7 +1085,7 @@ def merge(
     except Exception as exc:
         tracker.error("checkout", str(exc))
         console.print(tracker.render())
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
     tracker.start("pull")
     try:
@@ -1103,7 +1103,7 @@ def merge(
         console.print(tracker.render())
         console.print(f"\n[yellow]Warning:[/yellow] Could not fast-forward {target_branch}.")
         console.print("You may need to resolve conflicts manually.")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
     tracker.start("merge")
     try:
@@ -1130,7 +1130,7 @@ def merge(
         tracker.error("merge", str(exc))
         console.print(tracker.render())
         console.print("\n[red]Merge failed.[/red] You may need to resolve conflicts.")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
 
     if push:
         tracker.start("push")

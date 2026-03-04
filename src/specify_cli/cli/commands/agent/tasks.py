@@ -43,6 +43,7 @@ from specify_cli.tasks_support import (
     set_scalar,
     split_frontmatter,
 )
+import contextlib
 
 
 def resolve_primary_branch(repo_root: Path) -> str:
@@ -156,7 +157,7 @@ def _find_feature_slug(explicit_feature: str | None = None) -> str:
         )
     except FeatureDetectionError as e:
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 def _output_result(json_mode: bool, data: dict, success_message: str | None = None):
@@ -663,10 +664,8 @@ def _validate_ready_for_review(
             )
             commit_count = 0
             if result.returncode == 0 and result.stdout.strip():
-                try:
+                with contextlib.suppress(ValueError):
                     commit_count = int(result.stdout.strip())
-                except ValueError:
-                    pass
 
             if commit_count == 0:
                 guidance.append("No implementation commits on WP branch!")
@@ -1252,7 +1251,7 @@ def move_task(
         except Exception:
             pass  # Don't block on error logging
         _output_error(json_output, str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command(name="mark-status")
@@ -1430,7 +1429,7 @@ def mark_status(
         except Exception:
             pass  # Don't block on error logging
         _output_error(json_output, str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command(name="list-tasks")
@@ -1501,7 +1500,7 @@ def list_tasks(
 
     except Exception as e:
         _output_error(json_output, str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command(name="add-history")
@@ -1587,7 +1586,7 @@ def add_history(
         except Exception:
             pass  # Don't block on error logging
         _output_error(json_output, str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command(name="finalize-tasks")
@@ -1708,16 +1707,14 @@ def finalize_tasks(
 
     except Exception as e:
         # Emit ErrorLogged event (T016)
-        try:
+        with contextlib.suppress(Exception):
             emit_error_logged(
                 error_type="runtime",
                 error_message=str(e),
                 stack_trace=traceback.format_exc(),
             )
-        except Exception:
-            pass
         _output_error(json_output, str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command(name="validate-workflow")
@@ -1798,17 +1795,15 @@ def validate_workflow(
 
     except Exception as e:
         # Emit ErrorLogged event (T016)
-        try:
+        with contextlib.suppress(Exception):
             emit_error_logged(
                 error_type="validation",
                 error_message=str(e),
                 wp_id=task_id if 'task_id' in dir() else None,
                 stack_trace=traceback.format_exc(),
             )
-        except Exception:
-            pass
         _output_error(json_output, str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command(name="status")
@@ -2090,7 +2085,7 @@ def status(
 
     except Exception as e:
         _output_error(json_output, str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
 
 @app.command(name="list-dependents")
@@ -2159,4 +2154,4 @@ def list_dependents(
 
     except Exception as e:
         _output_error(json_output, str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
