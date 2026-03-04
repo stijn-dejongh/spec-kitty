@@ -449,7 +449,7 @@ Execution order:
 - WP06: planned
 - WP07: planned
 - WP08: planned
-- WP09: in_progress
+- WP09: done
 - WP10: done
 - WP11: canceled
 <!-- status-model:end -->
