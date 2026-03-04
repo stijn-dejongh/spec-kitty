@@ -1,7 +1,7 @@
 ---
 work_package_id: WP05
 title: Directive Schema Extension
-lane: "for_review"
+lane: "done"
 dependencies: [WP01]
 base_branch: feature/agent-profile-implementation
 base_commit: 319c155f7f3874a58a122a1c06dee35dea7f56c2
@@ -13,10 +13,10 @@ subtasks:
 - T028
 phase: Phase 1 - Foundation
 assignee: ''
-agent: "codex"
+agent: codex
 shell_pid: '112867'
-review_status: ''
-reviewed_by: ''
+review_status: "approved"
+reviewed_by: "Stijn Dejongh"
 history:
 - timestamp: '2026-02-26T04:36:22Z'
   lane: planned
@@ -179,3 +179,4 @@ spec-kitty implement WP05 --base WP01
 ```
 - 2026-02-28T08:23:55Z – codex – shell_pid=112867 – lane=doing – Assigned agent via workflow command
 - 2026-02-28T08:30:02Z – codex – shell_pid=112867 – lane=for_review – Ready for review: doctrine service + directive schema compatibility tests
+- 2026-03-04T04:46:48Z – codex – shell_pid=112867 – lane=done – Reviewed and approved: Directive schema extension complete, 48 tests passing. DoctrineService also implemented here.
