@@ -10,12 +10,12 @@ subtasks:
   - "T058"
 title: "Create New Shipped Directives"
 phase: "Phase 2 - Content"
-lane: "planned"
+lane: "done"
 assignee: ""
 agent: ""
 shell_pid: ""
-review_status: ""
-reviewed_by: ""
+review_status: "approved"
+reviewed_by: "Stijn Dejongh"
 dependencies: ["WP01", "WP05"]
 history:
   - timestamp: "2026-02-26T04:36:22Z"
@@ -198,3 +198,4 @@ Depends on WP01 and WP05 (parallel with WP07, WP08):
 ```bash
 spec-kitty implement WP09 --base WP05
 ```
+- 2026-03-04T04:46:54Z – unknown – lane=done – Reviewed and approved: tactic-ref and enrichment consistency tests passing. 469 tests total.
