@@ -7,6 +7,7 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from rich.console import Console
 
@@ -196,7 +197,7 @@ class MigrationRunner:
         target_version: str,
         migrations: list[BaseMigration],
         dry_run: bool,
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Upgrade all worktrees in .worktrees/ directory.
 
         Args:
@@ -207,7 +208,7 @@ class MigrationRunner:
         Returns:
             Dict with warnings and errors lists
         """
-        result: dict = {"warnings": [], "errors": []}
+        result: dict[str, Any] = {"warnings": [], "errors": []}
 
         worktrees_dir = self.project_path / WORKTREES_DIR
         if not worktrees_dir.exists():
