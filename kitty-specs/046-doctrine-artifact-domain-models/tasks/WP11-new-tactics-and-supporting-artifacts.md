@@ -157,6 +157,42 @@ else:
 "
 ```
 
+## Architectural Alignment
+
+This WP produces artifacts consumed by the **Doctrine Catalog Loader** and validated by the **Schema Validation Gate** components (see `architecture/2.x/03_components/README.md`). Key invariants:
+
+- Artifacts live in `src/doctrine/{type}/shipped/` — never in the project dir or outside the catalog
+- All new files must pass their respective schema (`src/doctrine/schemas/`) before committing
+- The `DoctrineService` aggregates lazily; new tactics/styleguides/toolguides are accessible via `DoctrineService().tactics.get(id)`, etc.
+- No circular imports: none of the `{type}/` subpackages may import from `doctrine.service`
+
+**Reference files:**
+- Container view: `architecture/2.x/02_containers/README.md` (Doctrine Artifact Catalog)
+- Component view: `architecture/2.x/03_components/README.md` (Doctrine Catalog Loader, Schema Validation Gate)
+- Glossary: `glossary/contexts/doctrine.md`, `glossary/contexts/practices-principles.md`
+- Doctrine reference material: `src/doctrine/doctrine_ref/tactics/`, `src/doctrine/doctrine_ref/directives/`
+
+---
+
+## ⚠️ Pre-Review Gate (Required Before Moving to `for_review`)
+
+Before moving this WP to `for_review`, run the following checks on all **changed files** in this WP and fix any issues immediately:
+
+```bash
+# 1. Ruff lint (must be clean)
+ruff check src/doctrine/tactics/shipped/ src/doctrine/styleguides/shipped/ src/doctrine/toolguides/shipped/
+
+# 2. Mypy strict (must be clean on Python sources)
+python -m mypy src/doctrine/tactics/ src/doctrine/styleguides/ src/doctrine/toolguides/ --strict --ignore-missing-imports
+
+# 3. Tests (must pass)
+pytest tests/doctrine/ -v -k "consistency or tactic or styleguide or toolguide"
+```
+
+Note: YAML files are not Python — ruff/mypy apply only to `.py` files. Schema validation is the gate for YAML artifacts (see T068).
+
+---
+
 ## Risks & Mitigations
 
 - **doctrine_ref tactics may be incomplete**: Some tactic references from enriched directives may not have corresponding doctrine_ref material — create minimal but meaningful tactic content
@@ -177,16 +213,8 @@ else:
 
 ### Implementation Command
 
-Depends on WP02-04 and WP07-09:
+All dependencies (WP01–WP09) are merged into `feature/agent-profile-implementation`. Branch directly from the feature branch:
 ```bash
-spec-kitty implement WP11 --base WP07
+spec-kitty implement WP11
 ```
-Then merge other dependencies:
-```bash
-cd .worktrees/046-doctrine-artifact-domain-models-WP11/
-git merge <WP08-branch>
-git merge <WP09-branch>
-git merge <WP02-branch>
-git merge <WP03-branch>
-git merge <WP04-branch>
-```
+No additional merges needed — the feature branch is the base.
