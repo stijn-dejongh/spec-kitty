@@ -42,19 +42,3 @@ If no WP ID is provided, it will automatically find the first work package with 
 
 **The Python script handles all file updates automatically - no manual editing required!**
 
-## Telemetry (final step)
-
-After completing the review and running the move-task command, emit a telemetry event to record this review phase:
-
-```bash
-spec-kitty agent telemetry emit \
-  --feature <feature-slug> \
-  --role reviewer \
-  --wp-id <WP-ID> \
-  --agent <your-agent-name> \
-  --model <your-model-id>
-```
-
-Note: Include `--wp-id` to associate this review event with the specific work package. The `move-task` command also emits a telemetry event — this is intentional (captures both the task transition and the review phase completion).
-
-Include `--input-tokens`, `--output-tokens`, `--cost-usd`, `--duration-ms` if available. This is fire-and-forget — failures never block the workflow.
