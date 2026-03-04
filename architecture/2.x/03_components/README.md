@@ -18,6 +18,91 @@ implementation-agnostic and behavior-focused.
 2. Explain behavior and interaction patterns that matter architecturally.
 3. Keep component definitions aligned with container boundaries and ADR decisions.
 
+## Doctrine Stack Domain Model
+
+The Doctrine Stack is the knowledge layer that governs how agents reason and act. The diagram below shows the conceptual elements, their reference directions, and the contradiction relationship introduced in v0.12.
+
+```mermaid
+classDiagram
+    direction TB
+
+    class Paradigm {
+        +id: string
+        +name: string
+        +summary: string
+        +tactic_refs: string[]
+        +opposed_by: Contradiction[]
+    }
+
+    class Directive {
+        +id: string
+        +title: string
+        +intent: string
+        +enforcement: required|advisory
+        +tactic_refs: string[]
+        +opposed_by: Contradiction[]
+    }
+
+    class Tactic {
+        +id: string
+        +name: string
+        +purpose: string
+        +steps: Step[]
+        +references: Reference[]
+        +opposed_by: Contradiction[]
+    }
+
+    class Styleguide {
+        +id: string
+        +name: string
+    }
+
+    class Toolguide {
+        +id: string
+        +name: string
+    }
+
+    class Contradiction {
+        +type: directive|tactic|paradigm
+        +id: string
+        +reason: string
+    }
+
+    class Reference {
+        +type: directive|tactic|styleguide|toolguide
+        +id: string
+        +name: string
+        +when: string
+    }
+
+    Paradigm "1" --> "0..*" Tactic : tactic_refs\n(justifies which tactics\noperationalise this mental model)
+    Directive "1" --> "0..*" Tactic : tactic_refs\n(selects procedures\nthat implement the rule)
+    Tactic "1" --> "0..*" Reference : references\n(consults output shapes\nor related procedures)
+    Reference ..> Styleguide : when type=styleguide
+    Reference ..> Toolguide : when type=toolguide
+    Reference ..> Tactic : when type=tactic
+    Reference ..> Directive : when type=directive
+
+    Paradigm "0..*" --> "0..*" Contradiction : opposed_by
+    Directive "0..*" --> "0..*" Contradiction : opposed_by
+    Tactic "0..*" --> "0..*" Contradiction : opposed_by
+```
+
+### Reference Direction Rules
+
+| From | To | Mechanism | Meaning |
+|---|---|---|---|
+| Paradigm | Tactic | `tactic_refs` | Approach justifies which tactics operationalise it |
+| Directive | Tactic | `tactic_refs` | Rule selects the step-by-step procedure that fulfils it |
+| Tactic | Tactic / Styleguide / Toolguide / Directive | `references[*]` | Step consults related procedures or output-shape contracts |
+| Any | Any | `opposed_by[*]` | Explicit tension: this artifact's intent conflicts with the referenced artifact under certain conditions |
+
+**Leaf nodes** — Styleguides and Toolguides are terminal. They are referenced *by* tactics; they carry no outward references themselves.
+
+**Cycle constraint** — Tactic-to-tactic references (via `references[*]`) must form a DAG. Cycles would cause infinite resolution loops and are detected by `test_tactic_reference_graph_has_no_cycles` in `tests/doctrine/test_directive_consistency.py`.
+
+**Contradiction semantics** — `opposed_by` does not mean "superseded". Both artifacts remain valid and applicable. The field documents a known tension so agents can surface it when the two artifacts are simultaneously active (e.g. Directive 024 Locality of Change vs Directive 025 Boy Scout Rule).
+
 ## Component Diagram (Mermaid)
 
 ```mermaid
