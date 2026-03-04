@@ -2,7 +2,7 @@
 work_package_id: WP07
 title: Enrich Existing Directives 001-010
 <<<<<<< HEAD
-lane: "planned"
+lane: "done"
 =======
 lane: "for_review"
 >>>>>>> 046-doctrine-artifact-domain-models-WP10
@@ -26,7 +26,7 @@ assignee: ''
 <<<<<<< HEAD
 agent: claude-sonnet
 shell_pid: '1519962'
-review_status: "has_feedback"
+review_status: "approved"
 reviewed_by: "Stijn Dejongh"
 review_feedback: "feedback://046-doctrine-artifact-domain-models/WP07/20260304T042931Z-9ac15c08.md"
 =======
@@ -240,3 +240,4 @@ spec-kitty implement WP07 --base WP05
 - 2026-03-04T04:29:31Z – claude-sonnet – shell_pid=1519962 – lane=planned – Moved to planned
 =======
 >>>>>>> 046-doctrine-artifact-domain-models-WP10
+- 2026-03-04T04:45:38Z – claude-sonnet – shell_pid=1519962 – lane=done – Directives 001-010 all enriched via WP06 codex branch merged through WP10. All have scope, procedures, validation_criteria. Directive 004 has tactic_refs=[acceptance-test-first, tdd-red-green-refactor, zombies-tdd].
