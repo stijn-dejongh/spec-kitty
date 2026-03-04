@@ -58,7 +58,7 @@ def test_wheel_contains_doctrine_package_data() -> None:
             "doctrine/agent_profiles/shipped/implementer.agent.yaml",
             "doctrine/schemas/agent-profile.schema.yaml",
             "doctrine/schemas/directive.schema.yaml",
-            "doctrine/directives/test-first.directive.yaml",
+            "doctrine/directives/shipped/test-first.directive.yaml",
         ]
         missing = [path for path in required_prefixes if path not in names]
         assert not missing, f"Missing doctrine wheel assets: {missing}"

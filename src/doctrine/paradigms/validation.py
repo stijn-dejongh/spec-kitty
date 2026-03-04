@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-import jsonschema  # type: ignore[import-untyped]
+import jsonschema
 from importlib.resources import files
 from ruamel.yaml import YAML
 
