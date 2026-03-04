@@ -449,7 +449,7 @@ Execution order:
 - WP06: in_progress
 - WP07: in_progress
 - WP08: in_progress
-- WP09: for_review
+- WP09: in_progress
 - WP10: for_review
 - WP11: canceled
 <!-- status-model:end -->

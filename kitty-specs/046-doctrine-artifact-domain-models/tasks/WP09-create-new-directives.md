@@ -1,7 +1,7 @@
 ---
 work_package_id: WP09
 title: Consistency Tests & Existing Test Updates
-lane: "for_review"
+lane: "doing"
 dependencies:
 - WP01
 - WP06
@@ -16,8 +16,8 @@ subtasks:
 - T068
 phase: Phase 2 - Content
 assignee: ''
-agent: "codex"
-shell_pid: '112867'
+agent: "claude-sonnet"
+shell_pid: "1520304"
 review_status: ''
 reviewed_by: ''
 history:
@@ -202,3 +202,4 @@ Depends on WP01 and WP05 (parallel with WP07, WP08):
 spec-kitty implement WP09 --base WP05
 ```
 - 2026-02-28T08:48:47Z – codex – shell_pid=112867 – lane=for_review – Moved to for_review
+- 2026-03-04T04:27:12Z – claude-sonnet – shell_pid=1520304 – lane=doing – Started review via workflow command
