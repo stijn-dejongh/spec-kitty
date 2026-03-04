@@ -1,6 +1,22 @@
 schema_version: "1.0"
 id: DIRECTIVE_002
 title: Accessibility First Principle
-intent: Ensure compliance with Accessibility First Principle.
+intent: >
+  Accessibility requirements are treated as first-class quality constraints,
+  not late-stage polish, so inclusive outcomes are built into design and
+  implementation from the start.
 tactic_refs: []
 enforcement: required
+scope: >
+  Applies to user-facing interfaces, interaction flows, and documentation that
+  defines UX behavior or acceptance criteria.
+procedures:
+  - Capture accessibility acceptance criteria during specification and planning.
+  - Validate keyboard, focus, semantics, and contrast behavior before review handoff.
+  - Track unresolved accessibility issues explicitly with remediation ownership.
+integrity_rules:
+  - Accessibility regressions cannot be accepted as an implicit trade-off.
+  - Required assistive behavior must be testable from documented acceptance criteria.
+validation_criteria:
+  - Work-package outcomes include explicit accessibility checks relevant to the feature.
+  - Reviews confirm no newly introduced blockers for keyboard or screen-reader users.

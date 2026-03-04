@@ -1,34 +1,31 @@
 ---
-work_package_id: WP09
-title: Consistency Tests & Existing Test Updates
-lane: "done"
-dependencies:
-- WP01
-- WP06
-- WP07
-- WP08
-base_branch: 046-doctrine-artifact-domain-models-WP09-merge-base
-base_commit: cbe21d3c6309586e1a0d1ee6a47177fc7308bc51
-created_at: '2026-02-28T08:46:50.884956+00:00'
+work_package_id: "WP09"
 subtasks:
-- T066
-- T067
-- T068
-phase: Phase 2 - Content
-assignee: ''
-agent: claude-sonnet
-shell_pid: '1520304'
-review_status: "approved"
-reviewed_by: "Stijn Dejongh"
+  - "T052"
+  - "T053"
+  - "T054"
+  - "T055"
+  - "T056"
+  - "T057"
+  - "T058"
+title: "Create New Shipped Directives"
+phase: "Phase 2 - Content"
+lane: "planned"
+assignee: ""
+agent: ""
+shell_pid: ""
+review_status: ""
+reviewed_by: ""
+dependencies: ["WP01", "WP05"]
 history:
-- timestamp: '2026-02-26T04:36:22Z'
-  lane: planned
-  agent: system
-  shell_pid: ''
-  action: Prompt generated via /spec-kitty.tasks
+  - timestamp: "2026-02-26T04:36:22Z"
+    lane: "planned"
+    agent: "system"
+    shell_pid: ""
+    action: "Prompt generated via /spec-kitty.tasks"
 ---
 
-# Work Package Prompt: WP09 – Consistency Tests & Existing Test Updates
+# Work Package Prompt: WP09 – Create New Shipped Directives
 
 ## ⚠️ IMPORTANT: Review Feedback Status
 
@@ -201,6 +198,3 @@ Depends on WP01 and WP05 (parallel with WP07, WP08):
 ```bash
 spec-kitty implement WP09 --base WP05
 ```
-- 2026-02-28T08:48:47Z – codex – shell_pid=112867 – lane=for_review – Moved to for_review
-- 2026-03-04T04:27:12Z – claude-sonnet – shell_pid=1520304 – lane=doing – Started review via workflow command
-- 2026-03-04T04:29:45Z – claude-sonnet – shell_pid=1520304 – lane=done – Review passed: All 7 new directive files (020-026) created with correct SCREAMING_SNAKE_CASE IDs, appropriate enforcement levels, substantive non-placeholder content, schema-conformant field names (snake_case), and proper tension resolution between DIRECTIVE_025 and DIRECTIVE_024. Repository count meets 27+ requirement. | Done override: Reviewer approving WP09 - implementation complete and validated via file inspection. Branch not yet merged into target as merge happens after all WPs are reviewed.

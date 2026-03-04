@@ -1,7 +1,7 @@
 ---
 work_package_id: WP11
-title: Obsolete WP (Superseded by WP10)
-lane: "canceled"
+title: New Tactics & Supporting Artifacts
+lane: planned
 dependencies:
 - WP01
 - WP02
@@ -18,7 +18,7 @@ subtasks:
 - T068
 phase: Phase 2 - Content
 assignee: ''
-agent: "codex"
+agent: ''
 shell_pid: ''
 review_status: ''
 reviewed_by: ''
@@ -30,7 +30,7 @@ history:
   action: Prompt generated via /spec-kitty.tasks
 ---
 
-# Work Package Prompt: WP11 – Obsolete WP (Superseded by WP10)
+# Work Package Prompt: WP11 – New Tactics & Supporting Artifacts
 
 ## ⚠️ IMPORTANT: Review Feedback Status
 
@@ -190,4 +190,3 @@ git merge <WP02-branch>
 git merge <WP03-branch>
 git merge <WP04-branch>
 ```
-- 2026-02-28T08:51:00Z – codex – lane=canceled – Obsolete after WP renumbering: tasks.md canonical scope ends at WP10

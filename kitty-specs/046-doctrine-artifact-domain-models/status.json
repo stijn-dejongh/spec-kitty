@@ -1,16 +1,16 @@
 {
-  "event_count": 37,
+  "event_count": 16,
   "feature_slug": "046-doctrine-artifact-domain-models",
-  "last_event_id": "01KJVHQSNM9NWX5VVRZCXAKSH5",
-  "materialized_at": "2026-03-04T04:29:45.012597+00:00",
+  "last_event_id": "01KJHP7XV5SCFZXETPKF5NWYJK",
+  "materialized_at": "2026-02-28T08:36:03.557282+00:00",
   "summary": {
     "blocked": 0,
-    "canceled": 1,
+    "canceled": 0,
     "claimed": 0,
-    "done": 7,
-    "for_review": 0,
+    "done": 3,
+    "for_review": 4,
     "in_progress": 0,
-    "planned": 3
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
@@ -35,60 +35,32 @@
       "last_transition_at": "2026-02-28T04:35:02.007120+00:00"
     },
     "WP04": {
-      "actor": "user",
-      "force_count": 4,
-      "lane": "done",
-      "last_event_id": "01KJVH4Q89GK9W6G27NJ972M47",
-      "last_transition_at": "2026-03-04T04:19:19.945683+00:00"
+      "actor": "codex",
+      "force_count": 2,
+      "lane": "for_review",
+      "last_event_id": "01KJHN998ZGQDENE86EQZDKE84",
+      "last_transition_at": "2026-02-28T08:19:19.455480+00:00"
     },
     "WP05": {
-      "actor": "user",
-      "force_count": 3,
-      "lane": "done",
-      "last_event_id": "01KJVHNEBH7NYK86Q5EHM7CCVG",
-      "last_transition_at": "2026-03-04T04:28:27.889104+00:00"
+      "actor": "codex",
+      "force_count": 1,
+      "lane": "for_review",
+      "last_event_id": "01KJHNWX7QY1A1TTVK91Q4N7AR",
+      "last_transition_at": "2026-02-28T08:30:02.487509+00:00"
     },
     "WP06": {
-      "actor": "user",
-      "force_count": 3,
-      "lane": "planned",
-      "last_event_id": "01KJVHQD5QYTV1FG0EK9YF62XR",
-      "last_transition_at": "2026-03-04T04:29:32.215909+00:00"
+      "actor": "codex",
+      "force_count": 1,
+      "lane": "for_review",
+      "last_event_id": "01KJHP3T18HBFR7HBHMH831PJQ",
+      "last_transition_at": "2026-02-28T08:33:48.584218+00:00"
     },
     "WP07": {
-      "actor": "user",
-      "force_count": 3,
-      "lane": "planned",
-      "last_event_id": "01KJVHQCB2N21D7N0JZR0VJ7ZA",
-      "last_transition_at": "2026-03-04T04:29:31.362359+00:00"
-    },
-    "WP08": {
-      "actor": "user",
-      "force_count": 3,
-      "lane": "planned",
-      "last_event_id": "01KJVHQCRESSPT8FETATJ6EZBM",
-      "last_transition_at": "2026-03-04T04:29:31.790390+00:00"
-    },
-    "WP09": {
-      "actor": "user",
-      "force_count": 3,
-      "lane": "done",
-      "last_event_id": "01KJVHQSNM9NWX5VVRZCXAKSH5",
-      "last_transition_at": "2026-03-04T04:29:45.012263+00:00"
-    },
-    "WP10": {
-      "actor": "user",
-      "force_count": 3,
-      "lane": "done",
-      "last_event_id": "01KJVHPGV8F074XDH7DHEJZKJR",
-      "last_transition_at": "2026-03-04T04:29:03.208500+00:00"
-    },
-    "WP11": {
       "actor": "codex",
-      "force_count": 0,
-      "lane": "canceled",
-      "last_event_id": "01KJHQ39SMYTVA6077T4KDEJ78",
-      "last_transition_at": "2026-02-28T08:51:00.532606+00:00"
+      "force_count": 1,
+      "lane": "for_review",
+      "last_event_id": "01KJHP7XV5SCFZXETPKF5NWYJK",
+      "last_transition_at": "2026-02-28T08:36:03.557063+00:00"
     }
   }
 }

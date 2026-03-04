@@ -1,30 +1,24 @@
 ---
 work_package_id: WP10
-title: New Tactics & Supporting Artifacts
-lane: "done"
+title: Consistency Tests & Existing Test Updates
+lane: planned
 dependencies:
-- WP02
-- WP03
-- WP04
-- WP06
+- WP01
 - WP07
 - WP08
 - WP09
-base_branch: 046-doctrine-artifact-domain-models-WP10-merge-base
-base_commit: 643edddb5686a4c3167d340d4ae0aa99c5043479
-created_at: '2026-02-28T08:49:49.478869+00:00'
 subtasks:
-- T069
-- T070
-- T071
-- T072
-- T073
+- T059
+- T060
+- T061
+- T062
+- T063
 phase: Phase 2 - Content
 assignee: ''
-agent: claude-sonnet
-shell_pid: '1520383'
-review_status: "approved"
-reviewed_by: "Stijn Dejongh"
+agent: ''
+shell_pid: ''
+review_status: ''
+reviewed_by: ''
 history:
 - timestamp: '2026-02-26T04:36:22Z'
   lane: planned
@@ -33,7 +27,7 @@ history:
   action: Prompt generated via /spec-kitty.tasks
 ---
 
-# Work Package Prompt: WP10 – New Tactics & Supporting Artifacts
+# Work Package Prompt: WP10 – Consistency Tests & Existing Test Updates
 
 ## ⚠️ IMPORTANT: Review Feedback Status
 
@@ -172,8 +166,3 @@ cd .worktrees/046-doctrine-artifact-domain-models-WP10/
 git merge <WP08-branch>
 git merge <WP09-branch>
 ```
-- 2026-02-28T08:49:49Z – codex – shell_pid=112867 – lane=doing – Assigned agent via workflow command
-- 2026-02-28T08:50:29Z – codex – shell_pid=112867 – lane=doing – Audit found no unresolved tactic_refs; no new tactics/styleguides/toolguides required.
-- 2026-02-28T08:50:52Z – codex – shell_pid=112867 – lane=for_review – Audit complete; no additional artifacts required
-- 2026-03-04T04:27:14Z – claude-sonnet – shell_pid=1520383 – lane=doing – Started review via workflow command
-- 2026-03-04T04:29:03Z – claude-sonnet – shell_pid=1520383 – lane=done – Review passed: All doctrine tests pass (469/469). Consistency tests, enriched directive tests, schema validation tests with paradigm support, and artifact compliance tests all implemented correctly. All test paths correctly reference shipped/ subdirectories. | Done override: Reviewer agent: WP10 branch contains valid implementation; all 469 doctrine tests pass. Branch not yet merged into integration branch but implementation is complete and verified.

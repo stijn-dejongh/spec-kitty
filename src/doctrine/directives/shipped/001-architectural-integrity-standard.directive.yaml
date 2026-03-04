@@ -1,6 +1,22 @@
 schema_version: "1.0"
 id: DIRECTIVE_001
 title: Architectural Integrity Standard
-intent: Ensure compliance with Architectural Integrity Standard.
+intent: >
+  Architectural decisions must preserve bounded contexts, explicit dependency
+  direction, and clear ownership boundaries so implementation changes remain
+  locally comprehensible and safe to evolve.
 tactic_refs: []
 enforcement: required
+scope: >
+  Applies to planning, implementation, and review activities that change
+  module boundaries, shared contracts, or cross-package dependencies.
+procedures:
+  - Map the proposed change to affected contexts and owning modules before implementation.
+  - Document boundary-impacting tradeoffs when introducing new cross-context dependencies.
+  - Reject architecture drift that bypasses published contracts or layering constraints.
+integrity_rules:
+  - Context boundaries must remain explicit and reviewable.
+  - New dependencies must flow through approved contracts, not hidden reach-ins.
+validation_criteria:
+  - Architecture-impacting pull requests include rationale for boundary changes.
+  - No unreviewed cross-context coupling is introduced by the change set.

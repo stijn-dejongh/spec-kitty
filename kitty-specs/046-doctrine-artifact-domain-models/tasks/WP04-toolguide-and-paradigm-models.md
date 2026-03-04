@@ -1,7 +1,7 @@
 ---
 work_package_id: WP04
 title: Toolguide & Paradigm Models
-lane: "done"
+lane: "for_review"
 dependencies: []
 subtasks:
 - T019
@@ -12,10 +12,10 @@ subtasks:
 - T024
 phase: Phase 1 - Foundation
 assignee: ''
-agent: claude-opus
-shell_pid: '1515120'
-review_status: "approved"
-reviewed_by: "Stijn Dejongh"
+agent: "codex"
+shell_pid: ''
+review_status: ''
+reviewed_by: ''
 history:
 - timestamp: '2026-02-26T04:36:22Z'
   lane: planned
@@ -198,5 +198,3 @@ spec-kitty implement WP04
 ```
 - 2026-02-28T04:35:22Z – unknown – lane=in_progress – Starting WP04: Toolguide & Paradigm Models
 - 2026-02-28T08:19:19Z – codex – lane=for_review – WP04 implementation complete; doctrine tests passing
-- 2026-03-04T04:13:36Z – claude-opus – shell_pid=1515120 – lane=doing – Started review via workflow command
-- 2026-03-04T04:19:19Z – claude-opus – shell_pid=1515120 – lane=done – Review passed: All 33 tests pass. Toolguide and Paradigm models, repositories, validation, schema, and shipped/ relocation are fully implemented and match the spec. schema_version (underscore) is used consistently across schema, model, and YAML files — correctly aligned with the existing directive/tactic patterns. No issues found.

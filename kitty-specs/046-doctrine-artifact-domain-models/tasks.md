@@ -249,13 +249,13 @@
 
 ### Included Subtasks
 
-- [x] T059 Create 020-worklog-creation.directive.yaml (from doctrine_ref/014)
-- [x] T060 Create 021-prompt-storage.directive.yaml (from doctrine_ref/015)
-- [x] T061 Create 022-commit-protocol.directive.yaml (from doctrine_ref/026)
-- [x] T062 Create 023-clarification-before-execution.directive.yaml (from doctrine_ref/023)
-- [x] T063 Create 024-locality-of-change.directive.yaml (from doctrine_ref/021)
-- [x] T064 Create 025-boy-scout-rule.directive.yaml (from doctrine_ref/036)
-- [x] T065 Create 026-hic-escalation-protocol.directive.yaml (from doctrine_ref/040)
+- [ ] T059 Create 020-worklog-creation.directive.yaml (from doctrine_ref/014)
+- [ ] T060 Create 021-prompt-storage.directive.yaml (from doctrine_ref/015)
+- [ ] T061 Create 022-commit-protocol.directive.yaml (from doctrine_ref/026)
+- [ ] T062 Create 023-clarification-before-execution.directive.yaml (from doctrine_ref/023)
+- [ ] T063 Create 024-locality-of-change.directive.yaml (from doctrine_ref/021)
+- [ ] T064 Create 025-boy-scout-rule.directive.yaml (from doctrine_ref/036)
+- [ ] T065 Create 026-hic-escalation-protocol.directive.yaml (from doctrine_ref/040)
 
 ### Implementation Notes
 
@@ -284,9 +284,9 @@
 
 ### Included Subtasks
 
-- [x] T066 Extend `tests/doctrine/test_directive_consistency.py` with tactic_ref resolution tests (scan all shipped directives, verify each `tactic_ref` resolves to an existing tactic file in `shipped/`)
-- [x] T067 Create `tests/doctrine/test_enriched_directives.py` — verify no shipped directive has single-sentence `intent`, all have `scope` field
-- [x] T068 Verify all existing doctrine tests pass with relocated files (full test suite run)
+- [ ] T066 Extend `tests/doctrine/test_directive_consistency.py` with tactic_ref resolution tests (scan all shipped directives, verify each `tactic_ref` resolves to an existing tactic file in `shipped/`)
+- [ ] T067 Create `tests/doctrine/test_enriched_directives.py` — verify no shipped directive has single-sentence `intent`, all have `scope` field
+- [ ] T068 Verify all existing doctrine tests pass with relocated files (full test suite run)
 
 ### Implementation Notes
 
@@ -310,11 +310,11 @@
 
 ### Included Subtasks
 
-- [x] T069 Audit all enriched and new directives for unresolved `tactic_refs`
-- [x] T070 [P] Create new tactic YAML files in `src/doctrine/tactics/shipped/` for unresolved references
-- [x] T071 [P] Create new styleguide YAML files in `src/doctrine/styleguides/shipped/` if needed
-- [x] T072 [P] Create new toolguide YAML files in `src/doctrine/toolguides/shipped/` if needed
-- [x] T073 Validate all new artifacts against their respective schemas
+- [ ] T069 Audit all enriched and new directives for unresolved `tactic_refs`
+- [ ] T070 [P] Create new tactic YAML files in `src/doctrine/tactics/shipped/` for unresolved references
+- [ ] T071 [P] Create new styleguide YAML files in `src/doctrine/styleguides/shipped/` if needed
+- [ ] T072 [P] Create new toolguide YAML files in `src/doctrine/toolguides/shipped/` if needed
+- [ ] T073 Validate all new artifacts against their respective schemas
 
 ### Implementation Notes
 
@@ -444,12 +444,8 @@ Execution order:
 - WP01: done
 - WP02: done
 - WP03: done
-- WP04: done
-- WP05: done
-- WP06: planned
-- WP07: planned
-- WP08: planned
-- WP09: done
-- WP10: done
-- WP11: canceled
+- WP04: for_review
+- WP05: for_review
+- WP06: for_review
+- WP07: for_review
 <!-- status-model:end -->

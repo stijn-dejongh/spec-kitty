@@ -1,7 +1,11 @@
 ---
 work_package_id: WP07
 title: Enrich Existing Directives 001-010
+<<<<<<< HEAD
 lane: "planned"
+=======
+lane: "for_review"
+>>>>>>> 046-doctrine-artifact-domain-models-WP10
 dependencies: [WP01, WP05]
 base_branch: feature/agent-profile-implementation
 base_commit: 79cfabb61acb3e08614228c4bd7ae0a7b95c5bab
@@ -19,11 +23,18 @@ subtasks:
 - T041
 phase: Phase 2 - Content
 assignee: ''
+<<<<<<< HEAD
 agent: claude-sonnet
 shell_pid: '1519962'
 review_status: "has_feedback"
 reviewed_by: "Stijn Dejongh"
 review_feedback: "feedback://046-doctrine-artifact-domain-models/WP07/20260304T042931Z-9ac15c08.md"
+=======
+agent: "codex"
+shell_pid: '112867'
+review_status: ''
+reviewed_by: ''
+>>>>>>> 046-doctrine-artifact-domain-models-WP10
 history:
 - timestamp: '2026-02-26T04:36:22Z'
   lane: planned
@@ -224,5 +235,8 @@ spec-kitty implement WP07 --base WP05
 ```
 - 2026-02-28T08:33:57Z – codex – shell_pid=112867 – lane=doing – Assigned agent via workflow command
 - 2026-02-28T08:36:03Z – codex – shell_pid=112867 – lane=for_review – Ready for review: directives 011-019 + test-first enriched
+<<<<<<< HEAD
 - 2026-03-04T04:27:05Z – claude-sonnet – shell_pid=1519962 – lane=doing – Started review via workflow command
 - 2026-03-04T04:29:31Z – claude-sonnet – shell_pid=1519962 – lane=planned – Moved to planned
+=======
+>>>>>>> 046-doctrine-artifact-domain-models-WP10
