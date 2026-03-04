@@ -1,7 +1,7 @@
 ---
 work_package_id: WP10
 title: New Tactics & Supporting Artifacts
-lane: "for_review"
+lane: "doing"
 dependencies:
 - WP02
 - WP03
@@ -21,8 +21,8 @@ subtasks:
 - T073
 phase: Phase 2 - Content
 assignee: ''
-agent: "codex"
-shell_pid: '112867'
+agent: "claude-sonnet"
+shell_pid: "1520383"
 review_status: ''
 reviewed_by: ''
 history:
@@ -175,3 +175,4 @@ git merge <WP09-branch>
 - 2026-02-28T08:49:49Z – codex – shell_pid=112867 – lane=doing – Assigned agent via workflow command
 - 2026-02-28T08:50:29Z – codex – shell_pid=112867 – lane=doing – Audit found no unresolved tactic_refs; no new tactics/styleguides/toolguides required.
 - 2026-02-28T08:50:52Z – codex – shell_pid=112867 – lane=for_review – Audit complete; no additional artifacts required
+- 2026-03-04T04:27:14Z – claude-sonnet – shell_pid=1520383 – lane=doing – Started review via workflow command
