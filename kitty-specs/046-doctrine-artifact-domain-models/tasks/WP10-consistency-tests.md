@@ -1,7 +1,7 @@
 ---
 work_package_id: WP10
 title: Consistency Tests & Existing Test Updates
-lane: planned
+lane: "done"
 dependencies:
 - WP01
 - WP07
@@ -17,8 +17,8 @@ phase: Phase 2 - Content
 assignee: ''
 agent: ''
 shell_pid: ''
-review_status: ''
-reviewed_by: ''
+review_status: "approved"
+reviewed_by: "Stijn Dejongh"
 history:
 - timestamp: '2026-02-26T04:36:22Z'
   lane: planned
@@ -166,3 +166,4 @@ cd .worktrees/046-doctrine-artifact-domain-models-WP10/
 git merge <WP08-branch>
 git merge <WP09-branch>
 ```
+- 2026-03-04T04:46:54Z – unknown – lane=done – Reviewed and approved: docs and zero-unresolved tactic-ref audit recorded.
