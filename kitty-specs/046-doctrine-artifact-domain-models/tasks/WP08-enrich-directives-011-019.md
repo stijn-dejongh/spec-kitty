@@ -1,7 +1,7 @@
 ---
 work_package_id: WP08
 title: Create New Shipped Directives
-lane: "for_review"
+lane: "doing"
 dependencies: [WP01]
 base_branch: feature/agent-profile-implementation
 base_commit: f6306beadf9e7f0d90c8a37954abf1f3555a4350
@@ -16,8 +16,8 @@ subtasks:
 - T065
 phase: Phase 2 - Content
 assignee: ''
-agent: "codex"
-shell_pid: "194283"
+agent: "claude-sonnet"
+shell_pid: "1520139"
 review_status: ''
 reviewed_by: ''
 history:
@@ -157,3 +157,4 @@ spec-kitty implement WP08 --base WP05
 ```
 - 2026-02-28T08:36:11Z – codex – shell_pid=112867 – lane=doing – Assigned agent via workflow command
 - 2026-02-28T08:46:06Z – codex – shell_pid=194283 – lane=for_review – Moved to for_review
+- 2026-03-04T04:27:10Z – claude-sonnet – shell_pid=1520139 – lane=doing – Started review via workflow command
