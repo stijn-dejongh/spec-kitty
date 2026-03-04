@@ -180,6 +180,46 @@ This is intentional and correct - it ensures a single source of truth for projec
 
 ---
 
+## 7. Preferred Workspace Tooling
+
+**Baseline environment assumptions: Linux OS, cross-environment collaboration, and a repo-local `.venv` that may lag behind other machines or the current repo state.**
+
+Upon startup, verify the availability of these tools: repository `.venv`, `poetry`, `uv`, `ruff`, `mypy`, local Mermaid tooling, and `rg` (ripgrep).
+
+If one or more tools are not present:
+- Warn the user.
+- Suggest concrete remediation actions.
+- Provide rationale for the warning and suggested remediation.
+
+After verification, record the final decision and available tools for the session in `.kittify/memory/available_tooling.md`.
+
+When recording this file, do not store personally identifiable information (PII), including IP addresses, system/host names, usernames, or similar machine-identifying data.
+
+When these tools are available, use this preference order:
+
+1. **Python environment**
+   - Use and activate the repository-local `.venv` first.
+   - If `.venv` appears outdated for the current branch/state, refresh or recreate it before major work.
+2. **Package and dependency tooling**
+   - Prefer `poetry` and `uv` over base `pip` commands.
+3. **Linting and type checking**
+   - Use `ruff` and `mypy` when available and when the project/task specifies lint or type checks.
+4. **Diagram tooling**
+   - Prefer local Mermaid tooling/workflows over remote or ad-hoc alternatives.
+5. **Filesystem search/navigation**
+   - Prefer `rg` (ripgrep) over slower base filesystem/search tools.
+
+---
+
+## 8. Model Discipline
+
+Before performing work or delegating work to a sub-agent, consider the required LLM model tier and attempt to use the highest token-ROI model available.
+
+- Simple tasks -> use a cheaper model.
+- Difficult or high-reasoning tasks -> use a premium model.
+
+---
+
 ### Quick Reference
 
 - 📁 **Paths**: Always specify exact locations.  
