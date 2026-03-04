@@ -447,7 +447,7 @@ Execution order:
 - WP04: done
 - WP05: done
 - WP06: in_progress
-- WP07: in_progress
+- WP07: planned
 - WP08: in_progress
 - WP09: in_progress
 - WP10: done
