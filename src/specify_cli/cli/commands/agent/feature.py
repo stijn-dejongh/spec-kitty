@@ -64,7 +64,7 @@ def _emit_json(payload: dict[str, object]) -> None:
 
 def _utc_now_iso() -> str:
     """Return deterministic UTC timestamp string for prompt/runtime variables."""
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _read_feature_meta(feature_dir: Path) -> dict[str, object]:
@@ -913,6 +913,7 @@ def setup_plan(  # noqa: C901
         mission_key = get_feature_mission_key(feature_dir)
         generators_detected = []
 
+        gap_analysis_path: str | None = None
         if mission_key == "documentation":
             from specify_cli.doc_state import (
                 read_documentation_state,
@@ -947,6 +948,7 @@ def setup_plan(  # noqa: C901
                                 last_audit_date=analysis.analysis_date,
                                 coverage_percentage=analysis.coverage_matrix.get_coverage_percentage(),
                             )
+                            gap_analysis_path = str(gap_analysis_output)
                             # Commit gap analysis and updated meta.json
                             try:  # noqa: SIM105
                                 safe_commit(
@@ -1670,7 +1672,6 @@ def finalize_tasks(  # noqa: C901
                         "requirement_refs_parsed": wp_requirement_refs,
                     }
                 )
-            )
 
     except typer.Exit:
         raise
