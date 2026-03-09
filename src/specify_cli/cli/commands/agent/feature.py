@@ -43,7 +43,7 @@ from specify_cli.mission import get_feature_mission_key
 from specify_cli.sync.events import emit_feature_created, emit_wp_created, get_emitter
 import contextlib
 
-app = typer.Typer(name="feature", help="Feature lifecycle commands for AI agents", no_args_is_help=True)
+app: typer.Typer = typer.Typer(name="feature", help="Feature lifecycle commands for AI agents", no_args_is_help=True)
 
 console = Console()
 
@@ -912,6 +912,7 @@ def setup_plan(  # noqa: C901
         # T014 + T016: Documentation mission wiring for plan
         mission_key = get_feature_mission_key(feature_dir)
         generators_detected = []
+        gap_analysis_path = None
 
         gap_analysis_path: str | None = None
         if mission_key == "documentation":
@@ -959,6 +960,7 @@ def setup_plan(  # noqa: C901
                                 )
                             except Exception:  # noqa: S110
                                 pass  # Non-fatal: agent can commit separately
+                            gap_analysis_path = str(gap_analysis_output)
                             if not json_output:
                                 coverage_pct = analysis.coverage_matrix.get_coverage_percentage() * 100
                                 console.print(
