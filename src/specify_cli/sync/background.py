@@ -12,14 +12,13 @@ import logging
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, UTC
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from .auth import AuthClient
 from .batch import BatchSyncResult, batch_sync, sync_all_queued_events
 from .config import SyncConfig
 from .feature_flags import is_saas_sync_enabled, saas_sync_disabled_message
 from .queue import OfflineQueue
-import contextlib
 
 if TYPE_CHECKING:
     from .body_queue import BodyUploadTask, OfflineBodyUploadQueue
@@ -41,7 +40,7 @@ class BackgroundSyncService:
     _backoff_seconds: float = field(default=0.5, init=False, repr=False)
     _last_sync: datetime | None = field(default=None, init=False, repr=False)
     _consecutive_failures: int = field(default=0, init=False, repr=False)
-    _body_queue: Optional[OfflineBodyUploadQueue] = field(default=None, init=False, repr=False)
+    _body_queue: OfflineBodyUploadQueue | None = field(default=None, init=False, repr=False)
     _lock: threading.Lock = field(default_factory=threading.Lock, init=False, repr=False)
 
     def start(self) -> None:
@@ -76,6 +75,8 @@ class BackgroundSyncService:
         if self.queue.size() > 0 or body_queue_has_work:
             try:
                 self._perform_sync()
+            except Exception:
+                logger.debug("Final sync failed during stop")
         logger.debug("Background sync service stopped")
 
     @property

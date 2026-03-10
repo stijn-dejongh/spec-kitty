@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import re
 import shutil
 import subprocess
@@ -38,6 +39,8 @@ from specify_cli.tasks_support import (
     split_frontmatter,
 )
 from datetime import UTC
+
+logger = logging.getLogger(__name__)
 
 
 def _write_prompt_to_file(
@@ -516,7 +519,7 @@ def implement(  # noqa: C901
                     _impl_feature_dir, feature_slug, repo_root,
                 )
             except Exception:
-                pass
+                logger.debug("Context sync failed (non-blocking)", exc_info=True)
 
             # Reload to get updated content
             wp = locate_work_package(repo_root, feature_slug, normalized_wp_id)

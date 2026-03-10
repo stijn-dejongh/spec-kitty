@@ -228,7 +228,7 @@ class TrackerService:
 
         endpoint = server_url.rstrip("/") + "/api/v1/connectors/trackers/snapshots/"
         idempotency_key = hashlib.sha256(
-            f"{provider}|{workspace}|{resource_type}|{resource_id}|{len(issues)}|{len(mappings)}|{payload['checkpoint']['cursor']}".encode("utf-8")
+            f"{provider}|{workspace}|{resource_type}|{resource_id}|{len(issues)}|{len(mappings)}|{payload['checkpoint']['cursor']}".encode()
         ).hexdigest()
 
         token = auth_token or str(credentials.get("access_token") or credentials.get("token") or "").strip()

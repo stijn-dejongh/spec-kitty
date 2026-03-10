@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 import typer
 from rich.console import Console
-from typing import Annotated
+from typing import Annotated, cast
 
 from specify_cli.core.paths import locate_project_root
 from specify_cli.core.agent_context import (
@@ -74,10 +74,10 @@ def resolve_context(
             ),
         ),
     ],
-    feature: Annotated[Optional[str], typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')")] = None,
-    wp_id: Annotated[Optional[str], typer.Option("--wp-id", help="Work package ID (e.g., WP01)")] = None,
-    base: Annotated[Optional[str], typer.Option("--base", help="Explicit base WP for implement")] = None,
-    agent: Annotated[Optional[str], typer.Option("--agent", help="Agent name for exact command rendering")] = None,
+    feature: Annotated[str | None, typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')")] = None,
+    wp_id: Annotated[str | None, typer.Option("--wp-id", help="Work package ID (e.g., WP01)")] = None,
+    base: Annotated[str | None, typer.Option("--base", help="Explicit base WP for implement")] = None,
+    agent: Annotated[str | None, typer.Option("--agent", help="Agent name for exact command rendering")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output results as JSON")] = False,
 ) -> None:
     """Resolve canonical feature/work-package/action context for prompt execution."""
@@ -122,9 +122,7 @@ def resolve_context(
             print(json.dumps({"success": False, "error_code": exc.code, "error": str(exc)}, indent=2))
         else:
             console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(1)
-
-
+        raise typer.Exit(1) from None
 @app.command(name="update-context")
 def update_context(
     feature: Annotated[str | None, typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')")] = None,

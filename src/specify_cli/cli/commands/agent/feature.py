@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import shutil
@@ -46,6 +47,7 @@ import contextlib
 app: typer.Typer = typer.Typer(name="feature", help="Feature lifecycle commands for AI agents", no_args_is_help=True)
 
 console = Console()
+logger = logging.getLogger(__name__)
 
 
 def _with_cli_version(payload: dict[str, object]) -> dict[str, object]:
@@ -671,7 +673,7 @@ spec-kitty agent tasks move-task WP01 --to doing
                 feature_dir, feature_slug_formatted, repo_root,
             )
         except Exception:
-            pass
+            logger.debug("Context sync failed (non-blocking)", exc_info=True)
 
         if json_output:
             create_payload ={"result": "success", "feature": feature_slug_formatted, "feature_dir": str(feature_dir),
@@ -1031,7 +1033,7 @@ def setup_plan(  # noqa: C901
                 feature_dir, feature_slug, repo_root,
             )
         except Exception:
-            pass
+            logger.debug("Context sync failed (non-blocking)", exc_info=True)
 
         if json_output:
             result = {
@@ -1695,7 +1697,7 @@ def finalize_tasks(  # noqa: C901
                 feature_dir, feature_slug, repo_root,
             )
         except Exception:
-            pass
+            logger.debug("Context sync failed (non-blocking)", exc_info=True)
 
         if json_output:
             _emit_json(

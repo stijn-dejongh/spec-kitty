@@ -289,7 +289,7 @@ def emit_status_transition(
                 feature_dir, feature_slug, repo_root,
             )
         except Exception:
-            pass  # Never block status transitions
+            logger.debug("Context sync failed (non-blocking)", exc_info=True)
 
     # Step 10: Return the event
     return event

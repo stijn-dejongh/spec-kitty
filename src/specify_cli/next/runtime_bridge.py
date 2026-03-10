@@ -36,7 +36,6 @@ from spec_kitty_runtime.schema import ActorIdentity, load_mission_template_file
 
 from specify_cli.mission import get_feature_mission_key
 from specify_cli.mission_v1.guards import _read_lane_from_frontmatter
-from specify_cli.status.transitions import resolve_lane_alias
 from specify_cli.next.decision import (
     Decision,
     DecisionKind,

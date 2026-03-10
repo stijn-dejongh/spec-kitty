@@ -206,7 +206,7 @@ class OfflineBodyUploadQueue:
         finally:
             conn.close()
 
-    def mark_failed_permanent(self, row_id: int, error: str) -> None:
+    def mark_failed_permanent(self, row_id: int, _error: str) -> None:
         """Remove a permanently failed task (non-retryable error)."""
         conn = sqlite3.connect(self.db_path)
         try:

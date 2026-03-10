@@ -35,7 +35,7 @@ class DossierSyncResult:
         return self.dossier is not None and not self.errors
 
 
-def sync_feature_dossier(
+def sync_feature_dossier(  # noqa: C901
     feature_dir: Path,
     namespace_ref: NamespaceRef,
     body_queue: OfflineBodyUploadQueue,

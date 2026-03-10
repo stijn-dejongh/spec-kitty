@@ -527,7 +527,7 @@ def merge_workspace_per_wp(  # noqa: C901
         except Exception as exc:
             tracker.error("checkout", str(exc))
             console.print(tracker.render())
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
 
         tracker.start("pull")
         try:
@@ -545,7 +545,7 @@ def merge_workspace_per_wp(  # noqa: C901
             console.print(tracker.render())
             console.print(f"\n[yellow]Warning:[/yellow] Could not fast-forward {target_branch}.")
             console.print("You may need to resolve conflicts manually.")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
 
         # Merge all WP branches
         tracker.start("merge")
@@ -553,7 +553,7 @@ def merge_workspace_per_wp(  # noqa: C901
             merged_count = 0
             skipped_count = 0
             skipped_count += len(merge_plan["skipped_already_in_target"]) + len(merge_plan["skipped_ancestor_of"])  # type: ignore[arg-type,index]
-            for wt_path, wp_id, branch in effective_workspaces:
+            for _wt_path, wp_id, branch in effective_workspaces:
                 console.print(f"[cyan]Merging {wp_id} ({branch})...[/cyan]")
 
                 if strategy == "squash":
@@ -585,8 +585,8 @@ def merge_workspace_per_wp(  # noqa: C901
         except Exception as exc:
             tracker.error("merge", str(exc))
             console.print(tracker.render())
-            console.print(f"\n[red]Merge failed.[/red] Resolve conflicts and try again.")
-            raise typer.Exit(1)
+            console.print("\n[red]Merge failed.[/red] Resolve conflicts and try again.")
+            raise typer.Exit(1) from None
 
         # Push if requested
         if push:
@@ -597,7 +597,7 @@ def merge_workspace_per_wp(  # noqa: C901
             except Exception as exc:
                 tracker.error("push", str(exc))
                 console.print(tracker.render())
-                console.print(f"\n[yellow]Warning:[/yellow] Merge succeeded but push failed.")
+                console.print("\n[yellow]Warning:[/yellow] Merge succeeded but push failed.")
                 console.print(f"Run manually: git push origin {target_branch}")
 
     # Remove worktrees (always run — cleanup is needed even when all branches are already integrated)
@@ -651,11 +651,14 @@ def merge_workspace_per_wp(  # noqa: C901
     console.print(tracker.render())
     if effective_workspaces:
         console.print(
-            f"\n[bold green]✓ Feature {feature_slug} ({len(effective_workspaces)}/{len(wp_workspaces)} effective WPs) successfully merged into {target_branch}[/bold green]"
+            f"\n[bold green]✓ Feature {feature_slug} "
+            f"({len(effective_workspaces)}/{len(wp_workspaces)} effective WPs) "
+            f"successfully merged into {target_branch}[/bold green]"
         )
     else:
         console.print(
-            f"\n[bold green]✓ Feature {feature_slug} was already integrated into {target_branch}. Cleanup complete.[/bold green]"
+            f"\n[bold green]✓ Feature {feature_slug} was already integrated into "
+            f"{target_branch}. Cleanup complete.[/bold green]"
         )
 
 

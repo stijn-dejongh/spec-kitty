@@ -6,7 +6,7 @@ import io
 import json
 import re
 import shutil
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 
 from specify_cli.agent_utils.directories import AGENT_DIRS
@@ -118,12 +118,10 @@ def _feature_requires_repair(feature_dir: Path, repo_root: Path) -> bool:
         return True
     if _status_events_need_repair(feature_dir):
         return True
-    if _feature_has_status_drift(feature_dir, repo_root):
-        return True
-    return False
+    return bool(_feature_has_status_drift(feature_dir, repo_root))
 
 
-def _repair_feature(
+def _repair_feature(  # noqa: C901
     feature_dir: Path,
     repo_root: Path,
     dry_run: bool,
@@ -366,7 +364,7 @@ def _has_orphan_status_snapshot(feature_dir: Path) -> bool:
     return (
         data.get("event_count") == 0
         and data.get("work_packages") == {}
-        and data.get("summary") == {lane: 0 for lane in CANONICAL_LANES}
+        and data.get("summary") == dict.fromkeys(CANONICAL_LANES, 0)
         and data.get("feature_slug", "") in {"", feature_dir.name}
     )
 
@@ -374,11 +372,13 @@ def _has_orphan_status_snapshot(feature_dir: Path) -> bool:
 def _cleanup_orphan_status_snapshot(feature_dir: Path, dry_run: bool) -> tuple[str | None, str | None]:
     status_path = feature_dir / SNAPSHOT_FILENAME
     if not _has_orphan_status_snapshot(feature_dir):
-        if status_path.exists() and not (feature_dir / EVENTS_FILENAME).exists() and not (feature_dir / "tasks").exists():
+        no_events = not (feature_dir / EVENTS_FILENAME).exists()
+        no_tasks = not (feature_dir / "tasks").exists()
+        if status_path.exists() and no_events and no_tasks:
             return None, "status.json has no matching event log and could not be auto-repaired"
         return None, None
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     backup_name = f"{SNAPSHOT_FILENAME}.orphan.bak.{timestamp}"
     if not dry_run:
         status_path.rename(feature_dir / backup_name)

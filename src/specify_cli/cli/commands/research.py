@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import shutil
 from pathlib import Path
 
@@ -17,8 +18,10 @@ from specify_cli.mission import get_feature_mission_key
 from specify_cli.plan_validation import PlanValidationError, validate_plan_filled
 from specify_cli.tasks_support import TaskCliError, find_repo_root
 
+logger = logging.getLogger(__name__)
 
-def research(
+
+def research(  # noqa: C901
     feature: str | None = typer.Option(None, "--feature", help="Feature slug to target (auto-detected when omitted)"),
     force: bool = typer.Option(False, "--force", help="Overwrite existing research artifacts"),
 ) -> None:
@@ -154,7 +157,7 @@ def research(
             feature_dir, feature_slug, repo_root,
         )
     except Exception:
-        pass
+        logger.debug("Context sync failed (non-blocking)", exc_info=True)
 
     relative_paths = [
         str(path.relative_to(feature_dir)) if path.is_relative_to(feature_dir) else str(path) for path in created_paths

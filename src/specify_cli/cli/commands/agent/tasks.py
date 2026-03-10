@@ -1376,7 +1376,7 @@ def mark_status(  # noqa: C901
                 feature_dir, feature_slug, repo_root,
             )
         except Exception:
-            pass
+            logger.debug("Context sync failed (non-blocking)", exc_info=True)
 
         # Build result
         result = {
