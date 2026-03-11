@@ -309,7 +309,7 @@ def _status_events_need_repair(feature_dir: Path) -> bool:
         return feature_requires_historical_migration(feature_dir)
     if any(event.reason and "historical_frontmatter_to_jsonl:v1" in event.reason for event in events):
         return False
-    if any(not event.actor.startswith("migration") for event in events):
+    if any(not str(event.actor).startswith("migration") for event in events):
         return False
     return feature_requires_historical_migration(feature_dir)
 

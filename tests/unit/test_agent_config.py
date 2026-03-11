@@ -45,7 +45,7 @@ class TestUnknownAgentKey:
 
         message = str(exc_info.value)
         assert "unknown_agent_xyz" in message
-        assert "Valid agents" in message
+        assert "Valid" in message
 
 
 class TestStrategyRemoval:

@@ -107,9 +107,10 @@ def test_wheel_contains_only_src_package(build_artifacts: dict[str, Path]) -> No
             if ".dist-info/" not in f
         ]
 
+    ALLOWED_PREFIXES = ("specify_cli/", "doctrine/")
     for file_path in all_files:
-        assert file_path.startswith("specify_cli/"), (
-            f"File outside package directory: {file_path}"
+        assert file_path.startswith(ALLOWED_PREFIXES), (
+            f"File outside package directories: {file_path}"
         )
 
 

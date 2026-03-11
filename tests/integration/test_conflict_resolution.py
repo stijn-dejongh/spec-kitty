@@ -145,9 +145,9 @@ class TestNonConflictingEventsForDifferentWPs:
         snapshot = reduce(events)
 
         assert snapshot.work_packages["WP01"]["lane"] == "in_progress"
-        assert snapshot.work_packages["WP01"]["actor"] == "agent-1"
+        assert snapshot.work_packages["WP01"]["actor"]["tool"] == "agent-1"
         assert snapshot.work_packages["WP02"]["lane"] == "in_progress"
-        assert snapshot.work_packages["WP02"]["actor"] == "agent-2"
+        assert snapshot.work_packages["WP02"]["actor"]["tool"] == "agent-2"
 
 
 class TestDuplicateEventIdsDeduplicated:

@@ -195,7 +195,7 @@ def emit(
             "wp_id": event.wp_id,
             "from_lane": str(event.from_lane),
             "to_lane": str(event.to_lane),
-            "actor": event.actor,
+            "actor": event.actor.to_dict() if hasattr(event.actor, "to_dict") else str(event.actor),
         }
 
         _output_result(

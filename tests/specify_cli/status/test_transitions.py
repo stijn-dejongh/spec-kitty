@@ -424,7 +424,7 @@ class TestExactErrorMessages:
     WORKSPACE_CONTEXT_MSG = "Transition claimed -> in_progress requires workspace context"
     SUBTASKS_MSG = "Transition in_progress -> for_review requires completed subtasks or force with reason"
     IMPL_EVIDENCE_MSG = "Transition in_progress -> for_review requires implementation evidence or force with reason"
-    REVIEWER_APPROVAL_MSG = "Transition for_review -> done requires evidence (reviewer identity and approval reference)"
+    REVIEWER_APPROVAL_MSG = "Transition to approved/done requires evidence (reviewer identity and approval reference)"
     REVIEW_REF_MSG = "Transition from for_review requires review_ref (review feedback reference)"
     REASON_REQUIRED_MSG = "Transition in_progress -> planned requires reason"
     FORCE_MSG = "Force transitions require actor and reason"

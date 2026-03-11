@@ -29,6 +29,7 @@ from pathlib import Path
 import typer
 
 from specify_cli.git.commit_helpers import safe_commit
+from specify_cli.identity import ActorIdentity
 from specify_cli.merge import run_preflight, get_merge_order
 
 from .envelope import (
@@ -138,8 +139,8 @@ def _resolve_feature_dir(main_repo_root: Path, feature_slug: str) -> Path | None
     return feature_dir
 
 
-def _get_last_actor(feature_dir: Path, wp_id: str) -> str | None:
-    """Get the actor of the most recent event for this WP."""
+def _get_last_actor(feature_dir: Path, wp_id: str) -> ActorIdentity | None:
+    """Get the structured actor identity of the most recent event for this WP."""
     from specify_cli.status.store import read_events
 
     events = read_events(feature_dir)
@@ -279,7 +280,7 @@ def feature_state(
                 "wp_id": wp_id,
                 "lane": wp_state.get("lane", "planned"),
                 "dependencies": dep_graph.get(wp_id, []),
-                "last_actor": wp_state.get("last_actor"),
+                "last_actor": wp_state.get("actor"),
             }
         )
 
@@ -404,6 +405,7 @@ def start_implementation(
     wp_state = snapshot.work_packages.get(wp, {})
     current_lane = wp_state.get("lane", "planned")
     last_actor = _get_last_actor(feature_dir, wp)
+    actor_identity = ActorIdentity.from_legacy(actor)
 
     workspace_path = str(main_repo_root / ".worktrees" / f"{feature}-{wp}")
     prompt_path = str(wp_path)
@@ -433,12 +435,12 @@ def start_implementation(
             no_op = False
 
         elif current_lane == "claimed":
-            if last_actor is not None and last_actor != actor:
+            if last_actor is not None and last_actor != actor_identity:
                 _fail(
                     cmd,
                     "WP_ALREADY_CLAIMED",
                     f"WP {wp} is already claimed by '{last_actor}'",
-                    {"claimed_by": last_actor, "requesting_actor": actor},
+                    {"claimed_by": last_actor.to_dict(), "requesting_actor": actor_identity.to_dict()},
                 )
                 return
             emit_status_transition(
@@ -455,12 +457,12 @@ def start_implementation(
             no_op = False
 
         elif current_lane == "in_progress":
-            if last_actor is not None and last_actor != actor:
+            if last_actor is not None and last_actor != actor_identity:
                 _fail(
                     cmd,
                     "WP_ALREADY_CLAIMED",
                     f"WP {wp} is already in_progress by '{last_actor}'",
-                    {"claimed_by": last_actor, "requesting_actor": actor},
+                    {"claimed_by": last_actor.to_dict(), "requesting_actor": actor_identity.to_dict()},
                 )
                 return
             # Idempotent success

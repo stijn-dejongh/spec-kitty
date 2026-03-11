@@ -127,7 +127,7 @@ def test_profile_aware_constitution_compilation_resolves_transitive_references(t
         styleguides=frozenset({"review-style"}),
         toolguides=frozenset(),
         procedures=frozenset(),
-        profiles=frozenset({"reviewer"}),
+        agent_profiles=frozenset({"reviewer"}),
     )
     interview = default_interview(mission="software-dev", profile="minimal")
     interview = apply_answer_overrides(

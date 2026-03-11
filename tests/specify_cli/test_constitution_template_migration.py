@@ -43,7 +43,7 @@ ALL_AGENTS = [
 def _load_canonical_constitution_template() -> str:
     """Return the current packaged software-dev constitution template content."""
     return (
-        files("specify_cli")
+        files("doctrine")
         .joinpath("missions", "software-dev", "command-templates", "constitution.md")
         .read_text(encoding="utf-8")
     )
