@@ -186,11 +186,6 @@ Planning requirements (scale to complexity):
 
 **Output**: data-model.md, /contracts/*, quickstart.md, agent-specific file
 
-## Key rules
-
-- Use absolute paths
-- ERROR on gate failures or unresolved clarifications
-
 ---
 
 ## ⛔ MANDATORY STOP POINT

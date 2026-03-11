@@ -34,6 +34,9 @@ for the full container model.
 3. Orchestration coordinates when and how it happens (execution domain).
 4. Event Store validates and persists what did happen (persistence domain).
 5. Lifecycle authority remains host-owned even when projection is enabled.
+6. Every WP execution begins with a constitution context bootstrap call that
+   injects action-scoped governance into the agent prompt (Principle 5:
+   Governance at the Execution Boundary).
 
 ## Branch Target Routing Invariants
 

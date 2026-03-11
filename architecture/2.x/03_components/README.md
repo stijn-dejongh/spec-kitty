@@ -135,12 +135,14 @@ flowchart TB
       doctrineCatalog[Doctrine Catalog Loader]
       schemaGate[Schema Validation Gate]
       glossaryHook[Glossary Hook Coordinator]
+      actionIndex[Action Index]
     end
 
     subgraph ConstitutionContainer["Constitution"]
       interview[Constitution Interview Flow]
       compile[Constitution Compiler]
       ctxResolve[Action Context Resolver]
+      ctxBootstrap[Context Bootstrap]
     end
 
     subgraph EventStoreContainer["Event Store"]
@@ -189,6 +191,8 @@ flowchart TB
     governanceCmd --> interview
     interview --> compile
     compile --> ctxResolve
+    ctxResolve --> ctxBootstrap
+    ctxBootstrap --> actionIndex
 
     %% Kitty-core → Doctrine
     missionResolve --> doctrineCatalog
@@ -292,17 +296,19 @@ Components are organized by their parent landscape container.
 
 | Component | Responsibility |
 |---|---|
-| Doctrine Catalog Loader | Loads doctrine assets as typed artifacts |
+| Doctrine Catalog Loader | Loads doctrine assets as typed artifacts via `DoctrineService` aggregation facade |
 | Schema Validation Gate | Enforces artifact compliance before runtime use |
 | Glossary Hook Coordinator | Applies glossary checks during mission execution |
+| Action Index | Per-action directive/tactic/styleguide/toolguide selection scoping. Loaded from `missions/<mission>/actions/<action>/index.yaml`. Provides the action-side of the two-stage intersection that determines which governance applies to a given execution phase. |
 
 ### Constitution
 
 | Component | Responsibility |
 |---|---|
 | Constitution Interview Flow | Captures governance intent from the Human in Charge |
-| Constitution Compiler | Produces constitution bundles and references |
-| Action Context Resolver | Provides command-scoped governance context |
+| Constitution Compiler | Produces constitution bundles and references via transitive resolution (directive → tactic → styleguide/toolguide chains) |
+| Action Context Resolver | Provides action-scoped governance context with depth semantics (1=compact, 2=bootstrap, 3=extended). Uses two-stage intersection: Action Index ∩ project selections. |
+| Context Bootstrap | Entry point at every execution boundary (Principle 5). First invocation per action returns depth-2 full content; subsequent calls default to depth-1 compact. State tracked in `context-state.json`. |
 
 ## Domain Alignment Matrix
 
@@ -312,7 +318,7 @@ See [2.x Domain Breakdown](../README.md#domain-breakdown) for domain-level defin
 |---|---|---|
 | Project and Governance Onboarding | Control Plane, Constitution | `Governance Command Set`, `Constitution Interview Flow`, `Constitution Compiler` |
 | Mission Runtime and Flow Control | Kitty-core, Control Plane | `Command Router`, `Next Loop Coordinator`, `Mission Discovery and Resolution`, `Runtime Asset Lifecycle Coordinator`, `Tiered Template Resolution Pipeline`, `Next-Action Recommendation Output` |
-| Doctrine and Knowledge Governance | Doctrine | `Doctrine Catalog Loader`, `Schema Validation Gate`, `Glossary Hook Coordinator` |
+| Doctrine and Knowledge Governance | Doctrine | `Doctrine Catalog Loader`, `Schema Validation Gate`, `Glossary Hook Coordinator`, `Action Index` |
 | Work Package State and Evidence | Orchestration, Event Store | `Lifecycle Command Gateway`, `Target-Line Router`, `WP Lifecycle Engine`, `Event Semantics Reducer`, `Mission Context Detection` |
 | Execution Dispatch | Agent Tool Connectors | `Execution Dispatch`, `Agent Adapters` |
 | Visibility | Dashboard | `Kanban View`, `Status Query Surface` |

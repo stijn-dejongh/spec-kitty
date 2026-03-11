@@ -146,9 +146,11 @@ context.
 
 The knowledge store. Contains typed, schema-validated governance artifacts:
 directives, tactics, paradigms, styleguides, toolguides, mission templates.
-Consumed by Constitution (compilation source) and by Agent Tool Connectors
-(execution-time governance context). Standalone — does not depend on any other
-container.
+Includes per-action governance indexes (`actions/<action>/index.yaml`) that
+scope which artifacts apply to each execution phase within a mission.
+Consumed by Constitution (compilation source and action-scoped intersection)
+and by Agent Tool Connectors (execution-time governance context). Standalone —
+does not depend on any other container.
 
 ### Constitution
 

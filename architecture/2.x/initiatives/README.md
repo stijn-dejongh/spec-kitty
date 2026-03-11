@@ -13,3 +13,5 @@ Canonical decisions must land in `architecture/2.x/adr/` once accepted.
    - Open tracking items for `spec-kitty next` mission mapping/template parity
 3. `2026-03-doctrine-execution-integration/`
    - Roadmap for wiring doctrine repositories into constitution resolver, mission templates, and connector interface
+4. `2026-03-054-postmortem/`
+   - Post-implementation review of feature 054 (constitution interview compiler and bootstrap), architecture doc gap analysis, streamlining assessment, and branching strategy doctrine design

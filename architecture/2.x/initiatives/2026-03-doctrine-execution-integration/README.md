@@ -65,6 +65,17 @@ prompt_builder.py: build_prompt()
 Connector interface contract -> Agent adapter (pluggable)
 ```
 
+## Implementation Status
+
+| Phase | Status | Feature |
+|-------|--------|---------|
+| Phase 1: Constitution Resolver + Mission Template Extraction | ✅ Complete (2026-03-10) | `054-constitution-interview-compiler-and-bootstrap` |
+| Phase 2: Connector Interface Contract | Planned | TBD |
+| Phase 3: Event Store Interface Abstraction | Deferred | TBD |
+
+---
+
+
 ## Roadmap: Three Phases
 
 ### Phase 1: Constitution Resolver + Mission Template Extraction (single mission)
@@ -94,8 +105,22 @@ inline mission governance into proper doctrine artifacts.
 **Entry point**: `src/specify_cli/constitution/resolver.py` (~50 lines),
 `src/specify_cli/next/prompt_builder.py`.
 
-**Prerequisite**: Curation cycle (see below) must complete first to ensure
-directive content is aligned with project owner intent.
+6. Deploy slimmed templates to all 48 agent copies via migration `m_2_0_2`.
+
+**Entry point**: `src/specify_cli/constitution/context.py`, `src/specify_cli/constitution/resolver.py`.
+
+**Note on MissionTemplateRepository**: Creation deferred to a follow-on feature.
+The `src/doctrine/missions` package is used directly by `context.py` for
+action guidelines in this iteration.
+
+**Prerequisite status**: Curation cycle is ongoing. Feature 054 proceeded against
+the current 046 artifacts; full curation alignment was not a hard blocker for
+Phase 1 mechanics.
+
+**Completion notes** (2026-03-10): All 12 WPs merged. Remaining deployment item:
+migration `m_2_0_2` for slimmed agent templates (tracked separately).
+`MissionTemplateRepository` creation deferred to follow-on work. See
+`2026-03-054-postmortem/README.md` for full review.
 
 ### Phase 2: Connector Interface Contract (separate mission)
 
@@ -164,8 +189,7 @@ Phase 2: Connector interface contract
 Phase 3: Event store abstraction (deferred)
 ```
 
-Phase 1 is the highest-value, lowest-effort change. It immediately makes
-every agent prompt doctrine-aware with the enriched content from feature 046.
+Phase 1 is complete. Phase 2 is now the critical path item.
 
 ## Curation Prerequisite
 

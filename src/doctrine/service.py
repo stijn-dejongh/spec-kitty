@@ -7,6 +7,7 @@ from typing import cast
 
 from doctrine.agent_profiles import AgentProfileRepository
 from doctrine.directives import DirectiveRepository
+from doctrine.mission_step_contracts import MissionStepContractRepository
 from doctrine.paradigms import ParadigmRepository
 from doctrine.procedures import ProcedureRepository
 from doctrine.styleguides import StyleguideRepository
@@ -89,6 +90,15 @@ class DoctrineService:
                 project_dir=self._project_dir("procedures"),
             )
         return cast(ProcedureRepository, self._cache["procedures"])
+
+    @property
+    def mission_step_contracts(self) -> MissionStepContractRepository:
+        if "mission_step_contracts" not in self._cache:
+            self._cache["mission_step_contracts"] = MissionStepContractRepository(
+                shipped_dir=self._shipped_dir("mission_step_contracts"),
+                project_dir=self._project_dir("mission_step_contracts"),
+            )
+        return cast(MissionStepContractRepository, self._cache["mission_step_contracts"])
 
     @property
     def agent_profiles(self) -> AgentProfileRepository:

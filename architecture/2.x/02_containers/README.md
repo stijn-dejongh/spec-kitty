@@ -140,7 +140,7 @@ flowchart TB
 | **Orchestration** | Execution coordination | Reads state to make scheduling decisions; dispatches work to Connectors; writes lifecycle events; enforces guarded transitions |
 | **Dashboard** | Read-only visibility | Presents kanban, status, and history views from Event Store data; no write path |
 | **Agent Tool Connectors** | Pluggable execution providers | Receives dispatched work from Orchestration; executes through SDK/prompt/shell; consumes Doctrine and Constitution at execution time |
-| **Doctrine** | Knowledge store and curation pipeline | Loads and validates governance artifacts (directives, tactics, procedures, paradigms, styleguides, toolguides, mission templates); provides glossary checks; owns the `_reference/` → `_proposed/` → `shipped/` promotion pipeline |
+| **Doctrine** | Knowledge store, action governance indexes, and curation pipeline | Loads and validates governance artifacts (directives, tactics, procedures, paradigms, styleguides, toolguides, mission templates); provides per-action governance indexes (`actions/<action>/index.yaml`) that scope which artifacts apply to each execution phase; provides glossary checks; owns the `_reference/` → `_proposed/` → `shipped/` promotion pipeline |
 | **Constitution** | Governance rules | Compiles governance bundles from Doctrine via interview flow; provides action context for runtime use |
 
 ## Container-Internal Component Mapping
@@ -157,8 +157,8 @@ to which landscape container.
 | Orchestration | Lifecycle Command Gateway, Target-Line Router, WP Lifecycle Engine, Sync Runtime Coordinator, Sync Identity Resolver, Lamport Clock Coordinator, Offline Queue Manager, Sync Transport Session, Tracker Connector Gateway |
 | Dashboard | Kanban View, Status Query Surface |
 | Agent Tool Connectors | Execution Dispatch, Agent Adapters (per-agent SDK/prompt/shell implementations) |
-| Doctrine | Doctrine Catalog Loader, Schema Validation Gate, Glossary Hook Coordinator, Curation Pipeline (`engine.py`, `state.py`, `workflow.py`) |
-| Constitution | Constitution Interview Flow, Constitution Compiler, Action Context Resolver |
+| Doctrine | Doctrine Catalog Loader, Schema Validation Gate, Glossary Hook Coordinator, Action Index, Curation Pipeline (`engine.py`, `state.py`, `workflow.py`) |
+| Constitution | Constitution Interview Flow, Constitution Compiler, Action Context Resolver, Context Bootstrap |
 
 ## Behavioral Collaboration Loops
 
@@ -184,8 +184,16 @@ to which landscape container.
 
 1. User initiates governance update through Control Plane.
 2. Control Plane routes to Constitution interview flow.
-3. Constitution Compiler produces governance bundles from Doctrine artifacts.
+3. Constitution Compiler produces governance bundles from Doctrine artifacts
+   via transitive reference resolution (directive → tactic → styleguide/toolguide).
 4. Action Context Resolver refreshes governance context for runtime use.
+
+**Sub-loop C' (execution-time bootstrap):** Every WP execution begins with a
+constitution context bootstrap call (`spec-kitty constitution context --action <X>`).
+The Action Context Resolver intersects the per-action index (from Doctrine) with
+the project's constitution selections, then injects depth-appropriate governance
+content into the agent prompt. This is not a setup step — it runs at every
+execution boundary (Principle 5).
 
 ### Loop D: Visibility (Dashboard ← Event Store)
 

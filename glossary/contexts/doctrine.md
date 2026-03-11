@@ -6,12 +6,12 @@ Terms describing the Doctrine domain model and doctrine artifact taxonomy.
 
 |                   |                                                                                                                                                                                                                                         |
 |-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Definition**    | The domain model that structures reusable governance knowledge in Spec Kitty. It organizes behavior and constraints into composable artifacts (paradigms, directives, tactics, procedures, templates, styleguides, and toolguides).      |
+| **Definition**    | The domain model that structures reusable governance knowledge in Spec Kitty. It organizes behavior and constraints into composable artifacts (paradigms, directives, tactics, procedures, templates, styleguides, toolguides, and mission step contracts). |
 | **Context**       | Doctrine                                                                                                                                                                                                                                |
 | **Status**        | canonical                                                                                                                                                                                                                               |
 | **Applicable to** | `1.x`, `2.x` |
 | **Location**      | `src/doctrine/`                                                                                                                                                                                                                         |
-| **Related terms** | [Paradigm](#paradigm), [Directive](#directive), [Tactic](#tactic), [Procedure](#procedure), [Template Set](#template-set), [Styleguide](#styleguide), [Toolguide](#toolguide), [Opposition](#opposition), [Governance](./governance.md) |
+| **Related terms** | [Paradigm](#paradigm), [Directive](#directive), [Tactic](#tactic), [Procedure](#procedure), [Template Set](#template-set), [Styleguide](#styleguide), [Toolguide](#toolguide), [Mission Step Contract](#mission-step-contract), [Action Index](#action-index), [Opposition](#opposition), [Governance](./governance.md) |
 
 ---
 
@@ -244,4 +244,43 @@ Terms describing the Doctrine domain model and doctrine artifact taxonomy.
 | **Status**        | canonical                                                                                                                                                                                                                               |
 | **Applicable to** | `2.x` |
 | **Location**      | `src/doctrine/missions/` (software-dev, documentation, research) |
-| **Related terms** | [Mission](./orchestration.md#mission), [Doctrine Domain](#doctrine-domain), [Mission-Runtime YAML](./orchestration.md#mission-runtime-yaml) |
+| **Related terms** | [Mission](./orchestration.md#mission), [Doctrine Domain](#doctrine-domain), [Mission-Runtime YAML](./orchestration.md#mission-runtime-yaml), [Mission Step Contract](#mission-step-contract) |
+
+---
+
+### Mission Step Contract
+
+|                   |                                                                                                                                                                                                                                         |
+|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Definition**    | A doctrine artifact that defines the structural steps of a mission action without embedding governance prose. Each step may delegate its concretization to other doctrine artifacts (paradigms, tactics, directives) via a `delegates_to` field and/or carry freeform `guidance` for step-specific instructions. Replaces inline governance in command templates with a structured, schema-validated contract. |
+| **Context**       | Doctrine                                                                                                                                                                                                                                |
+| **Status**        | canonical                                                                                                                                                                                                                               |
+| **Applicable to** | `2.x` |
+| **Location**      | `src/doctrine/mission_step_contracts/` |
+| **File pattern**  | `*.step-contract.yaml` |
+| **Related terms** | [Mission Template](#mission-template), [Delegates To](#delegates-to), [Action Index](#action-index), [Command Template](./orchestration.md#command-template), [Directive](#directive), [Tactic](#tactic), [Paradigm](#paradigm) |
+
+---
+
+### Delegates To
+
+|                   |                                                                                                                                                                                                                                         |
+|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Definition**    | A delegation link within a mission step contract that connects a structural step to doctrine artifacts for runtime concretization. Specifies the artifact `kind` (paradigm, tactic, directive, etc.) and a list of `candidates` — the constitution's selections determine which candidate actually applies at execution time. |
+| **Context**       | Doctrine                                                                                                                                                                                                                                |
+| **Status**        | canonical                                                                                                                                                                                                                               |
+| **Applicable to** | `2.x` |
+| **Related terms** | [Mission Step Contract](#mission-step-contract), [Constitution Selection](#constitution-selection), [Paradigm](#paradigm), [Tactic](#tactic), [Directive](#directive) |
+
+---
+
+### Action Index
+
+|                   |                                                                                                                                                                                                                                         |
+|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Definition**    | A per-action governance scoping artifact that lists which directives, tactics, styleguides, toolguides, and procedures are relevant to a specific mission action (for example implement, review, specify, plan). Used in a two-stage intersection with the project's constitution selections to determine which governance content is injected at execution time. Prevents cross-action governance bleed. |
+| **Context**       | Doctrine                                                                                                                                                                                                                                |
+| **Status**        | canonical                                                                                                                                                                                                                               |
+| **Applicable to** | `2.x` |
+| **Location**      | `src/doctrine/missions/<mission>/actions/<action>/index.yaml` |
+| **Related terms** | [Mission Template](#mission-template), [Directive](#directive), [Tactic](#tactic), [Context Bootstrap](./governance.md#context-bootstrap), [Two-Stage Intersection](./governance.md#two-stage-intersection) |

@@ -31,9 +31,9 @@ as Python modules within a single-process CLI application.
 | **Event Store** | `src/specify_cli/status/` | `specify_cli` | JSONL event logs (`store.py`), reducer (`reducer.py`), WP frontmatter, `meta.json`. Filesystem-only today. |
 | **Orchestration** | `src/specify_cli/orchestrator/`, `orchestrator_api/`, `merge/`, `sync/`, `tracker/` | `specify_cli` | Lifecycle engine, worktree management, merge execution, tracker projection. |
 | **Dashboard** | `src/specify_cli/dashboard/` | `specify_cli` | Playwright-based local browser kanban. Read-only against Event Store. |
-| **Agent Tool Connectors** | `src/specify_cli/missions/*/command-templates/` → deployed as `.claude/`, `.codex/`, `.amazonq/`, etc. | `specify_cli` | Current connector is a rendered markdown prompt template. One "adapter" per agent (12 agents). |
+| **Agent Tool Connectors** | `src/doctrine/missions/*/command-templates/` → deployed as `.claude/`, `.codex/`, `.amazonq/`, etc. | `doctrine` (source), `specify_cli` (deployment) | Current connector is a rendered markdown prompt template. One "adapter" per agent (12 agents). Source templates moved from `specify_cli/missions/` to `doctrine/missions/` in feature 054 (WP11/WP12). |
 | **Doctrine** | `src/doctrine/` | `doctrine` (standalone package, own `pyproject.toml`) | YAML artifacts, JSON Schema validation, Pydantic models, repository pattern. Zero dependency on `specify_cli`. |
-| **Constitution** | `src/specify_cli/constitution/` | `specify_cli` | Interview flow, compiler, context resolver. Produces `.kittify/constitution/` bundles. |
+| **Constitution** | `src/specify_cli/constitution/` | `specify_cli` | Interview flow, compiler, action context resolver with depth semantics and action index intersection. Produces `.kittify/constitution/` bundles. Context bootstrap injects governance at every execution boundary. |
 
 ### Key structural observation
 
@@ -95,13 +95,30 @@ User runs: spec-kitty implement WP01
 ### Loop C: Governance (User → Constitution → Doctrine)
 
 ```
-User runs: spec-kitty constitution
+User runs: spec-kitty constitution interview / generate
   → src/specify_cli/cli/commands/ (Control Plane)
   → src/specify_cli/constitution/interview.py (Constitution interview)
   → src/specify_cli/constitution/compiler.py (Constitution compiler)
+  → src/specify_cli/constitution/reference_resolver.py (transitive DFS: directive → tactic → styleguide/toolguide)
   → src/doctrine/service.py → per-artifact repositories (Doctrine read)
   → .kittify/constitution/ (compiled governance bundle)
 ```
+
+### Loop C': Action Context Bootstrap (Agent → Constitution → Doctrine)
+
+```
+Agent calls: spec-kitty constitution context --action implement
+  → src/specify_cli/constitution/context.py (Action Context Resolver)
+  → Load action index: src/doctrine/missions/software-dev/actions/implement/index.yaml
+  → Two-stage intersection: action index ∩ project selections (references.yaml)
+  → src/doctrine/service.py (DoctrineService) → fetch directive/tactic content by depth
+  → Load action guidelines: src/doctrine/missions/software-dev/actions/implement/guidelines.md
+  → Render ConstitutionContextResult (governance text injected into agent prompt)
+  → Persist context-state.json (first-load tracking for depth semantics)
+```
+
+This sub-loop runs at every execution boundary (Principle 5). First invocation
+returns depth-2 (full bootstrap); subsequent calls return depth-1 (compact).
 
 ### Loop D: Visibility (Dashboard ← Event Store)
 
@@ -149,8 +166,9 @@ Orchestration lifecycle event triggers:
 | **Glossary Hook Coordinator** | `doctrine/missions/glossary_hook.py`, `specify_cli/glossary/` | Glossary checks during mission execution |
 | **Constitution Interview Flow** | `constitution/interview.py` | Guided Q&A for governance capture |
 | **Constitution Compiler** | `constitution/compiler.py` | Doctrine→constitution bundle compilation |
-| **Action Context Resolver** | `constitution/context.py`, `resolver.py` | Command-scoped governance context |
-| **Execution Dispatch** | `missions/*/command-templates/implement.md` | Prompt rendering for agent dispatch |
+| **Action Context Resolver** | `constitution/context.py`, `resolver.py`, `reference_resolver.py` | Action-scoped governance context with depth semantics (1=compact, 2=bootstrap, 3=extended) and two-stage intersection (action index ∩ project selections) |
+| **Action Index** | `doctrine/missions/*/actions/*/index.yaml` | Per-action directive/tactic/styleguide/toolguide selection — loaded by `doctrine/missions/action_index.py` |
+| **Execution Dispatch** | `doctrine/missions/*/command-templates/implement.md` | Prompt rendering for agent dispatch (source relocated from `specify_cli/missions/` in feature 054) |
 | **Agent Adapters** | `.claude/`, `.codex/`, `.amazonq/`, etc. | Per-agent command templates (12 agents) |
 
 ---
@@ -261,16 +279,23 @@ update and a valid fixture update.
 | `DoctrineService` aggregation facade | ✅ Complete | `src/doctrine/service.py` |
 | Constitution compiler consumes Doctrine | ✅ Complete | `src/specify_cli/constitution/compiler.py` |
 | Command templates as connector implementation | ✅ Complete | 12-agent template system via migrations |
+| Transitive reference resolution (directive → tactic → styleguide/toolguide) | ✅ Complete | `src/specify_cli/constitution/reference_resolver.py` (feature 054) |
+| Action-scoped governance injection with depth semantics | ✅ Complete | `src/specify_cli/constitution/context.py` + `src/doctrine/missions/*/actions/*/index.yaml` (feature 054) |
+| Per-action guidelines extraction from templates | ✅ Complete | `src/doctrine/missions/software-dev/actions/*/guidelines.md` (feature 054) |
+| ArtifactKind canonical enum | ✅ Complete | `src/doctrine/artifact_kinds.py` (feature 054, WP09-WP10) |
+| MissionRepository package relocation | ✅ Complete | `src/doctrine/missions/` is authoritative; `specify_cli/missions/` stale content removed (feature 054, WP11-WP12) |
 
 ### What is emerging or aspirational
 
 | Capability | Status | Gap Description |
 |---|---|---|
 | Glossary integration at execution boundary | 🟡 Partial | `glossary_hook.py` exists; full Glossary Hook Coordinator loop is early-stage |
-| Agent Profile shaping connector behavior | 🟡 Partial | Models, repository, schema exist (feature 046). Wiring into dispatch is forward-looking |
-| Mission templates as first-class doctrine artifacts | 🟡 Partial | Directory-structured Python modules today. Template resolution pipeline in Kitty-core is the coupling point |
-| Explicit per-agent connector adapters | 🟡 Partial | 12-agent command template system is the seed. Architecture envisions SDK/shell/remote adapters |
-| Event Store behind interface contract | 🟡 Partial | `store.py`/`reducer.py` provide the interface pattern. Not yet formally abstracted for alternative backends |
+| Agent Profile shaping connector behavior | 🟡 Partial | Models, repository, schema exist (feature 046). Profile-aware resolution in `resolver.py` (feature 048/054). Auto-selection at execution time not yet wired. |
+| Mission templates as first-class doctrine artifacts | 🟡 Partial | Templates relocated to `src/doctrine/missions/` (feature 054). Action indexes operational. Formal `MissionTemplateRepository` deferred. |
+| Slimmed agent templates (governance-free) | 🟡 Partial | Bootstrap section added to templates. Residual inline governance prose not yet stripped. Migration `m_2_0_2` pending. |
+| Explicit per-agent connector adapters | 🟡 Partial | 12-agent command template system is the seed. Architecture envisions SDK/shell/remote adapters (Phase 2). |
+| Non-software-dev mission parity | 🟡 Partial | `documentation`, `plan`, `research` missions have action directories but thinner indexes than `software-dev`. |
+| Event Store behind interface contract | 🟡 Partial | `store.py`/`reducer.py` provide the interface pattern. Not yet formally abstracted for alternative backends (Phase 3). |
 | Control Plane as swappable surface | 🔴 Conceptual | CLI is tightly coupled. No interface abstraction exists yet for TUI/web alternatives |
 | Dashboard as independent read surface | 🟡 Partial | Functionally independent. Reads filesystem directly rather than through Event Store interface |
 
