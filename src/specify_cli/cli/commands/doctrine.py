@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from doctrine.artifact_kinds import ArtifactKind
 from doctrine.curation.state import CurationSession, clear_session, load_session
 from doctrine.curation.workflow import (
     CurationAborted,
@@ -100,7 +101,7 @@ def _repo_root() -> Path:
 def curate(
     artifact_type: str | None = typer.Option(
         None, "--type", "-t",
-        help="Filter by artifact type (directives, tactics, procedures, styleguides, toolguides, paradigms)",
+        help=f"Filter by artifact type ({', '.join(k.plural for k in ArtifactKind if k != ArtifactKind.TEMPLATE)})",
     ),
     resume: bool = typer.Option(
         True, "--resume/--fresh",
@@ -183,7 +184,7 @@ def promote(
     artifact_id: str = typer.Argument(help="ID of the artifact to promote"),
     artifact_type: str = typer.Option(
         ..., "--type", "-t",
-        help="Artifact type (directives, tactics, procedures, styleguides, toolguides, paradigms)",
+        help=f"Artifact type ({', '.join(k.plural for k in ArtifactKind if k != ArtifactKind.TEMPLATE)})",
     ),
 ) -> None:
     """Promote a single artifact from _proposed/ to shipped/."""

@@ -66,13 +66,15 @@ def resolve_governance(
     diagnostics: list[str] = []
 
     selected_paradigms = list(doctrine.selected_paradigms)
-    if selected_paradigms and doctrine_catalog.paradigms:
+    if selected_paradigms and "paradigms" in doctrine_catalog.domains_present:
         missing_paradigms = sorted(p for p in selected_paradigms if p not in doctrine_catalog.paradigms)
         if missing_paradigms:
             raise GovernanceResolutionError(
                 [
-                    "Constitution selected unavailable paradigms: " + ", ".join(missing_paradigms),
-                    "Update constitution selected_paradigms to values present in doctrine/paradigms.",
+                    "Constitution selected unavailable paradigm(s): " + ", ".join(missing_paradigms),
+                    "Available shipped paradigms: "
+                    + (", ".join(sorted(doctrine_catalog.paradigms)) or "(none)"),
+                    "Update constitution selected_paradigms to values present in doctrine/paradigms/shipped/.",
                 ]
             )
 
@@ -83,7 +85,7 @@ def resolve_governance(
         if missing_tools:
             raise GovernanceResolutionError(
                 [
-                    "Constitution selected unavailable tools: " + ", ".join(missing_tools),
+                    "Constitution selected unavailable tool(s): " + ", ".join(missing_tools),
                     "Update constitution available_tools or register those tools in the runtime tool registry.",
                 ]
             )
@@ -94,7 +96,10 @@ def resolve_governance(
         tools_source = "registry_fallback"
         diagnostics.append("No available_tools selection provided; using runtime tool registry fallback.")
 
-    directive_catalog_ids = {directive.id for directive in directives_cfg.directives}
+    # Local support declarations (directives.yaml entries) are always valid — they
+    # bypass shipped-catalog ID validation since they are free-form Markdown-derived.
+    local_directive_ids = {directive.id for directive in directives_cfg.directives}
+    directive_catalog_ids = set(local_directive_ids)
     if doctrine_catalog.directives:
         directive_catalog_ids.update(doctrine_catalog.directives)
 
@@ -105,8 +110,8 @@ def resolve_governance(
         if missing_directives:
             raise GovernanceResolutionError(
                 [
-                    "Constitution selected unavailable directives: " + ", ".join(missing_directives),
-                    "Update constitution selected_directives to values present in directives.yaml or doctrine/directives.",
+                    "Constitution selected unavailable directive(s): " + ", ".join(missing_directives),
+                    "Declare these IDs in directives.yaml or add them to doctrine/directives/shipped/.",
                 ]
             )
         resolved_directives = list(doctrine.selected_directives)
@@ -119,11 +124,16 @@ def resolve_governance(
         directives_source = "catalog_fallback"
 
     if doctrine.template_set:
-        if doctrine_catalog.template_sets and doctrine.template_set not in doctrine_catalog.template_sets:
+        if (
+            "template_sets" in doctrine_catalog.domains_present
+            and doctrine.template_set not in doctrine_catalog.template_sets
+        ):
             raise GovernanceResolutionError(
                 [
-                    f"Constitution selected unavailable template_set: {doctrine.template_set}",
-                    "Update constitution template_set to values available in doctrine missions.",
+                    f"Constitution selected unavailable template_set: '{doctrine.template_set}'",
+                    "Available template sets: "
+                    + (", ".join(sorted(doctrine_catalog.template_sets)) or "(none)"),
+                    "Update constitution template_set to a value available in doctrine missions.",
                 ]
             )
         template_set = doctrine.template_set

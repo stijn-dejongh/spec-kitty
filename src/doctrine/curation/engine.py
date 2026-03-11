@@ -9,6 +9,7 @@ from typing import Any
 
 from ruamel.yaml import YAML
 
+from doctrine.artifact_kinds import ArtifactKind
 from doctrine.curation.state import ARTIFACT_TYPES, CurationSession
 
 
@@ -61,14 +62,11 @@ class ProposedArtifact:
         return fields
 
 
-# File-extension globs for each artifact type
+# File-extension globs for each artifact type (derived from ArtifactKind)
 _GLOB_PATTERNS: dict[str, str] = {
-    "directives": "*.directive.yaml",
-    "tactics": "*.tactic.yaml",
-    "styleguides": "*.styleguide.yaml",
-    "procedures": "*.procedure.yaml",
-    "toolguides": "*.toolguide.yaml",
-    "paradigms": "*.paradigm.yaml",
+    kind.plural: kind.glob_pattern
+    for kind in ArtifactKind
+    if kind.glob_pattern  # excludes TEMPLATE (empty pattern)
 }
 
 

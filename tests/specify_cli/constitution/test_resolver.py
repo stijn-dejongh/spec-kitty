@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+import specify_cli.constitution.catalog as catalog_module
 from specify_cli.constitution.interview import default_interview
 from specify_cli.constitution.resolver import (
     GovernanceResolutionError,
@@ -28,9 +29,28 @@ def _write_constitution_files(
     return constitution_dir
 
 
-def test_resolve_governance_reads_constitution_selections_first(tmp_path: Path) -> None:
+def test_resolve_governance_reads_constitution_selections_first(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Constitution selections (paradigms, directives, tools, template_set) are used
+    when explicitly declared and all values exist in the shipped catalog."""
+    # Build a minimal doctrine root so shipped paradigm validation passes.
+    doctrine_root = tmp_path / "doctrine_root"
+    (doctrine_root / "paradigms" / "shipped").mkdir(parents=True)
+    (doctrine_root / "paradigms" / "shipped" / "test-first.paradigm.yaml").write_text(
+        "id: test-first\n"
+    )
+    (doctrine_root / "directives" / "shipped").mkdir(parents=True)
+    (doctrine_root / "agent_profiles" / "shipped").mkdir(parents=True)
+    (doctrine_root / "missions" / "software-dev").mkdir(parents=True)
+    (doctrine_root / "missions" / "software-dev" / "mission.yaml").write_text(
+        "name: software-dev\n"
+    )
+    monkeypatch.setattr(catalog_module, "resolve_doctrine_root", lambda: doctrine_root)
+
+    repo_root = tmp_path / "repo"
     _write_constitution_files(
-        tmp_path,
+        repo_root,
         governance="""
 doctrine:
   selected_paradigms: [test-first]
@@ -45,7 +65,7 @@ directives:
 """,
     )
 
-    result = resolve_governance(tmp_path, tool_registry={"git", "python", "pytest"})
+    result = resolve_governance(repo_root, tool_registry={"git", "python", "pytest"})
 
     assert result.paradigms == ["test-first"]
     assert result.directives == ["TEST_FIRST"]
@@ -225,3 +245,145 @@ def test_resolve_governance_for_profile_records_unresolved_references_in_diagnos
 
     assert resolution.directives == ["MISSING_DIRECTIVE"]
     assert any("MISSING_DIRECTIVE" in line for line in resolution.diagnostics)
+
+
+# ---------------------------------------------------------------------------
+# T017: Regression tests — named-ID failures, shipped-only, no agents.yaml
+# ---------------------------------------------------------------------------
+
+
+def _make_doctrine_root(tmp_path: Path, *, with_paradigm: str | None = None) -> Path:
+    """Create a minimal doctrine root for resolver tests."""
+    doctrine_root = tmp_path / "doctrine_root"
+    paradigms_shipped = doctrine_root / "paradigms" / "shipped"
+    paradigms_shipped.mkdir(parents=True)
+    if with_paradigm:
+        (paradigms_shipped / f"{with_paradigm}.paradigm.yaml").write_text(
+            f"id: {with_paradigm}\n"
+        )
+    (doctrine_root / "directives" / "shipped").mkdir(parents=True)
+    (doctrine_root / "agent_profiles" / "shipped").mkdir(parents=True)
+    (doctrine_root / "missions" / "software-dev").mkdir(parents=True)
+    (doctrine_root / "missions" / "software-dev" / "mission.yaml").write_text("name: software-dev\n")
+    return doctrine_root
+
+
+def test_paradigm_failure_names_exact_offending_id(tmp_path: Path, monkeypatch) -> None:
+    """Error message names the exact paradigm ID that was not in the shipped catalog."""
+    doctrine_root = _make_doctrine_root(tmp_path)
+    monkeypatch.setattr(catalog_module, "resolve_doctrine_root", lambda: doctrine_root)
+
+    repo_root = tmp_path / "repo"
+    _write_constitution_files(
+        repo_root,
+        governance="doctrine:\n  selected_paradigms: [my-bad-paradigm]\n",
+    )
+
+    with pytest.raises(GovernanceResolutionError) as exc:
+        resolve_governance(repo_root)
+
+    error_text = str(exc.value)
+    assert "my-bad-paradigm" in error_text
+
+
+def test_paradigm_failure_skipped_when_shipped_dir_absent(tmp_path: Path, monkeypatch) -> None:
+    """When the paradigms shipped directory does not exist, validation is skipped gracefully."""
+    doctrine_root = tmp_path / "doctrine_root"
+    # Do NOT create paradigms directory at all
+    (doctrine_root / "directives" / "shipped").mkdir(parents=True)
+    (doctrine_root / "agent_profiles" / "shipped").mkdir(parents=True)
+    (doctrine_root / "missions" / "software-dev").mkdir(parents=True)
+    (doctrine_root / "missions" / "software-dev" / "mission.yaml").write_text("name: software-dev\n")
+    monkeypatch.setattr(catalog_module, "resolve_doctrine_root", lambda: doctrine_root)
+
+    repo_root = tmp_path / "repo"
+    _write_constitution_files(
+        repo_root,
+        governance="doctrine:\n  selected_paradigms: [any-value]\n",
+    )
+
+    # Should not raise — domain is absent so skip validation
+    result = resolve_governance(repo_root, tool_registry={"git"})
+    assert result.paradigms == ["any-value"]
+
+
+def test_directive_failure_names_exact_offending_id(tmp_path: Path, monkeypatch) -> None:
+    """Error message names the exact directive ID that was not found."""
+    doctrine_root = _make_doctrine_root(tmp_path)
+    monkeypatch.setattr(catalog_module, "resolve_doctrine_root", lambda: doctrine_root)
+
+    repo_root = tmp_path / "repo"
+    _write_constitution_files(
+        repo_root,
+        governance="doctrine:\n  selected_directives: [GHOST_DIRECTIVE]\n",
+    )
+
+    with pytest.raises(GovernanceResolutionError) as exc:
+        resolve_governance(repo_root)
+
+    assert "GHOST_DIRECTIVE" in str(exc.value)
+
+
+def test_template_set_failure_names_exact_offending_value(tmp_path: Path, monkeypatch) -> None:
+    """Error message names the exact template_set value that was not in shipped catalog."""
+    doctrine_root = _make_doctrine_root(tmp_path)
+    monkeypatch.setattr(catalog_module, "resolve_doctrine_root", lambda: doctrine_root)
+
+    repo_root = tmp_path / "repo"
+    _write_constitution_files(
+        repo_root,
+        governance="doctrine:\n  template_set: ghost-template-set\n",
+    )
+
+    with pytest.raises(GovernanceResolutionError) as exc:
+        resolve_governance(repo_root)
+
+    assert "ghost-template-set" in str(exc.value)
+
+
+def test_tool_failure_names_exact_offending_value(tmp_path: Path, monkeypatch) -> None:
+    """Error message names the exact tool name that was not in the registry."""
+    doctrine_root = _make_doctrine_root(tmp_path)
+    monkeypatch.setattr(catalog_module, "resolve_doctrine_root", lambda: doctrine_root)
+
+    repo_root = tmp_path / "repo"
+    _write_constitution_files(
+        repo_root,
+        governance="doctrine:\n  available_tools: [ghost-tool]\n",
+    )
+
+    with pytest.raises(GovernanceResolutionError) as exc:
+        resolve_governance(repo_root, tool_registry={"git"})
+
+    assert "ghost-tool" in str(exc.value)
+
+
+def test_local_support_declaration_bypasses_catalog_validation(tmp_path: Path, monkeypatch) -> None:
+    """Directives declared in directives.yaml are valid without being in the shipped catalog."""
+    doctrine_root = _make_doctrine_root(tmp_path)
+    monkeypatch.setattr(catalog_module, "resolve_doctrine_root", lambda: doctrine_root)
+
+    repo_root = tmp_path / "repo"
+    _write_constitution_files(
+        repo_root,
+        governance="doctrine:\n  selected_directives: [LOCAL_ONLY]\n",
+        directives="directives:\n  - id: LOCAL_ONLY\n    title: Local rule\n",
+    )
+
+    # Should NOT raise — LOCAL_ONLY is declared in directives.yaml
+    result = resolve_governance(repo_root, tool_registry={"git"})
+    assert "LOCAL_ONLY" in result.directives
+
+
+def test_sync_output_does_not_include_agents_yaml(tmp_path: Path) -> None:
+    """Constitution sync writes exactly governance/directives/metadata — no agents.yaml."""
+    from specify_cli.constitution.sync import sync
+
+    constitution_file = tmp_path / "constitution.md"
+    constitution_file.write_text("# Project\n\n## Directives\n1. Write tests\n")
+
+    result = sync(constitution_file, tmp_path)
+
+    assert result.synced is True
+    assert set(result.files_written) == {"governance.yaml", "directives.yaml", "metadata.yaml"}
+    assert not (tmp_path / "agents.yaml").exists()

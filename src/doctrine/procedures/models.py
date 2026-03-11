@@ -13,6 +13,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from doctrine.artifact_kinds import ArtifactKind
+
 
 class ActorRole(StrEnum):
     """Who performs a procedure step."""
@@ -22,24 +24,12 @@ class ActorRole(StrEnum):
     SYSTEM = "system"
 
 
-class ProcedureReferenceType(StrEnum):
-    """Type of doctrine artifact being referenced by a procedure."""
-
-    DIRECTIVE = "directive"
-    TACTIC = "tactic"
-    STYLEGUIDE = "styleguide"
-    TOOLGUIDE = "toolguide"
-    PARADIGM = "paradigm"
-    PROCEDURE = "procedure"
-    TEMPLATE = "template"
-
-
 class ProcedureReference(BaseModel):
     """Cross-artifact reference within a procedure."""
 
     model_config = ConfigDict(frozen=True)
 
-    type: ProcedureReferenceType
+    type: ArtifactKind
     id: str
 
 

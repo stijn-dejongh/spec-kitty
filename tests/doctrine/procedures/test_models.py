@@ -3,12 +3,15 @@
 import pytest
 from pydantic import ValidationError
 
+from doctrine.artifact_kinds import ArtifactKind
 from doctrine.procedures.models import (
     ActorRole,
     Procedure,
-    ProcedureReferenceType,
     ProcedureStep,
 )
+
+# Alias kept for readability in test assertions
+ProcedureReferenceType = ArtifactKind
 
 
 class TestProcedureModel:

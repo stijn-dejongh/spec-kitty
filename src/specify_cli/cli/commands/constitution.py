@@ -30,6 +30,15 @@ from specify_cli.tasks_support import TaskCliError, find_repo_root
 if TYPE_CHECKING:
     from doctrine.service import DoctrineService
 
+# Generated files that may already exist and require overwrite confirmation.
+_GENERATED_FILES = [
+    "constitution.md",
+    "references.yaml",
+    "governance.yaml",
+    "directives.yaml",
+    "metadata.yaml",
+]
+
 app = typer.Typer(
     name="constitution",
     help="Constitution management commands",
@@ -151,8 +160,8 @@ def interview(
             print(
                 json.dumps(
                     {
-                        "success": True,
-                        "interview_path": str(answers_path.relative_to(repo_root)),
+                        "result": "success",
+                        "answers_file": str(answers_path.relative_to(repo_root)),
                         "mission": interview_data.mission,
                         "profile": interview_data.profile,
                         "selected_paradigms": interview_data.selected_paradigms,
@@ -170,11 +179,56 @@ def interview(
         console.print(f"Profile: {interview_data.profile}")
 
     except (TaskCliError, ValueError) as e:
-        console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(code=1)
+        if json_output:
+            print(json.dumps({"error": str(e)}, indent=2))
+        else:
+            console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(code=1) from e
     except Exception as e:
-        console.print(f"[red]Unexpected error:[/red] {e}")
-        raise typer.Exit(code=1)
+        if json_output:
+            print(json.dumps({"error": str(e)}, indent=2))
+        else:
+            console.print(f"[red]Unexpected error:[/red] {e}")
+        raise typer.Exit(code=1) from e
+
+
+class _OverwriteAborted(Exception):
+    """Raised when the user declines to overwrite existing generated files."""
+
+
+def _check_overwrite_conflicts(constitution_dir: Path, force: bool, json_output: bool) -> None:
+    """Collect conflicting generated files and prompt user when --force is not set.
+
+    In interactive (non-JSON) mode, lists conflicting files and prompts for confirmation.
+    In JSON mode, immediately raises _OverwriteAborted rather than prompting interactively.
+    Raises _OverwriteAborted on abort so callers can emit the appropriate error response.
+    """
+    conflicts = [f for f in _GENERATED_FILES if (constitution_dir / f).exists()]
+    if not conflicts:
+        return
+
+    if force:
+        return
+
+    if json_output:
+        # Non-interactive context: do not prompt; signal abort via exception.
+        msg = (
+            "The following files already exist: "
+            + ", ".join(conflicts)
+            + ". Use --force to overwrite."
+        )
+        raise _OverwriteAborted(msg)
+
+    # Interactive: warn about conflicts and prompt for confirmation.
+    console.print("[yellow]Warning:[/yellow] The following files already exist and will be overwritten:")
+    for filename in conflicts:
+        console.print(f"  - {filename}")
+
+    confirmed = typer.confirm("Overwrite these files?", default=False)
+    if not confirmed:
+        raise _OverwriteAborted(
+            "user declined to overwrite existing files. Use --force to skip this prompt."
+        )
 
 
 @app.command()
@@ -196,16 +250,25 @@ def generate(
         constitution_dir = repo_root / ".kittify" / "constitution"
         answers_path = _interview_path(repo_root)
 
-        interview_data = read_interview_answers(answers_path) if from_interview else None
-        if interview_data is None:
+        if from_interview:
+            interview_data = read_interview_answers(answers_path)
+            if interview_data is None:
+                msg = (
+                    f"Interview answers not found at {answers_path}. "
+                    "Run `spec-kitty constitution interview` to capture your answers first, "
+                    "or use --no-from-interview to generate with defaults."
+                )
+                raise TaskCliError(msg)
+            interview_source = "interview"
+        else:
             resolved_mission = mission or "software-dev"
             interview_data = default_interview(
                 mission=resolved_mission,
                 profile=profile.strip().lower(),
             )
             interview_source = "defaults"
-        else:
-            interview_source = "interview"
+
+        _check_overwrite_conflicts(constitution_dir, force=force, json_output=json_output)
 
         resolved_mission = mission or interview_data.mission
 
@@ -214,7 +277,7 @@ def generate(
             interview=interview_data,
             template_set=template_set,
         )
-        bundle_result = write_compiled_constitution(constitution_dir, compiled, force=force)
+        bundle_result = write_compiled_constitution(constitution_dir, compiled, force=True)
 
         constitution_path = constitution_dir / "constitution.md"
         sync_result = sync_constitution(constitution_path, constitution_dir, force=True)
@@ -227,12 +290,23 @@ def generate(
             if file_name not in files_written:
                 files_written.append(file_name)
 
+        constitution_rel = str(constitution_path.relative_to(repo_root))
+        references_rel = str((constitution_dir / "references.yaml").relative_to(repo_root))
+        library_files = [
+            ref.source_path
+            for ref in compiled.references
+            if ref.kind == "local_support"
+        ]
+
         if json_output:
             print(
                 json.dumps(
                     {
-                        "success": True,
-                        "constitution_path": str(constitution_path.relative_to(repo_root)),
+                        "result": "success",
+                        "constitution_file": constitution_rel,
+                        "references_file": references_rel,
+                        "generated_files": files_written,
+                        "library_files": library_files,
                         "interview_source": interview_source,
                         "mission": compiled.mission,
                         "template_set": compiled.template_set,
@@ -240,7 +314,6 @@ def generate(
                         "selected_directives": compiled.selected_directives,
                         "available_tools": compiled.available_tools,
                         "references_count": len(compiled.references),
-                        "files_written": files_written,
                         "diagnostics": compiled.diagnostics,
                     },
                     indent=2,
@@ -260,15 +333,13 @@ def generate(
         for filename in files_written:
             console.print(f"  ✓ {filename}")
 
-    except FileExistsError as e:
-        console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(code=1)
-    except (TaskCliError, ValueError, RuntimeError) as e:
-        console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(code=1)
     except Exception as e:
-        console.print(f"[red]Unexpected error:[/red] {e}")
-        raise typer.Exit(code=1)
+        prefix = "Aborted" if isinstance(e, _OverwriteAborted) else "Error"
+        if json_output:
+            print(json.dumps({"error": str(e)}, indent=2))
+        else:
+            console.print(f"[red]{prefix}:[/red] {e}")
+        raise typer.Exit(code=1) from e
 
 
 @app.command(name="generate-for-agent")
@@ -298,16 +369,25 @@ def generate_for_agent(
         constitution_dir = repo_root / ".kittify" / "constitution"
         answers_path = _interview_path(repo_root)
 
-        interview_data = read_interview_answers(answers_path) if from_interview else None
-        if interview_data is None:
+        if from_interview:
+            interview_data = read_interview_answers(answers_path)
+            if interview_data is None:
+                msg = (
+                    f"Interview answers not found at {answers_path}. "
+                    "Run `spec-kitty constitution interview` to capture your answers first, "
+                    "or use --no-from-interview to generate with defaults."
+                )
+                raise TaskCliError(msg)
+            interview_source = "interview"
+        else:
             resolved_mission = mission or "software-dev"
             interview_data = default_interview(
                 mission=resolved_mission,
                 profile=interview_profile.strip().lower(),
             )
             interview_source = "defaults"
-        else:
-            interview_source = "interview"
+
+        _check_overwrite_conflicts(constitution_dir, force=force, json_output=json_output)
 
         doctrine_service = _build_doctrine_service(repo_root)
         resolution = resolve_governance_for_profile(
@@ -331,7 +411,7 @@ def generate_for_agent(
             template_set=template_set,
             doctrine_service=doctrine_service,
         )
-        bundle_result = write_compiled_constitution(constitution_dir, compiled, force=force)
+        bundle_result = write_compiled_constitution(constitution_dir, compiled, force=True)
 
         constitution_path = constitution_dir / "constitution.md"
         sync_result = sync_constitution(constitution_path, constitution_dir, force=True)
@@ -347,7 +427,7 @@ def generate_for_agent(
             print(
                 json.dumps(
                     {
-                        "success": True,
+                        "result": "success",
                         "constitution_path": str(constitution_path.relative_to(repo_root)),
                         "interview_source": interview_source,
                         "mission": compiled.mission,
@@ -383,11 +463,12 @@ def generate_for_agent(
         for filename in files_written:
             console.print(f"  ✓ {filename}")
 
-    except (FileExistsError, TaskCliError, ValueError, RuntimeError) as e:
-        console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(code=1) from e
     except Exception as e:
-        console.print(f"[red]Unexpected error:[/red] {e}")
+        prefix = "Aborted" if isinstance(e, _OverwriteAborted) else "Error"
+        if json_output:
+            print(json.dumps({"error": str(e)}, indent=2))
+        else:
+            console.print(f"[red]{prefix}:[/red] {e}")
         raise typer.Exit(code=1) from e
 
 
@@ -395,12 +476,13 @@ def generate_for_agent(
 def context(
     action: str = typer.Option(..., "--action", help="Workflow action (specify|plan|implement|review)"),
     mark_loaded: bool = typer.Option(True, "--mark-loaded/--no-mark-loaded", help="Persist first-load state"),
+    depth: int | None = typer.Option(None, "--depth", help="Context depth (1=compact, 2=bootstrap, 3=extended)"),
     json_output: bool = typer.Option(False, "--json", help="Output JSON"),
 ) -> None:
     """Render constitution context for a specific workflow action."""
     try:
         repo_root = find_repo_root()
-        result = build_constitution_context(repo_root, action=action, mark_loaded=mark_loaded)
+        result = build_constitution_context(repo_root, action=action, mark_loaded=mark_loaded, depth=depth)
 
         if json_output:
             print(
@@ -411,7 +493,9 @@ def context(
                         "mode": result.mode,
                         "first_load": result.first_load,
                         "references_count": result.references_count,
+                        "context": result.text,
                         "text": result.text,
+                        "depth": result.depth,
                     },
                     indent=2,
                 )

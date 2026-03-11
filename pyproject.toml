@@ -68,6 +68,7 @@ dependencies = [
     "requests>=2.31.0",  # HTTP client for batch sync
     "transitions>=0.9.2",  # State machine library for mission DSL v1
     "jsonschema>=4.0",  # JSON Schema validation for mission configs
+    "python-ulid>=3.0",  # ULID generation for event IDs
 ]
 
 [project.urls]
@@ -114,13 +115,19 @@ exclude = [
     "src/specify_cli/**/tests/**",
 ]
 # Include all non-Python files (templates, configs, etc.)
+# Note: specify_cli/missions command-templates and templates were removed in WP12;
+# all mission template content now lives exclusively in doctrine/missions/.
 artifacts = [
     "src/specify_cli/**/*.md",
     "src/specify_cli/**/*.yaml",
     "src/specify_cli/**/*.yml",
     "src/specify_cli/**/*.json",
-    "src/specify_cli/**/*.csv",
-    "src/specify_cli/**/*.template",
+    "src/doctrine/**/*.md",
+    "src/doctrine/**/*.yaml",
+    "src/doctrine/**/*.yml",
+    "src/doctrine/**/*.json",
+    "src/doctrine/**/*.csv",
+    "src/doctrine/**/*.template",
 ]
 
 [tool.hatch.build.targets.sdist]

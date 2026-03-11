@@ -8,11 +8,12 @@ import re
 def find_mission_templates() -> list[Path]:
     """Find all command template files in missions."""
     spec_kitty_root = Path(__file__).parent.parent
-    missions_dir = spec_kitty_root / "src" / "specify_cli" / "missions"
 
+    # Primary: doctrine/missions (canonical location after WP12)
+    doctrine_missions_dir = spec_kitty_root / "src" / "doctrine" / "missions"
     templates = []
-    if missions_dir.exists():
-        for mission_dir in missions_dir.iterdir():
+    if doctrine_missions_dir.exists():
+        for mission_dir in doctrine_missions_dir.iterdir():
             if mission_dir.is_dir():
                 cmd_templates = mission_dir / "command-templates"
                 if cmd_templates.exists():
@@ -22,7 +23,7 @@ def find_mission_templates() -> list[Path]:
                 if mission_templates.exists():
                     templates.extend(mission_templates.glob("*.md"))
 
-    # Also check root templates
+    # Also check root templates in specify_cli
     root_templates = spec_kitty_root / "src" / "specify_cli" / "templates"
     if root_templates.exists():
         templates.extend(root_templates.glob("**/*.md"))
@@ -120,13 +121,7 @@ def test_templates_require_flat_structure():
     """Templates must explicitly require flat tasks/ structure."""
     spec_kitty_root = Path(__file__).parent.parent
     tasks_template = (
-        spec_kitty_root
-        / "src"
-        / "specify_cli"
-        / "missions"
-        / "software-dev"
-        / "command-templates"
-        / "tasks.md"
+        spec_kitty_root / "src" / "doctrine" / "missions" / "software-dev" / "command-templates" / "tasks.md"
     )
 
     assert tasks_template.exists(), "tasks.md template not found"

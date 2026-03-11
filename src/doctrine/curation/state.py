@@ -8,10 +8,15 @@ from datetime import datetime, UTC
 from pathlib import Path
 from typing import Literal
 
+from doctrine.artifact_kinds import ArtifactKind
+
 
 CurationVerdict = Literal["accepted", "dropped", "skipped", "pending"]
 
-ARTIFACT_TYPES = ("directives", "tactics", "procedures", "styleguides", "toolguides", "paradigms")
+# All curate-able artifact types (excludes TEMPLATE which has no dedicated glob pattern).
+ARTIFACT_TYPES: tuple[str, ...] = tuple(
+    kind.plural for kind in ArtifactKind if kind is not ArtifactKind.TEMPLATE
+)
 
 STATE_FILE = ".kittify/curation/state.json"
 

@@ -359,7 +359,7 @@ def collect_feature_summary(
 
         metadata: Dict[str, Optional[str]] = {
             "lane": wp.lane,
-            "agent": wp.agent,
+            "agent": str(wp.agent) if wp.agent is not None else None,
             "assignee": wp.assignee,
             "shell_pid": wp.shell_pid,
         }

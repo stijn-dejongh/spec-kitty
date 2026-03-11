@@ -373,7 +373,7 @@ class TestTemplateContent:
         """Test that research implement template source file exists."""
         repo_root = Path(__file__).resolve().parents[2]
         template_path = (
-            repo_root / "src" / "specify_cli" / "missions" / "research" / "command-templates" / "implement.md"
+            repo_root / "src" / "doctrine" / "missions" / "research" / "command-templates" / "implement.md"
         )
         assert template_path.exists()
 
@@ -389,7 +389,7 @@ class TestTemplateContent:
         """Test template documents correct canonical schemas."""
         repo_root = Path(__file__).resolve().parents[2]
         template_path = (
-            repo_root / "src" / "specify_cli" / "missions" / "research" / "command-templates" / "implement.md"
+            repo_root / "src" / "doctrine" / "missions" / "research" / "command-templates" / "implement.md"
         )
         content = template_path.read_text()
 

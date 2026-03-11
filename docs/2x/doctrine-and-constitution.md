@@ -19,13 +19,32 @@ Artifact integrity is enforced by:
 
 ## Constitution Lifecycle in 2.x
 
-The constitution flow is command-driven:
+The constitution flow is command-driven. The interview step is **required** — `generate` will
+exit non-zero with an actionable error if `answers.yaml` is absent.
 
-1. `spec-kitty constitution interview`
-2. `spec-kitty constitution generate`
-3. `spec-kitty constitution context --action <specify|plan|implement|review>`
-4. `spec-kitty constitution status`
-5. `spec-kitty constitution sync`
+1. `spec-kitty constitution interview` — Capture project answers (paradigms, directives, tools)
+2. `spec-kitty constitution generate --from-interview` — Compile bundle from answers + shipped doctrine
+3. `spec-kitty constitution context --action <specify|plan|implement|review>` — Load governance context
+4. `spec-kitty constitution status` — Check sync state
+5. `spec-kitty constitution sync` — Re-extract YAML config files from `constitution.md`
+
+**Validation behaviour:**
+
+- Shipped doctrine catalog is validated at compile time; unrecognised IDs are reported as diagnostics
+  but do not abort generation.
+- Project-local support files (declared in `answers.yaml`) are accepted without catalog-ID validation.
+  They supplement shipped doctrine and appear in `references.yaml` as `kind: local_support`.
+- Local support files that overlap a shipped concept emit an additive conflict warning; both entries
+  are kept.
+- `governance.yaml`, `directives.yaml`, and `metadata.yaml` are emitted by `constitution sync`.
+  `agents.yaml` is **not** emitted.
+
+**Context bootstrap behaviour:**
+
+- First call to `constitution context --action <action>` returns full governance context (depth 2).
+- Subsequent calls for the same action return compact context (depth 1) by default.
+- Bootstrap state is persisted in `.kittify/constitution/context-state.json`.
+- An explicit `--depth` flag overrides the bootstrap auto-selection.
 
 Primary implementation:
 
@@ -40,9 +59,13 @@ Current bundle location:
 1. `.kittify/constitution/constitution.md`
 2. `.kittify/constitution/interview/answers.yaml`
 3. `.kittify/constitution/references.yaml`
-4. `.kittify/constitution/library/*.md`
+4. `.kittify/constitution/context-state.json` — first-load bootstrap tracking
 
 Legacy compatibility is still handled for projects with older layout, but 2.x documentation treats `.kittify/constitution/` as canonical.
+
+> **Note:** The `library/` subdirectory used in earlier builds has been removed.
+> Shipped doctrine content is fetched at runtime from the packaged `src/doctrine/` tree;
+> project-local support files are referenced via paths recorded in `references.yaml`.
 
 ## Runtime Template Resolution
 

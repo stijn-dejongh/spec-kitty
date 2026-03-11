@@ -6,12 +6,12 @@ an optional runtime DAG, command templates, and content templates.
 
 ## Available Missions
 
-| Mission | Directory | Domain | States |
-|---------|-----------|--------|--------|
-| Software Development | `software-dev/` | software-dev | discovery → specify → plan → implement → review → done |
-| Documentation | `documentation/` | other | discover → audit → design → generate → validate → publish |
-| Plan | `plan/` | planning | goals → research → structure → draft → review → done |
-| Research | `research/` | research | scoping → methodology → gathering → synthesis → output → done |
+| Mission              | Directory        | Domain       | States                                                        |
+|----------------------|------------------|--------------|---------------------------------------------------------------|
+| Software Development | `software-dev/`  | software-dev | discovery → specify → plan → implement → review → done        |
+| Documentation        | `documentation/` | other        | discover → audit → design → generate → validate → publish     |
+| Plan                 | `plan/`          | planning     | goals → research → structure → draft → review → done          |
+| Research             | `research/`      | research     | scoping → methodology → gathering → synthesis → output → done |
 
 ## Structure Convention
 

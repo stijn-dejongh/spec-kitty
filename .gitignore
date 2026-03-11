@@ -120,4 +120,5 @@ mutmut-cache/
 mutants/
 
 pytest-of-*/
+.claude/
 src/doctrine/templates/.merged-software-dev/

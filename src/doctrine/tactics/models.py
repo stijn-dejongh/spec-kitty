@@ -5,20 +5,9 @@ Defines Tactic, TacticStep, TacticReference Pydantic models and
 ReferenceType enum for cross-artifact references.
 """
 
-from enum import StrEnum
-
 from pydantic import BaseModel, ConfigDict, Field
 
-
-class ReferenceType(StrEnum):
-    """Type of doctrine artifact being referenced."""
-
-    STYLEGUIDE = "styleguide"
-    TACTIC = "tactic"
-    DIRECTIVE = "directive"
-    TOOLGUIDE = "toolguide"
-    PROCEDURE = "procedure"
-    TEMPLATE = "template"
+from doctrine.artifact_kinds import ArtifactKind
 
 
 class TacticReference(BaseModel):
@@ -27,7 +16,7 @@ class TacticReference(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     name: str
-    type: ReferenceType
+    type: ArtifactKind
     id: str
     when: str
 

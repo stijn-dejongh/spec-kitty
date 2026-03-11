@@ -3,12 +3,15 @@
 import pytest
 from pydantic import ValidationError
 
+from doctrine.artifact_kinds import ArtifactKind
 from doctrine.tactics.models import (
-    ReferenceType,
     Tactic,
     TacticReference,
     TacticStep,
 )
+
+# Alias kept for readability in test assertions
+ReferenceType = ArtifactKind
 
 
 class TestReferenceType:

@@ -83,7 +83,7 @@ Connector interface contract -> Agent adapter (pluggable)
 **Goal**: Wire `DoctrineService` into the constitution resolver and extract
 inline mission governance into proper doctrine artifacts.
 
-**Scope**:
+**Scope** (as implemented in feature 054):
 
 1. Replace string-based directive lookups in `constitution/resolver.py` with
    `DoctrineService.directives.get(id)` calls. Inject full directive content
@@ -93,17 +93,21 @@ inline mission governance into proper doctrine artifacts.
    load the full `Tactic` objects with steps and inject them as actionable
    procedure guidance.
 
-3. Extract inline governance from `software-dev/mission.yaml` and command
-   templates into doctrine artifacts. Each workflow phase becomes a
-   shipped directive or tactic. The `mission.yaml` references artifact IDs
-   rather than inlining content.
+3. Extract inline governance from `software-dev` command templates
+   (`specify.md`, `plan.md`, `implement.md`, `review.md`) into per-action
+   doctrine files at `src/doctrine/missions/software-dev/actions/<action>/guidelines.md`.
+   Templates reference IDs and retrieve content at runtime via `constitution context`.
 
-4. Create `MissionTemplateRepository` (schema already exists at
-   `src/doctrine/schemas/mission.schema.yaml`) following the established
-   repository pattern.
+4. Implement action-scoped iterative deepening in `constitution context` via `--depth <1|2|3>`:
+   - Retrieval is scoped via two-stage intersection: action index (`actions/<action>/index.yaml`) ∩ project selections (`references.yaml`). Prevents cross-action content bleed.
+   - Each artifact type fetched via its own dedicated repository service (`DirectiveRepository`, `TacticRepository`, etc.) — no cross-type fetches.
+   - Depth 1 (compact): directive titles + tactic IDs for the action scope
+   - Depth 2 (bootstrap): full directive procedures + tactic steps via `DoctrineService` for the action scope
+   - Depth 3 (explicit): adds styleguide/toolguide details + per-action mission guidelines
 
-**Entry point**: `src/specify_cli/constitution/resolver.py` (~50 lines),
-`src/specify_cli/next/prompt_builder.py`.
+5. Constitution treated as configuration layer only — `generate` no longer
+   materialises content into `.kittify/constitution/library/`. All content
+   retrieved live from `DoctrineService` on each `context` call.
 
 6. Deploy slimmed templates to all 48 agent copies via migration `m_2_0_2`.
 

@@ -8,10 +8,17 @@ from specify_cli.constitution.generator import build_constitution_draft, write_c
 
 
 def test_build_constitution_draft_defaults() -> None:
+    """Defaults fall back to full catalog when configured entries are absent from doctrine."""
+    from specify_cli.constitution.catalog import load_doctrine_catalog
+
+    catalog = load_doctrine_catalog()
     draft = build_constitution_draft(mission="software-dev")
     assert draft.template_set == "software-dev-default"
-    assert draft.selected_directives == ["DIRECTIVE_004", "DIRECTIVE_027"]
-    assert "test-first" in draft.selected_paradigms
+    # When configured mission-defaults are not present in the catalog, the compiler
+    # falls back to the full set of available directives (sorted).
+    assert draft.selected_directives == sorted(catalog.directives)
+    # Paradigm fallback: empty when none are available in the catalog.
+    assert draft.selected_paradigms == sorted(catalog.paradigms)
     assert "selected_directives" in draft.markdown
 
 

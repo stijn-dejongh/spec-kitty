@@ -154,16 +154,13 @@ class TestGetPackageAssetRoot:
         result = get_package_asset_root()
         assert result.is_dir()
 
-    def test_dev_layout_fallback(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """Falls back to dev layout when importlib discovery fails."""
+    def test_dev_layout_fallback(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Raises FileNotFoundError when importlib discovery fails (no fallback to specify_cli)."""
         monkeypatch.delenv("SPEC_KITTY_TEMPLATE_ROOT", raising=False)
-        # Block importlib path so it falls through to dev layout
+        # Block importlib path so it falls through to error
         monkeypatch.setattr(
             "specify_cli.runtime.home.importlib.resources.files",
             lambda _pkg: type("Fake", (), {"__truediv__": lambda s, n: Path("/nonexistent")})(),
         )
-        result = get_package_asset_root()
-        assert result.is_dir()
-        assert result.name == "missions"
+        with pytest.raises(FileNotFoundError, match="Cannot locate package mission assets"):
+            get_package_asset_root()

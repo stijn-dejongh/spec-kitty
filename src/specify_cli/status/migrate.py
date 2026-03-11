@@ -28,6 +28,7 @@ from ulid import ULID
 
 from specify_cli.frontmatter import read_frontmatter
 from specify_cli.status.history_parser import build_transition_chain
+from specify_cli.identity import ActorIdentity
 from specify_cli.status.models import Lane, StatusEvent
 from specify_cli.status.store import EVENTS_FILENAME, StoreError, read_events
 from specify_cli.status.transitions import CANONICAL_LANES, resolve_lane_alias
@@ -352,7 +353,7 @@ def migrate_feature(
                     from_lane=Lane(t.from_lane),
                     to_lane=Lane(t.to_lane),
                     at=t.timestamp,
-                    actor=event_actor,
+                    actor=ActorIdentity.from_legacy(event_actor),
                     force=True,
                     execution_mode="direct_repo",
                     reason=reason,

@@ -11,6 +11,97 @@ from ruamel.yaml import YAML
 from specify_cli.constitution.catalog import DoctrineCatalog, load_doctrine_catalog
 from specify_cli.constitution.resolver import DEFAULT_TOOL_REGISTRY
 
+# Known action values for LocalSupportDeclaration normalization.
+_KNOWN_ACTIONS: frozenset[str] = frozenset({"specify", "plan", "implement", "review"})
+
+# Glob characters that indicate a path pattern rather than an explicit file.
+_GLOB_CHARS: tuple[str, ...] = ("*", "?", "[", "]")
+
+
+@dataclass(frozen=True)
+class LocalSupportDeclaration:
+    """One project-local doctrine support file declared in interview answers."""
+
+    path: str
+    action: str | None = None
+    target_kind: str | None = None
+    target_id: str | None = None
+
+    def to_dict(self) -> dict[str, object]:
+        d: dict[str, object] = {"path": self.path}
+        if self.action is not None:
+            d["action"] = self.action
+        if self.target_kind is not None:
+            d["target_kind"] = self.target_kind
+        if self.target_id is not None:
+            d["target_id"] = self.target_id
+        return d
+
+    @classmethod
+    def from_dict(cls, data: object) -> LocalSupportDeclaration | None:
+        """Parse a single declaration dict, returning None for invalid entries."""
+        if not isinstance(data, dict):
+            return None
+        raw_path = data.get("path")
+        if not isinstance(raw_path, str) or not raw_path.strip():
+            return None
+        path = raw_path.strip()
+        action = _normalize_optional_string(data.get("action"))
+        target_kind = _normalize_optional_string(data.get("target_kind"))
+        target_id = _normalize_optional_string(data.get("target_id"))
+        return cls(path=path, action=action, target_kind=target_kind, target_id=target_id)
+
+
+def validate_local_support_declarations(
+    declarations: list[LocalSupportDeclaration],
+) -> tuple[list[LocalSupportDeclaration], list[str]]:
+    """Validate and normalize a list of declarations.
+
+    Returns (valid_declarations, error_messages).
+    Rejects directory paths (trailing slash or no extension when a glob char present)
+    and paths containing glob characters.
+    """
+    valid: list[LocalSupportDeclaration] = []
+    errors: list[str] = []
+
+    for decl in declarations:
+        path = decl.path
+        # Reject glob patterns
+        if any(c in path for c in _GLOB_CHARS):
+            errors.append(
+                f"local_supporting_files path '{path}' contains glob characters; "
+                "explicit file paths only."
+            )
+            continue
+        # Reject paths that look like directories (trailing slash)
+        if path.endswith("/") or path.endswith("\\"):
+            errors.append(
+                f"local_supporting_files path '{path}' looks like a directory; "
+                "explicit file paths only."
+            )
+            continue
+        # Normalize action: unknown values are silently dropped (set to None)
+        normalized_action: str | None = None
+        if decl.action is not None:
+            if decl.action in _KNOWN_ACTIONS:
+                normalized_action = decl.action
+            else:
+                errors.append(
+                    f"local_supporting_files path '{path}': unknown action "
+                    f"'{decl.action}' (expected one of {sorted(_KNOWN_ACTIONS)}); "
+                    "treating as global."
+                )
+                # Still include the declaration but with action=None
+        normalized = LocalSupportDeclaration(
+            path=path,
+            action=normalized_action,
+            target_kind=decl.target_kind,
+            target_id=decl.target_id,
+        )
+        valid.append(normalized)
+
+    return valid, errors
+
 
 QUESTION_ORDER: tuple[str, ...] = (
     "project_intent",
@@ -77,9 +168,15 @@ class ConstitutionInterview:
     available_tools: list[str]
     agent_profile: str | None = None
     agent_role: str | None = None
+    local_supporting_files: list[LocalSupportDeclaration] = None  # type: ignore[assignment]
+
+    def __post_init__(self) -> None:
+        # Normalize None to empty list for local_supporting_files (frozen dataclass workaround)
+        if self.local_supporting_files is None:
+            object.__setattr__(self, "local_supporting_files", [])
 
     def to_dict(self) -> dict[str, object]:
-        return {
+        d: dict[str, object] = {
             "schema_version": "1.0.0",
             "mission": self.mission,
             "profile": self.profile,
@@ -90,6 +187,9 @@ class ConstitutionInterview:
             "agent_profile": self.agent_profile,
             "agent_role": self.agent_role,
         }
+        if self.local_supporting_files:
+            d["local_supporting_files"] = [decl.to_dict() for decl in self.local_supporting_files]
+        return d
 
     @classmethod
     def from_dict(cls, data: dict[str, object]) -> ConstitutionInterview:
@@ -102,6 +202,14 @@ class ConstitutionInterview:
         else:
             answers = {}
 
+        raw_local = data.get("local_supporting_files")
+        local_supporting_files: list[LocalSupportDeclaration] = []
+        if isinstance(raw_local, list):
+            for item in raw_local:
+                parsed = LocalSupportDeclaration.from_dict(item)
+                if parsed is not None:
+                    local_supporting_files.append(parsed)
+
         return cls(
             mission=mission,
             profile=profile,
@@ -111,6 +219,7 @@ class ConstitutionInterview:
             available_tools=_normalize_list(data.get("available_tools")),
             agent_profile=_normalize_optional_string(data.get("agent_profile")),
             agent_role=_normalize_optional_string(data.get("agent_role")),
+            local_supporting_files=local_supporting_files,
         )
 
 
@@ -196,6 +305,7 @@ def apply_answer_overrides(
     available_tools: Iterable[str] | None = None,
     agent_profile: str | None | object = _UNSET,
     agent_role: str | None | object = _UNSET,
+    local_supporting_files: list[LocalSupportDeclaration] | None | object = _UNSET,
 ) -> ConstitutionInterview:
     """Return an updated interview with selected fields overridden."""
     merged_answers = dict(interview.answers)
@@ -204,6 +314,14 @@ def apply_answer_overrides(
             if value is None:
                 continue
             merged_answers[str(key)] = str(value)
+
+    resolved_local: list[LocalSupportDeclaration]
+    if local_supporting_files is _UNSET:
+        resolved_local = list(interview.local_supporting_files)
+    elif local_supporting_files is None:
+        resolved_local = []
+    else:
+        resolved_local = list(local_supporting_files)  # type: ignore[call-overload]
 
     return ConstitutionInterview(
         mission=interview.mission,
@@ -223,6 +341,7 @@ def apply_answer_overrides(
         ),
         agent_profile=interview.agent_profile if agent_profile is _UNSET else _normalize_optional_string(agent_profile),
         agent_role=interview.agent_role if agent_role is _UNSET else _normalize_optional_string(agent_role),
+        local_supporting_files=resolved_local,
     )
 
 

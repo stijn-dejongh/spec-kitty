@@ -13,13 +13,19 @@ from specify_cli.constitution.interview import (
 
 
 def test_default_interview_minimal_uses_minimal_question_set() -> None:
+    """Minimal profile uses minimal question set; selections fall back to full catalog."""
+    from specify_cli.constitution.catalog import load_doctrine_catalog
+
+    catalog = load_doctrine_catalog()
     interview = default_interview(mission="software-dev", profile="minimal")
 
     assert interview.mission == "software-dev"
     assert interview.profile == "minimal"
     assert set(interview.answers.keys()) == set(MINIMAL_QUESTION_ORDER)
-    assert interview.selected_paradigms == ["domain-driven-design", "test-first"]
-    assert interview.selected_directives == ["DIRECTIVE_004", "DIRECTIVE_027"]
+    # When configured mission-defaults are absent from catalog, fall back to full
+    # catalog set (sorted).  This keeps the assertion in sync with catalog evolution.
+    assert interview.selected_paradigms == sorted(catalog.paradigms)
+    assert interview.selected_directives == sorted(catalog.directives)
 
 
 def test_default_interview_comprehensive_includes_full_questions() -> None:

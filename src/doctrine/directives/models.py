@@ -9,6 +9,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from doctrine.artifact_kinds import ArtifactKind
+
 
 class Enforcement(StrEnum):
     """Enforcement level for a directive."""
@@ -18,24 +20,12 @@ class Enforcement(StrEnum):
     ADVISORY = "advisory"
 
 
-class DirectiveReferenceType(StrEnum):
-    """Type of doctrine artifact being referenced by a directive."""
-
-    DIRECTIVE = "directive"
-    TACTIC = "tactic"
-    STYLEGUIDE = "styleguide"
-    TOOLGUIDE = "toolguide"
-    PARADIGM = "paradigm"
-    PROCEDURE = "procedure"
-    TEMPLATE = "template"
-
-
 class DirectiveReference(BaseModel):
     """Cross-artifact reference within a directive."""
 
     model_config = ConfigDict(frozen=True)
 
-    type: DirectiveReferenceType
+    type: ArtifactKind
     id: str
 
 

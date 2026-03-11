@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,6 +25,7 @@ class ConstitutionContextResult:
     first_load: bool
     text: str
     references_count: int
+    depth: int
 
 
 def build_constitution_context(
@@ -31,28 +33,43 @@ def build_constitution_context(
     *,
     action: str,
     mark_loaded: bool = True,
+    depth: int | None = None,
 ) -> ConstitutionContextResult:
     """Build constitution context text for a command action.
 
     For first load of bootstrap actions, include summary + references.
     For later loads (or non-bootstrap actions), include compact governance context.
+
+    Args:
+        repo_root: Repository root directory.
+        action: Workflow action name (e.g. "specify", "implement").
+        mark_loaded: Whether to persist first-load state.
+        depth: Context depth override. None lets state decide:
+               first_load -> 2 (bootstrap), not first_load -> 1 (compact).
+               Explicit depth wins over state-based default but does not
+               suppress the state update on first load.
     """
     normalized = action.strip().lower()
     constitution_path = repo_root / ".kittify" / "constitution" / "constitution.md"
     references_path = repo_root / ".kittify" / "constitution" / "references.yaml"
 
     if normalized not in BOOTSTRAP_ACTIONS:
+        effective_depth = depth if depth is not None else 1
         return ConstitutionContextResult(
             action=normalized,
             mode="compact",
             first_load=False,
             text=_render_compact_governance(repo_root),
             references_count=0,
+            depth=effective_depth,
         )
 
     state_path = repo_root / ".kittify" / "constitution" / "context-state.json"
     state = _load_state(state_path)
     first_load = normalized not in state.get("actions", {})
+
+    # Resolve effective depth: explicit wins, else state decides.
+    effective_depth = depth if depth is not None else 2 if first_load else 1
 
     references = _load_references(references_path)
 
@@ -63,15 +80,24 @@ def build_constitution_context(
             "  - Run `spec-kitty constitution interview` then `spec-kitty constitution generate`."
         )
         mode = "missing"
-    elif first_load:
+    elif effective_depth >= 2:
         constitution_content = constitution_path.read_text(encoding="utf-8")
         summary = _extract_policy_summary(constitution_content)
-        text = _render_bootstrap(constitution_path, summary, references)
+        text = _render_action_scoped(
+            repo_root,
+            normalized,
+            constitution_path,
+            summary,
+            references,
+            include_extended=(effective_depth >= 3),
+        )
         mode = "bootstrap"
     else:
         text = _render_compact_governance(repo_root)
         mode = "compact"
 
+    # Always update state on first load (state decides default only - explicit
+    # depth does not suppress the state update).
     if mark_loaded and first_load and mode != "missing":
         actions = state.setdefault("actions", {})
         actions[normalized] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -83,7 +109,239 @@ def build_constitution_context(
         first_load=first_load,
         text=text,
         references_count=len(references),
+        depth=effective_depth,
     )
+
+
+def _build_doctrine_service(repo_root: Path) -> object:
+    """Build a DoctrineService for the given repo root."""
+    from doctrine.service import DoctrineService
+    from specify_cli.constitution.catalog import resolve_doctrine_root
+
+    doctrine_root = resolve_doctrine_root()
+    project_root_candidates = [repo_root / "src" / "doctrine", repo_root / "doctrine"]
+    project_root = next((path for path in project_root_candidates if path.is_dir()), None)
+    return DoctrineService(shipped_root=doctrine_root, project_root=project_root)
+
+
+def _normalize_directive_id(raw: str) -> str:
+    """Normalise a directive slug like '024-locality-of-change' -> 'DIRECTIVE_024'.
+
+    If the raw value already looks like DIRECTIVE_NNN, return as-is.
+    """
+    if re.match(r"^DIRECTIVE_\d+$", raw):
+        return raw
+    match = re.match(r"^(\d+)", raw)
+    if match:
+        number = match.group(1).zfill(3)
+        return f"DIRECTIVE_{number}"
+    return raw.upper()
+
+
+def _build_directive_lines(
+    action_index: object,
+    project_directives: set[str],
+    doctrine_service: object,
+) -> list[str]:
+    """Build formatted directive lines for the action doctrine section."""
+    directive_lines: list[str] = []
+    for raw_id in action_index.directives:  # type: ignore[attr-defined]
+        norm_id = _normalize_directive_id(raw_id)
+        if project_directives and norm_id not in project_directives:
+            continue
+        try:
+            directive = doctrine_service.directives.get(norm_id)  # type: ignore[attr-defined]
+            if directive is not None:
+                directive_lines.append(f"    - {norm_id}: {directive.title} — {directive.intent}")
+            else:
+                directive_lines.append(f"    - {norm_id}")
+        except Exception:  # noqa: S110
+            directive_lines.append(f"    - {norm_id}")
+    return directive_lines
+
+
+def _build_tactic_lines(action_index: object, doctrine_service: object) -> list[str]:
+    """Build formatted tactic lines for the action doctrine section."""
+    tactic_lines: list[str] = []
+    for tactic_id in action_index.tactics:  # type: ignore[attr-defined]
+        try:
+            tactic = doctrine_service.tactics.get(tactic_id)  # type: ignore[attr-defined]
+            if tactic is not None:
+                desc = tactic.description or ""
+                tactic_lines.append(f"    - {tactic_id}: {tactic.title} — {desc}".rstrip(" —"))
+            else:
+                tactic_lines.append(f"    - {tactic_id}")
+        except Exception:  # noqa: S110
+            tactic_lines.append(f"    - {tactic_id}")
+    return tactic_lines
+
+
+def _build_extended_lines(action_index: object, doctrine_service: object) -> list[str]:
+    """Build styleguide + toolguide lines for depth-3 extended context."""
+    extended: list[str] = []
+
+    styleguide_lines: list[str] = []
+    for sg_id in action_index.styleguides:  # type: ignore[attr-defined]
+        try:
+            sg = doctrine_service.styleguides.get(sg_id)  # type: ignore[attr-defined]
+            styleguide_lines.append(f"    - {sg_id}: {sg.title}" if sg else f"    - {sg_id}")
+        except Exception:  # noqa: BLE001
+            styleguide_lines.append(f"    - {sg_id}")
+
+    if styleguide_lines:
+        extended.append("  Styleguides:")
+        extended.extend(styleguide_lines)
+
+    toolguide_lines: list[str] = []
+    for tg_id in action_index.toolguides:  # type: ignore[attr-defined]
+        try:
+            tg = doctrine_service.toolguides.get(tg_id)  # type: ignore[attr-defined]
+            toolguide_lines.append(f"    - {tg_id}: {tg.title}" if tg else f"    - {tg_id}")
+        except Exception:  # noqa: BLE001
+            toolguide_lines.append(f"    - {tg_id}")
+
+    if toolguide_lines:
+        extended.append("  Toolguides:")
+        extended.extend(toolguide_lines)
+
+    return extended
+
+
+def _append_action_doctrine_lines(
+    lines: list[str],
+    repo_root: Path,
+    action: str,
+    *,
+    include_extended: bool,
+) -> None:
+    """Append action doctrine content to lines list. Degrades gracefully on error."""
+    from doctrine.missions.action_index import load_action_index
+    from specify_cli.constitution.catalog import resolve_doctrine_root
+    from specify_cli.constitution.sync import load_governance_config
+
+    try:
+        missions_root = resolve_doctrine_root() / "missions"
+        governance = load_governance_config(repo_root)
+        template_set = governance.doctrine.template_set or "software-dev-default"
+        mission = template_set.removesuffix("-default")
+        action_index = load_action_index(missions_root, mission, action)
+        project_directives: set[str] = {
+            _normalize_directive_id(d) for d in governance.doctrine.selected_directives
+        }
+        doctrine_service = _build_doctrine_service(repo_root)
+
+        lines.append(f"Action Doctrine ({action}):")
+
+        directive_lines = _build_directive_lines(action_index, project_directives, doctrine_service)
+        if directive_lines:
+            lines.append("  Directives:")
+            lines.extend(directive_lines)
+
+        tactic_lines = _build_tactic_lines(action_index, doctrine_service)
+        if tactic_lines:
+            lines.append("  Tactics:")
+            lines.extend(tactic_lines)
+
+        if include_extended:
+            lines.extend(_build_extended_lines(action_index, doctrine_service))
+
+        # Action guidelines file
+        guidelines_path = missions_root / mission / "actions" / action / "guidelines.md"
+        if guidelines_path.exists():
+            try:
+                guidelines_content = guidelines_path.read_text(encoding="utf-8").strip()
+                if guidelines_content:
+                    lines.append("  Guidelines:")
+                    for gl_line in guidelines_content.splitlines():
+                        lines.append(f"    {gl_line}")
+            except Exception:  # noqa: BLE001, S110
+                pass
+
+    except Exception:  # noqa: BLE001, S110
+        # Degrade gracefully - skip action doctrine section on any error
+        pass
+
+
+def _render_action_scoped(
+    repo_root: Path,
+    action: str,
+    constitution_path: Path,
+    summary: list[str],
+    references: list[dict[str, str]],
+    *,
+    include_extended: bool = False,
+) -> str:
+    """Render action-scoped bootstrap context (depth >= 2).
+
+    Loads the action index, intersects project directives, fetches doctrine
+    content, and renders a structured context block.
+    """
+    lines: list[str] = [
+        "Constitution Context (Bootstrap):",
+        f"  - Source: {constitution_path}",
+        "  - This is the first load for this action. Use the summary and follow references as needed.",
+        "",
+        "Policy Summary:",
+    ]
+
+    if summary:
+        for item in summary[:8]:
+            lines.append(f"  - {item}")
+    else:
+        lines.append("  - No explicit policy summary section found in constitution.md.")
+
+    lines.append("")
+
+    _append_action_doctrine_lines(lines, repo_root, action, include_extended=include_extended)
+
+    lines.append("")
+
+    # --- Reference Docs section ---
+    lines.append("Reference Docs:")
+
+    filtered_references = _filter_references_for_action(references, action)
+
+    if filtered_references:
+        for reference in filtered_references[:10]:
+            ref_id = reference.get("id", "unknown")
+            title = reference.get("title", "")
+            local_path = reference.get("local_path", "")
+            lines.append(f"  - {ref_id}: {title} ({local_path})")
+    else:
+        lines.append("  - No references manifest found.")
+
+    return "\n".join(lines)
+
+
+def _filter_references_for_action(
+    references: list[dict[str, str]], action: str
+) -> list[dict[str, str]]:
+    """Filter references for a specific action.
+
+    Non-local_support references are always included.
+    For local_support references:
+      - If the summary contains "(action: XXX)", include only if XXX matches the requested action.
+      - If no "(action: ...)" appears in the summary, include (global).
+    """
+    filtered: list[dict[str, str]] = []
+    for ref in references:
+        kind = ref.get("kind", "")
+        if kind != "local_support":
+            filtered.append(ref)
+            continue
+
+        # local_support: check summary for action scope
+        summary = ref.get("summary", ref.get("title", ""))
+        action_match = re.search(r"\(action:\s*(\w+)\)", summary)
+        if action_match:
+            ref_action = action_match.group(1).strip().lower()
+            if ref_action == action.lower():
+                filtered.append(ref)
+        else:
+            # No action scope in summary → include globally
+            filtered.append(ref)
+
+    return filtered
 
 
 def _render_bootstrap(constitution_path: Path, summary: list[str], references: list[dict[str, str]]) -> str:
@@ -183,11 +441,15 @@ def _load_references(path: Path) -> list[dict[str, str]]:
     for item in raw_references:
         if not isinstance(item, dict):
             continue
-        refs.append({
-            "id": str(item.get("id", "")),
-            "title": str(item.get("title", "")),
-            "local_path": str(item.get("local_path", "")),
-        })
+        refs.append(
+            {
+                "id": str(item.get("id", "")),
+                "title": str(item.get("title", "")),
+                "local_path": str(item.get("local_path", "")),
+                "kind": str(item.get("kind", "")),
+                "summary": str(item.get("summary", "")),
+            }
+        )
     return refs
 
 

@@ -3,7 +3,11 @@
 import pytest
 from pydantic import ValidationError
 
-from doctrine.directives.models import Directive, DirectiveReferenceType, Enforcement
+from doctrine.artifact_kinds import ArtifactKind
+from doctrine.directives.models import Directive, Enforcement
+
+# Alias kept for readability in test assertions
+DirectiveReferenceType = ArtifactKind
 
 
 class TestEnforcement:

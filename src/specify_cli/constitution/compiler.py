@@ -12,7 +12,11 @@ from typing import TYPE_CHECKING
 from ruamel.yaml import YAML
 
 from specify_cli.constitution.catalog import DoctrineCatalog, load_doctrine_catalog, resolve_doctrine_root
-from specify_cli.constitution.interview import ConstitutionInterview
+from specify_cli.constitution.interview import (
+    ConstitutionInterview,
+    LocalSupportDeclaration,
+    validate_local_support_declarations,
+)
 from specify_cli.constitution.resolver import DEFAULT_TOOL_REGISTRY
 
 if TYPE_CHECKING:
@@ -99,6 +103,12 @@ def compile_constitution(
         diagnostics=diagnostics,
     )
 
+    # Validate and normalize local support file declarations.
+    valid_local, local_errors = validate_local_support_declarations(
+        list(interview.local_supporting_files)
+    )
+    diagnostics.extend(local_errors)
+
     references = _build_references(
         mission=mission,
         template_set=template,
@@ -108,6 +118,16 @@ def compile_constitution(
         doctrine_service=doctrine_service,
         diagnostics=diagnostics,
     )
+
+    # Build additive local support references.
+    shipped_ids = _build_shipped_concept_ids(references)
+    local_references = _build_local_support_references(
+        valid_local,
+        shipped_ids=shipped_ids,
+        diagnostics=diagnostics,
+    )
+    references = references + local_references
+
     markdown = _render_constitution_markdown(
         mission=mission,
         template_set=template,
@@ -136,7 +156,12 @@ def write_compiled_constitution(
     *,
     force: bool = False,
 ) -> WriteBundleResult:
-    """Write constitution bundle artifacts to output_dir."""
+    """Write constitution bundle artifacts to output_dir.
+
+    Only constitution.md and references.yaml are written; library/ materialization
+    has been removed — doctrine content is fetched at context-retrieval time via
+    references.yaml.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     constitution_path = output_dir / "constitution.md"
 
@@ -151,24 +176,6 @@ def write_compiled_constitution(
     references_path = output_dir / "references.yaml"
     _write_references_yaml(references_path, compiled)
     files_written.append("references.yaml")
-
-    library_dir = output_dir / "library"
-    library_dir.mkdir(parents=True, exist_ok=True)
-
-    expected_library_files: set[str] = set()
-    for reference in compiled.references:
-        target = output_dir / reference.local_path
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(reference.content, encoding="utf-8")
-        relative = str(target.relative_to(output_dir))
-        files_written.append(relative)
-        expected_library_files.add(relative)
-
-    # Remove stale generated library markdown files for deterministic output.
-    for stale in sorted(library_dir.glob("*.md")):
-        rel = str(stale.relative_to(output_dir))
-        if rel not in expected_library_files:
-            stale.unlink()
 
     return WriteBundleResult(files_written=files_written)
 
@@ -428,6 +435,73 @@ def _build_references_from_service(
     references.append(_template_reference(doctrine_root=doctrine_root, mission=mission, template_set=template_set))
 
     return references
+
+
+def _build_shipped_concept_ids(references: list[ConstitutionReference]) -> frozenset[str]:
+    """Return a set of '<kind>:<id>' keys for shipped (non-local) references."""
+    result: set[str] = set()
+    for ref in references:
+        if ref.kind != "local_support":
+            result.add(ref.id.upper())
+    return frozenset(result)
+
+
+def _build_local_support_references(
+    declarations: list[LocalSupportDeclaration],
+    *,
+    shipped_ids: frozenset[str],
+    diagnostics: list[str],
+) -> list[ConstitutionReference]:
+    """Build ConstitutionReference entries for local support file declarations."""
+    refs: list[ConstitutionReference] = []
+    for decl in declarations:
+        warning: str | None = None
+        if decl.target_kind and decl.target_id:
+            overlap_key = f"{decl.target_kind.upper()}:{decl.target_id.upper()}"
+            if overlap_key in {k.upper() for k in shipped_ids}:
+                warning = (
+                    f"Local support file overlaps shipped {decl.target_kind} "
+                    f"{decl.target_id}; shipped content remains primary."
+                )
+                diagnostics.append(
+                    f"local_supporting_files '{decl.path}': {warning}"
+                )
+
+        ref_id = f"LOCAL:{decl.path}"
+        title = Path(decl.path).name
+        summary_parts = ["Local support file"]
+        if decl.target_kind and decl.target_id:
+            summary_parts.append(f"supplements {decl.target_kind} {decl.target_id}")
+        if decl.action:
+            summary_parts.append(f"(action: {decl.action})")
+        summary = "; ".join(summary_parts) + "."
+
+        # Build a lightweight content block (no schema validation for free-form markdown)
+        lines: list[str] = [f"# Local Support File: {title}", ""]
+        lines.append(f"- Path: `{decl.path}`")
+        if decl.action:
+            lines.append(f"- Action scope: `{decl.action}`")
+        if decl.target_kind:
+            lines.append(f"- Target kind: `{decl.target_kind}`")
+        if decl.target_id:
+            lines.append(f"- Target ID: `{decl.target_id}`")
+        lines.append("- Relationship: additive")
+        if warning:
+            lines.append(f"- Warning: {warning}")
+        lines.append("")
+
+        refs.append(
+            ConstitutionReference(
+                id=ref_id,
+                kind="local_support",
+                title=title,
+                summary=summary,
+                source_path=decl.path,
+                local_path=f"library/local-{_slugify(decl.path)}.md",
+                content="\n".join(lines),
+            )
+        )
+    return refs
 
 
 def _index_yaml_assets(directory: Path, pattern: str) -> dict[str, dict[str, object]]:
@@ -698,22 +772,30 @@ def _render_directives(interview: ConstitutionInterview, selected_directives: li
 
 
 def _write_references_yaml(path: Path, compiled: CompiledConstitution) -> None:
+    ref_entries: list[dict[str, object]] = []
+    for reference in compiled.references:
+        entry: dict[str, object] = {
+            "id": reference.id,
+            "kind": reference.kind,
+            "title": reference.title,
+            "summary": reference.summary,
+            "source_path": reference.source_path,
+            "local_path": reference.local_path,
+        }
+        # For local support references, include extra metadata from the content block.
+        # The content is authoritative; we parse action/target from the id/summary.
+        # Instead, enrich from the reference content heuristic or keep as-is.
+        # Extra fields are stored on the reference id for traceability.
+        if reference.kind == "local_support":
+            entry["relationship"] = "additive"
+        ref_entries.append(entry)
+
     payload = {
         "schema_version": "1.0.0",
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "mission": compiled.mission,
         "template_set": compiled.template_set,
-        "references": [
-            {
-                "id": reference.id,
-                "kind": reference.kind,
-                "title": reference.title,
-                "summary": reference.summary,
-                "source_path": reference.source_path,
-                "local_path": reference.local_path,
-            }
-            for reference in compiled.references
-        ],
+        "references": ref_entries,
     }
 
     yaml = YAML()

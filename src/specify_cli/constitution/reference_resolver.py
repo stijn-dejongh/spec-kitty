@@ -17,6 +17,8 @@ if TYPE_CHECKING:
     from doctrine.tactics.models import Tactic
     from doctrine.toolguides.models import Toolguide
 
+from doctrine.artifact_kinds import ArtifactKind
+
 
 class _GetterRepository(Protocol):
     def get(self, artifact_id: str) -> object | None: ...
@@ -38,14 +40,8 @@ class ResolvedReferenceGraph:
         return len(self.unresolved) == 0
 
 
-# Maps ReferenceType string values to artifact_type keys used in traversal.
-_REF_TYPE_MAP: dict[str, str] = {
-    "styleguide": "styleguides",
-    "toolguide": "toolguides",
-    "procedure": "procedures",
-    "tactic": "tactics",
-    "directive": "directives",
-}
+# Maps ArtifactKind string values (singular) to plural artifact_type keys for traversal.
+_REF_TYPE_MAP: dict[str, str] = {kind.value: kind.plural for kind in ArtifactKind}
 
 
 class _Walker:

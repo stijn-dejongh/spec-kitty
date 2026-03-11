@@ -14,7 +14,7 @@ from types import ModuleType
 
 toml: ModuleType | None
 try:  # pragma: no cover - optional dependency
-    import toml  # type: ignore
+    import toml  # type: ignore[import-untyped,no-redef]
 except Exception:  # pragma: no cover - optional dependency
     toml = None  # type: ignore[assignment]
 
