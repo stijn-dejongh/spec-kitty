@@ -1,0 +1,23 @@
+schema_version: "1.0"
+id: DIRECTIVE_008
+title: Security Review Protocol
+intent: >
+  Security-sensitive changes must be reviewed for threat exposure, input and
+  boundary validation, and least-privilege handling before completion.
+tactic_refs:
+- premortem-risk-identification
+enforcement: required
+scope: >
+  Applies to authentication, authorization, secrets handling, external input
+  processing, and data movement across trust boundaries.
+procedures:
+- Identify threat surfaces affected by the change.
+- Validate input handling, access checks, and data protection controls.
+- Document any residual risk with explicit acceptance rationale.
+integrity_rules:
+- Known high-severity security gaps cannot be deferred without explicit 
+  sign-off.
+- Security controls must be verifiable in code and tests.
+validation_criteria:
+- Review output includes security findings or explicit no-impact reasoning.
+- Mitigations for discovered risks are implemented or formally tracked.

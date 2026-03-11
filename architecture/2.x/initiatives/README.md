@@ -11,3 +11,5 @@ Canonical decisions must land in `architecture/2.x/adr/` once accepted.
    - Brainstorm lineage, exploratory user journeys, dialectics, and structure proposals
 2. `next-mission-mappings/`
    - Open tracking items for `spec-kitty next` mission mapping/template parity
+3. `2026-03-doctrine-execution-integration/`
+   - Roadmap for wiring doctrine repositories into constitution resolver, mission templates, and connector interface

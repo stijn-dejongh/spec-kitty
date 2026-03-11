@@ -35,10 +35,10 @@ from specify_cli.core.vcs import (
 )
 from specify_cli.dashboard import ensure_dashboard_running
 from specify_cli.gitignore_manager import GitignoreManager
-from specify_cli.core.agent_config import (
-    AgentConfig,
-    AgentSelectionConfig,
-    save_agent_config,
+from specify_cli.core.tool_config import (
+    ToolConfig as AgentConfig,
+    ToolSelectionConfig as AgentSelectionConfig,
+    save_tool_config as save_agent_config,
 )
 from .init_help import INIT_COMMAND_DOC
 from specify_cli.template import (
@@ -203,6 +203,52 @@ def _get_package_templates_root() -> Path | None:
     except FileNotFoundError:
         pass
     return None
+
+
+def _get_structure_templates_dir() -> Path | None:
+    """Return bundled doctrine structure templates directory, if available."""
+    try:
+        pkg_root = get_package_asset_root()  # .../doctrine/missions
+        structure_dir = pkg_root.parent / "templates" / "structure"
+        if structure_dir.is_dir():
+            return structure_dir
+    except FileNotFoundError:
+        pass
+
+    return None
+
+
+def _maybe_generate_structure_templates(project_path: Path, non_interactive: bool, console: Console) -> None:
+    """Optionally generate REPO_MAP.md and SURFACES.md for a project."""
+    structure_dir = _get_structure_templates_dir()
+    if structure_dir is None:
+        return
+
+    templates = {
+        "REPO_MAP.md": structure_dir / "REPO_MAP.md",
+        "SURFACES.md": structure_dir / "SURFACES.md",
+    }
+
+    if non_interactive:
+        console.print("[dim]Skipping REPO_MAP/SURFACES generation in non-interactive mode[/dim]")
+        return
+
+    console.print()
+    should_generate = typer.confirm(
+        "Generate REPO_MAP.md and SURFACES.md from doctrine templates?",
+        default=False,
+    )
+    if not should_generate:
+        console.print("[dim]Skipped REPO_MAP/SURFACES generation[/dim]")
+        return
+
+    for target_name, template_path in templates.items():
+        target = project_path / target_name
+        if target.exists():
+            console.print(f"[dim]Skipping existing {target_name}[/dim]")
+            continue
+        shutil.copy2(template_path, target)
+        console.print(f"[green]Generated[/green] {target_name}")
 
 
 # =============================================================================
@@ -866,6 +912,7 @@ def init(
     # Final static tree (ensures finished state visible after Live context ends)
     _console.print(tracker.render())
     _console.print("\n[bold green]Project ready.[/bold green]")
+    _maybe_generate_structure_templates(project_path, non_interactive, _console)
 
     # Agent folder security notice
     agent_folder_map = {

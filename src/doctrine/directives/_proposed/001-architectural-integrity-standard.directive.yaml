@@ -1,0 +1,51 @@
+schema_version: "1.0"
+id: DIRECTIVE_001
+title: Architectural Integrity Standard
+intent: >
+  Architectural decisions must preserve bounded contexts, explicit dependency
+  direction, and clear ownership boundaries so implementation changes remain
+  locally comprehensible and safe to evolve. Architecture-impacting work must
+  produce traceable decision records and reference the relevant design mission
+  for structural documentation.
+tactic_refs:
+- adr-drafting-workflow
+- decision-marker-capture
+- glossary-curation-interview
+enforcement: required
+scope: >
+  Applies to planning, implementation, and review activities that change
+  module boundaries, shared contracts, or cross-package dependencies. Also
+  applies to the creation and maintenance of architectural documents through
+  the design mission lifecycle.
+procedures:
+- Map the proposed change to affected contexts and owning modules before
+  implementation.
+- Document boundary-impacting tradeoffs when introducing new cross-context
+  dependencies.
+- Reject architecture drift that bypasses published contracts or layering
+  constraints.
+- Ensure domain terms introduced or modified are reflected in the project
+  glossary with bounded context attribution.
+- Produce or update architectural decision records for significant boundary
+  changes, including rationale, alternatives considered, and consequences.
+- Every significant decision has a written record — if a choice affects module
+  boundaries, dependency direction, or contract shape, it must be documented
+  before or alongside the implementation.
+- Decision records link to the context that motivated them; a record without
+  rationale is a label, not a decision.
+- Rejected alternatives and their tradeoffs are documented alongside the
+  chosen path.
+integrity_rules:
+- Context boundaries must remain explicit and reviewable.
+- New dependencies must flow through approved contracts, not hidden reach-ins.
+- Architectural decisions must link to the design mission that produced them.
+- Decision records carry an honest status — proposed, accepted, deprecated,
+  or superseded. Ambiguous status erodes trust in the record.
+- When a decision impacts or is impacted by other decisions, the
+  cross-references are explicit and bidirectional.
+- Decisions are reversible by default; the cost of reversal is documented so
+  future maintainers can assess whether the original constraints still hold.
+validation_criteria:
+- Architecture-impacting pull requests include rationale for boundary changes.
+- No unreviewed cross-context coupling is introduced by the change set.
+- Domain terms used in the change set exist in the project glossary.

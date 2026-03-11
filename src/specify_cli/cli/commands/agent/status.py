@@ -25,7 +25,7 @@ from specify_cli.core.paths import locate_project_root, get_main_repo_root
 
 logger = logging.getLogger(__name__)
 
-app = typer.Typer(
+app: typer.Typer = typer.Typer(
     name="status",
     help="Canonical status management commands",
     no_args_is_help=True,

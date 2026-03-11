@@ -107,6 +107,17 @@ spec-kitty validate-encoding --all --fix
 - Run all required tests before claiming work is complete.  
 - Be transparent: state what you did, what you didn’t, and why.
 
+### Pre-Review Quality Gate
+
+**Before moving any Work Package to `for_review`, you MUST run:**
+
+```bash
+ruff check .
+mypy src/ --strict
+```
+
+Both commands must pass (zero errors) before the WP is eligible for review. Do not move a WP to `for_review` with outstanding ruff or mypy violations.
+
 ---
 
 ## 5. Git Discipline Rule
@@ -118,6 +129,11 @@ spec-kitty validate-encoding --all --fix
 - Do not rewrite history of shared branches.
 - Keep feature branches up to date with main via merge or rebase as appropriate.
 - Never commit secrets, tokens, or credentials.
+
+### Branching Strategy
+
+- For **2.x** work, the reference branch is either `2.x` or `develop` (if it exists).
+- For **1.x** work, the reference branch is `main`.
 
 ---
 
@@ -177,6 +193,56 @@ ls -la .kittify/memory
 ```
 
 This is intentional and correct - it ensures a single source of truth for project principles.
+
+---
+
+## 7. Preferred Workspace Tooling
+
+**Baseline environment assumptions: Linux OS, cross-environment collaboration, and a repo-local `.venv` that may lag behind other machines or the current repo state.**
+
+Upon startup, verify the availability of these tools: repository `.venv`, `poetry`, `uv`, `ruff`, `mypy`, local Mermaid tooling, and `rg` (ripgrep).
+
+If one or more tools are not present:
+- Warn the user.
+- Suggest concrete remediation actions.
+- Provide rationale for the warning and suggested remediation.
+
+After verification, record the final decision and available tools for the session in `.kittify/memory/available_tooling.md`.
+
+When recording this file, do not store personally identifiable information (PII), including IP addresses, system/host names, usernames, or similar machine-identifying data.
+
+When these tools are available, use this preference order:
+
+1. **Python environment**
+   - Use and activate the repository-local `.venv` first.
+   - If `.venv` appears outdated for the current branch/state, refresh or recreate it before major work.
+2. **Package and dependency tooling**
+   - Prefer `poetry` and `uv` over base `pip` commands.
+3. **Linting and type checking**
+   - Use `ruff` and `mypy` when available and when the project/task specifies lint or type checks.
+4. **Diagram tooling**
+   - Prefer local Mermaid tooling/workflows over remote or ad-hoc alternatives.
+5. **Filesystem search/navigation**
+   - Prefer `rg` (ripgrep) over slower base filesystem/search tools.
+
+---
+
+## 8. Model Discipline
+
+Before performing work or delegating work to a sub-agent, consider the required LLM model tier and attempt to use the highest token-ROI model available.
+
+- Simple tasks -> use a cheaper model.
+- Difficult or high-reasoning tasks -> use a premium model.
+
+---
+
+## 9. Conceptual Alignment Rule
+
+**All software development work is to consider the existing relevant glossary and architecture files to ensure conceptual alignment.**
+
+- Before implementing, read the relevant sections of `.kittify/glossaries/` and `architecture/` for the area you are changing.
+- Use terminology consistent with the project glossary; do not introduce synonyms for established concepts.
+- Flag any proposed changes that deviate from documented architectural decisions before proceeding.
 
 ---
 

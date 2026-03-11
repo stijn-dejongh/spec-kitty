@@ -1,0 +1,21 @@
+schema_version: "1.0"
+id: DIRECTIVE_012
+title: Work Package Granularity Standard
+intent: >
+  Work packages must be scoped to independently deliverable increments that are
+  reviewable, testable, and mergeable without broad cross-cutting churn.
+tactic_refs: []
+enforcement: required
+scope: >
+  Applies to work-package decomposition, task assignment, and dependency design
+  during planning and execution.
+procedures:
+  - Split work by coherent deliverable boundaries, not by arbitrary file count.
+  - Keep each package small enough to validate and review in a single pass.
+  - Capture explicit dependencies when ordering constraints exist.
+integrity_rules:
+  - Packages must not hide multiple unrelated outcomes behind one lane transition.
+  - Dependency edges must reflect actual sequencing needs.
+validation_criteria:
+  - Each active package has a clear independent test condition.
+  - Reviewers can evaluate completion without reading unrelated package history.

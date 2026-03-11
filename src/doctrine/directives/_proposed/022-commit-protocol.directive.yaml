@@ -1,0 +1,22 @@
+schema_version: "1.0"
+id: DIRECTIVE_022
+title: Commit Protocol
+intent: >
+  Code changes must be captured in coherent, reviewable commits with clear
+  intent so history remains reliable for diagnosis and rollback.
+tactic_refs:
+- change-apply-smallest-viable-diff
+enforcement: required
+scope: >
+  Applies to all commits produced during feature implementation, review
+  remediation, and maintenance work.
+procedures:
+- Group related changes into atomic commits that represent one logical step.
+- Use descriptive commit messages that summarize intent and scope.
+- Ensure tests relevant to the changed behavior pass before committing.
+integrity_rules:
+- Unrelated changes must not be bundled into the same commit.
+- Commit messages must not be placeholders or empty summaries.
+validation_criteria:
+- Commit history can be reviewed step-by-step without ambiguous intent.
+- Each commit maps to a specific problem statement or work package subtask.

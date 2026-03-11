@@ -251,6 +251,11 @@ pytest tests/ --browser-channel=chromium --headed=false
 ## Code Style
 Python 3.11+ (existing spec-kitty codebase): Follow standard conventions
 
+## Branching Strategy
+
+- For **2.x** work, the reference branch is either `2.x` or `develop` (if it exists).
+- For **1.x** work, the reference branch is `main`.
+
 ## Recent Changes
 - 047-namespace-aware-artifact-body-sync: Added Python 3.11+ + typer, rich, ruamel.yaml, requests, pytest, mypy
 - 023-documentation-sprint-agent-management-cleanup: Added Markdown (documentation only) + None (pure documentation)

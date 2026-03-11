@@ -1,0 +1,23 @@
+schema_version: "1.0"
+id: DIRECTIVE_014
+title: Acceptance Criteria Completeness
+intent: >
+  Acceptance criteria must fully describe success, failure handling, and key
+  boundary behaviors so implementation and review share a single completion
+  contract.
+tactic_refs:
+  - acceptance-test-first
+enforcement: required
+scope: >
+  Applies to feature specifications, work-package prompts, and review checks
+  where completion is judged against behavioral expectations.
+procedures:
+  - Define criteria in observable terms with explicit expected outcomes.
+  - Include negative and edge conditions where behavior could regress silently.
+  - Keep criteria synchronized with implementation and review notes when scope changes.
+integrity_rules:
+  - Criteria cannot be satisfied by undocumented assumptions.
+  - Missing edge behavior coverage must be surfaced before acceptance.
+validation_criteria:
+  - Acceptance scenarios cover primary success paths and critical failure modes.
+  - Review can map delivered behavior directly to explicit acceptance statements.

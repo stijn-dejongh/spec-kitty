@@ -1,0 +1,316 @@
+# 2.x Implementation Mapping
+
+| Field | Value |
+|---|---|
+| Status | Draft |
+| Date | 2026-03-04 |
+| Scope | Maps C4 architecture views and doctrine stack to current codebase |
+| Parent | [System Landscape](../00_landscape/README.md) |
+
+## Purpose
+
+Bridge the gap between the architecture documentation (C4 levels 0–3) and the
+actual codebase. This document answers: "Where does each architectural concept
+live in the source tree today?"
+
+This is **not** a code inventory — it maps domain responsibilities to modules,
+explains the doctrine stack layer model, and identifies where the current
+implementation aligns with or diverges from the target architecture.
+
+---
+
+## Level 0 — System Landscape → Codebase Modules
+
+The landscape defines 8 domain containers. All 8 exist in the current codebase
+as Python modules within a single-process CLI application.
+
+| Landscape Container | Primary Codebase Location | Package | Notes |
+|---|---|---|---|
+| **Control Plane** | `src/specify_cli/cli/` | `specify_cli` | Typer-based CLI. Single user entry point for all commands. |
+| **Kitty-core** | `src/specify_cli/core/`, `mission.py`, `mission_v1/`, `missions/`, `next/`, `template/`, `runtime/` | `specify_cli` | Planning pipeline (specify→plan→tasks) and next-action loop. |
+| **Event Store** | `src/specify_cli/status/` | `specify_cli` | JSONL event logs (`store.py`), reducer (`reducer.py`), WP frontmatter, `meta.json`. Filesystem-only today. |
+| **Orchestration** | `src/specify_cli/orchestrator/`, `orchestrator_api/`, `merge/`, `sync/`, `tracker/` | `specify_cli` | Lifecycle engine, worktree management, merge execution, tracker projection. |
+| **Dashboard** | `src/specify_cli/dashboard/` | `specify_cli` | Playwright-based local browser kanban. Read-only against Event Store. |
+| **Agent Tool Connectors** | `src/specify_cli/missions/*/command-templates/` → deployed as `.claude/`, `.codex/`, `.amazonq/`, etc. | `specify_cli` | Current connector is a rendered markdown prompt template. One "adapter" per agent (12 agents). |
+| **Doctrine** | `src/doctrine/` | `doctrine` (standalone package, own `pyproject.toml`) | YAML artifacts, JSON Schema validation, Pydantic models, repository pattern. Zero dependency on `specify_cli`. |
+| **Constitution** | `src/specify_cli/constitution/` | `specify_cli` | Interview flow, compiler, context resolver. Produces `.kittify/constitution/` bundles. |
+
+### Key structural observation
+
+The `doctrine` package is the only container that is a **standalone Python
+package** with its own `pyproject.toml`. All other containers are modules within
+the `specify_cli` monolith. This is architecturally significant: the Doctrine
+container's independence is already real at the package level, while the
+boundaries between the other 7 containers are module-level conventions enforced
+by code review, not by packaging.
+
+---
+
+## Level 1 — System Context → Boundary Mapping
+
+| External Actor | Current Boundary Surface | Implementation |
+|---|---|---|
+| **Human In Charge** | CLI commands, interview prompts | `src/specify_cli/cli/commands/` (Typer command groups) |
+| **Human In Charge** (read) | Dashboard kanban | `src/specify_cli/dashboard/server.py` → local browser |
+| **Agent Tools** | Command template prompts | `.claude/commands/`, `.codex/prompts/`, etc. (12 agent directories) |
+| **External Trackers** | Optional status projection | `src/specify_cli/sync/`, `src/specify_cli/tracker/` (feature-gated) |
+| **Project Repository** | Filesystem read/write | `kitty-specs/`, `.kittify/`, `status.events.jsonl`, WP frontmatter |
+
+### Boundary rule compliance
+
+| Boundary Rule | Current State |
+|---|---|
+| Host-owned authority is non-negotiable | ✅ All state mutations go through `status/emit.py` — agents cannot bypass |
+| Agent Tools are external | ✅ Agents receive rendered prompts; they do not call `specify_cli` directly |
+| Dashboard is read-only | ✅ `dashboard/` reads frontmatter/events only; no write path exists |
+| Tracker integration is optional | ✅ Sync/tracker modules are feature-gated; system works without them |
+| Repository is canonical state | ✅ All persistence is filesystem-based; no external state authority |
+
+---
+
+## Level 2 — Container Collaboration → Code Paths
+
+### Loop A: Planning (User → Kitty-core → Event Store)
+
+```
+User runs: spec-kitty specify / plan / tasks
+  → src/specify_cli/cli/commands/ (Control Plane)
+  → src/specify_cli/core/ + next/ + mission.py (Kitty-core)
+  → src/specify_cli/status/emit.py (Event Store write)
+  → kitty-specs/<feature>/ artifacts written to filesystem
+```
+
+### Loop B: Execution Coordination (Orchestration ↔ Event Store → Connectors)
+
+```
+User runs: spec-kitty implement WP01
+  → src/specify_cli/cli/commands/ (Control Plane)
+  → src/specify_cli/orchestrator/ (Orchestration)
+  → src/specify_cli/status/store.py (Event Store read — WP state)
+  → src/specify_cli/missions/*/command-templates/implement.md (Connector)
+  → Agent executes work (external)
+  → src/specify_cli/status/emit.py (Event Store write — lifecycle event)
+```
+
+### Loop C: Governance (User → Constitution → Doctrine)
+
+```
+User runs: spec-kitty constitution
+  → src/specify_cli/cli/commands/ (Control Plane)
+  → src/specify_cli/constitution/interview.py (Constitution interview)
+  → src/specify_cli/constitution/compiler.py (Constitution compiler)
+  → src/doctrine/service.py → per-artifact repositories (Doctrine read)
+  → .kittify/constitution/ (compiled governance bundle)
+```
+
+### Loop D: Visibility (Dashboard ← Event Store)
+
+```
+User runs: spec-kitty dashboard
+  → src/specify_cli/dashboard/server.py (starts local server)
+  → src/specify_cli/dashboard/scanner.py (reads kitty-specs/ frontmatter)
+  → Browser renders kanban (read-only)
+```
+
+### Loop E: External Projection (Orchestration → Tracker)
+
+```
+Orchestration lifecycle event triggers:
+  → src/specify_cli/sync/ (sync coordinator)
+  → src/specify_cli/tracker/ (tracker connector gateway)
+  → External tracker API (optional, feature-gated)
+```
+
+---
+
+## Level 3 — Components → Modules
+
+| Component (from C4 Level 3) | Module(s) | Key Files |
+|---|---|---|
+| **Command Router** | `cli/` | `cli/__init__.py`, command group registration |
+| **Workflow Command Set** | `cli/commands/` | `specify.py`, `plan.py`, `tasks.py`, `implement.py`, `review.py`, `merge.py` |
+| **Status Mutation Command Set** | `cli/commands/` | `status.py`, lane transition commands |
+| **Governance Command Set** | `cli/commands/` | `constitution.py` |
+| **Next Loop Coordinator** | `next/` | `next/__init__.py` — per-agent action sequencing |
+| **Mission Discovery and Resolution** | `core/`, `mission.py`, `mission_v1/` | Mission context detection, asset loading |
+| **Runtime Asset Lifecycle Coordinator** | `runtime/` | Bootstrap, tier selection, compatibility |
+| **Tiered Template Resolution Pipeline** | `template/` | Prompt/template resolution by configured precedence |
+| **Mission Context Detection** | `core/` | Active mission detection |
+| **Event Semantics Reducer** | `status/reducer.py` | Deterministic event→snapshot materialization |
+| **Persistence Layer** | `status/store.py` | JSONL append/read, corruption detection |
+| **Lifecycle Command Gateway** | `status/emit.py` | `emit_status_transition()` — single entry point for state changes |
+| **WP Lifecycle Engine** | `status/transitions.py` | 16-pair transition matrix, guard conditions |
+| **Target-Line Router** | `status/phase.py`, `core/` | Phase resolution, target branch routing |
+| **Sync Runtime Coordinator** | `sync/` | Sync lifecycle, projection scheduling |
+| **Tracker Connector Gateway** | `tracker/` | External tracker API adapters |
+| **Kanban View** | `dashboard/` | `server.py`, `scanner.py`, `templates/`, `static/` |
+| **Doctrine Catalog Loader** | `doctrine/service.py` | `DoctrineService` — lazy aggregation facade |
+| **Schema Validation Gate** | `doctrine/*/validation.py`, `doctrine/schemas/` | JSON Schema + Pydantic validation |
+| **Glossary Hook Coordinator** | `doctrine/missions/glossary_hook.py`, `specify_cli/glossary/` | Glossary checks during mission execution |
+| **Constitution Interview Flow** | `constitution/interview.py` | Guided Q&A for governance capture |
+| **Constitution Compiler** | `constitution/compiler.py` | Doctrine→constitution bundle compilation |
+| **Action Context Resolver** | `constitution/context.py`, `resolver.py` | Command-scoped governance context |
+| **Execution Dispatch** | `missions/*/command-templates/implement.md` | Prompt rendering for agent dispatch |
+| **Agent Adapters** | `.claude/`, `.codex/`, `.amazonq/`, etc. | Per-agent command templates (12 agents) |
+
+---
+
+## Doctrine Stack: Layer Model
+
+The Doctrine container is organized as a layered knowledge stack. Each layer
+serves a distinct governance purpose, and the reference directions between
+layers are strictly defined.
+
+### Artifact Type Layers
+
+| Layer | Artifact Type | Location | Count (shipped) | Purpose |
+|---|---|---|---|---|
+| **Mental Models** | Paradigm | `src/doctrine/paradigms/` | 1 (`test-first`) | High-level approaches that frame *how you think about a problem*. Not executable. |
+| **Rules** | Directive | `src/doctrine/directives/` | 27 (001–026 + test-first) | Enforceable governance rules. `enforcement: required\|advisory`. |
+| **Procedures** | Tactic | `src/doctrine/tactics/` | 4 | Step-by-step execution procedures. Agent-consumable. |
+| **Output Shapes** | Styleguide | `src/doctrine/styleguides/` | shipped set | Define *what output looks like* — formatting, naming, structure. |
+| **Tool Contracts** | Toolguide | `src/doctrine/toolguides/` | shipped set | Define *how tools are used* — config, invocation, constraints. |
+| **Execution Identity** | Agent Profile | `src/doctrine/agent_profiles/` | shipped set | Agent capabilities, constraints, behavioral contracts. |
+| **Process Templates** | Mission Template | `src/doctrine/missions/` | 3 types (software-dev, documentation, research) | Define the SDD process stages for different mission types. |
+
+### Reference Direction Rules
+
+```
+Paradigm ──tactic_refs──→ Tactic       (approach justifies tactics)
+Directive ──tactic_refs──→ Tactic      (rule selects procedures)
+Tactic ──references──→ Tactic          (step consults related procedure)
+Tactic ──references──→ Styleguide      (step consults output shape)
+Tactic ──references──→ Toolguide       (step consults tool contract)
+Tactic ──references──→ Directive       (step references governing rule)
+Any ──opposed_by──→ Any                (contradiction / tension documentation)
+```
+
+**Leaf nodes:** Styleguides and Toolguides are terminal — they are referenced
+*by* tactics but carry no outward references.
+
+**DAG constraint:** Tactic-to-tactic references must form a directed acyclic
+graph. Cycles are detected by `test_tactic_reference_graph_has_no_cycles` in
+`tests/doctrine/test_directive_consistency.py`.
+
+**Contradiction semantics:** `opposed_by` does **not** mean "superseded". Both
+artifacts remain valid. The field documents a known tension so agents can
+surface it when both are simultaneously active (e.g., Directive 024 Locality of
+Change vs. Directive 025 Boy Scout Rule).
+
+### Repository Implementation Pattern
+
+Every artifact type follows an identical internal structure:
+
+```
+src/doctrine/<artifact_type>/
+  ├── __init__.py          # Exports
+  ├── models.py            # Pydantic model (e.g., Directive, Tactic, Paradigm)
+  ├── repository.py        # Two-source YAML loader (shipped + project)
+  ├── validation.py        # Schema validation against JSON Schema
+  └── shipped/             # Built-in artifacts (YAML files)
+      ├── 001-xxx.<type>.yaml
+      └── ...
+```
+
+**Two-source loading** is the key design pattern:
+
+1. **Shipped artifacts** are bundled with the `doctrine` Python package in
+   `shipped/` directories. These are the defaults that come with Spec Kitty.
+2. **Project artifacts** live in the user's project (e.g.,
+   `.kittify/doctrine/directives/`). They can override shipped artifacts via
+   field-level merge or add entirely new ones.
+
+The `DoctrineService` (`src/doctrine/service.py`) is the aggregation facade —
+it lazily instantiates all per-type repositories and is the single entry point
+for all consumers (Constitution compiler, Connectors, Kitty-core).
+
+### Schema Validation
+
+Each artifact type has a corresponding JSON Schema file in
+`src/doctrine/schemas/`:
+
+| Schema File | Validates |
+|---|---|
+| `paradigm.schema.yaml` | Paradigm artifacts (includes `tactic_refs`, `opposed_by`, `contradiction` definition) |
+| `directive.schema.yaml` | Directive artifacts (includes `tactic_refs`, `opposed_by`) |
+| `tactic.schema.yaml` | Tactic artifacts (includes `steps`, `references`, `opposed_by`) |
+| `styleguide.schema.yaml` | Styleguide artifacts |
+| `toolguide.schema.yaml` | Toolguide artifacts |
+| `agent-profile.schema.yaml` | Agent Profile artifacts (capabilities, constraints) |
+| `mission.schema.yaml` | Mission template definition |
+
+Validation is enforced in tests (`tests/doctrine/`) and through the
+Schema Validation Gate component. Schemas use `additionalProperties: false`
+on paradigm and tactic types, meaning any new field requires both a schema
+update and a valid fixture update.
+
+---
+
+## Doctrine Stack: As-Is vs. Vision
+
+### What exists and works today
+
+| Capability | Status | Evidence |
+|---|---|---|
+| All 7 artifact types with Pydantic models, repositories, validation | ✅ Complete | `src/doctrine/*/models.py`, `repository.py`, `validation.py` |
+| JSON Schema validation for all types | ✅ Complete | `src/doctrine/schemas/*.schema.yaml` |
+| Two-source loading (shipped + project override) | ✅ Complete | `repository.py` field-level merge on each type |
+| Cross-artifact references (`tactic_refs`, `references[]`) | ✅ Complete | Wired with test coverage (40 doctrine tests) |
+| `opposed_by` contradiction modeling | ✅ Complete | Schema + data on paradigm, directive, tactic |
+| DAG cycle detection on tactic references | ✅ Complete | `test_tactic_reference_graph_has_no_cycles` |
+| `DoctrineService` aggregation facade | ✅ Complete | `src/doctrine/service.py` |
+| Constitution compiler consumes Doctrine | ✅ Complete | `src/specify_cli/constitution/compiler.py` |
+| Command templates as connector implementation | ✅ Complete | 12-agent template system via migrations |
+
+### What is emerging or aspirational
+
+| Capability | Status | Gap Description |
+|---|---|---|
+| Glossary integration at execution boundary | 🟡 Partial | `glossary_hook.py` exists; full Glossary Hook Coordinator loop is early-stage |
+| Agent Profile shaping connector behavior | 🟡 Partial | Models, repository, schema exist (feature 046). Wiring into dispatch is forward-looking |
+| Mission templates as first-class doctrine artifacts | 🟡 Partial | Directory-structured Python modules today. Template resolution pipeline in Kitty-core is the coupling point |
+| Explicit per-agent connector adapters | 🟡 Partial | 12-agent command template system is the seed. Architecture envisions SDK/shell/remote adapters |
+| Event Store behind interface contract | 🟡 Partial | `store.py`/`reducer.py` provide the interface pattern. Not yet formally abstracted for alternative backends |
+| Control Plane as swappable surface | 🔴 Conceptual | CLI is tightly coupled. No interface abstraction exists yet for TUI/web alternatives |
+| Dashboard as independent read surface | 🟡 Partial | Functionally independent. Reads filesystem directly rather than through Event Store interface |
+
+---
+
+## Divergence Notes
+
+Areas where the current implementation does not yet match the target
+architecture:
+
+1. **CLI mixes Control Plane and Orchestration:** Some CLI commands directly
+   invoke lifecycle mutations rather than routing through a clean Control Plane →
+   Orchestration interface. The boundary is module-level convention, not enforced
+   by an interface contract.
+
+2. **Kitty-core and Orchestration share filesystem paths:** Both can write
+   to `kitty-specs/` directly. The landscape says they should both go through
+   the Event Store interface contract.
+
+3. **Connector concept is implicit:** The current "adapter" is a rendered
+   markdown template. There is no formal `Connector` interface that alternative
+   dispatch mechanisms (SDK, shell, remote API) could implement.
+
+4. **Dashboard reads filesystem directly:** Rather than querying through
+   the Event Store interface, `dashboard/scanner.py` reads WP frontmatter files
+   directly. This works but bypasses the Event Store abstraction.
+
+These are not bugs — they reflect the natural state of a system evolving toward
+its target architecture. The landscape document establishes where the boundaries
+*should* be, and the gap between as-is and target architecture guides future
+refactoring priorities.
+
+---
+
+## Traceability
+
+- System Landscape: `../00_landscape/README.md`
+- Architectural Principles: `../00_landscape/README.md#architectural-principles`
+- System Context: `../01_context/README.md`
+- Container View: `../02_containers/README.md`
+- Component View: `../03_components/README.md`
+- Doctrine Stack Domain Model: `../03_components/README.md#doctrine-stack-domain-model`
+- Doctrine governance ADR: `../adr/2026-02-23-1-doctrine-artifact-governance-model.md`

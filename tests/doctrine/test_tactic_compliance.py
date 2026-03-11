@@ -18,18 +18,21 @@ from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
 
 DOCTRINE_DIR = Path(__file__).resolve().parents[2] / "src" / "doctrine"
 SCHEMA_DIR = DOCTRINE_DIR / "schemas"
-TACTICS_DIR = DOCTRINE_DIR / "tactics"
+
+_BUNDLED_SUBDIRS = ("shipped", "_proposed")
+_TACTICS_DIRS = [DOCTRINE_DIR / "tactics" / d for d in _BUNDLED_SUBDIRS]
 
 # Artifact type → (directory, glob pattern) for resolution scanning.
 # Styleguides use recursive glob because subdirectories are allowed.
 ARTIFACT_DIRS: dict[str, list[tuple[Path, str]]] = {
-    "tactic": [(TACTICS_DIR, "*.tactic.yaml")],
+    "tactic": [(d, "*.tactic.yaml") for d in _TACTICS_DIRS],
     "styleguide": [
-        (DOCTRINE_DIR / "styleguides", "*.styleguide.yaml"),
-        (DOCTRINE_DIR / "styleguides", "**/*.styleguide.yaml"),
+        (DOCTRINE_DIR / "styleguides" / d, pat)
+        for d in _BUNDLED_SUBDIRS
+        for pat in ("*.styleguide.yaml", "**/*.styleguide.yaml")
     ],
-    "directive": [(DOCTRINE_DIR / "directives", "*.directive.yaml")],
-    "toolguide": [(DOCTRINE_DIR / "toolguides", "*.toolguide.yaml")],
+    "directive": [(DOCTRINE_DIR / "directives" / d, "*.directive.yaml") for d in _BUNDLED_SUBDIRS],
+    "toolguide": [(DOCTRINE_DIR / "toolguides" / d, "*.toolguide.yaml") for d in _BUNDLED_SUBDIRS],
 }
 
 # Threshold: if a reference appears in this fraction of steps or more,
@@ -55,7 +58,11 @@ def _tactic_schema() -> Draft202012Validator:
 
 
 def _collect_tactic_files() -> list[Path]:
-    return sorted(TACTICS_DIR.glob("*.tactic.yaml"))
+    results: list[Path] = []
+    for d in _TACTICS_DIRS:
+        if d.exists():
+            results.extend(d.glob("*.tactic.yaml"))
+    return sorted(set(results))
 
 
 def _build_artifact_index() -> dict[str, set[str]]:

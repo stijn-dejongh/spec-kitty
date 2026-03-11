@@ -1,0 +1,9 @@
+schema_version: "1.0"
+id: domain-driven-design
+name: Domain-Driven Design
+summary: >-
+  Structure systems around bounded contexts with explicit ownership,
+  ubiquitous language, and well-defined context relationships so that
+  domain knowledge is encoded directly in module boundaries and naming.
+tactic_refs:
+  - glossary-curation-interview

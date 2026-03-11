@@ -1,0 +1,24 @@
+schema_version: "1.0"
+id: DIRECTIVE_004
+title: Test-Driven Implementation Standard
+intent: >
+  Implementation changes should be driven by executable examples and tests that
+  fail before code changes and pass after behavior is implemented.
+tactic_refs:
+  - acceptance-test-first
+  - tdd-red-green-refactor
+  - zombies-tdd
+enforcement: required
+scope: >
+  Applies to feature behavior, bug fixes, and refactors where observable
+  behavior or invariants can be validated through tests.
+procedures:
+  - Start from an acceptance or behavior test that captures expected outcomes.
+  - Implement in small red-green-refactor cycles.
+  - Keep tests readable and diagnostic so failures explain intent drift quickly.
+integrity_rules:
+  - New behavior must not be introduced without corresponding test coverage.
+  - Failing tests are not bypassed to claim completion.
+validation_criteria:
+  - New or changed behavior has tests that fail pre-change and pass post-change.
+  - Review confirms tests cover primary and critical edge behavior.

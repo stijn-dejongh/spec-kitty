@@ -1,9 +1,7 @@
-"""Agent configuration (canonical location in core).
+"""Deprecated: Use specify_cli.core.tool_config instead.
 
-This module manages agent configuration that is set during `spec-kitty init`
-and used by commands and migrations to select agents for implementation and review.
-
-The configuration is stored in .kittify/config.yaml under the `agents` key.
+This module is a compatibility shim that re-exports the renamed symbols from
+tool_config.py. It will be removed in a future release.
 """
 
 from __future__ import annotations
@@ -17,6 +15,7 @@ from ruamel.yaml import YAML
 from specify_cli.core.config import AI_CHOICES
 
 import logging
+import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -211,10 +210,15 @@ def get_configured_agents(repo_root: Path) -> list[str]:
     config = load_agent_config(repo_root)
     return config.available
 
+warnings.warn(
+    "specify_cli.core.agent_config is deprecated. Use specify_cli.core.tool_config instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 __all__ = [
-    "AgentSelectionConfig",
     "AgentConfig",
+    "AgentSelectionConfig",
     "AgentConfigError",
     "load_agent_config",
     "save_agent_config",

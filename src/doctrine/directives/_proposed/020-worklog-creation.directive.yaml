@@ -1,0 +1,21 @@
+schema_version: "1.0"
+id: DIRECTIVE_020
+title: Worklog Creation Standard
+intent: >
+  Significant implementation and research activity should be captured in
+  structured work logs to preserve traceability, context, and decision history.
+tactic_refs: []
+enforcement: advisory
+scope: >
+  Applies to feature implementation, troubleshooting, and research sessions that
+  produce technical decisions or non-trivial changes.
+procedures:
+  - Create a worklog entry when starting a substantial implementation or investigation session.
+  - Record decisions, blockers, and outcomes at meaningful checkpoints.
+  - Link entries to the active feature, work package, or task identifier.
+integrity_rules:
+  - Worklog entries should include timestamps and clear activity context.
+  - Decision notes should be attributable to a concrete code or planning action.
+validation_criteria:
+  - Completed work packages include at least one traceable worklog reference.
+  - Worklog entries are understandable without requiring private context.

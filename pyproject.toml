@@ -108,7 +108,7 @@ build-backend = "hatchling.build"
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/specify_cli"]
+packages = ["src/specify_cli", "src/doctrine"]
 exclude = [
     "src/specify_cli/**/tests/**",
 ]
@@ -173,6 +173,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ARG", "S"]  # Relax unused-arg and security rules in tests
+"src/doctrine/agent_profiles/**" = ["E501"]  # Long lines inherent in kebab-case Pydantic field aliases
 
 [tool.ruff.lint.mccabe]
 max-complexity = 15  # Match SonarCloud S3776 threshold
@@ -266,6 +267,7 @@ paths_to_mutate = [
     "src/specify_cli/glossary/",
     "src/specify_cli/merge/",
     "src/specify_cli/core/",
+    "src/doctrine",
 ]
 tests_dir = ["tests/unit/", "tests/specify_cli/"]
 pytest_add_cli_args = [

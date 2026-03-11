@@ -1,0 +1,22 @@
+schema_version: "1.0"
+id: DIRECTIVE_006
+title: Coding Standards Adherence
+intent: >
+  Code changes must follow established repository standards for style,
+  structure, naming, and maintainability so contributors can reason about
+  behavior consistently.
+tactic_refs: []
+enforcement: required
+scope: >
+  Applies to all source code, tests, and scripts introduced or modified in
+  feature work packages.
+procedures:
+  - Apply project linters, formatters, and type-check gates before handoff.
+  - Follow naming and module organization conventions used by adjacent code.
+  - Resolve style or type debt introduced by the change before review.
+integrity_rules:
+  - Standards are enforced in changed code, not deferred to future cleanup.
+  - Exceptions require explicit rationale and reviewer acknowledgment.
+validation_criteria:
+  - CI checks for formatting, linting, and typing pass for the affected scope.
+  - Reviewers confirm the change follows local project conventions.

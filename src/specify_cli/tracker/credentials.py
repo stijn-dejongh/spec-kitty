@@ -10,6 +10,9 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
 
+from types import ModuleType
+
+toml: ModuleType | None
 try:  # pragma: no cover - optional dependency
     import toml  # type: ignore
 except Exception:  # pragma: no cover - optional dependency
