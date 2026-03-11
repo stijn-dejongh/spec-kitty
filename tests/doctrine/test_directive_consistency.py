@@ -19,6 +19,13 @@ DIRECTIVE_SCHEMA = REPO_ROOT / "src" / "doctrine" / "schemas" / "directive.schem
 _DIRECTIVES_DIRS = [_DOCTRINE_ROOT / "directives" / d for d in ("shipped", "_proposed")]
 _TACTICS_DIRS = [_DOCTRINE_ROOT / "tactics" / d for d in ("shipped", "_proposed")]
 _PARADIGMS_DIRS = [_DOCTRINE_ROOT / "paradigms" / d for d in ("shipped", "_proposed")]
+_STYLEGUIDES_DIRS = [_DOCTRINE_ROOT / "styleguides" / d for d in ("shipped", "_proposed")]
+_TOOLGUIDES_DIRS = [_DOCTRINE_ROOT / "toolguides" / d for d in ("shipped", "_proposed")]
+_PROCEDURES_DIRS = [_DOCTRINE_ROOT / "procedures" / d for d in ("shipped", "_proposed")]
+_TEMPLATES_DIR = _DOCTRINE_ROOT / "templates"
+_SHIPPED_DIRECTIVES_DIR = _DOCTRINE_ROOT / "directives" / "shipped"
+_SHIPPED_TACTICS_DIR = _DOCTRINE_ROOT / "tactics" / "shipped"
+_SHIPPED_PARADIGMS_DIR = _DOCTRINE_ROOT / "paradigms" / "shipped"
 
 
 def _multi_glob(dirs: list[Path], pattern: str) -> list[Path]:
@@ -83,9 +90,26 @@ def test_directive_files_validate_against_schema() -> None:
         assert not errors, f"Schema validation failed for {path.name}: {[e.message for e in errors]}"
 
 
+def test_lenient_adherence_directives_declare_explicit_allowances() -> None:
+    directive_files = _multi_glob(_DIRECTIVES_DIRS, "*.directive.yaml")
+    assert directive_files, "No directive files found"
+
+    violations: list[str] = []
+    for path in directive_files:
+        data = _load_yaml(path)
+        if str(data.get("enforcement", "")).strip() != "lenient-adherence":
+            continue
+
+        allowances = data.get("explicit_allowances", []) or []
+        if not isinstance(allowances, list) or not any(str(item).strip() for item in allowances):
+            violations.append(f"{path.name}: lenient-adherence requires non-empty explicit_allowances")
+
+    assert not violations, "Lenient-adherence directive allowance violations:\n" + "\n".join(violations)
+
+
 def _shipped_tactic_ids() -> set[str]:
     tactic_ids: set[str] = set()
-    for path in _multi_glob(_TACTICS_DIRS, "*.tactic.yaml"):
+    for path in _multi_glob([_SHIPPED_TACTICS_DIR], "*.tactic.yaml"):
         data = _load_yaml(path)
         tactic_id = str(data.get("id", "")).strip()
         if tactic_id:
@@ -114,6 +138,79 @@ def test_all_directive_tactic_refs_resolve_to_shipped_tactics() -> None:
                 unresolved.append(f"{path.name}: unresolved tactic_ref '{ref_str}'")
 
     assert not unresolved, "Unresolved tactic references:\n" + "\n".join(unresolved)
+
+
+def _shipped_styleguide_ids() -> set[str]:
+    ids: set[str] = set()
+    for pattern in ("*.styleguide.yaml", "**/*.styleguide.yaml"):
+        for path in _multi_glob(_STYLEGUIDES_DIRS, pattern):
+            data = _load_yaml(path)
+            styleguide_id = str(data.get("id", "")).strip()
+            if styleguide_id:
+                ids.add(styleguide_id)
+    return ids
+
+
+def _shipped_toolguide_ids() -> set[str]:
+    ids: set[str] = set()
+    for path in _multi_glob(_TOOLGUIDES_DIRS, "*.toolguide.yaml"):
+        data = _load_yaml(path)
+        toolguide_id = str(data.get("id", "")).strip()
+        if toolguide_id:
+            ids.add(toolguide_id)
+    return ids
+
+
+def _shipped_procedure_ids() -> set[str]:
+    ids: set[str] = set()
+    for path in _multi_glob(_PROCEDURES_DIRS, "*.procedure.yaml"):
+        data = _load_yaml(path)
+        procedure_id = str(data.get("id", "")).strip()
+        if procedure_id:
+            ids.add(procedure_id)
+    return ids
+
+
+def _shipped_template_ids() -> set[str]:
+    ids: set[str] = set()
+    if not _TEMPLATES_DIR.exists():
+        return ids
+
+    for path in _TEMPLATES_DIR.glob("**/*.md"):
+        if path.is_dir():
+            continue
+        if any(part.startswith(".") for part in path.relative_to(_TEMPLATES_DIR).parts):
+            continue
+        ids.add(path.stem.replace(".", "-"))
+    return ids
+
+
+def test_directive_references_resolve_to_known_artifacts() -> None:
+    """All directive references must point to shipped doctrine artifacts."""
+    id_map = {
+        "directive": _shipped_directive_ids(),
+        "tactic": _shipped_tactic_ids(),
+        "styleguide": _shipped_styleguide_ids(),
+        "toolguide": _shipped_toolguide_ids(),
+        "paradigm": _shipped_paradigm_ids(),
+        "procedure": _shipped_procedure_ids(),
+        "template": _shipped_template_ids(),
+    }
+
+    unresolved: list[str] = []
+    for path in _multi_glob(_DIRECTIVES_DIRS, "*.directive.yaml"):
+        data = _load_yaml(path)
+        directive_id = str(data.get("id", "")).strip() or path.name
+        for ref in data.get("references", []) or []:
+            ref_type = str(ref.get("type", "")).strip()
+            ref_id = str(ref.get("id", "")).strip()
+            if ref_type not in id_map:
+                unresolved.append(f"{directive_id}: unknown reference type '{ref_type}'")
+                continue
+            if ref_id and ref_id not in id_map[ref_type]:
+                unresolved.append(f"{directive_id}: unresolved {ref_type} reference '{ref_id}'")
+
+    assert not unresolved, "Unresolved directive references:\n" + "\n".join(unresolved)
 
 
 # ---------------------------------------------------------------------------
@@ -210,7 +307,7 @@ def test_tactic_references_resolve_to_known_tactics() -> None:
 
 def _shipped_directive_ids() -> set[str]:
     ids: set[str] = set()
-    for path in _multi_glob(_DIRECTIVES_DIRS, "*.directive.yaml"):
+    for path in _multi_glob([_SHIPPED_DIRECTIVES_DIR], "*.directive.yaml"):
         data = _load_yaml(path)
         d_id = str(data.get("id", "")).strip()
         if d_id:
@@ -220,7 +317,7 @@ def _shipped_directive_ids() -> set[str]:
 
 def _shipped_paradigm_ids() -> set[str]:
     ids: set[str] = set()
-    for path in _multi_glob(_PARADIGMS_DIRS, "*.paradigm.yaml"):
+    for path in _multi_glob([_SHIPPED_PARADIGMS_DIR], "*.paradigm.yaml"):
         data = _load_yaml(path)
         p_id = str(data.get("id", "")).strip()
         if p_id:

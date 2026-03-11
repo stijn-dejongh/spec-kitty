@@ -38,3 +38,13 @@ class TestValidateDirective:
         }
         errors = validate_directive(minimal)
         assert errors == []
+
+    def test_lenient_adherence_requires_explicit_allowances(self, sample_directive_data: dict) -> None:
+        sample_directive_data["enforcement"] = "lenient-adherence"
+        errors = validate_directive(sample_directive_data)
+        assert any("explicit_allowances" in e for e in errors)
+
+    def test_invalid_reference_type_fails(self, enriched_directive_data: dict) -> None:
+        enriched_directive_data["references"] = [{"type": "unknown", "id": "whatever"}]
+        errors = validate_directive(enriched_directive_data)
+        assert any("references" in e for e in errors)

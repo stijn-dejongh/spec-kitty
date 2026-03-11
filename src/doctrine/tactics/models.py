@@ -18,6 +18,7 @@ class ReferenceType(StrEnum):
     DIRECTIVE = "directive"
     TOOLGUIDE = "toolguide"
     PROCEDURE = "procedure"
+    TEMPLATE = "template"
 
 
 class TacticReference(BaseModel):

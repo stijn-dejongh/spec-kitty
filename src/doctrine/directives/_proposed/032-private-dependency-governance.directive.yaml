@@ -1,0 +1,23 @@
+schema_version: "1.0"
+id: DIRECTIVE_032
+title: Private Dependency Governance
+intent: >
+  Private shared dependencies must be integrated through deterministic,
+  automation-safe workflows so cross-repository contracts stay explicit and
+  reproducible.
+enforcement: required
+scope: >
+  Applies to private or access-controlled dependencies, especially shared
+  libraries consumed across repositories during development, CI, and release
+  preparation.
+procedures:
+  - Pin private shared dependencies to deterministic revisions or exact released versions rather than floating references.
+  - Do not commit local path overrides or other workstation-specific dependency sources.
+  - Keep CI authentication, release packaging, and cross-repository integration steps aligned with the dependency's current visibility and distribution model.
+  - Treat private dependency updates as explicit integration events that require validation before merge.
+integrity_rules:
+  - Committed dependency sources must not rely on a contributor's local filesystem.
+  - Private dependency access must remain compatible with unattended CI and release workflows.
+validation_criteria:
+  - The committed dependency source is deterministic and portable across environments.
+  - Reviewers can trace how the private dependency is authenticated, validated, and prepared for release distribution.

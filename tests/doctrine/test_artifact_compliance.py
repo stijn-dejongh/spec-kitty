@@ -80,7 +80,7 @@ def test_artifact_files_validate_schema(artifact_type: str, artifact_path: Path)
 def tactic_ids() -> set[str]:
     ids: set[str] = set()
     for tactic_path in _multi_glob(
-        [DOCTRINE_DIR / "tactics" / d for d in _BUNDLED_SUBDIRS], "*.tactic.yaml"
+        [DOCTRINE_DIR / "tactics" / "shipped"], "*.tactic.yaml"
     ):
         tactic = _load_yaml(tactic_path)
         tactic_id = tactic.get("id")

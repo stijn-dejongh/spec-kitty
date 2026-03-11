@@ -1,0 +1,15 @@
+schema_version: "1.0"
+id: cross-repo-pin-and-verify
+name: Cross-Repo Pin and Verify
+purpose: Update a shared dependency across repositories through explicit pinning and validation instead of relying on floating upstream state.
+steps:
+  - title: Land the dependency-side change first
+    description: Complete the change in the producer repository and capture the exact released version or commit that consumers must target.
+  - title: Update the consumer pin explicitly
+    description: Change the consumer repository to point at the exact dependency revision or version being integrated.
+  - title: Refresh lockfiles and install state
+    description: Regenerate dependency lock state or installation metadata so the committed environment matches the updated pin.
+  - title: Run cross-repository validation
+    description: Execute the relevant tests or integration checks that prove the new dependency pin works in the consumer repository.
+  - title: Record the integration point
+    description: Ensure the resulting review trail makes the dependency revision and validation outcome easy to discover later.

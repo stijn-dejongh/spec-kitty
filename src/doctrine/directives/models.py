@@ -2,19 +2,41 @@
 Directive domain model and value objects.
 
 Defines the Directive Pydantic model with all governance fields including
-optional enrichment fields (scope, procedures, integrity_rules, validation_criteria).
+optional enrichment fields and typed cross-artifact references.
 """
 
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class Enforcement(StrEnum):
     """Enforcement level for a directive."""
 
     REQUIRED = "required"
+    LENIENT_ADHERENCE = "lenient-adherence"
     ADVISORY = "advisory"
+
+
+class DirectiveReferenceType(StrEnum):
+    """Type of doctrine artifact being referenced by a directive."""
+
+    DIRECTIVE = "directive"
+    TACTIC = "tactic"
+    STYLEGUIDE = "styleguide"
+    TOOLGUIDE = "toolguide"
+    PARADIGM = "paradigm"
+    PROCEDURE = "procedure"
+    TEMPLATE = "template"
+
+
+class DirectiveReference(BaseModel):
+    """Cross-artifact reference within a directive."""
+
+    model_config = ConfigDict(frozen=True)
+
+    type: DirectiveReferenceType
+    id: str
 
 
 class Directive(BaseModel):
@@ -44,3 +66,18 @@ class Directive(BaseModel):
     validation_criteria: list[str] = Field(
         default_factory=list, alias="validation_criteria"
     )
+    explicit_allowances: list[str] = Field(
+        default_factory=list, alias="explicit_allowances"
+    )
+    references: list[DirectiveReference] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_lenient_adherence(self) -> "Directive":
+        if (
+            self.enforcement == Enforcement.LENIENT_ADHERENCE
+            and not self.explicit_allowances
+        ):
+            raise ValueError(
+                "explicit_allowances must be provided when enforcement is lenient-adherence"
+            )
+        return self

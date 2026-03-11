@@ -2,13 +2,22 @@ schema_version: "1.0"
 id: premortem-risk-identification
 name: Premortem Risk Identification
 purpose: Proactively surface failure modes for a plan or decision by deliberately attempting to sabotage it before execution.
+references:
+  - name: Risk Identification Assessment Template
+    type: template
+    id: risk-identification-assessment-template
+    when: When recording the premortem assessment as a durable artifact.
 steps:
   - title: Shift to destructive mindset
-    description: Mentally distance from emotional investment; ask "How can I ensure this fails spectacularly?" Set a 15–20 minute timer for brainstorming.
+    description: >-
+      Mentally distance from emotional investment; ask "How can I ensure this
+      fails spectacularly?" If you are recording the assessment, start from the
+      referenced risk identification assessment template. Set a 15–20 minute
+      timer for brainstorming.
   - title: Generate failure list
     description: Write every way the plan could fail, aiming for 10–30 items. Include technical, social, resource, and timing factors without self-censoring.
     examples:
-      - "Database migration corrupts production data; team lacks expertise in chosen technology; timeline slips past next release window."
+      - "Capture failures such as: Database migration corrupts production data; team lacks expertise in chosen technology; timeline slips past next release window."
   - title: Rate impact and likelihood
     description: Assign each failure scenario High/Medium/Low for both impact and likelihood.
   - title: Prioritise top risks

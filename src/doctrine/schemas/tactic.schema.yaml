@@ -51,6 +51,7 @@ definitions:
           - directive
           - toolguide
           - procedure
+          - template
         description: Doctrine artifact type being referenced.
       id:
         type: string

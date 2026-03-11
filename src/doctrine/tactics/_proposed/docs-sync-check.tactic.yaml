@@ -1,0 +1,15 @@
+schema_version: "1.0"
+id: docs-sync-check
+name: Docs Sync Check
+purpose: Verify that changed behavior still matches the repository's user-facing and contributor-facing documentation before handoff.
+steps:
+  - title: Identify impacted docs
+    description: Determine which help text, README sections, ADRs, migration notes, API docs, or contributor instructions are affected by the change.
+  - title: Check behavior-document alignment
+    description: Compare the new behavior and interfaces against the current docs to find stale instructions, missing caveats, or outdated examples.
+  - title: Update the durable record
+    description: Apply the needed doc changes in the long-lived location where future contributors will look for the rule or workflow.
+  - title: Re-read critical instructions
+    description: Verify that examples, commands, and migration notes still reflect the code and governance state after the update.
+  - title: Call out intentional deferrals
+    description: If a lower-priority doc update is intentionally deferred, record that follow-up explicitly instead of leaving the drift implicit.

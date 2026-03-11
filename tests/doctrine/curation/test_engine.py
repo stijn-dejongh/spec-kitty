@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from doctrine.curation.engine import (
     depth_first_order,
     discover_proposed,

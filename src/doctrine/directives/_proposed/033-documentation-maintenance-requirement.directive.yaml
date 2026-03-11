@@ -1,0 +1,22 @@
+schema_version: "1.0"
+id: DIRECTIVE_033
+title: Documentation Maintenance Requirement
+intent: >
+  Documentation that shapes usage, migration, review, or architecture
+  understanding must be kept in sync with behavior so contributors and HiC
+  decisions are not guided by stale instructions.
+enforcement: required
+scope: >
+  Applies to CLI help text, public API documentation, migration notes,
+  architecture decision records, contributor guidance, and other maintained
+  docs changed or invalidated by implementation work.
+procedures:
+  - Update the affected documentation when behavior, interfaces, governance, or workflow expectations change.
+  - Record breaking changes and migration-impacting changes in the relevant change or migration documentation.
+  - Capture durable architectural or governance decisions in the appropriate long-lived record instead of leaving them only in code or review comments.
+integrity_rules:
+  - Documentation that materially affects implementation, operation, or adoption must not be knowingly left stale.
+  - Important behavioral changes must remain discoverable outside the code diff itself.
+validation_criteria:
+  - Reviewers can point to the updated documentation covering the changed behavior.
+  - Architecture or migration-impacting changes leave a durable documentation trail.

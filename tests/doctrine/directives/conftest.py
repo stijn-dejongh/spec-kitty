@@ -32,11 +32,17 @@ def enriched_directive_data() -> dict:
             "Write acceptance test first",
             "Run test suite",
         ],
+        "references": [
+            {"type": "toolguide", "id": "git-agent-commit-signing"},
+        ],
         "integrity_rules": [
             "Tests must pass before merge",
         ],
         "validation_criteria": [
             "Coverage above 90%",
+        ],
+        "explicit_allowances": [
+            "Documented exceptions may expand scope when they reduce implementation risk.",
         ],
     }
 

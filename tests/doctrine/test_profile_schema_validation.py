@@ -51,23 +51,23 @@ def invalid_bad_priority(fixtures_dir: Path) -> dict:
 
 class TestSchemaValidation:
     """Test YAML schema validation."""
-    
+
     def test_valid_complete_profile_passes(self, valid_profile: dict):
         """Valid complete profile passes validation."""
         errors = validate_agent_profile_yaml(valid_profile)
         assert errors == [], f"Expected no errors, got: {errors}"
-    
+
     def test_minimal_profile_passes(self, minimal_profile: dict):
         """Minimal valid profile (only required fields) passes."""
         errors = validate_agent_profile_yaml(minimal_profile)
         assert errors == [], f"Expected no errors, got: {errors}"
-    
+
     def test_missing_purpose_fails(self, invalid_missing_purpose: dict):
         """Missing required 'purpose' field fails validation."""
         errors = validate_agent_profile_yaml(invalid_missing_purpose)
         assert len(errors) > 0
         assert any("purpose" in err.lower() for err in errors)
-    
+
     def test_missing_specialization_fails(self):
         """Missing required 'specialization' section fails."""
         data = {
@@ -79,7 +79,7 @@ class TestSchemaValidation:
         errors = validate_agent_profile_yaml(data)
         assert len(errors) > 0
         assert any("specialization" in err.lower() for err in errors)
-    
+
     def test_missing_profile_id_fails(self):
         """Missing required 'profile-id' fails."""
         data = {
@@ -90,7 +90,7 @@ class TestSchemaValidation:
         errors = validate_agent_profile_yaml(data)
         assert len(errors) > 0
         assert any("profile-id" in err.lower() for err in errors)
-    
+
     def test_missing_name_fails(self):
         """Missing required 'name' fails."""
         data = {
@@ -101,7 +101,7 @@ class TestSchemaValidation:
         errors = validate_agent_profile_yaml(data)
         assert len(errors) > 0
         assert any("name" in err.lower() for err in errors)
-    
+
     def test_missing_primary_focus_fails(self):
         """Missing required 'specialization.primary-focus' fails."""
         data = {
@@ -113,13 +113,13 @@ class TestSchemaValidation:
         errors = validate_agent_profile_yaml(data)
         assert len(errors) > 0
         assert any("primary-focus" in err.lower() for err in errors)
-    
+
     def test_routing_priority_out_of_range_high_fails(self, invalid_bad_priority: dict):
         """routing-priority > 100 fails."""
         errors = validate_agent_profile_yaml(invalid_bad_priority)
         assert len(errors) > 0
         assert any("routing-priority" in err.lower() or "150" in err for err in errors)
-    
+
     def test_routing_priority_negative_fails(self):
         """routing-priority < 0 fails."""
         data = {
@@ -132,7 +132,7 @@ class TestSchemaValidation:
         errors = validate_agent_profile_yaml(data)
         assert len(errors) > 0
         assert any("routing-priority" in err.lower() or "-1" in err for err in errors)
-    
+
     def test_unknown_top_level_field_fails(self):
         """Unknown top-level field fails (additionalProperties: false)."""
         data = {
@@ -145,7 +145,7 @@ class TestSchemaValidation:
         errors = validate_agent_profile_yaml(data)
         assert len(errors) > 0
         assert any("unknown-field" in err.lower() or "additional" in err.lower() for err in errors)
-    
+
     def test_max_concurrent_tasks_zero_fails(self):
         """max-concurrent-tasks: 0 fails (minimum 1)."""
         data = {
@@ -157,7 +157,7 @@ class TestSchemaValidation:
         }
         errors = validate_agent_profile_yaml(data)
         assert len(errors) > 0
-    
+
     def test_invalid_profile_id_pattern_fails(self):
         """profile-id not matching pattern fails."""
         data = {
@@ -172,19 +172,19 @@ class TestSchemaValidation:
 
 class TestFileTypeDetection:
     """Test file type detection utility (T018b)."""
-    
+
     def test_agent_profile_file_detected(self):
         """File with .agent.yaml extension is detected."""
         assert is_agent_profile_file(Path("test.agent.yaml")) is True
-    
+
     def test_regular_yaml_not_detected(self):
         """Regular .yaml file is not detected."""
         assert is_agent_profile_file(Path("test.yaml")) is False
-    
+
     def test_non_yaml_not_detected(self):
         """Non-YAML file is not detected."""
         assert is_agent_profile_file(Path("test.md")) is False
-    
+
     def test_dotfile_agent_yaml_detected(self):
         """Hidden .agent.yaml file is detected."""
         assert is_agent_profile_file(Path(".hidden.agent.yaml")) is True

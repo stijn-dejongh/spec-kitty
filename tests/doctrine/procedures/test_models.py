@@ -3,7 +3,12 @@
 import pytest
 from pydantic import ValidationError
 
-from doctrine.procedures.models import ActorRole, Procedure, ProcedureStep
+from doctrine.procedures.models import (
+    ActorRole,
+    Procedure,
+    ProcedureReferenceType,
+    ProcedureStep,
+)
 
 
 class TestProcedureModel:
@@ -21,8 +26,9 @@ class TestProcedureModel:
         assert p.id == "feature-merge-ceremony"
         assert p.steps[0].on_failure is not None
         assert p.steps[0].tactic_refs == ["adr-drafting-workflow"]
-        assert len(p.references) == 1
-        assert p.references[0].type == "directive"
+        assert len(p.references) == 2
+        assert p.references[0].type == ProcedureReferenceType.DIRECTIVE
+        assert p.references[1].type == ProcedureReferenceType.TEMPLATE
 
     def test_step_actor_defaults_to_agent(self) -> None:
         step = ProcedureStep(title="test step")

@@ -29,6 +29,7 @@ definitions:
           - toolguide
           - paradigm
           - procedure
+          - template
       id:
         type: string
         minLength: 1

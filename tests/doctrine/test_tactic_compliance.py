@@ -19,8 +19,10 @@ from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
 DOCTRINE_DIR = Path(__file__).resolve().parents[2] / "src" / "doctrine"
 SCHEMA_DIR = DOCTRINE_DIR / "schemas"
 
-_BUNDLED_SUBDIRS = ("shipped", "_proposed")
-_TACTICS_DIRS = [DOCTRINE_DIR / "tactics" / d for d in _BUNDLED_SUBDIRS]
+_SOURCE_SUBDIRS = ("shipped", "_proposed")
+_SHIPPED_SUBDIRS = ("shipped",)
+_TACTICS_DIRS = [DOCTRINE_DIR / "tactics" / d for d in _SOURCE_SUBDIRS]
+_TEMPLATES_DIR = DOCTRINE_DIR / "templates"
 
 # Artifact type → (directory, glob pattern) for resolution scanning.
 # Styleguides use recursive glob because subdirectories are allowed.
@@ -28,11 +30,12 @@ ARTIFACT_DIRS: dict[str, list[tuple[Path, str]]] = {
     "tactic": [(d, "*.tactic.yaml") for d in _TACTICS_DIRS],
     "styleguide": [
         (DOCTRINE_DIR / "styleguides" / d, pat)
-        for d in _BUNDLED_SUBDIRS
+        for d in _SHIPPED_SUBDIRS
         for pat in ("*.styleguide.yaml", "**/*.styleguide.yaml")
     ],
-    "directive": [(DOCTRINE_DIR / "directives" / d, "*.directive.yaml") for d in _BUNDLED_SUBDIRS],
-    "toolguide": [(DOCTRINE_DIR / "toolguides" / d, "*.toolguide.yaml") for d in _BUNDLED_SUBDIRS],
+    "directive": [(DOCTRINE_DIR / "directives" / d, "*.directive.yaml") for d in _SHIPPED_SUBDIRS],
+    "toolguide": [(DOCTRINE_DIR / "toolguides" / d, "*.toolguide.yaml") for d in _SHIPPED_SUBDIRS],
+    "template": [(_TEMPLATES_DIR, "**/*.md")],
 }
 
 # Threshold: if a reference appears in this fraction of steps or more,
@@ -72,6 +75,14 @@ def _build_artifact_index() -> dict[str, set[str]]:
         ids: set[str] = set()
         for directory, pattern in locations:
             if not directory.exists():
+                continue
+            if artifact_type == "template":
+                for path in directory.glob(pattern):
+                    if path.is_dir():
+                        continue
+                    if any(part.startswith(".") for part in path.relative_to(directory).parts):
+                        continue
+                    ids.add(path.stem.replace(".", "-"))
                 continue
             for path in directory.glob(pattern):
                 try:

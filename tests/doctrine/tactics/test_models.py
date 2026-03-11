@@ -17,6 +17,8 @@ class TestReferenceType:
         assert ReferenceType.TACTIC == "tactic"
         assert ReferenceType.DIRECTIVE == "directive"
         assert ReferenceType.TOOLGUIDE == "toolguide"
+        assert ReferenceType.PROCEDURE == "procedure"
+        assert ReferenceType.TEMPLATE == "template"
 
 
 class TestTacticReference:

@@ -50,8 +50,10 @@ class TestDirectiveSchemaCompatibility:
         parsed = Directive.model_validate(minimal)
         assert parsed.scope is None
         assert parsed.procedures == []
+        assert parsed.references == []
         assert parsed.integrity_rules == []
         assert parsed.validation_criteria == []
+        assert parsed.explicit_allowances == []
 
     def test_enriched_directive_fields_validate_and_parse(self) -> None:
         """Enriched format with all optional fields must validate and parse."""
@@ -66,11 +68,17 @@ class TestDirectiveSchemaCompatibility:
                 "Write schema compatibility tests",
                 "Run directive test suite",
             ],
+            "references": [
+                {"type": "toolguide", "id": "git-agent-commit-signing"},
+            ],
             "integrity_rules": [
                 "Existing minimal directives must remain valid.",
             ],
             "validation_criteria": [
                 "Schema validation passes for minimal and enriched directives.",
+            ],
+            "explicit_allowances": [
+                "Documented exceptions may expand scope when explicitly justified.",
             ],
         }
 
@@ -78,8 +86,10 @@ class TestDirectiveSchemaCompatibility:
         parsed = Directive.model_validate(enriched)
         assert parsed.scope == enriched["scope"]
         assert parsed.procedures == enriched["procedures"]
+        assert [ref.model_dump() for ref in parsed.references] == enriched["references"]
         assert parsed.integrity_rules == enriched["integrity_rules"]
         assert parsed.validation_criteria == enriched["validation_criteria"]
+        assert parsed.explicit_allowances == enriched["explicit_allowances"]
 
     def test_partial_enrichment_still_validates(self) -> None:
         """A directive may include only some optional enrichment fields."""
@@ -99,6 +109,36 @@ class TestDirectiveSchemaCompatibility:
         assert parsed.procedures == ["Run selected checks"]
         assert parsed.integrity_rules == []
         assert parsed.validation_criteria == []
+        assert parsed.explicit_allowances == []
+
+    def test_lenient_adherence_requires_allowances(self) -> None:
+        invalid = {
+            "schema_version": "1.0",
+            "id": "DIRECTIVE_TEST_LENIENT",
+            "title": "Lenient Directive",
+            "intent": "Validate lenient-adherence allowance requirements.",
+            "enforcement": "lenient-adherence",
+        }
+
+        errors = validate_directive(invalid)
+        assert any("explicit_allowances" in error for error in errors)
+
+    def test_lenient_adherence_with_allowances_validates_and_parses(self) -> None:
+        valid = {
+            "schema_version": "1.0",
+            "id": "DIRECTIVE_TEST_LENIENT_VALID",
+            "title": "Lenient Directive",
+            "intent": "Validate lenient-adherence support.",
+            "enforcement": "lenient-adherence",
+            "explicit_allowances": [
+                "Allow proportional preparatory cleanup when it stabilizes the baseline."
+            ],
+        }
+
+        assert validate_directive(valid) == []
+        parsed = Directive.model_validate(valid)
+        assert parsed.enforcement.value == "lenient-adherence"
+        assert parsed.explicit_allowances == valid["explicit_allowances"]
 
     def test_invalid_enrichment_field_type_fails(self) -> None:
         """Invalid types in enrichment fields are rejected."""
@@ -124,8 +164,14 @@ class TestDirectiveSchemaCompatibility:
             "enforcement": "required",
             "scope": "Applies to repository tests.",
             "procedures": ["Save directive", "Reload directive"],
+            "references": [
+                {"type": "toolguide", "id": "git-agent-commit-signing"},
+            ],
             "integrity_rules": ["No enrichment fields are lost."],
             "validation_criteria": ["Loaded directive matches saved values."],
+            "explicit_allowances": [
+                "Allow bounded preparatory cleanup when it reduces validation noise."
+            ],
         }
         directive = Directive.model_validate(directive_data)
 
@@ -142,6 +188,7 @@ class TestDirectiveSchemaCompatibility:
         assert reloaded is not None
         assert reloaded.scope == directive.scope
         assert reloaded.procedures == directive.procedures
+        assert reloaded.references == directive.references
         assert reloaded.integrity_rules == directive.integrity_rules
         assert reloaded.validation_criteria == directive.validation_criteria
-
+        assert reloaded.explicit_allowances == directive.explicit_allowances

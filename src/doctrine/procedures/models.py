@@ -22,12 +22,24 @@ class ActorRole(StrEnum):
     SYSTEM = "system"
 
 
+class ProcedureReferenceType(StrEnum):
+    """Type of doctrine artifact being referenced by a procedure."""
+
+    DIRECTIVE = "directive"
+    TACTIC = "tactic"
+    STYLEGUIDE = "styleguide"
+    TOOLGUIDE = "toolguide"
+    PARADIGM = "paradigm"
+    PROCEDURE = "procedure"
+    TEMPLATE = "template"
+
+
 class ProcedureReference(BaseModel):
     """Cross-artifact reference within a procedure."""
 
     model_config = ConfigDict(frozen=True)
 
-    type: str
+    type: ProcedureReferenceType
     id: str
 
 

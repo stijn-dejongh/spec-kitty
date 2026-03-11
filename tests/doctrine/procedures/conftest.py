@@ -63,6 +63,7 @@ def enriched_procedure_data() -> dict:
         ],
         "references": [
             {"type": "directive", "id": "DIRECTIVE_001"},
+            {"type": "template", "id": "risk-identification-assessment-template"},
         ],
     }
 

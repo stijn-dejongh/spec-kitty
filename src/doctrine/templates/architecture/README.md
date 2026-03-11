@@ -7,6 +7,7 @@ Templates for architectural design documents used during planning and design pha
 | Template | Purpose |
 |----------|---------|
 | `adr-template.md` | Architectural Decision Record with context, decision drivers, options, and pros/cons |
+| `risk-identification-assessment-template.md` | Premortem risk assessment scaffold for high-impact plans and decisions |
 | `stakeholder-persona-template.md` | Stakeholder persona definition for user-centered design |
 | `user-journey-template.md` | User journey mapping for experience design |
 

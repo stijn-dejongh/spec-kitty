@@ -1,0 +1,39 @@
+schema_version: "1.0"
+id: maintain-private-git-dependency
+name: Maintain Private Git Dependency
+purpose: >
+  Update and validate a private shared dependency through a deterministic,
+  CI-safe workflow that preserves explicit integration points.
+entry_condition: >
+  A repository depends on a private shared library that must be updated,
+  validated, or prepared for release without using workstation-specific
+  overrides.
+exit_condition: >
+  The dependency is pinned deterministically, validated in the consumer
+  repository, and accompanied by any required CI or release adjustments.
+steps:
+  - title: Complete the producer-side change
+    description: Land the required change in the private dependency repository and capture the exact revision or release to integrate.
+    actor: agent
+  - title: Update the consumer dependency declaration
+    description: Replace any old pin with the exact new revision or released version in the consumer repository.
+    actor: agent
+  - title: Refresh lock and install state
+    description: Regenerate lockfiles or equivalent dependency state so the committed environment matches the new pin.
+    actor: agent
+  - title: Validate consumer behavior
+    description: Run the relevant test and integration checks proving that the consumer works against the new dependency revision.
+    actor: agent
+  - title: Check CI and release assumptions
+    description: Confirm that authentication, vendoring, or release packaging steps still match the dependency's current distribution model.
+    actor: human
+  - title: Record the integration result
+    description: Ensure the review trail captures the dependency revision, validation result, and any remaining follow-up.
+    actor: agent
+references:
+  - type: directive
+    id: DIRECTIVE_003
+  - type: directive
+    id: DIRECTIVE_010
+  - type: directive
+    id: DIRECTIVE_018

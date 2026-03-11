@@ -1,0 +1,27 @@
+schema_version: "1.0"
+id: documentation-maintenance
+title: Documentation Maintenance Styleguide
+scope: docs
+principles:
+  - Update docs where readers will actually look for the changed behavior instead of scattering partial notes across unrelated files.
+  - Prefer durable records such as CLI help, README sections, ADRs, and migration docs over transient explanations in commits or review comments.
+  - Keep examples executable and specific enough that a contributor can follow them without reconstructing hidden assumptions.
+  - When behavior changes by branch, version line, or product track, make the scope distinction explicit in the docs.
+  - Breaking changes and migration-impacting behavior must state what changed, who is affected, and where to go next.
+anti_patterns:
+  - name: Drift by Omission
+    description: Changing behavior without updating the maintained documentation that explains it.
+    bad_example: "Rename a CLI flag but leave the README and command help on the old flag."
+    good_example: "Rename the flag and update the CLI help, README example, and migration note in the same change."
+  - name: Review-Only Rationale
+    description: Leaving architectural or workflow rationale only in pull-request discussion instead of a durable document.
+    bad_example: "Explain the new branch-routing rule only in a review comment."
+    good_example: "Record the branch-routing rationale in the ADR or governance doc that future contributors will read."
+  - name: Scope-Blind Documentation
+    description: Documenting a branch-specific or version-specific rule as if it applies universally.
+    bad_example: "State that every branch uses the private event library."
+    good_example: "State clearly that the private event library applies to 2.x work and not to the maintenance line."
+quality_test: "A contributor who did not watch the implementation should still understand the new behavior, scope, and required follow-up from the updated docs alone."
+references:
+  - ".kittify/constitution/constitution.md"
+  - "architecture/2.x/adr/"

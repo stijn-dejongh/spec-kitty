@@ -9,6 +9,7 @@ from doctrine.procedures.models import (
     ActorRole,
     Procedure,
     ProcedureReference,
+    ProcedureReferenceType,
     ProcedureStep,
 )
 from doctrine.procedures.repository import ProcedureRepository
@@ -17,6 +18,7 @@ __all__ = [
     "ActorRole",
     "Procedure",
     "ProcedureReference",
+    "ProcedureReferenceType",
     "ProcedureRepository",
     "ProcedureStep",
 ]
