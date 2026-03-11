@@ -8,12 +8,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from specify_cli.constitution.catalog import load_doctrine_catalog
+from specify_cli.constitution.reference_resolver import resolve_references_transitively
 from specify_cli.constitution.sync import (
     load_directives_config,
     load_governance_config,
 )
+
+if TYPE_CHECKING:
+    from doctrine.service import DoctrineService
+    from specify_cli.constitution.interview import ConstitutionInterview
 
 DEFAULT_TEMPLATE_SET = "software-dev-default"
 DEFAULT_TOOL_REGISTRY: frozenset[str] = frozenset({"spec-kitty", "git", "python", "pytest", "ruff", "mypy", "poetry"})
@@ -37,6 +43,12 @@ class GovernanceResolution:
     tools: list[str]
     template_set: str
     metadata: dict[str, str]
+    tactics: list[str] = field(default_factory=list)
+    styleguides: list[str] = field(default_factory=list)
+    toolguides: list[str] = field(default_factory=list)
+    procedures: list[str] = field(default_factory=list)
+    profile_id: str | None = None
+    role: str | None = None
     diagnostics: list[str] = field(default_factory=list)
 
 
@@ -124,6 +136,10 @@ def resolve_governance(
     return GovernanceResolution(
         paradigms=selected_paradigms,
         directives=resolved_directives,
+        tactics=[],
+        styleguides=[],
+        toolguides=[],
+        procedures=[],
         tools=resolved_tools,
         template_set=template_set,
         metadata={
@@ -131,6 +147,50 @@ def resolve_governance(
             "directives_source": directives_source,
             "template_set_source": template_set_source,
         },
+        diagnostics=diagnostics,
+    )
+
+
+def resolve_governance_for_profile(
+    profile_id: str,
+    role: str | None,
+    doctrine_service: DoctrineService,
+    interview: ConstitutionInterview,
+) -> GovernanceResolution:
+    """Resolve governance selections for a specific agent profile."""
+    normalized_profile_id = profile_id.strip()
+    if not normalized_profile_id:
+        raise ValueError("Profile ID is required for profile-aware governance resolution.")
+
+    try:
+        profile = doctrine_service.agent_profiles.resolve_profile(normalized_profile_id)
+    except KeyError as exc:
+        raise ValueError(f"Agent profile '{normalized_profile_id}' not found.") from exc
+
+    profile_directives = [ref.code.strip() for ref in profile.directive_references if ref.code.strip()]
+    merged_directives = _merge_unique(profile_directives, interview.selected_directives)
+    graph = resolve_references_transitively(merged_directives, doctrine_service)
+    diagnostics = [
+        f"Unresolved reference: {artifact_type}/{artifact_id}"
+        for artifact_type, artifact_id in graph.unresolved
+    ]
+
+    return GovernanceResolution(
+        paradigms=list(interview.selected_paradigms),
+        directives=merged_directives,
+        tactics=list(graph.tactics),
+        styleguides=list(graph.styleguides),
+        toolguides=list(graph.toolguides),
+        procedures=list(graph.procedures),
+        tools=list(interview.available_tools),
+        template_set=DEFAULT_TEMPLATE_SET,
+        metadata={
+            "directives_source": "profile+interview",
+            "profile_directives_count": str(len(profile_directives)),
+            "interview_directives_count": str(len(interview.selected_directives)),
+        },
+        profile_id=profile.profile_id,
+        role=role.strip() if role and role.strip() else None,
         diagnostics=diagnostics,
     )
 
@@ -151,3 +211,12 @@ def collect_governance_diagnostics(
     except GovernanceResolutionError as exc:
         return exc.issues
     return resolution.diagnostics
+
+
+def _merge_unique(primary: list[str], secondary: list[str]) -> list[str]:
+    merged: list[str] = []
+    for value in [*primary, *secondary]:
+        item = str(value).strip()
+        if item and item not in merged:
+            merged.append(item)
+    return merged

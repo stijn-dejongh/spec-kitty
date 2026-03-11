@@ -10,5 +10,5 @@ tools:
   - opencode
   - codex
   selection:
-    preferred_implementer: claude
-    preferred_reviewer: codex
+    preferred_implementer:
+    preferred_reviewer:

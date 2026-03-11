@@ -109,3 +109,15 @@ out
 tmp/**
 !tmp/.gitkeep
 .kittify/missions/__pycache__/
+
+# FUSE temporary files (created by filesystem-in-userspace on some Linux systems)
+.fuse_hidden*
+
+# mutmut mutation testing
+mutmut.db
+mutmut-cache/
+.mutmut-cache
+mutants/
+
+pytest-of-*/
+src/doctrine/templates/.merged-software-dev/

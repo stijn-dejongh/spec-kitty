@@ -408,12 +408,16 @@ def _process_wp_file(
     title_match = re.search(r"^#\s+Work Package Prompt:\s+(.+)$", content, re.MULTILINE)
     title = title_match.group(1) if title_match else prompt_file.stem
 
+    agent_raw = frontmatter.get("agent", "")
+    # Normalize structured agent mapping (e.g. {tool: claude, model: opus, ...}) to tool string
+    agent_str = agent_raw.get("tool", "") if isinstance(agent_raw, dict) else str(agent_raw) if agent_raw else ""
+
     return {
         "id": frontmatter.get("work_package_id", prompt_file.stem),
         "title": title,
         "lane": frontmatter.get("lane", default_lane),
         "subtasks": frontmatter.get("subtasks", []),
-        "agent": frontmatter.get("agent", ""),
+        "agent": agent_str,
         "assignee": frontmatter.get("assignee", ""),
         "phase": frontmatter.get("phase", ""),
         "prompt_markdown": prompt_body.strip(),

@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
 from specify_cli.constitution.compiler import compile_constitution, write_compiled_constitution
+from specify_cli.constitution.catalog import resolve_doctrine_root
 from specify_cli.constitution.context import BOOTSTRAP_ACTIONS, build_constitution_context
 from specify_cli.constitution.hasher import is_stale
 from specify_cli.constitution.interview import (
@@ -22,8 +23,12 @@ from specify_cli.constitution.interview import (
     read_interview_answers,
     write_interview_answers,
 )
+from specify_cli.constitution.resolver import resolve_governance_for_profile
 from specify_cli.constitution.sync import sync as sync_constitution
 from specify_cli.tasks_support import TaskCliError, find_repo_root
+
+if TYPE_CHECKING:
+    from doctrine.service import DoctrineService
 
 app = typer.Typer(
     name="constitution",
@@ -57,6 +62,15 @@ def _parse_csv_option(raw: Optional[str]) -> list[str] | None:
 
 def _interview_path(repo_root: Path) -> Path:
     return repo_root / ".kittify" / "constitution" / "interview" / "answers.yaml"
+
+
+def _build_doctrine_service(repo_root: Path) -> DoctrineService:
+    from doctrine.service import DoctrineService
+
+    doctrine_root = resolve_doctrine_root()
+    project_root_candidates = [repo_root / "src" / "doctrine", repo_root / "doctrine"]
+    project_root = next((path for path in project_root_candidates if path.is_dir()), None)
+    return DoctrineService(shipped_root=doctrine_root, project_root=project_root)
 
 
 @app.command()
@@ -255,6 +269,126 @@ def generate(
     except Exception as e:
         console.print(f"[red]Unexpected error:[/red] {e}")
         raise typer.Exit(code=1)
+
+
+@app.command(name="generate-for-agent")
+def generate_for_agent(
+    agent_profile: str = typer.Option(..., "--profile", help="Agent profile ID for profile-aware compilation"),
+    role: str | None = typer.Option(None, "--role", help="Optional role override for generated governance"),
+    mission: str | None = typer.Option(None, "--mission", help="Mission key for template-set defaults"),
+    template_set: str | None = typer.Option(
+        None,
+        "--template-set",
+        help="Override doctrine template set (must exist in packaged doctrine missions)",
+    ),
+    from_interview: bool = typer.Option(
+        True, "--from-interview/--no-from-interview", help="Load interview answers if present"
+    ),
+    interview_profile: str = typer.Option(
+        "minimal",
+        "--interview-profile",
+        help="Default interview profile when no interview is available",
+    ),
+    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing constitution bundle"),
+    json_output: bool = typer.Option(False, "--json", help="Output JSON"),
+) -> None:
+    """Generate a constitution bundle resolved for a specific agent profile."""
+    try:
+        repo_root = find_repo_root()
+        constitution_dir = repo_root / ".kittify" / "constitution"
+        answers_path = _interview_path(repo_root)
+
+        interview_data = read_interview_answers(answers_path) if from_interview else None
+        if interview_data is None:
+            resolved_mission = mission or "software-dev"
+            interview_data = default_interview(
+                mission=resolved_mission,
+                profile=interview_profile.strip().lower(),
+            )
+            interview_source = "defaults"
+        else:
+            interview_source = "interview"
+
+        doctrine_service = _build_doctrine_service(repo_root)
+        resolution = resolve_governance_for_profile(
+            profile_id=agent_profile,
+            role=role,
+            doctrine_service=doctrine_service,
+            interview=interview_data,
+        )
+
+        resolved_mission = mission or interview_data.mission
+        profile_interview = apply_answer_overrides(
+            interview_data,
+            selected_directives=resolution.directives,
+            agent_profile=resolution.profile_id,
+            agent_role=resolution.role,
+        )
+
+        compiled = compile_constitution(
+            mission=resolved_mission,
+            interview=profile_interview,
+            template_set=template_set,
+            doctrine_service=doctrine_service,
+        )
+        bundle_result = write_compiled_constitution(constitution_dir, compiled, force=force)
+
+        constitution_path = constitution_dir / "constitution.md"
+        sync_result = sync_constitution(constitution_path, constitution_dir, force=True)
+        if sync_result.error:
+            raise RuntimeError(sync_result.error)
+
+        files_written = list(bundle_result.files_written)
+        for file_name in sync_result.files_written:
+            if file_name not in files_written:
+                files_written.append(file_name)
+
+        if json_output:
+            print(
+                json.dumps(
+                    {
+                        "success": True,
+                        "constitution_path": str(constitution_path.relative_to(repo_root)),
+                        "interview_source": interview_source,
+                        "mission": compiled.mission,
+                        "template_set": compiled.template_set,
+                        "agent_profile": resolution.profile_id,
+                        "role": resolution.role,
+                        "selected_directives": compiled.selected_directives,
+                        "tactics": resolution.tactics,
+                        "styleguides": resolution.styleguides,
+                        "toolguides": resolution.toolguides,
+                        "procedures": resolution.procedures,
+                        "files_written": files_written,
+                        "diagnostics": [*resolution.diagnostics, *compiled.diagnostics],
+                    },
+                    indent=2,
+                )
+            )
+            return
+
+        console.print("[green]✅ Profile-aware constitution generated and synced[/green]")
+        console.print(f"Constitution: {constitution_path.relative_to(repo_root)}")
+        console.print(f"Agent profile: {resolution.profile_id}")
+        if resolution.role:
+            console.print(f"Role: {resolution.role}")
+        console.print(f"Mission: {compiled.mission}")
+        console.print(f"Template set: {compiled.template_set}")
+        diagnostics = [*resolution.diagnostics, *compiled.diagnostics]
+        if diagnostics:
+            console.print("Diagnostics:")
+            for line in diagnostics:
+                console.print(f"  - {line}")
+        console.print("Files written:")
+        for filename in files_written:
+            console.print(f"  ✓ {filename}")
+
+    except (FileExistsError, TaskCliError, ValueError, RuntimeError) as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(code=1) from e
+    except Exception as e:
+        console.print(f"[red]Unexpected error:[/red] {e}")
+        raise typer.Exit(code=1) from e
 
 
 @app.command()

@@ -1,13 +1,17 @@
 """Tests for constitution-centric governance resolver."""
 
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 import pytest
 
+from specify_cli.constitution.interview import default_interview
 from specify_cli.constitution.resolver import (
     GovernanceResolutionError,
     collect_governance_diagnostics,
     resolve_governance,
+    resolve_governance_for_profile,
 )
 
 
@@ -155,3 +159,69 @@ doctrine:
     diagnostics = collect_governance_diagnostics(tmp_path)
     assert diagnostics
     assert any("NOT_A_DIRECTIVE" in line for line in diagnostics)
+
+
+def test_resolve_governance_for_profile_merges_profile_directives_first() -> None:
+    interview = default_interview(mission="software-dev", profile="minimal")
+    interview = default_interview(mission="software-dev", profile="minimal")
+    object.__setattr__(interview, "selected_directives", ["INTERVIEW_DIRECTIVE", "PROFILE_DIRECTIVE"])
+
+    profile = SimpleNamespace(
+        profile_id="reviewer",
+        directive_references=[
+            SimpleNamespace(code="PROFILE_DIRECTIVE"),
+            SimpleNamespace(code="PROFILE_SECOND"),
+        ],
+    )
+    doctrine_service = MagicMock()
+    doctrine_service.agent_profiles.resolve_profile.return_value = profile
+    doctrine_service.directives.get.side_effect = lambda artifact_id: SimpleNamespace(
+        id=artifact_id,
+        title=artifact_id,
+        intent=f"Intent for {artifact_id}",
+        tactic_refs=[],
+    )
+    doctrine_service.tactics.get.return_value = None
+    doctrine_service.styleguides.get.return_value = None
+    doctrine_service.toolguides.get.return_value = None
+    doctrine_service.procedures.get.return_value = None
+
+    resolution = resolve_governance_for_profile("reviewer", "reviewer", doctrine_service, interview)
+
+    assert resolution.profile_id == "reviewer"
+    assert resolution.role == "reviewer"
+    assert resolution.directives == ["PROFILE_DIRECTIVE", "PROFILE_SECOND", "INTERVIEW_DIRECTIVE"]
+    assert resolution.metadata["directives_source"] == "profile+interview"
+
+
+def test_resolve_governance_for_profile_missing_profile_raises_value_error() -> None:
+    interview = default_interview(mission="software-dev", profile="minimal")
+    doctrine_service = MagicMock()
+    doctrine_service.agent_profiles.resolve_profile.side_effect = KeyError("missing")
+
+    with pytest.raises(ValueError) as exc:
+        resolve_governance_for_profile("missing", None, doctrine_service, interview)
+
+    assert "missing" in str(exc.value)
+
+
+def test_resolve_governance_for_profile_records_unresolved_references_in_diagnostics() -> None:
+    interview = default_interview(mission="software-dev", profile="minimal")
+    object.__setattr__(interview, "selected_directives", [])
+
+    profile = SimpleNamespace(
+        profile_id="reviewer",
+        directive_references=[SimpleNamespace(code="MISSING_DIRECTIVE")],
+    )
+    doctrine_service = MagicMock()
+    doctrine_service.agent_profiles.resolve_profile.return_value = profile
+    doctrine_service.directives.get.return_value = None
+    doctrine_service.tactics.get.return_value = None
+    doctrine_service.styleguides.get.return_value = None
+    doctrine_service.toolguides.get.return_value = None
+    doctrine_service.procedures.get.return_value = None
+
+    resolution = resolve_governance_for_profile("reviewer", None, doctrine_service, interview)
+
+    assert resolution.directives == ["MISSING_DIRECTIVE"]
+    assert any("MISSING_DIRECTIVE" in line for line in resolution.diagnostics)

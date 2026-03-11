@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from specify_cli.core.paths import get_main_repo_root, locate_project_root
+from specify_cli.identity import ActorIdentity
 from specify_cli.legacy_detector import is_legacy_format
 
 # IMPORTANT: Keep in sync with scripts/tasks/task_helpers.py
@@ -282,8 +283,10 @@ class WorkPackage:
         return extract_scalar(self.frontmatter, "assignee")
 
     @property
-    def agent(self) -> Optional[str]:
-        return extract_scalar(self.frontmatter, "agent")
+    def agent(self) -> ActorIdentity | None:
+        from specify_cli.frontmatter import extract_agent_identity
+
+        return extract_agent_identity(self.frontmatter)
 
     @property
     def shell_pid(self) -> Optional[str]:
@@ -422,6 +425,7 @@ def get_lane_from_frontmatter(wp_path: Path, warn_on_missing: bool = True) -> st
 
 
 __all__ = [
+    "ActorIdentity",
     "LANES",
     "LANE_ALIASES",
     "TIMESTAMP_FORMAT",

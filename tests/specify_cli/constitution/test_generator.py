@@ -10,7 +10,7 @@ from specify_cli.constitution.generator import build_constitution_draft, write_c
 def test_build_constitution_draft_defaults() -> None:
     draft = build_constitution_draft(mission="software-dev")
     assert draft.template_set == "software-dev-default"
-    assert "TEST_FIRST" in draft.selected_directives
+    assert draft.selected_directives == ["DIRECTIVE_004", "DIRECTIVE_027"]
     assert "test-first" in draft.selected_paradigms
     assert "selected_directives" in draft.markdown
 

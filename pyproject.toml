@@ -4,7 +4,7 @@ version = "2.0.8"
 description = "Spec Kitty, a tool for Specification Driven Development (SDD) agentic projects, with kanban and git worktree isolation."
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.11"
+requires-python = ">=3.11,<4.0"
 authors = [
     { name = "Spec Kitty Contributors" },
 ]
@@ -83,6 +83,7 @@ test = [
     "pytest-cov>=4.1.0",  # Required by CI coverage flags
     "pytest-timeout>=2.2.0",  # Required by mutmut pytest_add_cli_args --timeout flag
     "diff-cover>=10.0.0",  # Enforce changed-line coverage in CI
+    "chardet>=3.0.4,<6",  # Pin chardet below 6.x to avoid requests compatibility warning
     "build>=1.0.0",  # Required for distribution tests (wheel building)
     "mutmut>=3.5.0",  # Mutation testing
 ]

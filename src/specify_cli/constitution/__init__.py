@@ -59,6 +59,7 @@ from .resolver import (
     GovernanceResolutionError,
     collect_governance_diagnostics,
     resolve_governance,
+    resolve_governance_for_profile,
 )
 
 __all__ = [
@@ -104,5 +105,6 @@ __all__ = [
     "GovernanceResolution",
     "GovernanceResolutionError",
     "resolve_governance",
+    "resolve_governance_for_profile",
     "collect_governance_diagnostics",
 ]

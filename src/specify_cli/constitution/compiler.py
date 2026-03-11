@@ -7,12 +7,16 @@ from datetime import datetime, timezone
 from io import StringIO
 from pathlib import Path
 import re
+from typing import TYPE_CHECKING
 
 from ruamel.yaml import YAML
 
 from specify_cli.constitution.catalog import DoctrineCatalog, load_doctrine_catalog, resolve_doctrine_root
 from specify_cli.constitution.interview import ConstitutionInterview
 from specify_cli.constitution.resolver import DEFAULT_TOOL_REGISTRY
+
+if TYPE_CHECKING:
+    from doctrine.service import DoctrineService
 
 
 @dataclass(frozen=True)
@@ -55,10 +59,22 @@ def compile_constitution(
     interview: ConstitutionInterview,
     template_set: str | None = None,
     doctrine_catalog: DoctrineCatalog | None = None,
+    doctrine_service: DoctrineService | None = None,
 ) -> CompiledConstitution:
-    """Compile constitution markdown, references manifest, and library docs."""
+    """Compile constitution markdown, references manifest, and library docs.
+
+    When *doctrine_service* is provided, artifact loading and transitive reference
+    resolution use the typed repository API (profile-aware path). When it is None
+    the compiler falls back to direct YAML scanning and emits a diagnostic warning.
+    """
     catalog = doctrine_catalog or load_doctrine_catalog()
     diagnostics: list[str] = []
+
+    if doctrine_service is None:
+        diagnostics.append(
+            "DoctrineService unavailable; using YAML scanning fallback. "
+            "Profile-aware compilation requires DoctrineService."
+        )
 
     template = _resolve_template_set(mission=mission, requested_template_set=template_set, catalog=catalog)
     selected_paradigms = _sanitize_catalog_selection(
@@ -89,6 +105,8 @@ def compile_constitution(
         interview=interview,
         paradigms=selected_paradigms,
         directives=selected_directives,
+        doctrine_service=doctrine_service,
+        diagnostics=diagnostics,
     )
     markdown = _render_constitution_markdown(
         mission=mission,
@@ -219,11 +237,52 @@ def _build_references(
     interview: ConstitutionInterview,
     paradigms: list[str],
     directives: list[str],
+    doctrine_service: DoctrineService | None = None,
+    diagnostics: list[str] | None = None,
 ) -> list[ConstitutionReference]:
     doctrine_root = resolve_doctrine_root()
 
     references: list[ConstitutionReference] = []
     references.append(_user_profile_reference(interview))
+
+    if doctrine_service is not None:
+        references.extend(
+            _build_references_from_service(
+                mission=mission,
+                template_set=template_set,
+                paradigms=paradigms,
+                directives=directives,
+                doctrine_root=doctrine_root,
+                doctrine_service=doctrine_service,
+                diagnostics=diagnostics if diagnostics is not None else [],
+            )
+        )
+    else:
+        references.extend(
+            _build_references_from_yaml(
+                mission=mission,
+                template_set=template_set,
+                interview=interview,
+                paradigms=paradigms,
+                directives=directives,
+                doctrine_root=doctrine_root,
+            )
+        )
+
+    return references
+
+
+def _build_references_from_yaml(
+    *,
+    mission: str,
+    template_set: str,
+    interview: ConstitutionInterview,
+    paradigms: list[str],
+    directives: list[str],
+    doctrine_root: Path,
+) -> list[ConstitutionReference]:
+    """Load references by scanning YAML files directly (fallback path)."""
+    references: list[ConstitutionReference] = []
 
     paradigm_sources = _index_yaml_assets(doctrine_root / "paradigms", "*.paradigm.yaml")
     directive_sources = _index_yaml_assets(doctrine_root / "directives", "*.directive.yaml")
@@ -263,6 +322,114 @@ def _build_references(
     return references
 
 
+def _build_references_from_service(
+    *,
+    mission: str,
+    template_set: str,
+    paradigms: list[str],
+    directives: list[str],
+    doctrine_root: Path,
+    doctrine_service: DoctrineService,
+    diagnostics: list[str],
+) -> list[ConstitutionReference]:
+    """Load references via typed repository queries and transitive resolution."""
+    from specify_cli.constitution.reference_resolver import resolve_references_transitively
+
+    references: list[ConstitutionReference] = []
+
+    # Paradigms: still loaded via YAML scanning (no typed paradigm references in graph)
+    paradigm_sources = _index_yaml_assets(doctrine_root / "paradigms", "*.paradigm.yaml")
+    for paradigm in paradigms:
+        references.append(
+            _doctrine_yaml_reference(
+                kind="paradigm",
+                raw_id=paradigm,
+                source=paradigm_sources.get(paradigm.casefold()),
+            )
+        )
+
+    # Resolve directives + transitive artifacts via DoctrineService
+    graph = resolve_references_transitively(directives, doctrine_service)
+
+    for directive_id in graph.directives:
+        directive = doctrine_service.directives.get(directive_id)
+        if directive is not None:
+            references.append(
+                _doctrine_model_reference(
+                    kind="directive",
+                    raw_id=directive.id,
+                    title=directive.title,
+                    summary=directive.intent,
+                )
+            )
+        else:
+            references.append(_doctrine_yaml_reference(kind="directive", raw_id=directive_id, source=None))
+
+    for tactic_id in graph.tactics:
+        tactic = doctrine_service.tactics.get(tactic_id)
+        if tactic is not None:
+            references.append(
+                _doctrine_model_reference(
+                    kind="tactic",
+                    raw_id=tactic.id,
+                    title=tactic.name,
+                    summary=tactic.purpose or f"Tactic: {tactic.name}",
+                )
+            )
+        else:
+            references.append(_doctrine_yaml_reference(kind="tactic", raw_id=tactic_id, source=None))
+
+    for sg_id in graph.styleguides:
+        sg = doctrine_service.styleguides.get(sg_id)
+        if sg is not None:
+            references.append(
+                _doctrine_model_reference(
+                    kind="styleguide",
+                    raw_id=sg.id,
+                    title=sg.title,
+                    summary=sg.principles[0] if sg.principles else f"Styleguide: {sg.title}",
+                )
+            )
+        else:
+            references.append(_doctrine_yaml_reference(kind="styleguide", raw_id=sg_id, source=None))
+
+    for tg_id in graph.toolguides:
+        tg = doctrine_service.toolguides.get(tg_id)
+        if tg is not None:
+            references.append(
+                _doctrine_model_reference(
+                    kind="toolguide",
+                    raw_id=tg.id,
+                    title=tg.title,
+                    summary=tg.summary,
+                )
+            )
+        else:
+            references.append(_doctrine_yaml_reference(kind="toolguide", raw_id=tg_id, source=None))
+
+    for proc_id in graph.procedures:
+        proc = doctrine_service.procedures.get(proc_id)
+        if proc is not None:
+            references.append(
+                _doctrine_model_reference(
+                    kind="procedure",
+                    raw_id=proc.id,
+                    title=proc.name,
+                    summary=proc.purpose,
+                )
+            )
+        else:
+            references.append(_doctrine_yaml_reference(kind="procedure", raw_id=proc_id, source=None))
+
+    # Record unresolved refs in diagnostics
+    for artifact_type, artifact_id in graph.unresolved:
+        diagnostics.append(f"Unresolved reference: {artifact_type}/{artifact_id}")
+
+    references.append(_template_reference(doctrine_root=doctrine_root, mission=mission, template_set=template_set))
+
+    return references
+
+
 def _index_yaml_assets(directory: Path, pattern: str) -> dict[str, dict[str, object]]:
     index: dict[str, dict[str, object]] = {}
     if not directory.is_dir():
@@ -291,6 +458,32 @@ def _load_yaml_asset(path: Path) -> dict[str, object]:
 
     data.setdefault("_source_path", str(path))
     return data
+
+
+def _doctrine_model_reference(
+    *,
+    kind: str,
+    raw_id: str,
+    title: str,
+    summary: str,
+) -> ConstitutionReference:
+    """Build a ConstitutionReference from typed repository model data."""
+    local_slug = _slugify(raw_id)
+    local_path = f"library/{kind}-{local_slug}.md"
+    content = (
+        f"# {kind.title()}: {title}\n\n"
+        f"- ID: `{raw_id}`\n"
+        f"- Summary: {summary}\n"
+    )
+    return ConstitutionReference(
+        id=f"{kind.upper()}:{raw_id}",
+        kind=kind,
+        title=title,
+        summary=summary,
+        source_path="",
+        local_path=local_path,
+        content=content,
+    )
 
 
 def _doctrine_yaml_reference(
@@ -365,6 +558,10 @@ def _user_profile_reference(interview: ConstitutionInterview) -> ConstitutionRef
     lines: list[str] = ["# User Project Profile", ""]
     lines.append(f"- Mission: `{interview.mission}`")
     lines.append(f"- Interview profile: `{interview.profile}`")
+    if interview.agent_profile:
+        lines.append(f"- Agent profile: `{interview.agent_profile}`")
+    if interview.agent_role:
+        lines.append(f"- Agent role: `{interview.agent_role}`")
     lines.append("")
     lines.append("## Interview Answers")
     lines.append("")
@@ -428,6 +625,20 @@ def _render_constitution_markdown(
             f"| `{reference.id}` | {reference.kind} | {reference.summary} | `{reference.local_path}` |"
         )
 
+    activation_lines = [f"mission: {mission}"]
+    if interview.agent_profile:
+        activation_lines.append(f"agent_profile: {interview.agent_profile}")
+    if interview.agent_role:
+        activation_lines.append(f"agent_role: {interview.agent_role}")
+    activation_lines.extend(
+        [
+            f"selected_paradigms: {_yaml_inline_list(selected_paradigms)}",
+            f"selected_directives: {_yaml_inline_list(selected_directives)}",
+            f"available_tools: {_yaml_inline_list(available_tools)}",
+            f"template_set: {template_set}",
+        ]
+    )
+
     return (
         "# Project Constitution\n\n"
         "<!-- Generated by `spec-kitty constitution generate` -->\n\n"
@@ -443,11 +654,8 @@ def _render_constitution_markdown(
         f"- Deployment constraints: {deployment}\n\n"
         "## Governance Activation\n\n"
         "```yaml\n"
-        f"mission: {mission}\n"
-        f"selected_paradigms: {_yaml_inline_list(selected_paradigms)}\n"
-        f"selected_directives: {_yaml_inline_list(selected_directives)}\n"
-        f"available_tools: {_yaml_inline_list(available_tools)}\n"
-        f"template_set: {template_set}\n"
+        + "\n".join(activation_lines)
+        + "\n"
         "```\n\n"
         "## Policy Summary\n\n"
         + "\n".join(policy_summary_lines)

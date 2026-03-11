@@ -21,14 +21,26 @@ class DoctrineCatalog:
     paradigms: frozenset[str]
     directives: frozenset[str]
     template_sets: frozenset[str]
+    tactics: frozenset[str]
+    styleguides: frozenset[str]
+    toolguides: frozenset[str]
+    procedures: frozenset[str]
+    profiles: frozenset[str]
 
 
 def load_doctrine_catalog() -> DoctrineCatalog:
     """Load doctrine catalogs from package assets with development fallbacks."""
     doctrine_root = resolve_doctrine_root()
-    paradigms = _load_yaml_id_catalog(doctrine_root / "paradigms", "*.paradigm.yaml")
-    directives = _load_yaml_id_catalog(doctrine_root / "directives", "*.directive.yaml")
+    paradigms = _load_yaml_id_catalog(doctrine_root / "paradigms", "**/*.paradigm.yaml")
+    directives = _load_yaml_id_catalog(doctrine_root / "directives", "**/*.directive.yaml")
     template_sets = _load_template_sets(doctrine_root)
+    tactics = _load_yaml_id_catalog(doctrine_root / "tactics", "**/*.tactic.yaml")
+    styleguides = _load_yaml_id_catalog(doctrine_root / "styleguides", "**/*.styleguide.yaml")
+    toolguides = _load_yaml_id_catalog(doctrine_root / "toolguides", "**/*.toolguide.yaml")
+    procedures = _load_yaml_id_catalog(doctrine_root / "procedures", "**/*.procedure.yaml")
+    profiles = _load_yaml_id_catalog(
+        doctrine_root / "agent_profiles", "**/*.agent.yaml", id_field="profile-id"
+    )
 
     if not template_sets:
         template_sets = {DEFAULT_TEMPLATE_SET}
@@ -37,6 +49,11 @@ def load_doctrine_catalog() -> DoctrineCatalog:
         paradigms=frozenset(sorted(paradigms)),
         directives=frozenset(sorted(directives)),
         template_sets=frozenset(sorted(template_sets)),
+        tactics=frozenset(sorted(tactics)),
+        styleguides=frozenset(sorted(styleguides)),
+        toolguides=frozenset(sorted(toolguides)),
+        procedures=frozenset(sorted(procedures)),
+        profiles=frozenset(sorted(profiles)),
     )
 
 
@@ -80,8 +97,17 @@ def _resolve_doctrine_root() -> Path:
     return resolve_doctrine_root()
 
 
-def _load_yaml_id_catalog(directory: Path, pattern: str) -> set[str]:
-    """Load `id` values from doctrine YAML files in a directory."""
+def _load_yaml_id_catalog(
+    directory: Path, pattern: str, *, id_field: str = "id"
+) -> set[str]:
+    """Load ID values from doctrine YAML files in a directory.
+
+    Args:
+        directory: Root directory to search.
+        pattern: Glob pattern (supports ``**`` for recursive search).
+        id_field: YAML key containing the artifact ID. Defaults to ``"id"``.
+                  Use ``"profile-id"`` for agent profile files.
+    """
     if not directory.is_dir():
         return set()
 
@@ -94,7 +120,7 @@ def _load_yaml_id_catalog(directory: Path, pattern: str) -> set[str]:
             continue
 
         if isinstance(data, dict):
-            raw_id = str(data.get("id", "")).strip()
+            raw_id = str(data.get(id_field, "")).strip()
             if raw_id:
                 ids.add(raw_id)
                 continue

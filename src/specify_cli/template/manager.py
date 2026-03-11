@@ -119,8 +119,16 @@ def copy_specify_base_from_local(repo_root: Path, project_path: Path, script_typ
 
     # Copy from .kittify/memory/ for consistency with other .kittify paths
     memory_src = repo_root / ".kittify" / "memory"
-    if memory_src.exists():
-        memory_dest = specify_root / "memory"
+    memory_dest = specify_root / "memory"
+    same_memory_tree = False
+    try:
+        same_memory_tree = memory_src.resolve(strict=False) == memory_dest.resolve(strict=False)
+    except OSError:
+        same_memory_tree = memory_src == memory_dest
+
+    if same_memory_tree:
+        memory_dest.mkdir(parents=True, exist_ok=True)
+    elif memory_src.exists():
         if memory_dest.exists():
             shutil.rmtree(memory_dest)
         shutil.copytree(memory_src, memory_dest)

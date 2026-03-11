@@ -352,10 +352,14 @@ def _find_first_planned_wp(repo_root: Path, feature_slug: str) -> Optional[str]:
 
 
 @app.command(name="implement")
-def implement(
+def implement(  # noqa: C901
     wp_id: Annotated[Optional[str], typer.Argument(help="Work package ID (e.g., WP01, wp01, WP01-slug) - auto-detects first planned if omitted")] = None,
     feature: Annotated[Optional[str], typer.Option("--feature", help="Feature slug (auto-detected if omitted)")] = None,
-    agent: Annotated[Optional[str], typer.Option("--agent", help="Agent name (required for auto-move to doing lane)")] = None,
+    agent: Annotated[Optional[str], typer.Option("--agent", help="Agent name (compound: tool:model:profile:role or legacy string)")] = None,
+    tool: Annotated[Optional[str], typer.Option("--tool", help="Agent tool name (e.g., claude, copilot)")] = None,
+    model: Annotated[Optional[str], typer.Option("--model", help="Agent model variant (e.g., claude-opus-4-6)")] = None,
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Agent governance profile ID")] = None,
+    role: Annotated[Optional[str], typer.Option("--role", help="Agent role (e.g., implementer, reviewer)")] = None,
     base: Annotated[Optional[str], typer.Option("--base", help="Base WP to branch from (e.g., WP01) - creates worktree if provided")] = None,
 ) -> None:
     """Display work package prompt with implementation instructions.
@@ -463,8 +467,11 @@ def implement(
         needs_agent_assignment = current_agent is None or str(current_agent).strip() == ""
 
         if current_lane != "doing" or needs_agent_assignment:
-            # Require --agent parameter to track who is working
-            if not agent:
+            # Require --agent or --tool parameter to track who is working
+            from specify_cli.identity import parse_agent_identity
+
+            parsed_identity = parse_agent_identity(agent=agent, tool=tool, model=model, profile=profile, role=role)
+            if not parsed_identity:
                 if current_lane == "doing" and not needs_agent_assignment:
                     # Already in doing with an agent; allow prompt display
                     pass
@@ -477,6 +484,8 @@ def implement(
                     print("This tracks WHO is working on the WP (prevents abandoned tasks).")
                     raise typer.Exit(1)
 
+            agent_display = str(parsed_identity)  # tool name for display/history
+
             from datetime import datetime, timezone
             import os
 
@@ -487,15 +496,15 @@ def implement(
             updated_front = wp.frontmatter
             if current_lane != "doing":
                 updated_front = set_scalar(updated_front, "lane", "doing")
-            updated_front = set_scalar(updated_front, "agent", agent)
+            updated_front = set_scalar(updated_front, "agent", agent_display)
             updated_front = set_scalar(updated_front, "shell_pid", shell_pid)
 
             # Build history entry
             timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             if current_lane != "doing":
-                history_entry = f"- {timestamp} – {agent} – shell_pid={shell_pid} – lane=doing – Started implementation via workflow command"
+                history_entry = f"- {timestamp} – {agent_display} – shell_pid={shell_pid} – lane=doing – Started implementation via workflow command"  # noqa: E501
             else:
-                history_entry = f"- {timestamp} – {agent} – shell_pid={shell_pid} – lane=doing – Assigned agent via workflow command"
+                history_entry = f"- {timestamp} – {agent_display} – shell_pid={shell_pid} – lane=doing – Assigned agent via workflow command"  # noqa: E501
 
             # Add history entry to body
             updated_body = append_activity_log(wp.body, history_entry)
@@ -509,7 +518,7 @@ def implement(
             commit_success = safe_commit(
                 repo_path=main_repo_root,
                 files_to_commit=[actual_wp_path],
-                commit_message=f"chore: Start {normalized_wp_id} implementation [{agent}]",
+                commit_message=f"chore: Start {normalized_wp_id} implementation [{agent_display}]",
                 allow_empty=True,  # OK if already in this state
             )
             if not commit_success:
@@ -519,7 +528,7 @@ def implement(
                 )
                 raise typer.Exit(1)
 
-            print(f"✓ Claimed {normalized_wp_id} (agent: {agent}, PID: {shell_pid}, target: {target_branch})")
+            print(f"✓ Claimed {normalized_wp_id} (agent: {agent_display}, PID: {shell_pid}, target: {target_branch})")
 
             # Dossier sync (fire-and-forget)
             try:
@@ -884,10 +893,14 @@ def _find_first_for_review_wp(repo_root: Path, feature_slug: str) -> Optional[st
 
 
 @app.command(name="review")
-def review(
+def review(  # noqa: C901
     wp_id: Annotated[Optional[str], typer.Argument(help="Work package ID (e.g., WP01) - auto-detects first for_review if omitted")] = None,
     feature: Annotated[Optional[str], typer.Option("--feature", help="Feature slug (auto-detected if omitted)")] = None,
-    agent: Annotated[Optional[str], typer.Option("--agent", help="Agent name (required for auto-move to doing lane)")] = None,
+    agent: Annotated[Optional[str], typer.Option("--agent", help="Agent name (compound: tool:model:profile:role or legacy string)")] = None,
+    tool: Annotated[Optional[str], typer.Option("--tool", help="Agent tool name (e.g., claude, copilot)")] = None,
+    model: Annotated[Optional[str], typer.Option("--model", help="Agent model variant (e.g., claude-opus-4-6)")] = None,
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Agent governance profile ID")] = None,
+    role: Annotated[Optional[str], typer.Option("--role", help="Agent role (e.g., implementer, reviewer)")] = None,
 ) -> None:
     """Display work package prompt with review instructions.
 
@@ -938,8 +951,11 @@ def review(
             raise typer.Exit(1)
 
         if current_lane != "doing":
-            # Require --agent parameter to track who is reviewing
-            if not agent:
+            # Require --agent or --tool parameter to track who is reviewing
+            from specify_cli.identity import parse_agent_identity
+
+            parsed_identity = parse_agent_identity(agent=agent, tool=tool, model=model, profile=profile, role=role)
+            if not parsed_identity:
                 print("Error: --agent parameter required when starting review.")
                 print(f"  Usage: spec-kitty agent workflow review {normalized_wp_id} --agent <your-name>")
                 print("  Example: spec-kitty agent workflow review WP01 --agent claude")
@@ -947,6 +963,8 @@ def review(
                 print("If you're using a generated agent command file, --agent is already included.")
                 print("This tracks WHO is reviewing the WP (prevents abandoned reviews).")
                 raise typer.Exit(1)
+
+            agent_display = str(parsed_identity)  # tool name for display/history
 
             from datetime import datetime, timezone
             import os
@@ -974,7 +992,7 @@ def review(
                     feature_slug=feature_slug,
                     wp_id=normalized_wp_id,
                     to_lane=current_canonical,
-                    actor=agent,
+                    actor=parsed_identity,
                     force=True,
                     reason="sync from frontmatter before workflow review claim",
                     workspace_context=f"workflow-review:{main_repo_root}",
@@ -987,7 +1005,7 @@ def review(
                 feature_slug=feature_slug,
                 wp_id=normalized_wp_id,
                 to_lane="in_progress",
-                actor=agent,
+                actor=parsed_identity,
                 force=True,  # review claim is always allowed
                 reason="Started review via workflow command",
                 review_ref="workflow-review-claim",
@@ -999,12 +1017,12 @@ def review(
             wp_content = wp.path.read_text(encoding="utf-8-sig")
             updated_front, updated_body, updated_padding = split_frontmatter(wp_content)
             updated_front = set_scalar(updated_front, "lane", "doing")
-            updated_front = set_scalar(updated_front, "agent", agent)
+            updated_front = set_scalar(updated_front, "agent", agent_display)
             updated_front = set_scalar(updated_front, "shell_pid", shell_pid)
 
             # Build history entry
             timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-            history_entry = f"- {timestamp} – {agent} – shell_pid={shell_pid} – lane=doing – Started review via workflow command"
+            history_entry = f"- {timestamp} – {agent_display} – shell_pid={shell_pid} – lane=doing – Started review via workflow command"  # noqa: E501
 
             # Add history entry to body
             updated_body = append_activity_log(updated_body, history_entry)
@@ -1019,7 +1037,7 @@ def review(
             commit_success = safe_commit(
                 repo_path=main_repo_root,
                 files_to_commit=[actual_wp_path] + status_artifacts,
-                commit_message=f"chore: Start {normalized_wp_id} review [{agent}]",
+                commit_message=f"chore: Start {normalized_wp_id} review [{agent_display}]",
                 allow_empty=True,  # OK if already in this state
             )
             if not commit_success:
@@ -1029,7 +1047,7 @@ def review(
                 )
                 raise typer.Exit(1)
 
-            print(f"✓ Claimed {normalized_wp_id} for review (agent: {agent}, PID: {shell_pid}, target: {target_branch})")
+            print(f"✓ Claimed {normalized_wp_id} for review (agent: {agent_display}, PID: {shell_pid}, target: {target_branch})")  # noqa: E501
 
             # Reload to get updated content
             wp = locate_work_package(repo_root, feature_slug, normalized_wp_id)

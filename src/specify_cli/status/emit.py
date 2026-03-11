@@ -36,6 +36,7 @@ from .models import (
     VerificationResult,
 )
 from .transitions import resolve_lane_alias, validate_transition
+from specify_cli.identity import ActorIdentity
 from . import store as _store
 from . import reducer as _reducer
 
@@ -164,7 +165,7 @@ def emit_status_transition(
     feature_slug: str,
     wp_id: str,
     to_lane: str,
-    actor: str,
+    actor: str | ActorIdentity,
     *,
     force: bool = False,
     reason: str | None = None,
@@ -255,6 +256,9 @@ def emit_status_transition(
         raise TransitionError(error_msg)
 
     # Step 4: Create StatusEvent with ULID event_id
+    actor_identity: ActorIdentity = (
+        ActorIdentity.from_legacy(actor) if isinstance(actor, str) else actor
+    )
     event = StatusEvent(
         event_id=_generate_ulid(),
         feature_slug=feature_slug,
@@ -262,7 +266,7 @@ def emit_status_transition(
         from_lane=Lane(from_lane),
         to_lane=Lane(resolved_lane),
         at=_now_utc(),
-        actor=actor,
+        actor=actor_identity,
         force=force,
         execution_mode=execution_mode,
         reason=reason,
@@ -340,7 +344,7 @@ def _saas_fan_out(
             wp_id=event.wp_id,
             from_lane=str(event.from_lane),
             to_lane=str(event.to_lane),
-            actor=event.actor,
+            actor=event.actor.to_compact(),
             feature_slug=feature_slug,
             policy_metadata=policy_metadata,
         )

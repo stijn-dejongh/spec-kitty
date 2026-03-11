@@ -811,7 +811,11 @@ def move_task(
     task_id: Annotated[str, typer.Argument(help="Task ID (e.g., WP01)")],
     to: Annotated[str, typer.Option("--to", help="Target lane (planned/doing/for_review/approved/done)")],
     feature: Annotated[Optional[str], typer.Option("--feature", help="Feature slug (auto-detected if omitted)")] = None,
-    agent: Annotated[Optional[str], typer.Option("--agent", help="Agent name")] = None,
+    agent: Annotated[Optional[str], typer.Option("--agent", help="Agent name (compound: tool:model:profile:role)")] = None,
+    tool: Annotated[Optional[str], typer.Option("--tool", help="Agent tool name (e.g., claude, copilot)")] = None,
+    model: Annotated[Optional[str], typer.Option("--model", help="Agent model variant (e.g., claude-opus-4-6)")] = None,
+    profile: Annotated[Optional[str], typer.Option("--profile", help="Agent governance profile ID")] = None,
+    role: Annotated[Optional[str], typer.Option("--role", help="Agent role (e.g., implementer, reviewer)")] = None,
     assignee: Annotated[Optional[str], typer.Option("--assignee", help="Assignee name (sets assignee when moving to doing)")] = None,
     shell_pid: Annotated[Optional[str], typer.Option("--shell-pid", help="Shell PID")] = None,
     note: Annotated[Optional[str], typer.Option("--note", help="History note")] = None,
@@ -1031,8 +1035,11 @@ def move_task(
             if force:
                 emit_review_ref = "force-override"
 
-        # Map --agent to actor; default to "user" if not provided
-        actor = agent or "user"
+        # Map --agent/--tool/--model/--profile/--role to actor; default to "user" if not provided
+        from specify_cli.identity import parse_agent_identity
+
+        parsed_identity = parse_agent_identity(agent=agent, tool=tool, model=model, profile=profile, role=role)
+        actor = parsed_identity if parsed_identity is not None else "user"
 
         # Build reason for emit (used by force transitions and some guards)
         emit_reason = note_text if note_text else None

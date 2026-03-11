@@ -135,7 +135,7 @@ def _check_idempotency(feature_dir: Path) -> str:
 
     # Layer 2: Check for non-migration actors (live events)
     for event in events:
-        if not event.actor.startswith("migration"):
+        if not event.actor.tool.startswith("migration"):
             return "live_events"
 
     # Layer 3: All events have migration actors

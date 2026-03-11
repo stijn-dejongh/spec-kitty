@@ -184,6 +184,38 @@ def test_generate_command_force_overwrites(tmp_path: Path) -> None:
         assert data["references_count"] >= 1
 
 
+def test_generate_for_agent_command_success(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    constitution_dir = repo_root / ".kittify" / "constitution"
+    constitution_dir.mkdir(parents=True)
+
+    with patch("specify_cli.cli.commands.constitution.find_repo_root") as mock_find_root:
+        mock_find_root.return_value = repo_root
+
+        result = runner.invoke(app, ["generate-for-agent", "--profile", "reviewer", "--json"])
+
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert data["success"] is True
+        assert data["agent_profile"] == "reviewer"
+        assert "selected_directives" in data
+        assert (repo_root / ".kittify" / "constitution" / "constitution.md").exists()
+
+
+def test_generate_for_agent_command_missing_profile_fails(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    constitution_dir = repo_root / ".kittify" / "constitution"
+    constitution_dir.mkdir(parents=True)
+
+    with patch("specify_cli.cli.commands.constitution.find_repo_root") as mock_find_root:
+        mock_find_root.return_value = repo_root
+
+        result = runner.invoke(app, ["generate-for-agent", "--profile", "missing-profile"])
+
+        assert result.exit_code == 1
+        assert "missing-profile" in result.stdout
+
+
 def test_context_bootstrap_then_compact(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     repo_root.mkdir()

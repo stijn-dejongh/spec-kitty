@@ -208,6 +208,10 @@ agents:
 - N/A (files only) (023-documentation-sprint-agent-management-cleanup)
 - Python 3.11+ + typer, rich, ruamel.yaml, requests, pytest, mypy (047-namespace-aware-artifact-body-sync)
 - SQLite (existing `OfflineQueue` DB file, new sibling table) (047-namespace-aware-artifact-body-sync)
+- Python 3.11+ + pydantic>=2.0, ruamel.yaml>=0.18.0, jsonschema>=4.0 (existing doctrine package deps) (046-doctrine-artifact-domain-models)
+- Filesystem (YAML files in `src/doctrine/` subpackages) (046-doctrine-artifact-domain-models)
+- Python 3.11+ + typer, rich, ruamel.yaml, pydantic (doctrine models) (048-structured-agent-identity-and-constitution-profile-integration)
+- Filesystem only — JSONL event log, YAML frontmatter, YAML doctrine assets (048-structured-agent-identity-and-constitution-profile-integration)
 ## Project Structure
 ```
 architecture/           # Architectural design decisions and technical specifications
@@ -257,6 +261,8 @@ Python 3.11+ (existing spec-kitty codebase): Follow standard conventions
 - For **1.x** work, the reference branch is `main`.
 
 ## Recent Changes
+- 048-structured-agent-identity-and-constitution-profile-integration: Added Python 3.11+ + typer, rich, ruamel.yaml, pydantic (doctrine models)
+- 046-doctrine-artifact-domain-models: Added Python 3.11+ + pydantic>=2.0, ruamel.yaml>=0.18.0, jsonschema>=4.0 (existing doctrine package deps)
 - 047-namespace-aware-artifact-body-sync: Added Python 3.11+ + typer, rich, ruamel.yaml, requests, pytest, mypy
 - 023-documentation-sprint-agent-management-cleanup: Added Markdown (documentation only) + None (pure documentation)
 - 015-first-class-jujutsu-vcs-integration: Adding VCS abstraction layer (Protocol-based), jj as first-class citizen alongside git, new vcs/ subpackage

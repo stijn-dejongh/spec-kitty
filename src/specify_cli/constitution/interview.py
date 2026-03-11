@@ -51,6 +51,19 @@ QUESTION_PROMPTS: dict[str, str] = {
     "exception_policy": "How should exceptions to the constitution be handled?",
 }
 
+_DEFAULT_MISSION_PARADIGMS: dict[str, tuple[str, ...]] = {
+    "software-dev": ("domain-driven-design", "test-first"),
+}
+
+_DEFAULT_MISSION_DIRECTIVES: dict[str, tuple[str, ...]] = {
+    # Prefer doctrine-backed test-first defaults for software delivery rather than
+    # selecting the entire directive catalog.
+    "software-dev": ("DIRECTIVE_004", "DIRECTIVE_027"),
+}
+
+
+_UNSET = object()
+
 
 @dataclass(frozen=True)
 class ConstitutionInterview:
@@ -62,6 +75,8 @@ class ConstitutionInterview:
     selected_paradigms: list[str]
     selected_directives: list[str]
     available_tools: list[str]
+    agent_profile: str | None = None
+    agent_role: str | None = None
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -72,6 +87,8 @@ class ConstitutionInterview:
             "selected_paradigms": list(self.selected_paradigms),
             "selected_directives": list(self.selected_directives),
             "available_tools": list(self.available_tools),
+            "agent_profile": self.agent_profile,
+            "agent_role": self.agent_role,
         }
 
     @classmethod
@@ -92,6 +109,8 @@ class ConstitutionInterview:
             selected_paradigms=_normalize_list(data.get("selected_paradigms")),
             selected_directives=_normalize_list(data.get("selected_directives")),
             available_tools=_normalize_list(data.get("available_tools")),
+            agent_profile=_normalize_optional_string(data.get("agent_profile")),
+            agent_role=_normalize_optional_string(data.get("agent_role")),
         )
 
 
@@ -121,12 +140,23 @@ def default_interview(
     if profile == "minimal":
         answers = {key: answers[key] for key in MINIMAL_QUESTION_ORDER}
 
+    default_paradigms = _resolve_default_selection(
+        mission=mission,
+        configured=_DEFAULT_MISSION_PARADIGMS,
+        available=catalog.paradigms,
+    )
+    default_directives = _resolve_default_selection(
+        mission=mission,
+        configured=_DEFAULT_MISSION_DIRECTIVES,
+        available=catalog.directives,
+    )
+
     return ConstitutionInterview(
         mission=mission,
         profile=profile,
         answers=answers,
-        selected_paradigms=sorted(catalog.paradigms),
-        selected_directives=sorted(catalog.directives),
+        selected_paradigms=default_paradigms or sorted(catalog.paradigms),
+        selected_directives=default_directives or sorted(catalog.directives),
         available_tools=sorted(DEFAULT_TOOL_REGISTRY),
     )
 
@@ -164,6 +194,8 @@ def apply_answer_overrides(
     selected_paradigms: Iterable[str] | None = None,
     selected_directives: Iterable[str] | None = None,
     available_tools: Iterable[str] | None = None,
+    agent_profile: str | None | object = _UNSET,
+    agent_role: str | None | object = _UNSET,
 ) -> ConstitutionInterview:
     """Return an updated interview with selected fields overridden."""
     merged_answers = dict(interview.answers)
@@ -189,6 +221,8 @@ def apply_answer_overrides(
             available_tools,
             fallback=interview.available_tools,
         ),
+        agent_profile=interview.agent_profile if agent_profile is _UNSET else _normalize_optional_string(agent_profile),
+        agent_role=interview.agent_role if agent_role is _UNSET else _normalize_optional_string(agent_role),
     )
 
 
@@ -214,3 +248,23 @@ def _normalize_list(raw: object) -> list[str]:
 def _normalize_csv(raw: str) -> list[str]:
     parts = [part.strip() for part in raw.split(",")]
     return [part for part in parts if part]
+
+
+def _normalize_optional_string(raw: object) -> str | None:
+    if raw is None:
+        return None
+    value = str(raw).strip()
+    return value or None
+
+
+def _resolve_default_selection(
+    *,
+    mission: str,
+    configured: dict[str, tuple[str, ...]],
+    available: frozenset[str],
+) -> list[str]:
+    selected: list[str] = []
+    for candidate in configured.get(mission, ()):
+        if candidate in available and candidate not in selected:
+            selected.append(candidate)
+    return selected
