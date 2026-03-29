@@ -81,6 +81,9 @@ def fake_package_assets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path
         "doctrine.missions.MissionTemplateRepository.default",
         staticmethod(lambda: MissionTemplateRepository(missions)),
     )
+    # Also set SPEC_KITTY_TEMPLATE_ROOT so get_package_asset_root() resolves
+    # to the same fake root (used by execute_migration and other callers).
+    monkeypatch.setenv("SPEC_KITTY_TEMPLATE_ROOT", str(missions))
     return missions
 
 # ---------------------------------------------------------------------------
