@@ -578,7 +578,7 @@ class TestAcceptMission:
 
         assert result.exit_code == 1
         data = json.loads(result.output.splitlines()[0])
-        assert data["error_code"] == "FEATURE_NOT_READY"
+        assert data["error_code"] == "MISSION_NOT_READY"
         assert "WP02" in data["data"]["incomplete_wps"]
 
 # ── merge-mission ─────────────────────────────────────────────────
