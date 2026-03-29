@@ -58,6 +58,11 @@ spec-kitty agent workflow implement $ARGUMENTS --agent <your-name>
 
 </details>
 
+> **Explicit slash-command argument from the caller**: `$ARGUMENTS` above is forwarded directly from
+> the slash-command invocation (e.g., `/spec-kitty.implement WP03 --base WP01`).
+> Pass it as-is to `spec-kitty agent workflow implement`; do not modify or strip it.
+> Example with explicit WP and base: `spec-kitty agent workflow implement --wp-id WP03 --base WP01 --agent <your-name>`
+
 **CRITICAL**: You MUST provide `--agent <your-name>` to track who is implementing!
 
 If no WP ID is provided, it will automatically find the first work package with `lane: "planned"` and move it to "doing" for you.
