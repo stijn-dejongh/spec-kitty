@@ -61,7 +61,13 @@ spec-kitty agent workflow implement $ARGUMENTS --agent <your-name>
 > **Explicit slash-command argument from the caller**: `$ARGUMENTS` above is forwarded directly from
 > the slash-command invocation (e.g., `/spec-kitty.implement WP03 --base WP01`).
 > Pass it as-is to `spec-kitty agent workflow implement`; do not modify or strip it.
-> Example with explicit WP and base: `spec-kitty agent workflow implement --wp-id WP03 --base WP01 --agent <your-name>`
+> Example with explicit WP, base and agent-profile args:
+> `spec-kitty agent workflow implement --wp-id WP03 --base WP01 --agent <your-name> --profile <profile-id> --role <role> --model <model>`
+>
+> **Agent-profile arguments** (from agent-profile implementation):
+> - `--profile <profile-id>`: Use a specific agent profile (e.g., `implementer`, `architect`). Overrides the `agent_profile` field in WP frontmatter.
+> - `--role <role>`: Set the agent's role for this WP (e.g., `implementer`, `reviewer`).
+> - `--model <model>`: Specify the AI model to use for this WP.
 
 **CRITICAL**: You MUST provide `--agent <your-name>` to track who is implementing!
 
