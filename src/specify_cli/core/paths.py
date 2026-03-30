@@ -50,7 +50,7 @@ def locate_project_root(start: Path | None = None) -> Path | None:
         >>> assert (root / ".kittify").exists()
 
         >>> # From worktree - returns MAIN repo, not worktree
-        >>> root = locate_project_root(Path(".worktrees/my-feature"))
+        >>> root = locate_project_root(Path(".worktrees/my-mission"))
         >>> assert ".worktrees" not in str(root)
     """
     # Tier 1: Check environment variable (allows override for CI/CD)
@@ -115,7 +115,7 @@ def is_worktree_context(path: Path) -> bool:
         True if path is within any git worktree, False otherwise
 
     Examples:
-        >>> is_worktree_context(Path("/repo/.worktrees/feature-001"))
+        >>> is_worktree_context(Path("/repo/.worktrees/mission-001"))
         True
         >>> is_worktree_context(Path("/repo/kitty-specs"))
         False
@@ -168,7 +168,7 @@ def resolve_with_context(start: Path | None = None) -> tuple[Path | None, bool]:
         >>> assert in_worktree is False
 
         >>> # From worktree
-        >>> root, in_worktree = resolve_with_context(Path(".worktrees/my-feature"))
+        >>> root, in_worktree = resolve_with_context(Path(".worktrees/my-mission"))
         >>> assert in_worktree is True
     """
     current = (start or Path.cwd()).resolve()
@@ -216,7 +216,7 @@ def get_main_repo_root(current_path: Path) -> Path:
         Path('/repo')
 
         >>> # From worktree - returns main repo
-        >>> get_main_repo_root(Path("/repo/.worktrees/feature-001"))
+        >>> get_main_repo_root(Path("/repo/.worktrees/mission-001"))
         Path('/repo')
     """
     git_file = current_path / ".git"
@@ -240,8 +240,8 @@ def get_main_repo_root(current_path: Path) -> Path:
     return current_path.resolve()
 
 
-def get_feature_target_branch(repo_root: Path, feature_slug: str) -> str:
-    """Get target branch for a feature by reading meta.json directly.
+def get_mission_target_branch(repo_root: Path, mission_slug: str) -> str:
+    """Get target branch for a mission by reading meta.json directly.
 
     Reads the ``target_branch`` field from ``kitty-specs/<slug>/meta.json``.
     Falls back to the primary branch (usually ``main``) if the file is missing
@@ -249,7 +249,7 @@ def get_feature_target_branch(repo_root: Path, feature_slug: str) -> str:
 
     Args:
         repo_root: Repository root path (may be worktree — resolved to main).
-        feature_slug: Feature slug (e.g., "025-cli-event-log-integration").
+        mission_slug: Mission slug (e.g., "025-cli-event-log-integration").
 
     Returns:
         Target branch name (e.g., ``"main"`` or ``"2.x"``).
@@ -257,7 +257,7 @@ def get_feature_target_branch(repo_root: Path, feature_slug: str) -> str:
     from specify_cli.core.git_ops import resolve_primary_branch
 
     main_root = get_main_repo_root(repo_root)
-    meta_file = main_root / "kitty-specs" / feature_slug / "meta.json"
+    meta_file = main_root / "kitty-specs" / mission_slug / "meta.json"
     fallback = resolve_primary_branch(main_root)
 
     if not meta_file.exists():
@@ -270,30 +270,30 @@ def get_feature_target_branch(repo_root: Path, feature_slug: str) -> str:
         return fallback
 
 
-def require_explicit_feature(feature: str | None, *, command_hint: str = "") -> str:
-    """Require an explicit feature slug; raise if not provided.
+def require_explicit_mission(mission: str | None, *, command_hint: str = "") -> str:
+    """Require an explicit mission slug; raise if not provided.
 
-    Replaces heuristic detection.  Every CLI command that needs a feature slug
-    must receive it via ``--feature`` (or equivalent).  No scanning, no env
+    Replaces heuristic detection.  Every CLI command that needs a mission slug
+    must receive it via ``--mission`` (or equivalent).  No scanning, no env
     var magic, no git branch guessing.
 
-    When the feature is missing, scans ``kitty-specs/`` for available features
+    When the mission is missing, scans ``kitty-specs/`` for available features
     and includes them in the error message so agents can self-correct.
 
     Args:
-        feature: The feature slug provided by the user (may be None).
+        mission: The mission slug provided by the user (may be None).
         command_hint: Name of the CLI flag to mention in the error message.
 
     Returns:
-        The feature slug (guaranteed non-empty string).
+        The mission slug (guaranteed non-empty string).
 
     Raises:
-        ValueError: If ``feature`` is None or empty.
+        ValueError: If ``mission`` is None or empty.
     """
-    if feature and feature.strip():
-        return feature.strip()
+    if mission and mission.strip():
+        return mission.strip()
 
-    flag = command_hint or "--feature <slug>"
+    flag = command_hint or "--mission <slug>"
 
     # Scan for available features to include in the error message
     available = ""
@@ -311,7 +311,7 @@ def require_explicit_feature(feature: str | None, *, command_hint: str = "") -> 
                 listing = "\n".join(f"  - {s}" for s in slugs[:15])
                 if len(slugs) > 15:
                     listing += f"\n  ... and {len(slugs) - 15} more"
-                available = f"\nAvailable features:\n{listing}\n"
+                available = f"\nAvailable missions:\n{listing}\n"
     except Exception:
         pass
 
@@ -331,10 +331,10 @@ def require_explicit_feature(feature: str | None, *, command_hint: str = "") -> 
             pass
 
     msg = (
-        f"Feature slug is required.  Provide it explicitly: {flag}\n"
+        f"Mission slug is required.  Provide it explicitly: {flag}\n"
         "No auto-detection is performed (branch scanning / env vars removed).\n"
         f"{available}"
-        f"Example:  spec-kitty ... --feature {example_slug}"
+        f"Example:  spec-kitty ... --mission {example_slug}"
     )
     raise ValueError(msg)
 
@@ -345,6 +345,6 @@ __all__ = [
     "resolve_with_context",
     "check_broken_symlink",
     "get_main_repo_root",
-    "get_feature_target_branch",
-    "require_explicit_feature",
+    "get_mission_target_branch",
+    "require_explicit_mission",
 ]

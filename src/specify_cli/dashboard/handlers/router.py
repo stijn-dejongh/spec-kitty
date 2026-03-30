@@ -5,13 +5,13 @@ from __future__ import annotations
 import urllib.parse
 
 from .api import APIHandler
-from .features import FeatureHandler
+from .missions import MissionHandler
 from .static import STATIC_URL_PREFIX, StaticHandler
 
 __all__ = ["DashboardRouter"]
 
 
-class DashboardRouter(APIHandler, FeatureHandler, StaticHandler):
+class DashboardRouter(APIHandler, MissionHandler, StaticHandler):
     """Dispatch GET/POST requests to API, feature, or static handlers."""
 
     def do_POST(self) -> None:  # noqa: N802 (BaseHTTPRequestHandler signature)

@@ -156,9 +156,9 @@ def check_target_divergence(target_branch: str, repo_root: Path) -> tuple[bool, 
         return False, None  # Non-fatal: preserve merge UX if remote checks fail
 
 
-def _wp_lane_from_feature(repo_root: Path, feature_slug: str, wp_id: str) -> str | None:
+def _wp_lane_from_mission(repo_root: Path, mission_slug: str, wp_id: str) -> str | None:
     """Read lane value for a WP prompt file from kitty-specs."""
-    tasks_dir = repo_root / KITTY_SPECS_DIR / feature_slug / "tasks"
+    tasks_dir = repo_root / KITTY_SPECS_DIR / mission_slug / "tasks"
     if not tasks_dir.exists():
         return None
 
@@ -177,7 +177,7 @@ def _wp_lane_from_feature(repo_root: Path, feature_slug: str, wp_id: str) -> str
 
 
 def run_preflight(
-    feature_slug: str,
+    mission_slug: str,
     target_branch: str,
     repo_root: Path,
     wp_workspaces: list[tuple[Path, str, str]],
@@ -185,7 +185,7 @@ def run_preflight(
     """Run all pre-flight checks before merge.
 
     Args:
-        feature_slug: Feature identifier (e.g., "017-smarter-feature-merge")
+        mission_slug: Mission identifier (e.g., "017-smarter-mission-merge")
         target_branch: Branch to merge into (e.g., "main")
         repo_root: Repository root path
         wp_workspaces: List of (worktree_path, wp_id, branch_name) tuples
@@ -196,7 +196,7 @@ def run_preflight(
     result = PreflightResult(passed=True)
 
     # Check for missing worktrees based on WP task files in kitty-specs
-    tasks_dir = repo_root / KITTY_SPECS_DIR / feature_slug / "tasks"
+    tasks_dir = repo_root / KITTY_SPECS_DIR / mission_slug / "tasks"
     if tasks_dir.exists():
         expected_wps = {
             f.stem.split("-")[0]
@@ -205,7 +205,7 @@ def run_preflight(
         discovered_wps = {wp_id for _, wp_id, _ in wp_workspaces}
         missing_wps = sorted(expected_wps - discovered_wps)
         for wp_id in missing_wps:
-            lane = _wp_lane_from_feature(repo_root, feature_slug, wp_id)
+            lane = _wp_lane_from_mission(repo_root, mission_slug, wp_id)
             if lane == "done":
                 result.warnings.append(
                     f"Skipping missing worktree check for {wp_id} (lane=done)."
@@ -213,7 +213,7 @@ def run_preflight(
                 continue
 
             result.passed = False
-            expected_path = repo_root / WORKTREES_DIR / f"{feature_slug}-{wp_id}"
+            expected_path = repo_root / WORKTREES_DIR / f"{mission_slug}-{wp_id}"
             error = (
                 f"Missing worktree for {wp_id}. "
                 f"Expected at {expected_path.name}. "
@@ -223,7 +223,7 @@ def run_preflight(
                 WPStatus(
                     wp_id=wp_id,
                     worktree_path=expected_path,
-                    branch_name=f"{feature_slug}-{wp_id}",
+                    branch_name=f"{mission_slug}-{wp_id}",
                     is_clean=False,
                     error=error,
                 )
@@ -256,10 +256,10 @@ def run_preflight_from_context(
     """Run pre-flight checks using a MissionContext as the source of truth.
 
     This is the preferred entry-point when a MissionContext is available,
-    since it avoids heuristic feature detection.
+    since it avoids heuristic mission detection.
 
     Args:
-        ctx: Bound MissionContext providing feature_slug, target_branch,
+        ctx: Bound MissionContext providing mission_slug, target_branch,
              and authoritative_repo.
         wp_workspaces: List of (worktree_path, wp_id, branch_name) tuples.
 
@@ -267,7 +267,7 @@ def run_preflight_from_context(
         PreflightResult with all check outcomes.
     """
     return run_preflight(
-        feature_slug=ctx.feature_slug,
+        mission_slug=ctx.mission_slug,
         target_branch=ctx.target_branch,
         repo_root=Path(ctx.authoritative_repo),
         wp_workspaces=wp_workspaces,

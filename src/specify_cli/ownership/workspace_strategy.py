@@ -20,7 +20,7 @@ from pathlib import Path
 
 
 def create_planning_workspace(
-    feature_slug: str,  # noqa: ARG001
+    mission_slug: str,  # noqa: ARG001
     wp_code: str,  # noqa: ARG001
     owned_files: list[str],  # noqa: ARG001
     repo_root: Path,
@@ -32,7 +32,7 @@ def create_planning_workspace(
     accessible at ``repo_root``.
 
     Args:
-        feature_slug: Feature identifier (e.g. ``"057-canonical-context-architecture-cleanup"``).
+        mission_slug: Feature identifier (e.g. ``"057-canonical-context-architecture-cleanup"``).
         wp_code: Work-package code (e.g. ``"WP04"``).
         owned_files: Glob patterns describing files owned by this WP.  Not
             used for workspace creation but validated to be accessible under

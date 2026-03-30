@@ -1,7 +1,7 @@
 """Tests for mission detection.
 
 Auto-detection was removed in the big-bang refactor (2026-03).
-_detect_current_feature now always returns None; callers must pass --feature explicitly.
+_detect_current_feature now always returns None; callers must pass --mission explicitly.
 """
 
 import pytest
@@ -12,13 +12,13 @@ pytestmark = pytest.mark.fast
 
 def test_detect_current_feature_always_returns_none_no_auto_detection(tmp_path, monkeypatch):
     """_detect_current_feature returns None regardless of directory (auto-detection removed)."""
-    # Even when inside a kitty-specs feature directory, returns None
-    feature_dir = tmp_path / "kitty-specs" / "001-research"
-    feature_dir.mkdir(parents=True)
-    monkeypatch.chdir(feature_dir)
+    # Even when inside a kitty-specs mission directory, returns None
+    mission_dir = tmp_path / "kitty-specs" / "001-research"
+    mission_dir.mkdir(parents=True)
+    monkeypatch.chdir(mission_dir)
 
     result = _detect_current_feature(tmp_path)
-    assert result is None, "Auto-detection removed: must use --feature explicitly"
+    assert result is None, "Auto-detection removed: must use --mission explicitly"
 
 
 def test_detect_current_feature_returns_none_from_worktree(tmp_path, monkeypatch):
@@ -28,7 +28,7 @@ def test_detect_current_feature_returns_none_from_worktree(tmp_path, monkeypatch
     monkeypatch.chdir(worktree_dir)
 
     result = _detect_current_feature(tmp_path)
-    assert result is None, "Auto-detection removed: must use --feature explicitly"
+    assert result is None, "Auto-detection removed: must use --mission explicitly"
 
 
 def test_detect_current_feature_returns_none_from_project_root(tmp_path, monkeypatch):

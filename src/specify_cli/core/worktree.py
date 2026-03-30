@@ -1,7 +1,7 @@
-"""Worktree management utilities for spec-kitty feature development.
+"""Worktree management utilities for spec-kitty mission development.
 
 This module provides functions for creating and managing workspaces (git worktrees)
-for parallel feature development. Uses the VCS abstraction layer.
+for parallel mission development. Uses the VCS abstraction layer.
 
 All functions are location-aware and work correctly whether called from main
 repository or existing worktree/workspace.
@@ -16,6 +16,7 @@ from __future__ import annotations
 import platform
 import shutil
 import subprocess
+import contextlib
 import warnings
 from pathlib import Path
 
@@ -62,10 +63,8 @@ def _exclude_from_git(worktree_path: Path, patterns: list[str]) -> None:
     # Read existing exclusions
     existing = set()
     if exclude_file.exists():
-        try:
+        with contextlib.suppress(OSError):
             existing = set(exclude_file.read_text().splitlines())
-        except OSError:
-            pass
 
     # Add new patterns if not already present
     new_patterns = [p for p in patterns if p not in existing]
@@ -130,9 +129,9 @@ def create_wp_workspace(
     if mode == ExecutionMode.PLANNING_ARTIFACT:
         owned_files: list[str] = wp_frontmatter.get("owned_files") or []
         wp_code = wp_frontmatter.get("work_package_id", "")
-        feature_slug = wp_frontmatter.get("feature_slug", "")
+        mission_slug = wp_frontmatter.get("mission_slug", "")
         return create_planning_workspace(
-            feature_slug=feature_slug,
+            mission_slug=mission_slug,
             wp_code=wp_code,
             owned_files=list(owned_files) if isinstance(owned_files, (list, tuple)) else [],
             repo_root=repo_root,
@@ -163,27 +162,27 @@ def create_wp_workspace(
     return workspace_path
 
 
-def get_next_feature_number(repo_root: Path) -> int:
-    """Determine next sequential feature number.
+def get_next_mission_number(repo_root: Path) -> int:
+    """Determine next sequential mission number.
 
-    Scans both kitty-specs/ and .worktrees/ directories for existing features
+    Scans both kitty-specs/ and .worktrees/ directories for existing missions
     (###-name format) and returns next number in sequence. This prevents number
-    reuse when features exist only in worktrees.
+    reuse when missions exist only in worktrees.
 
     Args:
         repo_root: Repository root path
 
     Returns:
-        Next feature number (e.g., 9 if highest existing is 008)
+        Next mission number (e.g., 9 if highest existing is 008)
 
     Examples:
         >>> repo_root = Path("/path/to/repo")
-        >>> next_num = get_next_feature_number(repo_root)
+        >>> next_num = get_next_mission_number(repo_root)
         >>> assert next_num > 0
     """
     max_number = 0
 
-    # Scan kitty-specs/ for feature numbers
+    # Scan kitty-specs/ for mission numbers
     specs_dir = repo_root / KITTY_SPECS_DIR
     if specs_dir.exists():
         for item in sorted(specs_dir.iterdir(), key=lambda p: p.name):
@@ -195,7 +194,7 @@ def get_next_feature_number(repo_root: Path) -> int:
                     # Not a valid number, skip
                     continue
 
-    # Also scan .worktrees/ for feature numbers
+    # Also scan .worktrees/ for mission numbers
     worktrees_dir = repo_root / WORKTREES_DIR
     if worktrees_dir.exists():
         for item in sorted(worktrees_dir.iterdir(), key=lambda p: p.name):
@@ -212,21 +211,21 @@ def get_next_feature_number(repo_root: Path) -> int:
 
 def create_feature_worktree(
     repo_root: Path,
-    feature_slug: str,
-    feature_number: int | None = None
+    mission_slug: str,
+    mission_number: int | None = None
 ) -> tuple[Path, Path]:
-    """Create workspace (git worktree) for feature development.
+    """Create workspace (git worktree) for mission development.
 
-    Creates a new workspace with a feature branch and sets up the
-    feature directory structure. Uses VCS abstraction.
+    Creates a new workspace with a mission branch and sets up the
+    mission directory structure. Uses VCS abstraction.
 
     Args:
         repo_root: Repository root path
-        feature_slug: Feature identifier (e.g., "test-feature")
-        feature_number: Optional feature number (auto-detected if None)
+        mission_slug: Mission identifier (e.g., "test-mission")
+        mission_number: Optional mission number (auto-detected if None)
 
     Returns:
-        Tuple of (worktree_path, feature_dir)
+        Tuple of (worktree_path, mission_dir)
 
     Raises:
         RuntimeError: If workspace creation fails
@@ -234,18 +233,18 @@ def create_feature_worktree(
 
     Examples:
         >>> repo_root = Path("/path/to/repo")
-        >>> worktree, feature_dir = create_feature_worktree(repo_root, "new-feature")
+        >>> worktree, mission_dir = create_mission_worktree(repo_root, "new-mission")
         >>> assert worktree.exists()
-        >>> assert feature_dir.exists()
+        >>> assert mission_dir.exists()
     """
-    # Auto-detect feature number if not provided
-    if feature_number is None:
-        feature_number = get_next_feature_number(repo_root)
+    # Auto-detect mission number if not provided
+    if mission_number is None:
+        mission_number = get_next_mission_number(repo_root)
 
-    # Format: 001-test-feature
-    branch_name = f"{feature_number:03d}-{feature_slug}"
+    # Format: 001-test-mission
+    branch_name = f"{mission_number:03d}-{mission_slug}"
 
-    # Create worktree at .worktrees/001-test-feature
+    # Create worktree at .worktrees/001-test-mission
     worktree_path = repo_root / WORKTREES_DIR / branch_name
 
     # Ensure .worktrees directory exists
@@ -269,8 +268,8 @@ def create_feature_worktree(
             is_valid_workspace = git_marker.exists()
 
         if is_valid_workspace:
-            feature_dir = worktree_path / KITTY_SPECS_DIR / branch_name
-            return (worktree_path, feature_dir)
+            mission_dir = worktree_path / KITTY_SPECS_DIR / branch_name
+            return (worktree_path, mission_dir)
 
         raise FileExistsError(f"Worktree path already exists: {worktree_path}")
 
@@ -318,23 +317,23 @@ def create_feature_worktree(
                 f"Failed to create workspace: {git_error.stderr}"
             ) from git_error
 
-    # Create feature directory structure
-    feature_dir = worktree_path / KITTY_SPECS_DIR / branch_name
-    feature_dir.mkdir(parents=True, exist_ok=True)
+    # Create mission directory structure
+    mission_dir = worktree_path / KITTY_SPECS_DIR / branch_name
+    mission_dir.mkdir(parents=True, exist_ok=True)
 
-    # Setup feature directory (symlinks, subdirectories, etc.)
-    setup_feature_directory(feature_dir, worktree_path, repo_root)
+    # Setup mission directory (symlinks, subdirectories, etc.)
+    setup_mission_directory(mission_dir, worktree_path, repo_root)
 
-    return (worktree_path, feature_dir)
+    return (worktree_path, mission_dir)
 
 
-def setup_feature_directory(
-    feature_dir: Path,
+def setup_mission_directory(
+    mission_dir: Path,
     worktree_path: Path,
     repo_root: Path,
     create_symlinks: bool = True
 ) -> None:
-    """Setup standard feature directory structure.
+    """Setup standard mission directory structure.
 
     Creates:
     - kitty-specs/###-name/ directory
@@ -344,23 +343,23 @@ def setup_feature_directory(
     - tasks/README.md
 
     Args:
-        feature_dir: Feature directory path
+        mission_dir: Feature directory path
         worktree_path: Worktree root path
         repo_root: Main repository root path
         create_symlinks: If True, create symlinks; else copy files (Windows)
 
     Examples:
-        >>> feature_dir = Path("/path/to/.worktrees/001-feature/kitty-specs/001-feature")
-        >>> setup_feature_directory(feature_dir, feature_dir.parent.parent, repo_root)
-        >>> assert (feature_dir / "checklists").exists()
+        >>> mission_dir = Path("/path/to/.worktrees/001-mission/kitty-specs/001-mission")
+        >>> setup_mission_directory(mission_dir, mission_dir.parent.parent, repo_root)
+        >>> assert (mission_dir / "checklists").exists()
     """
-    # Ensure feature directory exists
-    feature_dir.mkdir(parents=True, exist_ok=True)
+    # Ensure mission directory exists
+    mission_dir.mkdir(parents=True, exist_ok=True)
 
     # Create subdirectories
-    (feature_dir / "checklists").mkdir(exist_ok=True)
-    (feature_dir / "research").mkdir(exist_ok=True)
-    tasks_dir = feature_dir / "tasks"
+    (mission_dir / "checklists").mkdir(exist_ok=True)
+    (mission_dir / "research").mkdir(exist_ok=True)
+    tasks_dir = mission_dir / "tasks"
     tasks_dir.mkdir(exist_ok=True)
 
     # Create tasks/.gitkeep and README.md
@@ -439,7 +438,7 @@ spec-kitty agent tasks move-task WP01 --to doing
 
     # Setup shared constitution and AGENTS.md via symlink (or copy on Windows)
     # Calculate relative path from worktree to main repo
-    # Worktree: .worktrees/001-feature/.kittify/memory
+    # Worktree: .worktrees/001-mission/.kittify/memory
     # Main:     .kittify/memory
     # Relative: ../../../.kittify/memory
     relative_memory_path = Path("../../../.kittify/memory")
@@ -494,7 +493,7 @@ spec-kitty agent tasks move-task WP01 --to doing
     _exclude_from_git(worktree_path, [".kittify/memory", ".kittify/AGENTS.md"])
 
     # Copy spec template if it exists
-    spec_file = feature_dir / "spec.md"
+    spec_file = mission_dir / "spec.md"
     if not spec_file.exists():
         # Try to find spec template
         spec_template_candidates = [
@@ -511,11 +510,11 @@ spec-kitty agent tasks move-task WP01 --to doing
             spec_file.touch()
 
 
-def validate_feature_structure(
-    feature_dir: Path,
+def validate_mission_structure(
+    mission_dir: Path,
     check_tasks: bool = False
 ) -> dict:
-    """Validate feature directory structure and required files.
+    """Validate mission directory structure and required files.
 
     Checks for:
     - Required files: spec.md
@@ -523,7 +522,7 @@ def validate_feature_structure(
     - Optional: tasks.md (if check_tasks=True)
 
     Args:
-        feature_dir: Feature directory path
+        mission_dir: Feature directory path
         check_tasks: If True, validate tasks.md and task files exist
 
     Returns:
@@ -536,8 +535,8 @@ def validate_feature_structure(
         }
 
     Examples:
-        >>> feature_dir = Path("/path/to/kitty-specs/001-feature")
-        >>> result = validate_feature_structure(feature_dir)
+        >>> mission_dir = Path("/path/to/kitty-specs/001-mission")
+        >>> result = validate_mission_structure(mission_dir)
         >>> assert "valid" in result
         >>> assert "errors" in result
     """
@@ -548,9 +547,9 @@ def validate_feature_structure(
     artifact_dirs: dict[str, str] = {}
     available_docs: list[str] = []
 
-    # Check if feature directory exists
-    if not feature_dir.exists():
-        errors.append(f"Feature directory not found: {feature_dir}")
+    # Check if mission directory exists
+    if not mission_dir.exists():
+        errors.append(f"Mission directory not found: {mission_dir}")
         return {
             "valid": False,
             "errors": errors,
@@ -564,7 +563,7 @@ def validate_feature_structure(
         }
 
     # Check required files exist
-    spec_file = feature_dir / "spec.md"
+    spec_file = mission_dir / "spec.md"
     if not spec_file.exists():
         errors.append("Missing required file: spec.md")
     else:
@@ -573,7 +572,7 @@ def validate_feature_structure(
         artifact_files["spec_file"] = spec_file_str
         available_docs.append("spec.md")
 
-    plan_file = feature_dir / "plan.md"
+    plan_file = mission_dir / "plan.md"
     if plan_file.exists():
         plan_file_str = str(plan_file)
         paths["plan_file"] = plan_file_str
@@ -583,7 +582,7 @@ def validate_feature_structure(
     # Check directory structure
     recommended_dirs = ["checklists", "research", "tasks"]
     for dir_name in recommended_dirs:
-        dir_path = feature_dir / dir_name
+        dir_path = mission_dir / dir_name
         if not dir_path.exists():
             warnings.append(f"Missing recommended directory: {dir_name}/")
         else:
@@ -593,7 +592,7 @@ def validate_feature_structure(
 
     # Check task files if requested
     if check_tasks:
-        tasks_file = feature_dir / "tasks.md"
+        tasks_file = mission_dir / "tasks.md"
         if not tasks_file.exists():
             errors.append("Missing required file: tasks.md")
         else:
@@ -603,29 +602,29 @@ def validate_feature_structure(
             if "tasks.md" not in available_docs:
                 available_docs.append("tasks.md")
     else:
-        tasks_file = feature_dir / "tasks.md"
+        tasks_file = mission_dir / "tasks.md"
         if tasks_file.exists():
             tasks_file_str = str(tasks_file)
             paths["tasks_file"] = tasks_file_str
             artifact_files["tasks_file"] = tasks_file_str
             available_docs.append("tasks.md")
 
-    # Always include feature_dir in paths
-    feature_dir_str = str(feature_dir)
-    paths["feature_dir"] = feature_dir_str
-    artifact_dirs["feature_dir"] = feature_dir_str
+    # Always include mission_dir in paths
+    mission_dir_str = str(mission_dir)
+    paths["mission_dir"] = mission_dir_str
+    artifact_dirs["mission_dir"] = mission_dir_str
 
-    checklists_dir = feature_dir / "checklists"
+    checklists_dir = mission_dir / "checklists"
     if checklists_dir.exists():
         checklists_dir_str = str(checklists_dir)
         artifact_dirs.setdefault("checklists_dir", checklists_dir_str)
 
-    research_dir = feature_dir / "research"
+    research_dir = mission_dir / "research"
     if research_dir.exists():
         research_dir_str = str(research_dir)
         artifact_dirs.setdefault("research_dir", research_dir_str)
 
-    tasks_dir = feature_dir / "tasks"
+    tasks_dir = mission_dir / "tasks"
     if tasks_dir.exists():
         tasks_dir_str = str(tasks_dir)
         artifact_dirs.setdefault("tasks_dir", tasks_dir_str)
@@ -641,6 +640,6 @@ def validate_feature_structure(
         "artifact_dirs": artifact_dirs,
         "available_docs": available_docs,
         # Compatibility aliases for older templates/prompts
-        "FEATURE_DIR": feature_dir_str,
+        "FEATURE_DIR": mission_dir_str,
         "AVAILABLE_DOCS": available_docs,
     }

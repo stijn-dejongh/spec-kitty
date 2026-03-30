@@ -121,7 +121,7 @@ def _get_files_touched(branch: str, workspace_path: Path) -> list[str]:
 
 
 def reconcile_done_state(
-    feature_dir: Path,
+    mission_dir: Path,
     merged_branches: list[str],
     target_branch: str,
     workspace_path: Path,
@@ -136,7 +136,7 @@ def reconcile_done_state(
        event with repo evidence (merge commit hash, branch, files touched).
 
     Args:
-        feature_dir: Path to the feature directory containing the event log
+        mission_dir: Path to the feature directory containing the event log
                      (``kitty-specs/<feature-slug>/``).
         merged_branches: List of branch names that were merged by the engine.
         target_branch: Branch that was merged into (e.g. "main").
@@ -153,7 +153,7 @@ def reconcile_done_state(
         return []
 
     # Build current lane snapshot from event log
-    events = read_events(feature_dir)
+    events = read_events(mission_dir)
     snapshot = reduce(events)
     wp_lanes: dict[str, str] = {}
     for wp_id, wp_state in snapshot.work_packages.items():
@@ -164,7 +164,7 @@ def reconcile_done_state(
     # Determine which branches are actually in git ancestry
     actually_merged = get_merged_branches(target_branch, workspace_path)
 
-    feature_slug = feature_dir.name
+    mission_slug = mission_dir.name
     emitted: list[StatusEvent] = []
 
     for branch in merged_branches:
@@ -219,8 +219,8 @@ def reconcile_done_state(
                 if current_lane in ("planned", "claimed", "in_progress"):
                     try:
                         event = emit_status_transition(
-                            feature_dir=feature_dir,
-                            feature_slug=feature_slug,
+                            mission_dir=mission_dir,
+                            mission_slug=mission_slug,
                             wp_id=wp_id,
                             to_lane="approved",
                             actor="merge-reconciliation",
@@ -239,8 +239,8 @@ def reconcile_done_state(
                         )
 
             event = emit_status_transition(
-                feature_dir=feature_dir,
-                feature_slug=feature_slug,
+                mission_dir=mission_dir,
+                mission_slug=mission_slug,
                 wp_id=wp_id,
                 to_lane="done",
                 actor="merge-reconciliation",

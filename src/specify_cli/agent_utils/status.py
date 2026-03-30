@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from collections import Counter
 from pathlib import Path
-from typing import Optional
 
 from rich.console import Console
 from rich.panel import Panel
@@ -16,19 +15,18 @@ from rich.table import Table
 from rich.text import Text
 
 from specify_cli.core.paths import locate_project_root, get_main_repo_root
-from specify_cli.tasks_support import extract_scalar, split_frontmatter
 
 console = Console()
 
 
-def show_kanban_status(feature_slug: Optional[str] = None) -> dict:
-    """Display kanban status board for work packages in a feature.
+def show_kanban_status(mission_slug: str | None = None) -> dict:
+    """Display kanban status board for work packages in a mission.
 
     This function can be called directly by agents to get a beautiful
     status display without running a CLI command.
 
     Args:
-        feature_slug: Feature slug (e.g., "012-documentation-mission").
+        mission_slug: Mission slug (e.g., "012-documentation-mission").
                      If None, attempts to auto-detect from current directory.
 
     Returns:
@@ -46,26 +44,25 @@ def show_kanban_status(feature_slug: Optional[str] = None) -> dict:
             console.print("[red]Error:[/red] Not in a spec-kitty project")
             return {"error": "Not in a spec-kitty project"}
 
-        # feature_slug is required; no auto-detection
-        if not feature_slug:
+        # mission_slug is required; no auto-detection
+        if not mission_slug:
             msg = (
-                "feature_slug is required. "
-                "Pass it explicitly: show_kanban_status('057-my-feature')"
+                "mission_slug is required. "
+                "Pass it explicitly: show_kanban_status('057-my-mission')"
             )
             console.print(f"[red]Error:[/red] {msg}")
             return {"error": msg}
-
         # Get main repo root for correct path resolution
         main_repo_root = get_main_repo_root(repo_root)
 
-        # Locate feature directory
-        feature_dir = main_repo_root / "kitty-specs" / feature_slug
+        # Locate mission directory
+        mission_dir = main_repo_root / "kitty-specs" / mission_slug
 
-        if not feature_dir.exists():
-            console.print(f"[red]Error:[/red] Feature directory not found: {feature_dir}")
-            return {"error": f"Feature directory not found: {feature_dir}"}
+        if not mission_dir.exists():
+            console.print(f"[red]Error:[/red] Mission directory not found: {mission_dir}")
+            return {"error": f"Mission directory not found: {mission_dir}"}
 
-        tasks_dir = feature_dir / "tasks"
+        tasks_dir = mission_dir / "tasks"
 
         if not tasks_dir.exists():
             console.print(f"[red]Error:[/red] Tasks directory not found: {tasks_dir}")
@@ -74,7 +71,7 @@ def show_kanban_status(feature_slug: Optional[str] = None) -> dict:
         # Build lane map from event log (canonical source of truth)
         from specify_cli.status.reducer import reduce
         from specify_cli.status.store import read_events
-        events = read_events(feature_dir)
+        events = read_events(mission_dir)
         snapshot = reduce(events)
         # snapshot.work_packages: {wp_id: {"lane": ..., ...}}
         event_log_lanes: dict[str, str] = {
@@ -133,8 +130,8 @@ def show_kanban_status(feature_slug: Optional[str] = None) -> dict:
         done_count = len(by_lane["done"])
         in_progress = len(by_lane["claimed"]) + len(by_lane["in_progress"]) + len(by_lane["for_review"])
         planned_count = len(by_lane["planned"])
-        blocked_count = len(by_lane["blocked"])
-        canceled_count = len(by_lane["canceled"])
+        len(by_lane["blocked"])
+        len(by_lane["canceled"])
         progress_pct = round((done_count / total * 100), 1) if total > 0 else 0
 
         # Analyze parallelization opportunities
@@ -142,13 +139,13 @@ def show_kanban_status(feature_slug: Optional[str] = None) -> dict:
         parallel_info = _analyze_parallelization(work_packages, done_wp_ids)
 
         # Display the status board
-        _display_status_board(feature_slug, work_packages, by_lane, total, done_count,
+        _display_status_board(mission_slug, work_packages, by_lane, total, done_count,
                             in_progress, planned_count, progress_pct, parallel_info)
 
         # Return structured data
         lane_counts = Counter(wp["lane"] for wp in work_packages)
         return {
-            "feature": feature_slug,
+            "mission_slug": mission_slug,
             "total_wps": total,
             "by_lane": dict(lane_counts),
             "work_packages": work_packages,
@@ -232,21 +229,21 @@ def _analyze_parallelization(work_packages: list, done_wp_ids: set) -> dict:
     }
 
 
-def _display_status_board(feature_slug: str, work_packages: list, by_lane: dict,
+def _display_status_board(mission_slug: str, work_packages: list, by_lane: dict,
                          total: int, done_count: int, in_progress: int,
                          planned_count: int, progress_pct: float, parallel_info: dict) -> None:
     """Display the rich-formatted status board."""
     # Create title panel
     title_text = Text()
-    title_text.append(f"📊 Work Package Status: ", style="bold cyan")
-    title_text.append(feature_slug, style="bold white")
+    title_text.append("📊 Work Package Status: ", style="bold cyan")
+    title_text.append(mission_slug, style="bold white")
 
     console.print()
     console.print(Panel(title_text, border_style="cyan"))
 
     # Progress bar
     progress_text = Text()
-    progress_text.append(f"Progress: ", style="bold")
+    progress_text.append("Progress: ", style="bold")
     progress_text.append(f"{done_count}/{total}", style="bold green")
     progress_text.append(f" ({progress_pct}%)", style="dim")
 
@@ -348,13 +345,13 @@ def _display_status_board(feature_slug: str, work_packages: list, by_lane: dict,
 
         for group in parallel_info["parallel_groups"]:
             if group["type"] == "parallel":
-                console.print(f"\n  [bold green]✨ Can run in PARALLEL:[/bold green]")
+                console.print("\n  [bold green]✨ Can run in PARALLEL:[/bold green]")
                 for wp in group["wps"]:
                     console.print(f"     • {wp['id']} - {wp['title']}")
-                console.print(f"  [dim]  → All dependencies satisfied, no inter-dependencies[/dim]")
+                console.print("  [dim]  → All dependencies satisfied, no inter-dependencies[/dim]")
 
                 # Show implementation commands
-                console.print(f"\n  [bold]Start commands:[/bold]")
+                console.print("\n  [bold]Start commands:[/bold]")
                 for wp in group["wps"]:
                     # Find best base for this WP
                     wp_deps = wp.get("dependencies", [])
@@ -362,7 +359,7 @@ def _display_status_board(feature_slug: str, work_packages: list, by_lane: dict,
                     console.print(f"     spec-kitty implement {wp['id']} --base {base} &")
 
             elif group["type"] == "single":
-                console.print(f"\n  [bold yellow]▶️  Ready to start:[/bold yellow]")
+                console.print("\n  [bold yellow]▶️  Ready to start:[/bold yellow]")
                 for wp in group["wps"]:
                     console.print(f"     • {wp['id']} - {wp['title']}")
                     # Find best base for this WP
@@ -371,7 +368,7 @@ def _display_status_board(feature_slug: str, work_packages: list, by_lane: dict,
                     console.print(f"     spec-kitty implement {wp['id']} --base {base}")
 
             elif group["type"] == "sequential":
-                console.print(f"\n  [bold blue]⏭️  Sequential (blocked by other ready WPs):[/bold blue]")
+                console.print("\n  [bold blue]⏭️  Sequential (blocked by other ready WPs):[/bold blue]")
                 for wp in group["wps"]:
                     deps_in_ready = [d for d in wp.get("dependencies", [])
                                     if d in {w["id"] for w in parallel_info["ready_wps"]}]

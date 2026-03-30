@@ -12,9 +12,9 @@ Pipeline order (critical -- do not reorder):
     2. Derive from_lane from last event for this WP (or "planned")
     3. validate_transition(from_lane, resolved_lane, ...)
     4. Create StatusEvent with ULID event_id
-    5. store.append_event(feature_dir, event)
-    6. reducer.materialize(feature_dir)
-    7. _saas_fan_out(event, feature_slug, repo_root)
+    5. store.append_event(mission_dir, event)
+    6. reducer.materialize(mission_dir)
+    7. _saas_fan_out(event, mission_slug, repo_root)
     8. Return the event
 """
 
@@ -58,14 +58,14 @@ def _now_utc() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _derive_from_lane(feature_dir: Path, wp_id: str) -> str:
+def _derive_from_lane(mission_dir: Path, wp_id: str) -> str:
     """Derive the current lane for a WP from canonical reduced state.
 
     The event log may not be append-ordered by logical transition time,
     so we must reduce the full log to determine the current lane
     deterministically.
     """
-    events = _store.read_events(feature_dir)
+    events = _store.read_events(mission_dir)
     if not events:
         return "planned"
 
@@ -126,9 +126,9 @@ def _build_done_evidence(evidence: dict[str, Any]) -> DoneEvidence:
     )
 
 
-def _infer_subtasks_complete(feature_dir: Path, wp_id: str) -> bool:
+def _infer_subtasks_complete(mission_dir: Path, wp_id: str) -> bool:
     """Infer subtask completion from tasks.md checkboxes for a WP section."""
-    tasks_path = feature_dir / "tasks.md"
+    tasks_path = mission_dir / "tasks.md"
     if not tasks_path.exists():
         return True
     content = tasks_path.read_text(encoding="utf-8")
@@ -152,17 +152,17 @@ def _infer_subtasks_complete(feature_dir: Path, wp_id: str) -> bool:
     return not unchecked_found
 
 
-def _infer_implementation_evidence(feature_dir: Path, wp_id: str) -> bool:
+def _infer_implementation_evidence(mission_dir: Path, wp_id: str) -> bool:
     """Infer implementation evidence from prior canonical events for this WP."""
-    for event in _store.read_events(feature_dir):
+    for event in _store.read_events(mission_dir):
         if event.wp_id == wp_id:
             return True
     return False
 
 
 def emit_status_transition(
-    feature_dir: Path,
-    feature_slug: str,
+    mission_dir: Path,
+    mission_slug: str,
     wp_id: str,
     to_lane: str,
     actor: str,
@@ -187,8 +187,8 @@ def emit_status_transition(
     persisted. SaaS failures never block canonical persistence.
 
     Args:
-        feature_dir: Path to the kitty-specs feature directory.
-        feature_slug: Feature identifier (e.g. "034-feature-name").
+        mission_dir: Path to the kitty-specs feature directory.
+        mission_slug: Feature identifier (e.g. "034-feature-name").
         wp_id: Work package identifier (e.g. "WP01").
         to_lane: Target lane (canonical or alias).
         actor: Identity of the actor performing the transition.
@@ -214,24 +214,24 @@ def emit_status_transition(
     resolved_lane = resolve_lane_alias(to_lane)
 
     # Step 2: Derive from_lane from last event for this WP
-    from_lane = _derive_from_lane(feature_dir, wp_id)
+    from_lane = _derive_from_lane(mission_dir, wp_id)
 
     if workspace_context is None:
-        context_root = repo_root if repo_root is not None else feature_dir
+        context_root = repo_root if repo_root is not None else mission_dir
         workspace_context = f"{execution_mode}:{context_root}"
     if (
         subtasks_complete is None
         and from_lane == "in_progress"
         and resolved_lane == "for_review"
     ):
-        subtasks_complete = _infer_subtasks_complete(feature_dir, wp_id)
+        subtasks_complete = _infer_subtasks_complete(mission_dir, wp_id)
     if (
         implementation_evidence_present is None
         and from_lane == "in_progress"
         and resolved_lane == "for_review"
     ):
         implementation_evidence_present = _infer_implementation_evidence(
-            feature_dir, wp_id
+            mission_dir, wp_id
         )
 
     # Step 3: Validate the transition
@@ -258,7 +258,7 @@ def emit_status_transition(
     # Step 4: Create StatusEvent with ULID event_id
     event = StatusEvent(
         event_id=_generate_ulid(),
-        feature_slug=feature_slug,
+        mission_slug=mission_slug,
         wp_id=wp_id,
         from_lane=Lane(from_lane),
         to_lane=Lane(resolved_lane),
@@ -273,11 +273,11 @@ def emit_status_transition(
     )
 
     # Step 5: Persist event to JSONL log
-    _store.append_event(feature_dir, event)
+    _store.append_event(mission_dir, event)
 
     # Step 6: Materialize snapshot from event log
     try:
-        _reducer.materialize(feature_dir)
+        _reducer.materialize(mission_dir)
     except Exception:
         logger.warning(
             "Materialization failed after event %s was persisted; "
@@ -286,7 +286,7 @@ def emit_status_transition(
         )
 
     # Step 7: SaaS fan-out (never blocks canonical persistence)
-    _saas_fan_out(event, feature_slug, repo_root, policy_metadata=policy_metadata)
+    _saas_fan_out(event, mission_slug, repo_root, policy_metadata=policy_metadata)
 
     # Step 8: Dossier sync (fire-and-forget, never blocks)
     if repo_root is not None:
@@ -296,7 +296,7 @@ def emit_status_transition(
             )
 
             trigger_feature_dossier_sync_if_enabled(
-                feature_dir, feature_slug, repo_root,
+                mission_dir, mission_slug, repo_root,
             )
         except Exception:
             pass  # Never block status transitions
@@ -307,7 +307,7 @@ def emit_status_transition(
 
 def _saas_fan_out(
     event: StatusEvent,
-    feature_slug: str,
+    mission_slug: str,
     repo_root: Path | None,
     *,
     policy_metadata: dict | None = None,
@@ -326,7 +326,7 @@ def _saas_fan_out(
             from_lane=str(event.from_lane),
             to_lane=str(event.to_lane),
             actor=event.actor,
-            feature_slug=feature_slug,
+            mission_slug=mission_slug,
             policy_metadata=policy_metadata,
         )
     except ImportError:

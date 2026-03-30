@@ -39,14 +39,14 @@ _LOCK_FILE = "lock"
 class MergeAmbiguousStateError(Exception):
     """Raised when multiple active merge states exist and no mission_id was given.
 
-    Pass ``--feature <slug>`` (or ``--mission-id <id>``) to disambiguate.
+    Pass ``--mission <slug>`` (or ``--mission-id <id>``) to disambiguate.
     """
 
     def __init__(self, mission_ids: list[str]) -> None:
         self.mission_ids = mission_ids
         ids_formatted = "\n  ".join(mission_ids)
         super().__init__(
-            f"Multiple active merge states found — pass --feature to disambiguate:\n  {ids_formatted}"
+            f"Multiple active merge states found — pass --mission to disambiguate:\n  {ids_formatted}"
         )
 
 
@@ -67,8 +67,8 @@ class MergeLockError(Exception):
 class MergeState:
     """Persisted state for resumable merge operations."""
 
-    mission_id: str  # Per-mission scoping (e.g. "057-feature-name")
-    feature_slug: str  # Display alias for the feature
+    mission_id: str  # Per-mission scoping (e.g. "057-mission-name")
+    mission_slug: str  # Display alias for the mission
     target_branch: str
     wp_order: list[str]
     completed_wps: list[str] = field(default_factory=list)
@@ -258,7 +258,7 @@ def acquire_merge_lock(mission_id: str, repo_root: Path) -> bool:
     TOCTOU race that exists() + write_text() is vulnerable to.
 
     Args:
-        mission_id: Mission/feature slug identifier
+        mission_id: Mission/mission slug identifier
         repo_root: Repository root path
 
     Returns:
@@ -284,7 +284,7 @@ def release_merge_lock(mission_id: str, repo_root: Path) -> None:
     """Remove the merge lock file.
 
     Args:
-        mission_id: Mission/feature slug identifier
+        mission_id: Mission/mission slug identifier
         repo_root: Repository root path
     """
     lock_path = get_merge_runtime_dir(mission_id, repo_root) / _LOCK_FILE
@@ -296,7 +296,7 @@ def is_merge_locked(mission_id: str, repo_root: Path) -> bool:
     """Check whether a merge lock file exists for the given mission.
 
     Args:
-        mission_id: Mission/feature slug identifier
+        mission_id: Mission/mission slug identifier
         repo_root: Repository root path
     """
     lock_path = get_merge_runtime_dir(mission_id, repo_root) / _LOCK_FILE

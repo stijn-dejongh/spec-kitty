@@ -1,13 +1,13 @@
-"""Migration: Update agent plan.md templates with centralized feature detection.
+"""Migration: Update agent plan.md templates with centralized mission detection.
 
 This migration updates all 12 agent template copies of plan.md to include
-the new feature detection logic that prevents the agent from selecting the
-wrong feature when multiple features exist.
+the new mission detection logic that prevents the agent from selecting the
+wrong mission when multiple missions exist.
 
 The updated template instructs agents to:
-1. Detect feature context from git branch or current directory
-2. Pass the feature explicitly using --feature flag to avoid auto-detection
-3. Prioritize features without plan.md if multiple exist
+1. Detect mission context from git branch or current directory
+2. Pass the mission explicitly using --mission flag to avoid auto-detection
+3. Prioritize missions without plan.md if multiple exist
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ def get_agent_dirs_for_project(project_path: Path) -> list[tuple[str, str]]:
     Note:
         Falls back to all agents if config doesn't exist (legacy projects).
     """
-    from specify_cli.core.agent_config import load_agent_config
+    from specify_cli.core.tool_config import load_tool_config as load_agent_config
     from specify_cli.agent_utils.directories import AGENT_DIR_TO_KEY
 
     # Try to load config
@@ -62,19 +62,19 @@ def get_agent_dirs_for_project(project_path: Path) -> list[tuple[str, str]]:
 
 @MigrationRegistry.register
 class CentralizedFeatureDetectionMigration(BaseMigration):
-    """Update agent plan.md templates with feature detection logic.
+    """Update agent plan.md templates with mission detection logic.
 
     This migration regenerates the plan.md template for all configured agents
-    from the updated source template that includes feature detection instructions.
+    from the updated source template that includes mission detection instructions.
 
     The new template instructs agents to:
-    1. Detect feature context before running commands
-    2. Pass --feature flag explicitly to setup-plan
-    3. Handle multiple features gracefully
+    1. Detect mission context before running commands
+    2. Pass --mission flag explicitly to setup-plan
+    3. Handle multiple missions gracefully
     """
 
-    migration_id = "0.14.0_centralized_feature_detection"
-    description = "Update agent plan.md templates with centralized feature detection"
+    migration_id = "0.14.0_centralized_mission_detection"
+    description = "Update agent plan.md templates with centralized mission detection"
     target_version = "0.14.0"
 
     # Template file to update

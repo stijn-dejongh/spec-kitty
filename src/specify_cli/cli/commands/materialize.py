@@ -1,7 +1,7 @@
 """Materialize command — regenerate all derived views from the event log.
 
 Derived views (status.json, board-summary.json, progress.json) are
-output-only artefacts stored under ``.kittify/derived/<feature_slug>/``.
+output-only artefacts stored under ``.kittify/derived/<mission_slug>/``.
 This command forces full regeneration for one or all features, which is
 useful for CI pipelines, debugging, and external SaaS consumers.
 """
@@ -59,31 +59,31 @@ def materialize(
 
     # Resolve feature directories to process
     if feature:
-        feature_dirs = [specs_dir / feature]
-        if not feature_dirs[0].exists():
+        mission_dirs = [specs_dir / feature]
+        if not mission_dirs[0].exists():
             console.print(f"[red]Error:[/red] Feature not found: {feature}")
             raise typer.Exit(1)
     else:
         if not specs_dir.exists():
-            feature_dirs = []
+            mission_dirs = []
         else:
-            feature_dirs = sorted(
+            mission_dirs = sorted(
                 p for p in specs_dir.iterdir() if p.is_dir() and not p.name.startswith(".")
             )
 
     processed: list[dict[str, Any]] = []
     errors: list[str] = []
 
-    for feature_dir in feature_dirs:
-        slug = feature_dir.name
+    for mission_dir in mission_dirs:
+        slug = mission_dir.name
         files_written: list[str] = []
         try:
-            write_derived_views(feature_dir, derived_dir)
+            write_derived_views(mission_dir, derived_dir)
             files_written += ["status.json", "board-summary.json"]
-            generate_progress_json(feature_dir, derived_dir)
+            generate_progress_json(mission_dir, derived_dir)
             files_written.append("progress.json")
             processed.append({
-                "feature_slug": slug,
+                "mission_slug": slug,
                 "files_written": files_written,
                 "timestamp": datetime.now(UTC).isoformat(),
             })
@@ -104,7 +104,7 @@ def materialize(
             console.print("[dim]No features materialised.[/dim]")
         else:
             for entry in processed:
-                slug = entry["feature_slug"]
+                slug = entry["mission_slug"]
                 files = ", ".join(entry["files_written"])
                 console.print(f"[green]OK[/green] {slug} — {files}")
         if errors:

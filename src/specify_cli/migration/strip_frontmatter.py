@@ -76,8 +76,8 @@ class StripResult:
     warnings: list[str] = field(default_factory=list)
 
 
-def strip_mutable_fields(feature_dir: Path) -> StripResult:
-    """Remove mutable fields from all WP frontmatter in *feature_dir*.
+def strip_mutable_fields(mission_dir: Path) -> StripResult:
+    """Remove mutable fields from all WP frontmatter in *mission_dir*.
 
     For each ``tasks/WP*.md`` file:
 
@@ -91,7 +91,7 @@ def strip_mutable_fields(feature_dir: Path) -> StripResult:
     status-like blocks from its frontmatter.
 
     Args:
-        feature_dir: Path to the feature directory (e.g. ``kitty-specs/057-…``).
+        mission_dir: Path to the feature directory (e.g. ``kitty-specs/057-…``).
 
     Returns:
         :class:`StripResult` with counts and the pre-strip lane records.
@@ -99,10 +99,10 @@ def strip_mutable_fields(feature_dir: Path) -> StripResult:
     from specify_cli.frontmatter import FrontmatterManager
 
     result = StripResult()
-    tasks_dir = feature_dir / "tasks"
+    tasks_dir = mission_dir / "tasks"
 
     if not tasks_dir.is_dir():
-        logger.debug("No tasks/ directory in %s — skipping frontmatter strip", feature_dir.name)
+        logger.debug("No tasks/ directory in %s — skipping frontmatter strip", mission_dir.name)
         return result
 
     manager = FrontmatterManager()
@@ -144,7 +144,7 @@ def strip_mutable_fields(feature_dir: Path) -> StripResult:
         result.fields_stripped += stripped_count
 
     # Also strip frontmatter from tasks.md if it has status-like blocks
-    tasks_md = feature_dir / "tasks.md"
+    tasks_md = mission_dir / "tasks.md"
     if tasks_md.exists():
         try:
             frontmatter, body = manager.read(tasks_md)
@@ -158,11 +158,11 @@ def strip_mutable_fields(feature_dir: Path) -> StripResult:
                 logger.info(
                     "Stripped %d mutable field(s) from tasks.md in %s",
                     stripped_count,
-                    feature_dir.name,
+                    mission_dir.name,
                 )
                 result.fields_stripped += stripped_count
         except Exception as exc:
             # tasks.md may not have frontmatter at all — that's fine
-            logger.debug("tasks.md in %s has no frontmatter or could not be read: %s", feature_dir.name, exc)
+            logger.debug("tasks.md in %s has no frontmatter or could not be read: %s", mission_dir.name, exc)
 
     return result

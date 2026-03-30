@@ -11,7 +11,7 @@ from rich.console import Console
 from typing_extensions import Annotated
 
 from specify_cli.core.paths import locate_project_root
-from specify_cli.core.paths import require_explicit_feature
+from specify_cli.core.paths import require_explicit_mission
 from specify_cli.core.execution_context import (
     ACTION_NAMES,
     ActionName,
@@ -28,7 +28,7 @@ app = typer.Typer(
 console = Console()
 
 
-def _find_feature_directory(repo_root: Path, cwd: Path, explicit_feature: str | None = None) -> Path:
+def _find_mission_directory(repo_root: Path, cwd: Path, explicit_feature: str | None = None) -> Path:
     """Find the feature directory from an explicit feature slug.
 
     Args:
@@ -42,14 +42,14 @@ def _find_feature_directory(repo_root: Path, cwd: Path, explicit_feature: str | 
     Raises:
         ValueError: If feature slug is not provided or directory doesn't exist
     """
-    slug = require_explicit_feature(explicit_feature, command_hint="--feature <slug>")
-    feature_dir = repo_root / "kitty-specs" / slug
-    if not feature_dir.exists():
+    slug = require_explicit_mission(explicit_feature, command_hint="--feature <slug>")
+    mission_dir = repo_root / "kitty-specs" / slug
+    if not mission_dir.exists():
         raise ValueError(
-            f"Feature directory not found: {feature_dir}. "
+            f"Feature directory not found: {mission_dir}. "
             f"Check that '{slug}' is the correct feature slug."
         )
-    return feature_dir
+    return mission_dir
 
 
 @app.command(name="resolve")
@@ -99,7 +99,7 @@ def resolve_context(
             print(json.dumps({"success": True, **context.to_dict()}, indent=2))
         else:
             console.print(f"[green]✓[/green] Resolved {action} context")
-            console.print(f"  Feature: {context.feature_slug} ({context.detection_method})")
+            console.print(f"  Feature: {context.mission_slug} ({context.detection_method})")
             console.print(f"  Target branch: {context.target_branch}")
             if context.wp_id:
                 console.print(f"  Work package: {context.wp_id} ({context.lane})")

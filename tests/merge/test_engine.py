@@ -79,9 +79,9 @@ def git_repo(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def _make_wp_branch(repo: Path, base_branch: str, wp_id: str, feature_slug: str) -> str:
+def _make_wp_branch(repo: Path, base_branch: str, wp_id: str, mission_slug: str) -> str:
     """Create a WP branch with one dummy commit and return its name."""
-    branch = f"{feature_slug}-{wp_id}"
+    branch = f"{mission_slug}-{wp_id}"
     _git(["checkout", "-b", branch, base_branch], repo)
     (repo / f"{wp_id}.txt").write_text(f"Content for {wp_id}\n")
     _git(["add", f"{wp_id}.txt"], repo)
@@ -139,7 +139,7 @@ class TestMergeEventLogs:
             "at": at,
             "to_lane": lane,
             "wp_id": "WP01",
-            "feature_slug": "test",
+            "mission_slug": "test",
             "actor": "agent",
         }, sort_keys=True)
 
@@ -268,7 +268,7 @@ class TestMergeStateResume:
     def test_save_and_load_state(self, tmp_path: Path):
         state = MergeState(
             mission_id="057-feat",
-            feature_slug="057-feat",
+            mission_slug="057-feat",
             target_branch="main",
             wp_order=["WP01", "WP02", "WP03"],
         )
@@ -281,7 +281,7 @@ class TestMergeStateResume:
     def test_completed_wps_persisted(self, tmp_path: Path):
         state = MergeState(
             mission_id="057-feat",
-            feature_slug="057-feat",
+            mission_slug="057-feat",
             target_branch="main",
             wp_order=["WP01", "WP02", "WP03"],
         )
@@ -296,7 +296,7 @@ class TestMergeStateResume:
     def test_has_active_merge_true(self, tmp_path: Path):
         state = MergeState(
             mission_id="057-feat",
-            feature_slug="057-feat",
+            mission_slug="057-feat",
             target_branch="main",
             wp_order=["WP01"],
         )
@@ -306,7 +306,7 @@ class TestMergeStateResume:
     def test_has_active_merge_false_when_all_done(self, tmp_path: Path):
         state = MergeState(
             mission_id="057-feat",
-            feature_slug="057-feat",
+            mission_slug="057-feat",
             target_branch="main",
             wp_order=["WP01"],
             completed_wps=["WP01"],
@@ -361,7 +361,7 @@ class TestExecuteMergeErrorPaths:
         from specify_cli.merge.engine import execute_merge
 
         result = execute_merge(
-            feature_slug="999-nonexistent",
+            mission_slug="999-nonexistent",
             repo_root=git_repo,
         )
         assert not result.success
@@ -378,7 +378,7 @@ class TestExecuteMergeErrorPaths:
         # Acquire lock manually
         acquire_merge_lock(mission_id, git_repo)
         try:
-            result = execute_merge(feature_slug=feature, repo_root=git_repo)
+            result = execute_merge(mission_slug=feature, repo_root=git_repo)
             assert not result.success
             assert "lock" in result.errors[0].lower()
         finally:
@@ -417,7 +417,7 @@ class TestFullMergeIntegration:
         # we verify the error path handles missing worktree gracefully
         # (the worktrees exist as directories but have no .git)
         result = execute_merge(
-            feature_slug=feature,
+            mission_slug=feature,
             repo_root=git_repo,
         )
         # We expect either success (if preflight skips missing .git check)
@@ -438,7 +438,7 @@ class TestFullMergeIntegration:
         from specify_cli.merge.engine import execute_merge
 
         result = execute_merge(
-            feature_slug=feature,
+            mission_slug=feature,
             repo_root=git_repo,
             dry_run=True,
         )
@@ -466,7 +466,7 @@ class TestAbortMerge:
         # Save some state first
         state = MergeState(
             mission_id="057-abort",
-            feature_slug="057-abort",
+            mission_slug="057-abort",
             target_branch="main",
             wp_order=["WP01"],
         )

@@ -35,7 +35,7 @@ def _require_event_log(feature_dir: Path) -> None:
         )
 
 
-def get_wp_lane(feature_dir: Path, wp_id: str) -> str:
+def get_wp_lane(mission_dir: Path, wp_id: str) -> str:
     """Get canonical lane for a WP from the event log.
 
     Raises ``CanonicalStatusNotFoundError`` when the event log file is
@@ -47,7 +47,7 @@ def get_wp_lane(feature_dir: Path, wp_id: str) -> str:
     _require_event_log(feature_dir)
     from .store import read_events
     from .reducer import reduce
-    events = read_events(feature_dir)
+    events = read_events(mission_dir)
     if not events:
         # File exists but is empty — treat WP as uninitialized.
         return "uninitialized"
@@ -58,7 +58,7 @@ def get_wp_lane(feature_dir: Path, wp_id: str) -> str:
     return str(wp_state.get("lane", "planned"))
 
 
-def get_all_wp_lanes(feature_dir: Path) -> dict[str, str]:
+def get_all_wp_lanes(mission_dir: Path) -> dict[str, str]:
     """Get canonical lanes for all WPs from the event log.
 
     Raises ``CanonicalStatusNotFoundError`` when the event log file is
@@ -70,7 +70,7 @@ def get_all_wp_lanes(feature_dir: Path) -> dict[str, str]:
     _require_event_log(feature_dir)
     from .store import read_events
     from .reducer import reduce
-    events = read_events(feature_dir)
+    events = read_events(mission_dir)
     if not events:
         return {}
     snapshot = reduce(events)

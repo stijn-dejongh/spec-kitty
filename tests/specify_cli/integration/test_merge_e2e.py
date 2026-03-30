@@ -84,9 +84,9 @@ def git_repo(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def _make_wp_branch(repo: Path, base_branch: str, wp_id: str, feature_slug: str) -> str:
+def _make_wp_branch(repo: Path, base_branch: str, wp_id: str, mission_slug: str) -> str:
     """Create a WP branch with one commit; return branch name."""
-    branch = f"{feature_slug}-{wp_id}"
+    branch = f"{mission_slug}-{wp_id}"
     _git(["checkout", "-b", branch, base_branch], repo)
     (repo / f"{wp_id}.txt").write_text(f"Content for {wp_id}\n")
     _git(["add", f"{wp_id}.txt"], repo)
@@ -106,7 +106,7 @@ class TestMergeStateRoundTrip:
     def test_save_and_load(self, tmp_path: Path) -> None:
         state = MergeState(
             mission_id="047-merge-test",
-            feature_slug="047-merge-test",
+            mission_slug="047-merge-test",
             target_branch="main",
             wp_order=["WP01", "WP02", "WP03"],
         )
@@ -122,7 +122,7 @@ class TestMergeStateRoundTrip:
     def test_remaining_wps_after_complete(self, tmp_path: Path) -> None:
         state = MergeState(
             mission_id="047-merge-test",
-            feature_slug="047-merge-test",
+            mission_slug="047-merge-test",
             target_branch="main",
             wp_order=["WP01", "WP02", "WP03"],
         )
@@ -137,7 +137,7 @@ class TestMergeStateRoundTrip:
     def test_progress_percent_reflects_completion(self, tmp_path: Path) -> None:
         state = MergeState(
             mission_id="047-merge-test",
-            feature_slug="047-merge-test",
+            mission_slug="047-merge-test",
             target_branch="main",
             wp_order=["WP01", "WP02"],
         )
@@ -150,7 +150,7 @@ class TestMergeStateRoundTrip:
     def test_clear_state_removes_file(self, tmp_path: Path) -> None:
         state = MergeState(
             mission_id="047-merge-test",
-            feature_slug="047-merge-test",
+            mission_slug="047-merge-test",
             target_branch="main",
             wp_order=["WP01"],
         )
@@ -176,7 +176,7 @@ class TestHasActiveMerge:
     def test_true_when_wps_remain(self, tmp_path: Path) -> None:
         state = MergeState(
             mission_id="047-active",
-            feature_slug="047-active",
+            mission_slug="047-active",
             target_branch="main",
             wp_order=["WP01", "WP02"],
         )
@@ -186,7 +186,7 @@ class TestHasActiveMerge:
     def test_false_when_all_completed(self, tmp_path: Path) -> None:
         state = MergeState(
             mission_id="047-active",
-            feature_slug="047-active",
+            mission_slug="047-active",
             target_branch="main",
             wp_order=["WP01"],
             completed_wps=["WP01"],
@@ -263,7 +263,7 @@ class TestEventLogAutoResolution:
             "actor": "agent",
             "at": at,
             "event_id": event_id,
-            "feature_slug": "047-merge-test",
+            "mission_slug": "047-merge-test",
             "force": False,
             "from_lane": "planned",
             "to_lane": "in_progress",
@@ -412,7 +412,7 @@ class TestMergeResumeState:
         """After completing WP01, remaining = [WP02, WP03]."""
         state = MergeState(
             mission_id="047-resume",
-            feature_slug="047-resume",
+            mission_slug="047-resume",
             target_branch="main",
             wp_order=["WP01", "WP02", "WP03"],
         )
@@ -429,7 +429,7 @@ class TestMergeResumeState:
         """After completing all WPs, remaining_wps is empty."""
         state = MergeState(
             mission_id="047-complete",
-            feature_slug="047-complete",
+            mission_slug="047-complete",
             target_branch="main",
             wp_order=["WP01", "WP02"],
         )
@@ -448,7 +448,7 @@ class TestMergeResumeState:
         wp_order = ["WP03", "WP01", "WP02"]
         state = MergeState(
             mission_id="047-order",
-            feature_slug="047-order",
+            mission_slug="047-order",
             target_branch="main",
             wp_order=wp_order,
         )

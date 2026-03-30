@@ -41,7 +41,7 @@ def validate_event_schema(event: dict) -> list[str]:
     """Validate a single event dict against the StatusEvent schema.
 
     Checks:
-    - All required fields present: event_id, feature_slug, wp_id,
+    - All required fields present: event_id, mission_slug, wp_id,
       from_lane, to_lane, at, actor, force, execution_mode
     - event_id is valid event ID (ULID Crockford base32, or UUID)
     - from_lane and to_lane are canonical lane values (never aliases)
@@ -56,7 +56,7 @@ def validate_event_schema(event: dict) -> list[str]:
     findings: list[str] = []
     required_fields = [
         "event_id",
-        "feature_slug",
+        "mission_slug",
         "wp_id",
         "from_lane",
         "to_lane",
@@ -67,6 +67,9 @@ def validate_event_schema(event: dict) -> list[str]:
     ]
     for f in required_fields:
         if f not in event:
+            # Accept legacy "mission_slug" as alias for "mission_slug"
+            if f == "mission_slug" and "mission_slug" in event:
+                continue
             findings.append(f"Missing required field: {f}")
 
     # ULID format check
@@ -185,7 +188,7 @@ def validate_done_evidence(events: list[dict]) -> list[str]:
     return findings
 
 
-def validate_materialization_drift(feature_dir: Path) -> list[str]:
+def validate_materialization_drift(mission_dir: Path) -> list[str]:
     """Compare status.json on disk vs reducer output from the event log.
 
     Returns findings describing any drift detected. An empty list means
@@ -196,8 +199,8 @@ def validate_materialization_drift(feature_dir: Path) -> list[str]:
 
     findings: list[str] = []
 
-    status_path = feature_dir / SNAPSHOT_FILENAME
-    events_path = feature_dir / EVENTS_FILENAME
+    status_path = mission_dir / SNAPSHOT_FILENAME
+    events_path = mission_dir / EVENTS_FILENAME
 
     if not events_path.exists():
         if status_path.exists():
@@ -215,7 +218,7 @@ def validate_materialization_drift(feature_dir: Path) -> list[str]:
     disk_data = json.loads(status_path.read_text(encoding="utf-8"))
 
     # Compute expected snapshot from events
-    events = read_events(feature_dir)
+    events = read_events(mission_dir)
     expected_snapshot = reduce(events)
 
     # Compare work_packages and summary (skip materialized_at which is timestamp)
@@ -258,7 +261,7 @@ def validate_materialization_drift(feature_dir: Path) -> list[str]:
 
 
 def validate_derived_views(
-    feature_dir: Path,
+    mission_dir: Path,
     snapshot_wps: dict,
     phase: int,
 ) -> list[str]:
@@ -269,7 +272,7 @@ def validate_derived_views(
     against the canonical snapshot.
 
     Args:
-        feature_dir: Path to the feature directory (unused).
+        mission_dir: Path to the mission directory (unused).
         snapshot_wps: The work_packages dict from the StatusSnapshot (unused).
         phase: Current status phase (unused).
 

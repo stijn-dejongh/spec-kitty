@@ -16,7 +16,7 @@ from specify_cli.cli.commands.context import app
 # ---------------------------------------------------------------------------
 
 
-def _make_project(tmp_path: Path, *, feature_slug: str = "057-test-feature", wp_code: str = "WP01") -> Path:
+def _make_project(tmp_path: Path, *, mission_slug: str = "057-test-feature", wp_code: str = "WP01") -> Path:
     """Create a minimal spec-kitty project tree for CLI tests."""
     # .kittify/config.yaml
     kittify_dir = tmp_path / ".kittify"
@@ -27,19 +27,19 @@ def _make_project(tmp_path: Path, *, feature_slug: str = "057-test-feature", wp_
     )
 
     # kitty-specs/<slug>/meta.json
-    feature_dir = tmp_path / "kitty-specs" / feature_slug
-    feature_dir.mkdir(parents=True)
+    mission_dir = tmp_path / "kitty-specs" / mission_slug
+    mission_dir.mkdir(parents=True)
     meta = {
-        "feature_slug": feature_slug,
-        "mission_id": feature_slug,
+        "mission_slug": mission_slug,
+        "mission_id": mission_slug,
         "target_branch": "main",
     }
-    (feature_dir / "meta.json").write_text(
+    (mission_dir / "meta.json").write_text(
         json.dumps(meta, indent=2) + "\n", encoding="utf-8"
     )
 
     # kitty-specs/<slug>/tasks/<WP>.md
-    tasks_dir = feature_dir / "tasks"
+    tasks_dir = mission_dir / "tasks"
     tasks_dir.mkdir(parents=True)
     wp_content = (
         f"---\n"
@@ -90,7 +90,7 @@ class TestMissionResolveCommand:
         assert result.exit_code == 0, result.output
         data = json.loads(result.output)
         assert data["wp_code"] == "WP01"
-        assert data["feature_slug"] == "057-test-feature"
+        assert data["mission_slug"] == "057-test-feature"
         assert data["token"].startswith("ctx-")
         assert data["target_branch"] == "main"
 
@@ -196,7 +196,7 @@ class TestMissionShowCommand:
         data = json.loads(result.output)
         assert data["token"] == token
         assert data["wp_code"] == "WP01"
-        assert data["feature_slug"] == "057-test-feature"
+        assert data["mission_slug"] == "057-test-feature"
 
     def test_show_invalid_token_fails(self, tmp_path: Path) -> None:
         """show with an invalid token exits non-zero with an error."""
@@ -223,77 +223,77 @@ class TestMissionShowCommand:
 
 
 # ---------------------------------------------------------------------------
-# Tests: require_explicit_feature helper
+# Tests: require_explicit_mission helper
 # ---------------------------------------------------------------------------
 
 
 class TestRequireExplicitFeature:
-    """Tests for core/paths.py require_explicit_feature."""
+    """Tests for core/paths.py require_explicit_mission."""
 
     def test_returns_slug_when_provided(self) -> None:
-        from specify_cli.core.paths import require_explicit_feature
-        assert require_explicit_feature("057-my-feature") == "057-my-feature"
+        from specify_cli.core.paths import require_explicit_mission
+        assert require_explicit_mission("057-my-feature") == "057-my-feature"
 
     def test_strips_whitespace(self) -> None:
-        from specify_cli.core.paths import require_explicit_feature
-        assert require_explicit_feature("  057-my-feature  ") == "057-my-feature"
+        from specify_cli.core.paths import require_explicit_mission
+        assert require_explicit_mission("  057-my-feature  ") == "057-my-feature"
 
     def test_raises_when_none(self) -> None:
-        from specify_cli.core.paths import require_explicit_feature
+        from specify_cli.core.paths import require_explicit_mission
         with pytest.raises(ValueError, match="--feature"):
-            require_explicit_feature(None)
+            require_explicit_mission(None)
 
     def test_raises_when_empty_string(self) -> None:
-        from specify_cli.core.paths import require_explicit_feature
+        from specify_cli.core.paths import require_explicit_mission
         with pytest.raises(ValueError, match="--feature"):
-            require_explicit_feature("")
+            require_explicit_mission("")
 
     def test_raises_when_whitespace_only(self) -> None:
-        from specify_cli.core.paths import require_explicit_feature
+        from specify_cli.core.paths import require_explicit_mission
         with pytest.raises(ValueError, match="--feature"):
-            require_explicit_feature("   ")
+            require_explicit_mission("   ")
 
     def test_custom_command_hint(self) -> None:
-        from specify_cli.core.paths import require_explicit_feature
+        from specify_cli.core.paths import require_explicit_mission
         with pytest.raises(ValueError, match="--wp <WP_CODE>"):
-            require_explicit_feature(None, command_hint="--wp <WP_CODE>")
+            require_explicit_mission(None, command_hint="--wp <WP_CODE>")
 
 
 # ---------------------------------------------------------------------------
-# Tests: get_feature_target_branch helper
+# Tests: get_mission_target_branch helper
 # ---------------------------------------------------------------------------
 
 
 class TestGetFeatureTargetBranch:
-    """Tests for core/paths.py get_feature_target_branch."""
+    """Tests for core/paths.py get_mission_target_branch."""
 
     def test_reads_from_meta_json(self, tmp_path: Path) -> None:
-        from specify_cli.core.paths import get_feature_target_branch
-        feature_dir = tmp_path / "kitty-specs" / "057-test"
-        feature_dir.mkdir(parents=True)
-        (feature_dir / "meta.json").write_text(
+        from specify_cli.core.paths import get_mission_target_branch
+        mission_dir = tmp_path / "kitty-specs" / "057-test"
+        mission_dir.mkdir(parents=True)
+        (mission_dir / "meta.json").write_text(
             json.dumps({"target_branch": "2.x"}) + "\n", encoding="utf-8"
         )
         # Need a fake .git directory so resolve_primary_branch can run
         (tmp_path / ".git").mkdir()
-        branch = get_feature_target_branch(tmp_path, "057-test")
+        branch = get_mission_target_branch(tmp_path, "057-test")
         assert branch == "2.x"
 
     def test_falls_back_when_no_meta(self, tmp_path: Path) -> None:
-        from specify_cli.core.paths import get_feature_target_branch
+        from specify_cli.core.paths import get_mission_target_branch
         (tmp_path / ".git").mkdir()
         # No kitty-specs directory at all -- should return primary branch fallback
-        branch = get_feature_target_branch(tmp_path, "099-nonexistent")
+        branch = get_mission_target_branch(tmp_path, "099-nonexistent")
         # Just verify it returns a non-empty string (main or master)
         assert isinstance(branch, str)
         assert len(branch) > 0
 
     def test_falls_back_on_malformed_meta(self, tmp_path: Path) -> None:
-        from specify_cli.core.paths import get_feature_target_branch
-        feature_dir = tmp_path / "kitty-specs" / "057-test"
-        feature_dir.mkdir(parents=True)
-        (feature_dir / "meta.json").write_text("INVALID JSON {{", encoding="utf-8")
+        from specify_cli.core.paths import get_mission_target_branch
+        mission_dir = tmp_path / "kitty-specs" / "057-test"
+        mission_dir.mkdir(parents=True)
+        (mission_dir / "meta.json").write_text("INVALID JSON {{", encoding="utf-8")
         (tmp_path / ".git").mkdir()
-        branch = get_feature_target_branch(tmp_path, "057-test")
+        branch = get_mission_target_branch(tmp_path, "057-test")
         assert isinstance(branch, str)
         assert len(branch) > 0

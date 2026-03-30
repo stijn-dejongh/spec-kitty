@@ -9,10 +9,12 @@ import json
 import os
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
+
+from specify_cli.constitution.mission_paths import MissionType, ProjectMissionPaths
 
 
 class MissionError(Exception):
@@ -37,6 +39,7 @@ MISSION_ROOT_FIELDS: tuple[str, ...] = (
     "mcp_tools",
     "agent_context",
     "task_metadata",
+    "task_types",
     "commands",
 )
 
@@ -68,8 +71,8 @@ class ArtifactsConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    required: List[str] = Field(default_factory=list, description="Artifacts required for acceptance")
-    optional: List[str] = Field(default_factory=list, description="Optional artifacts and directories")
+    required: list[str] = Field(default_factory=list, description="Artifacts required for acceptance")
+    optional: list[str] = Field(default_factory=list, description="Optional artifacts and directories")
 
 
 class ValidationConfig(BaseModel):
@@ -77,7 +80,7 @@ class ValidationConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    checks: List[str] = Field(default_factory=list, description="Validation checks executed for this mission")
+    checks: list[str] = Field(default_factory=list, description="Validation checks executed for this mission")
     custom_validators: bool = Field(default=False, description="Whether validators.py should be invoked")
 
 
@@ -86,7 +89,7 @@ class WorkflowConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    phases: List[PhaseConfig] = Field(..., min_length=1, description="Ordered workflow phases")
+    phases: list[PhaseConfig] = Field(..., min_length=1, description="Ordered workflow phases")
 
 
 class MCPToolsConfig(BaseModel):
@@ -94,9 +97,9 @@ class MCPToolsConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    required: List[str] = Field(default_factory=list)
-    recommended: List[str] = Field(default_factory=list)
-    optional: List[str] = Field(default_factory=list)
+    required: list[str] = Field(default_factory=list)
+    recommended: list[str] = Field(default_factory=list)
+    optional: list[str] = Field(default_factory=list)
 
 
 class CommandConfig(BaseModel):
@@ -112,8 +115,17 @@ class TaskMetadataConfig(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    required: List[str] = Field(default_factory=list)
-    optional: List[str] = Field(default_factory=list)
+    required: list[str] = Field(default_factory=list)
+    optional: list[str] = Field(default_factory=list)
+
+
+class TaskTypeConfig(BaseModel):
+    """Agent role hint for a task type."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    agent_role: str | None = Field(default=None, description="Agent role hint for this task type")
+    description: str | None = Field(default=None, description="Human-readable description")
 
 
 class MissionConfig(BaseModel):
@@ -129,15 +141,16 @@ class MissionConfig(BaseModel):
     )
     workflow: WorkflowConfig = Field(..., description="Workflow definition")
     artifacts: ArtifactsConfig = Field(..., description="Artifacts required/optional")
-    paths: Dict[str, str] = Field(
+    paths: dict[str, str] = Field(
         default_factory=dict,
         description="Path conventions (workspace/tests/deliverables/documentation/data/etc.)",
     )
     validation: ValidationConfig = Field(default_factory=ValidationConfig, description="Validation settings")
-    mcp_tools: Optional[MCPToolsConfig] = Field(default=None, description="MCP tool recommendations")
-    agent_context: Optional[str] = Field(default=None, description="Agent instructions/personality")
-    task_metadata: Optional[TaskMetadataConfig] = Field(default=None, description="Task metadata definitions")
-    commands: Optional[Dict[str, CommandConfig]] = Field(default=None, description="Command-specific prompts")
+    mcp_tools: MCPToolsConfig | None = Field(default=None, description="MCP tool recommendations")
+    agent_context: str | None = Field(default=None, description="Agent instructions/personality")
+    task_metadata: TaskMetadataConfig | None = Field(default=None, description="Task metadata definitions")
+    task_types: dict[str, TaskTypeConfig] | None = Field(default=None, description="Agent role hints per task type")
+    commands: dict[str, CommandConfig] | None = Field(default=None, description="Command-specific prompts")
 
     def model_post_init(self, __context: Any) -> None:  # pragma: no cover - simple warning logic
         """Warn on unknown path convention keys while permitting customization."""
@@ -209,7 +222,7 @@ class Mission:
                 f"Expected mission.yaml in mission directory"
             )
 
-        with open(config_file, 'r') as f:
+        with open(config_file) as f:
             try:
                 raw_config = yaml.safe_load(f) or {}
             except yaml.YAMLError as e:
@@ -328,19 +341,19 @@ class Mission:
 
         return command_path
 
-    def list_templates(self) -> List[str]:
+    def list_templates(self) -> list[str]:
         """List all available templates in this mission."""
         if not self.templates_dir.exists():
             return []
         return [f.name for f in self.templates_dir.glob("*.md")]
 
-    def list_commands(self) -> List[str]:
+    def list_commands(self) -> list[str]:
         """List all available command templates in this mission."""
         if not self.command_templates_dir.exists():
             return []
         return [f.stem for f in self.command_templates_dir.glob("*.md")]
 
-    def get_validation_checks(self) -> List[str]:
+    def get_validation_checks(self) -> list[str]:
         """Get list of validation checks for this mission."""
         return list(self.config.validation.checks)
 
@@ -348,7 +361,7 @@ class Mission:
         """Check if mission has custom validators.py."""
         return self.config.validation.custom_validators
 
-    def get_workflow_phases(self) -> List[Dict[str, str]]:
+    def get_workflow_phases(self) -> list[dict[str, str]]:
         """Get workflow phases for this mission.
 
         Returns:
@@ -356,19 +369,19 @@ class Mission:
         """
         return [phase.model_dump() for phase in self.config.workflow.phases]
 
-    def get_required_artifacts(self) -> List[str]:
+    def get_required_artifacts(self) -> list[str]:
         """Get list of required artifacts for this mission."""
         return list(self.config.artifacts.required)
 
-    def get_optional_artifacts(self) -> List[str]:
+    def get_optional_artifacts(self) -> list[str]:
         """Get list of optional artifacts for this mission."""
         return list(self.config.artifacts.optional)
 
-    def get_path_conventions(self) -> Dict[str, str]:
+    def get_path_conventions(self) -> dict[str, str]:
         """Get path conventions for this mission (e.g., workspace, tests)."""
         return dict(self.config.paths)
 
-    def get_mcp_tools(self) -> Dict[str, List[str]]:
+    def get_mcp_tools(self) -> dict[str, list[str]]:
         """Get MCP tools configuration for this mission.
 
         Returns:
@@ -387,7 +400,7 @@ class Mission:
         """Get agent personality/instructions for this mission."""
         return self.config.agent_context or ""
 
-    def get_command_config(self, command_name: str) -> Dict[str, str]:
+    def get_command_config(self, command_name: str) -> dict[str, str]:
         """Get configuration for a specific command.
 
         Args:
@@ -406,7 +419,7 @@ class Mission:
         return f"Mission(name='{self.name}', domain='{self.domain}', version='{self.version}')"
 
 
-def get_active_mission(project_root: Optional[Path] = None) -> Mission:
+def get_active_mission(project_root: Path | None = None) -> Mission:
     """Get the currently active mission for a project.
 
     Args:
@@ -433,7 +446,7 @@ def get_active_mission(project_root: Optional[Path] = None) -> Mission:
     active_mission_link = kittify_dir / "active-mission"
 
     if active_mission_link.exists():
-        mission_path: Optional[Path] = None
+        mission_path: Path | None = None
         if active_mission_link.is_symlink():
             # Resolve symlink to actual mission directory (supports relative targets)
             mission_path = active_mission_link.resolve()
@@ -443,7 +456,9 @@ def get_active_mission(project_root: Optional[Path] = None) -> Mission:
             except OSError:
                 mission_name = ""
             if mission_name:
-                mission_path = kittify_dir / "missions" / mission_name
+                mission_path = ProjectMissionPaths.from_kittify(kittify_dir).mission_dir_for(
+                    MissionType.with_name(mission_name)
+                )
         if mission_path is None:
             # Fallback to interpreting the target path directly
             try:
@@ -453,10 +468,14 @@ def get_active_mission(project_root: Optional[Path] = None) -> Mission:
                 mission_path = None
 
         if mission_path is None:
-            mission_path = kittify_dir / "missions" / "software-dev"
+            mission_path = ProjectMissionPaths.from_kittify(kittify_dir).mission_dir_for(
+                MissionType.SOFTWARE_DEV
+            )
     else:
         # Default to software-dev if no active mission set
-        mission_path = kittify_dir / "missions" / "software-dev"
+        mission_path = ProjectMissionPaths.from_kittify(kittify_dir).mission_dir_for(
+            MissionType.SOFTWARE_DEV
+        )
 
     if not mission_path.exists():
         raise MissionNotFoundError(
@@ -467,7 +486,7 @@ def get_active_mission(project_root: Optional[Path] = None) -> Mission:
     return Mission(mission_path)
 
 
-def list_available_missions(kittify_dir: Optional[Path] = None) -> List[str]:
+def list_available_missions(kittify_dir: Path | None = None) -> list[str]:
     """List all available missions in a project.
 
     Args:
@@ -479,7 +498,7 @@ def list_available_missions(kittify_dir: Optional[Path] = None) -> List[str]:
     if kittify_dir is None:
         kittify_dir = Path.cwd() / ".kittify"
 
-    missions_dir = kittify_dir / "missions"
+    missions_dir = ProjectMissionPaths.from_kittify(kittify_dir).missions_root()
 
     if not missions_dir.exists():
         return []
@@ -492,7 +511,7 @@ def list_available_missions(kittify_dir: Optional[Path] = None) -> List[str]:
     return sorted(missions)
 
 
-def get_mission_by_name(mission_name: str, kittify_dir: Optional[Path] = None) -> Mission:
+def get_mission_by_name(mission_name: str, kittify_dir: Path | None = None) -> Mission:
     """Get a mission by name.
 
     Args:
@@ -508,7 +527,9 @@ def get_mission_by_name(mission_name: str, kittify_dir: Optional[Path] = None) -
     if kittify_dir is None:
         kittify_dir = Path.cwd() / ".kittify"
 
-    mission_path = kittify_dir / "missions" / mission_name
+    mission_path = ProjectMissionPaths.from_kittify(kittify_dir).mission_dir_for(
+        MissionType.with_name(mission_name)
+    )
 
     if not mission_path.exists():
         available = list_available_missions(kittify_dir)
@@ -521,43 +542,43 @@ def get_mission_by_name(mission_name: str, kittify_dir: Optional[Path] = None) -
 
 
 # =============================================================================
-# Per-Feature Mission Functions (v0.8.0+)
+# Per-Mission Functions (v0.8.0+)
 # =============================================================================
 
 
-def get_feature_mission_key(feature_dir: Path) -> str:
-    """Extract mission key from feature's meta.json, defaulting to software-dev.
+def get_mission_key(mission_dir: Path) -> str:
+    """Extract mission key from mission's meta.json, defaulting to software-dev.
 
-    This is a helper function for reading the mission field from a feature's
+    This is a helper function for reading the mission field from a mission's
     metadata file. It handles missing files and invalid JSON gracefully.
 
     Args:
-        feature_dir: Path to the feature directory (kitty-specs/<feature>/)
+        mission_dir: Path to the mission directory (kitty-specs/<mission>/)
 
     Returns:
         Mission key string (e.g., 'software-dev', 'research')
     """
-    meta_file = feature_dir / "meta.json"
+    meta_file = mission_dir / "meta.json"
     if not meta_file.exists():
         return "software-dev"
     try:
-        with open(meta_file, 'r', encoding='utf-8') as f:
+        with open(meta_file, encoding='utf-8') as f:
             meta = json.load(f)
         return meta.get("mission", "software-dev")
     except (json.JSONDecodeError, OSError):
         return "software-dev"
 
 
-def get_deliverables_path(feature_dir: Path, feature_slug: Optional[str] = None) -> Optional[str]:
-    """Extract deliverables_path from feature's meta.json.
+def get_deliverables_path(mission_dir: Path, mission_slug: str | None = None) -> str | None:
+    """Extract deliverables_path from mission's meta.json.
 
     For research missions, deliverables go in a separate location from
     kitty-specs/ planning artifacts. This function reads that location
     from meta.json.
 
     Args:
-        feature_dir: Path to the feature directory (kitty-specs/<feature>/)
-        feature_slug: Feature slug for default path generation (optional)
+        mission_dir: Path to the mission directory (kitty-specs/<mission>/)
+        mission_slug: Mission slug for default path generation (optional)
 
     Returns:
         Deliverables path string if configured, or a default path for research
@@ -567,12 +588,12 @@ def get_deliverables_path(feature_dir: Path, feature_slug: Optional[str] = None)
         >>> get_deliverables_path(Path("kitty-specs/001-market-research"))
         'docs/research/001-market-research/'
     """
-    meta_file = feature_dir / "meta.json"
+    meta_file = mission_dir / "meta.json"
 
     # Try to read from meta.json
     if meta_file.exists():
         try:
-            with open(meta_file, 'r', encoding='utf-8') as f:
+            with open(meta_file, encoding='utf-8') as f:
                 meta = json.load(f)
             deliverables_path = meta.get("deliverables_path")
             if deliverables_path:
@@ -582,20 +603,20 @@ def get_deliverables_path(feature_dir: Path, feature_slug: Optional[str] = None)
             mission = meta.get("mission", "software-dev")
             if mission == "research":
                 # Generate default path using slug from meta or directory name
-                slug = meta.get("slug") or feature_slug or feature_dir.name
+                slug = meta.get("slug") or mission_slug or mission_dir.name
                 return f"docs/research/{slug}/"
         except (json.JSONDecodeError, OSError):
             pass
 
-    # If no meta.json but feature_slug provided, check mission from directory structure
+    # If no meta.json but mission_slug provided, check mission from directory structure
     # and provide default for research missions
-    if feature_slug:
-        return f"docs/research/{feature_slug}/"
+    if mission_slug:
+        return f"docs/research/{mission_slug}/"
 
     return None
 
 
-def validate_deliverables_path(deliverables_path: str) -> Tuple[bool, str]:
+def validate_deliverables_path(deliverables_path: str) -> tuple[bool, str]:
     """Validate that a deliverables_path is acceptable.
 
     Rules:
@@ -618,7 +639,7 @@ def validate_deliverables_path(deliverables_path: str) -> Tuple[bool, str]:
 
     # Check if just 'research/' at root
     if path == 'research' or path == 'research/':
-        return False, "deliverables_path should not be just 'research/' at root (ambiguous). Use 'docs/research/<feature>/' or 'research-outputs/<feature>/' instead."
+        return False, "deliverables_path should not be just 'research/' at root (ambiguous). Use 'docs/research/<mission>/' or 'research-outputs/<mission>/' instead."
 
     # Check if absolute path
     if path.startswith('/'):
@@ -627,30 +648,30 @@ def validate_deliverables_path(deliverables_path: str) -> Tuple[bool, str]:
     return True, ""
 
 
-def get_mission_for_feature(feature_dir: Path, project_root: Optional[Path] = None) -> Mission:
-    """Get the mission for a specific feature.
+def get_mission_for_mission_dir(mission_dir: Path, project_root: Path | None = None) -> Mission:
+    """Get the mission for a specific mission directory.
 
-    Reads the mission key from the feature's meta.json and loads the
+    Reads the mission key from the mission's meta.json and loads the
     corresponding mission. If the mission field is missing or the specified
     mission doesn't exist, falls back to software-dev for backward compatibility.
 
     Args:
-        feature_dir: Path to the feature directory (kitty-specs/<feature>/)
+        mission_dir: Path to the mission directory (kitty-specs/<mission>/)
         project_root: Optional project root (defaults to finding .kittify)
 
     Returns:
-        Mission object for the feature
+        Mission object for the mission directory
 
     Raises:
-        MissionNotFoundError: If feature meta.json not found and no default available
+        MissionNotFoundError: If mission meta.json not found and no default available
     """
     # Get the mission key from meta.json
-    mission_key = get_feature_mission_key(feature_dir)
+    mission_key = get_mission_key(mission_dir)
 
     # Find project root if not provided
     if project_root is None:
-        # Walk up from feature_dir to find .kittify
-        current = feature_dir.resolve()
+        # Walk up from mission_dir to find .kittify
+        current = mission_dir.resolve()
         while current != current.parent:
             if (current / ".kittify").exists():
                 project_root = current
@@ -659,7 +680,7 @@ def get_mission_for_feature(feature_dir: Path, project_root: Optional[Path] = No
 
         if project_root is None:
             raise MissionNotFoundError(
-                f"Could not find .kittify directory from {feature_dir}\n"
+                f"Could not find .kittify directory from {mission_dir}\n"
                 f"Is this a Spec Kitty project?"
             )
 
@@ -671,14 +692,14 @@ def get_mission_for_feature(feature_dir: Path, project_root: Optional[Path] = No
     except MissionNotFoundError:
         # Fall back to software-dev with warning
         warnings.warn(
-            f"Mission '{mission_key}' not found for feature {feature_dir.name}, "
+            f"Mission '{mission_key}' not found for mission {mission_dir.name}, "
             f"using software-dev as default",
             stacklevel=2
         )
         return get_mission_by_name("software-dev", kittify_dir)
 
 
-def discover_missions(project_root: Optional[Path] = None) -> Dict[str, Tuple[Mission, str]]:
+def discover_missions(project_root: Path | None = None) -> dict[str, tuple[Mission, str]]:
     """Discover all available missions with their sources.
 
     Scans the project's .kittify/missions/ directory for valid mission
@@ -700,12 +721,12 @@ def discover_missions(project_root: Optional[Path] = None) -> Dict[str, Tuple[Mi
     if not kittify_dir.exists():
         return {}
 
-    missions_dir = kittify_dir / "missions"
+    missions_dir = ProjectMissionPaths.from_kittify(kittify_dir).missions_root()
 
     if not missions_dir.exists():
         return {}
 
-    missions: Dict[str, Tuple[Mission, str]] = {}
+    missions: dict[str, tuple[Mission, str]] = {}
 
     for mission_dir in missions_dir.iterdir():
         if mission_dir.is_dir() and (mission_dir / "mission.yaml").exists():

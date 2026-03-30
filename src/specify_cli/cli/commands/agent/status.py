@@ -17,9 +17,9 @@ from rich.console import Console
 from rich.table import Table
 from typing_extensions import Annotated
 
-from specify_cli.core.paths import require_explicit_feature
+from specify_cli.core.paths import require_explicit_mission
 from specify_cli.core.paths import locate_project_root, get_main_repo_root
-from specify_cli.status.locking import feature_status_lock
+from specify_cli.status.locking import mission_status_lock
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ app = typer.Typer(
 console = Console()
 
 
-def _find_feature_slug(explicit_feature: str | None = None) -> str:
+def _find_mission_slug(explicit_feature: str | None = None) -> str:
     """Require an explicit feature slug (no auto-detection).
 
     Args:
@@ -45,7 +45,7 @@ def _find_feature_slug(explicit_feature: str | None = None) -> str:
         typer.Exit: If feature slug is not provided.
     """
     try:
-        return require_explicit_feature(explicit_feature, command_hint="--feature <slug>")
+        return require_explicit_mission(explicit_feature, command_hint="--feature <slug>")
     except ValueError as e:
         console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1)
@@ -67,13 +67,13 @@ def _output_error(json_mode: bool, error_message: str):
         console.print(f"[red]Error:[/red] {error_message}")
 
 
-def _resolve_feature_dir(
+def _resolve_mission_dir(
     explicit_feature: str | None = None,
 ) -> tuple[Path, str, Path]:
     """Resolve feature directory, feature slug, and repo root.
 
     Returns:
-        (feature_dir, feature_slug, repo_root)
+        (mission_dir, mission_slug, repo_root)
 
     Raises:
         typer.Exit: If resolution fails
@@ -85,11 +85,11 @@ def _resolve_feature_dir(
         console.print("[red]Error:[/red] Could not locate project root")
         raise typer.Exit(1)
 
-    feature_slug = _find_feature_slug(explicit_feature=explicit_feature)
+    mission_slug = _find_mission_slug(explicit_feature=explicit_feature)
     main_repo_root = get_main_repo_root(repo_root)
-    feature_dir = main_repo_root / "kitty-specs" / feature_slug
+    mission_dir = main_repo_root / "kitty-specs" / mission_slug
 
-    return feature_dir, feature_slug, main_repo_root
+    return mission_dir, mission_slug, main_repo_root
 
 
 @app.command()
@@ -130,10 +130,10 @@ def emit(
         main_repo_root = get_main_repo_root(repo_root)
 
         # Resolve feature slug
-        feature_slug = _find_feature_slug(explicit_feature=feature)
+        mission_slug = _find_mission_slug(explicit_feature=feature)
 
         # Construct feature directory
-        feature_dir = main_repo_root / "kitty-specs" / feature_slug
+        mission_dir = main_repo_root / "kitty-specs" / mission_slug
 
         # Parse evidence JSON if provided
         evidence = None
@@ -156,8 +156,8 @@ def emit(
         )
 
         event = emit_status_transition(
-            feature_dir=feature_dir,
-            feature_slug=feature_slug,
+            mission_dir=mission_dir,
+            mission_slug=mission_slug,
             wp_id=wp_id,
             to_lane=to,
             actor=actor,
@@ -231,17 +231,17 @@ def materialize(
         main_repo_root = get_main_repo_root(repo_root)
 
         # Resolve feature slug
-        feature_slug = _find_feature_slug(explicit_feature=feature)
+        mission_slug = _find_mission_slug(explicit_feature=feature)
 
         # Construct feature directory
-        feature_dir = main_repo_root / "kitty-specs" / feature_slug
+        mission_dir = main_repo_root / "kitty-specs" / mission_slug
 
         # Lazy import to avoid circular imports
         from specify_cli.status.reducer import materialize as do_materialize
         from specify_cli.status.store import EVENTS_FILENAME
 
         # Check that the events file exists
-        events_path = feature_dir / EVENTS_FILENAME
+        events_path = mission_dir / EVENTS_FILENAME
         if not events_path.exists():
             _output_error(
                 json_output,
@@ -251,9 +251,9 @@ def materialize(
             )
             raise typer.Exit(1)
 
-        with feature_status_lock(main_repo_root, feature_slug):
+        with mission_status_lock(main_repo_root, mission_slug):
             # Materialize snapshot from event log
-            snapshot = do_materialize(feature_dir)
+            snapshot = do_materialize(mission_dir)
 
         # Build output
         if json_output:
@@ -264,7 +264,7 @@ def materialize(
             event_count = snapshot.event_count
 
             console.print(
-                f"[green]Materialized[/green] {feature_slug}: "
+                f"[green]Materialized[/green] {mission_slug}: "
                 f"{event_count} events -> {wp_count} WPs"
             )
 
@@ -327,7 +327,7 @@ def doctor(
     from specify_cli.runtime.doctor import run_global_checks
     from specify_cli.status.doctor import run_doctor
 
-    feature_dir, feature_slug, repo_root = _resolve_feature_dir(feature)
+    mission_dir, mission_slug, repo_root = _resolve_mission_dir(feature)
 
     # Run global runtime checks BEFORE project-specific checks
     global_checks = run_global_checks(project_dir=repo_root)
@@ -335,8 +335,8 @@ def doctor(
 
     try:
         result = run_doctor(
-            feature_dir=feature_dir,
-            feature_slug=feature_slug,
+            mission_dir=mission_dir,
+            mission_slug=mission_slug,
             repo_root=repo_root,
             stale_claimed_days=stale_claimed,
             stale_in_progress_days=stale_in_progress,
@@ -354,7 +354,7 @@ def doctor(
 
     if json_output:
         report = {
-            "feature_slug": result.feature_slug,
+            "mission_slug": result.mission_slug,
             "healthy": overall_healthy,
             "global_runtime": [
                 {
@@ -393,7 +393,7 @@ def doctor(
             console.print(f"  [{color}]{icon}[/{color}] {check.message}")
 
         # Project-specific section
-        console.print(f"\n[bold]Feature Status: {result.feature_slug}[/bold]")
+        console.print(f"\n[bold]Feature Status: {result.mission_slug}[/bold]")
         if result.is_healthy:
             console.print(
                 f"  [green]Healthy[/green]"
@@ -434,7 +434,7 @@ def _migration_result_to_dict(result: Any) -> dict[str, Any]:
     return {
         "features": [
             {
-                "feature_slug": f.feature_slug,
+                "mission_slug": f.mission_slug,
                 "status": f.status,
                 "wp_count": len(f.wp_details),
                 "wp_details": [
@@ -480,7 +480,7 @@ def _print_rich_migrate_output(result: Any, *, dry_run: bool) -> None:
         aliases = sum(1 for wp in f.wp_details if wp.alias_resolved)
         notes = f.error or ""
         table.add_row(
-            f.feature_slug,
+            f.mission_slug,
             _status_style(f.status),
             str(len(f.wp_details)),
             str(aliases),
@@ -583,7 +583,7 @@ def validate(
         validate_transition_legality,
     )
 
-    feature_slug = _find_feature_slug(explicit_feature=feature)
+    mission_slug = _find_mission_slug(explicit_feature=feature)
 
     cwd = Path.cwd().resolve()
     repo_root = locate_project_root(cwd)
@@ -595,10 +595,10 @@ def validate(
         raise typer.Exit(1)
 
     main_repo_root = get_main_repo_root(repo_root)
-    feature_dir = main_repo_root / "kitty-specs" / feature_slug
+    mission_dir = main_repo_root / "kitty-specs" / mission_slug
 
-    if not feature_dir.exists():
-        msg = f"Feature directory not found: {feature_dir}"
+    if not mission_dir.exists():
+        msg = f"Feature directory not found: {mission_dir}"
         if json_output:
             print(json.dumps({"error": msg}))
         else:
@@ -607,14 +607,14 @@ def validate(
 
     result = ValidationResult()
 
-    raw_events = read_events_raw(feature_dir)
+    raw_events = read_events_raw(mission_dir)
 
     if not raw_events:
         if json_output:
             print(
                 json.dumps(
                     {
-                        "feature_slug": feature_slug,
+                        "mission_slug": mission_slug,
                         "passed": True,
                         "errors": [],
                         "warnings": [],
@@ -625,7 +625,7 @@ def validate(
             )
         else:
             console.print(
-                f"[green]Status Validation: {feature_slug}[/green]"
+                f"[green]Status Validation: {mission_slug}[/green]"
             )
             console.print("No events to validate.")
             console.print("[green]Result: PASS[/green]")
@@ -638,14 +638,14 @@ def validate(
     result.errors.extend(validate_done_evidence(raw_events))
 
     # Drift detection: event log is sole authority, drift is always an error
-    drift_findings = validate_materialization_drift(feature_dir)
+    drift_findings = validate_materialization_drift(mission_dir)
     result.errors.extend(drift_findings)
 
     if json_output:
         print(
             json.dumps(
                 {
-                    "feature_slug": feature_slug,
+                    "mission_slug": mission_slug,
                     "passed": result.passed,
                     "errors": result.errors,
                     "warnings": result.warnings,
@@ -656,7 +656,7 @@ def validate(
         )
     else:
         console.print(
-            f"\n[bold]Status Validation: {feature_slug}[/bold]"
+            f"\n[bold]Status Validation: {mission_slug}[/bold]"
         )
         console.print("-" * 50)
 

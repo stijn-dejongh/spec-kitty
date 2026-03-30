@@ -28,7 +28,7 @@ runner = CliRunner()
 def _make_event(
     *,
     event_id: str = "01HXYZ0123456789ABCDEFGHJK",
-    feature_slug: str = "034-test-feature",
+    mission_slug: str = "034-test-mission",
     wp_id: str = "WP01",
     from_lane: str = "planned",
     to_lane: str = "claimed",
@@ -42,7 +42,7 @@ def _make_event(
 ) -> dict:
     event: dict = {
         "event_id": event_id,
-        "feature_slug": feature_slug,
+        "mission_slug": mission_slug,
         "wp_id": wp_id,
         "from_lane": from_lane,
         "to_lane": to_lane,
@@ -62,22 +62,22 @@ def _make_event(
 
 def _setup_feature(
     tmp_path: Path,
-    feature_slug: str = "034-test-feature",
+    mission_slug: str = "034-test-mission",
     events: list[dict] | None = None,
     materialize: bool = True,
     wp_files: dict[str, str] | None = None,
 ) -> Path:
-    """Set up a feature directory with optional events and WP files.
+    """Set up a mission directory with optional events and WP files.
 
-    Returns the feature_dir path.
+    Returns the mission_dir path.
     """
-    feature_dir = tmp_path / "kitty-specs" / feature_slug
-    feature_dir.mkdir(parents=True)
+    mission_dir = tmp_path / "kitty-specs" / mission_slug
+    mission_dir.mkdir(parents=True)
 
     # Write events file
     if events:
         lines = [json.dumps(e, sort_keys=True) for e in events]
-        (feature_dir / "status.events.jsonl").write_text(
+        (mission_dir / "status.events.jsonl").write_text(
             "\n".join(lines) + "\n", encoding="utf-8"
         )
 
@@ -85,11 +85,11 @@ def _setup_feature(
         if materialize:
             from specify_cli.status.reducer import materialize as do_materialize
 
-            do_materialize(feature_dir)
+            do_materialize(mission_dir)
 
     # Write WP files
     if wp_files:
-        tasks_dir = feature_dir / "tasks"
+        tasks_dir = mission_dir / "tasks"
         tasks_dir.mkdir(exist_ok=True)
         for wp_id, lane in wp_files.items():
             content = f"""---
@@ -102,7 +102,7 @@ lane: {lane}
 """
             (tasks_dir / f"{wp_id}-test.md").write_text(content, encoding="utf-8")
 
-    return feature_dir
+    return mission_dir
 
 
 # ---------------------------------------------------------------------------
@@ -122,7 +122,7 @@ class TestValidateCommand:
         tmp_path,
     ):
         """Valid log, matching snapshot -> exit 0, no errors."""
-        feature_slug = "034-test-feature"
+        mission_slug = "034-test-mission"
         events = [
             _make_event(
                 from_lane="planned",
@@ -132,7 +132,7 @@ class TestValidateCommand:
         ]
         _setup_feature(
             tmp_path,
-            feature_slug,
+            mission_slug,
             events=events,
             wp_files={"WP01": "claimed"},
         )
@@ -140,7 +140,7 @@ class TestValidateCommand:
         mock_locate.return_value = tmp_path
         mock_main_root.return_value = tmp_path
 
-        result = runner.invoke(app, ["validate", "--feature", feature_slug])
+        result = runner.invoke(app, ["validate", "--mission", mission_slug])
         assert result.exit_code == 0
         assert "PASS" in result.output
 
@@ -153,7 +153,7 @@ class TestValidateCommand:
         tmp_path,
     ):
         """Log with planned -> done (illegal) -> exit 1, error reported."""
-        feature_slug = "034-test-feature"
+        mission_slug = "034-test-mission"
         events = [
             _make_event(
                 from_lane="planned",
@@ -163,7 +163,7 @@ class TestValidateCommand:
         ]
         _setup_feature(
             tmp_path,
-            feature_slug,
+            mission_slug,
             events=events,
             wp_files={"WP01": "done"},
         )
@@ -171,7 +171,7 @@ class TestValidateCommand:
         mock_locate.return_value = tmp_path
         mock_main_root.return_value = tmp_path
 
-        result = runner.invoke(app, ["validate", "--feature", feature_slug])
+        result = runner.invoke(app, ["validate", "--mission", mission_slug])
         assert result.exit_code == 1
         assert "FAIL" in result.output
 
@@ -184,7 +184,7 @@ class TestValidateCommand:
         tmp_path,
     ):
         """Done event without evidence -> exit 1."""
-        feature_slug = "034-test-feature"
+        mission_slug = "034-test-mission"
         events = [
             _make_event(
                 from_lane="for_review",
@@ -194,7 +194,7 @@ class TestValidateCommand:
         ]
         _setup_feature(
             tmp_path,
-            feature_slug,
+            mission_slug,
             events=events,
             wp_files={"WP01": "done"},
         )
@@ -202,7 +202,7 @@ class TestValidateCommand:
         mock_locate.return_value = tmp_path
         mock_main_root.return_value = tmp_path
 
-        result = runner.invoke(app, ["validate", "--feature", feature_slug])
+        result = runner.invoke(app, ["validate", "--mission", mission_slug])
         assert result.exit_code == 1
 
 
@@ -215,7 +215,7 @@ class TestValidateCommand:
         tmp_path,
     ):
         """--json produces valid JSON with all expected fields."""
-        feature_slug = "034-test-feature"
+        mission_slug = "034-test-mission"
         events = [
             _make_event(
                 from_lane="planned",
@@ -225,7 +225,7 @@ class TestValidateCommand:
         ]
         _setup_feature(
             tmp_path,
-            feature_slug,
+            mission_slug,
             events=events,
             wp_files={"WP01": "claimed"},
         )
@@ -234,12 +234,12 @@ class TestValidateCommand:
         mock_main_root.return_value = tmp_path
 
         result = runner.invoke(
-            app, ["validate", "--feature", feature_slug, "--json"]
+            app, ["validate", "--mission", mission_slug, "--json"]
         )
         assert result.exit_code == 0
 
         data = json.loads(result.output)
-        assert data["feature_slug"] == feature_slug
+        assert data["mission_slug"] == mission_slug
         assert "passed" in data
         assert isinstance(data["errors"], list)
         assert isinstance(data["warnings"], list)
@@ -255,7 +255,7 @@ class TestValidateCommand:
         tmp_path,
     ):
         """--json with errors produces JSON with error details."""
-        feature_slug = "034-test-feature"
+        mission_slug = "034-test-mission"
         events = [
             _make_event(
                 from_lane="planned",
@@ -265,7 +265,7 @@ class TestValidateCommand:
         ]
         _setup_feature(
             tmp_path,
-            feature_slug,
+            mission_slug,
             events=events,
             wp_files={"WP01": "done"},
         )
@@ -274,7 +274,7 @@ class TestValidateCommand:
         mock_main_root.return_value = tmp_path
 
         result = runner.invoke(
-            app, ["validate", "--feature", feature_slug, "--json"]
+            app, ["validate", "--mission", mission_slug, "--json"]
         )
         assert result.exit_code == 1
 
@@ -292,10 +292,10 @@ class TestValidateCommand:
         tmp_path,
     ):
         """No event log: no errors, exit 0."""
-        feature_slug = "034-test-feature"
+        mission_slug = "034-test-mission"
         _setup_feature(
             tmp_path,
-            feature_slug,
+            mission_slug,
             events=None,
             materialize=False,
         )
@@ -303,7 +303,7 @@ class TestValidateCommand:
         mock_locate.return_value = tmp_path
         mock_main_root.return_value = tmp_path
 
-        result = runner.invoke(app, ["validate", "--feature", feature_slug])
+        result = runner.invoke(app, ["validate", "--mission", mission_slug])
         assert result.exit_code == 0
 
     @patch("specify_cli.cli.commands.agent.status.locate_project_root")
@@ -315,10 +315,10 @@ class TestValidateCommand:
         tmp_path,
     ):
         """No events + JSON output -> valid JSON, passed=true."""
-        feature_slug = "034-test-feature"
+        mission_slug = "034-test-mission"
         _setup_feature(
             tmp_path,
-            feature_slug,
+            mission_slug,
             events=None,
             materialize=False,
         )
@@ -327,7 +327,7 @@ class TestValidateCommand:
         mock_main_root.return_value = tmp_path
 
         result = runner.invoke(
-            app, ["validate", "--feature", feature_slug, "--json"]
+            app, ["validate", "--mission", mission_slug, "--json"]
         )
         assert result.exit_code == 0
         data = json.loads(result.output)

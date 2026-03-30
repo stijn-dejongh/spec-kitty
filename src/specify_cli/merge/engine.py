@@ -127,7 +127,7 @@ def _branch_tip(branch: str, workspace_path: Path) -> str | None:
 def _merge_branch(
     branch: str,
     wp_id: str,
-    feature_slug: str,
+    mission_slug: str,
     strategy: str,
     workspace_path: Path,
 ) -> None:
@@ -138,7 +138,7 @@ def _merge_branch(
     if strategy == "squash":
         _run_git(["merge", "--squash", branch], workspace_path)
         _run_git(
-            ["commit", "-m", f"Merge {wp_id} from {feature_slug}"],
+            ["commit", "-m", f"Merge {wp_id} from {mission_slug}"],
             workspace_path,
         )
     elif strategy == "rebase":
@@ -151,7 +151,7 @@ def _merge_branch(
         _run_git(
             [
                 "merge", "--no-ff", branch,
-                "-m", f"Merge {wp_id} from {feature_slug}",
+                "-m", f"Merge {wp_id} from {mission_slug}",
             ],
             workspace_path,
         )
@@ -198,7 +198,7 @@ def _checkout_target(target_branch: str, workspace_path: Path) -> None:
 
 
 def execute_merge(
-    feature_slug: str,
+    mission_slug: str,
     repo_root: Path,
     context: MissionContext | None = None,
     strategy: str = "merge",
@@ -206,7 +206,7 @@ def execute_merge(
     dry_run: bool = False,
     keep_workspace: bool = False,
 ) -> MergeResult:
-    """Orchestrate merging all WPs for *feature_slug* into the target branch.
+    """Orchestrate merging all WPs for *mission_slug* into the target branch.
 
     Workflow:
     1. Acquire merge lock.
@@ -226,7 +226,7 @@ def execute_merge(
     10. Release lock.
 
     Args:
-        feature_slug: Feature identifier (e.g. "057-canonical-context-...").
+        mission_slug: Feature identifier (e.g. "057-canonical-context-...").
         repo_root: Absolute path to the main repository root.
         context: Optional MissionContext for richer preflight validation.
         strategy: "merge" (default) or "squash". "rebase" raises immediately.
@@ -242,8 +242,8 @@ def execute_merge(
     result = MergeResult(success=False)
 
     # Derive target branch
-    target_branch = _resolve_target_branch(feature_slug, repo_root, context)
-    mission_id = feature_slug  # canonical mission ID == feature slug
+    target_branch = _resolve_target_branch(mission_slug, repo_root, context)
+    mission_id = mission_slug  # canonical mission ID == feature slug
 
     # 1. Acquire lock
     if not acquire_merge_lock(mission_id, repo_root):
@@ -255,10 +255,10 @@ def execute_merge(
 
     try:
         # 2. Discover WP workspaces
-        wp_workspaces = find_wp_worktrees(repo_root, feature_slug)
+        wp_workspaces = find_wp_worktrees(repo_root, mission_slug)
         if not wp_workspaces:
             result.errors.append(
-                f"No WP worktrees found for feature {feature_slug!r}."
+                f"No WP worktrees found for feature {mission_slug!r}."
             )
             return result
 
@@ -267,7 +267,7 @@ def execute_merge(
             preflight = run_preflight_from_context(context, wp_workspaces)
         else:
             preflight = run_preflight(
-                feature_slug=feature_slug,
+                mission_slug=mission_slug,
                 target_branch=target_branch,
                 repo_root=repo_root,
                 wp_workspaces=wp_workspaces,
@@ -278,9 +278,9 @@ def execute_merge(
             return result
 
         # 4. Compute merge order
-        feature_dir = repo_root / "kitty-specs" / feature_slug
+        mission_dir = repo_root / "kitty-specs" / mission_slug
         try:
-            ordered_workspaces = get_merge_order(wp_workspaces, feature_dir)
+            ordered_workspaces = get_merge_order(wp_workspaces, mission_dir)
         except MergeOrderError as exc:
             result.errors.append(str(exc))
             return result
@@ -291,7 +291,7 @@ def execute_merge(
         if dry_run:
             logger.info(
                 "[dry-run] Merge order for %s: %s",
-                feature_slug,
+                mission_slug,
                 ", ".join(wp_order),
             )
             result.success = True
@@ -311,7 +311,7 @@ def execute_merge(
         else:
             state = MergeState(
                 mission_id=mission_id,
-                feature_slug=feature_slug,
+                mission_slug=mission_slug,
                 target_branch=target_branch,
                 wp_order=wp_order,
                 strategy=strategy,
@@ -353,7 +353,7 @@ def execute_merge(
             logger.info("Merging %s (%s)...", wp_id, branch)
 
             try:
-                _merge_branch(branch, wp_id, feature_slug, strategy, workspace_path)
+                _merge_branch(branch, wp_id, mission_slug, strategy, workspace_path)
                 # Success
                 state.mark_wp_complete(wp_id)
                 save_state(state, repo_root)
@@ -386,7 +386,7 @@ def execute_merge(
                         # All owned conflicts resolved — complete the merge commit
                         try:
                             _run_git(
-                                ["commit", "-m", f"Merge {wp_id} from {feature_slug} (auto-resolved)"],
+                                ["commit", "-m", f"Merge {wp_id} from {mission_slug} (auto-resolved)"],
                                 workspace_path,
                             )
                             state.mark_wp_complete(wp_id)
@@ -419,10 +419,10 @@ def execute_merge(
                 # Non-fatal: merge succeeded, push failed
 
         # 11. Post-merge reconciliation
-        if merged_branches and feature_dir.exists():
+        if merged_branches and mission_dir.exists():
             try:
                 reconcile_done_state(
-                    feature_dir=feature_dir,
+                    mission_dir=mission_dir,
                     merged_branches=merged_branches,
                     target_branch=target_branch,
                     workspace_path=workspace_path,
@@ -486,13 +486,13 @@ def resume_merge(
 
     logger.info(
         "Resuming merge of %s: %d/%d WPs complete",
-        state.feature_slug,
+        state.mission_slug,
         len(state.completed_wps),
         len(state.wp_order),
     )
 
     return execute_merge(
-        feature_slug=state.feature_slug,
+        mission_slug=state.mission_slug,
         repo_root=repo_root,
         strategy=state.strategy,
         keep_workspace=keep_workspace,
@@ -536,7 +536,7 @@ def abort_merge(repo_root: Path) -> None:
 
 
 def _resolve_target_branch(
-    feature_slug: str,
+    mission_slug: str,
     repo_root: Path,
     context: MissionContext | None,
 ) -> str:
@@ -550,7 +550,7 @@ def _resolve_target_branch(
     if context is not None:
         return context.target_branch
 
-    meta_path = repo_root / "kitty-specs" / feature_slug / "meta.json"
+    meta_path = repo_root / "kitty-specs" / mission_slug / "meta.json"
     if meta_path.exists():
         import json
         try:

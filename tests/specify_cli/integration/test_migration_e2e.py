@@ -116,26 +116,26 @@ def _write_wp(
 
 def _create_legacy_feature(
     project_root: Path,
-    feature_slug: str,
+    mission_slug: str,
     wps: list[tuple[str, str]],  # [(wp_id, lane), ...]
 ) -> Path:
     """Create a legacy feature with WPs in various lanes."""
-    feature_dir = project_root / "kitty-specs" / feature_slug
-    tasks_dir = feature_dir / "tasks"
+    mission_dir = project_root / "kitty-specs" / mission_slug
+    tasks_dir = mission_dir / "tasks"
     tasks_dir.mkdir(parents=True)
 
     meta = {
-        "feature_slug": feature_slug,
+        "mission_slug": mission_slug,
         "mission": "software-dev",
         "target_branch": "main",
         "created_at": "2026-01-01T00:00:00+00:00",
     }
-    (feature_dir / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    (mission_dir / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
     for wp_id, lane in wps:
         _write_wp(tasks_dir, wp_id, lane)
 
-    return feature_dir
+    return mission_dir
 
 
 def _result_status(result: RebuildResult) -> str:
@@ -156,7 +156,7 @@ class TestMigrateFeatureBasic:
 
     def test_migration_creates_event_log(self, tmp_path: Path) -> None:
         """Migration creates an event log for WPs that have transitioned lanes."""
-        feature_dir = _create_legacy_feature(
+        mission_dir = _create_legacy_feature(
             tmp_path,
             "001-basic-feature",
             # WP01 in_progress and WP03 done produce transition events
@@ -164,29 +164,29 @@ class TestMigrateFeatureBasic:
             [("WP01", "in_progress"), ("WP02", "planned"), ("WP03", "done")],
         )
 
-        result = rebuild_event_log(feature_dir, feature_dir.name, {})
+        result = rebuild_event_log(mission_dir, mission_dir.name, {})
 
         # WP01 and WP03 have transitions, so migration should succeed
         status = _result_status(result)
         assert status == "migrated", (
             f"Expected migrated, got {status}: {result.errors}"
         )
-        event_log = feature_dir / EVENTS_FILENAME
+        event_log = mission_dir / EVENTS_FILENAME
         assert event_log.exists(), "Event log must be created after migration"
 
     def test_migration_events_cover_transitioned_wps(self, tmp_path: Path) -> None:
         """Events are created for WPs that have transitioned from planned."""
-        feature_dir = _create_legacy_feature(
+        mission_dir = _create_legacy_feature(
             tmp_path,
             "002-all-wps",
             # in_progress, for_review, and done all produce transitions
             [("WP01", "in_progress"), ("WP02", "for_review"), ("WP03", "done")],
         )
 
-        result = rebuild_event_log(feature_dir, feature_dir.name, {})
+        result = rebuild_event_log(mission_dir, mission_dir.name, {})
         status = _result_status(result)
         assert status == "migrated", f"Got: {status}: {result.errors}"
-        events = read_events(feature_dir)
+        events = read_events(mission_dir)
 
         migrated_wps = {e.wp_id for e in events}
         assert "WP01" in migrated_wps
@@ -194,14 +194,14 @@ class TestMigrateFeatureBasic:
         assert "WP03" in migrated_wps
 
     def test_migration_status_json_is_written(self, tmp_path: Path) -> None:
-        feature_dir = _create_legacy_feature(
+        mission_dir = _create_legacy_feature(
             tmp_path,
             "003-status-json",
             [("WP01", "in_progress"), ("WP02", "done")],
         )
 
-        rebuild_event_log(feature_dir, feature_dir.name, {})
-        snapshot = materialize(feature_dir)
+        rebuild_event_log(mission_dir, mission_dir.name, {})
+        snapshot = materialize(mission_dir)
 
         # Snapshot exists and covers both WPs (work_packages dict)
         assert "WP01" in snapshot.work_packages
@@ -216,19 +216,19 @@ class TestLaneCanonicalization:
     """Lane aliases are resolved to canonical names in the event log."""
 
     def test_doing_alias_resolved_to_in_progress(self, tmp_path: Path) -> None:
-        feature_dir = _create_legacy_feature(
+        mission_dir = _create_legacy_feature(
             tmp_path,
             "004-doing-alias",
             [("WP01", "doing")],  # legacy alias
         )
 
-        result = rebuild_event_log(feature_dir, feature_dir.name, {})
+        result = rebuild_event_log(mission_dir, mission_dir.name, {})
         # Migration should have created events for "doing" WP
         status = _result_status(result)
         assert status in ("migrated", "skipped"), f"Got: {status}"
 
         # If events were created, check that the WP is recorded
-        events = read_events(feature_dir)
+        events = read_events(mission_dir)
         if events:
             # All events should use canonical lane names (not aliases)
             from specify_cli.status.models import Lane
@@ -240,13 +240,13 @@ class TestLaneCanonicalization:
                     )
 
     def test_claimed_alias_resolved(self, tmp_path: Path) -> None:
-        feature_dir = _create_legacy_feature(
+        mission_dir = _create_legacy_feature(
             tmp_path,
             "005-claimed-alias",
             [("WP01", "claimed")],  # another alias
         )
 
-        result = rebuild_event_log(feature_dir, feature_dir.name, {})
+        result = rebuild_event_log(mission_dir, mission_dir.name, {})
         # Should not raise; migration handles alias gracefully
         status = _result_status(result)
         assert status in ("migrated", "skipped", "failed")
@@ -263,7 +263,7 @@ class TestMigrationIdempotency:
         from specify_cli.status.store import append_event
         from specify_cli.status.models import Lane, StatusEvent
 
-        feature_dir = _create_legacy_feature(
+        mission_dir = _create_legacy_feature(
             tmp_path,
             "006-idempotent",
             [("WP01", "planned")],
@@ -272,7 +272,7 @@ class TestMigrationIdempotency:
         # Create a live (non-migration) event
         live_event = StatusEvent(
             event_id="01ABCDEF0000000000000000AA",
-            feature_slug="006-idempotent",
+            mission_slug="006-idempotent",
             wp_id="WP01",
             from_lane=Lane.PLANNED,
             to_lane=Lane.CLAIMED,
@@ -281,23 +281,23 @@ class TestMigrationIdempotency:
             force=False,
             execution_mode="worktree",
         )
-        append_event(feature_dir, live_event)
+        append_event(mission_dir, live_event)
 
         # Second rebuild with existing event log: events are enriched/kept,
         # not duplicated. The result should not report errors.
-        result = rebuild_event_log(feature_dir, feature_dir.name, {})
+        result = rebuild_event_log(mission_dir, mission_dir.name, {})
         assert not result.errors, (
             f"Expected no errors on re-run with existing events, got {result.errors}"
         )
         # Events should not be lost
-        events_after = read_events(feature_dir)
+        events_after = read_events(mission_dir)
         assert len(events_after) >= 1, "Existing events must be preserved"
 
     def test_migration_does_not_lose_existing_events(self, tmp_path: Path) -> None:
         from specify_cli.status.store import append_event
         from specify_cli.status.models import Lane, StatusEvent
 
-        feature_dir = _create_legacy_feature(
+        mission_dir = _create_legacy_feature(
             tmp_path,
             "007-no-loss",
             [("WP01", "planned")],
@@ -306,7 +306,7 @@ class TestMigrationIdempotency:
         # Write a migration-style event first
         migration_event = StatusEvent(
             event_id="01AAAAAAAAAAAAAAAAAAAAAABB",
-            feature_slug="007-no-loss",
+            mission_slug="007-no-loss",
             wp_id="WP01",
             from_lane=Lane.PLANNED,
             to_lane=Lane.PLANNED,
@@ -316,11 +316,11 @@ class TestMigrationIdempotency:
             execution_mode="worktree",
             reason="migration",
         )
-        append_event(feature_dir, migration_event)
+        append_event(mission_dir, migration_event)
 
         # Second migration (migration-only events) should replace, not duplicate
-        rebuild_event_log(feature_dir, feature_dir.name, {})
-        events_after = read_events(feature_dir)
+        rebuild_event_log(mission_dir, mission_dir.name, {})
+        events_after = read_events(mission_dir)
 
         # No duplicate events (idempotent replace)
         assert len(events_after) >= 1, "Events should exist after migration"
@@ -345,20 +345,20 @@ class TestMultiFeatureMigration:
 
         results: list[RebuildResult] = []
         for slug, wps in feature_configs:
-            feature_dir = _create_legacy_feature(tmp_path, slug, wps)
-            result = rebuild_event_log(feature_dir, feature_dir.name, {})
+            mission_dir = _create_legacy_feature(tmp_path, slug, wps)
+            result = rebuild_event_log(mission_dir, mission_dir.name, {})
             results.append(result)
 
         # All should have migrated or skipped (none failed without reason)
         for r in results:
             status = _result_status(r)
             assert status in ("migrated", "skipped"), (
-                f"Feature {r.feature_slug} has unexpected status: {status}"
+                f"Feature {r.mission_slug} has unexpected status: {status}"
             )
 
     def test_done_wps_are_in_done_lane_post_migration(self, tmp_path: Path) -> None:
         """WPs that were 'done' before migration should have events after."""
-        feature_dir = _create_legacy_feature(
+        mission_dir = _create_legacy_feature(
             tmp_path,
             "015-done-preserved",
             [
@@ -368,14 +368,14 @@ class TestMultiFeatureMigration:
             ],
         )
 
-        result = rebuild_event_log(feature_dir, feature_dir.name, {})
+        result = rebuild_event_log(mission_dir, mission_dir.name, {})
         status = _result_status(result)
         assert status == "migrated", (
             f"Expected migrated, got {status}: {result.errors}"
         )
 
         # Events were created and WP01/WP02 are included
-        events = read_events(feature_dir)
+        events = read_events(mission_dir)
         assert events, "Events must be created after migration"
         wps_with_events = {e.wp_id for e in events}
         assert "WP01" in wps_with_events, "WP01 (done) should have events"
@@ -384,13 +384,13 @@ class TestMultiFeatureMigration:
 
     def test_planned_only_features_handled_gracefully(self, tmp_path: Path) -> None:
         """A feature where all WPs are still 'planned' migrates without error."""
-        feature_dir = _create_legacy_feature(
+        mission_dir = _create_legacy_feature(
             tmp_path,
             "016-all-planned",
             [("WP01", "planned"), ("WP02", "planned"), ("WP03", "planned")],
         )
 
-        result = rebuild_event_log(feature_dir, feature_dir.name, {})
+        result = rebuild_event_log(mission_dir, mission_dir.name, {})
         # Should not raise; status migrated or skipped
         status = _result_status(result)
         assert status in ("migrated", "skipped", "failed"), (
@@ -407,15 +407,15 @@ class TestMigrationErrorPaths:
 
     def test_feature_without_tasks_dir_reports_skipped(self, tmp_path: Path) -> None:
         """If tasks/ directory is missing, rebuild_event_log skips gracefully."""
-        feature_dir = tmp_path / "kitty-specs" / "017-no-tasks"
-        feature_dir.mkdir(parents=True)
-        (feature_dir / "meta.json").write_text(
-            json.dumps({"feature_slug": "017-no-tasks", "target_branch": "main"}),
+        mission_dir = tmp_path / "kitty-specs" / "017-no-tasks"
+        mission_dir.mkdir(parents=True)
+        (mission_dir / "meta.json").write_text(
+            json.dumps({"mission_slug": "017-no-tasks", "target_branch": "main"}),
             encoding="utf-8",
         )
         # No tasks/ directory
 
-        result = rebuild_event_log(feature_dir, feature_dir.name, {})
+        result = rebuild_event_log(mission_dir, mission_dir.name, {})
         # Without a tasks dir there are no WPs and no events, so it is skipped
         assert result.skipped or result.errors, (
             "Expected skipped or errors when tasks/ is missing"
@@ -423,17 +423,17 @@ class TestMigrationErrorPaths:
 
     def test_feature_without_wp_files_reports_skipped(self, tmp_path: Path) -> None:
         """If tasks/ exists but has no WP*.md files, rebuild skips gracefully."""
-        feature_dir = tmp_path / "kitty-specs" / "018-no-wps"
-        feature_dir.mkdir(parents=True)
-        tasks_dir = feature_dir / "tasks"
+        mission_dir = tmp_path / "kitty-specs" / "018-no-wps"
+        mission_dir.mkdir(parents=True)
+        tasks_dir = mission_dir / "tasks"
         tasks_dir.mkdir()
-        (feature_dir / "meta.json").write_text(
-            json.dumps({"feature_slug": "018-no-wps", "target_branch": "main"}),
+        (mission_dir / "meta.json").write_text(
+            json.dumps({"mission_slug": "018-no-wps", "target_branch": "main"}),
             encoding="utf-8",
         )
         # tasks/ dir exists but empty
 
-        result = rebuild_event_log(feature_dir, feature_dir.name, {})
+        result = rebuild_event_log(mission_dir, mission_dir.name, {})
         # No WPs and no existing events → skipped
         assert result.skipped or result.errors, (
             "Expected skipped or errors when no WP files exist"
@@ -441,14 +441,14 @@ class TestMigrationErrorPaths:
 
     def test_migration_writes_event_log_when_transitions_exist(self, tmp_path: Path) -> None:
         """rebuild_event_log writes events to disk when transitions are found."""
-        feature_dir = _create_legacy_feature(
+        mission_dir = _create_legacy_feature(
             tmp_path,
             "019-writes-events",
             [("WP01", "in_progress"), ("WP02", "done")],
         )
 
-        result = rebuild_event_log(feature_dir, feature_dir.name, {})
-        event_log = feature_dir / EVENTS_FILENAME
+        result = rebuild_event_log(mission_dir, mission_dir.name, {})
+        event_log = mission_dir / EVENTS_FILENAME
 
         # Result should indicate migration happened
         status = _result_status(result)

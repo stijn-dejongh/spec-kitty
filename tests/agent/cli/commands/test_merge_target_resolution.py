@@ -27,13 +27,13 @@ def _extract_json(output: str) -> dict[str, object]:
     raise AssertionError(f"No JSON payload found in output:\n{output}")
 
 
-def _write_meta_json(feature_dir: Path, target_branch: str) -> None:
-    feature_dir.mkdir(parents=True, exist_ok=True)
-    (feature_dir / "meta.json").write_text(
+def _write_meta_json(mission_dir: Path, target_branch: str) -> None:
+    mission_dir.mkdir(parents=True, exist_ok=True)
+    (mission_dir / "meta.json").write_text(
         json.dumps(
             {
-                "feature_number": "049",
-                "slug": feature_dir.name,
+                "mission_number": "049",
+                "slug": mission_dir.name,
                 "target_branch": target_branch,
             }
         ),
@@ -115,7 +115,7 @@ def test_merge_without_feature_on_feature_branch_reads_meta_target(monkeypatch, 
 
     assert result.exit_code == 0
     payload = _extract_json(result.stdout)
-    assert payload["feature_slug"] == slug
+    assert payload["mission_slug"] == slug
     assert payload["target_branch"] == "2.x"
 
 
@@ -180,12 +180,12 @@ def test_explicit_feature_flag_reads_meta_target(monkeypatch, tmp_path: Path) ->
 
     result = runner.invoke(
         cli_app,
-        ["merge", "--dry-run", "--json", "--feature", slug],
+        ["merge", "--dry-run", "--json", "--mission", slug],
     )
 
     assert result.exit_code == 0
     payload = _extract_json(result.stdout)
-    assert payload["feature_slug"] == slug
+    assert payload["mission_slug"] == slug
     assert payload["target_branch"] == "2.x"
 
 
@@ -194,7 +194,7 @@ def test_explicit_feature_flag_missing_meta_falls_back_to_primary(monkeypatch, t
     repo_root = tmp_path / "repo"
     repo_root.mkdir()
     (repo_root / ".git").mkdir()
-    # No meta.json written — feature dir does not exist
+    # No meta.json written — mission dir does not exist
     _patch_merge_environment(
         monkeypatch,
         repo_root,
@@ -204,12 +204,12 @@ def test_explicit_feature_flag_missing_meta_falls_back_to_primary(monkeypatch, t
 
     result = runner.invoke(
         cli_app,
-        ["merge", "--dry-run", "--json", "--feature", slug],
+        ["merge", "--dry-run", "--json", "--mission", slug],
     )
 
     assert result.exit_code == 0
     payload = _extract_json(result.stdout)
-    assert payload["feature_slug"] == slug
+    assert payload["mission_slug"] == slug
     assert payload["target_branch"] == "main"
 
 
@@ -248,7 +248,7 @@ def test_feature_explicitly_targeting_main(monkeypatch, tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = _extract_json(result.stdout)
-    assert payload["feature_slug"] == slug
+    assert payload["mission_slug"] == slug
     assert payload["target_branch"] == "main"
 
 

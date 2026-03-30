@@ -45,13 +45,13 @@ def _read_frontmatter(wp_file: Path) -> dict:
 class TestBackfillOwnership:
     def test_code_change_inferred(self, tmp_path: Path) -> None:
         """T061-1: WP body mentioning src/ gets execution_mode=code_change."""
-        feature_dir = tmp_path / "kitty-specs" / "001-alpha"
+        mission_dir = tmp_path / "kitty-specs" / "001-alpha"
         wp_file = _make_wp(
-            feature_dir / "tasks",
+            mission_dir / "tasks",
             "WP01-code",
             "Implement src/specify_cli/context/models.py and tests/specify_cli/context/test_models.py",
         )
-        backfill_ownership(feature_dir, "001-alpha")
+        backfill_ownership(mission_dir, "001-alpha")
         frontmatter = _read_frontmatter(wp_file)
         assert frontmatter["execution_mode"] == "code_change"
         assert "owned_files" in frontmatter
@@ -60,20 +60,20 @@ class TestBackfillOwnership:
 
     def test_planning_artifact_inferred(self, tmp_path: Path) -> None:
         """T061-2: WP body mentioning kitty-specs/ gets execution_mode=planning_artifact."""
-        feature_dir = tmp_path / "kitty-specs" / "001-alpha"
+        mission_dir = tmp_path / "kitty-specs" / "001-alpha"
         wp_file = _make_wp(
-            feature_dir / "tasks",
+            mission_dir / "tasks",
             "WP01-planning",
             "Create kitty-specs/001-alpha/spec.md and kitty-specs/001-alpha/plan.md",
         )
-        backfill_ownership(feature_dir, "001-alpha")
+        backfill_ownership(mission_dir, "001-alpha")
         frontmatter = _read_frontmatter(wp_file)
         assert frontmatter["execution_mode"] == "planning_artifact"
 
     def test_existing_ownership_not_overwritten(self, tmp_path: Path) -> None:
         """T061-3: Pre-existing ownership fields are never overwritten."""
-        feature_dir = tmp_path / "kitty-specs" / "001-alpha"
-        tasks_dir = feature_dir / "tasks"
+        mission_dir = tmp_path / "kitty-specs" / "001-alpha"
+        tasks_dir = mission_dir / "tasks"
         tasks_dir.mkdir(parents=True, exist_ok=True)
 
         wp_file = tasks_dir / "WP01-existing.md"
@@ -89,7 +89,7 @@ class TestBackfillOwnership:
             "Implement src/specify_cli/context/models.py\n"
         )
 
-        backfill_ownership(feature_dir, "001-alpha")
+        backfill_ownership(mission_dir, "001-alpha")
         frontmatter = _read_frontmatter(wp_file)
 
         # Should NOT have been changed to code_change even though body mentions src/
@@ -98,13 +98,13 @@ class TestBackfillOwnership:
 
     def test_all_three_fields_written(self, tmp_path: Path) -> None:
         """T061-4: execution_mode, owned_files, authoritative_surface all written."""
-        feature_dir = tmp_path / "kitty-specs" / "001-alpha"
+        mission_dir = tmp_path / "kitty-specs" / "001-alpha"
         wp_file = _make_wp(
-            feature_dir / "tasks",
+            mission_dir / "tasks",
             "WP02-full",
             "Work on src/specify_cli/migration/backfill_identity.py",
         )
-        backfill_ownership(feature_dir, "001-alpha")
+        backfill_ownership(mission_dir, "001-alpha")
         frontmatter = _read_frontmatter(wp_file)
         assert "execution_mode" in frontmatter
         assert "owned_files" in frontmatter
@@ -112,15 +112,15 @@ class TestBackfillOwnership:
 
     def test_no_tasks_dir_handled_gracefully(self, tmp_path: Path) -> None:
         """T061-5: Missing tasks/ dir does not raise."""
-        feature_dir = tmp_path / "kitty-specs" / "001-alpha"
-        feature_dir.mkdir(parents=True)
+        mission_dir = tmp_path / "kitty-specs" / "001-alpha"
+        mission_dir.mkdir(parents=True)
         # Should return without exception
-        backfill_ownership(feature_dir, "001-alpha")
+        backfill_ownership(mission_dir, "001-alpha")
 
     def test_partial_ownership_filled_in(self, tmp_path: Path) -> None:
         """Fields present are kept; only absent fields are filled in."""
-        feature_dir = tmp_path / "kitty-specs" / "001-alpha"
-        tasks_dir = feature_dir / "tasks"
+        mission_dir = tmp_path / "kitty-specs" / "001-alpha"
+        tasks_dir = mission_dir / "tasks"
         tasks_dir.mkdir(parents=True, exist_ok=True)
 
         wp_file = tasks_dir / "WP03-partial.md"
@@ -133,7 +133,7 @@ class TestBackfillOwnership:
             "Work on src/specify_cli/foo.py\n"
         )
 
-        backfill_ownership(feature_dir, "001-alpha")
+        backfill_ownership(mission_dir, "001-alpha")
         frontmatter = _read_frontmatter(wp_file)
         # execution_mode preserved
         assert frontmatter["execution_mode"] == "code_change"

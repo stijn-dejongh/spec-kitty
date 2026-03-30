@@ -55,8 +55,8 @@ def _git_diff_files(repo_root: Path, base_branch: str, wp_branch: str) -> list[s
     return []
 
 
-def backfill_ownership(feature_dir: Path, feature_slug: str) -> None:
-    """Infer and write ownership fields for all WPs in *feature_dir*.
+def backfill_ownership(mission_dir: Path, mission_slug: str) -> None:
+    """Infer and write ownership fields for all WPs in *mission_dir*.
 
     For each ``tasks/WP*.md`` file:
 
@@ -72,14 +72,14 @@ def backfill_ownership(feature_dir: Path, feature_slug: str) -> None:
     and logs any warnings — validation failures do NOT abort the migration.
 
     Args:
-        feature_dir: Path to the feature directory (e.g. ``kitty-specs/057-…``).
-        feature_slug: Slug of the feature (e.g. ``"057-canonical-context-architecture-cleanup"``).
+        mission_dir: Path to the feature directory (e.g. ``kitty-specs/057-…``).
+        mission_slug: Slug of the feature (e.g. ``"057-canonical-context-architecture-cleanup"``).
     """
     from specify_cli.frontmatter import FrontmatterManager
 
-    tasks_dir = feature_dir / "tasks"
+    tasks_dir = mission_dir / "tasks"
     if not tasks_dir.is_dir():
-        logger.debug("No tasks/ directory in %s — skipping ownership backfill", feature_dir.name)
+        logger.debug("No tasks/ directory in %s — skipping ownership backfill", mission_dir.name)
         return
 
     manager = FrontmatterManager()
@@ -87,7 +87,7 @@ def backfill_ownership(feature_dir: Path, feature_slug: str) -> None:
 
     # Locate repo root: walk up until we find a .git directory
     repo_root: Path | None = None
-    candidate = feature_dir
+    candidate = mission_dir
     for _ in range(10):
         if (candidate / ".git").exists():
             repo_root = candidate
@@ -134,7 +134,7 @@ def backfill_ownership(feature_dir: Path, feature_slug: str) -> None:
                 wp_code = m_code.group(1) if m_code else ""
 
             if base_branch and wp_code:
-                wp_branch = f"{feature_slug}-{wp_code}"
+                wp_branch = f"{mission_slug}-{wp_code}"
                 git_files = _git_diff_files(repo_root, base_branch, wp_branch)
 
         updates: dict = {}
@@ -144,7 +144,7 @@ def backfill_ownership(feature_dir: Path, feature_slug: str) -> None:
             updates["execution_mode"] = str(mode)
 
         if not has_files:
-            owned = infer_owned_files(full_content, feature_slug)
+            owned = infer_owned_files(full_content, mission_slug)
             # Prefer git-diff files if available and execution_mode is code_change
             if git_files and updates.get("execution_mode") == "code_change":
                 owned = git_files

@@ -79,41 +79,41 @@ def init_test_repo(tmp_path: Path) -> Path:
     )
     return tmp_path
 
-def create_feature_in_main(repo: Path, feature_slug: str) -> Path:
-    """Create feature directory in main repo (simulates /spec-kitty.specify)."""
+def create_mission_in_main(repo: Path, mission_slug: str) -> Path:
+    """Create mission directory in main repo (simulates /spec-kitty.specify)."""
     import json
 
-    feature_dir = repo / "kitty-specs" / feature_slug
-    feature_dir.mkdir(parents=True, exist_ok=True)
+    mission_dir = repo / "kitty-specs" / mission_slug
+    mission_dir.mkdir(parents=True, exist_ok=True)
 
     # Create spec.md
-    (feature_dir / "spec.md").write_text(f"# Spec for {feature_slug}")
+    (mission_dir / "spec.md").write_text(f"# Spec for {mission_slug}")
 
     # Create meta.json (required for VCS locking)
     meta_content = {
-        "feature_number": feature_slug.split("-")[0],
-        "feature_slug": feature_slug,
+        "mission_number": mission_slug.split("-")[0],
+        "mission_slug": mission_slug,
         "created_at": "2026-01-17T00:00:00Z",
         "vcs": "git",  # Lock to git for tests
     }
-    (feature_dir / "meta.json").write_text(json.dumps(meta_content, indent=2))
+    (mission_dir / "meta.json").write_text(json.dumps(meta_content, indent=2))
 
     # Create tasks directory
-    (feature_dir / "tasks").mkdir(exist_ok=True)
+    (mission_dir / "tasks").mkdir(exist_ok=True)
 
     # Commit to main
-    subprocess.run(["git", "add", str(feature_dir)], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "add", str(mission_dir)], cwd=repo, check=True, capture_output=True)
     subprocess.run(
-        ["git", "commit", "-m", f"Add spec for {feature_slug}"],
+        ["git", "commit", "-m", f"Add spec for {mission_slug}"],
         cwd=repo,
         check=True,
         capture_output=True,
     )
-    return feature_dir
+    return mission_dir
 
-def create_wp_file(feature_dir: Path, wp_id: str, dependencies: list[str]) -> Path:
+def create_wp_file(mission_dir: Path, wp_id: str, dependencies: list[str]) -> Path:
     """Create WP prompt file with frontmatter."""
-    wp_file = feature_dir / "tasks" / f"{wp_id}-test.md"
+    wp_file = mission_dir / "tasks" / f"{wp_id}-test.md"
     if not dependencies:
         deps_str = "[]"
     else:
@@ -131,32 +131,32 @@ This is a test work package.
     wp_file.write_text(frontmatter)
     return wp_file
 
-def implement_wp(repo: Path, feature_slug: str, wp_id: str, base: str | None = None) -> Path:
+def implement_wp(repo: Path, mission_slug: str, wp_id: str, base: str | None = None) -> Path:
     """Create workspace for WP using spec-kitty implement command.
 
     Uses the actual spec-kitty implement command to test real command behavior.
     """
-    workspace_name = f"{feature_slug}-{wp_id}"
+    workspace_name = f"{mission_slug}-{wp_id}"
     workspace_path = repo / ".worktrees" / workspace_name
 
     if workspace_path.exists():
         # Workspace already exists, return it
         return workspace_path
 
-    # Ensure we're on the feature branch for context detection
-    # Check if feature branch exists
-    result = subprocess.run(["git", "rev-parse", "--verify", feature_slug], cwd=repo, capture_output=True, check=False)
+    # Ensure we're on the mission branch for context detection
+    # Check if mission branch exists
+    result = subprocess.run(["git", "rev-parse", "--verify", mission_slug], cwd=repo, capture_output=True, check=False)
 
     if result.returncode != 0:
-        # Feature branch doesn't exist, create it
-        subprocess.run(["git", "checkout", "-b", feature_slug], cwd=repo, check=True, capture_output=True)
+        # Mission branch doesn't exist, create it
+        subprocess.run(["git", "checkout", "-b", mission_slug], cwd=repo, check=True, capture_output=True)
     else:
-        # Feature branch exists, check it out
-        subprocess.run(["git", "checkout", feature_slug], cwd=repo, check=True, capture_output=True)
+        # Mission branch exists, check it out
+        subprocess.run(["git", "checkout", mission_slug], cwd=repo, check=True, capture_output=True)
 
     # Build spec-kitty implement command arguments
     # --feature is required (auto-detection removed in big-bang refactor)
-    args = ["implement", wp_id, "--feature", feature_slug]
+    args = ["implement", wp_id, "--mission-run", mission_slug]
     if base is not None:
         args.extend(["--base", base])
 
@@ -189,9 +189,9 @@ def test_planning_in_main_no_worktrees(tmp_path):
     repo = init_test_repo(tmp_path)
 
     # Simulate /spec-kitty.specify
-    feature_dir = create_feature_in_main(repo, "011-test-feature")
-    assert feature_dir.exists()
-    assert feature_dir == repo / "kitty-specs" / "011-test-feature"
+    mission_dir = create_mission_in_main(repo, "011-test-mission")
+    assert mission_dir.exists()
+    assert mission_dir == repo / "kitty-specs" / "011-test-mission"
 
     # Verify NO worktree created
     worktrees_dir = repo / ".worktrees"
@@ -210,7 +210,7 @@ def test_planning_in_main_no_worktrees(tmp_path):
     assert "Add spec for" in result.stdout
 
     # Simulate /spec-kitty.plan
-    plan_file = feature_dir / "plan.md"
+    plan_file = mission_dir / "plan.md"
     plan_file.write_text("# Plan")
     subprocess.run(["git", "add", str(plan_file)], cwd=repo, check=True, capture_output=True)
     subprocess.run(
@@ -221,10 +221,10 @@ def test_planning_in_main_no_worktrees(tmp_path):
     )
 
     # Simulate /spec-kitty.tasks
-    create_wp_file(feature_dir, "WP01", [])
-    create_wp_file(feature_dir, "WP02", ["WP01"])
+    create_wp_file(mission_dir, "WP01", [])
+    create_wp_file(mission_dir, "WP02", ["WP01"])
     subprocess.run(
-        ["git", "add", str(feature_dir / "tasks")],
+        ["git", "add", str(mission_dir / "tasks")],
         cwd=repo,
         check=True,
         capture_output=True,
@@ -262,17 +262,17 @@ def test_implement_wp_no_dependencies(tmp_path):
 
     Validates:
     - spec-kitty implement WP01 creates workspace
-    - Workspace named correctly: .worktrees/###-feature-WP01/
+    - Workspace named correctly: .worktrees/###-mission-WP01/
     - Branch created from main
     - Workspace contains planning artifacts
     """
     repo = init_test_repo(tmp_path)
-    feature_dir = create_feature_in_main(repo, "011-test")
-    create_wp_file(feature_dir, "WP01", [])
+    mission_dir = create_mission_in_main(repo, "011-test")
+    create_wp_file(mission_dir, "WP01", [])
 
     # Commit WP file to main
     subprocess.run(
-        ["git", "add", str(feature_dir / "tasks")],
+        ["git", "add", str(mission_dir / "tasks")],
         cwd=repo,
         check=True,
         capture_output=True,
@@ -329,13 +329,13 @@ def test_implement_wp_with_dependencies(tmp_path):
     - Git graph shows correct branching structure
     """
     repo = init_test_repo(tmp_path)
-    feature_dir = create_feature_in_main(repo, "011-test")
-    create_wp_file(feature_dir, "WP01", [])
-    create_wp_file(feature_dir, "WP02", ["WP01"])
+    mission_dir = create_mission_in_main(repo, "011-test")
+    create_wp_file(mission_dir, "WP01", [])
+    create_wp_file(mission_dir, "WP02", ["WP01"])
 
     # Commit WP files
     subprocess.run(
-        ["git", "add", str(feature_dir / "tasks")],
+        ["git", "add", str(mission_dir / "tasks")],
         cwd=repo,
         check=True,
         capture_output=True,
@@ -402,13 +402,13 @@ def test_parallel_wp_implementation(tmp_path):
     - Both workspaces exist and are valid
     """
     repo = init_test_repo(tmp_path)
-    feature_dir = create_feature_in_main(repo, "011-test")
-    create_wp_file(feature_dir, "WP01", [])
-    create_wp_file(feature_dir, "WP03", [])
+    mission_dir = create_mission_in_main(repo, "011-test")
+    create_wp_file(mission_dir, "WP01", [])
+    create_wp_file(mission_dir, "WP03", [])
 
     # Commit WPs
     subprocess.run(
-        ["git", "add", str(feature_dir / "tasks")],
+        ["git", "add", str(mission_dir / "tasks")],
         cwd=repo,
         check=True,
         capture_output=True,
@@ -483,12 +483,12 @@ def test_implement_missing_base_workspace_error(tmp_path):
     - No WP02 workspace created
     """
     repo = init_test_repo(tmp_path)
-    feature_dir = create_feature_in_main(repo, "011-test")
-    create_wp_file(feature_dir, "WP02", ["WP01"])
+    mission_dir = create_mission_in_main(repo, "011-test")
+    create_wp_file(mission_dir, "WP02", ["WP01"])
 
     # Commit WP file
     subprocess.run(
-        ["git", "add", str(feature_dir / "tasks")],
+        ["git", "add", str(mission_dir / "tasks")],
         cwd=repo,
         check=True,
         capture_output=True,
@@ -517,14 +517,14 @@ def test_circular_dependency_detection(tmp_path):
     from specify_cli.core.dependency_graph import build_dependency_graph, detect_cycles
 
     repo = init_test_repo(tmp_path)
-    feature_dir = create_feature_in_main(repo, "011-test")
+    mission_dir = create_mission_in_main(repo, "011-test")
 
     # Create circular dependency: WP01 → WP02 → WP01
-    create_wp_file(feature_dir, "WP01", ["WP02"])
-    create_wp_file(feature_dir, "WP02", ["WP01"])
+    create_wp_file(mission_dir, "WP01", ["WP02"])
+    create_wp_file(mission_dir, "WP02", ["WP01"])
 
-    # Build graph - note that build_dependency_graph takes feature_dir not tasks_dir
-    graph = build_dependency_graph(feature_dir)
+    # Build graph - note that build_dependency_graph takes mission_dir not tasks_dir
+    graph = build_dependency_graph(mission_dir)
 
     # Detect cycles - returns list of lists (each list is a cycle)
     cycles = detect_cycles(graph)
@@ -549,12 +549,12 @@ def test_implement_missing_base_flag_suggestion(tmp_path):
     - Uses real spec-kitty implement command (no mocks)
     """
     repo = init_test_repo(tmp_path)
-    feature_dir = create_feature_in_main(repo, "011-test")
-    create_wp_file(feature_dir, "WP02", ["WP01"])
+    mission_dir = create_mission_in_main(repo, "011-test")
+    create_wp_file(mission_dir, "WP02", ["WP01"])
 
     # Commit WP file
     subprocess.run(
-        ["git", "add", str(feature_dir / "tasks")],
+        ["git", "add", str(mission_dir / "tasks")],
         cwd=repo,
         check=True,
         capture_output=True,
@@ -566,7 +566,7 @@ def test_implement_missing_base_flag_suggestion(tmp_path):
         capture_output=True,
     )
 
-    # Create a branch to simulate feature context
+    # Create a branch to simulate mission context
     subprocess.run(
         ["git", "checkout", "-b", "011-test"],
         cwd=repo,
@@ -594,13 +594,13 @@ def test_implement_with_base_flag_success(tmp_path):
     - Tests actual dependency enforcement
     """
     repo = init_test_repo(tmp_path)
-    feature_dir = create_feature_in_main(repo, "011-test")
-    create_wp_file(feature_dir, "WP01", [])
-    create_wp_file(feature_dir, "WP02", ["WP01"])
+    mission_dir = create_mission_in_main(repo, "011-test")
+    create_wp_file(mission_dir, "WP01", [])
+    create_wp_file(mission_dir, "WP02", ["WP01"])
 
     # Commit WP files
     subprocess.run(
-        ["git", "add", str(feature_dir / "tasks")],
+        ["git", "add", str(mission_dir / "tasks")],
         cwd=repo,
         check=True,
         capture_output=True,
@@ -612,7 +612,7 @@ def test_implement_with_base_flag_success(tmp_path):
         capture_output=True,
     )
 
-    # Create feature branch for context detection
+    # Create mission branch for context detection
     subprocess.run(
         ["git", "checkout", "-b", "011-test"],
         cwd=repo,
@@ -622,7 +622,7 @@ def test_implement_with_base_flag_success(tmp_path):
 
     # Implement WP01 first (no dependencies)
     # --feature is required (auto-detection removed in big-bang refactor)
-    result = run_cli(repo, "implement", "WP01", "--feature", "011-test")
+    result = run_cli(repo, "implement", "WP01", "--mission-run", "011-test")
     assert result.returncode == 0, f"WP01 implementation failed: {result.stderr}\nStdout: {result.stdout}"
 
     # Verify WP01 workspace exists
@@ -630,7 +630,7 @@ def test_implement_with_base_flag_success(tmp_path):
     assert wp01_workspace.exists()
 
     # Implement WP02 with correct --base flag
-    result = run_cli(repo, "implement", "WP02", "--base", "WP01", "--feature", "011-test")
+    result = run_cli(repo, "implement", "WP02", "--base", "WP01", "--mission-run", "011-test")
     assert result.returncode == 0, f"WP02 implementation failed: {result.stderr}\nStdout: {result.stdout}"
 
     # Verify WP02 workspace exists
@@ -662,16 +662,16 @@ def test_merge_workspace_per_wp_preparation(tmp_path):
     - All branches can be merged to main (no conflicts)
     """
     repo = init_test_repo(tmp_path)
-    feature_dir = create_feature_in_main(repo, "011-test")
+    mission_dir = create_mission_in_main(repo, "011-test")
 
     # Create WP files
-    create_wp_file(feature_dir, "WP01", [])
-    create_wp_file(feature_dir, "WP02", ["WP01"])
-    create_wp_file(feature_dir, "WP03", [])
+    create_wp_file(mission_dir, "WP01", [])
+    create_wp_file(mission_dir, "WP02", ["WP01"])
+    create_wp_file(mission_dir, "WP03", [])
 
     # Commit WPs
     subprocess.run(
-        ["git", "add", str(feature_dir / "tasks")],
+        ["git", "add", str(mission_dir / "tasks")],
         cwd=repo,
         check=True,
         capture_output=True,
@@ -738,7 +738,7 @@ def test_pre_upgrade_validation_blocks_legacy_worktrees(tmp_path):
     """Test migration blocks when legacy worktrees exist (FR-022, FR-023).
 
     Validates:
-    - Legacy worktree pattern detected (###-feature without -WP##)
+    - Legacy worktree pattern detected (###-mission without -WP##)
     - Validation fails
     - Clear error message provided
     """
@@ -748,8 +748,8 @@ def test_pre_upgrade_validation_blocks_legacy_worktrees(tmp_path):
 
     repo = init_test_repo(tmp_path)
 
-    # Create legacy worktree (###-feature pattern, no -WP## suffix)
-    legacy_dir = repo / ".worktrees" / "009-old-feature"
+    # Create legacy worktree (###-mission pattern, no -WP## suffix)
+    legacy_dir = repo / ".worktrees" / "009-old-mission"
     legacy_dir.mkdir(parents=True)
 
     # Validate upgrade
@@ -758,7 +758,7 @@ def test_pre_upgrade_validation_blocks_legacy_worktrees(tmp_path):
     # Should fail validation
     assert is_valid is False
     assert len(errors) > 0
-    assert any("009-old-feature" in err for err in errors)
+    assert any("009-old-mission" in err for err in errors)
     # Error should mention merge or delete
     errors_text = " ".join(errors).lower()
     assert "merge" in errors_text or "delete" in errors_text or "complete" in errors_text
@@ -767,7 +767,7 @@ def test_pre_upgrade_validation_passes_with_new_worktrees(tmp_path):
     """Test migration passes when only workspace-per-WP worktrees exist (FR-024).
 
     Validates:
-    - New worktree pattern accepted (###-feature-WP##)
+    - New worktree pattern accepted (###-mission-WP##)
     - Validation passes
     - No errors reported
     """
@@ -778,9 +778,9 @@ def test_pre_upgrade_validation_passes_with_new_worktrees(tmp_path):
     repo = init_test_repo(tmp_path)
 
     # Create workspace-per-WP worktrees (new pattern)
-    new_dir1 = repo / ".worktrees" / "010-feature-WP01"
+    new_dir1 = repo / ".worktrees" / "010-mission-WP01"
     new_dir1.mkdir(parents=True)
-    new_dir2 = repo / ".worktrees" / "010-feature-WP02"
+    new_dir2 = repo / ".worktrees" / "010-mission-WP02"
     new_dir2.mkdir(parents=True)
 
     # Run validation

@@ -2,7 +2,7 @@
 
 The resolver reads identity from project metadata and WP frontmatter.
 It does NOT use branch names, environment variables, or directory walking.
-Both ``wp_code`` and ``feature_slug`` are REQUIRED -- there is no scanning,
+Both ``wp_code`` and ``mission_slug`` are REQUIRED -- there is no scanning,
 no heuristic fallback, and no single-feature auto-detection.
 """
 
@@ -55,9 +55,9 @@ def _read_project_uuid(repo_root: Path) -> str:
     return str(uuid_val)
 
 
-def _read_meta_json(feature_dir: Path) -> dict[str, str]:
+def _read_meta_json(mission_dir: Path) -> dict[str, str]:
     """Read mission_id and target_branch from meta.json."""
-    meta_path = feature_dir / "meta.json"
+    meta_path = mission_dir / "meta.json"
     if not meta_path.exists():
         msg = f"meta.json not found at {meta_path}."
         raise MissingIdentityError(msg)
@@ -65,13 +65,13 @@ def _read_meta_json(feature_dir: Path) -> dict[str, str]:
     data = json.loads(meta_path.read_text(encoding="utf-8"))
 
     # mission_id may not exist yet in current metadata;
-    # fall back to feature_slug as the identifier during transition
-    mission_id = data.get("mission_id", data.get("feature_slug", ""))
+    # fall back to mission_slug as the identifier during transition
+    mission_id = data.get("mission_id", data.get("mission_slug", ""))
     target_branch = data.get("target_branch", "main")
 
     if not mission_id:
         msg = (
-            f"Neither mission_id nor feature_slug found in {meta_path}. "
+            f"Neither mission_id nor mission_slug found in {meta_path}. "
             "The feature metadata is incomplete."
         )
         raise MissingIdentityError(msg)
@@ -79,13 +79,13 @@ def _read_meta_json(feature_dir: Path) -> dict[str, str]:
     return {"mission_id": mission_id, "target_branch": target_branch}
 
 
-def _read_wp_frontmatter(feature_dir: Path, wp_code: str) -> dict[str, object]:
+def _read_wp_frontmatter(mission_dir: Path, wp_code: str) -> dict[str, object]:
     """Read WP frontmatter fields from the task markdown file.
 
     Scans tasks/ directory for a file matching the wp_code pattern
     (e.g., WP01-*.md or WP01.md).
     """
-    tasks_dir = feature_dir / "tasks"
+    tasks_dir = mission_dir / "tasks"
     if not tasks_dir.exists():
         msg = f"tasks/ directory not found at {tasks_dir}."
         raise WorkPackageNotFoundError(msg)
@@ -125,18 +125,18 @@ def _read_wp_frontmatter(feature_dir: Path, wp_code: str) -> dict[str, object]:
 
 def resolve_context(
     wp_code: str,
-    feature_slug: str,
+    mission_slug: str,
     agent: str,
     repo_root: Path,
 ) -> MissionContext:
     """Resolve a MissionContext from explicit arguments.
 
-    Both ``wp_code`` and ``feature_slug`` are REQUIRED. This function
+    Both ``wp_code`` and ``mission_slug`` are REQUIRED. This function
     does NOT scan, auto-detect, or fall back to heuristics.
 
     Args:
         wp_code: Work package display alias (e.g., "WP01").
-        feature_slug: Feature slug (e.g., "057-canonical-context-architecture-cleanup").
+        mission_slug: Feature slug (e.g., "057-canonical-context-architecture-cleanup").
         agent: Name of the agent creating this context.
         repo_root: Absolute path to the repository root.
 
@@ -144,7 +144,7 @@ def resolve_context(
         A persisted MissionContext.
 
     Raises:
-        MissingArgumentError: If wp_code or feature_slug is empty.
+        MissingArgumentError: If wp_code or mission_slug is empty.
         MissingIdentityError: If project_uuid or mission_id is not assigned.
         FeatureNotFoundError: If the feature slug doesn't match a kitty-specs/ dir.
         WorkPackageNotFoundError: If the wp_code is not found in tasks/.
@@ -156,9 +156,9 @@ def resolve_context(
         )
         raise MissingArgumentError(msg)
 
-    if not feature_slug:
+    if not mission_slug:
         msg = (
-            "feature_slug is required. Provide the feature slug "
+            "mission_slug is required. Provide the feature slug "
             "(e.g., --feature 057-canonical-context-architecture-cleanup). "
             "No scanning or auto-detection is performed."
         )
@@ -168,19 +168,19 @@ def resolve_context(
     project_uuid = _read_project_uuid(repo_root)
 
     # 2. Locate feature directory
-    feature_dir = repo_root / "kitty-specs" / feature_slug
-    if not feature_dir.exists():
+    mission_dir = repo_root / "kitty-specs" / mission_slug
+    if not mission_dir.exists():
         msg = (
-            f"Feature directory not found: {feature_dir}. "
-            f"Check that '{feature_slug}' is the correct feature slug."
+            f"Feature directory not found: {mission_dir}. "
+            f"Check that '{mission_slug}' is the correct feature slug."
         )
         raise FeatureNotFoundError(msg)
 
     # 3. Read meta.json
-    meta = _read_meta_json(feature_dir)
+    meta = _read_meta_json(mission_dir)
 
     # 4. Read WP frontmatter
-    fm = _read_wp_frontmatter(feature_dir, wp_code)
+    fm = _read_wp_frontmatter(mission_dir, wp_code)
 
     # Extract fields from frontmatter
     work_package_id = str(fm.get("work_package_id", wp_code))
@@ -200,7 +200,7 @@ def resolve_context(
     if execution_mode == "planning_artifact":
         authoritative_ref = None
     else:
-        authoritative_ref = f"{feature_slug}-{wp_code}"
+        authoritative_ref = f"{mission_slug}-{wp_code}"
 
     # Compute dependency_mode
     dependency_mode = "chained" if dependencies else "independent"
@@ -216,7 +216,7 @@ def resolve_context(
         mission_id=meta["mission_id"],
         work_package_id=work_package_id,
         wp_code=wp_code,
-        feature_slug=feature_slug,
+        mission_slug=mission_slug,
         target_branch=meta["target_branch"],
         authoritative_repo=str(repo_root),
         authoritative_ref=authoritative_ref,
@@ -236,16 +236,16 @@ def resolve_context(
 def resolve_or_load(
     token: str | None,
     wp_code: str | None,
-    feature_slug: str | None,
+    mission_slug: str | None,
     agent: str,
     repo_root: Path,
 ) -> MissionContext:
     """Main entry point: load from token or resolve from arguments.
 
     - If ``token`` is provided: load the persisted context directly.
-    - If ``token`` is None and both ``wp_code`` and ``feature_slug`` are
+    - If ``token`` is None and both ``wp_code`` and ``mission_slug`` are
       provided: resolve a new context.
-    - If ``token`` is None and either ``wp_code`` or ``feature_slug`` is
+    - If ``token`` is None and either ``wp_code`` or ``mission_slug`` is
       missing: raise ``MissingArgumentError``.
 
     This function never scans or guesses.
@@ -253,7 +253,7 @@ def resolve_or_load(
     Args:
         token: Existing context token, or None.
         wp_code: Work package code (e.g., "WP01"), or None.
-        feature_slug: Feature slug, or None.
+        mission_slug: Feature slug, or None.
         agent: Agent name for new context creation.
         repo_root: Repository root path.
 
@@ -261,7 +261,7 @@ def resolve_or_load(
         The loaded or newly resolved MissionContext.
 
     Raises:
-        MissingArgumentError: If neither token nor both wp_code/feature_slug
+        MissingArgumentError: If neither token nor both wp_code/mission_slug
             are provided.
         ContextNotFoundError: If the token file does not exist.
         ContextCorruptedError: If the token file is invalid.
@@ -269,13 +269,13 @@ def resolve_or_load(
     if token:
         return _load_context(token, repo_root)
 
-    if wp_code and feature_slug:
-        return resolve_context(wp_code, feature_slug, agent, repo_root)
+    if wp_code and mission_slug:
+        return resolve_context(wp_code, mission_slug, agent, repo_root)
 
     missing: list[str] = []
     if not wp_code:
         missing.append("--wp <WP_CODE>")
-    if not feature_slug:
+    if not mission_slug:
         missing.append("--feature <FEATURE_SLUG>")
 
     msg = (

@@ -3,7 +3,7 @@
 import pytest
 from pathlib import Path
 
-from specify_cli.dashboard.scanner import scan_feature_kanban, _count_wps_by_lane
+from specify_cli.dashboard.scanner import scan_mission_kanban, _count_wps_by_lane
 from specify_cli.status.models import Lane, StatusEvent
 from specify_cli.status.store import append_event
 
@@ -28,9 +28,9 @@ def _write_event(feature_dir: Path, wp_id: str, to_lane: str, from_lane: str = "
 
 def test_dashboard_cli_status_parity(tmp_path: Path):
     """Verify dashboard and CLI status use same defaults and encoding."""
-    # Setup: Create a minimal feature with work packages
-    feature_dir = tmp_path / "kitty-specs" / "001-test-feature"
-    tasks_dir = feature_dir / "tasks"
+    # Setup: Create a minimal mission with work packages
+    mission_dir = tmp_path / "kitty-specs" / "001-test-mission"
+    tasks_dir = mission_dir / "tasks"
     tasks_dir.mkdir(parents=True)
 
     # Create WP with missing lane (tests default behavior)
@@ -69,7 +69,7 @@ This WP has an explicit lane.
     _write_event(feature_dir, "WP02", "in_progress")
 
     # Get results from both systems
-    dashboard_lanes = scan_feature_kanban(tmp_path, "001-test-feature")
+    dashboard_lanes = scan_mission_kanban(tmp_path, "001-test-mission")
 
     # Test dashboard counts
     counts = _count_wps_by_lane(tasks_dir)
@@ -85,8 +85,8 @@ This WP has an explicit lane.
 
 def test_both_use_utf8_sig_encoding(tmp_path: Path):
     """Verify both systems handle BOM correctly."""
-    feature_dir = tmp_path / "kitty-specs" / "002-test-bom"
-    tasks_dir = feature_dir / "tasks"
+    mission_dir = tmp_path / "kitty-specs" / "002-test-bom"
+    tasks_dir = mission_dir / "tasks"
     tasks_dir.mkdir(parents=True)
 
     # Create file with BOM (Windows-style)
@@ -109,7 +109,7 @@ Windows BOM test.
     _write_event(feature_dir, "WP01", "planned")
 
     # Dashboard should handle it
-    dashboard_lanes = scan_feature_kanban(tmp_path, "002-test-bom")
+    dashboard_lanes = scan_mission_kanban(tmp_path, "002-test-bom")
     assert len(dashboard_lanes["planned"]) == 1
     assert dashboard_lanes["planned"][0]["title"] == "Test BOM"
 

@@ -54,7 +54,7 @@ except ImportError:  # pragma: no cover
 class RebuildResult:
     """Outcome of rebuilding the event log for a single feature."""
 
-    feature_slug: str
+    mission_slug: str
     events_generated: int = 0        # Brand-new synthetic events created
     events_kept: int = 0             # Existing events preserved unchanged
     events_corrected: int = 0        # Existing events that were enriched / fixed
@@ -115,9 +115,9 @@ def _make_migration_timestamp(base_ts: str, offset_seconds: int = 0) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _read_existing_events(feature_dir: Path) -> list[dict[str, Any]]:
+def _read_existing_events(mission_dir: Path) -> list[dict[str, Any]]:
     """Read raw event dicts from status.events.jsonl; return [] on error."""
-    events_file = feature_dir / "status.events.jsonl"
+    events_file = mission_dir / "status.events.jsonl"
     if not events_file.exists():
         return []
     results: list[dict[str, Any]] = []
@@ -136,9 +136,9 @@ def _read_existing_events(feature_dir: Path) -> list[dict[str, Any]]:
     return results
 
 
-def _read_status_json(feature_dir: Path) -> dict[str, Any] | None:
+def _read_status_json(mission_dir: Path) -> dict[str, Any] | None:
     """Return the status.json snapshot dict or None if absent/corrupt."""
-    status_file = feature_dir / "status.json"
+    status_file = mission_dir / "status.json"
     if not status_file.exists():
         return None
     try:
@@ -147,13 +147,13 @@ def _read_status_json(feature_dir: Path) -> dict[str, Any] | None:
         if isinstance(data, dict):
             return data
     except (OSError, json.JSONDecodeError) as exc:
-        logger.warning("Cannot read status.json in %s: %s", feature_dir, exc)
+        logger.warning("Cannot read status.json in %s: %s", mission_dir, exc)
     return None
 
 
-def _read_frontmatter_lanes(feature_dir: Path) -> dict[str, str]:
+def _read_frontmatter_lanes(mission_dir: Path) -> dict[str, str]:
     """Return mapping of wp_code → canonical lane from WP frontmatter."""
-    tasks_dir = feature_dir / "tasks"
+    tasks_dir = mission_dir / "tasks"
     if not tasks_dir.is_dir():
         return {}
     lanes: dict[str, str] = {}
@@ -177,9 +177,9 @@ def _read_frontmatter_lanes(feature_dir: Path) -> dict[str, str]:
     return lanes
 
 
-def _read_wp_frontmatter_full(feature_dir: Path) -> dict[str, dict[str, Any]]:
+def _read_wp_frontmatter_full(mission_dir: Path) -> dict[str, dict[str, Any]]:
     """Return mapping of wp_code → full frontmatter dict."""
-    tasks_dir = feature_dir / "tasks"
+    tasks_dir = mission_dir / "tasks"
     if not tasks_dir.is_dir():
         return {}
     result: dict[str, dict[str, Any]] = {}
@@ -232,7 +232,7 @@ def _dedup_events(events: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], i
 
 def _enrich_event_identity(
     evt: dict[str, Any],
-    feature_slug: str,
+    mission_slug: str,
     wp_id_map: dict[str, str],
 ) -> tuple[dict[str, Any], bool]:
     """Backfill mission_id / work_package_id fields if absent.
@@ -247,8 +247,8 @@ def _enrich_event_identity(
         evt["work_package_id"] = wp_id_map[wp_code]
         changed = True
 
-    if "feature_slug" not in evt:
-        evt["feature_slug"] = feature_slug
+    if "mission_slug" not in evt:
+        evt["mission_slug"] = mission_slug
         changed = True
 
     return evt, changed
@@ -261,7 +261,7 @@ def _enrich_event_identity(
 
 def _build_chain(
     wp_code: str,
-    feature_slug: str,
+    mission_slug: str,
     wp_id_map: dict[str, str],
     target_lane: str,
     migration_timestamp: str,
@@ -308,7 +308,7 @@ def _build_chain(
         ts = _make_migration_timestamp(migration_timestamp, offset_seconds=offset)
         evt: dict[str, Any] = {
             "event_id": _generate_ulid(),
-            "feature_slug": feature_slug,
+            "mission_slug": mission_slug,
             "wp_id": wp_code,
             "from_lane": from_lane,
             "to_lane": to_lane,
@@ -333,8 +333,8 @@ def _build_chain(
 
 
 def rebuild_event_log(  # noqa: C901
-    feature_dir: Path,
-    feature_slug: str,
+    mission_dir: Path,
+    mission_slug: str,
     wp_id_map: dict[str, str],
 ) -> RebuildResult:
     """Rebuild the canonical event log from all available legacy sources.
@@ -344,8 +344,8 @@ def rebuild_event_log(  # noqa: C901
     identity-enriched event log.
 
     Args:
-        feature_dir: Path to the feature directory (e.g. ``kitty-specs/057-…``).
-        feature_slug: Slug of the feature (e.g. ``"057-…"``).
+        mission_dir: Path to the feature directory (e.g. ``kitty-specs/057-…``).
+        mission_slug: Slug of the feature (e.g. ``"057-…"``).
         wp_id_map: Mapping of ``wp_code → work_package_id`` from identity
             backfill (WP12).  Used to enrich events that lack
             ``work_package_id``.
@@ -353,15 +353,15 @@ def rebuild_event_log(  # noqa: C901
     Returns:
         :class:`RebuildResult` with counts and warnings for the feature.
     """
-    result = RebuildResult(feature_slug=feature_slug)
+    result = RebuildResult(mission_slug=mission_slug)
     migration_ts = datetime.now(UTC).isoformat()
 
     # ------------------------------------------------------------------
     # Step 1: Read all sources
     # ------------------------------------------------------------------
-    existing_events = _read_existing_events(feature_dir)
-    status_json = _read_status_json(feature_dir)
-    frontmatter_lanes = _read_frontmatter_lanes(feature_dir)
+    existing_events = _read_existing_events(mission_dir)
+    status_json = _read_status_json(mission_dir)
+    frontmatter_lanes = _read_frontmatter_lanes(mission_dir)
     # If there are no WPs and no event log → nothing to do
     if not existing_events and not frontmatter_lanes:
         result.skipped = True
@@ -450,7 +450,7 @@ def rebuild_event_log(  # noqa: C901
 
             loser_sources = [f"{src}={ln}" for src, ln, _ in candidates if src != winner_src]
             msg = (
-                f"{feature_slug}/{wp_code}: lane conflict "
+                f"{mission_slug}/{wp_code}: lane conflict "
                 f"({', '.join(loser_sources)} vs {winner_src}={winner_lane}). "
                 f"Using {winner_src}."
             )
@@ -468,7 +468,7 @@ def rebuild_event_log(  # noqa: C901
     enriched_events: list[dict[str, Any]] = []
     corrections = 0
     for evt in existing_events:
-        enriched, changed = _enrich_event_identity(evt, feature_slug, wp_id_map)
+        enriched, changed = _enrich_event_identity(evt, mission_slug, wp_id_map)
         enriched_events.append(enriched)
         if changed:
             corrections += 1
@@ -491,7 +491,7 @@ def rebuild_event_log(  # noqa: C901
         if log_lane is not None and log_lane != auth_lane:
             # Contradiction: emit a corrective synthetic event
             msg = (
-                f"{feature_slug}/{wp_code}: event log says '{log_lane}' "
+                f"{mission_slug}/{wp_code}: event log says '{log_lane}' "
                 f"but authoritative source says '{auth_lane}'. "
                 "Emitting corrective synthetic event."
             )
@@ -501,7 +501,7 @@ def rebuild_event_log(  # noqa: C901
             work_package_id = wp_id_map.get(wp_code, "")
             corrective_evt: dict[str, Any] = {
                 "event_id": _generate_ulid(),
-                "feature_slug": feature_slug,
+                "mission_slug": mission_slug,
                 "wp_id": wp_code,
                 "from_lane": log_lane,
                 "to_lane": auth_lane,
@@ -522,7 +522,7 @@ def rebuild_event_log(  # noqa: C901
             # No event log entry for this WP — generate synthetic chain
             chain = _build_chain(
                 wp_code=wp_code,
-                feature_slug=feature_slug,
+                mission_slug=mission_slug,
                 wp_id_map=wp_id_map,
                 target_lane=auth_lane,
                 migration_timestamp=migration_ts,
@@ -541,17 +541,17 @@ def rebuild_event_log(  # noqa: C901
         result.skipped = True
         return result
 
-    events_file = feature_dir / "status.events.jsonl"
-    tmp_file = feature_dir / "status.events.jsonl.tmp"
+    events_file = mission_dir / "status.events.jsonl"
+    tmp_file = mission_dir / "status.events.jsonl.tmp"
 
     try:
-        feature_dir.mkdir(parents=True, exist_ok=True)
+        mission_dir.mkdir(parents=True, exist_ok=True)
         with tmp_file.open("w", encoding="utf-8") as fh:
             for evt in final_events:
                 fh.write(json.dumps(evt, sort_keys=True) + "\n")
         os.replace(str(tmp_file), str(events_file))
     except OSError as exc:
-        msg = f"Failed to write event log for {feature_slug}: {exc}"
+        msg = f"Failed to write event log for {mission_slug}: {exc}"
         logger.error(msg)
         result.errors.append(msg)
         if tmp_file.exists():

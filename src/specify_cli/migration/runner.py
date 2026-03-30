@@ -291,16 +291,16 @@ def _move_derived_files(repo_root: Path) -> list[str]:
     if not kitty_specs.is_dir():
         return moved
 
-    for feature_dir in sorted(kitty_specs.iterdir()):
-        if not feature_dir.is_dir():
+    for mission_dir in sorted(kitty_specs.iterdir()):
+        if not mission_dir.is_dir():
             continue
 
-        status_json = feature_dir / "status.json"
+        status_json = mission_dir / "status.json"
         if not status_json.exists():
             continue
 
         # Destination: .kittify/derived/<slug>/status.json
-        derived_dir = repo_root / ".kittify" / "derived" / feature_dir.name
+        derived_dir = repo_root / ".kittify" / "derived" / mission_dir.name
         derived_dir.mkdir(parents=True, exist_ok=True)
         dest = derived_dir / "status.json"
 
@@ -309,9 +309,9 @@ def _move_derived_files(repo_root: Path) -> list[str]:
             # Leave source in place for now (it may still be referenced);
             # the .gitignore will keep it out of git once added.
             moved.append(f"Copied {status_json} → {dest}")
-            logger.debug("Copied status.json for %s to derived dir", feature_dir.name)
+            logger.debug("Copied status.json for %s to derived dir", mission_dir.name)
         except OSError as exc:
-            logger.warning("Could not copy status.json for %s: %s", feature_dir.name, exc)
+            logger.warning("Could not copy status.json for %s: %s", mission_dir.name, exc)
 
     return moved
 
@@ -471,11 +471,11 @@ def run_migration(repo_root: Path, dry_run: bool = False) -> MigrationReport:  #
     # WP IDs for each feature
     all_wp_id_maps: dict[str, dict[str, str]] = {}
     total_wps = 0
-    for feature_dir in _discover_features(repo_root):
-        slug = feature_dir.name
+    for mission_dir in _discover_features(repo_root):
+        slug = mission_dir.name
         mid = mission_id_map.get(slug, "")
         try:
-            wp_id_map = backfill_wp_ids(feature_dir, mid)
+            wp_id_map = backfill_wp_ids(mission_dir, mid)
             all_wp_id_maps[slug] = wp_id_map
             total_wps += len(wp_id_map)
         except Exception as exc:
@@ -488,10 +488,10 @@ def run_migration(repo_root: Path, dry_run: bool = False) -> MigrationReport:  #
     # Step 3: Ownership backfill
     # ------------------------------------------------------------------
     logger.info("Migration step 3/10: Ownership backfill")
-    for feature_dir in _discover_features(repo_root):
-        slug = feature_dir.name
+    for mission_dir in _discover_features(repo_root):
+        slug = mission_dir.name
         try:
-            backfill_ownership(feature_dir, slug)
+            backfill_ownership(mission_dir, slug)
         except Exception as exc:
             return _fail("ownership_backfill", f"ownership backfill failed for {slug}: {exc}")
 
@@ -500,11 +500,11 @@ def run_migration(repo_root: Path, dry_run: bool = False) -> MigrationReport:  #
     # ------------------------------------------------------------------
     logger.info("Migration step 4/10: State rebuild")
     total_events_generated = 0
-    for feature_dir in _discover_features(repo_root):
-        slug = feature_dir.name
+    for mission_dir in _discover_features(repo_root):
+        slug = mission_dir.name
         wp_id_map = all_wp_id_maps.get(slug, {})
         try:
-            rb = rebuild_event_log(feature_dir, slug, wp_id_map)
+            rb = rebuild_event_log(mission_dir, slug, wp_id_map)
             total_events_generated += rb.events_generated
             for w in rb.warnings:
                 report.warnings.append(w)
@@ -519,10 +519,10 @@ def run_migration(repo_root: Path, dry_run: bool = False) -> MigrationReport:  #
     # Step 5: Strip frontmatter (AFTER state rebuild)
     # ------------------------------------------------------------------
     logger.info("Migration step 5/10: Strip frontmatter")
-    for feature_dir in _discover_features(repo_root):
-        slug = feature_dir.name
+    for mission_dir in _discover_features(repo_root):
+        slug = mission_dir.name
         try:
-            strip_mutable_fields(feature_dir)
+            strip_mutable_fields(mission_dir)
         except Exception as exc:
             return _fail("strip_frontmatter", f"frontmatter strip failed for {slug}: {exc}")
 

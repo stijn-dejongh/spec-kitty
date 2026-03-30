@@ -40,7 +40,7 @@ pytestmark = pytest.mark.fast
 def _setup_project(
     tmp_path: Path,
     *,
-    feature_slug: str = "047-lifecycle-test",
+    mission_slug: str = "047-lifecycle-test",
     wp_code: str = "WP01",
     execution_mode: str = "code_change",
     owned_files: list[str] | None = None,
@@ -56,19 +56,19 @@ def _setup_project(
         encoding="utf-8",
     )
 
-    feature_dir = tmp_path / "kitty-specs" / feature_slug
-    feature_dir.mkdir(parents=True)
+    mission_dir = tmp_path / "kitty-specs" / mission_slug
+    mission_dir.mkdir(parents=True)
     meta: dict[str, str] = {
-        "feature_slug": feature_slug,
+        "mission_slug": mission_slug,
         "mission": "software-dev",
         "target_branch": "main",
         "created_at": "2026-03-27T16:00:00+00:00",
     }
     if mission_id:
         meta["mission_id"] = mission_id
-    (feature_dir / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    (mission_dir / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
-    tasks_dir = feature_dir / "tasks"
+    tasks_dir = mission_dir / "tasks"
     tasks_dir.mkdir(parents=True)
     files = owned_files or ["src/specify_cli/context/**"]
     deps = dependencies or []
@@ -95,7 +95,7 @@ def _setup_project(
 # ---------------------------------------------------------------------------
 
 class TestContextResolutionNoHeuristics:
-    """resolve_context requires explicit wp_code + feature_slug; never scans."""
+    """resolve_context requires explicit wp_code + mission_slug; never scans."""
 
     def test_resolve_context_returns_mission_context(self, tmp_path: Path) -> None:
         repo = _setup_project(tmp_path)
@@ -103,7 +103,7 @@ class TestContextResolutionNoHeuristics:
 
         assert isinstance(ctx, MissionContext)
         assert ctx.wp_code == "WP01"
-        assert ctx.feature_slug == "047-lifecycle-test"
+        assert ctx.mission_slug == "047-lifecycle-test"
         assert ctx.project_uuid == "test-uuid-lifecycle-0001"
         assert ctx.target_branch == "main"
         assert ctx.execution_mode == "code_change"
@@ -114,12 +114,12 @@ class TestContextResolutionNoHeuristics:
         with pytest.raises(MissingArgumentError, match="wp_code is required"):
             resolve_context("", "047-lifecycle-test", "claude", tmp_path)
 
-    def test_resolve_requires_feature_slug(self, tmp_path: Path) -> None:
+    def test_resolve_requires_mission_slug(self, tmp_path: Path) -> None:
         _setup_project(tmp_path)
-        with pytest.raises(MissingArgumentError, match="feature_slug is required"):
+        with pytest.raises(MissingArgumentError, match="mission_slug is required"):
             resolve_context("WP01", "", "claude", tmp_path)
 
-    def test_resolve_raises_when_feature_dir_missing(self, tmp_path: Path) -> None:
+    def test_resolve_raises_when_mission_dir_missing(self, tmp_path: Path) -> None:
         _setup_project(tmp_path)
         with pytest.raises(FeatureNotFoundError):
             resolve_context("WP01", "999-nonexistent-feature", "claude", tmp_path)
@@ -131,14 +131,14 @@ class TestContextResolutionNoHeuristics:
 
     def test_resolve_raises_when_config_missing(self, tmp_path: Path) -> None:
         """No .kittify/config.yaml → MissingIdentityError, not a silent fallback."""
-        feature_dir = tmp_path / "kitty-specs" / "047-lifecycle-test"
-        feature_dir.mkdir(parents=True)
-        (feature_dir / "meta.json").write_text(
-            json.dumps({"feature_slug": "047-lifecycle-test", "target_branch": "main"}),
+        mission_dir = tmp_path / "kitty-specs" / "047-lifecycle-test"
+        mission_dir.mkdir(parents=True)
+        (mission_dir / "meta.json").write_text(
+            json.dumps({"mission_slug": "047-lifecycle-test", "target_branch": "main"}),
             encoding="utf-8",
         )
-        (feature_dir / "tasks").mkdir()
-        (feature_dir / "tasks" / "WP01-test.md").write_text(
+        (mission_dir / "tasks").mkdir()
+        (mission_dir / "tasks" / "WP01-test.md").write_text(
             "---\nwork_package_id: WP01\nlane: planned\n---\nContent\n",
             encoding="utf-8",
         )
@@ -148,7 +148,7 @@ class TestContextResolutionNoHeuristics:
     def test_no_detect_feature_called_during_resolution(self, tmp_path: Path) -> None:
         """Verify detection heuristics are not invoked during context resolution.
 
-        The old feature_detection module has been removed (WP02). This test
+        The old mission_detection module has been removed (WP02). This test
         confirms that resolve_context succeeds without touching any heuristic
         detection pathway — it is a contract test, not an import blocker.
 
@@ -160,17 +160,17 @@ class TestContextResolutionNoHeuristics:
         import sys
 
         # Ensure the deleted module is not importable even if stale .pyc exists
-        old_entry = sys.modules.pop("specify_cli.core.feature_detection", None)
+        old_entry = sys.modules.pop("specify_cli.core.mission_detection", None)
         try:
-            sys.modules["specify_cli.core.feature_detection"] = None  # type: ignore[assignment]
-            # Resolution must succeed even with feature_detection blocked
+            sys.modules["specify_cli.core.mission_detection"] = None  # type: ignore[assignment]
+            # Resolution must succeed even with mission_detection blocked
             ctx = resolve_context("WP01", "047-lifecycle-test", "claude", repo)
             assert ctx.wp_code == "WP01"
         finally:
             # Restore state
-            del sys.modules["specify_cli.core.feature_detection"]
+            del sys.modules["specify_cli.core.mission_detection"]
             if old_entry is not None:
-                sys.modules["specify_cli.core.feature_detection"] = old_entry
+                sys.modules["specify_cli.core.mission_detection"] = old_entry
 
 
 # ---------------------------------------------------------------------------
@@ -188,7 +188,7 @@ class TestContextTokenRoundTrip:
         loaded = load_context(ctx.token, repo)
         assert loaded.token == ctx.token
         assert loaded.wp_code == ctx.wp_code
-        assert loaded.feature_slug == ctx.feature_slug
+        assert loaded.mission_slug == ctx.mission_slug
         assert loaded.project_uuid == ctx.project_uuid
 
     def test_load_raises_for_unknown_token(self, tmp_path: Path) -> None:
@@ -217,7 +217,7 @@ class TestResolveOrLoad:
         loaded = resolve_or_load(
             token=ctx.token,
             wp_code=None,
-            feature_slug=None,
+            mission_slug=None,
             agent="claude",
             repo_root=repo,
         )
@@ -228,7 +228,7 @@ class TestResolveOrLoad:
         ctx = resolve_or_load(
             token=None,
             wp_code="WP01",
-            feature_slug="047-lifecycle-test",
+            mission_slug="047-lifecycle-test",
             agent="claude",
             repo_root=repo,
         )
@@ -241,7 +241,7 @@ class TestResolveOrLoad:
             resolve_or_load(
                 token=None,
                 wp_code=None,
-                feature_slug=None,
+                mission_slug=None,
                 agent="claude",
                 repo_root=tmp_path,
             )
@@ -252,24 +252,24 @@ class TestResolveOrLoad:
             resolve_or_load(
                 token=None,
                 wp_code=None,
-                feature_slug="047-lifecycle-test",
+                mission_slug="047-lifecycle-test",
                 agent="claude",
                 repo_root=tmp_path,
             )
 
-    def test_raises_when_only_feature_slug_missing(self, tmp_path: Path) -> None:
+    def test_raises_when_only_mission_slug_missing(self, tmp_path: Path) -> None:
         _setup_project(tmp_path)
         with pytest.raises(MissingArgumentError, match="--feature"):
             resolve_or_load(
                 token=None,
                 wp_code="WP01",
-                feature_slug=None,
+                mission_slug=None,
                 agent="claude",
                 repo_root=tmp_path,
             )
 
     def test_token_takes_precedence_over_args(self, tmp_path: Path) -> None:
-        """When token is provided, wp_code/feature_slug args are ignored."""
+        """When token is provided, wp_code/mission_slug args are ignored."""
         repo = _setup_project(tmp_path)
         ctx = resolve_context("WP01", "047-lifecycle-test", "claude", repo)
 
@@ -277,7 +277,7 @@ class TestResolveOrLoad:
         loaded = resolve_or_load(
             token=ctx.token,
             wp_code="WP99",  # wrong — should be ignored
-            feature_slug="999-wrong-feature",  # wrong — should be ignored
+            mission_slug="999-wrong-feature",  # wrong — should be ignored
             agent="claude",
             repo_root=repo,
         )
@@ -294,7 +294,7 @@ class TestContextFieldCorrectness:
     def test_authoritative_ref_set_for_code_change(self, tmp_path: Path) -> None:
         repo = _setup_project(tmp_path, execution_mode="code_change")
         ctx = resolve_context("WP01", "047-lifecycle-test", "claude", repo)
-        # authoritative_ref = {feature_slug}-{wp_code}
+        # authoritative_ref = {mission_slug}-{wp_code}
         assert ctx.authoritative_ref == "047-lifecycle-test-WP01"
 
     def test_authoritative_ref_none_for_planning_artifact(self, tmp_path: Path) -> None:
@@ -318,11 +318,11 @@ class TestContextFieldCorrectness:
         assert "src/a.py" in ctx.owned_files
         assert "src/b.py" in ctx.owned_files
 
-    def test_mission_id_falls_back_to_feature_slug(self, tmp_path: Path) -> None:
-        """When meta.json has no mission_id, feature_slug is used as mission_id."""
+    def test_mission_id_falls_back_to_mission_slug(self, tmp_path: Path) -> None:
+        """When meta.json has no mission_id, mission_slug is used as mission_id."""
         repo = _setup_project(tmp_path, mission_id=None)  # no explicit mission_id
         ctx = resolve_context("WP01", "047-lifecycle-test", "claude", repo)
-        # mission_id resolves to feature_slug when absent
+        # mission_id resolves to mission_slug when absent
         assert ctx.mission_id == "047-lifecycle-test"
 
     def test_mission_id_explicit_when_set(self, tmp_path: Path) -> None:

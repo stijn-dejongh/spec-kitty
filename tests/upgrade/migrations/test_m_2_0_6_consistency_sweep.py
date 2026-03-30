@@ -36,9 +36,9 @@ def _write_wp(tasks_dir: Path, wp_id: str, lane: str) -> Path:
 
 def test_detect_flags_malformed_meta_as_repairable(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
-    feature_dir = repo_root / "kitty-specs" / "001-broken-meta"
-    feature_dir.mkdir(parents=True)
-    (feature_dir / "meta.json").write_text("{not-json", encoding="utf-8")
+    mission_dir = repo_root / "kitty-specs" / "001-broken-meta"
+    mission_dir.mkdir(parents=True)
+    (mission_dir / "meta.json").write_text("{not-json", encoding="utf-8")
 
     migration = ConsistencySweepMigration()
     assert migration.detect(repo_root) is True
@@ -46,12 +46,12 @@ def test_detect_flags_malformed_meta_as_repairable(tmp_path: Path) -> None:
 
 def test_detect_flags_incomplete_meta_as_repairable(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
-    feature_dir = repo_root / "kitty-specs" / "001-incomplete-meta"
-    feature_dir.mkdir(parents=True)
-    (feature_dir / "meta.json").write_text(
+    mission_dir = repo_root / "kitty-specs" / "001-incomplete-meta"
+    mission_dir.mkdir(parents=True)
+    (mission_dir / "meta.json").write_text(
         json.dumps(
             {
-                "feature_number": "001",
+                "mission_number": "001",
                 "slug": "001-incomplete-meta",
                 "target_branch": "main",
                 "created_at": "2026-01-01T00:00:00+00:00",
@@ -70,12 +70,12 @@ def test_apply_repairs_feature_state_and_legacy_prompt_refs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     repo_root = tmp_path / "repo"
-    feature_dir = repo_root / "kitty-specs" / "001-upgrade-sweep"
-    tasks_dir = feature_dir / "tasks"
+    mission_dir = repo_root / "kitty-specs" / "001-upgrade-sweep"
+    tasks_dir = mission_dir / "tasks"
     tasks_dir.mkdir(parents=True)
 
     _write_wp(tasks_dir, "WP01", "doing")
-    (feature_dir / "tasks.md").write_text(
+    (mission_dir / "tasks.md").write_text(
         "\n".join(
             [
                 "# Tasks",
@@ -86,10 +86,10 @@ def test_apply_repairs_feature_state_and_legacy_prompt_refs(
         ),
         encoding="utf-8",
     )
-    (feature_dir / "status.json").write_text(
+    (mission_dir / "status.json").write_text(
         json.dumps(
             {
-                "feature_slug": "",
+                "mission_slug": "",
                 "event_count": 0,
                 "work_packages": {},
                 "summary": dict.fromkeys(CANONICAL_LANES, 0),
@@ -101,7 +101,7 @@ def test_apply_repairs_feature_state_and_legacy_prompt_refs(
     )
 
     monkeypatch.setattr(
-        "specify_cli.upgrade.feature_meta.resolve_primary_branch",
+        "specify_cli.upgrade.mission_meta.resolve_primary_branch",
         lambda _repo_root: "2.x",
     )
     monkeypatch.setattr(
@@ -114,7 +114,7 @@ def test_apply_repairs_feature_state_and_legacy_prompt_refs(
 
     assert result.success is True
 
-    meta = json.loads((feature_dir / "meta.json").read_text(encoding="utf-8"))
+    meta = json.loads((mission_dir / "meta.json").read_text(encoding="utf-8"))
     assert meta["target_branch"] == "2.x"
     assert meta["mission"] == "software-dev"
 
@@ -122,15 +122,15 @@ def test_apply_repairs_feature_state_and_legacy_prompt_refs(
     assert 'lane: "doing"' not in wp_text
     assert "lane: in_progress" in wp_text
 
-    tasks_md = (feature_dir / "tasks.md").read_text(encoding="utf-8")
+    tasks_md = (mission_dir / "tasks.md").read_text(encoding="utf-8")
     assert ".claude/prompts/tasks/WP01-upgrade.md" in tasks_md
 
     # WP05: Migration no longer bootstraps events from frontmatter.
     # No event log is created. The orphan status.json (event_count=0,
     # work_packages={}) is backed up — the event log is the sole authority.
-    assert not (feature_dir / EVENTS_FILENAME).exists()
+    assert not (mission_dir / EVENTS_FILENAME).exists()
 
-    backup_files = sorted(feature_dir.glob("status.json.orphan.bak.*"))
+    backup_files = sorted(mission_dir.glob("status.json.orphan.bak.*"))
     assert len(backup_files) == 1
 
 
@@ -139,17 +139,17 @@ def test_apply_quarantines_unreadable_planned_only_event_log(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     repo_root = tmp_path / "repo"
-    feature_dir = repo_root / "kitty-specs" / "001-corrupt-events"
-    tasks_dir = feature_dir / "tasks"
+    mission_dir = repo_root / "kitty-specs" / "001-corrupt-events"
+    tasks_dir = mission_dir / "tasks"
     tasks_dir.mkdir(parents=True)
 
     _write_wp(tasks_dir, "WP01", "planned")
-    (feature_dir / "meta.json").write_text(
+    (mission_dir / "meta.json").write_text(
         json.dumps(
             {
-                "feature_number": "001",
+                "mission_number": "001",
                 "slug": "001-corrupt-events",
-                "feature_slug": "001-corrupt-events",
+                "mission_slug": "001-corrupt-events",
                 "mission": "software-dev",
                 "target_branch": "main",
                 "created_at": "2026-01-01T00:00:00+00:00",
@@ -158,7 +158,7 @@ def test_apply_quarantines_unreadable_planned_only_event_log(
         + "\n",
         encoding="utf-8",
     )
-    (feature_dir / EVENTS_FILENAME).write_text("{bad json\n", encoding="utf-8")
+    (mission_dir / EVENTS_FILENAME).write_text("{bad json\n", encoding="utf-8")
 
     monkeypatch.setattr(
         "specify_cli.upgrade.migrations.m_2_0_6_consistency_sweep._migrate_runtime_assets",
@@ -169,11 +169,11 @@ def test_apply_quarantines_unreadable_planned_only_event_log(
     result = migration.apply(repo_root, dry_run=False)
 
     assert result.success is True
-    assert not (feature_dir / EVENTS_FILENAME).exists()
-    assert len(list(feature_dir.glob("status.events.jsonl.unreadable.bak.*"))) == 1
+    assert not (mission_dir / EVENTS_FILENAME).exists()
+    assert len(list(mission_dir.glob("status.events.jsonl.unreadable.bak.*"))) == 1
     assert any("archived unreadable status.events.jsonl" in change for change in result.changes_made)
 
-    status = json.loads((feature_dir / "status.json").read_text(encoding="utf-8"))
+    status = json.loads((mission_dir / "status.json").read_text(encoding="utf-8"))
     assert status["work_packages"] == {}
     assert status["event_count"] == 0
 
@@ -183,7 +183,7 @@ def test_apply_cleans_legacy_worktree_assets(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     repo_root = tmp_path / "repo"
-    worktree = repo_root / ".worktrees" / "001-feature-WP01"
+    worktree = repo_root / ".worktrees" / "001-mission-WP01"
     commands_dir = worktree / ".claude" / "commands"
     scripts_dir = worktree / ".kittify" / "scripts"
     commands_dir.mkdir(parents=True)

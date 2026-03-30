@@ -16,7 +16,7 @@ from specify_cli.mission import (
     MissionNotFoundError,
     discover_missions,
     get_mission_by_name,
-    get_mission_for_feature,
+    get_mission_for_mission_dir,
     list_available_missions,
 )
 
@@ -144,7 +144,7 @@ def list_cmd() -> None:
     if not kittify_dir.exists():
         console.print(f"[red]Spec Kitty project not initialized at:[/red] {project_root}")
         console.print(
-            "[dim]Run 'spec-kitty init <project-name>' or execute this command from a feature worktree created under .worktrees/<feature>/.[/dim]"  # noqa: E501
+            "[dim]Run 'spec-kitty init <project-name>' or execute this command from a mission worktree created under .worktrees/<mission>/.[/dim]"  # noqa: E501
         )
         raise typer.Exit(1)
 
@@ -157,63 +157,63 @@ def list_cmd() -> None:
         raise typer.Exit(1) from exc
 
 
-def _detect_current_feature(project_root: Path) -> str | None:
-    """Return None — no auto-detection (requires explicit --feature).
+def _detect_current_mission(project_root: Path) -> str | None:
+    """Return None — no auto-detection (requires explicit --mission-run).
 
     Args:
         project_root: Project root path (unused)
 
     Returns:
-        Always None; caller must provide --feature explicitly.
+        Always None; caller must provide --mission-run explicitly.
     """
     return None
 
 
 @app.command("current")
 def current_cmd(
-    feature: str | None = typer.Option(
+    mission_run: str | None = typer.Option(
         None,
-        "--feature",
+        "--mission-run",
         "-f",
-        help="Feature slug (auto-detects from current directory if omitted)",
+        help="Mission run slug (auto-detects from current directory if omitted)",
     ),
 ) -> None:
-    """Show currently active mission for a feature (auto-detects feature from cwd)."""
+    """Show currently active mission for a mission run (auto-detects mission from cwd)."""
     project_root = get_project_root_or_exit()
     check_version_compatibility(project_root, "mission")
 
-    # Detect feature if not explicitly provided
-    feature_slug = feature if feature else _detect_current_feature(project_root)
+    # Detect mission if not explicitly provided
+    mission_slug = mission_run if mission_run else _detect_current_mission(project_root)
 
-    if not feature_slug:
+    if not mission_slug:
         console.print(
-            "[yellow]No active feature detected.[/yellow]\n"
-            "\nUse [cyan]--feature <slug>[/cyan] to specify one, "
-            "or run from within a feature worktree."
+            "[yellow]No active mission detected.[/yellow]\n"
+            "\nUse [cyan]--mission-run <slug>[/cyan] to specify one, "
+            "or run from within a mission worktree."
         )
-        # Optionally list available features
+        # Optionally list available missions
         kitty_specs = project_root / "kitty-specs"
         if kitty_specs.is_dir():
-            features = sorted(
+            missions = sorted(
                 d.name for d in kitty_specs.iterdir()
                 if d.is_dir() and d.name[0:1].isdigit()
             )
-            if features:
-                console.print("\n[cyan]Available features:[/cyan]")
-                for feat in features[:10]:
-                    console.print(f"  - {feat}")
-                if len(features) > 10:
-                    console.print(f"  ... and {len(features) - 10} more")
+            if missions:
+                console.print("\n[cyan]Available missions:[/cyan]")
+                for m in missions[:10]:
+                    console.print(f"  - {m}")
+                if len(missions) > 10:
+                    console.print(f"  ... and {len(missions) - 10} more")
         raise typer.Exit(1)
 
     try:
-        feature_dir = project_root / "kitty-specs" / feature_slug
-        if not feature_dir.exists():
-            console.print(f"[red]Feature not found:[/red] {feature_slug}")
+        mission_dir = project_root / "kitty-specs" / mission_slug
+        if not mission_dir.exists():
+            console.print(f"[red]Mission not found:[/red] {mission_slug}")
             raise typer.Exit(1)
 
-        mission = get_mission_for_feature(feature_dir, project_root)
-        context = f"Feature: {feature_slug}"
+        mission = get_mission_for_mission_dir(mission_dir, project_root)
+        context = f"Mission: {mission_slug}"
 
     except MissionNotFoundError as exc:
         console.print(f"[red]Error:[/red] {exc}")
@@ -262,7 +262,7 @@ def info_cmd(
 
 
 def _print_active_worktrees(active_worktrees: Iterable[str]) -> None:
-    console.print("[red]Cannot switch missions: active features exist[/red]")
+    console.print("[red]Cannot switch missions: active missions exist[/red]")
     console.print("\n[yellow]Active worktrees:[/yellow]")
     for wt in active_worktrees:
         console.print(f"  • {wt}")
@@ -280,9 +280,9 @@ def switch_cmd(
     console.print("Mission types are now selected [bold]per mission run[/bold] during [cyan]/spec-kitty.specify[/cyan].")
     console.print()
     console.print("[cyan]New workflow:[/cyan]")
-    console.print("  1. Run [bold]/spec-kitty.specify[/bold] to start a new feature")
+    console.print("  1. Run [bold]/spec-kitty.specify[/bold] to start a new mission")
     console.print("  2. The system will infer and confirm the appropriate mission")
-    console.print("  3. Mission is stored in the feature's [dim]meta.json[/dim]")
+    console.print("  3. Mission is stored in the mission's [dim]meta.json[/dim]")
     console.print()
     console.print("[cyan]To see available missions:[/cyan]")
     console.print("  spec-kitty mission list")

@@ -52,7 +52,7 @@ def _install_manifest_stubs(monkeypatch, worktree_path: Path) -> None:
         def get_all_features(self) -> list[str]:
             return ["004-modular-code-refactoring"]
 
-        def get_feature_status(self, feature: str) -> dict[str, object]:
+        def get_mission_status(self, mission: str) -> dict[str, object]:
             return {
                 "state": "in_development",
                 "branch_exists": True,
@@ -82,7 +82,7 @@ def _configure_common_patches(monkeypatch, worktree_path: Path) -> None:
 
     # Create fake acceptance module for the corrected import path
     fake_acceptance = types.ModuleType("specify_cli.acceptance")
-    fake_acceptance.detect_feature_slug = lambda repo_root, cwd: "004-modular-code-refactoring"  # type: ignore[attr-defined]
+    fake_acceptance.detect_mission_slug = lambda repo_root, cwd: "004-modular-code-refactoring"  # type: ignore[attr-defined]
     fake_acceptance.AcceptanceError = _DummyAcceptanceError  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "specify_cli.acceptance", fake_acceptance)
 
@@ -105,9 +105,9 @@ def test_run_diagnostics_reports_manifest_and_worktree_state(monkeypatch, tmp_pa
     monkeypatch.setattr(diagnostics.subprocess, "run", fake_run)
     monkeypatch.setattr("specify_cli.core.git_ops.resolve_primary_branch", lambda _: "main")
 
-    # Pass feature_dir explicitly (auto-detection removed; must specify feature context)
-    feature_dir = project_dir / "kitty-specs" / "004-modular-code-refactoring"
-    result = diagnostics.run_diagnostics(project_dir, feature_dir=feature_dir)
+    # Pass mission_dir explicitly (auto-detection removed; must specify mission context)
+    mission_dir = project_dir / "kitty-specs" / "004-modular-code-refactoring"
+    result = diagnostics.run_diagnostics(project_dir, mission_dir=mission_dir)
 
     assert result["git_branch"] == "feature/testing"
     assert result["worktrees_exist"] is True
@@ -125,7 +125,7 @@ def test_run_diagnostics_reports_manifest_and_worktree_state(monkeypatch, tmp_pa
 
 
 def test_run_diagnostics_without_feature_dir_shows_no_context(monkeypatch, tmp_path: Path) -> None:
-    """When no feature_dir is passed, active_mission should be 'no feature context'."""
+    """When no mission_dir is passed, active_mission should be 'no mission context'."""
     project_dir = tmp_path / "project"
     project_dir.mkdir()
     (project_dir / ".kittify").mkdir()
@@ -142,22 +142,22 @@ def test_run_diagnostics_without_feature_dir_shows_no_context(monkeypatch, tmp_p
 
     result = diagnostics.run_diagnostics(project_dir)
 
-    assert result["active_mission"] == "no feature context"
+    assert result["active_mission"] == "no mission context"
 
 
 def test_run_diagnostics_with_feature_dir_resolves_mission(monkeypatch, tmp_path: Path) -> None:
-    """When feature_dir is passed and has meta.json with mission, it should resolve correctly."""
+    """When mission_dir is passed and has meta.json with mission, it should resolve correctly."""
     project_dir = tmp_path / "project"
     project_dir.mkdir()
     (project_dir / ".kittify").mkdir()
     worktree_dir = project_dir / ".worktrees"
     worktree_dir.mkdir()
 
-    # Create a feature dir with meta.json specifying 'research' mission
-    feature_dir = tmp_path / "feature-dir"
-    feature_dir.mkdir()
-    meta = {"mission": "research", "feature_slug": "099-test", "created_at": "2026-01-01"}
-    (feature_dir / "meta.json").write_text(json.dumps(meta))
+    # Create a mission dir with meta.json specifying 'research' mission
+    mission_dir = tmp_path / "mission-dir"
+    mission_dir.mkdir()
+    meta = {"mission": "research", "mission_slug": "099-test", "created_at": "2026-01-01"}
+    (mission_dir / "meta.json").write_text(json.dumps(meta))
 
     _configure_common_patches(monkeypatch, worktree_dir)
 
@@ -167,6 +167,6 @@ def test_run_diagnostics_with_feature_dir_resolves_mission(monkeypatch, tmp_path
     monkeypatch.setattr(diagnostics.subprocess, "run", fake_run)
     monkeypatch.setattr("specify_cli.core.git_ops.resolve_primary_branch", lambda _: "main")
 
-    result = diagnostics.run_diagnostics(project_dir, feature_dir=feature_dir)
+    result = diagnostics.run_diagnostics(project_dir, mission_dir=mission_dir)
 
     assert result["active_mission"] == "research"

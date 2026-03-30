@@ -100,7 +100,7 @@ def backfill_mission_ids(repo_root: Path) -> dict[str, str]:
         repo_root: Absolute path to the project root.
 
     Returns:
-        Mapping of ``feature_slug → mission_id`` for every feature processed.
+        Mapping of ``mission_slug → mission_id`` for every feature processed.
         Features that already had a ``mission_id`` appear in the mapping with
         their existing value.
     """
@@ -111,27 +111,27 @@ def backfill_mission_ids(repo_root: Path) -> dict[str, str]:
         logger.warning("kitty-specs/ not found at %s — no mission IDs backfilled", repo_root)
         return mapping
 
-    for feature_dir in sorted(kitty_specs.iterdir()):
-        if not feature_dir.is_dir():
+    for mission_dir in sorted(kitty_specs.iterdir()):
+        if not mission_dir.is_dir():
             continue
 
-        meta_path = feature_dir / "meta.json"
+        meta_path = mission_dir / "meta.json"
         if not meta_path.exists():
-            logger.debug("Skipping %s (no meta.json)", feature_dir.name)
+            logger.debug("Skipping %s (no meta.json)", mission_dir.name)
             continue
 
         with open(meta_path, encoding="utf-8") as fh:
             meta: dict[str, Any] = json.load(fh)
 
         if "mission_id" in meta:
-            mapping[feature_dir.name] = meta["mission_id"]
-            logger.debug("mission_id already set for %s: %s", feature_dir.name, meta["mission_id"])
+            mapping[mission_dir.name] = meta["mission_id"]
+            logger.debug("mission_id already set for %s: %s", mission_dir.name, meta["mission_id"])
             continue
 
         new_id = _generate_ulid()
         meta["mission_id"] = new_id
-        mapping[feature_dir.name] = new_id
-        logger.info("Assigned mission_id=%s to feature %s", new_id, feature_dir.name)
+        mapping[mission_dir.name] = new_id
+        logger.info("Assigned mission_id=%s to feature %s", new_id, mission_dir.name)
 
         with open(meta_path, "w", encoding="utf-8") as fh:
             json.dump(meta, fh, indent=2, ensure_ascii=False)
@@ -140,10 +140,10 @@ def backfill_mission_ids(repo_root: Path) -> dict[str, str]:
     return mapping
 
 
-def backfill_wp_ids(feature_dir: Path, mission_id: str) -> dict[str, str]:
+def backfill_wp_ids(mission_dir: Path, mission_id: str) -> dict[str, str]:
     """Assign ``work_package_id``, ``wp_code``, and ``mission_id`` to each WP.
 
-    Scans ``<feature_dir>/tasks/WP*.md`` for work-package frontmatter files.
+    Scans ``<mission_dir>/tasks/WP*.md`` for work-package frontmatter files.
     For each WP that does not already have a ``work_package_id``, a ULID is
     generated and written.  ``wp_code`` is derived from the filename (e.g.
     ``WP01-foo.md → "WP01"``).  ``mission_id`` is always written (it may
@@ -153,7 +153,7 @@ def backfill_wp_ids(feature_dir: Path, mission_id: str) -> dict[str, str]:
     round-trip-safe reading and writing.
 
     Args:
-        feature_dir: Path to the feature directory (e.g. ``kitty-specs/057-…``).
+        mission_dir: Path to the feature directory (e.g. ``kitty-specs/057-…``).
         mission_id:  ULID string for the parent feature's ``mission_id``.
 
     Returns:
@@ -161,11 +161,11 @@ def backfill_wp_ids(feature_dir: Path, mission_id: str) -> dict[str, str]:
     """
     from specify_cli.frontmatter import FrontmatterManager
 
-    tasks_dir = feature_dir / "tasks"
+    tasks_dir = mission_dir / "tasks"
     mapping: dict[str, str] = {}
 
     if not tasks_dir.is_dir():
-        logger.debug("No tasks/ directory in %s — skipping WP ID backfill", feature_dir.name)
+        logger.debug("No tasks/ directory in %s — skipping WP ID backfill", mission_dir.name)
         return mapping
 
     manager = FrontmatterManager()

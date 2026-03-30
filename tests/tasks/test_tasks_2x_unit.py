@@ -1,7 +1,7 @@
 """Unit tests for agent task helper functions (2.x contract).
 
 Extracted from test_tasks.py during test-detection-remediation.
-These test active 2.x helpers: _find_feature_slug and status lane alias resolution.
+These test active 2.x helpers: _find_mission_slug and status lane alias resolution.
 """
 
 from __future__ import annotations
@@ -18,13 +18,13 @@ from specify_cli.status.store import append_event
 from specify_cli.status.models import StatusEvent, Lane
 
 
-def _seed_wp_lane(feature_dir: Path, wp_id: str, lane: str) -> None:
+def _seed_wp_lane(mission_dir: Path, wp_id: str, lane: str) -> None:
     """Seed a WP into a specific lane in the event log."""
     _lane_alias = {"doing": "in_progress"}
     canonical_lane = _lane_alias.get(lane, lane)
     event = StatusEvent(
         event_id=f"test-{wp_id}-{canonical_lane}",
-        feature_slug=feature_dir.name,
+        mission_slug=mission_dir.name,
         wp_id=wp_id,
         from_lane=Lane.PLANNED,
         to_lane=Lane(canonical_lane),
@@ -33,32 +33,32 @@ def _seed_wp_lane(feature_dir: Path, wp_id: str, lane: str) -> None:
         force=True,
         execution_mode="worktree",
     )
-    append_event(feature_dir, event)
+    append_event(mission_dir, event)
 
 runner = CliRunner()
 
 
 class TestFindFeatureSlug:
-    """Tests for _find_feature_slug helper."""
+    """Tests for _find_mission_slug helper."""
 
     def test_find_with_explicit_slug(self, tmp_path: Path):
-        """_find_feature_slug returns explicit slug when provided.
+        """_find_mission_slug returns explicit slug when provided.
 
-        After WP02 removed heuristic detection, _find_feature_slug requires
+        After WP02 removed heuristic detection, _find_mission_slug requires
         an explicit slug.  No cwd scanning or git branch parsing is performed.
         """
-        from specify_cli.cli.commands.agent.tasks import _find_feature_slug
+        from specify_cli.cli.commands.agent.tasks import _find_mission_slug
 
-        slug = _find_feature_slug(explicit_feature="008-test-feature")
-        assert slug == "008-test-feature"
+        slug = _find_mission_slug(explicit_mission="008-test-mission")
+        assert slug == "008-test-mission"
 
     def test_find_raises_on_missing_slug(self):
-        """_find_feature_slug raises typer.Exit when no explicit slug is given."""
-        from specify_cli.cli.commands.agent.tasks import _find_feature_slug
+        """_find_mission_slug raises typer.Exit when no explicit slug is given."""
+        from specify_cli.cli.commands.agent.tasks import _find_mission_slug
         from click.exceptions import Exit
 
         with pytest.raises(Exit):
-            _find_feature_slug(explicit_feature=None)
+            _find_mission_slug(explicit_mission=None)
 
 
 class TestStatusInProgressLane:
@@ -71,7 +71,7 @@ class TestStatusInProgressLane:
 
     @patch("specify_cli.cli.commands.agent.tasks._ensure_target_branch_checked_out")
     @patch("specify_cli.cli.commands.agent.tasks.locate_project_root")
-    @patch("specify_cli.cli.commands.agent.tasks._find_feature_slug")
+    @patch("specify_cli.cli.commands.agent.tasks._find_mission_slug")
     def test_in_progress_wp_appears_in_json_output(
         self, mock_slug: Mock, mock_root: Mock, mock_branch: Mock, tmp_path: Path
     ):
@@ -81,18 +81,18 @@ class TestStatusInProgressLane:
         tasks_dir = repo_root / "kitty-specs" / "042-test" / "tasks"
         tasks_dir.mkdir(parents=True)
 
-        feature_dir = repo_root / "kitty-specs" / "042-test"
+        mission_dir = repo_root / "kitty-specs" / "042-test"
 
         # WP with canonical 'in_progress' lane (as persisted by 7-lane model)
         (tasks_dir / "WP01-alpha.md").write_text(
             '---\nwork_package_id: "WP01"\ntitle: "Alpha"\nlane: "in_progress"\n---\nContent\n'
         )
-        _seed_wp_lane(feature_dir, "WP01", "in_progress")
+        _seed_wp_lane(mission_dir, "WP01", "in_progress")
         # WP with legacy alias 'doing' -> seeded as canonical 'in_progress'
         (tasks_dir / "WP02-beta.md").write_text(
             '---\nwork_package_id: "WP02"\ntitle: "Beta"\nlane: "doing"\n---\nContent\n'
         )
-        _seed_wp_lane(feature_dir, "WP02", "doing")
+        _seed_wp_lane(mission_dir, "WP02", "doing")
         # WP already planned (no event seeding needed)
         (tasks_dir / "WP03-gamma.md").write_text(
             '---\nwork_package_id: "WP03"\ntitle: "Gamma"\nlane: "planned"\n---\nContent\n'
@@ -106,7 +106,7 @@ class TestStatusInProgressLane:
             "specify_cli.core.stale_detection.check_doing_wps_for_staleness",
             return_value={},
         ):
-            result = runner.invoke(app, ["status", "--feature", "042-test", "--json"])
+            result = runner.invoke(app, ["status", "--mission", "042-test", "--json"])
 
         assert result.exit_code == 0, f"stdout: {result.stdout}"
         output = json.loads(result.stdout)
@@ -126,7 +126,7 @@ class TestStatusInProgressLane:
     @patch("specify_cli.core.stale_detection.check_doing_wps_for_staleness", return_value={})
     @patch("specify_cli.cli.commands.agent.tasks._ensure_target_branch_checked_out")
     @patch("specify_cli.cli.commands.agent.tasks.locate_project_root")
-    @patch("specify_cli.cli.commands.agent.tasks._find_feature_slug")
+    @patch("specify_cli.cli.commands.agent.tasks._find_mission_slug")
     def test_in_progress_wp_appears_in_rich_output(
         self, mock_slug: Mock, mock_root: Mock, mock_branch: Mock,
         mock_stale: Mock, tmp_path: Path
@@ -137,18 +137,18 @@ class TestStatusInProgressLane:
         tasks_dir = repo_root / "kitty-specs" / "042-test" / "tasks"
         tasks_dir.mkdir(parents=True)
 
-        feature_dir = repo_root / "kitty-specs" / "042-test"
+        mission_dir = repo_root / "kitty-specs" / "042-test"
 
         (tasks_dir / "WP01-alpha.md").write_text(
             '---\nwork_package_id: "WP01"\ntitle: "Alpha Task"\nlane: "in_progress"\n---\nContent\n'
         )
-        _seed_wp_lane(feature_dir, "WP01", "in_progress")
+        _seed_wp_lane(mission_dir, "WP01", "in_progress")
 
         mock_root.return_value = repo_root
         mock_slug.return_value = "042-test"
         mock_branch.return_value = (repo_root, "main")
 
-        result = runner.invoke(app, ["status", "--feature", "042-test"])
+        result = runner.invoke(app, ["status", "--mission", "042-test"])
 
         assert result.exit_code == 0, f"stdout: {result.stdout}"
         # The WP should appear in the output (not silently dropped)

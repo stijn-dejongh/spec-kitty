@@ -59,12 +59,12 @@ def _write_metadata(tmp_path: Path, extra: dict | None = None) -> Path:
 
 def _make_feature(tmp_path: Path, slug: str, wps: list[str] | None = None) -> Path:
     """Create a feature directory with meta.json and optional WP files."""
-    feature_dir = tmp_path / "kitty-specs" / slug
-    tasks_dir = feature_dir / "tasks"
+    mission_dir = tmp_path / "kitty-specs" / slug
+    tasks_dir = mission_dir / "tasks"
     tasks_dir.mkdir(parents=True)
 
-    meta = {"feature_slug": slug, "title": f"Feature {slug}"}
-    with open(feature_dir / "meta.json", "w") as fh:
+    meta = {"mission_slug": slug, "title": f"Feature {slug}"}
+    with open(mission_dir / "meta.json", "w") as fh:
         json.dump(meta, fh, indent=2)
 
     for wp_name in (wps or []):
@@ -73,7 +73,7 @@ def _make_feature(tmp_path: Path, slug: str, wps: list[str] | None = None) -> Pa
             f"---\ntitle: {wp_name} Title\ndependencies: []\n---\n\n# {wp_name} body\n"
         )
 
-    return feature_dir
+    return mission_dir
 
 
 # ---------------------------------------------------------------------------
@@ -155,12 +155,12 @@ class TestBackfillMissionIds:
 
     def test_preserves_existing_mission_id(self, tmp_path: Path) -> None:
         """T060-4: Pre-existing mission_id is returned unchanged."""
-        feature_dir = _make_feature(tmp_path, "001-alpha")
+        mission_dir = _make_feature(tmp_path, "001-alpha")
         existing_id = "01EXISTING00000000000000000"
-        with open(feature_dir / "meta.json") as fh:
+        with open(mission_dir / "meta.json") as fh:
             meta = json.load(fh)
         meta["mission_id"] = existing_id
-        with open(feature_dir / "meta.json", "w") as fh:
+        with open(mission_dir / "meta.json", "w") as fh:
             json.dump(meta, fh, indent=2)
 
         mapping = backfill_mission_ids(tmp_path)
@@ -187,12 +187,12 @@ class TestBackfillMissionIds:
 class TestBackfillWpIds:
     def test_assigns_wp_ids(self, tmp_path: Path) -> None:
         """T060-5: work_package_id, wp_code, mission_id are written to each WP."""
-        feature_dir = _make_feature(
+        mission_dir = _make_feature(
             tmp_path, "001-alpha", wps=["WP01-core", "WP02-extras"]
         )
         mission_id = "01MISSION000000000000000000"
 
-        mapping = backfill_wp_ids(feature_dir, mission_id)
+        mapping = backfill_wp_ids(mission_dir, mission_id)
 
         assert "WP01" in mapping
         assert "WP02" in mapping
@@ -201,36 +201,36 @@ class TestBackfillWpIds:
 
     def test_wp_code_and_mission_id_written(self, tmp_path: Path) -> None:
         """T060-5: wp_code and mission_id appear in frontmatter."""
-        feature_dir = _make_feature(tmp_path, "001-alpha", wps=["WP01-core"])
+        mission_dir = _make_feature(tmp_path, "001-alpha", wps=["WP01-core"])
         mission_id = "01MISSION000000000000000000"
-        backfill_wp_ids(feature_dir, mission_id)
+        backfill_wp_ids(mission_dir, mission_id)
 
         from specify_cli.frontmatter import FrontmatterManager
         fm = FrontmatterManager()
-        frontmatter, _ = fm.read(feature_dir / "tasks" / "WP01-core.md")
+        frontmatter, _ = fm.read(mission_dir / "tasks" / "WP01-core.md")
         assert frontmatter["wp_code"] == "WP01"
         assert frontmatter["mission_id"] == mission_id
         assert _is_ulid(frontmatter["work_package_id"])
 
     def test_idempotent_work_package_id(self, tmp_path: Path) -> None:
         """T060-6: Existing work_package_id is not overwritten."""
-        feature_dir = _make_feature(tmp_path, "001-alpha", wps=["WP01-core"])
+        mission_dir = _make_feature(tmp_path, "001-alpha", wps=["WP01-core"])
         mission_id = "01MISSION000000000000000000"
-        mapping1 = backfill_wp_ids(feature_dir, mission_id)
-        mapping2 = backfill_wp_ids(feature_dir, mission_id)
+        mapping1 = backfill_wp_ids(mission_dir, mission_id)
+        mapping2 = backfill_wp_ids(mission_dir, mission_id)
         assert mapping1["WP01"] == mapping2["WP01"]
 
     def test_no_tasks_dir(self, tmp_path: Path) -> None:
         """Returns empty dict when tasks/ does not exist."""
-        feature_dir = tmp_path / "kitty-specs" / "001-alpha"
-        feature_dir.mkdir(parents=True)
-        mapping = backfill_wp_ids(feature_dir, "01MISSION000000000000000000")
+        mission_dir = tmp_path / "kitty-specs" / "001-alpha"
+        mission_dir.mkdir(parents=True)
+        mapping = backfill_wp_ids(mission_dir, "01MISSION000000000000000000")
         assert mapping == {}
 
     def test_body_preserved(self, tmp_path: Path) -> None:
         """Body content after frontmatter is preserved byte-for-byte."""
-        feature_dir = _make_feature(tmp_path, "001-alpha", wps=["WP01-core"])
-        wp_file = feature_dir / "tasks" / "WP01-core.md"
+        mission_dir = _make_feature(tmp_path, "001-alpha", wps=["WP01-core"])
+        wp_file = mission_dir / "tasks" / "WP01-core.md"
 
         # Read original body
         original_content = wp_file.read_text()
@@ -238,7 +238,7 @@ class TestBackfillWpIds:
         parts = original_content.split("---\n", 2)
         original_body = parts[2] if len(parts) == 3 else ""
 
-        backfill_wp_ids(feature_dir, "01MISSION000000000000000000")
+        backfill_wp_ids(mission_dir, "01MISSION000000000000000000")
 
         # Read new content
         new_content = wp_file.read_text()
@@ -249,9 +249,9 @@ class TestBackfillWpIds:
 
     def test_ids_are_unique(self, tmp_path: Path) -> None:
         """T060-7: Each WP receives a distinct ULID."""
-        feature_dir = _make_feature(
+        mission_dir = _make_feature(
             tmp_path, "001-alpha", wps=["WP01", "WP02", "WP03"]
         )
-        mapping = backfill_wp_ids(feature_dir, "01MISSION000000000000000000")
+        mapping = backfill_wp_ids(mission_dir, "01MISSION000000000000000000")
         ids = list(mapping.values())
         assert len(set(ids)) == len(ids), "Duplicate ULIDs assigned"

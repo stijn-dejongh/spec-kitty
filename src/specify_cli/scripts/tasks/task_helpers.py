@@ -11,7 +11,7 @@ from datetime import datetime, UTC
 from pathlib import Path
 
 # IMPORTANT: Keep in sync with src/specify_cli/tasks_support.py
-LANES: tuple[str, ...] = ("planned", "doing", "for_review", "done")
+LANES: tuple[str, ...] = ("planned", "doing", "for_review", "in_review", "done")
 
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
@@ -19,16 +19,16 @@ TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 LEGACY_LANE_DIRS: list[str] = ["planned", "doing", "for_review", "done"]
 
 
-def is_legacy_format(feature_path: Path) -> bool:
-    """Check if feature uses legacy directory-based lanes.
+def is_legacy_format(mission_path: Path) -> bool:
+    """Check if mission uses legacy directory-based lanes.
 
-    A feature is considered to use legacy format if:
+    A mission is considered to use legacy format if:
     - It has a tasks/ subdirectory
     - Any of the lane subdirectories (planned/, doing/, for_review/, done/)
       exist AND contain at least one .md file
 
     Args:
-        feature_path: Path to the feature directory (e.g., kitty-specs/007-feature/)
+        mission_path: Path to the mission directory (e.g., kitty-specs/007-mission/)
 
     Returns:
         True if legacy directory-based lanes detected, False otherwise.
@@ -37,7 +37,7 @@ def is_legacy_format(feature_path: Path) -> bool:
         Empty lane directories (containing only .gitkeep) are NOT considered
         legacy format - only directories with actual .md work package files.
     """
-    tasks_dir = feature_path / "tasks"
+    tasks_dir = mission_path / "tasks"
     if not tasks_dir.exists():
         return False
 
@@ -161,9 +161,9 @@ def normalize_note(note: str | None, target_lane: str) -> str:
     return cleaned or default
 
 
-def detect_conflicting_wp_status(status_lines: list[str], feature: str, old_path: Path, new_path: Path) -> list[str]:
+def detect_conflicting_wp_status(status_lines: list[str], mission_slug: str, old_path: Path, new_path: Path) -> list[str]:
     """Return staged work-package entries unrelated to the requested move."""
-    base_path = Path("kitty-specs") / feature / "tasks"
+    base_path = Path("kitty-specs") / mission_slug / "tasks"
     prefix = f"{base_path.as_posix()}/"
     allowed = {
         str(old_path).lstrip("./"),
@@ -321,7 +321,7 @@ def activity_entries(body: str) -> list[dict[str, str]]:
 
 @dataclass
 class WorkPackage:
-    feature: str
+    mission_slug: str
     path: Path
     current_lane: str
     relative_subpath: Path
@@ -354,23 +354,23 @@ class WorkPackage:
         return get_lane_from_frontmatter(self.path, warn_on_missing=False)
 
 
-def locate_work_package(repo_root: Path, feature: str, wp_id: str) -> WorkPackage:
+def locate_work_package(repo_root: Path, mission_slug: str, wp_id: str) -> WorkPackage:
     """Locate a work package by ID, supporting both legacy and new formats.
 
     Legacy format: WP files in tasks/{lane}/ subdirectories
     New format: WP files in flat tasks/ directory with canonical status in the event log
     """
-    feature_path = repo_root / "kitty-specs" / feature
-    tasks_root = feature_path / "tasks"
+    mission_path = repo_root / "kitty-specs" / mission_slug
+    tasks_root = mission_path / "tasks"
     if not tasks_root.exists():
-        raise TaskCliError(f"Feature '{feature}' has no tasks directory at {tasks_root}.")
+        raise TaskCliError(f"Mission '{mission_slug}' has no tasks directory at {tasks_root}.")
 
     # Use exact WP ID matching with word boundary to avoid WP04 matching WP04b
     # Matches: WP04.md, WP04-something.md, WP04_something.md
     # Does NOT match: WP04b.md, WP04b-something.md
     wp_pattern = re.compile(rf"^{re.escape(wp_id)}(?:[-_.]|\.md$)")
 
-    use_legacy = is_legacy_format(feature_path)
+    use_legacy = is_legacy_format(mission_path)
     candidates = []
 
     if use_legacy:
@@ -393,7 +393,7 @@ def locate_work_package(repo_root: Path, feature: str, wp_id: str) -> WorkPackag
                 candidates.append((lane, path, tasks_root))
 
     if not candidates:
-        raise TaskCliError(f"Work package '{wp_id}' not found under kitty-specs/{feature}/tasks.")
+        raise TaskCliError(f"Work package '{wp_id}' not found under kitty-specs/{mission_slug}/tasks.")
     if len(candidates) > 1:
         joined = "\n".join(str(item[1].relative_to(repo_root)) for item in candidates)
         raise TaskCliError(f"Multiple files matched '{wp_id}'. Refine the ID or clean duplicates:\n{joined}")
@@ -403,7 +403,7 @@ def locate_work_package(repo_root: Path, feature: str, wp_id: str) -> WorkPackag
     front, body, padding = split_frontmatter(text)
     relative = path.relative_to(base_dir)
     return WorkPackage(
-        feature=feature,
+        mission_slug=mission_slug,
         path=path,
         current_lane=lane,
         relative_subpath=relative,
@@ -434,7 +434,7 @@ def get_lane_from_frontmatter(wp_path: Path, warn_on_missing: bool = True) -> st
     """
     del warn_on_missing
 
-    feature_dir = wp_path.parent.parent
+    mission_dir = wp_path.parent.parent
     text = wp_path.read_text(encoding="utf-8-sig")
     frontmatter, _body, _padding = split_frontmatter(text)
     wp_id = extract_scalar(frontmatter, "work_package_id")
@@ -445,8 +445,7 @@ def get_lane_from_frontmatter(wp_path: Path, warn_on_missing: bool = True) -> st
 
     try:
         from specify_cli.status.lane_reader import get_wp_lane
-
-        return get_wp_lane(feature_dir, wp_id)
+        return get_wp_lane(mission_dir, wp_id)
     except RuntimeError as exc:
         raise TaskCliError(str(exc)) from exc
 
