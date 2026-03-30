@@ -21,8 +21,8 @@ from specify_cli.mission import (
 )
 
 app = typer.Typer(
-    name="mission",
-    help="View available Spec Kitty missions. Missions are selected per-feature during /spec-kitty.specify.",
+    name="mission-type",
+    help="View available Spec Kitty mission types. Mission types are selected per mission run during /spec-kitty.specify.",
     no_args_is_help=True,
 )
 
@@ -132,7 +132,7 @@ def _print_available_missions(project_root: Path) -> None:
 
     console.print(table)
     console.print()
-    console.print("[dim]Missions are selected per-feature during /spec-kitty.specify[/dim]")
+    console.print("[dim]Mission types are selected per mission run during /spec-kitty.specify[/dim]")
 
 
 @app.command("list")
@@ -277,7 +277,7 @@ def switch_cmd(
     """[REMOVED] Switch active mission - this command was removed in v0.8.0."""
     console.print("[bold red]Error:[/bold red] The 'mission switch' command was removed in v0.8.0.")
     console.print()
-    console.print("Missions are now selected [bold]per-feature[/bold] during [cyan]/spec-kitty.specify[/cyan].")
+    console.print("Mission types are now selected [bold]per mission run[/bold] during [cyan]/spec-kitty.specify[/cyan].")
     console.print()
     console.print("[cyan]New workflow:[/cyan]")
     console.print("  1. Run [bold]/spec-kitty.specify[/bold] to start a new feature")
@@ -287,5 +287,5 @@ def switch_cmd(
     console.print("[cyan]To see available missions:[/cyan]")
     console.print("  spec-kitty mission list")
     console.print()
-    console.print("[dim]See: https://github.com/your-org/spec-kitty#per-feature-missions[/dim]")
+    console.print("[dim]See: https://github.com/your-org/spec-kitty#mission-types[/dim]")
     raise typer.Exit(1)
