@@ -12,7 +12,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 import typer
-from typing import Annotated
+from typing import Annotated, Optional
 
 from specify_cli.cli.commands.implement import implement as top_level_implement
 from constitution.context import build_constitution_context
