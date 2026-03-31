@@ -13,7 +13,7 @@ This step assumes `tasks.md` already exists with complete WP definitions.
 
 **IMPORTANT**: This step works in the project root checkout. NO worktrees created.
 
-**In repos with multiple features, always pass `--feature <slug>` to every spec-kitty command.**
+**In repos with multiple missions, always pass the canonical mission selector expected by the command (`--mission`, `--mission-run`, or `--mission-type`) instead of relying on auto-detection.**
 
 ## User Input
 

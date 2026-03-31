@@ -24,10 +24,14 @@ from .tasks_support import (
     split_frontmatter,
 )
 from specify_cli.status.store import EVENTS_FILENAME, StoreError
+from specify_cli.status.lane_reader import CanonicalStatusNotFoundError
 from specify_cli.mission_metadata import load_meta, record_acceptance, write_meta
 from specify_cli.mission import MissionError, get_mission_for_mission_dir
 from specify_cli.validators.paths import PathValidationError, validate_mission_paths
-from specify_cli.core.paths import require_explicit_mission as _require_explicit_mission
+from specify_cli.core.paths import (
+    get_mission_dir,
+    require_explicit_mission as _require_explicit_mission,
+)
 from specify_cli.core.tool_config import get_auto_commit_default
 
 AcceptanceMode = str  # Expected values: "pr", "local", "checklist"
@@ -83,6 +87,16 @@ class AcceptanceSummary:
     git_dirty: list[str]
     path_violations: list[str]
     warnings: list[str]
+
+    @property
+    def mission(self) -> str:
+        """Compatibility alias for legacy callers that still expect feature naming."""
+        return self.mission_slug
+
+    @property
+    def feature(self) -> str:
+        """Compatibility alias for legacy callers that still expect feature naming."""
+        return self.mission_slug
 
     @property
     def all_done(self) -> bool:
@@ -197,7 +211,7 @@ def _iter_work_packages(repo_root: Path, mission_slug: str) -> Iterable[WorkPack
     Legacy format: WP files in tasks/{lane}/ subdirectories
     New format: WP files in flat tasks/ directory with lane in frontmatter
     """
-    mission_path = repo_root / "kitty-specs" / mission_slug
+    mission_path = get_mission_dir(repo_root, mission_slug, main_repo=False)
     tasks_dir = mission_path / "tasks"
     if not tasks_dir.exists():
         raise AcceptanceError(f"Mission '{mission_slug}' has no tasks directory at {tasks_dir}.")
@@ -232,7 +246,10 @@ def _iter_work_packages(repo_root: Path, mission_slug: str) -> Iterable[WorkPack
                 continue
             text = _read_text_strict(path)
             front, body, padding = split_frontmatter(text)
-            lane = get_lane_from_frontmatter(path, warn_on_missing=False)
+            try:
+                lane = get_lane_from_frontmatter(path, warn_on_missing=False)
+            except CanonicalStatusNotFoundError:
+                lane = "planned"
             relative = path.relative_to(tasks_dir)
             yield WorkPackage(
                 mission_slug=mission_slug,
@@ -272,6 +289,24 @@ def detect_mission_slug(
         return _require_explicit_mission(explicit_mission, command_hint="--mission <slug>")
     except ValueError as e:
         raise AcceptanceError(str(e)) from e
+
+
+def detect_feature_slug(
+    repo_root: Path,
+    *,
+    explicit_feature: Optional[str] = None,
+    env: Optional[Mapping[str, str]] = None,
+    cwd: Optional[Path] = None,
+    announce_fallback: bool = True,
+) -> str:
+    """Compatibility alias for legacy callers renamed to mission terminology."""
+    return detect_mission_slug(
+        repo_root,
+        explicit_mission=explicit_feature,
+        env=env,
+        cwd=cwd,
+        announce_fallback=announce_fallback,
+    )
 
 
 def _read_text_strict(path: Path) -> str:
@@ -342,7 +377,7 @@ def normalize_mission_encoding(repo_root: Path, mission_slug: str) -> list[Path]
         "\u00b7": "*",  # Middle dot -> asterisk
     }
 
-    mission_dir = repo_root / "kitty-specs" / mission_slug
+    mission_dir = get_mission_dir(repo_root, mission_slug, main_repo=False)
     if not mission_dir.exists():
         return []
 
@@ -397,13 +432,18 @@ def normalize_mission_encoding(repo_root: Path, mission_slug: str) -> list[Path]
     return rewritten
 
 
+def normalize_feature_encoding(repo_root: Path, mission_slug: str) -> list[Path]:
+    """Compatibility alias for legacy callers renamed to mission terminology."""
+    return normalize_mission_encoding(repo_root, mission_slug)
+
+
 def collect_mission_summary(
     repo_root: Path,
     mission_slug: str,
     *,
     strict_metadata: bool = True,
 ) -> AcceptanceSummary:
-    mission_dir = repo_root / "kitty-specs" / mission_slug
+    mission_dir = get_mission_dir(repo_root, mission_slug, main_repo=False)
     tasks_dir = mission_dir / "tasks"
     if not mission_dir.exists():
         raise AcceptanceError(f"Mission directory not found: {mission_dir}")
@@ -447,11 +487,10 @@ def collect_mission_summary(
 
     # ── Canonical state validation via reducer-only snapshot ──────────────
     events_path = mission_dir / EVENTS_FILENAME
+    use_legacy_lane_fallback = not events_path.exists()
     if not events_path.exists():
         activity_issues.append(
-            f"No canonical state found for mission '{mission_slug}'. "
-            "Cannot validate acceptance without status.events.jsonl. "
-            "Run status migration to bootstrap the event log."
+            f"No canonical state found for mission '{mission_slug}': missing {EVENTS_FILENAME}."
         )
         snapshot_wps: dict[str, dict] = {}
     else:
@@ -465,10 +504,9 @@ def collect_mission_summary(
         snapshot_wps = snapshot.work_packages
         if not snapshot_wps:
             activity_issues.append(
-                f"No canonical state found for mission '{mission_slug}'. "
-                "Cannot validate acceptance without status.events.jsonl. "
-                "Run status migration to bootstrap the event log."
+                f"No canonical state found for mission '{mission_slug}' in {EVENTS_FILENAME}."
             )
+            use_legacy_lane_fallback = True
 
     # Collect WP IDs from task files
     expected_wp_ids: list[str] = []
@@ -483,8 +521,13 @@ def collect_mission_summary(
         has_lane_entry = canonical_lane is not None
         latest_lane = canonical_lane
 
-        # Use canonical lane for bucketing (event log is sole authority).
-        bucket_lane = canonical_lane if canonical_lane is not None else "planned"
+        if use_legacy_lane_fallback:
+            bucket_lane = wp.current_lane or "planned"
+            latest_lane = bucket_lane
+            has_lane_entry = True
+        else:
+            # Use canonical lane for bucketing when the event log exists.
+            bucket_lane = canonical_lane if canonical_lane is not None else "planned"
         if bucket_lane in lanes:
             lanes[bucket_lane].append(wp_id)
         else:
@@ -500,7 +543,8 @@ def collect_mission_summary(
         if strict_metadata:
             if not wp.agent:
                 metadata_issues.append(f"{wp_id}: missing agent in frontmatter")
-            if canonical_lane in {"doing", "in_progress", "for_review"} and not wp.assignee:
+            lane_for_validation = bucket_lane
+            if lane_for_validation in {"doing", "in_progress", "for_review"} and not wp.assignee:
                 metadata_issues.append(f"{wp_id}: missing assignee in frontmatter")
             if not wp.shell_pid:
                 metadata_issues.append(f"{wp_id}: missing shell_pid in frontmatter")
@@ -519,7 +563,7 @@ def collect_mission_summary(
 
     # Validate canonical state for all WPs (only if event log exists and has events)
     # WPs must be in 'approved' or 'done' — acceptance transitions approved → done.
-    if events_path.exists() and snapshot_wps:
+    if events_path.exists() and snapshot_wps and not use_legacy_lane_fallback:
         for wp_id in expected_wp_ids:
             wp_snapshot = snapshot_wps.get(wp_id)
             if wp_snapshot is None:
@@ -635,6 +679,20 @@ def collect_mission_summary(
         git_dirty=git_dirty,
         path_violations=path_violations,
         warnings=warnings,
+    )
+
+
+def collect_feature_summary(
+    repo_root: Path,
+    mission_slug: str,
+    *,
+    strict_metadata: bool = True,
+) -> AcceptanceSummary:
+    """Compatibility alias for legacy callers renamed to mission terminology."""
+    return collect_mission_summary(
+        repo_root,
+        mission_slug,
+        strict_metadata=strict_metadata,
     )
 
 
@@ -804,8 +862,11 @@ __all__ = [
     "ArtifactEncodingError",
     "WorkPackageState",
     "choose_mode",
+    "collect_feature_summary",
     "collect_mission_summary",
+    "detect_feature_slug",
     "detect_mission_slug",
+    "normalize_feature_encoding",
     "normalize_mission_encoding",
     "perform_acceptance",
 ]

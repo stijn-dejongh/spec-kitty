@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Optional
 
 from specify_cli.core.dependency_graph import build_dependency_graph, topological_sort
-from specify_cli.core.paths import get_main_repo_root, get_mission_target_branch
+from specify_cli.core.paths import get_main_repo_root, get_mission_dir, get_mission_target_branch
 from specify_cli.workspace_context import list_contexts
 from specify_cli.frontmatter import read_frontmatter
 
@@ -133,7 +133,7 @@ def materialize_worktree_topology(
     main_repo_root = get_main_repo_root(repo_root)
     target_branch = get_mission_target_branch(main_repo_root, mission_slug)
 
-    mission_dir = main_repo_root / "kitty-specs" / mission_slug
+    mission_dir = get_mission_dir(main_repo_root, mission_slug, main_repo=False)
     graph = build_dependency_graph(mission_dir)
 
     # Get topological order (dependencies before dependents)

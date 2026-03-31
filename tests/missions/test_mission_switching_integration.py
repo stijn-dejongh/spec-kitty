@@ -15,23 +15,19 @@ import pytest
 pytestmark = pytest.mark.git_repo
 
 def test_mission_switch_shows_helpful_error(clean_project: Path, run_cli) -> None:
-    """Mission switch command should show helpful error about per-feature missions."""
+    """Legacy mission switch surface should fail with current command guidance."""
     result = run_cli(clean_project, "mission", "switch", "research")
 
-    # Should fail with exit code 1
-    assert result.returncode == 1
-    # Should explain that command was removed
+    assert result.returncode == 2
     output = result.stdout + result.stderr
-    assert "removed" in output.lower() or "v0.8.0" in output.lower()
-    # Should point to new workflow
-    assert "/spec-kitty.specify" in output
+    assert "No such command 'mission'" in output
+    assert "mission-type" in output
 
 def test_mission_switch_blocked_by_worktrees_via_cli(project_with_worktree: Path, run_cli) -> None:
-    """Mission switch should show per-feature error even with worktrees."""
+    """Legacy mission switch surface should still fail with current guidance."""
     result = run_cli(project_with_worktree, "mission", "switch", "research")
 
-    # Should fail (v0.8.0+ switch is removed)
-    assert result.returncode != 0
-    # Should mention the command was removed
+    assert result.returncode == 2
     output = result.stdout + result.stderr
-    assert "removed" in output.lower() or "/spec-kitty.specify" in output
+    assert "No such command 'mission'" in output
+    assert "mission-type" in output

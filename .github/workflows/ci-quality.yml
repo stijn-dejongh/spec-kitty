@@ -521,9 +521,15 @@ jobs:
 
       - name: "[ENFORCED] Run fast test suite with coverage"
         run: |
+          mapfile -t FAST_TEST_FILES < <(python scripts/select_tests_by_marker.py fast)
+          if [ "${#FAST_TEST_FILES[@]}" -eq 0 ]; then
+            echo "::error::No fast-marked test files found."
+            exit 1
+          fi
+
           python -m pytest \
             -v \
-            --ignore=tests/legacy \
+            "${FAST_TEST_FILES[@]}" \
             -m fast \
             --cov=src/specify_cli --cov=src/constitution --cov=src/doctrine --cov=src/kernel \
             --cov-report=term-missing \
@@ -586,9 +592,15 @@ jobs:
 
       - name: "[ENFORCED] Run git_repo integration tests with coverage"
         run: |
+          mapfile -t GIT_REPO_TEST_FILES < <(python scripts/select_tests_by_marker.py git_repo)
+          if [ "${#GIT_REPO_TEST_FILES[@]}" -eq 0 ]; then
+            echo "::error::No git_repo-marked test files found."
+            exit 1
+          fi
+
           python -m pytest \
             -v \
-            --ignore=tests/legacy \
+            "${GIT_REPO_TEST_FILES[@]}" \
             -m git_repo \
             --cov=src/specify_cli --cov=src/constitution --cov=src/doctrine \
             --cov-report=xml:out/reports/coverage/coverage-integration.xml \
@@ -874,22 +886,44 @@ jobs:
 
           if [ -z "$project_key" ]; then
             project_key="${organization}_${repo_name}"
+            project_key_source="derived"
+          else
+            project_key_source="repository_variable"
           fi
 
           echo "organization=$organization" >> "$GITHUB_OUTPUT"
           echo "host_url=$host_url" >> "$GITHUB_OUTPUT"
           echo "project_key=$project_key" >> "$GITHUB_OUTPUT"
+          echo "project_key_source=$project_key_source" >> "$GITHUB_OUTPUT"
 
           echo "Using SonarCloud settings:"
           echo "  host_url=$host_url"
           echo "  organization=$organization"
-          echo "  project_key=$project_key"
+          echo "  project_key_source=$project_key_source"
 
       - name: "[ENFORCED] Check out repository"
         if: steps.sonar_token.outputs.enabled == 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: "[ENFORCED] Materialize effective Sonar config"
+        if: steps.sonar_token.outputs.enabled == 'true'
+        run: |
+          tmp_file="$(mktemp)"
+
+          if [ -f sonar-project.properties ]; then
+            grep -v '^sonar\.organization=' sonar-project.properties \
+              | grep -v '^sonar\.projectKey=' \
+              > "$tmp_file"
+          fi
+
+          {
+            echo "sonar.organization=${{ steps.sonar_settings.outputs.organization }}"
+            echo "sonar.projectKey=${{ steps.sonar_settings.outputs.project_key }}"
+          } >> "$tmp_file"
+
+          mv "$tmp_file" sonar-project.properties
 
       - name: "[ENFORCED] Download fast-tests coverage"
         if: steps.sonar_token.outputs.enabled == 'true' && (needs.fast-tests.result == 'success' || needs.fast-tests.result == 'failure')
@@ -950,13 +984,9 @@ jobs:
       - name: "[ENFORCED] SonarCloud Scan"
         if: steps.sonar_token.outputs.enabled == 'true'
         uses: SonarSource/sonarqube-scan-action@v6
-        with:
-          args: >
-            -Dsonar.host.url=${{ steps.sonar_settings.outputs.host_url }}
-            -Dsonar.organization=${{ steps.sonar_settings.outputs.organization }}
-            -Dsonar.projectKey=${{ steps.sonar_settings.outputs.project_key }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ steps.sonar_settings.outputs.host_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "[ENFORCED] SonarCloud Quality Gate"

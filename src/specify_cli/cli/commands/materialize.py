@@ -21,9 +21,13 @@ console = Console()
 
 
 def materialize(
+    mission: Annotated[
+        str | None,
+        typer.Option("--mission", help="Mission slug to materialize (all if omitted)"),
+    ] = None,
     feature: Annotated[
         str | None,
-        typer.Option("--feature", help="Feature slug to materialise (all if omitted)"),
+        typer.Option("--feature", hidden=True, help="[Deprecated] Use --mission"),
     ] = None,
     json_output: Annotated[
         bool,
@@ -32,7 +36,7 @@ def materialize(
 ) -> None:
     """Regenerate all derived views from the canonical event log.
 
-    For each feature (or a single feature when --feature is given),
+    For each mission (or a single mission when --mission is given),
     writes the following files to ``.kittify/derived/<slug>/``:
 
     - ``status.json`` — full StatusSnapshot
@@ -42,7 +46,7 @@ def materialize(
     Examples::
 
         spec-kitty materialize
-        spec-kitty materialize --feature 034-my-feature
+        spec-kitty materialize --mission 034-my-mission
         spec-kitty materialize --json
     """
     from specify_cli.status.views import write_derived_views
@@ -57,11 +61,12 @@ def materialize(
     derived_dir = repo_root / ".kittify" / "derived"
     derived_dir.mkdir(parents=True, exist_ok=True)
 
-    # Resolve feature directories to process
-    if feature:
-        mission_dirs = [specs_dir / feature]
+    # Resolve mission directories to process
+    mission_slug = mission or feature
+    if mission_slug:
+        mission_dirs = [specs_dir / mission_slug]
         if not mission_dirs[0].exists():
-            console.print(f"[red]Error:[/red] Feature not found: {feature}")
+            console.print(f"[red]Error:[/red] Mission not found: {mission_slug}")
             raise typer.Exit(1)
     else:
         if not specs_dir.exists():
@@ -93,7 +98,7 @@ def materialize(
     summary = {
         "processed": len(processed),
         "errors": errors,
-        "features": processed,
+        "missions": processed,
         "derived_dir": str(derived_dir),
     }
 
@@ -101,7 +106,7 @@ def materialize(
         console.print_json(json.dumps(summary, indent=2))
     else:
         if not processed:
-            console.print("[dim]No features materialised.[/dim]")
+            console.print("[dim]No missions materialized.[/dim]")
         else:
             for entry in processed:
                 slug = entry["mission_slug"]
@@ -112,6 +117,6 @@ def materialize(
             for err in errors:
                 console.print(f"[red]ERR[/red] {err}")
         else:
-            console.print(f"\n[dim]{len(processed)} feature(s) materialised to {derived_dir}[/dim]")
+            console.print(f"\n[dim]{len(processed)} mission(s) materialized to {derived_dir}[/dim]")
 
     raise typer.Exit(0 if not errors else 1)

@@ -226,10 +226,10 @@ class TestGetOrStartRun:
     def test_feature_runs_index_persisted(self, tmp_path: Path) -> None:
         repo_root = _scaffold_project(tmp_path)
 
-        from specify_cli.next.runtime_bridge import get_or_start_run, _load_feature_runs
+        from specify_cli.next.runtime_bridge import get_or_start_run, _load_mission_runs
 
         get_or_start_run("042-test-mission", repo_root, "software-dev")
-        index = _load_feature_runs(repo_root)
+        index = _load_mission_runs(repo_root)
         assert "042-test-mission" in index
         assert "run_id" in index["042-test-mission"]
 
@@ -568,9 +568,9 @@ class TestWPStepHelpers:
 
     def test_should_advance_hardfails_without_canonical_status(self, tmp_path: Path) -> None:
         repo_root = _scaffold_project(tmp_path)
-        feature_dir = repo_root / "kitty-specs" / "042-test-feature"
-        tasks_dir = feature_dir / "tasks"
-        tasks_dir.mkdir(exist_ok=True)
+        mission_dir = repo_root / "kitty-specs" / "042-test-mission"
+        tasks_dir = mission_dir / "tasks"
+        tasks_dir.mkdir(parents=True, exist_ok=True)
         (tasks_dir / "WP01.md").write_text(
             "---\nwork_package_id: WP01\ntitle: WP01 task\n---\n# WP01\n",
             encoding="utf-8",
@@ -580,7 +580,7 @@ class TestWPStepHelpers:
         from specify_cli.status.lane_reader import CanonicalStatusNotFoundError
 
         with pytest.raises(CanonicalStatusNotFoundError):
-            _should_advance_wp_step("implement", feature_dir)
+            _should_advance_wp_step("implement", mission_dir)
 
     def test_should_advance_all_done(self, tmp_path: Path) -> None:
         repo_root = _scaffold_project(tmp_path)

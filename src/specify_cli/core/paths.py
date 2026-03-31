@@ -240,6 +240,32 @@ def get_main_repo_root(current_path: Path) -> Path:
     return current_path.resolve()
 
 
+def get_missions_root(repo_root: Path, *, main_repo: bool = True) -> Path:
+    """Return the root directory containing all mission artifacts.
+
+    Args:
+        repo_root: Repository root path, which may be a worktree root.
+        main_repo: When True, resolve to the primary repository root first.
+    """
+    base_root = get_main_repo_root(repo_root) if main_repo else repo_root.resolve()
+    return base_root / "kitty-specs"
+
+
+def get_mission_dir(repo_root: Path, mission_slug: str, *, main_repo: bool = True) -> Path:
+    """Return the directory for a mission slug under ``kitty-specs/``."""
+    return get_missions_root(repo_root, main_repo=main_repo) / mission_slug
+
+
+def get_mission_tasks_dir(repo_root: Path, mission_slug: str, *, main_repo: bool = True) -> Path:
+    """Return the ``tasks/`` directory for a mission slug."""
+    return get_mission_dir(repo_root, mission_slug, main_repo=main_repo) / "tasks"
+
+
+def get_mission_meta_path(repo_root: Path, mission_slug: str, *, main_repo: bool = True) -> Path:
+    """Return the ``meta.json`` path for a mission slug."""
+    return get_mission_dir(repo_root, mission_slug, main_repo=main_repo) / "meta.json"
+
+
 def get_mission_target_branch(repo_root: Path, mission_slug: str) -> str:
     """Get target branch for a mission by reading meta.json directly.
 
@@ -257,7 +283,7 @@ def get_mission_target_branch(repo_root: Path, mission_slug: str) -> str:
     from specify_cli.core.git_ops import resolve_primary_branch
 
     main_root = get_main_repo_root(repo_root)
-    meta_file = main_root / "kitty-specs" / mission_slug / "meta.json"
+    meta_file = get_mission_meta_path(main_root, mission_slug, main_repo=False)
     fallback = resolve_primary_branch(main_root)
 
     if not meta_file.exists():
@@ -345,6 +371,10 @@ __all__ = [
     "resolve_with_context",
     "check_broken_symlink",
     "get_main_repo_root",
+    "get_missions_root",
+    "get_mission_dir",
+    "get_mission_tasks_dir",
+    "get_mission_meta_path",
     "get_mission_target_branch",
     "require_explicit_mission",
 ]

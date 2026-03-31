@@ -3,6 +3,7 @@
 Provides the canonical functions for locating:
 - The user-global ~/.kittify/ directory (cross-platform)
 - The package-bundled mission assets (for ensure_runtime to copy from)
+- Project-local .kittify/constitution/ bundle paths
 
 These functions have no spec-kitty-specific dependencies and are consumed
 by multiple packages in the stack (specify_cli, constitution).  They live
@@ -13,6 +14,7 @@ from __future__ import annotations
 
 import importlib.resources
 import os
+import tempfile
 from pathlib import Path
 
 
@@ -37,6 +39,9 @@ def get_kittify_home() -> Path:
     """
     if env_home := os.environ.get("SPEC_KITTY_HOME"):
         return Path(env_home)
+
+    if os.environ.get("SPEC_KITTY_TEST_MODE") == "1":
+        return Path(tempfile.gettempdir()) / "spec-kitty-test-home"
 
     if _is_windows():
         # platformdirs is the only sanctioned third-party import in kernel/.
@@ -80,4 +85,63 @@ def get_package_asset_root() -> Path:
     raise FileNotFoundError("Cannot locate package mission assets. Set SPEC_KITTY_TEMPLATE_ROOT or reinstall spec-kitty-cli.")
 
 
-__all__ = ["get_kittify_home", "get_package_asset_root"]
+def get_project_kittify_dir(repo_root: Path) -> Path:
+    """Return the project-local ``.kittify/`` directory for a repo root."""
+    return Path(repo_root) / ".kittify"
+
+
+def get_project_constitution_dir(repo_root: Path) -> Path:
+    """Return the canonical project-local constitution bundle directory."""
+    return get_project_kittify_dir(repo_root) / "constitution"
+
+
+def get_project_constitution_path(repo_root: Path) -> Path:
+    """Return the canonical project-local ``constitution.md`` path."""
+    return get_project_constitution_dir(repo_root) / "constitution.md"
+
+
+def get_project_constitution_references_path(repo_root: Path) -> Path:
+    """Return the canonical project-local ``references.yaml`` path."""
+    return get_project_constitution_dir(repo_root) / "references.yaml"
+
+
+def get_project_constitution_interview_path(repo_root: Path) -> Path:
+    """Return the canonical project-local constitution interview answers path."""
+    return get_project_constitution_dir(repo_root) / "interview" / "answers.yaml"
+
+
+def get_project_constitution_context_state_path(repo_root: Path) -> Path:
+    """Return the canonical project-local constitution context state path."""
+    return get_project_constitution_dir(repo_root) / "context-state.json"
+
+
+def get_project_constitution_agents_dir(repo_root: Path) -> Path:
+    """Return the canonical project-local constitution agents directory."""
+    return get_project_constitution_dir(repo_root) / "agents"
+
+
+def resolve_project_constitution_path(repo_root: Path) -> Path | None:
+    """Resolve the project constitution path, preferring canonical over legacy."""
+    canonical = get_project_constitution_path(repo_root)
+    if canonical.exists():
+        return canonical
+
+    legacy = get_project_kittify_dir(repo_root) / "memory" / "constitution.md"
+    if legacy.exists():
+        return legacy
+
+    return None
+
+
+__all__ = [
+    "get_kittify_home",
+    "get_package_asset_root",
+    "get_project_kittify_dir",
+    "get_project_constitution_dir",
+    "get_project_constitution_path",
+    "get_project_constitution_references_path",
+    "get_project_constitution_interview_path",
+    "get_project_constitution_context_state_path",
+    "get_project_constitution_agents_dir",
+    "resolve_project_constitution_path",
+]

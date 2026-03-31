@@ -17,7 +17,7 @@
 
 **Metaphor**: If your spec is code written in English, the checklist is its unit test suite. You're testing whether the requirements are well-written, complete, unambiguous, and ready for implementation - NOT whether the implementation works.
 
-**In repos with multiple features, always pass `--feature <slug>` to every spec-kitty command.**
+**In repos with multiple missions, always pass the canonical mission selector expected by the command (`--mission`, `--mission-run`, or `--mission-type`) instead of relying on auto-detection.**
 
 ## User Input
 

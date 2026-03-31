@@ -227,7 +227,7 @@ class TestMissionShowCommand:
 # ---------------------------------------------------------------------------
 
 
-class TestRequireExplicitFeature:
+class TestRequireExplicitMission:
     """Tests for core/paths.py require_explicit_mission."""
 
     def test_returns_slug_when_provided(self) -> None:
@@ -240,17 +240,17 @@ class TestRequireExplicitFeature:
 
     def test_raises_when_none(self) -> None:
         from specify_cli.core.paths import require_explicit_mission
-        with pytest.raises(ValueError, match="--feature"):
+        with pytest.raises(ValueError, match="--mission"):
             require_explicit_mission(None)
 
     def test_raises_when_empty_string(self) -> None:
         from specify_cli.core.paths import require_explicit_mission
-        with pytest.raises(ValueError, match="--feature"):
+        with pytest.raises(ValueError, match="--mission"):
             require_explicit_mission("")
 
     def test_raises_when_whitespace_only(self) -> None:
         from specify_cli.core.paths import require_explicit_mission
-        with pytest.raises(ValueError, match="--feature"):
+        with pytest.raises(ValueError, match="--mission"):
             require_explicit_mission("   ")
 
     def test_custom_command_hint(self) -> None:

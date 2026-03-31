@@ -1,6 +1,6 @@
-**Path reference rule:** When you mention directories or files, provide either the absolute path or a path relative to the project root (for example, `kitty-specs/<feature>/tasks/`). Never refer to a folder by name alone.
+**Path reference rule:** When you mention directories or files, provide either the absolute path or a path relative to the project root (for example, `kitty-specs/<mission-slug>/tasks/`). Never refer to a folder by name alone.
 
-**In repos with multiple features, always pass `--feature <slug>` to every spec-kitty command.**
+**In repos with multiple missions, always pass the canonical mission selector expected by the command (`--mission`, `--mission-run`, or `--mission-type`) instead of relying on auto-detection.**
 
 ## Location Pre-flight Check
 
@@ -38,7 +38,7 @@ When you run `spec-kitty research`, the following files are generated in your fe
 - **research/evidence-log.csv** – Sources and findings audit trail
 - **research/source-register.csv** – Reference tracking for all sources
 
-**Location**: All files go in `kitty-specs/<feature-slug>/`
+**Location**: All files go in `kitty-specs/<mission-slug>/`
 
 ---
 
@@ -74,7 +74,7 @@ Create `research.md`, `data-model.md`, and supporting CSV stubs based on the act
 
 ## Success Criteria
 
-- `kitty-specs/<feature>/research.md` explains every major decision with references to evidence.
-- `kitty-specs/<feature>/data-model.md` lists the entities and relationships needed for implementation.
+- `kitty-specs/<mission-slug>/research.md` explains every major decision with references to evidence.
+- `kitty-specs/<mission-slug>/data-model.md` lists the entities and relationships needed for implementation.
 - CSV logs exist (even if partially filled) so evidence gathering is traceable.
 - Outstanding questions from the research phase are tracked and ready for follow-up during planning or execution.

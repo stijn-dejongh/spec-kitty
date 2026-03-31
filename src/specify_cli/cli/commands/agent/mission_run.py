@@ -69,6 +69,26 @@ def _emit_json(payload: dict[str, object]) -> None:
     print(json.dumps(_with_cli_version(payload)))
 
 
+def _resolve_mission_selector(
+    mission_run: str | None,
+    *,
+    mission: str | None = None,
+    feature: str | None = None,
+) -> str | None:
+    """Resolve canonical mission selector from compatibility aliases.
+
+    `--mission-run` is the canonical selector for agent mission lifecycle
+    commands. `--mission` and `--feature` remain adapter-level aliases while
+    downstream surfaces finish converging on `--mission-run`.
+    """
+    return mission_run or mission or feature
+
+
+def get_next_feature_number(repo_root: Path) -> int:
+    """Compatibility alias for legacy tests and wrappers."""
+    return get_next_mission_number(repo_root)
+
+
 def _utc_now_iso() -> str:
     """Return deterministic UTC timestamp string for prompt/runtime variables."""
     return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -336,6 +356,9 @@ def _find_mission_directory(
         ValueError: If mission directory cannot be determined
         MissionDetectionError: If detection fails
     """
+    if not explicit_mission:
+        raise ValueError("Mission slug is required; auto-detection has been removed")
+
     try:
         return detect_mission_directory(
             repo_root,
@@ -390,26 +413,39 @@ def _build_setup_plan_detection_error(
     candidates = _list_mission_spec_candidates(repo_root)
     command_args = command_args if command_args is not None else ["--json"]
 
+    legacy_feature_context = error_code != "PLAN_CONTEXT_UNRESOLVED" and "feature" in _base_error.lower()
+
     payload: dict[str, object] = {
         "error_code": error_code,
         "mission_flag": mission_flag,
         "spec_kitty_version": SPEC_KITTY_VERSION,
     }
+    if legacy_feature_context:
+        payload["legacy_error_code"] = "FEATURE_CONTEXT_UNRESOLVED"
 
     if not candidates:
+        if legacy_feature_context:
+            payload["error_code"] = "FEATURE_CONTEXT_UNRESOLVED"
+            payload["legacy_error_code"] = "FEATURE_CONTEXT_UNRESOLVED"
         payload["error"] = "No missions found in kitty-specs/"
         payload["remediation"] = "Run /spec-kitty.specify or: spec-kitty agent mission-run create-mission <name> --json"
         return payload
 
     slugs = [c["mission_slug"] for c in candidates]
     n = len(slugs)
+    if legacy_feature_context:
+        payload["error_code"] = "FEATURE_CONTEXT_UNRESOLVED"
     payload["error"] = f"{n} missions found, pass --mission-run <slug> to disambiguate"
     payload["available_missions"] = slugs
+    if legacy_feature_context:
+        payload["available_features"] = slugs
 
     # One example command so the LLM knows the exact syntax
     args_suffix = f" {' '.join(command_args)}" if command_args else ""
-    payload["example_command"] = f"spec-kitty agent mission-run {command_name} --mission-run {slugs[0]}{args_suffix}"
-    payload["remediation"] = "Re-run with --mission-run <slug>"
+    payload["example_command"] = (
+        f"spec-kitty agent mission-run {command_name} --mission {slugs[0]}{args_suffix}"
+    )
+    payload["remediation"] = "Re-run with --mission <slug>"
     return payload
 
 
@@ -543,7 +579,7 @@ def create_mission(  # noqa: C901
                 if main_repo is not None:
                     console.print("\n[cyan]Run from the main repository instead:[/cyan]")
                     console.print(f"  cd {main_repo}")
-                    console.print(f"  spec-kitty agent mission-run create-mission {mission_name}")
+                    console.print(f"  spec-kitty agent create-mission {mission_name}")
             raise typer.Exit(1)
 
         repo_root = locate_project_root()
@@ -580,7 +616,7 @@ def create_mission(  # noqa: C901
             console.print(f"[bold cyan]Branch:[/bold cyan] {planning_branch} (target for this mission)")
 
         # Get next mission number
-        mission_number = get_next_mission_number(repo_root)
+        mission_number = get_next_feature_number(repo_root)
         mission_slug_formatted = f"{mission_number:03d}-{mission_name}"
 
         # Create mission directory in main repo
@@ -806,7 +842,15 @@ spec-kitty agent tasks move-task WP01 --to doing
 
 @app.command(name="check-prerequisites")
 def check_prerequisites(  # noqa: C901
-    mission: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (e.g., '020-my-mission')")] = None,
+    mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (e.g., '020-my-mission')")] = None,
+    mission: Annotated[
+        str | None,
+        typer.Option("--mission", hidden=True, help="Compatibility alias for mission selection"),
+    ] = None,
+    feature: Annotated[
+        str | None,
+        typer.Option("--feature", hidden=True, help="Legacy compatibility alias for mission selection"),
+    ] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
     paths_only: Annotated[bool, typer.Option("--paths-only", help="Only output path variables")] = False,
     include_tasks: Annotated[bool, typer.Option("--include-tasks", help="Include tasks.md in validation")] = False,
@@ -824,6 +868,7 @@ def check_prerequisites(  # noqa: C901
         spec-kitty agent mission-run check-prerequisites --mission-run 020-my-mission --paths-only --json
     """
     try:
+        selected_mission = _resolve_mission_selector(mission_run, mission=mission, feature=feature)
         if require_tasks and not include_tasks:
             include_tasks = True
             if not json_output:
@@ -850,7 +895,7 @@ def check_prerequisites(  # noqa: C901
             mission_dir = _find_mission_directory(
                 repo_root,
                 cwd,
-                explicit_mission=mission,
+                explicit_mission=selected_mission,
             )
         except ValueError as detection_error:
             command_args: list[str] = []
@@ -864,7 +909,7 @@ def check_prerequisites(  # noqa: C901
             payload = _build_setup_plan_detection_error(
                 repo_root,
                 str(detection_error),
-                mission,
+                selected_mission,
                 error_code="MISSION_CONTEXT_UNRESOLVED",
                 command_name="check-prerequisites",
                 command_args=command_args,
@@ -894,6 +939,7 @@ def check_prerequisites(  # noqa: C901
                 paths_payload["PLAN_FILE"] = paths_payload.get("plan_file", "")
                 paths_payload["TASKS_FILE"] = paths_payload.get("tasks_file", "")
                 paths_payload["MISSION_SPEC"] = paths_payload.get("spec_file", "")
+                paths_payload["FEATURE_SPEC"] = paths_payload.get("spec_file", "")
                 paths_payload["IMPL_PLAN"] = paths_payload.get("plan_file", "")
                 paths_payload["TASKS"] = paths_payload.get("tasks_file", "")
                 mission_dir_value = str(paths_payload.get("mission_dir", ""))
@@ -940,7 +986,15 @@ def check_prerequisites(  # noqa: C901
 
 @app.command(name="setup-plan")
 def setup_plan(  # noqa: C901
-    mission: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (e.g., '020-my-mission')")] = None,
+    mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (e.g., '020-my-mission')")] = None,
+    mission: Annotated[
+        str | None,
+        typer.Option("--mission", hidden=True, help="Compatibility alias for mission selection"),
+    ] = None,
+    feature: Annotated[
+        str | None,
+        typer.Option("--feature", hidden=True, help="Legacy compatibility alias for mission selection"),
+    ] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
 ) -> None:
     """Scaffold implementation plan template in the project root checkout.
@@ -953,6 +1007,7 @@ def setup_plan(  # noqa: C901
         spec-kitty agent mission-run setup-plan --mission-run 020-my-mission --json
     """
     try:
+        selected_mission = _resolve_mission_selector(mission_run, mission=mission, feature=feature)
         repo_root = locate_project_root()
         if repo_root is None:
             error_msg = "Could not locate project root. Run from within spec-kitty repository."
@@ -976,10 +1031,10 @@ def setup_plan(  # noqa: C901
             mission_dir = _find_mission_directory(
                 repo_root,
                 cwd,
-                explicit_mission=mission,
+                explicit_mission=selected_mission,
             )
         except ValueError as detection_error:
-            payload = _build_setup_plan_detection_error(repo_root, str(detection_error), mission)
+            payload = _build_setup_plan_detection_error(repo_root, str(detection_error), selected_mission)
             if json_output:
                 _emit_json(payload)
             else:
@@ -1247,7 +1302,15 @@ def _get_current_branch(repo_root: Path) -> str:
 
 @app.command(name="accept")
 def accept_mission(
-    mission: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (auto-detected if not specified)")] = None,
+    mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (auto-detected if not specified)")] = None,
+    mission: Annotated[
+        str | None,
+        typer.Option("--mission", hidden=True, help="Compatibility alias for mission selection"),
+    ] = None,
+    feature: Annotated[
+        str | None,
+        typer.Option("--feature", hidden=True, help="Legacy compatibility alias for mission selection"),
+    ] = None,
     mode: Annotated[str, typer.Option("--mode", help="Acceptance mode: auto, pr, local, checklist")] = "auto",
     json_output: Annotated[bool, typer.Option("--json", help="Output results as JSON for agent parsing")] = False,
     lenient: Annotated[bool, typer.Option("--lenient", help="Skip strict metadata validation")] = False,
@@ -1275,9 +1338,10 @@ def accept_mission(
     """
     # Delegate to top-level accept command
     try:
+        selected_mission = _resolve_mission_selector(mission_run, mission=mission, feature=feature)
         # Call top-level accept with mapped parameters
         top_level_accept(
-            mission=mission,
+            mission=selected_mission,
             mode=mode,
             actor=None,  # Agent commands don't use --actor
             test=[],  # Agent commands don't use --test
@@ -1299,7 +1363,15 @@ def accept_mission(
 
 @app.command(name="merge")
 def merge_mission(
-    mission: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (auto-detected if not specified)")] = None,
+    mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (auto-detected if not specified)")] = None,
+    mission: Annotated[
+        str | None,
+        typer.Option("--mission", hidden=True, help="Compatibility alias for mission selection"),
+    ] = None,
+    feature: Annotated[
+        str | None,
+        typer.Option("--feature", hidden=True, help="Legacy compatibility alias for mission selection"),
+    ] = None,
     target: Annotated[str | None, typer.Option("--target", help="Target branch to merge into (auto-detected if not specified)")] = None,
     strategy: Annotated[str, typer.Option("--strategy", help="Merge strategy: merge, squash, rebase")] = "merge",
     push: Annotated[bool, typer.Option("--push", help="Push to origin after merging")] = False,
@@ -1342,6 +1414,7 @@ def merge_mission(
         spec-kitty agent mission-run merge --keep-worktree --keep-branch
     """
     try:
+        selected_mission = _resolve_mission_selector(mission_run, mission=mission, feature=feature)
         repo_root = locate_project_root()
         if repo_root is None:
             error = "Could not locate project root"
@@ -1352,8 +1425,8 @@ def merge_mission(
         if target is None:
             from specify_cli.core.mission_detection import get_mission_target_branch
 
-            if mission:
-                target = get_mission_target_branch(repo_root, mission)
+            if selected_mission:
+                target = get_mission_target_branch(repo_root, selected_mission)
             else:
                 from specify_cli.core.git_ops import resolve_primary_branch
 
@@ -1365,12 +1438,12 @@ def merge_mission(
             is_mission_branch = re.match(r"^\d{3}-", current_branch)
 
             if not is_mission_branch:
-                if not mission:
+                if not selected_mission:
                     raise RuntimeError(f"Not on mission branch ({current_branch}). Auto-retry requires --mission-run to choose a deterministic worktree.")
 
-                retry_worktree = _find_mission_worktree(repo_root, mission)
+                retry_worktree = _find_mission_worktree(repo_root, selected_mission)
                 if not retry_worktree:
-                    raise RuntimeError(f"Could not find worktree for mission {mission} under {repo_root / '.worktrees'}.")
+                    raise RuntimeError(f"Could not find worktree for mission {selected_mission} under {repo_root / '.worktrees'}.")
 
                 console.print(f"[yellow]Auto-retry:[/yellow] Not on mission branch ({current_branch}). Running merge in {retry_worktree.name}")
 
@@ -1380,7 +1453,7 @@ def merge_mission(
 
                 # Re-run command in worktree
                 retry_cmd = ["spec-kitty", "agent", "mission", "merge"]
-                retry_cmd.extend(["--mission-run", mission])
+                retry_cmd.extend(["--mission-run", selected_mission])
                 retry_cmd.extend(["--target", target, "--strategy", strategy])
                 if push:
                     retry_cmd.append("--push")
@@ -1411,7 +1484,7 @@ def merge_mission(
                 push=push,
                 target_branch=target,  # Note: parameter name differs
                 dry_run=dry_run,
-                mission=mission,
+                mission=selected_mission,
                 resume=False,  # Agent commands don't support resume
                 abort=False,  # Agent commands don't support abort
             )
@@ -1429,7 +1502,15 @@ def merge_mission(
 
 @app.command(name="finalize-tasks")
 def finalize_tasks(  # noqa: C901
-    mission: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (e.g., '020-my-mission')")] = None,
+    mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (e.g., '020-my-mission')")] = None,
+    mission: Annotated[
+        str | None,
+        typer.Option("--mission", hidden=True, help="Compatibility alias for mission selection"),
+    ] = None,
+    feature: Annotated[
+        str | None,
+        typer.Option("--feature", hidden=True, help="Legacy compatibility alias for mission selection"),
+    ] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
     validate_only: Annotated[bool, typer.Option("--validate-only", help="Run all validations without committing. Reports issues that would block finalization.")] = False,
 ) -> None:
@@ -1446,6 +1527,7 @@ def finalize_tasks(  # noqa: C901
         spec-kitty agent mission-run finalize-tasks --mission-run 020-my-mission --validate-only --json
     """
     try:
+        selected_mission = _resolve_mission_selector(mission_run, mission=mission, feature=feature)
         repo_root = locate_project_root()
         if repo_root is None:
             error_msg = "Could not locate project root"
@@ -1461,13 +1543,13 @@ def finalize_tasks(  # noqa: C901
             mission_dir = _find_mission_directory(
                 repo_root,
                 cwd,
-                explicit_mission=mission,
+                explicit_mission=selected_mission,
             )
         except ValueError as detection_error:
             payload = _build_setup_plan_detection_error(
                 repo_root,
                 str(detection_error),
-                mission,
+                selected_mission,
                 error_code="MISSION_CONTEXT_UNRESOLVED",
                 command_name="finalize-tasks",
                 command_args=["--json"] if json_output else [],
@@ -1782,7 +1864,7 @@ def finalize_tasks(  # noqa: C901
         if validate_only:
             # Bootstrap dry-run: report what would be seeded (no mutation)
             bootstrap_result = bootstrap_canonical_state(
-                feature_dir, feature_slug, dry_run=True,
+                mission_dir, mission_slug, dry_run=True,
             )
             bootstrap_stats = {
                 "total_wps": bootstrap_result.total_wps,

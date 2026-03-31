@@ -8,6 +8,12 @@ from pathlib import Path
 import typer
 from rich.console import Console
 from rich.table import Table
+from kernel.paths import (
+    get_project_constitution_dir,
+    get_project_constitution_interview_path,
+    get_project_constitution_path,
+    resolve_project_constitution_path,
+)
 
 from specify_cli.constitution.compiler import compile_constitution, write_compiled_constitution
 from specify_cli.constitution.context import BOOTSTRAP_ACTIONS, build_constitution_context
@@ -35,14 +41,11 @@ console = Console()
 
 def _resolve_constitution_path(repo_root: Path) -> Path:
     """Find constitution.md in project, trying new and legacy locations."""
-    new_path = repo_root / ".kittify" / "constitution" / "constitution.md"
-    if new_path.exists():
-        return new_path
+    if resolved := resolve_project_constitution_path(repo_root):
+        return resolved
 
+    new_path = get_project_constitution_path(repo_root)
     legacy_path = repo_root / ".kittify" / "memory" / "constitution.md"
-    if legacy_path.exists():
-        return legacy_path
-
     raise TaskCliError(f"Constitution not found. Expected:\n  - {new_path}\n  - {legacy_path} (legacy)")
 
 
@@ -55,7 +58,7 @@ def _parse_csv_option(raw: str | None) -> list[str] | None:
 
 
 def _interview_path(repo_root: Path) -> Path:
-    return repo_root / ".kittify" / "constitution" / "interview" / "answers.yaml"
+    return get_project_constitution_interview_path(repo_root)
 
 
 @app.command()
@@ -180,7 +183,7 @@ def generate(
     """Generate constitution bundle from interview answers + doctrine references."""
     try:
         repo_root = find_repo_root()
-        constitution_dir = repo_root / ".kittify" / "constitution"
+        constitution_dir = get_project_constitution_dir(repo_root)
         answers_path = _interview_path(repo_root)
 
         interview_data = read_interview_answers(answers_path) if from_interview else None

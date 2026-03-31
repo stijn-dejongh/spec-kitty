@@ -10,8 +10,7 @@ import typer
 from rich.console import Console
 from typing_extensions import Annotated
 
-from specify_cli.core.paths import locate_project_root
-from specify_cli.core.paths import require_explicit_mission
+from specify_cli.core.paths import get_mission_dir, locate_project_root, require_explicit_mission
 from specify_cli.core.execution_context import (
     ACTION_NAMES,
     ActionName,
@@ -28,26 +27,26 @@ app = typer.Typer(
 console = Console()
 
 
-def _find_mission_directory(repo_root: Path, cwd: Path, explicit_feature: str | None = None) -> Path:
-    """Find the feature directory from an explicit feature slug.
+def _find_mission_directory(repo_root: Path, cwd: Path, explicit_mission: str | None = None) -> Path:
+    """Find the mission directory from an explicit mission slug.
 
     Args:
         repo_root: Repository root path
         cwd: Current working directory (unused — kept for signature compatibility)
-        explicit_feature: Feature slug from --feature flag (required)
+        explicit_mission: Mission slug from --mission flag (required)
 
     Returns:
-        Path to feature directory
+        Path to mission directory
 
     Raises:
-        ValueError: If feature slug is not provided or directory doesn't exist
+        ValueError: If mission slug is not provided or directory doesn't exist
     """
-    slug = require_explicit_mission(explicit_feature, command_hint="--feature <slug>")
-    mission_dir = repo_root / "kitty-specs" / slug
+    slug = require_explicit_mission(explicit_mission, command_hint="--mission <slug>")
+    mission_dir = get_mission_dir(repo_root, slug)
     if not mission_dir.exists():
         raise ValueError(
-            f"Feature directory not found: {mission_dir}. "
-            f"Check that '{slug}' is the correct feature slug."
+            f"Mission directory not found: {mission_dir}. "
+            f"Check that '{slug}' is the correct mission slug."
         )
     return mission_dir
 
@@ -64,13 +63,14 @@ def resolve_context(
             ),
         ),
     ],
-    feature: Annotated[Optional[str], typer.Option("--feature", help="Feature slug (e.g., '020-my-feature')")] = None,
+    mission: Annotated[Optional[str], typer.Option("--mission", help="Mission slug (e.g., '020-my-mission')")] = None,
+    feature: Annotated[Optional[str], typer.Option("--feature", hidden=True, help="[Deprecated] Use --mission")] = None,
     wp_id: Annotated[Optional[str], typer.Option("--wp-id", help="Work package ID (e.g., WP01)")] = None,
     base: Annotated[Optional[str], typer.Option("--base", help="Explicit base WP for implement")] = None,
     agent: Annotated[Optional[str], typer.Option("--agent", help="Agent name for exact command rendering")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output results as JSON")] = False,
 ) -> None:
-    """Resolve canonical feature/work-package/action context for prompt execution."""
+    """Resolve canonical mission/work-package/action context for prompt execution."""
     try:
         repo_root = locate_project_root()
         if repo_root is None:
@@ -85,10 +85,11 @@ def resolve_context(
                 f"Invalid action '{action}'. Expected one of: {', '.join(ACTION_NAMES)}.",
             )
 
+        mission_slug = mission or feature
         context = resolve_action_context(
             repo_root,
             action=cast(ActionName, action),
-            feature=feature,
+            mission=mission_slug,
             wp_id=wp_id,
             base=base,
             agent=agent,
@@ -99,7 +100,7 @@ def resolve_context(
             print(json.dumps({"success": True, **context.to_dict()}, indent=2))
         else:
             console.print(f"[green]✓[/green] Resolved {action} context")
-            console.print(f"  Feature: {context.mission_slug} ({context.detection_method})")
+            console.print(f"  Mission: {context.mission_slug} ({context.detection_method})")
             console.print(f"  Target branch: {context.target_branch}")
             if context.wp_id:
                 console.print(f"  Work package: {context.wp_id} ({context.lane})")

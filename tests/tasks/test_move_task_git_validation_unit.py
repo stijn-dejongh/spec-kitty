@@ -85,10 +85,10 @@ Test content here.
     # The WP starts at "doing" (in_progress), so seed planned -> in_progress.
     for lane_val in ("planned", "in_progress"):
         append_event(
-            feature_dir,
+            mission_dir,
             StatusEvent(
                 event_id=f"seed-WP01-{lane_val}",
-                feature_slug="017-test-feature",
+                mission_slug="017-test-mission",
                 wp_id="WP01",
                 from_lane=Lane.PLANNED,
                 to_lane=Lane(lane_val),
@@ -235,6 +235,7 @@ class TestMoveTaskGitValidation:
                 "WP01",
                 "--to",
                 "done",
+                "--force",
                 "--done-override-reason",
                 "Validated manually in post-merge audit",
                 "--json",

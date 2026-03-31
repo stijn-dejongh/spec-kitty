@@ -327,6 +327,19 @@ def create_feature_worktree(
     return (worktree_path, mission_dir)
 
 
+def create_mission_worktree(
+    repo_root: Path,
+    mission_slug: str,
+    mission_number: int | None = None,
+) -> tuple[Path, Path]:
+    """Compatibility alias for callers updated from feature to mission wording."""
+    return create_feature_worktree(
+        repo_root,
+        mission_slug,
+        mission_number=mission_number,
+    )
+
+
 def setup_mission_directory(
     mission_dir: Path,
     worktree_path: Path,
@@ -641,5 +654,6 @@ def validate_mission_structure(
         "available_docs": available_docs,
         # Compatibility aliases for older templates/prompts
         "FEATURE_DIR": mission_dir_str,
+        "MISSION_DIR": mission_dir_str,
         "AVAILABLE_DOCS": available_docs,
     }

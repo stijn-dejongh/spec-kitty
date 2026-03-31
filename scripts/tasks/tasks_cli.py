@@ -116,12 +116,12 @@ def stage_update(
     from_lane = _derive_current_lane(feature_dir, wp_id)
 
     # Pre-build the canonical event and new WP content before writing anything
-    feature_slug = feature_dir.name
+    mission_slug = feature_dir.name
     canonical_from = resolve_lane_alias(from_lane)
     canonical_to = resolve_lane_alias(target_lane)
     event = StatusEvent(
         event_id=_generate_ulid(),
-        feature_slug=feature_slug,
+        mission_slug=mission_slug,
         wp_id=wp_id,
         from_lane=Lane(canonical_from),
         to_lane=Lane(canonical_to),
@@ -480,7 +480,7 @@ def _resolve_feature(repo_root: Path, requested: Optional[str]) -> str:
 
 def _summary_to_text(summary: AcceptanceSummary) -> List[str]:
     lines: List[str] = []
-    lines.append(f"Feature: {summary.feature}")
+    lines.append(f"Mission: {summary.mission}")
     lines.append(f"Branch: {summary.branch or 'N/A'}")
     lines.append(f"Worktree: {summary.worktree_root}")
     lines.append("")
@@ -593,7 +593,7 @@ def accept_command(args: argparse.Namespace) -> None:
         print(json.dumps(result.to_dict(), indent=2))
         return
 
-    print(f"✅ Feature '{feature}' accepted at {result.accepted_at} by {result.accepted_by}")
+    print(f"✅ Mission '{feature}' accepted at {result.accepted_at} by {result.accepted_by}")
     if result.accept_commit:
         print(f"   Acceptance commit: {result.accept_commit}")
     if result.parent_commit:
@@ -687,13 +687,13 @@ def merge_command(args: argparse.Namespace) -> None:
 
     if current_branch == args.target:
         raise TaskCliError(
-            f"Already on target branch '{args.target}'. Switch to the feature branch before merging."
+            f"Already on target branch '{args.target}'. Switch to the mission branch before merging."
         )
 
     if current_branch != feature:
         raise TaskCliError(
-            f"Current branch '{current_branch}' does not match detected feature '{feature}'."
-            " Run this command from the feature worktree or specify --feature explicitly."
+            f"Current branch '{current_branch}' does not match detected mission '{feature}'."
+            " Run this command from the mission worktree or specify --mission explicitly."
         )
 
     try:
@@ -771,7 +771,7 @@ def merge_command(args: argparse.Namespace) -> None:
         if meta_path:
             meta_rel = str(meta_path.relative_to(primary_repo_root))
             git(["add", meta_rel])
-        git(["commit", "-m", f"Merge feature {feature}"])
+        git(["commit", "-m", f"Merge mission {feature}"])
     else:
         merge_proc = git(["merge", "--no-ff", "--no-commit", feature], check=False)
         if merge_proc.returncode != 0:
@@ -782,7 +782,7 @@ def merge_command(args: argparse.Namespace) -> None:
         if meta_path:
             meta_rel = str(meta_path.relative_to(primary_repo_root))
             git(["add", meta_rel])
-        git(["commit", "-m", f"Merge feature {feature}"])
+        git(["commit", "-m", f"Merge mission {feature}"])
 
     if meta_path:
         merge_commit = git(["rev-parse", "HEAD"]).stdout.strip()
@@ -813,7 +813,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     update = subparsers.add_parser("update", help="Append a canonical status transition")
-    update.add_argument("feature", help="Feature directory slug (e.g., 008-awesome-feature)")
+    update.add_argument("feature", help="Mission directory slug (e.g., 008-awesome-mission)")
     update.add_argument("work_package", help="Work package identifier (e.g., WP03)")
     update.add_argument("lane", help=f"Target lane ({', '.join(LANES)})")
     update.add_argument("--note", help="Activity note to record with the update")
@@ -825,7 +825,7 @@ def build_parser() -> argparse.ArgumentParser:
     update.add_argument("--force", action="store_true", help="Ignore other staged work-package files")
 
     history = subparsers.add_parser("history", help="Append a history entry without changing lanes")
-    history.add_argument("feature", help="Feature directory slug")
+    history.add_argument("feature", help="Mission directory slug")
     history.add_argument("work_package", help="Work package identifier (e.g., WP03)")
     history.add_argument("--note", required=True, help="History note to append")
     history.add_argument("--lane", help="Lane to record (defaults to current lane)")
@@ -837,10 +837,10 @@ def build_parser() -> argparse.ArgumentParser:
     history.add_argument("--dry-run", action="store_true", help="Show the log entry without updating files")
 
     list_parser = subparsers.add_parser("list", help="List work packages by lane")
-    list_parser.add_argument("feature", help="Feature directory slug")
+    list_parser.add_argument("feature", help="Mission directory slug")
 
     rollback = subparsers.add_parser("rollback", help="Return a work package to its prior lane")
-    rollback.add_argument("feature", help="Feature directory slug")
+    rollback.add_argument("feature", help="Mission directory slug")
     rollback.add_argument("work_package", help="Work package identifier (e.g., WP03)")
     rollback.add_argument("--note", help="History note to record (default: Rolled back to <lane>)")
     rollback.add_argument("--agent", help="Agent identifier to record for the rollback entry")
@@ -850,8 +850,8 @@ def build_parser() -> argparse.ArgumentParser:
     rollback.add_argument("--dry-run", action="store_true", help="Report planned rollback without modifying files")
     rollback.add_argument("--force", action="store_true", help="Ignore other staged work-package files")
 
-    status = subparsers.add_parser("status", help="Summarize work packages for a feature")
-    status.add_argument("--feature", help="Feature directory slug (auto-detect by default)")
+    status = subparsers.add_parser("status", help="Summarize work packages for a mission")
+    status.add_argument("--mission", "--feature", dest="feature", help="Mission directory slug (auto-detect by default)")
     status.add_argument("--json", action="store_true", help="Emit JSON summary")
     status.add_argument("--lenient", action="store_true", help="Skip strict metadata validation")
     status.add_argument(
@@ -861,7 +861,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     verify = subparsers.add_parser("verify", help="Run acceptance checks without committing")
-    verify.add_argument("--feature", help="Feature directory slug (auto-detect by default)")
+    verify.add_argument("--mission", "--feature", dest="feature", help="Mission directory slug (auto-detect by default)")
     verify.add_argument("--json", action="store_true", help="Emit JSON summary")
     verify.add_argument("--lenient", action="store_true", help="Skip strict metadata validation")
     verify.add_argument(
@@ -870,8 +870,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Automatically repair non-UTF-8 artifact files",
     )
 
-    accept = subparsers.add_parser("accept", help="Perform feature acceptance workflow")
-    accept.add_argument("--feature", help="Feature directory slug (auto-detect by default)")
+    accept = subparsers.add_parser("accept", help="Perform mission acceptance workflow")
+    accept.add_argument("--mission", "--feature", dest="feature", help="Mission directory slug (auto-detect by default)")
     accept.add_argument("--mode", choices=["auto", "pr", "local", "checklist"], default="auto")
     accept.add_argument("--actor", help="Override acceptance author (defaults to system/user)")
     accept.add_argument("--test", action="append", help="Record validation command executed (repeatable)")
@@ -885,8 +885,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Automatically repair non-UTF-8 artifact files before acceptance",
     )
 
-    merge = subparsers.add_parser("merge", help="Merge a feature branch into the target branch")
-    merge.add_argument("--feature", help="Feature directory slug (auto-detect by default)")
+    merge = subparsers.add_parser("merge", help="Merge a mission branch into the target branch")
+    merge.add_argument("--mission", "--feature", dest="feature", help="Mission directory slug (auto-detect by default)")
     merge.add_argument("--strategy", choices=["merge", "squash", "rebase"], default="merge")
     merge.add_argument("--target", default=None, help="Target branch to merge into (auto-detected)")
     merge.add_argument("--push", action="store_true", help="Push to origin after merging")

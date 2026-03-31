@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -30,6 +31,7 @@ def run_cli(project_path: Path, *args: str) -> subprocess.CompletedProcess:
     src_path = REPO_ROOT / "src"
     env["PYTHONPATH"] = f"{src_path}{os.pathsep}{env.get('PYTHONPATH', '')}".rstrip(os.pathsep)
     env.setdefault("SPEC_KITTY_TEMPLATE_ROOT", str(REPO_ROOT))
+    env.setdefault("SPEC_KITTY_TEST_MODE", "1")
     command = [str(get_venv_python()), "-m", "specify_cli.__init__", *args]
     return subprocess.run(command, cwd=str(project_path), capture_output=True, text=True, env=env)
 
@@ -77,8 +79,8 @@ def create_mission_on_main(repo: Path, mission_slug: str) -> Path:
         "# WP01\n"
     )
     seed_event = {
-        "event_id": f"{feature_slug}-wp01-planned-{time.time_ns()}",
-        "feature_slug": feature_slug,
+        "event_id": f"{mission_slug}-wp01-planned-{time.time_ns()}",
+        "mission_slug": mission_slug,
         "wp_id": "WP01",
         "from_lane": "planned",
         "to_lane": "planned",
@@ -91,7 +93,7 @@ def create_mission_on_main(repo: Path, mission_slug: str) -> Path:
         "evidence": None,
         "policy_metadata": None,
     }
-    (feature_dir / "status.events.jsonl").write_text(json.dumps(seed_event) + "\n", encoding="utf-8")
+    (mission_dir / "status.events.jsonl").write_text(json.dumps(seed_event) + "\n", encoding="utf-8")
 
     # Commit
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
@@ -131,7 +133,7 @@ def test_implement_respects_current_branch(tmp_path):
     assert get_current_branch(repo) == "feature/new-auth"
 
     # Run implement command
-    result = run_cli(repo, "implement", "WP01", "--feature", "001-test-feature")
+    result = run_cli(repo, "implement", "WP01", "--mission-run", "001-test-mission")
 
     # Should succeed
     assert result.returncode == 0, f"implement failed: {result.stderr}"
@@ -175,7 +177,7 @@ def test_worktree_base_branch_is_current(tmp_path):
     subprocess.run(["git", "commit", "-m", "Develop commit"], cwd=repo, check=True, capture_output=True)
 
     # Run implement command from develop
-    result = run_cli(repo, "implement", "WP01", "--feature", "002-test-feature")
+    result = run_cli(repo, "implement", "WP01", "--mission-run", "002-test-mission")
     assert result.returncode == 0, f"implement failed: {result.stderr}"
 
     # Check workspace context to verify base branch
@@ -223,7 +225,7 @@ def test_status_commits_respect_current_branch(tmp_path):
     commits_before = int(result.stdout.strip())
 
     # Move task to doing (triggers status commit)
-    result = run_cli(repo, "agent", "tasks", "move-task", "WP01", "--to", "doing", "--mission", "003-test-mission")
+    result = run_cli(repo, "agent", "tasks", "move-task", "WP01", "--to", "doing", "--mission-run", "003-test-mission")
 
     # Command should succeed
     assert result.returncode == 0, f"move-task failed: {result.stderr}"
@@ -280,7 +282,7 @@ def test_notification_when_current_differs_from_target(tmp_path):
     subprocess.run(["git", "checkout", "-b", "develop"], cwd=repo, check=True, capture_output=True)
 
     # Run implement command
-    result = run_cli(repo, "implement", "WP01", "--feature", "004-test-feature")
+    result = run_cli(repo, "implement", "WP01", "--mission-run", "004-test-mission")
 
     # Should succeed (not error)
     assert result.returncode == 0, f"implement failed: {result.stderr}"

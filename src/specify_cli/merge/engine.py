@@ -41,6 +41,7 @@ from specify_cli.merge.workspace import (
     create_merge_workspace,
     get_merge_workspace,
 )
+from specify_cli.core.paths import get_mission_dir, get_mission_meta_path
 
 if TYPE_CHECKING:
     from specify_cli.context.models import MissionContext
@@ -226,7 +227,7 @@ def execute_merge(
     10. Release lock.
 
     Args:
-        mission_slug: Feature identifier (e.g. "057-canonical-context-...").
+        mission_slug: Mission run identifier (e.g. "057-canonical-context-...").
         repo_root: Absolute path to the main repository root.
         context: Optional MissionContext for richer preflight validation.
         strategy: "merge" (default) or "squash". "rebase" raises immediately.
@@ -258,7 +259,7 @@ def execute_merge(
         wp_workspaces = find_wp_worktrees(repo_root, mission_slug)
         if not wp_workspaces:
             result.errors.append(
-                f"No WP worktrees found for feature {mission_slug!r}."
+                f"No WP worktrees found for mission {mission_slug!r}."
             )
             return result
 
@@ -278,7 +279,7 @@ def execute_merge(
             return result
 
         # 4. Compute merge order
-        mission_dir = repo_root / "kitty-specs" / mission_slug
+        mission_dir = get_mission_dir(repo_root, mission_slug, main_repo=False)
         try:
             ordered_workspaces = get_merge_order(wp_workspaces, mission_dir)
         except MergeOrderError as exc:
@@ -469,7 +470,7 @@ def resume_merge(
         result = MergeResult(success=False)
         result.errors.append(
             "No merge state to resume. "
-            "Run 'spec-kitty merge --feature <slug>' to start a new merge."
+            "Run 'spec-kitty merge --mission <slug>' to start a new merge."
         )
         return result
 
@@ -540,7 +541,7 @@ def _resolve_target_branch(
     repo_root: Path,
     context: MissionContext | None,
 ) -> str:
-    """Resolve the target branch for a feature.
+    """Resolve the target branch for a mission run.
 
     Priority:
     1. context.target_branch (if context is provided)
@@ -550,7 +551,7 @@ def _resolve_target_branch(
     if context is not None:
         return context.target_branch
 
-    meta_path = repo_root / "kitty-specs" / mission_slug / "meta.json"
+    meta_path = get_mission_meta_path(repo_root, mission_slug, main_repo=False)
     if meta_path.exists():
         import json
         try:

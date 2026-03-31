@@ -1,7 +1,7 @@
-"""Tests for canonical 7-lane SaaS fan-out.
+"""Tests for canonical lane SaaS fan-out.
 
 Covers:
-  T025 - All 7 canonical lanes pass through fan-out without collapse
+  T025 - All canonical lanes pass through fan-out without collapse
   T026 - Invalid lane handling via TransitionError
 """
 
@@ -36,7 +36,7 @@ def mission_dir(tmp_path: Path) -> Path:
 
 
 class TestCanonicalFanOut:
-    """Verify _saas_fan_out passes all 7 canonical lanes directly without collapse."""
+    """Verify _saas_fan_out passes canonical lanes directly without collapse."""
 
     def _make_event(
         self,
@@ -83,7 +83,7 @@ class TestCanonicalFanOut:
             wp_id="WP01",
             from_lane=str(from_lane),
             to_lane=str(to_lane),
-            actor="test-actor:unknown:unknown:unknown",
+            actor=event.actor,
             mission_slug="039-test-mission",
             policy_metadata=None,
         )
@@ -99,7 +99,7 @@ class TestCanonicalFanOut:
         mock_emit.assert_called_once()
 
     def test_all_canonical_lanes_accepted_by_validators(self) -> None:
-        """All 7 canonical lanes are valid values for from_lane/to_lane validators."""
+        """All canonical lanes are valid values for from_lane/to_lane validators."""
         from specify_cli.sync.emitter import _PAYLOAD_RULES
 
         rules = _PAYLOAD_RULES["WPStatusChanged"]

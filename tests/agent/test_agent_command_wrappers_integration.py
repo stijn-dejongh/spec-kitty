@@ -274,7 +274,7 @@ class TestAgentWorkflowImplement:
             "event_id": "01JTEST00000000000000000000",
             "evidence": None,
             "execution_mode": "direct_repo",
-            "feature_slug": feature_slug,
+            "mission_slug": mission_slug,
             "force": False,
             "from_lane": "planned",
             "reason": None,

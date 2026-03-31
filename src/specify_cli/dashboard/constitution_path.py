@@ -4,21 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from kernel.paths import resolve_project_constitution_path as _resolve_project_constitution_path
+
 
 def resolve_project_constitution_path(project_dir: Path) -> Path | None:
-    """Resolve the project-level constitution file path.
-
-    Resolution order:
-    1. .kittify/constitution/constitution.md (canonical)
-    2. .kittify/memory/constitution.md (legacy)
-    """
-    project_root = Path(project_dir)
-    candidate_paths = (
-        project_root / ".kittify" / "constitution" / "constitution.md",
-        project_root / ".kittify" / "memory" / "constitution.md",
-    )
-
-    for candidate in candidate_paths:
-        if candidate.exists():
-            return candidate
-    return None
+    """Resolve the project-level constitution file path."""
+    return _resolve_project_constitution_path(project_dir)

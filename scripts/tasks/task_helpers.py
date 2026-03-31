@@ -376,7 +376,7 @@ def locate_work_package(repo_root: Path, feature: str, wp_id: str) -> WorkPackag
     feature_path = repo_root / "kitty-specs" / feature
     tasks_root = feature_path / "tasks"
     if not tasks_root.exists():
-        raise TaskCliError(f"Feature '{feature}' has no tasks directory at {tasks_root}.")
+        raise TaskCliError(f"Mission '{feature}' has no tasks directory at {tasks_root}.")
 
     # Use exact WP ID matching with word boundary to avoid WP04 matching WP04b
     # Matches: WP04.md, WP04-something.md, WP04_something.md

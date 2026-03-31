@@ -19,18 +19,18 @@ class CanonicalStatusNotFoundError(RuntimeError):
     """
 
 
-def has_event_log(feature_dir: Path) -> bool:
+def has_event_log(mission_dir: Path) -> bool:
     """Return True when the canonical event log file exists on disk."""
-    return (feature_dir / EVENTS_FILENAME).exists()
+    return (mission_dir / EVENTS_FILENAME).exists()
 
 
-def _require_event_log(feature_dir: Path) -> None:
+def _require_event_log(mission_dir: Path) -> None:
     """Raise ``CanonicalStatusNotFoundError`` when no event log exists."""
-    if not has_event_log(feature_dir):
-        slug = feature_dir.name
+    if not has_event_log(mission_dir):
+        slug = mission_dir.name
         raise CanonicalStatusNotFoundError(
-            f"Canonical status not found for feature '{slug}'. "
-            f"Run 'spec-kitty agent feature finalize-tasks --feature {slug}' "
+            f"Canonical status not found for mission '{slug}'. "
+            f"Run 'spec-kitty agent tasks finalize-tasks --mission {slug}' "
             f"to bootstrap the event log."
         )
 
@@ -44,7 +44,7 @@ def get_wp_lane(mission_dir: Path, wp_id: str) -> str:
     Returns ``"uninitialized"`` when the event log exists but contains
     no events for *wp_id*.
     """
-    _require_event_log(feature_dir)
+    _require_event_log(mission_dir)
     from .store import read_events
     from .reducer import reduce
     events = read_events(mission_dir)
@@ -67,7 +67,7 @@ def get_all_wp_lanes(mission_dir: Path) -> dict[str, str]:
     Returns dict mapping wp_id -> lane string. WPs with no events are
     *not* included (caller should treat missing keys as ``"uninitialized"``).
     """
-    _require_event_log(feature_dir)
+    _require_event_log(mission_dir)
     from .store import read_events
     from .reducer import reduce
     events = read_events(mission_dir)

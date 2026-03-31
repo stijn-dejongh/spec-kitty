@@ -59,12 +59,17 @@ env/
 .kittify/workspaces/
 .kittify/merge-state.json
 .kittify/.migration-backup/
+kitty-specs/**/.kittify/
 kitty-specs/**/.kittify/dossiers/
 .kittify/constitution/context-state.json
 .kittify/constitution/directives.yaml
 .kittify/constitution/governance.yaml
 .kittify/constitution/metadata.yaml
 .kittify/constitution/references.yaml
+.kittify/constitution/
+.kittify/curation/
+.kittify/memory/
+.kittify/overrides/
 node_modules/
 
 # Spec Kit-specific files
@@ -96,6 +101,9 @@ sdd-*/
 
 # Keep spec_kitty_core.yaml tracked (canonical terms)
 !.kittify/glossaries/spec_kitty_core.yaml
+
+# Development artifacts (not for mainline)
+reports/
 doctrine_ref
 /work/
 

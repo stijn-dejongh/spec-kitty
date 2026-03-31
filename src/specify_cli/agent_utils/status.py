@@ -14,7 +14,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from specify_cli.core.paths import locate_project_root, get_main_repo_root
+from specify_cli.core.paths import get_mission_dir, get_main_repo_root, locate_project_root
 
 console = Console()
 
@@ -56,7 +56,7 @@ def show_kanban_status(mission_slug: str | None = None) -> dict:
         main_repo_root = get_main_repo_root(repo_root)
 
         # Locate mission directory
-        mission_dir = main_repo_root / "kitty-specs" / mission_slug
+        mission_dir = get_mission_dir(main_repo_root, mission_slug, main_repo=False)
 
         if not mission_dir.exists():
             console.print(f"[red]Error:[/red] Mission directory not found: {mission_dir}")

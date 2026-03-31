@@ -37,6 +37,7 @@ def run_cli(project_path: Path, *args: str) -> subprocess.CompletedProcess:
     src_path = REPO_ROOT / "src"
     env["PYTHONPATH"] = f"{src_path}{os.pathsep}{env.get('PYTHONPATH', '')}".rstrip(os.pathsep)
     env.setdefault("SPEC_KITTY_TEMPLATE_ROOT", str(REPO_ROOT))
+    env.setdefault("SPEC_KITTY_HOME", str(project_path / ".kittify-test-home"))
     command = [str(get_venv_python()), "-m", "specify_cli.__init__", *args]
     return subprocess.run(
         command,

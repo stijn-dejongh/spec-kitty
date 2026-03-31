@@ -28,7 +28,7 @@ break work into clear pieces, and write detailed guidance.
 
 **Do NOT cd anywhere**. Stay in the project root checkout root.
 
-**In repos with multiple features, always pass `--feature <slug>` to every spec-kitty command.**
+**In repos with multiple missions, always pass the canonical mission selector expected by the command (`--mission`, `--mission-run`, or `--mission-type`) instead of relying on auto-detection.**
 
 ## User Input
 
@@ -46,7 +46,7 @@ Before proceeding, resolve canonical command context:
 spec-kitty agent context resolve --action tasks_outline --json
 ```
 
-Treat that JSON as canonical for feature slug, feature directory, and target branch.
+Treat that JSON as canonical for the mission slug, mission directory, and target branch.
 Do not probe git branch state manually inside the prompt.
 
 ## Steps

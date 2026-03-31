@@ -28,7 +28,9 @@ from specify_cli.status.store import read_events
 from specify_cli.core.dependency_graph import build_dependency_graph, get_dependents
 from specify_cli.core.paths import locate_project_root, get_main_repo_root, is_worktree_context
 from specify_cli.core.paths import (
+    get_mission_dir,
     get_mission_target_branch,
+    get_mission_tasks_dir,
     require_explicit_mission,
 )
 from specify_cli.mission import get_mission_key
@@ -257,7 +259,7 @@ def _check_unchecked_subtasks(
     """
     # Use planning repo root to resolve kitty-specs/ (main branch is authoritative)
     main_repo_root = get_main_repo_root(repo_root)
-    mission_dir = main_repo_root / "kitty-specs" / mission_slug
+    mission_dir = get_mission_dir(main_repo_root, mission_slug, main_repo=False)
     tasks_md = mission_dir / "tasks.md"
 
     if not tasks_md.exists():
@@ -317,7 +319,7 @@ def _check_dependent_warnings(
 
     # Use planning repo root to resolve kitty-specs/ (main branch is authoritative)
     main_repo_root = get_main_repo_root(repo_root)
-    mission_dir = main_repo_root / "kitty-specs" / mission_slug
+    mission_dir = get_mission_dir(main_repo_root, mission_slug, main_repo=False)
 
     # Build dependency graph
     try:
@@ -453,7 +455,7 @@ def _validate_ready_for_review(
 
     guidance: list[str] = []
     main_repo_root = get_main_repo_root(repo_root)
-    mission_dir = main_repo_root / "kitty-specs" / mission_slug
+    mission_dir = get_mission_dir(main_repo_root, mission_slug, main_repo=False)
 
     # Detect mission type from mission's meta.json
     mission_key = get_mission_key(mission_dir)
@@ -872,7 +874,7 @@ def move_task(
         if auto_commit is None:
             auto_commit = get_auto_commit_default(repo_root)
 
-        mission_slug = _find_mission_slug(explicit_mission=mission)
+        mission_slug = _find_mission_slug(explicit_mission=mission_run)
 
         # Ensure we operate on the target branch for this mission
         main_repo_root, target_branch = _ensure_target_branch_checked_out(repo_root, mission_slug, json_output)
@@ -897,7 +899,7 @@ def move_task(
         # Load work package first (needed for current_lane check)
         wp = locate_work_package(repo_root, mission_slug, task_id)
         # Lane is event-log-only; read from canonical event log not frontmatter
-        _mt_mission_dir = main_repo_root / "kitty-specs" / mission_slug
+        _mt_mission_dir = get_mission_dir(main_repo_root, mission_slug, main_repo=False)
         try:
             from specify_cli.status.store import read_events as _mt_read_events
             from specify_cli.status.reducer import reduce as _mt_reduce
@@ -1076,7 +1078,7 @@ def move_task(
         canonical_lane = resolve_lane_alias(target_lane)
 
         # Determine mission_dir for the event store
-        mission_dir = main_repo_root / "kitty-specs" / mission_slug
+        mission_dir = get_mission_dir(main_repo_root, mission_slug, main_repo=False)
 
         # Keep force semantics strict: only user-requested --force should bypass guards.
         emit_force = force
@@ -1293,10 +1295,10 @@ def mark_status(
         if auto_commit is None:
             auto_commit = get_auto_commit_default(repo_root)
 
-        mission_slug = _find_mission_slug(explicit_mission=mission)
+        mission_slug = _find_mission_slug(explicit_mission=mission_run)
         # Ensure we operate on the target branch for this mission
         main_repo_root, target_branch = _ensure_target_branch_checked_out(repo_root, mission_slug, json_output)
-        mission_dir = main_repo_root / "kitty-specs" / mission_slug
+        mission_dir = get_mission_dir(main_repo_root, mission_slug, main_repo=False)
         tasks_md = mission_dir / "tasks.md"
 
         with mission_status_lock(main_repo_root, mission_slug):
@@ -1432,7 +1434,8 @@ def mark_status(
 @app.command(name="list-tasks")
 def list_tasks(
     lane: Annotated[Optional[str], typer.Option("--lane", help="Filter by lane")] = None,
-    mission_run: Annotated[Optional[str], typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
+    mission: Annotated[Optional[str], typer.Option("--mission", help="Mission slug (required in multi-mission repos)")] = None,
+    mission_run: Annotated[Optional[str], typer.Option("--mission-run", hidden=True, help="[Deprecated] Use --mission")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
 ) -> None:
     """List tasks with optional lane filtering.
@@ -1448,19 +1451,19 @@ def list_tasks(
             _output_error(json_output, "Could not locate project root")
             raise typer.Exit(1)
 
-        mission_slug = _find_mission_slug(explicit_mission=mission)
+        mission_slug = _find_mission_slug(explicit_mission=mission or mission_run)
 
         # Ensure we operate on the target branch for this mission
         main_repo_root, _ = _ensure_target_branch_checked_out(repo_root, mission_slug, json_output)
 
         # Find all task files
-        tasks_dir = main_repo_root / "kitty-specs" / mission_slug / "tasks"
+        tasks_dir = get_mission_tasks_dir(main_repo_root, mission_slug, main_repo=False)
         if not tasks_dir.exists():
             _output_error(json_output, f"Tasks directory not found: {tasks_dir}")
             raise typer.Exit(1)
 
         # Load canonical lanes from event log
-        _lt_mission_dir = main_repo_root / "kitty-specs" / mission_slug
+        _lt_mission_dir = get_mission_dir(main_repo_root, mission_slug, main_repo=False)
         try:
             from specify_cli.status.store import read_events as _lt_read_events
             from specify_cli.status.reducer import reduce as _lt_reduce
@@ -1537,7 +1540,7 @@ def add_history(
             _output_error(json_output, "Could not locate project root")
             raise typer.Exit(1)
 
-        mission_slug = _find_mission_slug(explicit_mission=mission)
+        mission_slug = _find_mission_slug(explicit_mission=mission_run)
 
         # Ensure we operate on the target branch for this mission
         _ensure_target_branch_checked_out(repo_root, mission_slug, json_output)
@@ -1622,12 +1625,12 @@ def finalize_tasks(
             _output_error(json_output, "Could not locate project root")
             raise typer.Exit(1)
 
-        mission_slug = _find_mission_slug(explicit_mission=mission)
+        mission_slug = _find_mission_slug(explicit_mission=mission_run)
         # Ensure we operate on the target branch for this mission
         main_repo_root, _ = _ensure_target_branch_checked_out(repo_root, mission_slug, json_output)
-        mission_dir = main_repo_root / "kitty-specs" / mission_slug
+        mission_dir = get_mission_dir(main_repo_root, mission_slug, main_repo=False)
         tasks_md = mission_dir / "tasks.md"
-        tasks_dir = mission_dir / "tasks"
+        tasks_dir = get_mission_tasks_dir(main_repo_root, mission_slug, main_repo=False)
 
         if not tasks_md.exists():
             _output_error(json_output, f"tasks.md not found: {tasks_md}")
@@ -1805,11 +1808,11 @@ def map_requirements(
             _output_error(json_output, "Could not locate project root")
             raise typer.Exit(1)
 
-        mission_slug = _find_mission_slug(explicit_mission=mission)
+        mission_slug = _find_mission_slug(explicit_mission=mission_run)
         main_repo_root, _ = _ensure_target_branch_checked_out(
             repo_root, mission_slug, json_output
         )
-        mission_dir = main_repo_root / "kitty-specs" / mission_slug
+        mission_dir = get_mission_dir(main_repo_root, mission_slug, main_repo=False)
 
         if not mission_dir.exists():
             _output_error(json_output, f"Mission directory not found: {mission_dir}")
@@ -1852,7 +1855,7 @@ def map_requirements(
             ref_list_parsed = [ref.strip() for ref in refs.split(",") if ref.strip()]
             new_mappings[wp.upper()] = [ref.upper() for ref in ref_list_parsed]
 
-        tasks_dir = mission_dir / "tasks"
+        tasks_dir = get_mission_tasks_dir(main_repo_root, mission_slug, main_repo=False)
         existing_wps: set[str] = set()
         if tasks_dir.exists():
             for wp_file in tasks_dir.glob("WP*.md"):
@@ -2066,7 +2069,8 @@ def map_requirements(
 @app.command(name="validate-workflow")
 def validate_workflow(
     task_id: Annotated[str, typer.Argument(help="Task ID (e.g., WP01)")],
-    mission_run: Annotated[Optional[str], typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
+    mission: Annotated[Optional[str], typer.Option("--mission", help="Mission slug (required in multi-mission repos)")] = None,
+    mission_run: Annotated[Optional[str], typer.Option("--mission-run", hidden=True, help="[Deprecated] Use --mission")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
 ) -> None:
     """Validate task metadata structure and workflow consistency.
@@ -2081,7 +2085,7 @@ def validate_workflow(
             _output_error(json_output, "Could not locate project root")
             raise typer.Exit(1)
 
-        mission_slug = _find_mission_slug(explicit_mission=mission)
+        mission_slug = _find_mission_slug(explicit_mission=mission or mission_run)
 
         # Ensure we operate on the target branch for this mission
         _ensure_target_branch_checked_out(repo_root, mission_slug, json_output)
@@ -2100,7 +2104,8 @@ def validate_workflow(
                 errors.append(f"Missing required field: {field}")
 
         # Get lane from event log (canonical source)
-        _vw_mission_dir = repo_root / "kitty-specs" / mission_slug
+        main_repo_root = get_main_repo_root(repo_root)
+        _vw_mission_dir = get_mission_dir(main_repo_root, mission_slug, main_repo=False)
         try:
             from specify_cli.status.store import read_events as _vw_read_events
             from specify_cli.status.reducer import reduce as _vw_reduce
@@ -2162,9 +2167,13 @@ def validate_workflow(
 
 @app.command(name="status")
 def status(
+    mission: Annotated[
+        Optional[str],
+        typer.Option("--mission", help="Mission slug (e.g., 012-documentation-mission). Required in multi-mission repos.")
+    ] = None,
     mission_run: Annotated[
         Optional[str],
-        typer.Option("--mission-run", "-f", help="Mission run slug (e.g., 012-documentation-mission). Required in multi-mission repos.")
+        typer.Option("--mission-run", hidden=True, help="[Deprecated] Use --mission")
     ] = None,
     json_output: Annotated[
         bool,
@@ -2202,19 +2211,19 @@ def status(
             raise typer.Exit(1)
 
         # Auto-detect or use provided mission slug
-        mission_slug = _find_mission_slug(explicit_mission=mission)
+        mission_slug = _find_mission_slug(explicit_mission=mission or mission_run)
 
         # Ensure we operate on the target branch for this mission
         main_repo_root, _ = _ensure_target_branch_checked_out(repo_root, mission_slug, json_output)
 
         # Locate mission directory
-        mission_dir = main_repo_root / "kitty-specs" / mission_slug
+        mission_dir = get_mission_dir(main_repo_root, mission_slug, main_repo=False)
 
         if not mission_dir.exists():
             console.print(f"[red]Error:[/red] Mission directory not found: {mission_dir}")
             raise typer.Exit(1)
 
-        tasks_dir = mission_dir / "tasks"
+        tasks_dir = get_mission_tasks_dir(main_repo_root, mission_slug, main_repo=False)
 
         if not tasks_dir.exists():
             console.print(f"[red]Error:[/red] Tasks directory not found: {tasks_dir}")
@@ -2488,7 +2497,8 @@ def status(
 @app.command(name="list-dependents")
 def list_dependents(
     wp_id: Annotated[str, typer.Argument(help="Work package ID (e.g., WP01)")],
-    mission_run: Annotated[Optional[str], typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
+    mission: Annotated[Optional[str], typer.Option("--mission", help="Mission slug (required in multi-mission repos)")] = None,
+    mission_run: Annotated[Optional[str], typer.Option("--mission-run", hidden=True, help="[Deprecated] Use --mission")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
 ) -> None:
     """Find all WPs that depend on a given WP (downstream dependents).
@@ -2508,9 +2518,9 @@ def list_dependents(
             _output_error(json_output, "Could not locate project root")
             raise typer.Exit(1)
 
-        mission_slug = _find_mission_slug(explicit_mission=mission)
+        mission_slug = _find_mission_slug(explicit_mission=mission or mission_run)
         main_repo_root, _ = _ensure_target_branch_checked_out(repo_root, mission_slug, json_output)
-        mission_dir = main_repo_root / "kitty-specs" / mission_slug
+        mission_dir = get_mission_dir(main_repo_root, mission_slug, main_repo=False)
 
         if not mission_dir.exists():
             _output_error(json_output, f"Mission directory not found: {mission_dir}")

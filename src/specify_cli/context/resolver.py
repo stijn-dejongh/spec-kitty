@@ -15,8 +15,9 @@ from pathlib import Path
 from ruamel.yaml import YAML
 from ulid import ULID
 
+from specify_cli.core.paths import get_mission_dir
 from specify_cli.context.errors import (
-    FeatureNotFoundError,
+    MissionNotFoundError,
     MissingArgumentError,
     MissingIdentityError,
     WorkPackageNotFoundError,
@@ -72,7 +73,7 @@ def _read_meta_json(mission_dir: Path) -> dict[str, str]:
     if not mission_id:
         msg = (
             f"Neither mission_id nor mission_slug found in {meta_path}. "
-            "The feature metadata is incomplete."
+            "The mission metadata is incomplete."
         )
         raise MissingIdentityError(msg)
 
@@ -136,7 +137,7 @@ def resolve_context(
 
     Args:
         wp_code: Work package display alias (e.g., "WP01").
-        mission_slug: Feature slug (e.g., "057-canonical-context-architecture-cleanup").
+        mission_slug: Mission slug (e.g., "057-canonical-context-architecture-cleanup").
         agent: Name of the agent creating this context.
         repo_root: Absolute path to the repository root.
 
@@ -146,7 +147,7 @@ def resolve_context(
     Raises:
         MissingArgumentError: If wp_code or mission_slug is empty.
         MissingIdentityError: If project_uuid or mission_id is not assigned.
-        FeatureNotFoundError: If the feature slug doesn't match a kitty-specs/ dir.
+        MissionNotFoundError: If the mission slug doesn't match a kitty-specs/ dir.
         WorkPackageNotFoundError: If the wp_code is not found in tasks/.
     """
     if not wp_code:
@@ -158,8 +159,8 @@ def resolve_context(
 
     if not mission_slug:
         msg = (
-            "mission_slug is required. Provide the feature slug "
-            "(e.g., --feature 057-canonical-context-architecture-cleanup). "
+            "mission_slug is required. Provide the mission slug "
+            "(e.g., --mission 057-canonical-context-architecture-cleanup). "
             "No scanning or auto-detection is performed."
         )
         raise MissingArgumentError(msg)
@@ -167,14 +168,14 @@ def resolve_context(
     # 1. Read project_uuid
     project_uuid = _read_project_uuid(repo_root)
 
-    # 2. Locate feature directory
-    mission_dir = repo_root / "kitty-specs" / mission_slug
+    # 2. Locate mission directory
+    mission_dir = get_mission_dir(repo_root, mission_slug)
     if not mission_dir.exists():
         msg = (
-            f"Feature directory not found: {mission_dir}. "
-            f"Check that '{mission_slug}' is the correct feature slug."
+            f"Mission directory not found: {mission_dir}. "
+            f"Check that '{mission_slug}' is the correct mission slug."
         )
-        raise FeatureNotFoundError(msg)
+        raise MissionNotFoundError(msg)
 
     # 3. Read meta.json
     meta = _read_meta_json(mission_dir)
@@ -253,7 +254,7 @@ def resolve_or_load(
     Args:
         token: Existing context token, or None.
         wp_code: Work package code (e.g., "WP01"), or None.
-        mission_slug: Feature slug, or None.
+        mission_slug: Mission slug, or None.
         agent: Agent name for new context creation.
         repo_root: Repository root path.
 
@@ -276,11 +277,11 @@ def resolve_or_load(
     if not wp_code:
         missing.append("--wp <WP_CODE>")
     if not mission_slug:
-        missing.append("--feature <FEATURE_SLUG>")
+        missing.append("--mission <MISSION_SLUG>")
 
     msg = (
         f"Missing required argument(s): {', '.join(missing)}. "
-        "Either provide a --context <token> or both --wp and --feature. "
+        "Either provide a --context <token> or both --wp and --mission. "
         "No scanning or auto-detection is performed."
     )
     raise MissingArgumentError(msg)

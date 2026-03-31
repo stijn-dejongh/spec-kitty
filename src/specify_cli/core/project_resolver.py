@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from rich.console import Console
+from specify_cli.core.paths import get_mission_dir
 
 ConsoleType = Console | None
 
@@ -81,18 +82,18 @@ def resolve_worktree_aware_mission_dir(
     for idx, part in enumerate(parts):
         if part == ".worktrees" and idx + 1 < len(parts) and parts[idx + 1] == mission_slug:
             worktree_root = Path(*parts[: idx + 2])
-            mission_dir = worktree_root / "kitty-specs" / mission_slug
+            mission_dir = get_mission_dir(worktree_root, mission_slug, main_repo=False)
             resolved_console.print(f"[green]✓[/green] Using worktree location: {mission_dir}")
             return mission_dir
 
     worktree_path = repo_root / ".worktrees" / mission_slug
     if worktree_path.exists():
-        mission_dir = worktree_path / "kitty-specs" / mission_slug
+        mission_dir = get_mission_dir(worktree_path, mission_slug, main_repo=False)
         resolved_console.print(f"[green]✓[/green] Found worktree, using: {mission_dir}")
         resolved_console.print(f"[yellow]Tip:[/yellow] Run commands from {worktree_path} for better isolation")
         return mission_dir
 
-    mission_dir = repo_root / "kitty-specs" / mission_slug
+    mission_dir = get_mission_dir(repo_root, mission_slug, main_repo=False)
     resolved_console.print(f"[yellow]⚠[/yellow] No worktree found, using root location: {mission_dir}")
     resolved_console.print(
         f"[yellow]Tip:[/yellow] Consider creating a worktree with: git worktree add .worktrees/{mission_slug} {mission_slug}"  # noqa: E501

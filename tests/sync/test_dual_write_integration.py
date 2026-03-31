@@ -1,7 +1,8 @@
-"""Integration tests for dual-write consistency (T075).
+"""Integration tests for canonical status consistency.
 
-Verifies that emit_status_transition keeps the event log (JSONL),
-materialized snapshot (status.json), and frontmatter views in sync.
+Verifies that emit_status_transition keeps the event log (JSONL) and
+materialized snapshot (status.json) in sync. Frontmatter lane writes are
+no longer part of the canonical pipeline.
 """
 
 from __future__ import annotations
@@ -68,12 +69,11 @@ def _read_wp_frontmatter_lane(mission_dir: Path, wp_id: str) -> str | None:
 
 # ── Tests ────────────────────────────────────────────────────────
 
-class TestDualWriteEventAndFrontmatterConsistent:
-    """T075: Verify event log, status.json, and frontmatter all agree."""
+class TestDualWriteEventAndSnapshotConsistent:
+    """Verify event log and status.json agree on current state."""
 
     def test_dual_write_event_and_frontmatter_consistent(self, tmp_path: Path):
-        """Emit planned->claimed, verify event in JSONL, status.json,
-        and frontmatter all agree."""
+        """Emit planned->claimed and verify canonical state artifacts agree."""
         mission_dir = _setup_mission_dir(tmp_path)
 
         event = emit_status_transition(
@@ -97,12 +97,12 @@ class TestDualWriteEventAndFrontmatterConsistent:
         assert snapshot["work_packages"]["WP01"]["lane"] == "claimed"
         assert snapshot["event_count"] == 1
 
-        # 3. Verify frontmatter updated
+        # 3. Frontmatter lane remains unchanged; the event log is authoritative.
         fm_lane = _read_wp_frontmatter_lane(mission_dir, "WP01")
-        assert fm_lane == "claimed"
+        assert fm_lane == "planned"
 
 class TestDualWriteMultipleTransitions:
-    """T075: Multiple transitions maintain consistency."""
+    """Multiple transitions maintain canonical consistency."""
 
     def test_dual_write_multiple_transitions(self, tmp_path: Path):
         """Emit planned->claimed->in_progress->for_review,
@@ -150,9 +150,9 @@ class TestDualWriteMultipleTransitions:
         assert snapshot["work_packages"]["WP01"]["lane"] == "for_review"
         assert snapshot["event_count"] == 3
 
-        # Verify frontmatter
+        # Frontmatter lane remains static; canonical status comes from the log.
         fm_lane = _read_wp_frontmatter_lane(mission_dir, "WP01")
-        assert fm_lane == "for_review"
+        assert fm_lane == "planned"
 
 class TestDualWriteAliasResolvedEverywhere:
     """T075: Alias 'doing' is resolved to 'in_progress' everywhere."""
@@ -227,6 +227,7 @@ class TestDualWriteForceTransitionRecorded:
             mission_dir=mission_dir, mission_slug=slug,
             wp_id="WP01", to_lane="in_review", actor="reviewer-1",
             repo_root=repo_root,
+            review_ref="workflow-review-claim",
         )
         emit_status_transition(
             mission_dir=mission_dir, mission_slug=slug,

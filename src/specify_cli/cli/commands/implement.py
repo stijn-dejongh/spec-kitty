@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import functools
 import json
+import re
 import subprocess
 from datetime import datetime, UTC
 from pathlib import Path
@@ -31,6 +32,8 @@ from specify_cli.workspace_context import WorkspaceContext, save_context
 from specify_cli.core.multi_parent_merge import create_multi_parent_base
 from specify_cli.core.context_validation import require_main_repo
 from specify_cli.core.paths import (
+    get_mission_dir,
+    get_mission_tasks_dir,
     get_mission_target_branch,
     require_explicit_mission,
 )
@@ -140,7 +143,7 @@ def find_wp_file(repo_root: Path, mission_slug: str, wp_id: str) -> Path:
     Raises:
         FileNotFoundError: If WP file not found
     """
-    tasks_dir = repo_root / "kitty-specs" / mission_slug / "tasks"
+    tasks_dir = get_mission_tasks_dir(repo_root, mission_slug, main_repo=False)
     if not tasks_dir.exists():
         raise FileNotFoundError(f"Tasks directory not found: {tasks_dir}")
 
@@ -351,7 +354,7 @@ def check_for_dependents(repo_root: Path, mission_slug: str, wp_id: str) -> None
         mission_slug: Mission slug (e.g., "010-workspace-per-wp")
         wp_id: Work package ID (e.g., "WP01")
     """
-    mission_dir = repo_root / "kitty-specs" / mission_slug
+    mission_dir = get_mission_dir(repo_root, mission_slug, main_repo=False)
 
     # Build dependency graph
     graph = build_dependency_graph(mission_dir)
@@ -367,7 +370,7 @@ def check_for_dependents(repo_root: Path, mission_slug: str, wp_id: str) -> None
         try:
             dep_file = find_wp_file(repo_root, mission_slug, dep_id)
             from specify_cli.status.lane_reader import get_wp_lane
-            dep_mission_dir = repo_root / "kitty-specs" / mission_slug
+            dep_mission_dir = get_mission_dir(repo_root, mission_slug, main_repo=False)
             lane = get_wp_lane(dep_mission_dir, dep_id)
 
             if lane in ["planned", "claimed", "in_progress", "doing", "for_review"]:
@@ -530,6 +533,7 @@ def implement(
     wp_id: str = typer.Argument(..., help="Work package ID (e.g., WP01)"),
     base: str = typer.Option(None, "--base", help="Base WP to branch from (e.g., WP01)"),
     mission: str = typer.Option(None, "--mission", help="Mission slug (e.g., 001-user-authentication)"),
+    mission_run: str | None = typer.Option(None, "--mission-run", hidden=True, help="Compatibility alias for --mission"),
     force: bool = typer.Option(False, "--force", help="Force auto-merge even when dependencies are done"),
     auto_commit: Annotated[
         bool | None,
@@ -572,7 +576,7 @@ def implement(
         # Resolve auto_commit: CLI flag overrides project config
         if auto_commit is None:
             auto_commit = get_auto_commit_default(repo_root)
-        mission_number, mission_slug = detect_mission_context(mission)
+        mission_number, mission_slug = detect_mission_context(mission_run or mission)
         tracker.complete("detect", f"Mission: {mission_slug}")
     except (TaskCliError, typer.Exit) as exc:
         tracker.error("detect", str(exc) if isinstance(exc, TaskCliError) else "failed")
@@ -592,7 +596,7 @@ def implement(
             # Check if all dependencies are done - suggest merge-first workflow
             from specify_cli.core.dependency_resolver import check_dependency_status
 
-            mission_dir = repo_root / "kitty-specs" / mission_slug
+            mission_dir = get_mission_dir(repo_root, mission_slug, main_repo=False)
             dep_status = check_dependency_status(mission_dir, wp_id, declared_deps)
 
             if dep_status.should_suggest_merge_first and not force:
@@ -624,7 +628,7 @@ def implement(
 
         # Ensure mission_dir is set (may not be set if we took the single-dep or --base path above)
         if "mission_dir" not in dir():
-            mission_dir = repo_root / "kitty-specs" / mission_slug
+            mission_dir = get_mission_dir(repo_root, mission_slug, main_repo=False)
 
         # If --base provided, validate it matches declared dependencies
         if base:
@@ -635,7 +639,7 @@ def implement(
 
             # Check if base is merged (ADR-18: Auto-detect merged dependencies)
             try:
-                locate_work_package(repo_root, mission_slug, base)  # validate it exists
+                find_wp_file(repo_root, mission_slug, base)
                 base_lane = _get_wp_lane_from_event_log(mission_dir, base)
             except Exception:
                 # Base WP file not found - error
@@ -682,7 +686,7 @@ def implement(
     if base is None:  # Only for first WP in mission (branches from main)
         try:
             # Detect VCS backend early to use appropriate commands
-            mission_dir = repo_root / "kitty-specs" / mission_slug
+            mission_dir = get_mission_dir(repo_root, mission_slug, main_repo=False)
             if not mission_dir.exists():
                 console.print(f"\n[red]Error:[/red] Mission directory not found: {mission_dir}")
                 console.print("Run /spec-kitty.specify first")
@@ -768,7 +772,7 @@ def implement(
 
         # Ensure VCS is locked in meta.json and get the backend to use
         # (do this early so we can use VCS for all operations)
-        mission_dir = repo_root / "kitty-specs" / mission_slug
+        mission_dir = get_mission_dir(repo_root, mission_slug, main_repo=False)
         vcs_backend = _ensure_vcs_in_meta(mission_dir, repo_root)
 
         # Get VCS implementation
@@ -887,7 +891,7 @@ def implement(
         else:
             # Has dependencies - check if base is merged or in-progress
             try:
-                locate_work_package(repo_root, mission_slug, base)  # validate it exists
+                find_wp_file(repo_root, mission_slug, base)
                 base_lane = _get_wp_lane_from_event_log(mission_dir, base)
             except Exception as e:
                 # Base WP file not found

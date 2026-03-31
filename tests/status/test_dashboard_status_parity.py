@@ -10,11 +10,11 @@ from specify_cli.status.store import append_event
 pytestmark = pytest.mark.fast
 
 
-def _write_event(feature_dir: Path, wp_id: str, to_lane: str, from_lane: str = "planned") -> None:
-    """Append a single status event to the feature's event log."""
+def _write_event(mission_dir: Path, wp_id: str, to_lane: str, from_lane: str = "planned") -> None:
+    """Append a single status event to the mission event log."""
     event = StatusEvent(
         event_id=f"01TEST{wp_id}{to_lane.upper()[:4]}",
-        feature_slug=feature_dir.name,
+        mission_slug=mission_dir.name,
         wp_id=wp_id,
         from_lane=Lane(from_lane),
         to_lane=Lane(to_lane),
@@ -23,7 +23,7 @@ def _write_event(feature_dir: Path, wp_id: str, to_lane: str, from_lane: str = "
         force=False,
         execution_mode="worktree",
     )
-    append_event(feature_dir, event)
+    append_event(mission_dir, event)
 
 
 def test_dashboard_cli_status_parity(tmp_path: Path):
@@ -65,8 +65,8 @@ This WP has an explicit lane.
     )
 
     # Bootstrap event log: WP01 planned (bootstrap), WP02 in_progress
-    _write_event(feature_dir, "WP01", "planned")
-    _write_event(feature_dir, "WP02", "in_progress")
+    _write_event(mission_dir, "WP01", "planned")
+    _write_event(mission_dir, "WP02", "in_progress")
 
     # Get results from both systems
     dashboard_lanes = scan_mission_kanban(tmp_path, "001-test-mission")
@@ -106,7 +106,7 @@ Windows BOM test.
     )
 
     # Bootstrap event log with planned state
-    _write_event(feature_dir, "WP01", "planned")
+    _write_event(mission_dir, "WP01", "planned")
 
     # Dashboard should handle it
     dashboard_lanes = scan_mission_kanban(tmp_path, "002-test-bom")

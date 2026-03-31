@@ -35,6 +35,7 @@ from spec_kitty_runtime import (
 from spec_kitty_runtime.schema import ActorIdentity, load_mission_template_file
 
 from specify_cli.core.atomic import atomic_write
+from specify_cli.core.paths import get_mission_dir
 from specify_cli.mission import get_mission_key
 from specify_cli.status.transitions import resolve_lane_alias
 from specify_cli.next.decision import (
@@ -390,7 +391,7 @@ def decide_next_via_runtime(
     4. For non-WP steps: call next_step(run_ref, agent, result) directly
     5. Map NextDecision -> Decision (preserving JSON contract)
     """
-    mission_dir = repo_root / "kitty-specs" / mission_slug
+    mission_dir = get_mission_dir(repo_root, mission_slug)
     now = datetime.now(UTC).isoformat()
 
     if not mission_dir.is_dir():
@@ -526,7 +527,7 @@ def answer_decision_via_runtime(
     repo_root: Path,
 ) -> None:
     """Answer a pending decision."""
-    mission_key = get_mission_key(repo_root / "kitty-specs" / mission_slug)
+    mission_key = get_mission_key(get_mission_dir(repo_root, mission_slug))
     run_ref = get_or_start_run(mission_slug, repo_root, mission_key)
     actor = ActorIdentity(actor_id=agent, actor_type="llm")
     runtime_provide_decision_answer(

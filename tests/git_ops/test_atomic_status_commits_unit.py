@@ -441,7 +441,7 @@ Test content.
         (mission_dir / "meta.json").write_text(json.dumps(meta))
         _append_status_event(
             mission_dir,
-            feature_slug="017-test-feature",
+            mission_slug="017-test-mission",
             wp_id="WP01",
             from_lane=Lane.PLANNED,
             to_lane=Lane.IN_PROGRESS,

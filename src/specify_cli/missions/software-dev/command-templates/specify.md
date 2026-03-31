@@ -11,14 +11,14 @@
 cd /path/to/project/root  # Your project root checkout
 
 # All planning artifacts are created in the project root and committed:
-# - kitty-specs/###-feature/spec.md → Created in project root
+# - kitty-specs/###-mission/spec.md → Created in project root
 # - Committed to target branch (from create-feature JSON: target_branch/base_branch)
 # - NO worktrees created
 ```
 
 **Worktrees are created later** during `/spec-kitty.implement`, not during planning.
 
-**In repos with multiple features, always pass `--feature <slug>` to every spec-kitty command.**
+**In repos with multiple missions, always pass the canonical mission selector expected by the command (`--mission`, `--mission-run`, or `--mission-type`) instead of relying on auto-detection.**
 
 ## User Input
 
@@ -138,16 +138,16 @@ Store the final mission selection in your notes and include it in the spec outpu
 
 **Planning happens in the project root checkout - NO worktree created!**
 
-1. Creates `kitty-specs/###-feature/spec.md` directly in project root
+1. Creates `kitty-specs/###-mission/spec.md` directly in project root
 2. Automatically commits to target branch
 3. No worktree created during specify
 
-**Worktrees created later**: Use `spec-kitty implement WP##` to create a workspace for each work package. Worktrees are created later during implement (e.g., `.worktrees/###-feature-WP##`).
+**Worktrees created later**: Use `spec-kitty implement WP##` to create a workspace for each work package. Worktrees are created later during implement (e.g., `.worktrees/###-mission-WP##`).
 
 ## Location
 
 - Work in: **Project root checkout** (not a worktree)
-- Creates: `kitty-specs/###-feature/spec.md`
+- Creates: `kitty-specs/###-mission/spec.md`
 - Commits to: target branch (from `create-feature --json` → `target_branch`)
 
 ## Outline
@@ -156,7 +156,7 @@ Store the final mission selection in your notes and include it in the spec outpu
 
 - Summarize the agreed intent into a short, descriptive title (aim for ≤7 words; avoid filler like "feature" or "thing").
 - Read that title back during the Intent Summary and revise it if the user requests changes.
-- Use the confirmed title to derive the kebab-case feature slug for the create-feature command.
+- Use the confirmed title to derive the kebab-case mission slug for the create-feature command.
 
 The text the user typed after `/spec-kitty.specify` in the triggering message **is** the initial feature description. Capture it verbatim, but treat it only as a starting point for discovery—not the final truth. Your job is to interrogate the request, surface gaps, and co-create a complete specification with the user.
 

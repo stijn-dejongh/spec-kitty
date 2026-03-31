@@ -27,6 +27,12 @@ for _ in range(6):
             sys.path.insert(0, str(_src))
         break
 
+_MISSION_EXPORTS = {
+    "collect_feature_summary": "collect_mission_summary",
+    "detect_feature_slug": "detect_mission_slug",
+    "normalize_feature_encoding": "normalize_mission_encoding",
+}
+
 _EXPORT_NAMES = (
     "AcceptanceError",
     "AcceptanceMode",
@@ -44,14 +50,24 @@ _EXPORT_NAMES = (
 
 def _load_acceptance_api():
     core = importlib.import_module("specify_cli.acceptance")
-    if all(hasattr(core, name) for name in _EXPORT_NAMES):
-        return {name: getattr(core, name) for name in _EXPORT_NAMES}
+    if all(hasattr(core, _MISSION_EXPORTS.get(name, name)) for name in _EXPORT_NAMES):
+        return {
+            name: getattr(core, _MISSION_EXPORTS.get(name, name))
+            for name in _EXPORT_NAMES
+        }
 
     legacy = importlib.import_module("specify_cli.scripts.tasks.acceptance_support")
-    return {name: getattr(legacy, name) for name in _EXPORT_NAMES}
+    return {
+        name: getattr(legacy, _MISSION_EXPORTS.get(name, name))
+        for name in _EXPORT_NAMES
+    }
 
 
 globals().update(_load_acceptance_api())
+
+collect_mission_summary = globals()["collect_feature_summary"]
+detect_mission_slug = globals()["detect_feature_slug"]
+normalize_mission_encoding = globals()["normalize_feature_encoding"]
 
 # Re-export task_helpers utilities that callers historically accessed
 # through this module (e.g. acc.run_git in tests).
@@ -66,7 +82,10 @@ __all__ = [
     "WorkPackageState",
     "choose_mode",
     "collect_feature_summary",
+    "collect_mission_summary",
     "detect_feature_slug",
+    "detect_mission_slug",
     "normalize_feature_encoding",
+    "normalize_mission_encoding",
     "perform_acceptance",
 ]

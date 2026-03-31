@@ -18,7 +18,7 @@ Example:
 
     @require_worktree
     def some_workspace_command():
-        # This function can only run from inside a worktree
+        # This function can only run from inside a mission worktree
         pass
 """
 
@@ -170,7 +170,7 @@ def format_location_error(
             f"[yellow]Current location:[/yellow] Main repository\n"
             f"[yellow]Required location:[/yellow] Inside a worktree\n\n"
             f"[bold]Change to a worktree:[/bold]\n"
-            f"  cd .worktrees/###-feature-WP##/\n\n"
+            f"  cd .worktrees/###-mission-WP##/\n\n"
             f"[dim]This command operates on workspace files and must run from inside a worktree.[/dim]"
         )
 

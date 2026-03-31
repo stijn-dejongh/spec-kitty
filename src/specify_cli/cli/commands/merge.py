@@ -19,7 +19,11 @@ from specify_cli.core.git_preflight import (
     build_git_preflight_failure_payload,
     run_git_preflight,
 )
-from specify_cli.core.paths import get_main_repo_root, get_mission_target_branch
+from specify_cli.core.paths import (
+    get_main_repo_root,
+    get_mission_dir,
+    get_mission_target_branch,
+)
 from specify_cli.core.git_ops import has_remote, has_tracking_branch, run_command
 from specify_cli.core.vcs import get_vcs
 from specify_cli.core.context_validation import require_main_repo
@@ -51,7 +55,7 @@ def _mark_wp_merged_done(
     target_branch: str,
 ) -> None:
     """Record merge-complete state for a merged WP using canonical status events."""
-    mission_dir = repo_root / "kitty-specs" / mission_slug
+    mission_dir = get_mission_dir(repo_root, mission_slug, main_repo=False)
     wp_path = None
     for candidate in sorted((mission_dir / "tasks").glob(f"{wp_id}*.md")):
         wp_path = candidate
@@ -204,7 +208,7 @@ def _order_wp_workspaces(
     wp_workspaces: list[tuple[Path, str, str]],
 ) -> list[tuple[Path, str, str]]:
     """Prefer dependency/topological order, then deterministic WP sorting."""
-    mission_dir = repo_root / "kitty-specs" / mission_slug
+    mission_dir = get_mission_dir(repo_root, mission_slug, main_repo=False)
     if mission_dir.exists():
         try:
             return get_merge_order(wp_workspaces, mission_dir)
@@ -978,7 +982,7 @@ def merge(
                 ["git", "rev-parse", "--abbrev-ref", "HEAD"], capture=True
             )
             _inferred_slug = extract_mission_slug(_current_branch)
-            _mission_dir = repo_root / "kitty-specs" / _inferred_slug
+            _mission_dir = get_mission_dir(repo_root, _inferred_slug, main_repo=False)
             if re.match(r"^\d{3}-.+$", _inferred_slug) and (_mission_dir / "meta.json").exists():
                 resolved_mission = _inferred_slug
                 target_branch = get_mission_target_branch(repo_root, resolved_mission)

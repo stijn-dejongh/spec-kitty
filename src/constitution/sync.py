@@ -16,6 +16,7 @@ from ruamel.yaml import YAML
 
 from constitution.extractor import Extractor, write_extraction_result
 from constitution.hasher import is_stale
+from kernel.paths import get_project_constitution_dir, get_project_constitution_path
 from constitution.schemas import (
     DirectivesConfig,
     GovernanceConfig,
@@ -147,7 +148,7 @@ def load_governance_config(repo_root: Path) -> GovernanceConfig:
     Returns:
         GovernanceConfig instance (empty if file missing)
     """
-    constitution_dir = repo_root / ".kittify" / "constitution"
+    constitution_dir = get_project_constitution_dir(repo_root)
     governance_path = constitution_dir / "governance.yaml"
 
     if not governance_path.exists():
@@ -155,7 +156,7 @@ def load_governance_config(repo_root: Path) -> GovernanceConfig:
         return GovernanceConfig()
 
     # Check staleness
-    constitution_path = constitution_dir / "constitution.md"
+    constitution_path = get_project_constitution_path(repo_root)
     metadata_path = constitution_dir / "metadata.yaml"
     if constitution_path.exists() and metadata_path.exists():
         stale, _, _ = is_stale(constitution_path, metadata_path)
@@ -180,14 +181,14 @@ def load_directives_config(repo_root: Path) -> DirectivesConfig:
     Returns:
         DirectivesConfig instance (empty if file missing)
     """
-    constitution_dir = repo_root / ".kittify" / "constitution"
+    constitution_dir = get_project_constitution_dir(repo_root)
     directives_path = constitution_dir / "directives.yaml"
 
     if not directives_path.exists():
         logger.warning("directives.yaml not found. Run 'spec-kitty constitution sync'.")
         return DirectivesConfig()
 
-    constitution_path = constitution_dir / "constitution.md"
+    constitution_path = get_project_constitution_path(repo_root)
     metadata_path = constitution_dir / "metadata.yaml"
     if constitution_path.exists() and metadata_path.exists():
         stale, _, _ = is_stale(constitution_path, metadata_path)

@@ -7,12 +7,16 @@ class ContextResolutionError(Exception):
     """Base class for context resolution failures."""
 
 
-class FeatureNotFoundError(ContextResolutionError):
-    """Feature slug does not match any kitty-specs/ directory."""
+class MissionNotFoundError(ContextResolutionError):
+    """Mission slug does not match any kitty-specs/ directory."""
+
+
+# Backward-compatible alias during the mission-first cutover.
+FeatureNotFoundError = MissionNotFoundError
 
 
 class WorkPackageNotFoundError(ContextResolutionError):
-    """wp_code not found in the feature's tasks/ directory."""
+    """wp_code not found in the mission's tasks/ directory."""
 
 
 class MissingArgumentError(ContextResolutionError):

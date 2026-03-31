@@ -26,6 +26,8 @@ from specify_cli.shims.registry import PROMPT_DRIVEN_COMMANDS
 # ---------------------------------------------------------------------------
 
 _WP_CODE_PATTERN = re.compile(r"\bWP\d{2,}\b", re.IGNORECASE)
+_MISSION_FLAG_PATTERN = re.compile(r"--mission\s+(\S+)")
+_MISSION_RUN_FLAG_PATTERN = re.compile(r"--mission-run\s+(\S+)")
 _FEATURE_FLAG_PATTERN = re.compile(r"--feature\s+(\S+)")
 
 
@@ -34,7 +36,8 @@ def _parse_raw_args(raw_args: str) -> dict[str, str | None]:
 
     Looks for:
     - A ``WP##`` code (first match wins).
-    - A ``--feature <slug>`` value.
+    - A canonical mission selector (``--mission`` / ``--mission-run``).
+    - A legacy ``--feature <slug>`` value when compatibility is still in play.
 
     All other content is silently ignored so that new flags added to
     agent slash commands don't break existing dispatch logic.
@@ -49,8 +52,16 @@ def _parse_raw_args(raw_args: str) -> dict[str, str | None]:
     wp_match = _WP_CODE_PATTERN.search(raw_args)
     wp_code = wp_match.group(0).upper() if wp_match else None
 
-    feature_match = _FEATURE_FLAG_PATTERN.search(raw_args)
-    mission_slug = feature_match.group(1) if feature_match else None
+    mission_match = _MISSION_FLAG_PATTERN.search(raw_args)
+    if mission_match:
+        mission_slug = mission_match.group(1)
+    else:
+        mission_run_match = _MISSION_RUN_FLAG_PATTERN.search(raw_args)
+        if mission_run_match:
+            mission_slug = mission_run_match.group(1)
+        else:
+            feature_match = _FEATURE_FLAG_PATTERN.search(raw_args)
+            mission_slug = feature_match.group(1) if feature_match else None
 
     return {"wp_code": wp_code, "mission_slug": mission_slug}
 

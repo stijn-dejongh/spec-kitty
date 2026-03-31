@@ -406,7 +406,12 @@ class TestReducerDeterminism:
             snap = reduce([event_original, event_duplicate])
 
         assert snap.event_count == 1
-        assert snap.work_packages["WP01"]["actor"] == "original-actor"
+        assert snap.work_packages["WP01"]["actor"] == {
+            "tool": "original-actor",
+            "model": "unknown",
+            "profile": "unknown",
+            "role": "unknown",
+        }
 
     def test_json_serialization_byte_identical(self):
         """materialize_to_json produces byte-identical output for same snapshot."""

@@ -69,6 +69,15 @@ def _valid_policy_json() -> str:
         }
     )
 
+
+def _parse_output_json(output: str) -> dict:
+    """Parse the last JSON object emitted by the command output."""
+    for line in reversed(output.splitlines()):
+        line = line.strip()
+        if line.startswith("{"):
+            return json.loads(line)
+    raise AssertionError(f"No JSON object found in output:\n{output}")
+
 def _emit_event(mission_dir: Path, wp_id: str, from_lane: str, to_lane: str, actor: str = "test") -> None:
     """Helper to emit a status event directly."""
     from specify_cli.status.emit import emit_status_transition
@@ -102,7 +111,6 @@ def _emit_planned_to_done(mission_dir: Path, mission_slug: str, wp_id: str, acto
     emit_status_transition(mission_dir, mission_slug, wp_id, "claimed", actor)
     emit_status_transition(mission_dir, mission_slug, wp_id, "in_progress", actor)
     emit_status_transition(mission_dir, mission_slug, wp_id, "for_review", actor)
-    emit_status_transition(mission_dir, mission_slug, wp_id, "in_review", actor)
     emit_status_transition(
         mission_dir, mission_slug, wp_id, "approved", actor,
         evidence=_approval_evidence,
@@ -118,7 +126,7 @@ class TestContractVersion:
     def test_envelope_shape_and_version(self, tmp_path):
         result = runner.invoke(app, ["contract-version"])
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is True
         assert data["error_code"] is None
         assert data["data"]["api_version"] == CONTRACT_VERSION
@@ -143,7 +151,7 @@ class TestMissionState:
             result = runner.invoke(app, ["mission-state", "--mission", mission_slug])
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is True
         assert data["data"]["mission_slug"] == mission_slug
         wps = {wp["wp_id"]: wp for wp in data["data"]["work_packages"]}
@@ -161,7 +169,7 @@ class TestMissionState:
             result = runner.invoke(app, ["mission-state", "--mission", "nonexistent-mission"])
 
         assert result.exit_code == 1
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is False
         assert data["error_code"] == "MISSION_NOT_FOUND"
 
@@ -194,7 +202,7 @@ class TestListReady:
             result = runner.invoke(app, ["list-ready", "--mission", mission_slug])
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is True
         ready = {wp["wp_id"] for wp in data["data"]["ready_work_packages"]}
         # Both WP01 and WP02 have no deps, so both should be ready
@@ -216,7 +224,7 @@ class TestListReady:
             result = runner.invoke(app, ["list-ready", "--mission", mission_slug])
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         ready_ids = {wp["wp_id"] for wp in data["data"]["ready_work_packages"]}
         assert "WP01" not in ready_ids
         assert "WP02" in ready_ids
@@ -251,7 +259,7 @@ class TestStartImplementation:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["error_code"] == "POLICY_METADATA_REQUIRED"
 
     def test_planned_wp_composite_transition(self, tmp_path):
@@ -274,7 +282,7 @@ class TestStartImplementation:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is True
         assert data["data"]["from_lane"] == "planned"
         assert data["data"]["to_lane"] == "in_progress"
@@ -306,7 +314,7 @@ class TestStartImplementation:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is True
         assert data["data"]["no_op"] is True
 
@@ -334,7 +342,7 @@ class TestStartImplementation:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["error_code"] == "WP_ALREADY_CLAIMED"
 
 # ── start-review ──────────────────────────────────────────────────
@@ -358,7 +366,7 @@ class TestStartReview:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["error_code"] == "TRANSITION_REJECTED"
 
     def test_valid_start_review(self, tmp_path):
@@ -388,7 +396,7 @@ class TestStartReview:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is True
         assert data["data"]["to_lane"] == "in_progress"
         assert data["data"]["policy_metadata_recorded"] is True
@@ -417,7 +425,7 @@ class TestTransition:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["error_code"] == "TRANSITION_REJECTED"
 
     def test_terminal_transition_no_policy_required(self, tmp_path):
@@ -441,7 +449,7 @@ class TestTransition:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is True
         assert data["data"]["to_lane"] == "canceled"
         assert data["data"]["policy_metadata_recorded"] is False
@@ -467,7 +475,7 @@ class TestTransition:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["error_code"] == "POLICY_METADATA_REQUIRED"
 
 # ── append-history ────────────────────────────────────────────────
@@ -496,7 +504,7 @@ class TestAppendHistory:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is True
         assert data["data"]["history_entry_id"].startswith("hist-")
         assert data["data"]["wp_id"] == "WP01"
@@ -519,7 +527,7 @@ class TestAppendHistory:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["error_code"] == "WP_NOT_FOUND"
 
 # ── accept-mission ────────────────────────────────────────────────
@@ -547,7 +555,7 @@ class TestAcceptMission:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is True
         assert data["data"]["accepted"] is True
 
@@ -577,7 +585,7 @@ class TestAcceptMission:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["error_code"] == "MISSION_NOT_READY"
         assert "WP02" in data["data"]["incomplete_wps"]
 
@@ -612,7 +620,7 @@ class TestMergeMission:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["error_code"] == "PREFLIGHT_FAILED"
         assert "Missing worktree" in data["data"]["errors"][0]
 
@@ -645,7 +653,7 @@ class TestMergeMission:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is True
         assert data["data"]["merged"] is True
         assert data["data"]["target_branch"] == "main"
@@ -680,7 +688,7 @@ class TestMergeMission:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is True
         assert data["data"]["strategy"] == "rebase"
 
@@ -703,7 +711,7 @@ class TestMergeMission:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["error_code"] == "UNSUPPORTED_STRATEGY"
         assert data["data"]["strategy"] == "octopus"
         assert "merge" in data["data"]["supported"]
@@ -719,7 +727,7 @@ class TestContractVersionMismatch:
             ["contract-version", "--provider-version", MIN_PROVIDER_VERSION],
         )
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is True
         assert data["data"]["api_version"] is not None
 
@@ -729,7 +737,7 @@ class TestContractVersionMismatch:
             ["contract-version", "--provider-version", "0.0.1"],
         )
         assert result.exit_code == 1
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["error_code"] == "CONTRACT_VERSION_MISMATCH"
         assert "provider_version" in data["data"]
         assert "min_supported_provider_version" in data["data"]
@@ -740,7 +748,7 @@ class TestContractVersionMismatch:
             ["contract-version", "--provider-version", "not-a-version"],
         )
         assert result.exit_code == 1
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["error_code"] == "CONTRACT_VERSION_MISMATCH"
 
 # ── WP_NOT_FOUND for state-mutating commands ──────────────────────
@@ -764,7 +772,7 @@ class TestWPNotFound:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["error_code"] == "WP_NOT_FOUND"
 
     def test_start_review_ghost_wp_rejected(self, tmp_path):
@@ -786,7 +794,7 @@ class TestWPNotFound:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["error_code"] == "WP_NOT_FOUND"
 
     def test_transition_ghost_wp_rejected(self, tmp_path):
@@ -807,7 +815,7 @@ class TestWPNotFound:
             )
 
         assert result.exit_code == 1
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["error_code"] == "WP_NOT_FOUND"
 
 # ── mission-state with no events ──────────────────────────────────
@@ -826,7 +834,7 @@ class TestMissionStateNoEvents:
             result = runner.invoke(app, ["mission-state", "--mission", mission_slug])
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is True
         wps = {wp["wp_id"]: wp for wp in data["data"]["work_packages"]}
         assert "WP01" in wps
@@ -885,7 +893,7 @@ class TestSuffixedWPFilenames:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is True
         assert data["data"]["wp_id"] == "WP07"
         # prompt_path must point to the real (suffixed) file
@@ -915,7 +923,7 @@ class TestSuffixedWPFilenames:
             )
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is True
         assert data["data"]["wp_id"] == "WP07"
         assert data["data"]["to_lane"] == "canceled"
@@ -930,7 +938,7 @@ class TestSuffixedWPFilenames:
             result = runner.invoke(app, ["mission-state", "--mission", "040-test-mission"])
 
         assert result.exit_code == 0, result.output
-        data = json.loads(result.output.splitlines()[0])
+        data = _parse_output_json(result.output)
         assert data["success"] is True
         wp_ids = {wp["wp_id"] for wp in data["data"]["work_packages"]}
 

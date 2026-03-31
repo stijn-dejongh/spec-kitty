@@ -98,15 +98,15 @@ def stage_update(
         return wp.path
 
     wp_id = wp.work_package_id or wp.path.stem
-    feature_dir = wp.path.parent.parent
-    from_lane = _derive_current_lane(feature_dir, wp_id)
+    mission_dir = wp.path.parent.parent
+    from_lane = _derive_current_lane(mission_dir, wp_id)
 
-    feature_slug = feature_dir.name
+    mission_slug = mission_dir.name
     canonical_from = resolve_lane_alias(from_lane)
     canonical_to = resolve_lane_alias(target_lane)
     event = StatusEvent(
         event_id=_generate_ulid(),
-        feature_slug=feature_slug,
+        mission_slug=mission_slug,
         wp_id=wp_id,
         from_lane=Lane(canonical_from),
         to_lane=Lane(canonical_to),
@@ -126,12 +126,12 @@ def stage_update(
     new_content = build_document(updated_frontmatter, new_body, wp.padding)
     wp.frontmatter = updated_frontmatter
     wp.path.write_text(new_content, encoding="utf-8")
-    append_event(feature_dir, event)
-    _materialize(feature_dir)
+    append_event(mission_dir, event)
+    _materialize(mission_dir)
 
     run_git(["add", str(wp.path.relative_to(repo_root))], cwd=repo_root, check=True)
-    events_path = feature_dir / "status.events.jsonl"
-    status_path = feature_dir / "status.json"
+    events_path = mission_dir / "status.events.jsonl"
+    status_path = mission_dir / "status.json"
     for p in (events_path, status_path):
         if p.exists():
             run_git(["add", str(p.relative_to(repo_root))], cwd=repo_root, check=True)

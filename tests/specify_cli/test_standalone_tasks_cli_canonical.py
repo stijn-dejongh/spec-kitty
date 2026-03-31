@@ -39,8 +39,8 @@ def _init_repo(repo: Path) -> None:
 
 
 def _build_feature(repo: Path, slug: str = "060-standalone-test", *, with_events: bool = True) -> Path:
-    feature_dir = repo / "kitty-specs" / slug
-    tasks_dir = feature_dir / "tasks"
+    mission_dir = repo / "kitty-specs" / slug
+    tasks_dir = mission_dir / "tasks"
     tasks_dir.mkdir(parents=True)
     (tasks_dir / "WP01-test.md").write_text(
         "---\n"
@@ -58,7 +58,7 @@ def _build_feature(repo: Path, slug: str = "060-standalone-test", *, with_events
     if with_events:
         event = StatusEvent(
             event_id="01TESTSTANDALONEDONE",
-            feature_slug=slug,
+            mission_slug=slug,
             wp_id="WP01",
             from_lane=Lane.PLANNED,
             to_lane=Lane.DONE,
@@ -67,10 +67,10 @@ def _build_feature(repo: Path, slug: str = "060-standalone-test", *, with_events
             force=True,
             execution_mode="direct_repo",
         )
-        append_event(feature_dir, event)
-        materialize(feature_dir)
+        append_event(mission_dir, event)
+        materialize(mission_dir)
 
-    return feature_dir
+    return mission_dir
 
 
 def test_repo_root_tasks_cli_list_uses_canonical_status(tmp_path: Path, isolated_env: dict[str, str]) -> None:
@@ -134,7 +134,7 @@ def test_src_task_helpers_work_package_lane_reads_canonical_status(
     wp_path = feature_dir / "tasks" / "WP01-test.md"
     frontmatter, body, padding = task_helpers.split_frontmatter(wp_path.read_text(encoding="utf-8"))
     wp = task_helpers.WorkPackage(
-        feature=feature_dir.name,
+        mission_slug=feature_dir.name,
         path=wp_path,
         current_lane="done",
         relative_subpath=Path("WP01-test.md"),
@@ -174,7 +174,7 @@ def test_src_tasks_cli_stage_update_writes_status_artifacts(
     wp_path = feature_dir / "tasks" / "WP01-test.md"
     frontmatter, body, padding = task_helpers.split_frontmatter(wp_path.read_text(encoding="utf-8"))
     wp = task_helpers.WorkPackage(
-        feature=feature_dir.name,
+        mission_slug=feature_dir.name,
         path=wp_path,
         current_lane="planned",
         relative_subpath=Path("WP01-test.md"),
@@ -238,7 +238,7 @@ def test_src_tasks_cli_rollback_uses_canonical_event_history(
         feature_dir,
         StatusEvent(
             event_id="01TESTROLLBACKPLANNED000001",
-            feature_slug=feature_dir.name,
+            mission_slug=feature_dir.name,
             wp_id="WP01",
             from_lane=Lane.PLANNED,
             to_lane=Lane.PLANNED,
@@ -252,7 +252,7 @@ def test_src_tasks_cli_rollback_uses_canonical_event_history(
         feature_dir,
         StatusEvent(
             event_id="01TESTROLLBACKREVIEW00001",
-            feature_slug=feature_dir.name,
+            mission_slug=feature_dir.name,
             wp_id="WP01",
             from_lane=Lane.PLANNED,
             to_lane=Lane.FOR_REVIEW,
@@ -272,7 +272,7 @@ def test_src_tasks_cli_rollback_uses_canonical_event_history(
     tasks_cli.update_command = fake_update_command
     tasks_cli.find_repo_root = lambda: repo
     args = argparse.Namespace(
-        feature=feature_dir.name,
+        mission_slug=feature_dir.name,
         work_package="WP01",
         note=None,
         agent=None,
@@ -287,7 +287,7 @@ def test_src_tasks_cli_rollback_uses_canonical_event_history(
 
     update_args = captured["args"]
     assert update_args.lane == "planned"
-    assert update_args.agent == "reviewer"
+    assert str(update_args.agent) == "reviewer"
     assert update_args.note == "Rolled back to planned"
 
 

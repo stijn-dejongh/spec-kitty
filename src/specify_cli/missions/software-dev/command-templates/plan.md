@@ -11,14 +11,14 @@
 # You should already be here if you just ran /spec-kitty.specify
 
 # Creates:
-# - kitty-specs/###-feature/plan.md → In project root checkout
+# - kitty-specs/###-mission/plan.md → In project root checkout
 # - Commits to target branch
 # - NO worktrees created
 ```
 
 **Do NOT cd anywhere**. Stay in the project root checkout root.
 
-**In repos with multiple features, always pass `--feature <slug>` to every spec-kitty command.**
+**In repos with multiple missions, always pass the canonical mission selector expected by the command (`--mission`, `--mission-run`, or `--mission-type`) instead of relying on auto-detection.**
 
 ## User Input
 
@@ -57,10 +57,10 @@ This command runs in the **project root checkout**, not in a worktree.
   - Run `spec-kitty agent feature setup-plan --feature <feature-slug> --json`
   - Use `current_branch`, `target_branch` / `base_branch`, and `planning_base_branch` / `merge_target_branch` (plus uppercase aliases) from that payload
   - Use `branch_matches_target` from that payload to detect branch mismatch; do not probe branch state manually inside the prompt
-- Planning artifacts live in `kitty-specs/###-feature/`
+- Planning artifacts live in `kitty-specs/###-mission/`
 - The plan template is committed to the target branch after generation
 
-**Path reference rule:** When you mention directories or files, provide either the absolute path or a path relative to the project root (for example, `kitty-specs/<feature>/tasks/`). Never refer to a folder by name alone.
+**Path reference rule:** When you mention directories or files, provide either the absolute path or a path relative to the project root (for example, `kitty-specs/<mission-slug>/tasks/`). Never refer to a folder by name alone.
 
 ## Planning Interrogation (mandatory)
 
@@ -96,14 +96,14 @@ Planning requirements (scale to complexity):
    - Once every planning question has a concrete answer and the alignment summary is confirmed by the user, continue.
 
 2. **Resolve feature context deterministically** (CRITICAL - prevents wrong feature selection):
-   - Prefer an explicit feature slug from user direction or from the current directory path (`kitty-specs/<feature-slug>/...`)
-   - If you do not yet have an explicit feature slug, run `spec-kitty agent feature setup-plan --json` once without `--feature`
+   - Prefer an explicit mission slug from user direction or from the current directory path (`kitty-specs/<mission-slug>/...`)
+   - If you do not yet have an explicit mission slug, run `spec-kitty agent feature setup-plan --json` once without `--feature`
    - If that call succeeds, treat its JSON as the canonical setup payload and skip step 3
-   - If that call returns an ambiguity error with `available_features`, stop and resolve one explicit feature slug before continuing
+   - If that call returns an ambiguity error with `available_features`, stop and resolve one explicit mission slug before continuing
 
 3. **Setup**: If step 2 did not already return a successful setup payload, run `spec-kitty agent feature setup-plan --feature <feature-slug> --json` from the repository root and parse JSON for:
    - `result`: "success" or error message
-   - `feature_slug`: Resolved feature slug
+   - `feature_slug`: Resolved mission slug (legacy field name)
    - `spec_file`: Absolute path to resolved spec.md
    - `plan_file`: Absolute path to the created plan.md
    - `feature_dir`: Absolute path to the feature directory
@@ -124,7 +124,7 @@ Planning requirements (scale to complexity):
    spec-kitty agent feature setup-plan --feature 020-my-feature --json
    ```
 
-   **Error handling**: If the command fails with "Cannot detect feature" or "Multiple features found", verify your feature detection logic in step 2 and ensure you're passing the correct feature slug.
+   **Error handling**: If the command fails with "Cannot detect feature" or "Multiple features found", verify your feature detection logic in step 2 and ensure you're passing the correct mission slug.
 
 4. **Load context**: Read `spec_file` from setup-plan JSON output and `.kittify/constitution/constitution.md` if it exists. If the constitution file is missing, skip Constitution Check and note that it is absent. Load IMPL_PLAN template (already copied).
 

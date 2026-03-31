@@ -29,8 +29,8 @@
 # You should already be here if you just ran /spec-kitty.plan
 
 # Creates:
-# - kitty-specs/###-feature/tasks/WP01-*.md → In project root checkout
-# - kitty-specs/###-feature/tasks/WP02-*.md → In project root checkout
+# - kitty-specs/###-mission/tasks/WP01-*.md → In project root checkout
+# - kitty-specs/###-mission/tasks/WP02-*.md → In project root checkout
 # - Commits ALL to target branch
 # - NO worktrees created
 ```
@@ -39,7 +39,7 @@
 
 **Worktrees created later**: After tasks are generated, use `spec-kitty implement WP##` to create workspace for each WP.
 
-**In repos with multiple features, always pass `--feature <slug>` to every spec-kitty command.**
+**In repos with multiple missions, always pass the canonical mission selector expected by the command (`--mission`, `--mission-run`, or `--mission-type`) instead of relying on auto-detection.**
 
 ## User Input
 
@@ -389,9 +389,9 @@ frontmatter. Use `--replace` to overwrite a WP's refs (e.g., to correct a bad ma
 
 ### Step 1: Detect Feature Context
 
-Resolve the feature slug from explicit user direction, current branch, or current directory path.
+Resolve the mission slug from explicit user direction, current branch, or current directory path.
 
-If ambiguous, run `check-prerequisites` once without `--feature`, parse the JSON candidate list, and select one explicit feature slug.
+If ambiguous, run `check-prerequisites` once without `--feature`, parse the JSON candidate list, and select one explicit mission slug.
 
 ### Step 2: Setup
 

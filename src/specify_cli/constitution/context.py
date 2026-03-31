@@ -11,6 +11,11 @@ from ruamel.yaml import YAML
 
 from specify_cli.constitution.resolver import GovernanceResolutionError, resolve_governance
 from specify_cli.core.atomic import atomic_write
+from kernel.paths import (
+    get_project_constitution_context_state_path,
+    get_project_constitution_path,
+    get_project_constitution_references_path,
+)
 
 
 BOOTSTRAP_ACTIONS: frozenset[str] = frozenset({"specify", "plan", "implement", "review"})
@@ -39,8 +44,8 @@ def build_constitution_context(
     For later loads (or non-bootstrap actions), include compact governance context.
     """
     normalized = action.strip().lower()
-    constitution_path = repo_root / ".kittify" / "constitution" / "constitution.md"
-    references_path = repo_root / ".kittify" / "constitution" / "references.yaml"
+    constitution_path = get_project_constitution_path(repo_root)
+    references_path = get_project_constitution_references_path(repo_root)
 
     if normalized not in BOOTSTRAP_ACTIONS:
         return ConstitutionContextResult(
@@ -51,7 +56,7 @@ def build_constitution_context(
             references_count=0,
         )
 
-    state_path = repo_root / ".kittify" / "constitution" / "context-state.json"
+    state_path = get_project_constitution_context_state_path(repo_root)
     state = _load_state(state_path)
     first_load = normalized not in state.get("actions", {})
 

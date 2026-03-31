@@ -288,7 +288,7 @@ class TestEmitStatusTransition:
         assert event.to_lane == Lane.CLAIMED
         assert event.wp_id == "WP01"
         assert event.mission_slug == "034-test-mission"
-        assert event.actor == "claude-opus"
+        assert str(event.actor) == "claude-opus"
         assert event.force is False
         assert event.execution_mode == "worktree"
         assert len(event.event_id) == 26  # ULID length
@@ -728,7 +728,7 @@ class TestSaasFanOut:
             wp_id="WP01",
             from_lane="claimed",
             to_lane="in_progress",
-            actor="test-actor",
+            actor=event.actor,
             mission_slug="034-test-mission",
             policy_metadata=None,
         )

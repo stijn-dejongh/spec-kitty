@@ -265,3 +265,81 @@ def trigger_mission_dossier_sync_if_enabled(
     except Exception as e:
         logger.warning("Dossier sync failed for %s: %s", mission_slug, e)
         return None
+
+
+def sync_feature_dossier(
+    mission_dir: Path,
+    namespace_ref: NamespaceRef,
+    body_queue: OfflineBodyUploadQueue,
+    mission_type: str = "software-dev",
+    step_id: str | None = None,
+    *,
+    repo_root: Path | None = None,
+    project_identity: ProjectIdentity | None = None,
+) -> DossierSyncResult:
+    """Compatibility alias for pre-mission dossier sync callers."""
+    return sync_mission_dossier(
+        mission_dir=mission_dir,
+        namespace_ref=namespace_ref,
+        body_queue=body_queue,
+        mission_type=mission_type,
+        step_id=step_id,
+        repo_root=repo_root,
+        project_identity=project_identity,
+    )
+
+
+def trigger_feature_dossier_sync_if_enabled(
+    mission_dir: Path,
+    mission_slug: str,
+    repo_root: Path,
+    mission_type: str = "software-dev",
+    step_id: str | None = None,
+) -> DossierSyncResult | None:
+    """Compatibility wrapper preserving the legacy patch surface."""
+    try:
+        from .feature_flags import is_saas_sync_enabled
+
+        if not is_saas_sync_enabled():
+            return None
+
+        from specify_cli.core.paths import get_mission_target_branch
+        from specify_cli.mission import get_feature_mission_key
+        from specify_cli.sync.namespace import NamespaceRef, resolve_manifest_version
+        from specify_cli.sync.project_identity import ensure_identity
+        from specify_cli.sync.runtime import get_runtime
+
+        identity = ensure_identity(repo_root)
+        if identity.project_uuid is None:
+            logger.warning("No project UUID; skipping dossier sync")
+            return None
+
+        target_branch = get_mission_target_branch(repo_root, mission_slug)
+        resolved_mission = get_feature_mission_key(mission_dir) or mission_type
+        manifest_version = resolve_manifest_version(resolved_mission)
+
+        namespace_ref = NamespaceRef.from_context(
+            identity=identity,
+            mission_slug=mission_slug,
+            target_branch=target_branch,
+            mission_key=resolved_mission,
+            manifest_version=manifest_version,
+        )
+
+        runtime = get_runtime()
+        if runtime.body_queue is None:
+            logger.debug("Body queue not initialised; skipping dossier sync")
+            return None
+
+        return sync_feature_dossier(
+            mission_dir=mission_dir,
+            namespace_ref=namespace_ref,
+            body_queue=runtime.body_queue,
+            mission_type=resolved_mission,
+            step_id=step_id,
+            repo_root=repo_root,
+            project_identity=identity,
+        )
+    except Exception as e:
+        logger.warning("Dossier sync failed for %s: %s", mission_slug, e)
+        return None

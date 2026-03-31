@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from specify_cli.context.errors import (
-    FeatureNotFoundError,
+    MissionNotFoundError,
     MissingArgumentError,
     MissingIdentityError,
     WorkPackageNotFoundError,
@@ -204,7 +204,7 @@ class TestResolveContextErrors:
 
     def test_feature_not_found_raises(self, tmp_path: Path) -> None:
         repo = _setup_project(tmp_path, mission_slug="057-test-feature")
-        with pytest.raises(FeatureNotFoundError, match="not found"):
+        with pytest.raises(MissionNotFoundError, match="not found"):
             resolve_context("WP01", "999-nonexistent", "claude", repo)
 
     def test_wp_not_found_raises(self, tmp_path: Path) -> None:
@@ -273,7 +273,7 @@ class TestResolveOrLoad:
 
     def test_missing_mission_slug_raises(self, tmp_path: Path) -> None:
         repo = _setup_project(tmp_path)
-        with pytest.raises(MissingArgumentError, match="--feature"):
+        with pytest.raises(MissingArgumentError, match="--mission"):
             resolve_or_load(
                 token=None,
                 wp_code="WP01",
@@ -284,7 +284,7 @@ class TestResolveOrLoad:
 
     def test_both_missing_raises(self, tmp_path: Path) -> None:
         repo = _setup_project(tmp_path)
-        with pytest.raises(MissingArgumentError, match="--wp.*--feature"):
+        with pytest.raises(MissingArgumentError, match="--wp.*--mission"):
             resolve_or_load(
                 token=None,
                 wp_code=None,

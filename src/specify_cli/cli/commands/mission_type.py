@@ -169,6 +169,11 @@ def _detect_current_mission(project_root: Path) -> str | None:
     return None
 
 
+def _detect_current_feature(project_root: Path) -> str | None:
+    """Compatibility alias for legacy tests and callers."""
+    return _detect_current_mission(project_root)
+
+
 @app.command("current")
 def current_cmd(
     mission_run: str | None = typer.Option(
@@ -183,7 +188,7 @@ def current_cmd(
     check_version_compatibility(project_root, "mission")
 
     # Detect mission if not explicitly provided
-    mission_slug = mission_run if mission_run else _detect_current_mission(project_root)
+    mission_slug = mission_run if mission_run else _detect_current_feature(project_root)
 
     if not mission_slug:
         console.print(

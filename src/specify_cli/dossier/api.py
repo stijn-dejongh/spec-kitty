@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 from pydantic import BaseModel, Field
 
+from specify_cli.core.paths import get_mission_dir
 from .models import ArtifactRef, MissionDossier
 from .snapshot import load_snapshot
 
@@ -223,7 +224,7 @@ class DossierAPIHandler(DossierHandlerAdapter):
         """
         try:
             # Load snapshot
-            mission_dir = self.repo_root / "kitty-specs" / mission_slug
+            mission_dir = get_mission_dir(self.repo_root, mission_slug, main_repo=False)
             snapshot = load_snapshot(mission_dir, mission_slug)
 
             if not snapshot:
@@ -393,7 +394,7 @@ class DossierAPIHandler(DossierHandlerAdapter):
             SnapshotExportResponse or error dict (SaaS import-compatible)
         """
         try:
-            mission_dir = self.repo_root / "kitty-specs" / mission_slug
+            mission_dir = get_mission_dir(self.repo_root, mission_slug, main_repo=False)
             snapshot = load_snapshot(mission_dir, mission_slug)
 
             if not snapshot:
@@ -431,7 +432,7 @@ class DossierAPIHandler(DossierHandlerAdapter):
         Raises:
             ValueError, TypeError on invalid snapshot data
         """
-        mission_dir = self.repo_root / "kitty-specs" / mission_slug
+        mission_dir = get_mission_dir(self.repo_root, mission_slug, main_repo=False)
         snapshot = load_snapshot(mission_dir, mission_slug)
 
         if not snapshot:

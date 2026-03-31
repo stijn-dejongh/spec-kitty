@@ -91,11 +91,11 @@ def _resolve_mission_slug(
 def _tasks_commands(mission_slug: str) -> dict[str, str]:
     return {
         "check_prerequisites": (
-            "spec-kitty agent mission check-prerequisites "
-            f"--json --paths-only --include-tasks --mission {mission_slug}"
+            "spec-kitty agent mission-run check-prerequisites "
+            f"--json --paths-only --include-tasks --mission-run {mission_slug}"
         ),
         "finalize_tasks": (
-            f"spec-kitty agent mission finalize-tasks --mission {mission_slug} --json"
+            f"spec-kitty agent mission-run finalize-tasks --mission-run {mission_slug} --json"
         ),
     }
 

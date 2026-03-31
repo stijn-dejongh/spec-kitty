@@ -37,7 +37,7 @@ def create_merge_workspace(mission_id: str, target_branch: str, repo_root: Path)
     so the main repository's checked-out branch is never changed.
 
     Args:
-        mission_id: Mission/feature slug identifier (e.g. "057-feature-name")
+        mission_id: Mission slug identifier (e.g. "057-example-mission")
         target_branch: The branch to check out in the worktree (e.g. "main")
         repo_root: Path to the repository root
 
@@ -69,7 +69,7 @@ def cleanup_merge_workspace(mission_id: str, repo_root: Path) -> None:
     """Remove the dedicated merge worktree and per-mission runtime directory.
 
     Args:
-        mission_id: Mission/feature slug identifier
+        mission_id: Mission slug identifier
         repo_root: Path to the repository root
     """
     workspace_path = get_merge_workspace_path(mission_id, repo_root)
@@ -100,7 +100,7 @@ def get_merge_workspace(mission_id: str, repo_root: Path) -> Path | None:
     """Return the merge workspace path if it exists and is a valid git worktree.
 
     Args:
-        mission_id: Mission/feature slug identifier
+        mission_id: Mission slug identifier
         repo_root: Path to the repository root
 
     Returns:

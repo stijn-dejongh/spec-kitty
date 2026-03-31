@@ -134,8 +134,8 @@ def bootstrap_canonical_state(
     # Emit planned events for uninitialized WPs
     for wp_id in wps_to_seed:
         emit_status_transition(
-            feature_dir=feature_dir,
-            feature_slug=feature_slug,
+            mission_dir=feature_dir,
+            mission_slug=feature_slug,
             wp_id=wp_id,
             to_lane="planned",
             actor="finalize-tasks",

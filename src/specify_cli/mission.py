@@ -569,6 +569,11 @@ def get_mission_key(mission_dir: Path) -> str:
         return "software-dev"
 
 
+def get_feature_mission_key(mission_dir: Path) -> str:
+    """Compatibility alias for pre-mission callers."""
+    return get_mission_key(mission_dir)
+
+
 def get_deliverables_path(mission_dir: Path, mission_slug: str | None = None) -> str | None:
     """Extract deliverables_path from mission's meta.json.
 

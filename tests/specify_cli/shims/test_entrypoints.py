@@ -21,11 +21,11 @@ from specify_cli.context.errors import MissingArgumentError
 
 class TestParseRawArgs:
     def test_extracts_wp_code(self) -> None:
-        result = _parse_raw_args("WP03 --feature 057-cleanup")
+        result = _parse_raw_args("WP03 --mission 057-cleanup")
         assert result["wp_code"] == "WP03"
 
     def test_extracts_mission_slug(self) -> None:
-        result = _parse_raw_args("WP01 --feature 057-canonical-context")
+        result = _parse_raw_args("WP01 --mission 057-canonical-context")
         assert result["mission_slug"] == "057-canonical-context"
 
     def test_wp_code_case_normalised(self) -> None:
@@ -33,7 +33,7 @@ class TestParseRawArgs:
         assert result["wp_code"] == "WP05"
 
     def test_missing_wp_returns_none(self) -> None:
-        result = _parse_raw_args("--feature 057-cleanup")
+        result = _parse_raw_args("--mission 057-cleanup")
         assert result["wp_code"] is None
 
     def test_missing_feature_returns_none(self) -> None:
@@ -50,8 +50,13 @@ class TestParseRawArgs:
         assert result["wp_code"] == "WP01"
 
     def test_longer_wp_code(self) -> None:
-        result = _parse_raw_args("WP123 --feature test")
+        result = _parse_raw_args("WP123 --mission test")
         assert result["wp_code"] == "WP123"
+
+    def test_mission_run_falls_back_to_mission_slug(self) -> None:
+        result = _parse_raw_args("WP07 --mission-run 057-runtime-mission")
+        assert result["wp_code"] == "WP07"
+        assert result["mission_slug"] == "057-runtime-mission"
 
 
 # ---------------------------------------------------------------------------
@@ -86,7 +91,7 @@ class TestShimDispatch:
             shim_dispatch(
                 command="nonexistent-command",
                 agent="claude",
-                raw_args="WP01 --feature 057-test",
+                raw_args="WP01 --mission 057-test",
                 context_token=None,
                 repo_root=tmp_path,
             )
@@ -122,7 +127,7 @@ class TestShimDispatch:
             result = shim_dispatch(
                 command="review",
                 agent="codex",
-                raw_args="WP03 --feature 057-canonical-context",
+                raw_args="WP03 --mission 057-canonical-context",
                 context_token=None,
                 repo_root=tmp_path,
             )
@@ -170,7 +175,7 @@ class TestShimDispatch:
             result = shim_dispatch(
                 command=command,
                 agent="claude",
-                raw_args="WP01 --feature 057-test",
+                raw_args="WP01 --mission 057-test",
                 context_token=None,
                 repo_root=tmp_path,
             )
@@ -198,7 +203,7 @@ class TestShimDispatch:
             result = shim_dispatch(
                 command=command,
                 agent="claude",
-                raw_args="WP01 --feature 057-test",
+                raw_args="WP01 --mission 057-test",
                 context_token=None,
                 repo_root=tmp_path,
             )
@@ -211,7 +216,7 @@ class TestShimDispatch:
             shim_dispatch(
                 command=internal,
                 agent="claude",
-                raw_args="WP01 --feature 057-test",
+                raw_args="WP01 --mission 057-test",
                 context_token=None,
                 repo_root=tmp_path,
             )

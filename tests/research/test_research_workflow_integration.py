@@ -141,7 +141,7 @@ def test_full_research_workflow_via_cli(tmp_path: Path, run_cli) -> None:
     )
 
     # Verify research mission active for the explicit mission.
-    result = run_cli(project_dir, "mission-type", "current", "--mission", mission_slug)
+    result = run_cli(project_dir, "mission-type", "current", "--mission-run", mission_slug)
     assert result.returncode == 0
     assert "research" in result.stdout.lower()
 

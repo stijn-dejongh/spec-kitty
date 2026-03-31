@@ -34,8 +34,8 @@ def _make_completed_process(stdout: str = "", returncode: int = 0) -> Mock:
     return proc
 
 
-def test_validate_worktree_on_feature_branch(monkeypatch: pytest.MonkeyPatch, fake_project_root: Path) -> None:
-    """validate_worktree_location should pass on feature branches."""
+def test_validate_worktree_on_mission_branch(monkeypatch: pytest.MonkeyPatch, fake_project_root: Path) -> None:
+    """validate_worktree_location should pass on mission branches."""
 
     def mock_run(cmd: Any, **kwargs: Any) -> Mock:
         assert cmd == ["git", "branch", "--show-current"]
@@ -49,7 +49,7 @@ def test_validate_worktree_on_feature_branch(monkeypatch: pytest.MonkeyPatch, fa
 
     assert isinstance(result, WorktreeValidationResult)
     assert result.is_valid is True
-    assert result.is_feature_branch is True
+    assert result.is_mission_branch is True
     assert result.worktree_path == fake_project_root
 
 
@@ -101,7 +101,7 @@ def test_worktree_is_valid_without_branch() -> None:
     """WorktreeValidationResult is valid when no branch and no errors."""
     result = WorktreeValidationResult(
         current_branch="",
-        is_feature_branch=False,
+        is_mission_branch=False,
         is_main_branch=False,
         worktree_path=None,
         errors=[],

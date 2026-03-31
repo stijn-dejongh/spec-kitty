@@ -136,8 +136,8 @@ def reconcile_done_state(
        event with repo evidence (merge commit hash, branch, files touched).
 
     Args:
-        mission_dir: Path to the feature directory containing the event log
-                     (``kitty-specs/<feature-slug>/``).
+        mission_dir: Path to the mission directory containing the event log
+                     (``kitty-specs/<mission-slug>/``).
         merged_branches: List of branch names that were merged by the engine.
         target_branch: Branch that was merged into (e.g. "main").
         workspace_path: Path to the merge workspace (git worktree).

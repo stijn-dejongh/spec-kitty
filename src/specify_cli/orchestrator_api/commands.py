@@ -29,6 +29,7 @@ from pathlib import Path
 import typer
 
 from specify_cli.git.commit_helpers import safe_commit
+from specify_cli.core.paths import get_mission_dir
 from specify_cli.merge import run_preflight, get_merge_order
 
 from .envelope import (
@@ -180,10 +181,29 @@ def _get_main_repo_root() -> Path:
 
 def _resolve_mission_dir(main_repo_root: Path, mission_slug: str) -> Path | None:
     """Return the mission directory if it exists, else None."""
-    mission_dir = main_repo_root / "kitty-specs" / mission_slug
+    mission_dir = get_mission_dir(main_repo_root, mission_slug, main_repo=False)
     if not mission_dir.exists():
         return None
     return mission_dir
+
+
+def _resolve_mission_selector(
+    *,
+    mission: str | None,
+    feature: str | None,
+    canonical_command: str,
+) -> tuple[str | None, dict[str, object]]:
+    """Resolve the selector and return deprecation metadata when needed."""
+    if mission:
+        return mission, {}
+    if feature:
+        return feature, {
+            "deprecated_alias_used": True,
+            "deprecated_alias": "--feature",
+            "canonical_flag": "--mission",
+            "canonical_command": canonical_command,
+        }
+    return None, {}
 
 
 def _get_last_actor(mission_dir: Path, wp_id: str) -> str | None:
@@ -286,9 +306,14 @@ def contract_version(
 @app.command(name="mission-state")
 def mission_state(
     mission: str | None = typer.Option(None, "--mission", help="Mission slug (e.g. 034-my-mission)"),
+    feature: str | None = typer.Option(None, "--feature", hidden=True, help="Deprecated alias for --mission"),
 ) -> None:
     """Return the full state of a mission (all WPs, lanes, dependencies)."""
-    mission_slug = mission
+    mission_slug, deprecation = _resolve_mission_selector(
+        mission=mission,
+        feature=feature,
+        canonical_command="mission-state",
+    )
     if not mission_slug:
         _fail("mission-state", "USAGE_ERROR", "--mission is required")
         return
@@ -342,9 +367,19 @@ def mission_state(
             "mission_slug": mission_slug,
             "summary": snapshot.summary,
             "work_packages": work_packages,
+            **deprecation,
         },
     )
     _emit(envelope)
+
+
+@app.command(name="feature-state")
+def feature_state(
+    mission: str | None = typer.Option(None, "--mission", help="Mission slug"),
+    feature: str | None = typer.Option(None, "--feature", hidden=True, help="[Deprecated] Use --mission"),
+) -> None:
+    """Deprecated compatibility alias for mission-state."""
+    mission_state(mission=mission, feature=feature)
 
 
 # ── Command 3: list-ready ──────────────────────────────────────────────────
@@ -353,9 +388,14 @@ def mission_state(
 @app.command(name="list-ready")
 def list_ready(
     mission: str | None = typer.Option(None, "--mission", help="Mission slug"),
+    feature: str | None = typer.Option(None, "--feature", hidden=True, help="Deprecated alias for --mission"),
 ) -> None:
     """List WPs that are ready to start (planned and all deps done)."""
-    mission_slug = mission
+    mission_slug, deprecation = _resolve_mission_selector(
+        mission=mission,
+        feature=feature,
+        canonical_command="list-ready",
+    )
     if not mission_slug:
         _fail("list-ready", "USAGE_ERROR", "--mission is required")
         return
@@ -408,6 +448,7 @@ def list_ready(
         data={
             "mission_slug": mission_slug,
             "ready_work_packages": ready_wps,
+            **deprecation,
         },
     )
     _emit(envelope)
@@ -419,13 +460,18 @@ def list_ready(
 @app.command(name="start-implementation")
 def start_implementation(
     mission: str | None = typer.Option(None, "--mission", help="Mission slug"),
+    feature: str | None = typer.Option(None, "--feature", hidden=True, help="Deprecated alias for --mission"),
     wp: str = typer.Option(..., "--wp", help="Work package ID (e.g. WP01)"),
     actor: str = typer.Option(..., "--actor", help="Actor identity"),
     policy: str = typer.Option(None, "--policy", help="Policy metadata JSON (required)"),
 ) -> None:
     """Composite transition: planned→claimed→in_progress (idempotent)."""
     cmd = "start-implementation"
-    mission_slug = mission
+    mission_slug, deprecation = _resolve_mission_selector(
+        mission=mission,
+        feature=feature,
+        canonical_command=cmd,
+    )
     if not mission_slug:
         _fail(cmd, "USAGE_ERROR", "--mission is required")
         return
@@ -548,6 +594,7 @@ def start_implementation(
             "prompt_path": prompt_path,
             "policy_metadata_recorded": True,
             "no_op": no_op,
+            **deprecation,
         },
     )
     _emit(envelope)
@@ -559,6 +606,7 @@ def start_implementation(
 @app.command(name="start-review")
 def start_review(
     mission: str | None = typer.Option(None, "--mission", help="Mission slug"),
+    feature: str | None = typer.Option(None, "--feature", hidden=True, help="Deprecated alias for --mission"),
     wp: str = typer.Option(..., "--wp", help="Work package ID"),
     actor: str = typer.Option(..., "--actor", help="Actor identity"),
     policy: str = typer.Option(None, "--policy", help="Policy metadata JSON (required)"),
@@ -566,7 +614,11 @@ def start_review(
 ) -> None:
     """Transition a WP from for_review back to in_progress (reviewer rollback)."""
     cmd = "start-review"
-    mission_slug = mission
+    mission_slug, deprecation = _resolve_mission_selector(
+        mission=mission,
+        feature=feature,
+        canonical_command=cmd,
+    )
     if not mission_slug:
         _fail(cmd, "USAGE_ERROR", "--mission is required")
         return
@@ -632,6 +684,7 @@ def start_review(
             "to_lane": "in_progress",
             "prompt_path": prompt_path,
             "policy_metadata_recorded": True,
+            **deprecation,
         },
     )
     _emit(envelope)
@@ -643,6 +696,7 @@ def start_review(
 @app.command(name="transition")
 def transition(
     mission: str | None = typer.Option(None, "--mission", help="Mission slug"),
+    feature: str | None = typer.Option(None, "--feature", hidden=True, help="Deprecated alias for --mission"),
     wp: str = typer.Option(..., "--wp", help="Work package ID"),
     to: str = typer.Option(..., "--to", help="Target lane"),
     actor: str = typer.Option(..., "--actor", help="Actor identity"),
@@ -653,7 +707,11 @@ def transition(
 ) -> None:
     """Emit a single lane transition for a WP."""
     cmd = "transition"
-    mission_slug = mission
+    mission_slug, deprecation = _resolve_mission_selector(
+        mission=mission,
+        feature=feature,
+        canonical_command=cmd,
+    )
     if not mission_slug:
         _fail(cmd, "USAGE_ERROR", "--mission is required")
         return
@@ -731,6 +789,7 @@ def transition(
             "from_lane": from_lane,
             "to_lane": to_lane,
             "policy_metadata_recorded": policy_dict is not None,
+            **deprecation,
         },
     )
     _emit(envelope)
@@ -742,13 +801,18 @@ def transition(
 @app.command(name="append-history")
 def append_history(
     mission: str | None = typer.Option(None, "--mission", help="Mission slug"),
+    feature: str | None = typer.Option(None, "--feature", hidden=True, help="Deprecated alias for --mission"),
     wp: str = typer.Option(..., "--wp", help="Work package ID"),
     actor: str = typer.Option(..., "--actor", help="Actor identity"),
     note: str = typer.Option(..., "--note", help="History note to append"),
 ) -> None:
     """Append a history entry to a WP prompt file."""
     cmd = "append-history"
-    mission_slug = mission
+    mission_slug, deprecation = _resolve_mission_selector(
+        mission=mission,
+        feature=feature,
+        canonical_command=cmd,
+    )
     if not mission_slug:
         _fail(cmd, "USAGE_ERROR", "--mission is required")
         return
@@ -795,6 +859,7 @@ def append_history(
             "mission_slug": mission_slug,
             "wp_id": wp,
             "history_entry_id": entry_id,
+            **deprecation,
         },
     )
     _emit(envelope)
@@ -806,11 +871,16 @@ def append_history(
 @app.command(name="accept-mission")
 def accept_mission(
     mission: str | None = typer.Option(None, "--mission", help="Mission slug"),
+    feature: str | None = typer.Option(None, "--feature", hidden=True, help="Deprecated alias for --mission"),
     actor: str = typer.Option(..., "--actor", help="Actor identity"),
 ) -> None:
     """Accept a mission after all WPs are done."""
     cmd = "accept-mission"
-    mission_slug = mission
+    mission_slug, deprecation = _resolve_mission_selector(
+        mission=mission,
+        feature=feature,
+        canonical_command=cmd,
+    )
     if not mission_slug:
         _fail(cmd, "USAGE_ERROR", "--mission is required")
         return
@@ -857,9 +927,20 @@ def accept_mission(
             "accepted": True,
             "mode": "auto",
             "accepted_at": accepted_at,
+            **deprecation,
         },
     )
     _emit(envelope)
+
+
+@app.command(name="accept-feature")
+def accept_feature(
+    mission: str | None = typer.Option(None, "--mission", help="Mission slug"),
+    feature: str | None = typer.Option(None, "--feature", hidden=True, help="[Deprecated] Use --mission"),
+    actor: str = typer.Option(..., "--actor", help="Actor identity"),
+) -> None:
+    """Deprecated compatibility alias for accept-mission."""
+    accept_mission(mission=mission, feature=feature, actor=actor)
 
 
 # ── Command 9: merge-mission ───────────────────────────────────────────────
@@ -868,13 +949,18 @@ def accept_mission(
 @app.command(name="merge-mission")
 def merge_mission(
     mission: str | None = typer.Option(None, "--mission", help="Mission slug"),
+    feature: str | None = typer.Option(None, "--feature", hidden=True, help="Deprecated alias for --mission"),
     target: str = typer.Option(None, "--target", help="Target branch to merge into (auto-detected from meta.json)"),
     strategy: str = typer.Option("merge", "--strategy", help="Merge strategy: merge, squash, or rebase"),
     push: bool = typer.Option(False, "--push", help="Push target branch after merge"),
 ) -> None:
     """Run preflight checks then merge all WP branches into target."""
     cmd = "merge-mission"
-    mission_slug = mission
+    mission_slug, deprecation = _resolve_mission_selector(
+        mission=mission,
+        feature=feature,
+        canonical_command=cmd,
+    )
     if not mission_slug:
         _fail(cmd, "USAGE_ERROR", "--mission is required")
         return
@@ -1036,6 +1122,7 @@ def merge_mission(
             "strategy": strategy,
             "merged_wps": merged_wps,
             "worktree_removed": False,
+            **deprecation,
         },
     )
     _emit(envelope)

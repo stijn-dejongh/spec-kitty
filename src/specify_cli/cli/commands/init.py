@@ -13,6 +13,11 @@ from pathlib import Path
 from collections.abc import Callable
 
 import typer
+from kernel.paths import (
+    get_project_constitution_dir,
+    get_project_constitution_interview_path,
+    get_project_constitution_path,
+)
 from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
@@ -421,7 +426,7 @@ def _apply_doctrine_defaults(project_path: Path, console: Console) -> bool:
 
         draft = build_constitution_draft(mission=mission, interview=interview_data)
 
-        constitution_path = project_path / ".kittify" / "constitution" / "constitution.md"
+        constitution_path = get_project_constitution_path(project_path)
         constitution_path.parent.mkdir(parents=True, exist_ok=True)
         write_constitution(constitution_path, draft.markdown)
         console.print("[green]✓[/green] Constitution generated at .kittify/constitution/constitution.md")
@@ -499,12 +504,12 @@ def _run_inline_interview(project_path: Path, console: Console) -> bool:
         interview_data = apply_answer_overrides(interview_data, answers=answers_override)
         draft = build_constitution_draft(mission="software-dev", interview=interview_data)
 
-        constitution_path = project_path / ".kittify" / "constitution" / "constitution.md"
+        constitution_path = get_project_constitution_path(project_path)
         constitution_path.parent.mkdir(parents=True, exist_ok=True)
         write_constitution(constitution_path, draft.markdown)
 
         # Persist answers for future re-generation.
-        answers_path = project_path / ".kittify" / "constitution" / "interview" / "answers.yaml"
+        answers_path = get_project_constitution_interview_path(project_path)
         write_interview_answers(answers_path, interview_data)
 
         # Remove checkpoint — interview completed successfully.
@@ -531,7 +536,7 @@ def _run_doctrine_stack_init(project_path: Path, non_interactive: bool, console:
 
     Returns True if the step completed, was skipped, or was deferred.
     """
-    constitution_path = project_path / ".kittify" / "constitution" / "constitution.md"
+    constitution_path = get_project_constitution_path(project_path)
 
     # FR-004: skip if constitution already exists.
     if constitution_path.exists():

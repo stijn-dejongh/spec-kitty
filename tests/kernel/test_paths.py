@@ -13,11 +13,23 @@ Coverage:
 
 from __future__ import annotations
 
+import tempfile
 from pathlib import Path
 
 import pytest
 
-from kernel.paths import get_kittify_home, get_package_asset_root
+from kernel.paths import (
+    get_kittify_home,
+    get_package_asset_root,
+    get_project_kittify_dir,
+    get_project_constitution_dir,
+    get_project_constitution_path,
+    get_project_constitution_references_path,
+    get_project_constitution_interview_path,
+    get_project_constitution_context_state_path,
+    get_project_constitution_agents_dir,
+    resolve_project_constitution_path,
+)
 
 pytestmark = pytest.mark.fast
 
@@ -101,6 +113,12 @@ class TestSpecKittyHomeEnvOverride:
         # Empty string is falsy -> falls through
         assert get_kittify_home() == Path.home() / ".kittify"
 
+    def test_test_mode_uses_temp_scoped_home(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """SPEC_KITTY_TEST_MODE uses a writable temp-scoped runtime home."""
+        monkeypatch.delenv("SPEC_KITTY_HOME", raising=False)
+        monkeypatch.setenv("SPEC_KITTY_TEST_MODE", "1")
+        assert get_kittify_home() == Path(tempfile.gettempdir()) / "spec-kitty-test-home"
+
 
 # ---------------------------------------------------------------------------
 # T006: get_package_asset_root — package asset discovery
@@ -161,3 +179,43 @@ class TestGetPackageAssetRoot:
             lambda _pkg: (_ for _ in ()).throw(ModuleNotFoundError("should not be called")),
         )
         assert get_package_asset_root() == missions
+
+
+class TestProjectConstitutionPaths:
+    """Project-local constitution path helpers."""
+
+    def test_project_kittify_dir(self, tmp_path: Path) -> None:
+        """Project .kittify dir is rooted directly under repo_root."""
+        assert get_project_kittify_dir(tmp_path) == tmp_path / ".kittify"
+
+    def test_project_constitution_paths(self, tmp_path: Path) -> None:
+        """Canonical constitution paths are built under .kittify/constitution."""
+        assert get_project_constitution_dir(tmp_path) == tmp_path / ".kittify" / "constitution"
+        assert get_project_constitution_path(tmp_path) == tmp_path / ".kittify" / "constitution" / "constitution.md"
+        assert get_project_constitution_references_path(tmp_path) == tmp_path / ".kittify" / "constitution" / "references.yaml"
+        assert get_project_constitution_interview_path(tmp_path) == tmp_path / ".kittify" / "constitution" / "interview" / "answers.yaml"
+        assert get_project_constitution_context_state_path(tmp_path) == tmp_path / ".kittify" / "constitution" / "context-state.json"
+        assert get_project_constitution_agents_dir(tmp_path) == tmp_path / ".kittify" / "constitution" / "agents"
+
+    def test_resolve_project_constitution_path_prefers_canonical(self, tmp_path: Path) -> None:
+        """Canonical constitution path wins over the legacy memory fallback."""
+        canonical = tmp_path / ".kittify" / "constitution" / "constitution.md"
+        legacy = tmp_path / ".kittify" / "memory" / "constitution.md"
+        canonical.parent.mkdir(parents=True)
+        legacy.parent.mkdir(parents=True)
+        canonical.write_text("canonical", encoding="utf-8")
+        legacy.write_text("legacy", encoding="utf-8")
+
+        assert resolve_project_constitution_path(tmp_path) == canonical
+
+    def test_resolve_project_constitution_path_falls_back_to_legacy(self, tmp_path: Path) -> None:
+        """Legacy memory constitution is used when canonical file is absent."""
+        legacy = tmp_path / ".kittify" / "memory" / "constitution.md"
+        legacy.parent.mkdir(parents=True)
+        legacy.write_text("legacy", encoding="utf-8")
+
+        assert resolve_project_constitution_path(tmp_path) == legacy
+
+    def test_resolve_project_constitution_path_returns_none_when_missing(self, tmp_path: Path) -> None:
+        """Resolver returns None when neither canonical nor legacy file exists."""
+        assert resolve_project_constitution_path(tmp_path) is None

@@ -17,6 +17,8 @@ from typing import Any
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap
 
+from specify_cli.identity import ActorIdentity
+
 
 class FrontmatterError(Exception):
     """Error in frontmatter operations."""
@@ -226,12 +228,18 @@ class FrontmatterManager:
         # Add fields in standard order (if they exist)
         for field in self.WP_FIELD_ORDER:
             if field in frontmatter:
-                normalized[field] = frontmatter[field]
+                value = frontmatter[field]
+                if field == "agent" and isinstance(value, ActorIdentity):
+                    value = value.to_dict()
+                normalized[field] = value
 
         # Add any remaining fields (alphabetically)
         remaining = sorted(set(frontmatter.keys()) - set(self.WP_FIELD_ORDER))
         for field in remaining:
-            normalized[field] = frontmatter[field]
+            value = frontmatter[field]
+            if field == "agent" and isinstance(value, ActorIdentity):
+                value = value.to_dict()
+            normalized[field] = value
 
         return normalized
 
@@ -363,6 +371,32 @@ def normalize_file(file_path: Path) -> bool:
         return False
 
 
+def extract_agent_identity(frontmatter: str | dict[str, Any]) -> ActorIdentity | None:
+    """Read the structured agent identity from raw frontmatter text or mapping."""
+    data: dict[str, Any]
+    if isinstance(frontmatter, str):
+        parsed = _manager.yaml.load(frontmatter) or {}
+        if not isinstance(parsed, dict):
+            return None
+        data = dict(parsed)
+    else:
+        data = dict(frontmatter)
+
+    agent_value = data.get("agent")
+    if agent_value is None:
+        return None
+    if isinstance(agent_value, ActorIdentity):
+        return agent_value
+    if isinstance(agent_value, dict):
+        return ActorIdentity.from_dict(agent_value)
+    if isinstance(agent_value, str):
+        compact = agent_value.strip().strip('"').strip("'")
+        if not compact:
+            return None
+        return ActorIdentity.from_compact(compact)
+    return None
+
+
 __all__ = [
     "FrontmatterError",
     "FrontmatterManager",
@@ -374,4 +408,5 @@ __all__ = [
     "add_history_entry",
     "validate_frontmatter",
     "normalize_file",
+    "extract_agent_identity",
 ]
