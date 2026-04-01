@@ -175,9 +175,13 @@ class ManifestRegistry:
         if mission_type in ManifestRegistry._cache:
             return ManifestRegistry._cache[mission_type]
 
-        manifest_path = Path(__file__).parent.parent / "missions" / mission_type / "expected-artifacts.yaml"
+        from doctrine.missions.repository import MissionRepository
 
-        if not manifest_path.exists():
+        repo = MissionRepository.default()
+        ea_result = repo.get_expected_artifacts(mission_type)
+        manifest_path = repo._expected_artifacts_path(mission_type) if ea_result else None
+
+        if manifest_path is None or not manifest_path.exists():
             logger.debug(f"Manifest not found for mission type: {mission_type}")
             ManifestRegistry._cache[mission_type] = None
             return None

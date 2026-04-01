@@ -12,48 +12,27 @@ pytestmark = pytest.mark.distribution
 
 
 def test_command_templates_not_bundled():
-    """WP10: command-templates directories must not exist in src/specify_cli (except software-dev).
+    """WP10: command-templates directories must not exist in specify_cli package.
 
     Shim generation (spec-kitty agent shim) replaces rendered template files.
-    No command-templates should remain to be bundled into the distribution
-    under specify_cli.
-
-    Exception: src/specify_cli/missions/software-dev/command-templates/ is
-    intentionally retained as the canonical source for prompt-driven commands
-    (restored in feature 058).
+    No command-templates should remain to be bundled in the specify_cli distribution.
 
     The doctrine package retains command-templates as the package-default
     tier (tier 5) of the 5-tier asset resolver, so doctrine/ dirs are allowed.
     """
-    spec_kitty_root = Path(__file__).parent.parent.parent.parent
-    missions_dir = spec_kitty_root / "src" / "specify_cli" / "missions"
+    from importlib.resources import files
 
-    # software-dev/command-templates/ is the canonical source for prompt-driven
-    # commands and is intentionally kept (feature 058).
-    allowed = {
-        str((missions_dir / "software-dev" / "command-templates").relative_to(spec_kitty_root)),
-    }
-    # Doctrine package dirs are the tier 5 package-default source — allowed.
-    doctrine_base = spec_kitty_root / "src" / "doctrine"
-    if doctrine_base.exists():
-        for d in doctrine_base.rglob("command-templates"):
-            if d.is_dir():
-                allowed.add(str(d.relative_to(spec_kitty_root)))
+    cli_pkg = files("specify_cli")
+    cli_root = Path(str(cli_pkg))
 
     found = []
-    for base in [
-        spec_kitty_root / "src" / "specify_cli",
-        spec_kitty_root / "src" / "doctrine",
-    ]:
-        if base.exists():
-            for d in base.rglob("command-templates"):
-                if d.is_dir():
-                    rel = str(d.relative_to(spec_kitty_root))
-                    if rel not in allowed:
-                        found.append(rel)
+    if cli_root.is_dir():
+        for d in cli_root.rglob("command-templates"):
+            if d.is_dir():
+                found.append(str(d.relative_to(cli_root)))
 
     assert len(found) == 0, (
-        f"command-templates directories still present (WP10 deletion incomplete): {found}"
+        f"command-templates directories still present in specify_cli (WP10 deletion incomplete): {found}"
     )
 
 
@@ -163,9 +142,7 @@ def test_wheel_bundles_templates_correctly():
         assert result.returncode == 0, f"Failed to check templates: {result.stderr}"
         output = result.stdout
         # WP10: command-templates were deleted — shims replace them
-        assert "command-templates" not in output, (
-            "command-templates should NOT be in bundled package (deleted in WP10)"
-        )
+        assert "command-templates" not in output, "command-templates should NOT be in bundled package (deleted in WP10)"
         assert "git-hooks" not in output, "git-hooks should not be bundled in 2.x"
 
         result = subprocess.run(

@@ -13,10 +13,15 @@ from pathlib import Path
 from unittest.mock import MagicMock
 from collections.abc import Generator
 
+from doctrine.missions.repository import MissionRepository
+
 pytestmark = pytest.mark.fast
+
+DOCTRINE_MISSIONS = MissionRepository.default_missions_root()
 # ============================================================================
 # Fixtures
 # ============================================================================
+
 
 @pytest.fixture
 def temp_project(tmp_path: Path) -> Generator[Path, None, None]:
@@ -51,19 +56,11 @@ def plan_feature(temp_project: Path) -> Generator[tuple[str, Path], None, None]:
     mission_dir.mkdir()
 
     # Create meta.json with mission: "plan"
-    meta = {
-        "mission_number": "001",
-        "slug": mission_slug,
-        "mission": "plan",
-        "created_at": "2026-02-22T00:00:00+00:00"
-    }
+    meta = {"mission_number": "001", "slug": mission_slug, "mission": "plan", "created_at": "2026-02-22T00:00:00+00:00"}
     (mission_dir / "meta.json").write_text(json.dumps(meta, indent=2))
 
     # Create spec.md
-    (mission_dir / "spec.md").write_text(
-        "# Test Mission\n\n"
-        "This is a test mission for plan mission integration.\n"
-    )
+    (mission_dir / "spec.md").write_text("# Test Mission\n\nThis is a test mission for plan mission integration.\n")
 
     yield (mission_slug, mission_dir)
 
@@ -86,8 +83,8 @@ def mock_runtime_bridge() -> MagicMock:
                 {"id": "specify", "order": 1, "title": "Specify"},
                 {"id": "research", "order": 2, "title": "Research"},
                 {"id": "plan", "order": 3, "title": "Plan"},
-                {"id": "review", "order": 4, "title": "Review"}
-            ]
+                {"id": "review", "order": 4, "title": "Review"},
+            ],
         }
     }
 
@@ -116,6 +113,7 @@ def mock_workspace_context() -> MagicMock:
 # ============================================================================
 # Test Classes
 # ============================================================================
+
 
 class TestPlanMissionIntegration:
     """Integration tests for plan mission mission creation and runtime."""
@@ -172,8 +170,8 @@ class TestPlanMissionIntegration:
 
         # Verify steps are in correct order
         for i, expected_id in enumerate(["specify", "research", "plan", "review"], 1):
-            assert steps[i-1]["id"] == expected_id
-            assert steps[i-1]["order"] == i
+            assert steps[i - 1]["id"] == expected_id
+            assert steps[i - 1]["order"] == i
 
     def test_next_command_plan_feature_not_blocked(self, plan_feature):
         """Verify spec-kitty next doesn't block on plan missions (Mission 041 fix).
@@ -189,7 +187,7 @@ class TestPlanMissionIntegration:
         assert meta["mission"] == "plan", "Mission must have mission=plan"
 
         # 2. Verify mission-runtime.yaml exists (required for discovery)
-        mission_runtime = Path("src/specify_cli/missions/plan/mission-runtime.yaml")
+        mission_runtime = DOCTRINE_MISSIONS / "plan" / "mission-runtime.yaml"
         assert mission_runtime.exists(), "mission-runtime.yaml must exist"
 
         # 3. Verify it parses as valid YAML
@@ -263,7 +261,7 @@ class TestPlanMissionRegressions:
         import yaml
 
         # Verify software-dev mission exists and is intact
-        sd_runtime = Path("src/specify_cli/missions/software-dev/mission-runtime.yaml")
+        sd_runtime = DOCTRINE_MISSIONS / "software-dev" / "mission-runtime.yaml"
         assert sd_runtime.exists(), "software-dev mission-runtime.yaml must exist"
 
         # Load and parse
@@ -277,7 +275,7 @@ class TestPlanMissionRegressions:
         assert len(steps) > 0, "software-dev must have at least one step"
 
         # Verify templates directory exists for software-dev
-        templates_dir = Path("src/specify_cli/missions/software-dev/templates")
+        templates_dir = DOCTRINE_MISSIONS / "software-dev" / "templates"
         assert templates_dir.exists(), "software-dev templates directory must exist"
         assert len(list(templates_dir.glob("*.md"))) > 0, "software-dev must have at least one template"
 
@@ -286,7 +284,7 @@ class TestPlanMissionRegressions:
         import yaml
 
         # Verify research mission exists and is intact
-        r_mission = Path("src/specify_cli/missions/research/mission.yaml")
+        r_mission = DOCTRINE_MISSIONS / "research" / "mission.yaml"
         assert r_mission.exists(), "research mission.yaml must exist"
 
         # Load and parse
@@ -299,7 +297,7 @@ class TestPlanMissionRegressions:
         assert len(states) > 0, "research must have at least one state"
 
         # Verify templates directory exists for research
-        templates_dir = Path("src/specify_cli/missions/research/templates")
+        templates_dir = DOCTRINE_MISSIONS / "research" / "templates"
         assert templates_dir.exists(), "research templates directory must exist"
         assert len(list(templates_dir.glob("*.md"))) > 0, "research must have at least one template"
 
@@ -308,7 +306,7 @@ class TestPlanMissionRegressions:
         import yaml
 
         # Load plan mission-runtime.yaml
-        plan_runtime = Path("src/specify_cli/missions/plan/mission-runtime.yaml")
+        plan_runtime = DOCTRINE_MISSIONS / "plan" / "mission-runtime.yaml"
         assert plan_runtime.exists(), "plan mission-runtime.yaml must exist"
 
         content = plan_runtime.read_text()
@@ -357,7 +355,8 @@ class TestPlanMissionSteps:
     def test_specify_step_defined_in_mission_runtime(self):
         """Verify specify step is defined in plan mission-runtime.yaml."""
         import yaml
-        runtime = Path("src/specify_cli/missions/plan/mission-runtime.yaml")
+
+        runtime = DOCTRINE_MISSIONS / "plan" / "mission-runtime.yaml"
         data = yaml.safe_load(runtime.read_text())
         step_ids = [s["id"] for s in data["mission"]["steps"]]
         assert "specify" in step_ids, "specify step must be defined in plan mission"
@@ -365,7 +364,8 @@ class TestPlanMissionSteps:
     def test_research_step_defined_in_mission_runtime(self):
         """Verify research step is defined in plan mission-runtime.yaml."""
         import yaml
-        runtime = Path("src/specify_cli/missions/plan/mission-runtime.yaml")
+
+        runtime = DOCTRINE_MISSIONS / "plan" / "mission-runtime.yaml"
         data = yaml.safe_load(runtime.read_text())
         step_ids = [s["id"] for s in data["mission"]["steps"]]
         assert "research" in step_ids, "research step must be defined in plan mission"
@@ -373,7 +373,8 @@ class TestPlanMissionSteps:
     def test_plan_step_defined_in_mission_runtime(self):
         """Verify plan step is defined in plan mission-runtime.yaml."""
         import yaml
-        runtime = Path("src/specify_cli/missions/plan/mission-runtime.yaml")
+
+        runtime = DOCTRINE_MISSIONS / "plan" / "mission-runtime.yaml"
         data = yaml.safe_load(runtime.read_text())
         step_ids = [s["id"] for s in data["mission"]["steps"]]
         assert "plan" in step_ids, "plan step must be defined in plan mission"
@@ -381,7 +382,8 @@ class TestPlanMissionSteps:
     def test_review_step_defined_in_mission_runtime(self):
         """Verify review step is defined in plan mission-runtime.yaml."""
         import yaml
-        runtime = Path("src/specify_cli/missions/plan/mission-runtime.yaml")
+
+        runtime = DOCTRINE_MISSIONS / "plan" / "mission-runtime.yaml"
         data = yaml.safe_load(runtime.read_text())
         step_ids = [s["id"] for s in data["mission"]["steps"]]
         assert "review" in step_ids, "review step must be defined in plan mission"
@@ -403,9 +405,8 @@ class TestPlanMissionWorkflow:
         """Verify valid transitions between steps follow dependency chain."""
         import yaml
 
-
         # Load mission definition
-        mission_yaml = Path("src/specify_cli/missions/plan/mission-runtime.yaml")
+        mission_yaml = DOCTRINE_MISSIONS / "plan" / "mission-runtime.yaml"
         mission = yaml.safe_load(mission_yaml.read_text())
         steps = mission["mission"]["steps"]
 
@@ -426,12 +427,12 @@ class TestPlanMissionWorkflow:
             else:
                 # Each step depends only on the previous one
                 expected_dep = step_ids[i - 1]
-                assert depends_on == [expected_dep], \
+                assert depends_on == [expected_dep], (
                     f"Step {step_id} should depend only on {expected_dep}, got {depends_on}"
+                )
 
         # Verify no cycles (linear chain is acyclic by definition)
         assert len(step_ids) == len(set(step_ids)), "Step IDs must be unique"
 
         # Verify terminal step is correct
-        assert mission["mission"]["runtime"]["terminal_step"] == "review", \
-            "Terminal step must be review (last step)"
+        assert mission["mission"]["runtime"]["terminal_step"] == "review", "Terminal step must be review (last step)"

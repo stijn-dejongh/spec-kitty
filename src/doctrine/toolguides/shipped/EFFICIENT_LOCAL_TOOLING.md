@@ -134,6 +134,60 @@ Example hook pattern (Claude Code `PreToolUse`):
 git status  →  hook intercepts  →  rtk git status  →  agent receives filtered output
 ```
 
+## RTK pytest runner
+
+`rtk pytest` intercepts pytest and forces compact output (`--tb=short -q`). You **cannot** bypass this — all pytest invocations go through RTK's filter layer.
+
+### Getting failure details
+
+RTK summarizes results (e.g., `Pytest: 137 passed, 2 failed`). When failures occur, use these strategies to see details:
+
+1. **Check for log files** — When output exceeds RTK's threshold, the full output is written to `~/.local/share/rtk/tee/<timestamp>_pytest.log`. Read and grep these logs for `FAILED` lines and tracebacks.
+2. **Narrow the test scope** — Run individual test files or classes instead of entire directories to isolate which tests fail. RTK shows inline failure output when the total output is small enough.
+3. **Wipe old logs first** — Old logs from previous runs can be confusing. Run `rm -f ~/.local/share/rtk/tee/*.log` before a fresh run to ensure any log file produced is from the current invocation.
+4. **Use `-vvv` for discovery metadata** — `rtk pytest -vvv` adds `Running:` prefix showing the actual pytest command being executed, which helps confirm what arguments RTK is injecting.
+
+### Verbosity levels
+
+```bash
+rtk pytest tests/         # Default: summary only
+rtk pytest -v tests/      # Level 1: show running command
+rtk pytest -vv tests/     # Level 2: more detail
+rtk pytest -vvv tests/    # Level 3: max RTK verbosity (shows Running: prefix)
+```
+
+**Important**: RTK's `-v` flags control RTK's own output filtering, not pytest's `-v`. RTK always passes `--tb=short -q` to pytest regardless of your verbosity level. You cannot pass `--tb=long` or other pytest display flags through RTK.
+
+### Incremental testing pattern
+
+Run tests in tiers to stay under RTK's summarization threshold and see inline failures:
+
+```bash
+# Tier 1: Unit tests by directory
+rtk pytest tests/next/test_runtime_bridge_unit.py --timeout=60
+rtk pytest tests/next/test_decision_unit.py --timeout=60
+
+# Tier 2: Integration tests
+rtk pytest tests/next/test_next_command_integration.py --timeout=60
+
+# Tier 3: Cross-cutting
+rtk pytest tests/cross_cutting/ --timeout=60
+rtk pytest tests/missions/ --timeout=60
+
+# When a directory has failures, bisect by file to find the culprit
+rtk pytest tests/next/test_next_command_integration.py -k "test_specific_name" --timeout=60
+```
+
+### Reading RTK log files
+
+```bash
+rtk ls ~/.local/share/rtk/tee/          # List available logs
+# Then use Read/Grep tools to search:
+#   grep "FAILED" in the log to find failing test names
+#   grep "AssertionError\|Error\|raise" for tracebacks
+#   read the log with offset around FAILED lines for context
+```
+
 ## Windows and WSL
 
 - Prefer WSL for repository-scale Unix-oriented workflows on Windows when it materially improves tool availability or throughput.

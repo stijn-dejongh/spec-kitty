@@ -14,12 +14,10 @@ Verifies:
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import yaml
 
+from doctrine.missions.repository import MissionRepository
 from specify_cli.mission_v1.schema import (
-
     is_v1_mission,
     validate_mission_v1,
 )
@@ -32,7 +30,8 @@ pytestmark = pytest.mark.git_repo
 # Helpers
 # ---------------------------------------------------------------------------
 
-MISSIONS_DIR = Path(__file__).resolve().parents[2] / "src" / "specify_cli" / "missions"
+MISSIONS_DIR = MissionRepository.default_missions_root()
+
 
 def _load_yaml(mission_name: str) -> dict:
     """Load a mission.yaml from the missions directory."""
@@ -41,9 +40,11 @@ def _load_yaml(mission_name: str) -> dict:
     with open(path) as f:
         return yaml.safe_load(f)
 
+
 def _find_transitions(config: dict, trigger: str) -> list[dict]:
     """Return all transitions with the given trigger name."""
     return [t for t in config["transitions"] if t["trigger"] == trigger]
+
 
 def _find_transition(config: dict, trigger: str, source: str) -> dict | None:
     """Return the first transition matching trigger and source."""
@@ -57,9 +58,11 @@ def _find_transition(config: dict, trigger: str, source: str) -> dict | None:
                 return t
     return None
 
+
 # ---------------------------------------------------------------------------
 # Research Mission Tests
 # ---------------------------------------------------------------------------
+
 
 class TestResearchMissionV1:
     """Research mission v1 structure and schema validation."""
@@ -83,9 +86,7 @@ class TestResearchMissionV1:
 
     def test_states_count(self, config: dict) -> None:
         state_names = [s["name"] for s in config["states"]]
-        assert state_names == [
-            "scoping", "methodology", "gathering", "synthesis", "output", "done"
-        ]
+        assert state_names == ["scoping", "methodology", "gathering", "synthesis", "output", "done"]
 
     def test_all_states_have_display_name(self, config: dict) -> None:
         for state in config["states"]:
@@ -104,9 +105,7 @@ class TestResearchMissionV1:
         for source, dest in expected_chain:
             t = _find_transition(config, "advance", source)
             assert t is not None, f"Missing advance transition from {source}"
-            assert t["dest"] == dest, (
-                f"advance from {source} should go to {dest}, got {t['dest']}"
-            )
+            assert t["dest"] == dest, f"advance from {source} should go to {dest}, got {t['dest']}"
 
     def test_evidence_gate_on_gathering_to_synthesis(self, config: dict) -> None:
         """The gathering -> synthesis transition must require event_count guard."""
@@ -149,8 +148,7 @@ class TestResearchMissionV1:
     def test_guards_section_present(self, config: dict) -> None:
         assert "guards" in config
         guard_names = set(config["guards"].keys())
-        expected = {"has_scope", "has_methodology", "minimum_sources",
-                    "has_findings", "publication_approved"}
+        expected = {"has_scope", "has_methodology", "minimum_sources", "has_findings", "publication_approved"}
         assert expected == guard_names
 
     def test_inputs_defined(self, config: dict) -> None:
@@ -175,9 +173,11 @@ class TestResearchMissionV1:
         assert "agent_context" in config
         assert "commands" in config
 
+
 # ---------------------------------------------------------------------------
 # Plan Mission Tests
 # ---------------------------------------------------------------------------
+
 
 class TestPlanMissionV1:
     """Plan mission v1 structure and schema validation."""
@@ -201,9 +201,7 @@ class TestPlanMissionV1:
 
     def test_states_count(self, config: dict) -> None:
         state_names = [s["name"] for s in config["states"]]
-        assert state_names == [
-            "goals", "research", "structure", "draft", "review", "done"
-        ]
+        assert state_names == ["goals", "research", "structure", "draft", "review", "done"]
 
     def test_all_states_have_display_name(self, config: dict) -> None:
         for state in config["states"]:
@@ -294,9 +292,11 @@ class TestPlanMissionV1:
         assert "artifacts" in config
         assert "commands" in config
 
+
 # ---------------------------------------------------------------------------
 # Directory structure tests
 # ---------------------------------------------------------------------------
+
 
 class TestPlanMissionDirectoryStructure:
     """Verify the plan mission directory has the expected layout."""
@@ -309,6 +309,7 @@ class TestPlanMissionDirectoryStructure:
 
     def test_plan_templates_exists(self) -> None:
         assert (MISSIONS_DIR / "plan" / "templates").is_dir()
+
 
 # ---------------------------------------------------------------------------
 # Guard expression validation (both missions use the 6 supported primitives)
@@ -323,6 +324,7 @@ SUPPORTED_GUARD_PRIMITIVES = [
     "command_succeeds",
 ]
 
+
 class TestGuardExpressionPrimitives:
     """All guard check expressions must use only supported primitives."""
 
@@ -332,14 +334,10 @@ class TestGuardExpressionPrimitives:
         for name, guard in config.get("guards", {}).items():
             check = guard["check"]
             matched = any(prim in check for prim in SUPPORTED_GUARD_PRIMITIVES)
-            assert matched, (
-                f"Guard '{name}' in {mission_name} uses unsupported expression: {check}"
-            )
+            assert matched, f"Guard '{name}' in {mission_name} uses unsupported expression: {check}"
 
     @pytest.mark.parametrize("mission_name", ["research", "plan"])
-    def test_all_transition_conditions_use_supported_primitives(
-        self, mission_name: str
-    ) -> None:
+    def test_all_transition_conditions_use_supported_primitives(self, mission_name: str) -> None:
         config = _load_yaml(mission_name)
         for t in config["transitions"]:
             for cond in t.get("conditions", []):

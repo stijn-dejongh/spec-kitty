@@ -21,6 +21,7 @@ runner = CliRunner()
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 def _init_git_repo(path: Path) -> None:
     """Initialize a bare git repo at *path* so mission detection works."""
     subprocess.run(["git", "init", "--initial-branch=main"], cwd=path, capture_output=True, check=True)
@@ -30,6 +31,7 @@ def _init_git_repo(path: Path) -> None:
     (path / "README.md").write_text("# test", encoding="utf-8")
     subprocess.run(["git", "add", "README.md"], cwd=path, capture_output=True, check=True)
     subprocess.run(["git", "commit", "-m", "init"], cwd=path, capture_output=True, check=True)
+
 
 def _scaffold_project(
     tmp_path: Path,
@@ -55,6 +57,7 @@ def _scaffold_project(
 
     return repo_root
 
+
 def _write_runtime_input_mission(repo_root: Path, mission_key: str) -> None:
     """Create a runtime-only mission that deterministically requests input."""
     mission_dir = repo_root / ".kittify" / "overrides" / "missions" / mission_key
@@ -77,6 +80,7 @@ def _write_runtime_input_mission(repo_root: Path, mission_key: str) -> None:
         ),
         encoding="utf-8",
     )
+
 
 def _seed_wp_lane(mission_dir: Path, wp_id: str, lane: str) -> None:
     """Seed a WP into a specific lane in the event log."""
@@ -113,6 +117,7 @@ def _add_wp_files(mission_dir: Path, wps: dict[str, str]) -> None:
         # Seed event log for non-planned lanes
         if lane != "planned":
             _seed_wp_lane(mission_dir, wp_id, lane)
+
 
 def _advance_runtime_to_step(
     repo_root: Path,
@@ -152,6 +157,7 @@ def _advance_runtime_to_step(
         if snapshot.issued_step_id == target_step_id:
             return
 
+
 def _complete_all_steps(
     repo_root: Path,
     mission_slug: str,
@@ -171,9 +177,11 @@ def _complete_all_steps(
         if decision.kind == "terminal":
             return
 
+
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 class TestNextCommandJSON:
     """Test JSON output mode of the ``next`` command."""
@@ -234,6 +242,7 @@ class TestNextCommandJSON:
         decision = decide_next("test-agent", "999-nonexistent", "success", repo_root)
         assert decision.kind == DecisionKind.blocked
         assert "not found" in decision.reason
+
 
 class TestNextCommandImplementState:
     """Test implement state behavior with WP files."""
@@ -299,6 +308,7 @@ class TestNextCommandImplementState:
         # All WPs done => should advance past implement
         assert decision.kind in (DecisionKind.step, DecisionKind.blocked)
 
+
 class TestNextCommandProgress:
     """Test that progress information is included."""
 
@@ -323,6 +333,7 @@ class TestNextCommandProgress:
         assert decision.progress["in_progress_wps"] == 1
         assert decision.progress["planned_wps"] == 1
 
+
 class TestNextCommandOrigin:
     """Test that origin metadata is included."""
 
@@ -334,6 +345,7 @@ class TestNextCommandOrigin:
         decision = decide_next("test-agent", "042-test-mission", "success", repo_root)
         if decision.origin:
             assert "mission_path" in decision.origin
+
 
 class TestNextCommandRuntimeFields:
     """Test that runtime fields are included in decisions."""
@@ -366,6 +378,7 @@ class TestNextCommandRuntimeFields:
         assert "step_id" in d
         assert "decision_id" in d
         assert "input_key" in d
+
 
 class TestNextCommandKnownBlockedMissions:
     """Strict reminders for accepted-but-unimplemented mission mappings."""
@@ -406,9 +419,11 @@ class TestNextCommandKnownBlockedMissions:
         assert decision.kind == DecisionKind.step
         assert decision.action is not None
 
+
 # ---------------------------------------------------------------------------
 # CLI CliRunner tests — test actual Typer command routing
 # ---------------------------------------------------------------------------
+
 
 class TestNextCommandCLI:
     """Test the ``next`` command via CliRunner (real CLI routing)."""
@@ -551,9 +566,11 @@ class TestNextCommandCLI:
         assert data["run_id"] is not None
         assert "step_id" in data
 
+
 # ---------------------------------------------------------------------------
 # --answer --json single-document output tests
 # ---------------------------------------------------------------------------
+
 
 class TestNextCommandAnswerJSON:
     def test_answer_json_single_document(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -635,9 +652,11 @@ class TestNextCommandAnswerJSON:
         assert isinstance(obj, dict)
         assert text[idx:].strip() == "", f"Unexpected trailing output: {text[idx:]!r}"
 
+
 # ---------------------------------------------------------------------------
 # Decision-required metadata tests
 # ---------------------------------------------------------------------------
+
 
 class TestNextCommandDecisionRequired:
     def test_decision_required_has_question_field_in_json(self, tmp_path: Path) -> None:
@@ -666,9 +685,11 @@ class TestNextCommandDecisionRequired:
         assert d["decision_id"] == "input:approval"
         assert d["input_key"] == "approval"
 
+
 # ---------------------------------------------------------------------------
 # Atomic task transition tests
 # ---------------------------------------------------------------------------
+
 
 class TestAtomicTaskTransitions:
     def test_plan_to_tasks_outline_to_packages_to_finalize(self, tmp_path: Path) -> None:
