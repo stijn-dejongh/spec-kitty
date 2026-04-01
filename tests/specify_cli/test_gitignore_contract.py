@@ -2,6 +2,10 @@
 
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 def test_repo_gitignore_covers_local_runtime():
     """Every LOCAL_RUNTIME project surface has a matching .gitignore entry."""

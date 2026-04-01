@@ -13,6 +13,9 @@ from specify_cli.mission import Mission
 from specify_cli.mission_v1 import MissionProtocol, PhaseMission
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

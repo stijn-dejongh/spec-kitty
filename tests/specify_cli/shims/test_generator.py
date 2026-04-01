@@ -11,6 +11,10 @@ from specify_cli.shims.generator import (
 )
 from specify_cli.shims.registry import CLI_DRIVEN_COMMANDS, CONSUMER_SKILLS, PROMPT_DRIVEN_COMMANDS
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 # ---------------------------------------------------------------------------
 # generate_shim_content

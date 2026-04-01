@@ -7,6 +7,10 @@ from pathlib import Path
 
 from specify_cli.dashboard.handlers.api import APIHandler
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 class _DummyAPIHandler:
     """Minimal handler shim to execute APIHandler methods in isolation."""

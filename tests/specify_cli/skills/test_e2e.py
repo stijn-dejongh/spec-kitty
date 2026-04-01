@@ -26,6 +26,10 @@ from specify_cli.skills.manifest import (
 from specify_cli.skills.registry import CanonicalSkill, SkillRegistry
 from specify_cli.skills.verifier import repair_skills, verify_installed_skills
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 # ── Helpers ──────────────────────────────────────────────────────────
 

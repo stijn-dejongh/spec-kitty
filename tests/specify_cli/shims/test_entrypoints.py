@@ -15,6 +15,9 @@ from specify_cli.context.models import MissionContext
 from specify_cli.context.errors import MissingArgumentError
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # _parse_raw_args
 # ---------------------------------------------------------------------------

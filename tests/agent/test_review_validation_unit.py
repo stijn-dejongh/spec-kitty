@@ -9,6 +9,10 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 class TestValidateReadyForReview:
     """Tests for _validate_ready_for_review helper."""

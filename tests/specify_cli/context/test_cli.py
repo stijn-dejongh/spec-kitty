@@ -11,6 +11,9 @@ from typer.testing import CliRunner
 from specify_cli.cli.commands.context import app
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

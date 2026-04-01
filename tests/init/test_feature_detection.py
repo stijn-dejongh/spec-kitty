@@ -1,8 +1,4 @@
-"""
-
-pytestmark = pytest.mark.fast
-
-Comprehensive unit tests for centralized mission detection.
+"""Comprehensive unit tests for centralized mission detection.
 
 Tests cover all detection scenarios:
 1. Explicit parameter (highest priority)
@@ -32,6 +28,9 @@ from specify_cli.core.mission_detection import (
     detect_mission_directory,
     get_mission_target_branch,
 )
+
+
+pytestmark = pytest.mark.fast
 
 
 # ============================================================================

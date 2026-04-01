@@ -6,11 +6,17 @@ baseline (before T003/T004 apply the rename) and PASS after.
 from __future__ import annotations
 
 import os
+import re
 import sys
 import subprocess
 from pathlib import Path
 
 import pytest
+
+
+def _strip_ansi(text: str) -> str:
+    """Remove ANSI escape sequences from text."""
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
 # Ensure the worktree's own src/ is first on PYTHONPATH so subprocess calls
 # pick up this worktree's modified files rather than the editable-install in
@@ -23,6 +29,7 @@ def _run_cli(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess
     env = os.environ.copy()
     env["PYTHONPATH"] = _WORKTREE_SRC + os.pathsep + env.get("PYTHONPATH", "")
     env["NO_COLOR"] = "1"
+    env["TERM"] = "dumb"
     return subprocess.run(
         [sys.executable, "-m", "specify_cli.__main__", *args],
         capture_output=True,
@@ -42,6 +49,7 @@ def _help(*subcommand: str) -> subprocess.CompletedProcess[str]:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.fast
 def test_resolve_utility_mission_only() -> None:
     """resolve_mission_type returns mission_type when only --mission-type given."""
     from specify_cli.cli.commands._flag_utils import resolve_mission_type
@@ -50,6 +58,7 @@ def test_resolve_utility_mission_only() -> None:
     assert result == "software-dev"
 
 
+@pytest.mark.fast
 def test_resolve_utility_feature_only() -> None:
     """resolve_mission_type raises typer.Exit when removed --mission alias is used."""
     import typer
@@ -59,6 +68,7 @@ def test_resolve_utility_feature_only() -> None:
         resolve_mission_type(None, "056-my-feature")
 
 
+@pytest.mark.fast
 def test_resolve_utility_conflicting_raises() -> None:
     """resolve_mission_type returns mission_type even when mission alias is also given."""
     from specify_cli.cli.commands._flag_utils import resolve_mission_type
@@ -68,6 +78,7 @@ def test_resolve_utility_conflicting_raises() -> None:
     assert result == "software-dev"
 
 
+@pytest.mark.fast
 def test_resolve_utility_same_value_silent() -> None:
     """resolve_mission_type returns None when neither flag is set."""
     from specify_cli.cli.commands._flag_utils import resolve_mission_type
@@ -82,39 +93,47 @@ def test_resolve_utility_same_value_silent() -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 def test_mission_flag_present_in_next_help() -> None:
     """spec-kitty next --help must expose --mission as a documented option."""
     result = _help("next")
-    assert "--mission" in result.stdout, (
+    stdout = _strip_ansi(result.stdout)
+    assert "--mission" in stdout, (
         f"--mission not found in `spec-kitty next --help`.\n"
-        f"stdout: {result.stdout}\nstderr: {result.stderr}"
+        f"stdout: {stdout}\nstderr: {result.stderr}"
     )
 
 
+@pytest.mark.integration
 def test_feature_flag_deprecated_label_in_next_help() -> None:
     """--feature should be absent (hidden) or labelled deprecated in next --help."""
     result = _help("next")
+    stdout = _strip_ansi(result.stdout)
     # After the rename --feature is hidden=True, so it should NOT appear in help.
     # Before the rename it IS visible.  The test asserts it is gone from visible help.
-    assert "--feature" not in result.stdout, (
+    assert "--feature" not in stdout, (
         "--feature should be hidden after rename but is still visible in help.\n"
-        f"stdout: {result.stdout}"
+        f"stdout: {stdout}"
     )
 
 
+@pytest.mark.integration
 def test_mission_flag_present_in_verify_help() -> None:
     """spec-kitty verify-setup --help must expose --mission as a documented option."""
     result = _help("verify-setup")
-    assert "--mission" in result.stdout, (
+    stdout = _strip_ansi(result.stdout)
+    assert "--mission" in stdout, (
         f"--mission not found in `spec-kitty verify-setup --help`.\n"
-        f"stdout: {result.stdout}\nstderr: {result.stderr}"
+        f"stdout: {stdout}\nstderr: {result.stderr}"
     )
 
 
+@pytest.mark.integration
 def test_mission_flag_present_in_agent_workflow_implement_help() -> None:
     """spec-kitty agent workflow implement --help must expose --mission."""
     result = _help("agent", "workflow", "implement")
-    assert "--mission" in result.stdout, (
+    stdout = _strip_ansi(result.stdout)
+    assert "--mission" in stdout, (
         f"--mission not found in `spec-kitty agent workflow implement --help`.\n"
-        f"stdout: {result.stdout}\nstderr: {result.stderr}"
+        f"stdout: {stdout}\nstderr: {result.stderr}"
     )

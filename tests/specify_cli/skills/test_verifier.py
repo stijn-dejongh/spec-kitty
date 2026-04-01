@@ -14,6 +14,10 @@ from specify_cli.skills.manifest import (
 from specify_cli.skills.registry import SkillRegistry
 from specify_cli.skills.verifier import VerifyResult, repair_skills, verify_installed_skills
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 def _make_entry(
     skill_name: str = "test-skill",

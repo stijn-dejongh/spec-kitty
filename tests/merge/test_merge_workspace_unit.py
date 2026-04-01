@@ -20,6 +20,9 @@ from specify_cli.merge.workspace import (
 )
 
 
+pytestmark = pytest.mark.git_repo
+
+
 MISSION_ID = "057-test-feature"
 
 

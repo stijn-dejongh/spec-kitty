@@ -27,6 +27,9 @@ from specify_cli.dossier.manifest import (
 from specify_cli.dossier.models import ArtifactRef, MissionDossier
 
 
+pytestmark = pytest.mark.fast
+
+
 class TestIndexerScanning:
     """Test Indexer directory scanning."""
 

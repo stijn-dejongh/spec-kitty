@@ -14,6 +14,10 @@ import types
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 
 # --------------------------------------------------------------------------- #

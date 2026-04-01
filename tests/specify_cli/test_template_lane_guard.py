@@ -18,6 +18,9 @@ from pathlib import Path
 
 import pytest
 
+
+pytestmark = pytest.mark.fast
+
 # Root of the source tree relative to repo root
 REPO_ROOT = Path(__file__).resolve().parents[2]
 

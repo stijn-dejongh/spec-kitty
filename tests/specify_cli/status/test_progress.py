@@ -20,6 +20,9 @@ from specify_cli.status.reducer import reduce
 from specify_cli.status.store import append_event
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

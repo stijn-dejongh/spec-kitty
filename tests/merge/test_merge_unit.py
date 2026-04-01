@@ -12,6 +12,10 @@ from pathlib import Path
 
 from specify_cli.runtime.merge import MANAGED_DIRS, MANAGED_FILES, merge_package_assets
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 # ---------------------------------------------------------------------------
 # T009: merge_package_assets() tests

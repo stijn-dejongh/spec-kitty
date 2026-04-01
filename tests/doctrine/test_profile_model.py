@@ -29,6 +29,9 @@ from doctrine.agent_profiles.profile import (
 )
 
 
+pytestmark = pytest.mark.fast
+
+
 class TestAgentProfileZero:
     """Zero: Minimal valid profile construction."""
 

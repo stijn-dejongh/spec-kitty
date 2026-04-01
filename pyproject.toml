@@ -152,6 +152,7 @@ markers = [
     "legacy: Frozen 0.x/1.x contract tests — only run on the 0.x/1.x maintenance branch",
     "adversarial: Adversarial/security tests for 0.13.0",
     "distribution: Tests requiring wheel install (slow, no SPEC_KITTY_TEMPLATE_ROOT)",
+    "doctrine: Tests that load shipped doctrine YAML/JSON assets from the source tree",
     "e2e: End-to-end tests exercising the full CLI workflow (may be slow)",
     "platform_darwin: macOS-specific tests (case-insensitive FS)",
     "platform_linux: Linux-specific tests",

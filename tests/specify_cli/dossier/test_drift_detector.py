@@ -27,6 +27,10 @@ from specify_cli.dossier.drift_detector import (
 from specify_cli.dossier.models import MissionDossierSnapshot
 from specify_cli.sync.project_identity import ProjectIdentity
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 class TestBaselineKey:
     """Test BaselineKey dataclass and methods."""

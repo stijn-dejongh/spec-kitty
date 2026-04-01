@@ -22,6 +22,9 @@ from specify_cli.merge.state import (
 )
 
 
+pytestmark = pytest.mark.fast
+
+
 MISSION_ID = "057-test-mission"
 
 

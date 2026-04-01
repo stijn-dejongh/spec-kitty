@@ -14,6 +14,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent.parent / "s
 import generate_contextive_glossaries as gen
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

@@ -14,6 +14,10 @@ from specify_cli.requirement_mapping import (
     validate_refs,
 )
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 class TestValidateRefs:
     """Test ref validation against spec IDs."""

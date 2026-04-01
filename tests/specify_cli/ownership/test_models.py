@@ -7,6 +7,9 @@ import pytest
 from specify_cli.ownership.models import ExecutionMode, OwnershipManifest
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # ExecutionMode
 # ---------------------------------------------------------------------------

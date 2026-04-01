@@ -13,6 +13,9 @@ import typer
 import specify_cli.cli.commands.upgrade as upgrade_cmd
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # _git_status_paths – parsing logic (real subprocess mock)
 # ---------------------------------------------------------------------------

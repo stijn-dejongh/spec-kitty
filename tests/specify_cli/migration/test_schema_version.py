@@ -27,6 +27,9 @@ from specify_cli.migration.schema_version import (
 )
 from specify_cli.migration.gate import check_schema_version
 
+
+pytestmark = pytest.mark.fast
+
 # Use a concrete version for testing (REQUIRED_SCHEMA_VERSION may be None during dev)
 _TEST_SCHEMA_VERSION: int = 3
 

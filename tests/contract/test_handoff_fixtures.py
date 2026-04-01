@@ -15,6 +15,9 @@ import pytest
 from specify_cli.spec_kitty_events.models import Event
 from specify_cli.sync.emitter import _PAYLOAD_RULES, VALID_EVENT_TYPES
 
+
+pytestmark = pytest.mark.fast
+
 # ---------------------------------------------------------------------------
 # Fixture data: one event per documented event type.
 # These match the examples in contracts/batch-api-contract.md.

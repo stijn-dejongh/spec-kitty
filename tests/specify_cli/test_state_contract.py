@@ -18,6 +18,9 @@ from specify_cli.state_contract import (
 )
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # Uniqueness and completeness
 # ---------------------------------------------------------------------------

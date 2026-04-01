@@ -13,6 +13,9 @@ from specify_cli.template.github_client import (
 )
 
 
+pytestmark = pytest.mark.fast
+
+
 class FakeResponse:
     def __init__(
         self,

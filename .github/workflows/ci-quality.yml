@@ -560,7 +560,8 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # integration-tests: replaces the individual git_repo / integration suites.
-  # Runs all tests marked git_repo (real filesystem/git operations).
+  # Runs all tests marked git_repo (real filesystem/git operations) or
+  # integration (subprocess CLI tests without git).
   # ---------------------------------------------------------------------------
   integration-tests:
     runs-on: ubuntu-latest
@@ -590,18 +591,32 @@ jobs:
           mkdir -p out/reports/xunit-reports
           mkdir -p out/reports/coverage
 
-      - name: "[ENFORCED] Run git_repo integration tests with coverage"
+      - name: "[ENFORCED] Run git_repo + integration tests with coverage"
         run: |
           mapfile -t GIT_REPO_TEST_FILES < <(python scripts/select_tests_by_marker.py git_repo)
-          if [ "${#GIT_REPO_TEST_FILES[@]}" -eq 0 ]; then
-            echo "::error::No git_repo-marked test files found."
+          mapfile -t INTEGRATION_TEST_FILES < <(python scripts/select_tests_by_marker.py integration)
+
+          # Deduplicate and merge both file lists
+          ALL_TEST_FILES=()
+          declare -A seen
+          for f in "${GIT_REPO_TEST_FILES[@]}" "${INTEGRATION_TEST_FILES[@]}"; do
+            if [ -n "$f" ] && [ -z "${seen[$f]+x}" ]; then
+              ALL_TEST_FILES+=("$f")
+              seen[$f]=1
+            fi
+          done
+
+          if [ "${#ALL_TEST_FILES[@]}" -eq 0 ]; then
+            echo "::error::No git_repo or integration-marked test files found."
             exit 1
           fi
 
+          echo "Collected ${#ALL_TEST_FILES[@]} test files (git_repo + integration)"
+
           python -m pytest \
             -v \
-            "${GIT_REPO_TEST_FILES[@]}" \
-            -m git_repo \
+            "${ALL_TEST_FILES[@]}" \
+            -m "git_repo or integration" \
             --cov=src/specify_cli --cov=src/constitution --cov=src/doctrine \
             --cov-report=xml:out/reports/coverage/coverage-integration.xml \
             --junitxml=out/reports/xunit-reports/xunit-result-integration-${{ github.run_id }}.xml

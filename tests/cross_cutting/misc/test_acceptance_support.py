@@ -9,6 +9,9 @@ import acceptance_support as acc
 import task_helpers as th
 
 
+pytestmark = pytest.mark.git_repo
+
+
 def test_collect_mission_summary_reports_metadata_issue(mission_repo: Path, mission_slug: str) -> None:
     # WP files now live in flat tasks/ directory
     wp_path = mission_repo / "kitty-specs" / mission_slug / "tasks" / "WP01.md"

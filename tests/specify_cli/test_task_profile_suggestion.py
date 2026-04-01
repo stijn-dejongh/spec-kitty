@@ -12,6 +12,10 @@ from pathlib import Path
 
 import yaml
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 # ---------------------------------------------------------------------------
 # Scenario 1 — mission template has agent_role

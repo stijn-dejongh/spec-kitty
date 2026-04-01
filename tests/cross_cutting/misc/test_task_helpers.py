@@ -5,6 +5,10 @@ from pathlib import Path
 
 import task_helpers as th
 
+import pytest
+
+pytestmark = pytest.mark.git_repo
+
 
 def test_set_scalar_inserts_and_updates() -> None:
     original = "agent: \"system\"\n"

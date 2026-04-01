@@ -13,11 +13,17 @@ For each command the tests verify:
 from __future__ import annotations
 
 import os
+import re
 import sys
 import subprocess
 from pathlib import Path
 
 import pytest
+
+
+def _strip_ansi(text: str) -> str:
+    """Remove ANSI escape sequences from text."""
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
 _WORKTREE_SRC = str(Path(__file__).parents[4] / "src")
 
@@ -27,6 +33,7 @@ def _run_cli(*args: str) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env["PYTHONPATH"] = _WORKTREE_SRC + os.pathsep + env.get("PYTHONPATH", "")
     env["NO_COLOR"] = "1"
+    env["TERM"] = "dumb"
     return subprocess.run(
         [sys.executable, "-m", "specify_cli.__main__", *args],
         capture_output=True,
@@ -44,6 +51,7 @@ def _help(*subcommand: str) -> subprocess.CompletedProcess[str]:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.fast
 def test_resolve_mission_type_canonical_flag_wins() -> None:
     """resolve_mission_type returns mission_type when --mission-type given."""
     from specify_cli.cli.commands._flag_utils import resolve_mission_type
@@ -52,6 +60,7 @@ def test_resolve_mission_type_canonical_flag_wins() -> None:
     assert result == "software-dev"
 
 
+@pytest.mark.fast
 def test_resolve_mission_type_none_when_neither() -> None:
     """resolve_mission_type returns None when neither flag given."""
     from specify_cli.cli.commands._flag_utils import resolve_mission_type
@@ -60,6 +69,7 @@ def test_resolve_mission_type_none_when_neither() -> None:
     assert result is None
 
 
+@pytest.mark.fast
 def test_resolve_mission_type_legacy_raises_exit() -> None:
     """resolve_mission_type raises typer.Exit(1) when the removed --mission alias is used."""
     import click
@@ -78,6 +88,7 @@ def test_resolve_mission_type_legacy_raises_exit() -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize(
     "subcommand",
     [
@@ -92,11 +103,13 @@ def test_resolve_mission_type_legacy_raises_exit() -> None:
 def test_mission_type_flag_visible_in_help(subcommand: list[str]) -> None:
     """--mission-type must appear in the command's --help output."""
     result = _help(*subcommand)
-    assert "--mission-type" in result.stdout, (
-        f"--mission-type not found in `spec-kitty {' '.join(subcommand)} --help`.\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+    stdout = _strip_ansi(result.stdout)
+    assert "--mission-type" in stdout, (
+        f"--mission-type not found in `spec-kitty {' '.join(subcommand)} --help`.\nstdout:\n{stdout}\nstderr:\n{result.stderr}"
     )
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize(
     "subcommand",
     [
@@ -111,10 +124,11 @@ def test_mission_type_flag_visible_in_help(subcommand: list[str]) -> None:
 def test_mission_flag_hidden_in_help(subcommand: list[str]) -> None:
     """--mission must NOT appear in the command's --help output (hidden=True)."""
     result = _help(*subcommand)
+    stdout = _strip_ansi(result.stdout)
     # Filter out lines that are sub-command names (e.g. "mission" in "spec-kitty mission")
     # We specifically check for the option flag --mission (with leading dashes).
-    assert "--mission " not in result.stdout and "--mission\n" not in result.stdout, (
-        f"--mission (as flag) should be hidden but is still visible in `spec-kitty {' '.join(subcommand)} --help`.\nstdout:\n{result.stdout}"
+    assert "--mission " not in stdout and "--mission\n" not in stdout, (
+        f"--mission (as flag) should be hidden but is still visible in `spec-kitty {' '.join(subcommand)} --help`.\nstdout:\n{stdout}"
     )
 
 
@@ -123,19 +137,21 @@ def test_mission_flag_hidden_in_help(subcommand: list[str]) -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
 def test_config_mission_legacy_flag_errors() -> None:
     """spec-kitty config --mission <type> must exit 1 with a clear error message."""
     result = _run_cli("config", "--mission", "software-dev", "--show-origin")
     assert result.returncode == 1, (
         f"Expected exit code 1 when --mission used on config, got {result.returncode}.\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
     )
-    combined = result.stdout + result.stderr
+    combined = _strip_ansi(result.stdout + result.stderr)
     assert "--mission-type" in combined, f"Error message should mention --mission-type but got:\n{combined}"
 
 
+@pytest.mark.integration
 def test_constitution_interview_mission_legacy_flag_errors() -> None:
     """spec-kitty constitution interview --mission <type> must exit 1."""
     result = _run_cli("constitution", "interview", "--mission", "software-dev", "--defaults")
     assert result.returncode == 1
-    combined = result.stdout + result.stderr
+    combined = _strip_ansi(result.stdout + result.stderr)
     assert "--mission-type" in combined, f"Error message should mention --mission-type but got:\n{combined}"

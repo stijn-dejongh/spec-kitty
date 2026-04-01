@@ -11,6 +11,9 @@ from specify_cli.upgrade.migrations.m_0_10_12_constitution_cleanup import (
 )
 
 
+pytestmark = pytest.mark.fast
+
+
 @pytest.fixture
 def migration() -> ConstitutionCleanupMigration:
     """Create migration instance."""

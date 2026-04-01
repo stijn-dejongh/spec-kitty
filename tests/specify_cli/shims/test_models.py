@@ -7,6 +7,9 @@ import pytest
 from specify_cli.shims.models import AgentShimConfig, ShimTemplate
 
 
+pytestmark = pytest.mark.fast
+
+
 class TestShimTemplate:
     def test_creation(self) -> None:
         t = ShimTemplate(

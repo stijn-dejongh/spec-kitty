@@ -2,6 +2,10 @@ import json
 
 from specify_cli.dashboard import lifecycle
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 def test_parse_and_write_dashboard_file_roundtrip(tmp_path):
     dashboard_file = tmp_path / ".kittify" / ".dashboard"

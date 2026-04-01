@@ -20,6 +20,9 @@ from specify_cli.guards import (  # noqa: E402
 )
 
 
+pytestmark = pytest.mark.fast
+
+
 @pytest.fixture
 def fake_project_root(tmp_path: Path) -> Path:
     """Return a fake project root for validation."""

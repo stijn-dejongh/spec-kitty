@@ -30,6 +30,9 @@ from specify_cli.dossier.events import (
 )
 
 
+pytestmark = pytest.mark.fast
+
+
 class TestMissionDossierArtifactIndexedPayload:
     """Tests for MissionDossierArtifactIndexedPayload schema."""
 

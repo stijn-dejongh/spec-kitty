@@ -14,6 +14,10 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src" / "spe
 
 import gitignore_manager
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 GitignoreManager = gitignore_manager.GitignoreManager
 ProtectionResult = gitignore_manager.ProtectionResult
 

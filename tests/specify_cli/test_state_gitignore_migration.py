@@ -10,6 +10,9 @@ from specify_cli.upgrade.migrations.m_2_0_9_state_gitignore import (
 )
 
 
+pytestmark = pytest.mark.fast
+
+
 @pytest.fixture()
 def migration():
     return StateGitignoreMigration()

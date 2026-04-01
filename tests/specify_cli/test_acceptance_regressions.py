@@ -32,6 +32,9 @@ from specify_cli.status.models import Lane, StatusEvent
 from specify_cli.status.store import StoreError, append_event
 
 
+pytestmark = pytest.mark.git_repo
+
+
 # ---------------------------------------------------------------------------
 # Shared test helper
 # ---------------------------------------------------------------------------

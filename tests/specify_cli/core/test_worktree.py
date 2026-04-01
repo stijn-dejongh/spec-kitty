@@ -19,6 +19,9 @@ from specify_cli.core.worktree import create_wp_workspace
 from specify_cli.ownership.models import ExecutionMode
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

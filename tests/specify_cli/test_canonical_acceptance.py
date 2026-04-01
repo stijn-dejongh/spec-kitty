@@ -22,6 +22,9 @@ from specify_cli.status.models import Lane, StatusEvent
 from specify_cli.status.store import append_event
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

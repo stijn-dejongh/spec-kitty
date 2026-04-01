@@ -16,6 +16,10 @@ from specify_cli.runtime.show_origin import (
     collect_origins,
 )
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 # ---------------------------------------------------------------------------
 # Helpers

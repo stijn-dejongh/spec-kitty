@@ -26,6 +26,9 @@ from specify_cli.mission_v1.guards import (
 from specify_cli.mission_v1.schema import MissionValidationError
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

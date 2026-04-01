@@ -29,6 +29,9 @@ from specify_cli.migration.rebuild_state import (
 )
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # Test helpers / fixtures
 # ---------------------------------------------------------------------------

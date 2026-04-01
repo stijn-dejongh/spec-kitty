@@ -20,6 +20,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 # Patterns that indicate direct meta.json writes outside the public API.
 # We look for the combination of json serialization + file write in the

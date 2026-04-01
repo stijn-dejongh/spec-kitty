@@ -11,6 +11,10 @@ from typer.testing import CliRunner
 from specify_cli import app as cli_app
 from specify_cli.core.context_validation import ExecutionContext
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 runner = CliRunner()
 

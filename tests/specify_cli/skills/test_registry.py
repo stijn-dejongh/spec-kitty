@@ -9,6 +9,9 @@ import pytest
 from specify_cli.skills.registry import CanonicalSkill, SkillRegistry
 
 
+pytestmark = pytest.mark.integration
+
+
 def _make_skill(
     root: Path,
     name: str,

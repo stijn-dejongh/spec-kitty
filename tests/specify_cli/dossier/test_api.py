@@ -18,6 +18,9 @@ from specify_cli.dossier.api import (
 from specify_cli.dossier.models import ArtifactRef, MissionDossier, MissionDossierSnapshot
 
 
+pytestmark = pytest.mark.fast
+
+
 # ============================================================================
 # Fixtures
 # ============================================================================

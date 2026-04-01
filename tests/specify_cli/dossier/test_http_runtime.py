@@ -31,6 +31,9 @@ from specify_cli.dossier.snapshot import save_snapshot, compute_snapshot
 from specify_cli.dossier.models import ArtifactRef, MissionDossier
 
 
+pytestmark = pytest.mark.fast
+
+
 class TestDossierHTTPRuntime:
     """Runtime HTTP endpoint tests with real snapshots."""
 

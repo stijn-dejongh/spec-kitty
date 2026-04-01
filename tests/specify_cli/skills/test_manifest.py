@@ -14,6 +14,10 @@ from specify_cli.skills.manifest import (
     save_manifest,
 )
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 def _make_entry(
     skill_name: str = "test-skill",

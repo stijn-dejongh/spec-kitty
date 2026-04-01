@@ -8,6 +8,9 @@ import tarfile
 import pytest
 
 
+pytestmark = pytest.mark.distribution
+
+
 def test_command_templates_not_bundled():
     """WP10: command-templates directories must not exist in src/specify_cli (except software-dev).
 

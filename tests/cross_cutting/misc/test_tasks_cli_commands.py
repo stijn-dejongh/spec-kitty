@@ -11,6 +11,9 @@ from tests.utils import REPO_ROOT, run, run_tasks_cli, write_wp
 from task_helpers import locate_work_package
 
 
+pytestmark = pytest.mark.git_repo
+
+
 def assert_success(result) -> None:
     if result.returncode != 0:
         raise AssertionError(f"Command failed: {result.stderr}\nSTDOUT: {result.stdout}")

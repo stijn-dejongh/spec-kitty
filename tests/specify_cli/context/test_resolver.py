@@ -18,6 +18,9 @@ from specify_cli.context.resolver import resolve_context, resolve_or_load
 from specify_cli.context.store import save_context
 
 
+pytestmark = pytest.mark.fast
+
+
 def _setup_project(
     tmp_path: Path,
     *,

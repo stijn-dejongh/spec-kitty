@@ -9,6 +9,10 @@ from ruamel.yaml import YAML
 from specify_cli.validators.doctrine_curation import validate_import_candidate
 from tests.utils import REPO_ROOT
 
+import pytest
+
+pytestmark = pytest.mark.doctrine
+
 
 def test_doctrine_structure_paths_exist() -> None:
     expected_dirs = [

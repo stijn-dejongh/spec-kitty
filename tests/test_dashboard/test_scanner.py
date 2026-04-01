@@ -7,6 +7,10 @@ from specify_cli.status.models import Lane, StatusEvent
 from specify_cli.status.reducer import materialize
 from specify_cli.status.store import append_event
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 def _set_wp_lane(mission_dir: Path, wp_id: str, lane: str) -> None:
     append_event(

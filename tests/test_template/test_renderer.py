@@ -8,6 +8,10 @@ from specify_cli.template.renderer import (
     rewrite_paths,
 )
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 def test_parse_frontmatter_returns_metadata_body_and_raw() -> None:
     content = """---

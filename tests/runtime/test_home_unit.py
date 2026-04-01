@@ -14,6 +14,9 @@ import pytest
 from specify_cli.runtime.home import get_kittify_home, get_package_asset_root
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # T004: Cross-platform path resolution tests
 # ---------------------------------------------------------------------------

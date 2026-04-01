@@ -17,6 +17,9 @@ import pytest
 from specify_cli.migration.rewrite_shims import RewriteResult, rewrite_agent_shims
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

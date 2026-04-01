@@ -19,6 +19,9 @@ import pytest
 import yaml
 from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
 
+
+pytestmark = pytest.mark.doctrine
+
 DOCTRINE_DIR = Path(__file__).resolve().parents[2] / "src" / "doctrine"
 SCHEMA_DIR = DOCTRINE_DIR / "schemas"
 

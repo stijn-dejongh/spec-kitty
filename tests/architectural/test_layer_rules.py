@@ -13,7 +13,7 @@ from __future__ import annotations
 import pytest
 from pytestarch import LayerRule
 
-pytestmark = pytest.mark.architectural
+pytestmark = pytest.mark.fast
 
 
 # --- Invariant 1: kernel is the true root (zero outgoing deps) ---

@@ -27,6 +27,9 @@ from specify_cli.core.context_validation import (
 )
 
 
+pytestmark = pytest.mark.fast
+
+
 class TestContextDetection:
     """Tests for context detection logic."""
 

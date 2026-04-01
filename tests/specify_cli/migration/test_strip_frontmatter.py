@@ -21,6 +21,10 @@ from specify_cli.migration.strip_frontmatter import (
     strip_mutable_fields,
 )
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 # ---------------------------------------------------------------------------
 # Helpers

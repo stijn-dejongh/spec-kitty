@@ -26,6 +26,9 @@ from specify_cli.validators.paths import (
 )
 
 
+pytestmark = pytest.mark.fast
+
+
 @pytest.fixture
 def valid_evidence_log(tmp_path: Path) -> Path:
     csv_file = tmp_path / "evidence-log.csv"

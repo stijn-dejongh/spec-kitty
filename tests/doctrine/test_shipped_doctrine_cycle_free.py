@@ -24,6 +24,9 @@ from doctrine.shared.exceptions import DoctrineResolutionCycleError
 from constitution.reference_resolver import resolve_references_transitively
 
 
+pytestmark = pytest.mark.doctrine
+
+
 @pytest.fixture(scope="module")
 def shipped_service() -> DoctrineService:
     """DoctrineService loaded from shipped-only artifacts (no project overrides)."""

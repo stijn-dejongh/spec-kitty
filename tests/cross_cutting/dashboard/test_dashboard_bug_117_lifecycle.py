@@ -14,6 +14,9 @@ import pytest
 from specify_cli.dashboard.lifecycle import ensure_dashboard_running, stop_dashboard
 
 
+pytestmark = pytest.mark.fast
+
+
 class TestProcessDetectionWithHealthTimeout:
     """Test T020: Process running + health timeout → should report SUCCESS (not failure)."""
 

@@ -26,6 +26,9 @@ from specify_cli.migration.backfill_identity import (
     backfill_wp_ids,
 )
 
+
+pytestmark = pytest.mark.fast
+
 # ULID pattern: 26 chars, Crockford base32 (0-9A-HJKMNP-TV-Z), case-insensitive at read
 _ULID_RE = re.compile(r"^[0-9A-HJKMNP-TV-Z]{26}$", re.IGNORECASE)
 

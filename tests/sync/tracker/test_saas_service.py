@@ -15,6 +15,9 @@ from specify_cli.tracker.saas_service import SaaSTrackerService
 from specify_cli.tracker.service import TrackerServiceError
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

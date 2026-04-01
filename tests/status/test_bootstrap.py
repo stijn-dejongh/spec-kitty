@@ -16,6 +16,10 @@ from specify_cli.status.bootstrap import (
 )
 from specify_cli.status.store import EVENTS_FILENAME, read_events
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 # ---------------------------------------------------------------------------
 # Helpers

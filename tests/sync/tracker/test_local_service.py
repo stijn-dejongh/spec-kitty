@@ -17,6 +17,9 @@ from specify_cli.tracker.credentials import TrackerCredentialStore
 from specify_cli.tracker.local_service import LocalTrackerService, LocalTrackerServiceError
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

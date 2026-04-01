@@ -14,6 +14,10 @@ from pathlib import Path
 
 from specify_cli.migration.backfill_ownership import backfill_ownership
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 # ---------------------------------------------------------------------------
 # Helpers

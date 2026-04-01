@@ -5,6 +5,10 @@ from datetime import datetime
 from specify_cli.upgrade.metadata import ProjectMetadata
 from specify_cli.upgrade.runner import MigrationRunner
 
+import pytest
+
+pytestmark = pytest.mark.fast
+
 
 def test_upgrade_updates_metadata_to_correct_version(tmp_path):
     """Verify upgrade updates metadata.yaml to actual CLI version, not fallback."""

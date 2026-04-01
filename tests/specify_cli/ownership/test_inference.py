@@ -13,6 +13,9 @@ from specify_cli.ownership.inference import (
 from specify_cli.ownership.models import ExecutionMode, OwnershipManifest
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # infer_execution_mode
 # ---------------------------------------------------------------------------

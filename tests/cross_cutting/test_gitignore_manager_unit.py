@@ -23,6 +23,9 @@ from specify_cli.gitignore_manager import (  # noqa: E402
     ProtectionResult,
 )
 
+
+pytestmark = pytest.mark.fast
+
 # Total entries: agents + runtime (derived from state contract)
 _TOTAL_ENTRIES = len(AGENT_DIRECTORIES) + len(RUNTIME_PROTECTED_ENTRIES)
 

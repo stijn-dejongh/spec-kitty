@@ -12,6 +12,9 @@ from pathlib import Path
 import pytest
 import yaml
 
+
+pytestmark = pytest.mark.doctrine
+
 WORKTREE = Path(__file__).parents[3]
 
 ACTIONS_DIR = WORKTREE / "src" / "doctrine" / "missions" / "software-dev" / "actions"

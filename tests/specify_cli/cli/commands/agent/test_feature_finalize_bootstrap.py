@@ -17,6 +17,9 @@ import typer
 from specify_cli.status.bootstrap import BootstrapResult
 
 
+pytestmark = pytest.mark.fast
+
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
