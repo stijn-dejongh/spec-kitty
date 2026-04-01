@@ -113,9 +113,9 @@ def feature_dir_with_meta(repo_with_tracker: Path) -> Path:
     feature_dir = repo_with_tracker / "kitty-specs" / "061-test-feature"
     feature_dir.mkdir(parents=True)
     meta: dict[str, Any] = {
-        "feature_number": "061",
+        "mission_number": "061",
         "slug": "test-feature",
-        "feature_slug": "061-test-feature",
+        "mission_slug": "061-test-feature",
         "friendly_name": "Test Feature",
         "mission": "software-dev",
         "target_branch": "main",

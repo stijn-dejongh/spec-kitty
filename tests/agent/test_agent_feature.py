@@ -308,15 +308,15 @@ class TestCreateMissionCommand:
         assert output["result"] == "success"
         assert output["mission"] == "001-test-mission"
         assert "mission_dir" in output
-        assert output["current_branch"] == "main"
-        assert output["target_branch"] == "main"
-        assert output["base_branch"] == "main"
-        assert output["planning_base_branch"] == "main"
-        assert output["merge_target_branch"] == "main"
+        assert output["current_branch"] == "develop"
+        assert output["target_branch"] == "develop"
+        assert output["base_branch"] == "develop"
+        assert output["planning_base_branch"] == "develop"
+        assert output["merge_target_branch"] == "develop"
         assert output["branch_matches_target"] is True
-        assert "Completed changes must merge into main." in output["branch_strategy_summary"]
-        assert output["TARGET_BRANCH"] == "main"
-        assert output["BASE_BRANCH"] == "main"
+        assert "Completed changes must merge into develop." in output["branch_strategy_summary"]
+        assert output["TARGET_BRANCH"] == "develop"
+        assert output["BASE_BRANCH"] == "develop"
 
         # Verify mission directory was created
         mission_dir = tmp_path / "kitty-specs" / "001-test-mission"

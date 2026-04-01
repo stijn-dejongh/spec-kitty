@@ -85,9 +85,9 @@ def _setup_feature(
     feature_dir.mkdir(parents=True, exist_ok=True)
 
     meta = {
-        "feature_number": "061",
+        "mission_number": "061",
         "slug": feature_slug,
-        "feature_slug": feature_slug,
+        "mission_slug": feature_slug,
         "friendly_name": "add clerk auth",
         "mission": "software-dev",
         "target_branch": "main",
