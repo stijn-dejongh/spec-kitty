@@ -15,7 +15,7 @@ from specify_cli.cli.commands.agent.feature import app
 pytestmark = pytest.mark.fast
 
 _FEATURE_MODULE = "specify_cli.cli.commands.agent.feature"
-_CORE_MODULE = "specify_cli.core.feature_creation"
+_CORE_MODULE = "specify_cli.core.mission_creation"
 
 runner = CliRunner()
 
@@ -40,9 +40,9 @@ def _run_create_feature(
         patch(f"{_CORE_MODULE}.is_git_repo", return_value=True),
         patch(f"{_CORE_MODULE}.is_worktree_context", return_value=False),
         patch(f"{_CORE_MODULE}.get_current_branch", return_value=current_branch),
-        patch(f"{_CORE_MODULE}.get_next_feature_number", return_value=1),
+        patch(f"{_CORE_MODULE}.get_next_mission_number", return_value=1),
         patch(f"{_CORE_MODULE}.safe_commit", return_value=True),
-        patch(f"{_CORE_MODULE}.emit_feature_created"),
+        patch(f"{_CORE_MODULE}.emit_mission_created"),
     ):
         result = runner.invoke(app, args)
 

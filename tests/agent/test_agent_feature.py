@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -15,6 +14,9 @@ from specify_cli.cli.commands.agent.mission_run import app
 pytestmark = pytest.mark.fast
 
 runner = CliRunner()
+
+_CORE = "specify_cli.core.mission_creation"
+_CLI = "specify_cli.cli.commands.agent.mission_run"
 
 
 class TestBranchContextCommand:
@@ -55,25 +57,34 @@ class TestBranchContextCommand:
 class TestCreateMissionCommand:
     """Tests for create-mission command."""
 
-    @patch("specify_cli.cli.commands.agent.mission_run.locate_project_root")
-    @patch("specify_cli.cli.commands.agent.mission_run.is_git_repo")
-    @patch("specify_cli.cli.commands.agent.mission_run.get_current_branch")
-    @patch("specify_cli.cli.commands.agent.mission_run.get_next_feature_number")
-    @patch("specify_cli.cli.commands.agent.mission_run._commit_to_branch")
+    @patch(f"{_CORE}.emit_mission_created")
+    @patch(f"{_CORE}._commit_mission_file")
+    @patch(f"{_CORE}.is_worktree_context", return_value=False)
+    @patch(f"{_CLI}.locate_project_root")
+    @patch(f"{_CORE}.is_git_repo", return_value=True)
+    @patch(f"{_CORE}.get_current_branch")
+    @patch(f"{_CORE}.get_next_mission_number")
     def test_creates_mission_with_json_output(
-        self, mock_commit: Mock, mock_get_number: Mock, mock_branch: Mock,
-        mock_is_git: Mock, mock_locate: Mock, tmp_path: Path
+        self,
+        mock_get_number: Mock,
+        mock_branch: Mock,
+        mock_is_git: Mock,
+        mock_locate: Mock,
+        mock_is_wt: Mock,
+        mock_commit: Mock,
+        mock_emit: Mock,
+        tmp_path: Path,
     ):
         """Should create mission and output JSON format."""
         # Setup
         mock_locate.return_value = tmp_path
-        mock_is_git.return_value = True
         mock_branch.return_value = "main"
         mock_get_number.return_value = 1
 
         # Create necessary directories
         (tmp_path / ".kittify" / "templates").mkdir(parents=True)
         (tmp_path / ".kittify" / "templates" / "spec-template.md").write_text("# Spec Template")
+        (tmp_path / "kitty-specs").mkdir(exist_ok=True)
 
         # Execute
         result = runner.invoke(app, ["create-mission", "test-mission", "--json"])
@@ -108,14 +119,233 @@ class TestCreateMissionCommand:
         assert meta["mission_slug"] == "001-test-mission"
         assert meta["mission"] == "software-dev"
         assert meta["target_branch"] == "main"
+
+    @patch(f"{_CORE}.emit_mission_created")
+    @patch(f"{_CORE}._commit_mission_file")
+    @patch(f"{_CORE}.is_worktree_context", return_value=False)
+    @patch(f"{_CLI}.locate_project_root")
+    @patch(f"{_CORE}.is_git_repo", return_value=True)
+    @patch(f"{_CORE}.get_current_branch")
+    @patch(f"{_CORE}.get_next_mission_number")
+    def test_creates_mission_with_human_output(
+        self,
+        mock_get_number: Mock,
+        mock_branch: Mock,
+        mock_is_git: Mock,
+        mock_locate: Mock,
+        mock_is_wt: Mock,
+        mock_commit: Mock,
+        mock_emit: Mock,
+        tmp_path: Path,
+    ):
+        """Should create mission and output human-readable format."""
+        # Setup
+        mock_locate.return_value = tmp_path
+        mock_branch.return_value = "main"
+        mock_get_number.return_value = 1
+
+        # Create necessary directories
+        (tmp_path / ".kittify" / "templates").mkdir(parents=True)
+        (tmp_path / ".kittify" / "templates" / "spec-template.md").write_text("# Spec Template")
+        (tmp_path / "kitty-specs").mkdir(exist_ok=True)
+
+        # Execute
+        result = runner.invoke(app, ["create-mission", "test-mission"])
+
+        # Verify
+        assert result.exit_code == 0
+        assert "Mission created: 001-test-mission" in result.stdout
+        assert "Directory:" in result.stdout
+
+    @patch(f"{_CORE}.is_worktree_context", return_value=False)
+    @patch(f"{_CLI}.locate_project_root")
+    @patch(f"{_CORE}.locate_project_root")
+    def test_errors_when_project_root_not_found_json(
+        self,
+        mock_core_locate: Mock,
+        mock_cli_locate: Mock,
+        mock_is_wt: Mock,
+    ):
+        """Should return JSON error when project root not found."""
+        # Setup: both CLI and core locate_project_root return None
+        mock_cli_locate.return_value = None
+        mock_core_locate.return_value = None
+
+        # Execute
+        result = runner.invoke(app, ["create-mission", "test-mission", "--json"])
+
+        # Verify
+        assert result.exit_code == 1
+        # Parse only the first line (JSON output)
+        first_line = result.stdout.strip().split("\n")[0]
+        output = json.loads(first_line)
+        assert "error" in output
+        assert "Could not locate project root" in output["error"]
+
+    @patch(f"{_CORE}.is_worktree_context", return_value=False)
+    @patch(f"{_CLI}.locate_project_root")
+    @patch(f"{_CORE}.locate_project_root")
+    def test_errors_when_project_root_not_found_human(
+        self,
+        mock_core_locate: Mock,
+        mock_cli_locate: Mock,
+        mock_is_wt: Mock,
+    ):
+        """Should return human error when project root not found."""
+        # Setup: both CLI and core locate_project_root return None
+        mock_cli_locate.return_value = None
+        mock_core_locate.return_value = None
+
+        # Execute
+        result = runner.invoke(app, ["create-mission", "test-mission"])
+
+        # Verify
+        assert result.exit_code == 1
+        assert "Error:" in result.stdout
+        assert "Could not locate project root" in result.stdout
+
+    @patch(f"{_CORE}.is_worktree_context")
+    @patch(f"{_CLI}.locate_project_root")
+    @patch("specify_cli.cli.commands.agent.mission_run.Path.cwd")
+    def test_blocks_create_mission_from_worktree_with_main_repo_hint(
+        self,
+        mock_cwd: Mock,
+        mock_locate: Mock,
+        mock_is_worktree: Mock,
+    ) -> None:
+        """Should print main repo hint when worktree context is detected."""
+        mock_cwd.return_value = Path("/tmp/external-worktree")
+        mock_is_worktree.return_value = True
+        mock_locate.return_value = Path("/tmp/main-repo")
+
+        result = runner.invoke(app, ["create-mission", "test-mission"])
+
+        assert result.exit_code == 1
+        assert "Cannot create missions from inside a worktree" in result.stdout
+        assert "Run from the main repository instead:" in result.stdout
+        assert "cd " in result.stdout
+        assert "/main-repo" in result.stdout
+        assert "spec-kitty agent create-mission test-mission" in result.stdout
+
+    @patch(f"{_CORE}.is_worktree_context")
+    @patch(f"{_CLI}.locate_project_root")
+    @patch("specify_cli.cli.commands.agent.mission_run.Path.cwd")
+    def test_blocks_create_mission_from_worktree_with_worktrees_fallback_hint(
+        self,
+        mock_cwd: Mock,
+        mock_locate: Mock,
+        mock_is_worktree: Mock,
+    ) -> None:
+        """Should fall back to .worktrees path slicing when main repo lookup fails."""
+        mock_cwd.return_value = Path("/tmp/main-repo/.worktrees/mission-001")
+        mock_is_worktree.return_value = True
+        mock_locate.return_value = None
+
+        result = runner.invoke(app, ["create-mission", "test-mission"])
+
+        assert result.exit_code == 1
+        assert "Cannot create missions from inside a worktree" in result.stdout
+        assert "Run from the main repository instead:" in result.stdout
+        assert "cd " in result.stdout
+        assert "/main-repo" in result.stdout
+        assert "spec-kitty agent create-mission test-mission" in result.stdout
+
+    @patch(f"{_CORE}.is_worktree_context", return_value=False)
+    @patch(f"{_CLI}.locate_project_root")
+    @patch(f"{_CORE}.is_git_repo")
+    def test_handles_git_errors(self, mock_is_git: Mock, mock_locate: Mock, mock_is_wt: Mock, tmp_path: Path):
+        """Should handle errors when not in git repo or wrong branch."""
+        # Setup: Not in git repo
+        mock_locate.return_value = tmp_path
+        mock_is_git.return_value = False
+
+        # Execute
+        result = runner.invoke(app, ["create-mission", "test-mission", "--json"])
+
+        # Verify
+        assert result.exit_code == 1
+        # Parse only the first line (JSON output)
+        first_line = result.stdout.strip().split("\n")[0]
+        output = json.loads(first_line)
+        assert "error" in output
+        assert "git" in output["error"].lower()
+
+    @patch(f"{_CORE}.emit_mission_created")
+    @patch(f"{_CORE}._commit_mission_file")
+    @patch(f"{_CORE}.is_worktree_context", return_value=False)
+    @patch(f"{_CLI}.locate_project_root")
+    @patch(f"{_CORE}.is_git_repo", return_value=True)
+    @patch(f"{_CORE}.get_current_branch")
+    @patch(f"{_CORE}.get_next_mission_number")
+    def test_allows_mission_creation_from_any_branch(
+        self,
+        mock_get_number: Mock,
+        mock_branch: Mock,
+        mock_is_git: Mock,
+        mock_locate: Mock,
+        mock_is_wt: Mock,
+        mock_commit: Mock,
+        mock_emit: Mock,
+        tmp_path: Path,
+    ):
+        """Should allow mission creation on any branch (records it as target)."""
+        # Setup: On non-main branch — should succeed (not block)
+        mock_locate.return_value = tmp_path
+        mock_branch.return_value = "develop"
+        mock_get_number.return_value = 1
+
+        # Create necessary directories
+        (tmp_path / ".kittify" / "templates").mkdir(parents=True)
+        (tmp_path / ".kittify" / "templates" / "spec-template.md").write_text("# Spec Template")
+        (tmp_path / "kitty-specs").mkdir(exist_ok=True)
+
+        # Execute
+        result = runner.invoke(app, ["create-mission", "test-mission", "--json"])
+
+        # Verify
+        assert result.exit_code == 0
+        output = json.loads(result.stdout)
+        assert output["result"] == "success"
+        assert output["mission"] == "001-test-mission"
+        assert "mission_dir" in output
+        assert output["current_branch"] == "main"
+        assert output["target_branch"] == "main"
+        assert output["base_branch"] == "main"
+        assert output["planning_base_branch"] == "main"
+        assert output["merge_target_branch"] == "main"
+        assert output["branch_matches_target"] is True
+        assert "Completed changes must merge into main." in output["branch_strategy_summary"]
+        assert output["TARGET_BRANCH"] == "main"
+        assert output["BASE_BRANCH"] == "main"
+
+        # Verify mission directory was created
+        mission_dir = tmp_path / "kitty-specs" / "001-test-mission"
+        assert mission_dir.exists()
+        assert (mission_dir / "spec.md").exists()
+
+        # meta.json should exist for all missions (not only documentation)
+        meta_path = mission_dir / "meta.json"
+        assert meta_path.exists()
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        assert meta["mission_number"] == "001"
+        assert meta["slug"] == "001-test-mission"
+        assert meta["mission_slug"] == "001-test-mission"
+        assert meta["mission"] == "software-dev"
+        assert meta["target_branch"] == "main"
+
     @patch("specify_cli.cli.commands.agent.mission_run.locate_project_root")
     @patch("specify_cli.cli.commands.agent.mission_run.is_git_repo")
     @patch("specify_cli.cli.commands.agent.mission_run.get_current_branch")
     @patch("specify_cli.cli.commands.agent.mission_run.get_next_feature_number")
     @patch("specify_cli.cli.commands.agent.mission_run._commit_to_branch")
     def test_creates_mission_with_human_output(
-        self, mock_commit: Mock, mock_get_number: Mock, mock_branch: Mock,
-        mock_is_git: Mock, mock_locate: Mock, tmp_path: Path
+        self,
+        mock_commit: Mock,
+        mock_get_number: Mock,
+        mock_branch: Mock,
+        mock_is_git: Mock,
+        mock_locate: Mock,
+        tmp_path: Path,
     ):
         """Should create mission and output human-readable format."""
         # Setup
@@ -148,7 +378,7 @@ class TestCreateMissionCommand:
         # Verify
         assert result.exit_code == 1
         # Parse only the first line (JSON output)
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert "error" in output
         assert "Could not locate project root" in output["error"]
@@ -216,9 +446,7 @@ class TestCreateMissionCommand:
     @patch("specify_cli.cli.commands.agent.mission_run.locate_project_root")
     @patch("specify_cli.cli.commands.agent.mission_run.is_git_repo")
     @patch("specify_cli.cli.commands.agent.mission_run.get_current_branch")
-    def test_handles_git_errors(
-        self, mock_branch: Mock, mock_is_git: Mock, mock_locate: Mock, tmp_path: Path
-    ):
+    def test_handles_git_errors(self, mock_branch: Mock, mock_is_git: Mock, mock_locate: Mock, tmp_path: Path):
         """Should handle errors when not in git repo or wrong branch."""
         # Setup: Not in git repo
         mock_locate.return_value = tmp_path
@@ -230,7 +458,7 @@ class TestCreateMissionCommand:
         # Verify
         assert result.exit_code == 1
         # Parse only the first line (JSON output)
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert "error" in output
         assert "git" in output["error"].lower()
@@ -241,8 +469,13 @@ class TestCreateMissionCommand:
     @patch("specify_cli.cli.commands.agent.mission_run.get_next_feature_number")
     @patch("specify_cli.cli.commands.agent.mission_run._commit_to_branch")
     def test_allows_mission_creation_from_any_branch(
-        self, mock_commit: Mock, mock_get_number: Mock, mock_branch: Mock,
-        mock_is_git: Mock, mock_locate: Mock, tmp_path: Path
+        self,
+        mock_commit: Mock,
+        mock_get_number: Mock,
+        mock_branch: Mock,
+        mock_is_git: Mock,
+        mock_locate: Mock,
+        tmp_path: Path,
     ):
         """Should allow mission creation on any branch (records it as target)."""
         # Setup: On non-main branch — should succeed (not block)
@@ -260,36 +493,45 @@ class TestCreateMissionCommand:
 
         # Verify — should succeed, recording "develop" as target_branch
         assert result.exit_code == 0
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert output["result"] == "success"
 
-    @patch("specify_cli.cli.commands.agent.mission_run.locate_project_root")
-    @patch("specify_cli.cli.commands.agent.mission_run.is_git_repo")
-    @patch("specify_cli.cli.commands.agent.mission_run.get_current_branch")
-    @patch("specify_cli.cli.commands.agent.mission_run.get_next_feature_number")
-    @patch("specify_cli.cli.commands.agent.mission_run._commit_to_branch")
+    @patch(f"{_CORE}.emit_mission_created")
+    @patch(f"{_CORE}._commit_mission_file")
+    @patch(f"{_CORE}.is_worktree_context", return_value=False)
+    @patch(f"{_CLI}.locate_project_root")
+    @patch(f"{_CORE}.is_git_repo", return_value=True)
+    @patch(f"{_CORE}.get_current_branch")
+    @patch(f"{_CORE}.get_next_mission_number")
     def test_creates_mission_on_primary_branch(
-        self, mock_commit: Mock, mock_get_number: Mock, mock_branch: Mock,
-        mock_is_git: Mock, mock_locate: Mock, tmp_path: Path
+        self,
+        mock_get_number: Mock,
+        mock_branch: Mock,
+        mock_is_git: Mock,
+        mock_locate: Mock,
+        mock_is_wt: Mock,
+        mock_commit: Mock,
+        mock_emit: Mock,
+        tmp_path: Path,
     ):
         """Should allow mission creation on the primary branch."""
         # Setup: On primary branch
         mock_locate.return_value = tmp_path
-        mock_is_git.return_value = True
         mock_branch.return_value = "main"
         mock_get_number.return_value = 1
 
         # Create necessary directories
         (tmp_path / ".kittify" / "templates").mkdir(parents=True)
         (tmp_path / ".kittify" / "templates" / "spec-template.md").write_text("# Spec Template")
+        (tmp_path / "kitty-specs").mkdir(exist_ok=True)
 
         # Execute
         result = runner.invoke(app, ["create-mission", "test-mission", "--json"])
 
         # Verify
         assert result.exit_code == 0
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert output["result"] == "success"
 
@@ -359,9 +601,7 @@ class TestCheckPrerequisitesCommand:
     @patch("specify_cli.cli.commands.agent.mission_run.locate_project_root")
     @patch("specify_cli.cli.commands.agent.mission_run._find_mission_directory")
     @patch("specify_cli.cli.commands.agent.mission_run.validate_mission_structure")
-    def test_shows_validation_errors(
-        self, mock_validate: Mock, mock_find: Mock, mock_locate: Mock, tmp_path: Path
-    ):
+    def test_shows_validation_errors(self, mock_validate: Mock, mock_find: Mock, mock_locate: Mock, tmp_path: Path):
         """Should show validation errors in output."""
         # Setup
         mock_locate.return_value = tmp_path
@@ -386,9 +626,7 @@ class TestCheckPrerequisitesCommand:
     @patch("specify_cli.cli.commands.agent.mission_run.locate_project_root")
     @patch("specify_cli.cli.commands.agent.mission_run._find_mission_directory")
     @patch("specify_cli.cli.commands.agent.mission_run.validate_mission_structure")
-    def test_shows_validation_warnings(
-        self, mock_validate: Mock, mock_find: Mock, mock_locate: Mock, tmp_path: Path
-    ):
+    def test_shows_validation_warnings(self, mock_validate: Mock, mock_find: Mock, mock_locate: Mock, tmp_path: Path):
         """Should show validation warnings in output."""
         # Setup
         mock_locate.return_value = tmp_path
@@ -413,9 +651,7 @@ class TestCheckPrerequisitesCommand:
     @patch("specify_cli.cli.commands.agent.mission_run.locate_project_root")
     @patch("specify_cli.cli.commands.agent.mission_run._find_mission_directory")
     @patch("specify_cli.cli.commands.agent.mission_run.validate_mission_structure")
-    def test_paths_only_flag_json(
-        self, mock_validate: Mock, mock_find: Mock, mock_locate: Mock, tmp_path: Path
-    ):
+    def test_paths_only_flag_json(self, mock_validate: Mock, mock_find: Mock, mock_locate: Mock, tmp_path: Path):
         """Should output only paths when --paths-only flag is used."""
         # Setup
         mock_locate.return_value = tmp_path
@@ -451,9 +687,7 @@ class TestCheckPrerequisitesCommand:
     @patch("specify_cli.cli.commands.agent.mission_run.locate_project_root")
     @patch("specify_cli.cli.commands.agent.mission_run._find_mission_directory")
     @patch("specify_cli.cli.commands.agent.mission_run.validate_mission_structure")
-    def test_include_tasks_flag(
-        self, mock_validate: Mock, mock_find: Mock, mock_locate: Mock, tmp_path: Path
-    ):
+    def test_include_tasks_flag(self, mock_validate: Mock, mock_find: Mock, mock_locate: Mock, tmp_path: Path):
         """Should validate tasks.md when --include-tasks flag is used."""
         # Setup
         mock_locate.return_value = tmp_path
@@ -551,7 +785,7 @@ class TestCheckPrerequisitesCommand:
         # Verify
         assert result.exit_code == 1
         # Parse only the first line (JSON output)
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert "error" in output
 
@@ -640,9 +874,7 @@ class TestGitPreflightEnforcement:
 
     @patch("specify_cli.cli.commands.agent.mission_run.run_git_preflight")
     @patch("specify_cli.cli.commands.agent.mission_run.locate_project_root")
-    def test_setup_plan_exits_on_preflight_failure_json(
-        self, mock_locate: Mock, mock_preflight: Mock, tmp_path: Path
-    ):
+    def test_setup_plan_exits_on_preflight_failure_json(self, mock_locate: Mock, mock_preflight: Mock, tmp_path: Path):
         """setup-plan should emit JSON remediation payload on preflight failure."""
         from specify_cli.core.git_preflight import GitPreflightIssue, GitPreflightResult
 
@@ -834,9 +1066,10 @@ requirement_refs:
         assert payload["result"] == "success"
         assert payload["requirement_refs_parsed"]["WP01"] == ["FR-001"]
         updated = (tasks_dir / "WP01-test.md").read_text(encoding="utf-8")
-        assert 'planning_base_branch: main' in updated
-        assert 'merge_target_branch: main' in updated
-        assert 'branch_strategy: Planning artifacts for this mission were generated on main.' in updated
+        assert "planning_base_branch: main" in updated
+        assert "merge_target_branch: main" in updated
+        assert "branch_strategy: Planning artifacts for this mission were generated on main." in updated
+
 
 class TestSetupPlanCommand:
     """Tests for setup-plan command."""
@@ -990,7 +1223,7 @@ class TestSetupPlanCommand:
 
         # Verify
         assert result.exit_code == 1
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert output["error_code"] == "SPEC_FILE_MISSING"
         assert output["mission_slug"] == "001-test"
@@ -1009,7 +1242,7 @@ class TestSetupPlanCommand:
         # Verify
         assert result.exit_code == 1
         # Parse only the first line (JSON output)
-        first_line = result.stdout.strip().split('\n')[0]
+        first_line = result.stdout.strip().split("\n")[0]
         output = json.loads(first_line)
         assert "error" in output
 

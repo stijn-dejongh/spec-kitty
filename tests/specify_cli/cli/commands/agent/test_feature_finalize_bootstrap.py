@@ -60,7 +60,7 @@ def _setup_feature(tmp_path: Path, feature_slug: str = "060-test-feature") -> Pa
 
     # meta.json for event emission
     meta = feature_dir / "meta.json"
-    meta.write_text(json.dumps({"feature_slug": feature_slug}), encoding="utf-8")
+    meta.write_text(json.dumps({"mission_slug": feature_slug}), encoding="utf-8")
 
     return feature_dir
 

@@ -137,7 +137,9 @@ def mock_client() -> SaaSTrackerClient:
     config = MagicMock()
     config.get_server_url.return_value = "https://saas.example.com"
     return SaaSTrackerClient(
-        credential_store=store, sync_config=config, timeout=5.0,
+        credential_store=store,
+        sync_config=config,
+        timeout=5.0,
     )
 
 
@@ -177,7 +179,9 @@ class TestSearchConfirmBindFlow:
         )
 
         result = search_origin_candidates(
-            repo_with_tracker, query_text="Clerk auth", client=mock_client,
+            repo_with_tracker,
+            query_text="Clerk auth",
+            client=mock_client,
         )
 
         assert len(result.candidates) == 1
@@ -226,7 +230,9 @@ class TestSearchConfirmBindFlow:
 
         # Step 1: Search
         result = search_origin_candidates(
-            repo_with_tracker, query_text="Clerk auth", client=mock_client,
+            repo_with_tracker,
+            query_text="Clerk auth",
+            client=mock_client,
         )
         assert len(result.candidates) == 1
         candidate = result.candidates[0]
@@ -275,7 +281,7 @@ class TestSearchConfirmBindFlow:
 class TestStartMissionFromTicket:
     """Integration test for the full orchestration function."""
 
-    @patch("specify_cli.core.feature_creation.create_feature_core")
+    @patch("specify_cli.core.mission_creation.create_mission_core")
     @patch("specify_cli.tracker.saas_client.httpx.Client")
     def test_full_flow_returns_result(
         self,
@@ -285,13 +291,13 @@ class TestStartMissionFromTicket:
         feature_dir_with_meta: Path,
         mock_client: SaaSTrackerClient,
     ) -> None:
-        """Mock create_feature_core + httpx -> real bind -> result."""
+        """Mock create_mission_core + httpx -> real bind -> result."""
         mock_http = _setup_mock_http(mock_http_cls)
 
-        # create_feature_core returns a result pointing at our feature dir
+        # create_mission_core returns a result pointing at our feature dir
         mock_create.return_value = MagicMock(
-            feature_dir=feature_dir_with_meta,
-            feature_slug="061-test-feature",
+            mission_dir=feature_dir_with_meta,
+            mission_slug="061-test-feature",
         )
 
         # Bind succeeds via httpx
@@ -327,7 +333,7 @@ class TestStartMissionFromTicket:
         )
         assert "origin_ticket" in disk_meta
 
-        # Verify create_feature_core was called with derived slug
+        # Verify create_mission_core was called with derived slug
         mock_create.assert_called_once_with(
             repo_with_tracker,
             "web-123",
@@ -391,7 +397,8 @@ class TestErrorPropagation:
         candidate = _make_candidate()
 
         with pytest.raises(
-            OriginBindingError, match="already bound to a different issue",
+            OriginBindingError,
+            match="already bound to a different issue",
         ):
             bind_mission_origin(
                 feature_dir_with_meta,
@@ -423,16 +430,16 @@ class TestErrorPropagation:
                 client=mock_client,
             )
 
-    @patch("specify_cli.core.feature_creation.create_feature_core")
+    @patch("specify_cli.core.mission_creation.create_mission_core")
     def test_creation_failure_propagates(
         self,
         mock_create: MagicMock,
         repo_with_tracker: Path,
     ) -> None:
         """FeatureCreationError -> OriginBindingError."""
-        from specify_cli.core.feature_creation import FeatureCreationError
+        from specify_cli.core.mission_creation import MissionCreationError
 
-        mock_create.side_effect = FeatureCreationError(
+        mock_create.side_effect = MissionCreationError(
             "Feature slug 'web-123' already exists",
         )
         candidate = _make_candidate()
@@ -466,7 +473,8 @@ class TestSaaSFirstWriteOrdering:
         """HTTP 500 from SaaS -> meta.json must NOT have origin_ticket."""
         mock_http = _setup_mock_http(mock_http_cls)
         mock_http.request.return_value = _make_response(
-            500, {"message": "Internal server error"},
+            500,
+            {"message": "Internal server error"},
         )
 
         candidate = _make_candidate()
@@ -563,7 +571,8 @@ class TestSaaSFirstWriteOrdering:
         """HTTP 403 forbidden -> meta.json must NOT have origin_ticket."""
         mock_http = _setup_mock_http(mock_http_cls)
         mock_http.request.return_value = _make_response(
-            403, {"message": "Forbidden: insufficient permissions"},
+            403,
+            {"message": "Forbidden: insufficient permissions"},
         )
 
         candidate = _make_candidate()
@@ -593,7 +602,8 @@ class TestSaaSFirstWriteOrdering:
         """HTTP 422 validation error -> meta.json must NOT have origin_ticket."""
         mock_http = _setup_mock_http(mock_http_cls)
         mock_http.request.return_value = _make_response(
-            422, {"message": "Invalid payload", "code": "validation_error"},
+            422,
+            {"message": "Invalid payload", "code": "validation_error"},
         )
 
         candidate = _make_candidate()
@@ -626,7 +636,8 @@ class TestSaaSFirstWriteOrdering:
 
         mock_http = _setup_mock_http(mock_http_cls)
         mock_http.request.return_value = _make_response(
-            500, {"message": "Internal server error"},
+            500,
+            {"message": "Internal server error"},
         )
 
         candidate = _make_candidate()
@@ -694,12 +705,9 @@ class TestOfflineEventQueuing:
 
         # Drain the queue and check the event
         events = queue.drain_queue(limit=100)
-        origin_events = [
-            e for e in events if e.get("event_type") == "MissionOriginBound"
-        ]
+        origin_events = [e for e in events if e.get("event_type") == "MissionOriginBound"]
         assert len(origin_events) >= 1, (
-            f"Expected MissionOriginBound event in queue, got: "
-            f"{[e.get('event_type') for e in events]}"
+            f"Expected MissionOriginBound event in queue, got: {[e.get('event_type') for e in events]}"
         )
 
         event = origin_events[0]
@@ -708,7 +716,5 @@ class TestOfflineEventQueuing:
         assert payload["provider"] == "linear"
         assert payload["external_issue_id"] == "issue-uuid-1"
         assert payload["external_issue_key"] == "WEB-123"
-        assert payload["external_issue_url"] == (
-            "https://linear.app/acme/issue/WEB-123/add-clerk-auth"
-        )
+        assert payload["external_issue_url"] == ("https://linear.app/acme/issue/WEB-123/add-clerk-auth")
         assert payload["title"] == "Add Clerk auth"

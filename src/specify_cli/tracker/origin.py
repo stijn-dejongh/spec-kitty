@@ -17,7 +17,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from specify_cli.feature_metadata import load_meta, set_origin_ticket
+from specify_cli.mission_metadata import load_meta, set_origin_ticket
 from specify_cli.tracker.config import load_tracker_config
 from specify_cli.tracker.origin_models import (
     MissionFromTicketResult,
@@ -121,19 +121,14 @@ def search_origin_candidates(
     # 1. Load tracker config
     tracker_config = load_tracker_config(repo_root)
     if not tracker_config.provider or not tracker_config.project_slug:
-        raise OriginBindingError(
-            "No tracker bound. Run `spec-kitty tracker bind` first."
-        )
+        raise OriginBindingError("No tracker bound. Run `spec-kitty tracker bind` first.")
 
     provider = tracker_config.provider
     project_slug = tracker_config.project_slug
 
     # 2. Validate provider is jira or linear (C-001)
     if provider not in _ORIGIN_PROVIDERS:
-        raise OriginBindingError(
-            f"Only Jira and Linear providers support origin binding. "
-            f"Current provider: {provider}"
-        )
+        raise OriginBindingError(f"Only Jira and Linear providers support origin binding. Current provider: {provider}")
 
     # 3. Call SaaS
     actual_client = client or SaaSTrackerClient()
@@ -178,7 +173,7 @@ def search_origin_candidates(
 
 
 def bind_mission_origin(
-    feature_dir: Path,
+    mission_dir: Path,
     candidate: OriginCandidate,
     provider: str,
     resource_type: str,
@@ -194,8 +189,8 @@ def bind_mission_origin(
 
     Parameters
     ----------
-    feature_dir:
-        Path to the feature directory containing ``meta.json``.
+    mission_dir:
+        Path to the mission directory containing ``meta.json``.
     candidate:
         The confirmed origin candidate.
     provider:
@@ -217,31 +212,27 @@ def bind_mission_origin(
     OriginBindingError
         On SaaS failure, missing metadata, or write failure.
     """
-    # 1. Load meta.json to get feature_slug (needed for SaaS call)
-    meta = load_meta(feature_dir)
+    # 1. Load meta.json to get mission_slug (needed for SaaS call)
+    meta = load_meta(mission_dir)
     if meta is None:
-        raise OriginBindingError(
-            f"No meta.json found in {feature_dir}"
-        )
-    feature_slug = meta.get("feature_slug")
-    if not feature_slug:
-        raise OriginBindingError(
-            f"meta.json in {feature_dir} missing feature_slug"
-        )
+        raise OriginBindingError(f"No meta.json found in {mission_dir}")
+    mission_slug = meta.get("mission_slug") or meta.get("feature_slug")
+    if not mission_slug:
+        raise OriginBindingError(f"meta.json in {mission_dir} missing mission_slug")
 
     # 2. Resolve project_slug from tracker config
-    #    Walk up from feature_dir to find .kittify/config.yaml
-    repo_root = _resolve_repo_root(feature_dir)
+    #    Walk up from mission_dir to find .kittify/config.yaml
+    repo_root = _resolve_repo_root(mission_dir)
     tracker_config = load_tracker_config(repo_root)
     project_slug = tracker_config.project_slug or ""
 
-    # 3. Call SaaS FIRST — if this fails, STOP. No local state written.
+    # 3. Call SaaS FIRST -- if this fails, STOP. No local state written.
     actual_client = client or SaaSTrackerClient()
     try:
         actual_client.bind_mission_origin(
             provider,
             project_slug,
-            feature_slug=feature_slug,
+            feature_slug=mission_slug,
             external_issue_id=candidate.external_issue_id,
             external_issue_key=candidate.external_issue_key,
             external_issue_url=candidate.url,
@@ -263,7 +254,7 @@ def bind_mission_origin(
     }
 
     # 5. Write to meta.json (local-second)
-    updated_meta = set_origin_ticket(feature_dir, origin_ticket)
+    updated_meta = set_origin_ticket(mission_dir, origin_ticket)
 
     # 6. Emit MissionOriginBound event (fire-and-forget, lazy import)
     event_emitted = False
@@ -272,7 +263,7 @@ def bind_mission_origin(
 
         emitter = get_emitter()
         emitter.emit_mission_origin_bound(
-            feature_slug=feature_slug,
+            feature_slug=mission_slug,
             provider=provider,
             external_issue_id=candidate.external_issue_id,
             external_issue_key=candidate.external_issue_key,
@@ -324,7 +315,7 @@ def start_mission_from_ticket(
     Returns
     -------
     MissionFromTicketResult
-        Structured result with feature_dir, slug, origin metadata,
+        Structured result with mission_dir, slug, origin metadata,
         and event emission status.
 
     Raises
@@ -332,26 +323,29 @@ def start_mission_from_ticket(
     OriginBindingError
         On creation or binding failure.
     """
-    from specify_cli.core.feature_creation import (
-        FeatureCreationError,
-        create_feature_core,
+    from specify_cli.core.mission_creation import (
+        MissionCreationError,
+        create_mission_core,
     )
 
     # 1. Derive slug from candidate
     slug = _derive_slug_from_ticket(candidate)
 
-    # 2. Create feature
+    # 2. Create mission
     try:
-        creation_result = create_feature_core(
-            repo_root, slug, mission=mission_key, target_branch=None,
+        creation_result = create_mission_core(
+            repo_root,
+            slug,
+            mission=mission_key,
+            target_branch=None,
         )
-    except FeatureCreationError as exc:
+    except MissionCreationError as exc:
         raise OriginBindingError(str(exc)) from exc
 
     # 3. Bind origin (SaaS-first, local-second)
     try:
         updated_meta, event_emitted = bind_mission_origin(
-            creation_result.feature_dir,
+            creation_result.mission_dir,
             candidate,
             provider,
             resource_type,
@@ -360,13 +354,13 @@ def start_mission_from_ticket(
         )
         origin_ticket: dict[str, str] = updated_meta.get("origin_ticket", {})
     except OriginBindingError:
-        # Feature exists but has no origin. Acceptable -- agent can retry
+        # Mission exists but has no origin. Acceptable -- agent can retry
         # the bind separately. Re-raise so caller knows.
         raise
 
     return MissionFromTicketResult(
-        feature_dir=creation_result.feature_dir,
-        feature_slug=creation_result.feature_slug,
+        feature_dir=creation_result.mission_dir,
+        feature_slug=creation_result.mission_slug,
         origin_ticket=origin_ticket,
         event_emitted=event_emitted,
     )
@@ -377,9 +371,9 @@ def start_mission_from_ticket(
 # ---------------------------------------------------------------------------
 
 
-def _resolve_repo_root(feature_dir: Path) -> Path:
-    """Walk up from feature_dir to find the repo root (.kittify/ parent)."""
-    current = feature_dir.resolve()
+def _resolve_repo_root(mission_dir: Path) -> Path:
+    """Walk up from mission_dir to find the repo root (.kittify/ parent)."""
+    current = mission_dir.resolve()
     for _ in range(20):  # safety bound
         if (current / ".kittify").is_dir():
             return current
@@ -387,6 +381,6 @@ def _resolve_repo_root(feature_dir: Path) -> Path:
         if parent == current:
             break
         current = parent
-    # Fall back: assume feature_dir is inside kitty-specs/<slug>/
+    # Fall back: assume mission_dir is inside kitty-specs/<slug>/
     # so repo_root is two levels up
-    return feature_dir.parent.parent
+    return mission_dir.parent.parent

@@ -294,7 +294,7 @@ def set_documentation_state(
 
 
 def set_origin_ticket(
-    feature_dir: Path,
+    mission_dir: Path,
     origin_ticket: dict[str, Any],
 ) -> dict[str, Any]:
     """Set or replace ``origin_ticket`` subtree in meta.json.
@@ -305,12 +305,12 @@ def set_origin_ticket(
     ``external_issue_url``, ``title``.
 
     Raises:
-        FileNotFoundError: If meta.json does not exist in *feature_dir*.
+        FileNotFoundError: If meta.json does not exist in *mission_dir*.
         ValueError: If any required key is missing from *origin_ticket*.
     """
-    meta = load_meta(feature_dir)
+    meta = load_meta(mission_dir)
     if meta is None:
-        raise FileNotFoundError(f"No meta.json in {feature_dir}")
+        raise FileNotFoundError(f"No meta.json in {mission_dir}")
 
     required_keys = {
         "provider",
@@ -326,7 +326,7 @@ def set_origin_ticket(
         raise ValueError(f"origin_ticket missing required keys: {sorted(missing)}")
 
     meta["origin_ticket"] = origin_ticket
-    write_meta(feature_dir, meta)
+    write_meta(mission_dir, meta)
     return meta
 
 
