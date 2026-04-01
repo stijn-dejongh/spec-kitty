@@ -21,8 +21,7 @@ from specify_cli.status.bootstrap import BootstrapResult
 # Fixtures
 # ---------------------------------------------------------------------------
 
-MODULE = "specify_cli.cli.commands.agent.feature"
-CORE_MODULE = "specify_cli.core.feature_creation"
+MODULE = "specify_cli.cli.commands.agent.mission_run"
 
 
 def _setup_feature(tmp_path: Path, feature_slug: str = "060-test-feature") -> Path:
@@ -34,9 +33,7 @@ def _setup_feature(tmp_path: Path, feature_slug: str = "060-test-feature") -> Pa
     # spec.md with at least one requirement
     spec_md = feature_dir / "spec.md"
     spec_md.write_text(
-        "---\ntitle: Test Feature\n---\n\n"
-        "## Requirements\n\n"
-        "- FR-001: First requirement\n",
+        "---\ntitle: Test Feature\n---\n\n## Requirements\n\n- FR-001: First requirement\n",
         encoding="utf-8",
     )
 
@@ -52,7 +49,7 @@ def _setup_feature(tmp_path: Path, feature_slug: str = "060-test-feature") -> Pa
         wp_file = tasks_dir / f"{wp_id}-test.md"
         refs_yaml = "\n".join(f"  - {r}" for r in refs)
         wp_file.write_text(
-            f"---\nwork_package_id: \"{wp_id}\"\ntitle: \"Test {wp_id}\"\n"
+            f'---\nwork_package_id: "{wp_id}"\ntitle: "Test {wp_id}"\n'
             f"requirement_refs:\n{refs_yaml}\n"
             f"dependencies: []\n---\n\n# {wp_id}\n",
             encoding="utf-8",
@@ -66,7 +63,9 @@ def _setup_feature(tmp_path: Path, feature_slug: str = "060-test-feature") -> Pa
 
 
 def _make_bootstrap_result(
-    total: int = 2, seeded: int = 2, existing: int = 0,
+    total: int = 2,
+    seeded: int = 2,
+    existing: int = 0,
 ) -> BootstrapResult:
     """Create a BootstrapResult with given counts."""
     return BootstrapResult(
@@ -83,12 +82,12 @@ def _common_patches(tmp_path: Path, feature_slug: str = "060-test-feature"):
     feature_dir = tmp_path / "kitty-specs" / feature_slug
     return {
         f"{MODULE}.locate_project_root": MagicMock(return_value=tmp_path),
-        f"{MODULE}._find_feature_directory": MagicMock(return_value=feature_dir),
+        f"{MODULE}._find_mission_directory": MagicMock(return_value=feature_dir),
         f"{MODULE}._resolve_planning_branch": MagicMock(return_value="main"),
         f"{MODULE}._ensure_branch_checked_out": MagicMock(),
         f"{MODULE}.safe_commit": MagicMock(return_value=True),
         f"{MODULE}.run_command": MagicMock(return_value=(0, "abc1234", "")),
-        f"{CORE_MODULE}.emit_feature_created": MagicMock(),
+        f"{MODULE}.emit_mission_created": MagicMock(),
         f"{MODULE}.emit_wp_created": MagicMock(),
         f"{MODULE}.get_emitter": MagicMock(
             return_value=MagicMock(generate_causation_id=MagicMock(return_value="test-id")),
@@ -116,7 +115,7 @@ class TestFinalizeTasksCallsBootstrap:
         mock_bootstrap = MagicMock(return_value=_make_bootstrap_result())
         patches[f"{MODULE}.bootstrap_canonical_state"] = mock_bootstrap
 
-        from specify_cli.cli.commands.agent.feature import finalize_tasks
+        from specify_cli.cli.commands.agent.mission_run import finalize_tasks
 
         ctx_patches = {k: patch(k, v) for k, v in patches.items()}
         mocks = {}
@@ -154,7 +153,7 @@ class TestValidateOnlyDryRun:
         mock_bootstrap = MagicMock(return_value=_make_bootstrap_result())
         patches[f"{MODULE}.bootstrap_canonical_state"] = mock_bootstrap
 
-        from specify_cli.cli.commands.agent.feature import finalize_tasks
+        from specify_cli.cli.commands.agent.mission_run import finalize_tasks
 
         ctx_patches = {k: patch(k, v) for k, v in patches.items()}
         for p in ctx_patches.values():
@@ -192,7 +191,7 @@ class TestValidateOnlyDryRun:
             return_value=_make_bootstrap_result(total=2, seeded=1, existing=1)
         )
 
-        from specify_cli.cli.commands.agent.feature import finalize_tasks
+        from specify_cli.cli.commands.agent.mission_run import finalize_tasks
 
         ctx_patches = {k: patch(k, v) for k, v in patches.items()}
         for p in ctx_patches.values():
@@ -227,7 +226,7 @@ class TestBootstrapStatsInJson:
         mock_bootstrap = MagicMock(return_value=_make_bootstrap_result(total=2, seeded=1, existing=1))
         patches[f"{MODULE}.bootstrap_canonical_state"] = mock_bootstrap
 
-        from specify_cli.cli.commands.agent.feature import finalize_tasks
+        from specify_cli.cli.commands.agent.mission_run import finalize_tasks
 
         ctx_patches = {k: patch(k, v) for k, v in patches.items()}
         for p in ctx_patches.values():
@@ -270,7 +269,7 @@ class TestBootstrapStatsInJson:
         mock_bootstrap = MagicMock(return_value=_make_bootstrap_result(total=3, seeded=3, existing=0))
         patches[f"{MODULE}.bootstrap_canonical_state"] = mock_bootstrap
 
-        from specify_cli.cli.commands.agent.feature import finalize_tasks
+        from specify_cli.cli.commands.agent.mission_run import finalize_tasks
 
         ctx_patches = {k: patch(k, v) for k, v in patches.items()}
         for p in ctx_patches.values():

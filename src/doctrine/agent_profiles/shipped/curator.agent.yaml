@@ -123,6 +123,3 @@ directive-references:
   - code: "018"
     name: Doctrine Versioning Requirement
     rationale: Changes to doctrine layers must be versioned with change rationale documented
-  - code: "019"
-    name: Documentation Gap Prioritization
-    rationale: Identified documentation gaps must be triaged by user impact and filled in priority order

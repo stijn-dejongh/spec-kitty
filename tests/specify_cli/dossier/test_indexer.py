@@ -13,7 +13,7 @@ Tests cover:
 import os
 import pytest
 import tempfile
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -458,7 +458,6 @@ class TestMissionDossierBuilder:
         indexer = Indexer(ManifestRegistry())
         dossier = indexer.index_mission(tmp_path, "software-dev")
 
-        assert dossier.mission_slug == "software-dev"
         assert dossier.mission_slug == tmp_path.name
         assert dossier.mission_dir == str(tmp_path)
         assert len(dossier.artifacts) >= 3
@@ -514,9 +513,9 @@ class TestMissionDossierBuilder:
         (tmp_path / "spec.md").write_text("# Specification")
 
         indexer = Indexer(ManifestRegistry())
-        before = datetime.utcnow()
+        before = datetime.now(UTC)
         dossier = indexer.index_mission(tmp_path, "software-dev")
-        after = datetime.utcnow()
+        after = datetime.now(UTC)
 
         assert dossier.dossier_updated_at is not None
         assert before <= dossier.dossier_updated_at <= after

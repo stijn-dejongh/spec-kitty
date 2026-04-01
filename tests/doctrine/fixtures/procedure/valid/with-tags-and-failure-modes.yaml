@@ -1,0 +1,24 @@
+schema_version: "1.0"
+id: tagged-procedure
+name: Tagged Procedure
+purpose: A procedure with tags and failure_modes.
+entry_condition: Always applicable
+exit_condition: Procedure complete
+tags:
+  - workflow
+  - testing
+failure_modes:
+  - name: Skipped steps
+    description: Jumping ahead without completing prerequisite steps.
+steps:
+  - title: Step one
+    description: First step
+    actor: agent
+    tactic_refs:
+      - tdd-red-green-refactor
+  - title: Step two
+    description: Second step
+    actor: human
+anti_patterns:
+  - name: Rushing
+    description: Skipping quality checks to save time.

@@ -123,7 +123,7 @@ def test_workflow_review_accepts_for_review_lane(workflow_repo: Path) -> None:
     events = read_events(mission_dir)
     snapshot = reduce(events)
     wp_state = snapshot.work_packages.get("WP01", {})
-    assert wp_state.get("lane") in ("in_progress", "doing"), f"Expected in_progress lane, got: {wp_state.get('lane')}"
+    assert wp_state.get("lane") in ("in_review", "in_progress", "doing"), f"Expected in_review lane, got: {wp_state.get('lane')}"
 
 
 def test_workflow_implement_moves_planned_to_doing(workflow_repo: Path) -> None:
@@ -140,7 +140,7 @@ def test_workflow_implement_moves_planned_to_doing(workflow_repo: Path) -> None:
     wp_path = tasks_dir / "WP01-test.md"
     _write_wp_file(wp_path, "WP01", lane="planned")
     # Seed canonical state so implement doesn't hard-fail (no frontmatter fallback)
-    _seed_wp_lane(feature_dir, "WP01", "planned")
+    _seed_wp_lane(mission_dir, "WP01", "planned")
 
     # Pre-create workspace so implement skips worktree creation (which needs real git)
     workspace = workflow_repo / ".worktrees" / f"{mission_slug}-WP01"
@@ -230,7 +230,7 @@ def test_workflow_review_uses_existing_canonical_event_lane(workflow_repo: Path)
     events = read_events(mission_dir)
     snapshot = reduce(events)
     wp_state = snapshot.work_packages.get("WP01", {})
-    assert wp_state.get("lane") in ("in_progress", "doing"), f"Expected in_progress lane, got: {wp_state.get('lane')}"
+    assert wp_state.get("lane") in ("in_review", "in_progress", "doing"), f"Expected in_review lane, got: {wp_state.get('lane')}"
 
 
 def _setup_implement_fixture(workflow_repo: Path, *, lane: str = "planned") -> tuple[Path, str]:
@@ -246,7 +246,7 @@ def _setup_implement_fixture(workflow_repo: Path, *, lane: str = "planned") -> t
     wp_path = tasks_dir / "WP01-test.md"
     _write_wp_file(wp_path, "WP01", lane=lane)
     # Seed canonical state so implement doesn't hard-fail (no frontmatter fallback)
-    _seed_wp_lane(feature_dir, "WP01", lane)
+    _seed_wp_lane(mission_dir, "WP01", lane)
     # Pre-create workspace so implement skips real git worktree creation
     workspace = workflow_repo / ".worktrees" / f"{mission_slug}-WP01"
     workspace.mkdir(parents=True, exist_ok=True)

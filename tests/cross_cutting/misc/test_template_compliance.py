@@ -121,13 +121,16 @@ def test_no_phase_subdirectories_in_templates():
 
 
 def test_command_templates_removed():
-    """WP10: command-templates directories must be fully removed.
+    """WP10: command-templates directories must be fully removed from specify_cli.
 
     Shim generation (spec-kitty agent shim) replaces template-based commands.
 
     Exception: src/specify_cli/missions/software-dev/command-templates/ is
     intentionally retained as the canonical source for prompt-driven commands
     (restored in feature 058).
+
+    The doctrine package retains command-templates as the package-default
+    tier (tier 5) of the 5-tier asset resolver, so doctrine/ dirs are allowed.
     """
     spec_kitty_root = Path(__file__).parent.parent.parent.parent
     missions_dir = spec_kitty_root / "src" / "specify_cli" / "missions"
@@ -137,9 +140,22 @@ def test_command_templates_removed():
 
     # software-dev/command-templates/ is the canonical source for prompt-driven
     # commands and is intentionally kept (feature 058).
+    # doctrine/ dirs are the package-default tier of the 5-tier resolver.
     allowed = {
         str((missions_dir / "software-dev" / "command-templates").relative_to(spec_kitty_root)),
     }
+    # Doctrine package dirs are the tier 5 package-default source — allowed.
+    for parent in [doctrine_missions_dir, doctrine_templates_dir]:
+        if parent.exists():
+            for d in parent.rglob("command-templates"):
+                if d.is_dir():
+                    allowed.add(str(d.relative_to(spec_kitty_root)))
+    # Also allow doctrine/_reference/ (archived reference material)
+    doctrine_ref = spec_kitty_root / "src" / "doctrine" / "_reference"
+    if doctrine_ref.exists():
+        for d in doctrine_ref.rglob("command-templates"):
+            if d.is_dir():
+                allowed.add(str(d.relative_to(spec_kitty_root)))
 
     found = []
     for parent in [missions_dir, templates_dir, doctrine_missions_dir, doctrine_templates_dir]:
@@ -186,7 +202,7 @@ def test_task_prompt_templates_include_branch_contract_metadata():
 
 
 def test_no_command_templates_in_mission_dirs():
-    """WP10: No command-templates subdirectories should exist under any mission directory.
+    """WP10: No command-templates subdirectories should exist under specify_cli mission dirs.
 
     Command templates were deleted in WP10 in favour of shim generation.
     Each agent slot now contains a thin 3-line shim file produced by
@@ -195,6 +211,9 @@ def test_no_command_templates_in_mission_dirs():
     Exception: src/specify_cli/missions/software-dev/command-templates/ is
     intentionally retained as the canonical source for prompt-driven commands
     (restored in feature 058).
+
+    The doctrine package retains command-templates as the package-default
+    tier (tier 5) of the 5-tier asset resolver, so doctrine/ dirs are allowed.
     """
     spec_kitty_root = Path(__file__).parent.parent.parent.parent
     missions_dir = spec_kitty_root / "src" / "specify_cli" / "missions"
@@ -205,6 +224,11 @@ def test_no_command_templates_in_mission_dirs():
     allowed = {
         str((missions_dir / "software-dev" / "command-templates").relative_to(spec_kitty_root)),
     }
+    # Doctrine mission dirs are the tier 5 package-default source — allowed.
+    if doctrine_dir.exists():
+        for child in doctrine_dir.rglob("command-templates"):
+            if child.is_dir():
+                allowed.add(str(child.relative_to(spec_kitty_root)))
 
     violations = []
     for base in [missions_dir, doctrine_dir]:

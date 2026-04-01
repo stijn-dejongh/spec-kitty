@@ -111,7 +111,7 @@ dependencies: []
     initial_gitignore = gitignore_path.read_text()
 
     # Run spec-kitty implement to create worktree
-    result = _run_checkout_cli(tmp_path, "implement", "WP01", "--feature", "001-test-feature")
+    result = _run_checkout_cli(tmp_path, "implement", "WP01", "--mission", "001-test-mission")
 
     # Verify command succeeded
     assert result.returncode == 0, f"implement failed: {result.stderr}"
@@ -225,7 +225,7 @@ dependencies: []
     ).stdout.strip()
 
     # Create worktree
-    result = _run_checkout_cli(tmp_path, "implement", "WP01", "--feature", "001-test-feature")
+    result = _run_checkout_cli(tmp_path, "implement", "WP01", "--mission", "001-test-mission")
     assert result.returncode == 0, f"implement failed: {result.stderr}"
 
     # In worktree, create a test file and commit
@@ -336,7 +336,7 @@ dependencies: []
     )
 
     # Create worktree
-    result = _run_checkout_cli(tmp_path, "implement", "WP01", "--feature", "001-test-feature")
+    result = _run_checkout_cli(tmp_path, "implement", "WP01", "--mission", "001-test-mission")
     assert result.returncode == 0, f"implement failed: {result.stderr}"
 
     # Check that .git/info/exclude exists (in git directory, not worktree)

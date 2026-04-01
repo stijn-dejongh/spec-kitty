@@ -1,0 +1,11 @@
+schema_version: "1.0"
+id: tactic-with-tags
+name: Tactic With Tags
+purpose: Fixture exercising the optional tags field.
+tags:
+  - refactoring
+  - ddd
+  - event-sourcing
+steps:
+  - title: Step one
+    description: A step in a tagged tactic.

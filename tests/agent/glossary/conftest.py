@@ -19,6 +19,19 @@ from specify_cli.glossary.models import (
 _THIS_DIR = Path(__file__).parent
 
 
+@pytest.fixture(autouse=True)
+def _register_glossary_runner():
+    """Ensure the GlossaryAwarePrimitiveRunner is registered for tests
+    that call execute_with_glossary() via the kernel registry."""
+    from kernel.glossary_runner import register, clear_registry, get_runner
+    from specify_cli.glossary.attachment import GlossaryAwarePrimitiveRunner
+
+    if get_runner() is None:
+        register(GlossaryAwarePrimitiveRunner)
+    yield
+    clear_registry()
+
+
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     """Mark all tests in this directory as fast."""
     for item in items:

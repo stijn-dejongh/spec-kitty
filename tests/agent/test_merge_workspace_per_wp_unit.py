@@ -411,6 +411,7 @@ class TestAncestorSkippedWpMarkedDone:
         ]
         merge_plan = {
             "all_wp_workspaces": wp_workspaces,
+            "all_wp_branches": ["010-mission-WP01", "010-mission-WP02"],
             "effective_wp_workspaces": [(wt_wp02, "WP02", "010-mission-WP02")],
             "skipped_already_in_target": [],
             "skipped_ancestor_of": {"010-mission-WP01": ["010-mission-WP02"]},

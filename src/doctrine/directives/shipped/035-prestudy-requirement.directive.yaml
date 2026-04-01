@@ -1,5 +1,5 @@
 schema_version: "1.0"
-id: DIRECTIVE_033
+id: DIRECTIVE_035
 title: Prestudy Requirement
 intent: >
   Significant architectural decisions and initiatives must be preceded by a
@@ -50,6 +50,16 @@ validation_criteria:
     accepted trade-offs for the chosen approach.
   - The prestudy has an explicit acceptance record (date, authority, status field).
   - Subsequent ADRs reference the prestudy.
+traceable_decisions: >
+  Every decision produced during or after the prestudy must be recorded at a
+  consistent level of abstraction — organisational impact, architecture, design,
+  or code — and must not mix levels within a single rationale. Traceability
+  means each decision links upward to the constraint or goal that motivated it
+  and downward to the artifacts that implement it. This prevents reasoning from
+  hopscotching between abstraction levels and ensures that the scope of each
+  document matches its audience and purpose. The Drill-Down Documentation
+  procedure (see references) provides a structured approach to layering
+  decisions through these levels.
 explicit_allowances:
   - Initiatives with an explicit time-constrained exception, where the decision
     authority has accepted the risk in writing and the exception is recorded in
@@ -66,3 +76,5 @@ references:
     id: system-context-canvas-template
   - type: template
     id: lightweight-prestudy-template
+  - type: procedure
+    id: drill-down-documentation

@@ -13,6 +13,19 @@ required:
 - exit_condition
 - steps
 definitions:
+  failure_mode:
+    type: object
+    additionalProperties: false
+    required:
+    - name
+    - description
+    properties:
+      name:
+        type: string
+        minLength: 1
+      description:
+        type: string
+        minLength: 1
   procedure_anti_pattern:
     type: object
     additionalProperties: false
@@ -97,11 +110,19 @@ properties:
   exit_condition:
     type: string
     minLength: 1
+  tags:
+    type: array
+    items:
+      type: string
   steps:
     type: array
     minItems: 1
     items:
       $ref: '#/definitions/procedure_step'
+  failure_modes:
+    type: array
+    items:
+      $ref: '#/definitions/failure_mode'
   anti_patterns:
     type: array
     description: Common mistakes or failure modes to avoid when following this procedure.

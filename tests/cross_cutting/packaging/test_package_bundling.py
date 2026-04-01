@@ -9,14 +9,18 @@ import pytest
 
 
 def test_command_templates_not_bundled():
-    """WP10: command-templates directories must not exist in src/specify_cli or src/doctrine.
+    """WP10: command-templates directories must not exist in src/specify_cli (except software-dev).
 
     Shim generation (spec-kitty agent shim) replaces rendered template files.
-    No command-templates should remain to be bundled into the distribution.
+    No command-templates should remain to be bundled into the distribution
+    under specify_cli.
 
     Exception: src/specify_cli/missions/software-dev/command-templates/ is
     intentionally retained as the canonical source for prompt-driven commands
     (restored in feature 058).
+
+    The doctrine package retains command-templates as the package-default
+    tier (tier 5) of the 5-tier asset resolver, so doctrine/ dirs are allowed.
     """
     spec_kitty_root = Path(__file__).parent.parent.parent.parent
     missions_dir = spec_kitty_root / "src" / "specify_cli" / "missions"
@@ -26,6 +30,12 @@ def test_command_templates_not_bundled():
     allowed = {
         str((missions_dir / "software-dev" / "command-templates").relative_to(spec_kitty_root)),
     }
+    # Doctrine package dirs are the tier 5 package-default source — allowed.
+    doctrine_base = spec_kitty_root / "src" / "doctrine"
+    if doctrine_base.exists():
+        for d in doctrine_base.rglob("command-templates"):
+            if d.is_dir():
+                allowed.add(str(d.relative_to(spec_kitty_root)))
 
     found = []
     for base in [

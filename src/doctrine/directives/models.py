@@ -10,7 +10,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from doctrine.artifact_kinds import ArtifactKind
-from doctrine.shared.models import Contradiction
+from doctrine.shared.models import Contradiction, FailureMode
 
 
 class Enforcement(StrEnum):
@@ -52,24 +52,18 @@ class Directive(BaseModel):
 
     # Optional enrichment fields
     scope: str | None = None
+    tags: list[str] = Field(default_factory=list)
     procedures: list[str] = Field(default_factory=list)
     integrity_rules: list[str] = Field(default_factory=list, alias="integrity_rules")
-    validation_criteria: list[str] = Field(
-        default_factory=list, alias="validation_criteria"
-    )
-    explicit_allowances: list[str] = Field(
-        default_factory=list, alias="explicit_allowances"
-    )
+    validation_criteria: list[str] = Field(default_factory=list, alias="validation_criteria")
+    explicit_allowances: list[str] = Field(default_factory=list, alias="explicit_allowances")
+    traceable_decisions: str | None = None
+    failure_modes: list[FailureMode] = Field(default_factory=list)
     references: list[DirectiveReference] = Field(default_factory=list)
     opposed_by: list[Contradiction] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_lenient_adherence(self) -> "Directive":
-        if (
-            self.enforcement == Enforcement.LENIENT_ADHERENCE
-            and not self.explicit_allowances
-        ):
-            raise ValueError(
-                "explicit_allowances must be provided when enforcement is lenient-adherence"
-            )
+        if self.enforcement == Enforcement.LENIENT_ADHERENCE and not self.explicit_allowances:
+            raise ValueError("explicit_allowances must be provided when enforcement is lenient-adherence")
         return self

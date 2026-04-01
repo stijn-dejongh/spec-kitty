@@ -32,6 +32,7 @@ from specify_cli.core.paths import (
     get_mission_dir,
     require_explicit_mission as _require_explicit_mission,
 )
+from specify_cli.core.mission_detection import MissionDetectionError
 from specify_cli.core.tool_config import get_auto_commit_default
 
 AcceptanceMode = str  # Expected values: "pr", "local", "checklist"

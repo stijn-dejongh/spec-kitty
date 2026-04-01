@@ -145,6 +145,44 @@ Terms describing the Doctrine domain model and doctrine artifact taxonomy.
 
 ---
 
+### Procedure
+
+|                   |                                                                                                                                                                                                                                         |
+|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Definition**    | A step-by-step operational workflow that defines how a specific governance or engineering activity is carried out. Procedures have explicit entry/exit conditions, ordered steps with assigned actors, and integrity rules.               |
+| **Context**       | Doctrine                                                                                                                                                                                                                                |
+| **Status**        | canonical                                                                                                                                                                                                                               |
+| **Applicable to** | `1.x`, `2.x` |
+| **Location**      | `src/doctrine/procedures/`                                                                                                                                                                                                             |
+| **Related terms** | [Directive](#directive), [Tactic](#tactic), [Template Set](#template-set)                                                                                                                                                              |
+
+---
+
+### Agent Profile
+
+|                   |                                                                                                                                                                                                                                         |
+|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Definition**    | A doctrine artifact that defines the behavioral contract, collaboration mode, authority boundaries, and governance expectations for a specific actor role in the Spec Kitty workflow (for example Human-in-Charge, Implementer, Reviewer). |
+| **Context**       | Doctrine                                                                                                                                                                                                                                |
+| **Status**        | canonical                                                                                                                                                                                                                               |
+| **Applicable to** | `2.x` |
+| **Location**      | `src/doctrine/agent_profiles/`                                                                                                                                                                                                         |
+| **Related terms** | [Directive](#directive), [Constitution Selection](#constitution-selection), [Human-in-Charge (HiC)](./identity.md#human-in-charge-hic)                                                                                                 |
+
+---
+
+### Failure Modes
+
+|                   |                                                                                                                                                                                                                                         |
+|-------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Definition**    | A section within a directive or procedure that enumerates known anti-patterns and misapplication risks. Each failure mode names the pattern, describes its symptoms, and clarifies how it violates the artifact's intent.                 |
+| **Context**       | Doctrine                                                                                                                                                                                                                                |
+| **Status**        | canonical                                                                                                                                                                                                                               |
+| **Applicable to** | `2.x` |
+| **Related terms** | [Directive](#directive), [Procedure](#procedure), [Schema (Doctrine Artifact)](#schema-doctrine-artifact)                                                                                                                              |
+
+---
+
 ### Doctrine Catalog
 
 |                   |                                                                                                                                                                                                                                         |

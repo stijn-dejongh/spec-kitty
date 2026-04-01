@@ -1,0 +1,7 @@
+# Missing required field: steps
+schema_version: "1.0"
+id: missing-steps
+name: Bad Procedure
+purpose: Missing required steps field.
+entry_condition: Always
+exit_condition: Never

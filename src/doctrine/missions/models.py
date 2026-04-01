@@ -22,9 +22,7 @@ class MissionStateObject(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", populate_by_name=True)
 
     id: str
-    agent_profile: str | None = Field(
-        default=None, alias="agent-profile", pattern=r"^[a-z][a-z0-9-]*$"
-    )
+    agent_profile: str | None = Field(default=None, alias="agent-profile", pattern=r"^[a-z][a-z0-9-]*$")
 
 
 class MissionTransition(BaseModel):
@@ -35,9 +33,7 @@ class MissionTransition(BaseModel):
     from_state: str = Field(alias="from")
     to: str
     on: str | None = None
-    agent_profile: str | None = Field(
-        default=None, alias="agent-profile", pattern=r"^[a-z][a-z0-9-]*$"
-    )
+    agent_profile: str | None = Field(default=None, alias="agent-profile", pattern=r"^[a-z][a-z0-9-]*$")
 
 
 class MissionOrchestration(BaseModel):
@@ -62,9 +58,7 @@ class MissionStep(BaseModel):
     description: str | None = None
     prompt_template: str | None = None
     depends_on: list[str] = Field(default_factory=list)
-    agent_profile: str | None = Field(
-        default=None, alias="agent-profile", pattern=r"^[a-z][a-z0-9-]*$"
-    )
+    agent_profile: str | None = Field(default=None, alias="agent-profile", pattern=r"^[a-z][a-z0-9-]*$")
 
 
 class Mission(BaseModel):
@@ -80,5 +74,6 @@ class Mission(BaseModel):
     key: str = Field(pattern=r"^[a-z][a-z0-9-]*$")
     name: str
     description: str | None = None
+    tags: list[str] = Field(default_factory=list)
     orchestration: MissionOrchestration
     steps: list[MissionStep] = Field(default_factory=list)

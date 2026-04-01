@@ -148,7 +148,7 @@ class TestPydanticIntegration:
         from doctrine.tactics.models import TacticReference
 
         ref = TacticReference.model_validate({"name": "foo", "type": "styleguide", "id": "sg-01", "when": "always"})
-        assert ref.type is ArtifactKind.STYLEGUIDE
+        assert ref.type == "styleguide"
 
     def test_procedure_reference_deserializes(self) -> None:
         from doctrine.procedures.models import ProcedureReference

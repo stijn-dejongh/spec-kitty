@@ -155,19 +155,25 @@ def test_tactic_schema_valid(tactic_path: Path) -> None:
 
 
 @pytest.mark.parametrize("tactic_path", _shipped_tactic_files, ids=_shipped_tactic_ids)
-def test_references_resolve(
-    tactic_path: Path, artifact_index: dict[str, set[str]]
-) -> None:
+def test_references_resolve(tactic_path: Path, artifact_index: dict[str, set[str]]) -> None:
     """Every reference (root and step) in a shipped tactic must point to an existing artifact.
 
     _proposed tactics are excluded — they are work-in-progress and may reference
     artifacts not yet shipped.
+
+    Informational reference types (``related``, ``checklist``) are skipped —
+    they are non-traversable cross-reference markers, not resolvable artifact types.
     """
+    # Informational markers that are valid in YAML but not backed by an artifact directory.
+    _INFORMATIONAL_REF_TYPES = {"related", "checklist"}
+
     tactic = _load_yaml(tactic_path)
     unresolved = []
 
     for ref in _extract_root_references(tactic):
         ref_type = ref.get("type", "unknown")
+        if ref_type in _INFORMATIONAL_REF_TYPES:
+            continue
         ref_id = ref.get("id", "missing")
         known_ids = artifact_index.get(ref_type, set())
         if ref_id not in known_ids:
@@ -177,6 +183,8 @@ def test_references_resolve(
 
     for step_idx, step_title, ref in _extract_step_references(tactic):
         ref_type = ref.get("type", "unknown")
+        if ref_type in _INFORMATIONAL_REF_TYPES:
+            continue
         ref_id = ref.get("id", "missing")
         known_ids = artifact_index.get(ref_type, set())
         if ref_id not in known_ids:

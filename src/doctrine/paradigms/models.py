@@ -14,6 +14,7 @@ class Paradigm(BaseModel):
     id: str = Field(pattern=r"^[a-z][a-z0-9-]*$")
     name: str
     summary: str
+    tags: list[str] = Field(default_factory=list)
     tactic_refs: list[str] = Field(default_factory=list)
     directive_refs: list[str] = Field(default_factory=list)
     opposed_by: list[Contradiction] = Field(default_factory=list)

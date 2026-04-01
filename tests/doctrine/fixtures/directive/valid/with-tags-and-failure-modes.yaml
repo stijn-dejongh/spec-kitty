@@ -1,0 +1,13 @@
+schema_version: "1.0"
+id: TAGGED_DIRECTIVE
+title: Tagged Directive
+intent: Test tags and failure_modes on directives.
+enforcement: advisory
+tags:
+  - governance
+  - testing
+failure_modes:
+  - name: Over-analysis
+    description: Spending disproportionate effort on low-stakes decisions.
+  - name: Confirmation-bias assessment
+    description: Performing assessment after decision already committed to.

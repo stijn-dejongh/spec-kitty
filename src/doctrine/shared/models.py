@@ -21,4 +21,29 @@ class Contradiction(BaseModel):
     reason: str = Field(min_length=1)
 
 
-__all__ = ["Contradiction"]
+class FailureMode(BaseModel):
+    """A named failure mode with a description.
+
+    Replaces the previous ``list[str]`` representation on tactics with a
+    structured value object.  Used by tactics, directives, and procedures.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    name: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+
+
+class ArtefactTags(BaseModel):
+    """Thin wrapper around ``list[str]`` for artifact classification tags.
+
+    Provides a canonical frozen value object for the optional ``tags``
+    field present on all doctrine artifact models.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    values: list[str] = Field(default_factory=list)
+
+
+__all__ = ["ArtefactTags", "Contradiction", "FailureMode"]

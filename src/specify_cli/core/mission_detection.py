@@ -301,16 +301,21 @@ def _validate_mission_exists(slug: str, repo_root: Path) -> bool:
 def is_mission_complete(mission_dir: Path) -> bool:
     """Check if all work packages in a mission are complete.
 
-    A mission is considered complete when all WP files have lane: 'done'.
+    A mission is considered complete when all WP files have lane 'done'.
+    Prefers the canonical event log when available; falls back to reading
+    frontmatter ``lane:`` fields when no event log exists yet.  This
+    fallback is intentional: mission detection (priority 5-7) needs a
+    best-effort completeness check that works before ``finalize-tasks``
+    has been run.
 
     Args:
         mission_dir: Path to mission directory (e.g., kitty-specs/020-my-mission)
 
     Returns:
-        True if all WPs have lane: 'done', False otherwise
-        Returns False on any parse errors (safe default - mission stays incomplete)
+        True if all WPs have lane 'done', False otherwise.
+        Returns False on any error (safe default - mission stays incomplete).
     """
-    from specify_cli.frontmatter import read_frontmatter
+    from specify_cli.status.lane_reader import get_all_wp_lanes, has_event_log
 
     tasks_dir = mission_dir / "tasks"
     if not tasks_dir.exists():
@@ -320,17 +325,29 @@ def is_mission_complete(mission_dir: Path) -> bool:
     if not wp_files:
         return False
 
-    for wp_file in wp_files:
+    if has_event_log(mission_dir):
         try:
-            frontmatter, _ = read_frontmatter(wp_file)
-            lane = frontmatter.get("lane", "planned")
-            if lane != "done":
-                return False
+            lanes = get_all_wp_lanes(mission_dir)
         except Exception:
-            # On any error, treat as incomplete (safe default)
             return False
 
-    return True
+        for wp_file in wp_files:
+            wp_id = wp_file.stem
+            if lanes.get(wp_id) != "done":
+                return False
+        return True
+
+    # Fallback: read frontmatter when no event log exists
+    try:
+        from specify_cli.frontmatter import read_frontmatter
+
+        for wp_file in wp_files:
+            fm, _ = read_frontmatter(wp_file)
+            if fm.get("lane") != "done":
+                return False
+        return True
+    except Exception:
+        return False
 
 
 def _is_mission_runnable(mission_dir: Path) -> bool:

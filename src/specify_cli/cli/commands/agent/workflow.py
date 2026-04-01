@@ -22,6 +22,7 @@ from specify_cli.core.implement_validation import (
     validate_and_resolve_base,
     validate_base_workspace_exists,
 )
+from specify_cli.core.mission_detection import detect_mission_directory
 from specify_cli.core.paths import (
     get_main_repo_root,
     get_mission_dir,
@@ -373,6 +374,7 @@ def implement(
     feature: Annotated[Optional[str], typer.Option("--feature", hidden=True, help="Legacy compatibility alias for mission selection")] = None,
     agent: Annotated[Optional[str], typer.Option("--agent", help="Agent name (required for auto-move to doing lane)")] = None,
     base: Annotated[Optional[str], typer.Option("--base", help="Base WP to branch from (e.g., WP01) - creates worktree if provided")] = None,
+    allow_missing_profile: Annotated[bool, typer.Option("--allow-missing-profile", help="Degrade to warning when agent profile cannot be resolved")] = False,
 ) -> None:
     """Display work package prompt with implementation instructions.
 

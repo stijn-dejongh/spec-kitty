@@ -1,0 +1,7 @@
+schema_version: "1.0"
+id: minimal-contract
+action: implement
+mission: software-dev
+steps:
+  - id: bootstrap
+    description: Load constitution context

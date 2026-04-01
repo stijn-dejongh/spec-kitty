@@ -14,4 +14,5 @@ class Toolguide(BaseModel):
     title: str
     guide_path: str = Field(pattern=r"^src/doctrine/.+\.md$")
     summary: str
+    tags: list[str] = Field(default_factory=list)
     commands: list[str] = Field(default_factory=list)

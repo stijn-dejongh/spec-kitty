@@ -1,0 +1,14 @@
+schema_version: "1.0"
+id: tactic-with-failure-modes
+name: Tactic With Structured Failure Modes
+purpose: Fixture exercising structured failure_modes objects.
+tags:
+  - testing
+failure_modes:
+  - name: Over-analysis
+    description: Spending disproportionate effort on low-stakes choices.
+  - name: Checklist theatre
+    description: Going through the steps mechanically without genuine deliberation.
+steps:
+  - title: Step one
+    description: A step in a tactic with structured failure modes.

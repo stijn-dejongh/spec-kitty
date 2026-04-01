@@ -1,0 +1,6 @@
+# Empty steps array (minItems: 1)
+schema_version: "1.0"
+id: empty-steps
+action: implement
+mission: software-dev
+steps: []

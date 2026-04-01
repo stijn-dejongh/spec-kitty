@@ -42,14 +42,14 @@ def _install_manifest_stubs(monkeypatch, worktree_path: Path) -> None:
 
         def get_worktree_summary(self) -> dict[str, int]:
             return {
-                "total_features": 1,
+                "total_missions": 1,
                 "active_worktrees": 1,
-                "merged_features": 0,
+                "merged_missions": 0,
                 "in_development": 1,
                 "not_started": 0,
             }
 
-        def get_all_features(self) -> list[str]:
+        def get_all_missions(self) -> list[str]:
             return ["004-modular-code-refactoring"]
 
         def get_mission_status(self, mission: str) -> dict[str, object]:
@@ -114,8 +114,8 @@ def test_run_diagnostics_reports_manifest_and_worktree_state(monkeypatch, tmp_pa
     assert result["file_integrity"]["total_expected"] == 2
     assert result["file_integrity"]["total_missing"] == 1
     assert result["worktree_overview"]["active_worktrees"] == 1
-    assert result["all_features"][0]["name"] == "004-modular-code-refactoring"
-    assert result["current_feature"]["detected"] is True
+    assert result["all_missions"][0]["name"] == "004-modular-code-refactoring"
+    assert result["current_mission"]["detected"] is True
     assert any(msg.startswith("Mission integrity") for msg in result["observations"])
 
 

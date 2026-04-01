@@ -49,6 +49,7 @@ steps:
       - refactoring-replace-temp-with-query
       - refactoring-retry-pattern
       - refactoring-strangler-fig
+      - domain-service-extraction
   - title: Apply in smallest viable steps
     description: >
       Execute the selected tactic one step at a time. After each

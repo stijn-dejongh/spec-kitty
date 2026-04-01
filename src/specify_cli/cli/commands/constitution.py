@@ -28,6 +28,7 @@ from specify_cli.constitution.interview import (
     write_interview_answers,
 )
 from specify_cli.constitution.sync import sync as sync_constitution
+from specify_cli.cli.commands._flag_utils import resolve_mission_type
 from specify_cli.tasks_support import TaskCliError, find_repo_root
 
 app = typer.Typer(
@@ -63,7 +64,8 @@ def _interview_path(repo_root: Path) -> Path:
 
 @app.command()
 def interview(
-    mission: str = typer.Option("software-dev", "--mission", help="Mission key for constitution defaults"),
+    mission_type: str | None = typer.Option(None, "--mission-type", help="Mission key for constitution defaults [default: software-dev]"),
+    mission_legacy: str | None = typer.Option(None, "--mission", hidden=True, help="[Removed] Use --mission-type"),
     profile: str = typer.Option("minimal", "--profile", help="Interview profile: minimal or comprehensive"),
     use_defaults: bool = typer.Option(False, "--defaults", help="Use deterministic defaults without prompts"),
     selected_paradigms: str | None = typer.Option(
@@ -85,6 +87,7 @@ def interview(
 ) -> None:
     """Capture constitution interview answers for later generation."""
     try:
+        mission = resolve_mission_type(mission_type, mission_legacy) or "software-dev"
         repo_root = find_repo_root()
         normalized_profile = profile.strip().lower()
         if normalized_profile not in {"minimal", "comprehensive"}:
@@ -167,7 +170,8 @@ def interview(
 
 @app.command()
 def generate(
-    mission: str | None = typer.Option(None, "--mission", help="Mission key for template-set defaults"),
+    mission_type: str | None = typer.Option(None, "--mission-type", help="Mission key for template-set defaults"),
+    mission_legacy: str | None = typer.Option(None, "--mission", hidden=True, help="[Removed] Use --mission-type"),
     template_set: str | None = typer.Option(
         None,
         "--template-set",
@@ -182,6 +186,7 @@ def generate(
 ) -> None:
     """Generate constitution bundle from interview answers + doctrine references."""
     try:
+        mission = resolve_mission_type(mission_type, mission_legacy)
         repo_root = find_repo_root()
         constitution_dir = get_project_constitution_dir(repo_root)
         answers_path = _interview_path(repo_root)
@@ -249,6 +254,62 @@ def generate(
         console.print("Files written:")
         for filename in files_written:
             console.print(f"  ✓ {filename}")
+
+    except (FileExistsError, TaskCliError, ValueError, RuntimeError) as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(code=1) from e
+    except Exception as e:
+        console.print(f"[red]Unexpected error:[/red] {e}")
+        raise typer.Exit(code=1) from e
+
+
+@app.command(name="generate-for-agent")
+def generate_for_agent(
+    agent_profile: str = typer.Option(..., "--profile", help="Agent profile ID to compile constitution for"),
+    mission_type: str | None = typer.Option(None, "--mission-type", help="Mission key for template-set defaults"),
+    mission_legacy: str | None = typer.Option(None, "--mission", hidden=True, help="[Removed] Use --mission-type"),
+    role: str | None = typer.Option(None, "--role", help="Override role for profile resolution"),
+    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing constitution bundle"),
+    json_output: bool = typer.Option(False, "--json", help="Output JSON"),
+) -> None:
+    """Generate a profile-aware constitution for a specific agent profile."""
+    try:
+        mission = resolve_mission_type(mission_type, mission_legacy)
+        repo_root = find_repo_root()
+        constitution_dir = get_project_constitution_dir(repo_root)
+        answers_path = _interview_path(repo_root)
+
+        interview_data = read_interview_answers(answers_path)
+        if interview_data is None:
+            resolved_mission = mission or "software-dev"
+            interview_data = default_interview(
+                mission=resolved_mission,
+                profile="minimal",
+            )
+
+        resolved_mission = mission or interview_data.mission
+
+        compiled = compile_constitution(
+            mission=resolved_mission,
+            interview=interview_data,
+        )
+        bundle_result = write_compiled_constitution(constitution_dir, compiled, force=force)
+
+        if json_output:
+            print(
+                json.dumps(
+                    {
+                        "success": True,
+                        "agent_profile": agent_profile,
+                        "mission": compiled.mission,
+                        "files_written": list(bundle_result.files_written),
+                    },
+                    indent=2,
+                )
+            )
+            return
+
+        console.print(f"[green]Constitution generated for agent profile: {agent_profile}[/green]")
 
     except (FileExistsError, TaskCliError, ValueError, RuntimeError) as e:
         console.print(f"[red]Error:[/red] {e}")

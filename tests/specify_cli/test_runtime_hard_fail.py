@@ -48,7 +48,7 @@ def _write_event(feature_dir: Path, wp_id: str, to_lane: str, from_lane: str = "
     """Append a single status event to the feature's event log."""
     event = StatusEvent(
         event_id=f"01TEST{wp_id}{to_lane.upper()[:4]}",
-        feature_slug=feature_dir.name,
+        mission_slug=feature_dir.name,
         wp_id=wp_id,
         from_lane=Lane(from_lane),
         to_lane=Lane(to_lane),
@@ -102,7 +102,7 @@ class TestEventLogAbsent:
         front, body, padding = split_frontmatter(text)
 
         wp = WorkPackage(
-            feature=feature_dir.name,
+            mission_slug=feature_dir.name,
             path=wp_path,
             current_lane="planned",
             relative_subpath=Path("WP01.md"),
@@ -175,7 +175,7 @@ class TestEventLogExistsWPMissing:
         front, body, padding = split_frontmatter(text)
 
         wp = WorkPackage(
-            feature=feature_dir.name,
+            mission_slug=feature_dir.name,
             path=wp_path,
             current_lane="planned",
             relative_subpath=Path("WP02.md"),
@@ -217,7 +217,7 @@ class TestEventLogExistsWPHasState:
         # Write a planned->planned event (bootstrap)
         event = StatusEvent(
             event_id="01TESTBOOTWP01",
-            feature_slug=feature_dir.name,
+            mission_slug=feature_dir.name,
             wp_id="WP01",
             from_lane=Lane.PLANNED,
             to_lane=Lane.PLANNED,
@@ -244,7 +244,7 @@ class TestEventLogExistsWPHasState:
         # done requires evidence — write raw event
         event = StatusEvent(
             event_id="01TESTDONEWP01",
-            feature_slug=feature_dir.name,
+            mission_slug=feature_dir.name,
             wp_id="WP01",
             from_lane=Lane.APPROVED,
             to_lane=Lane.DONE,
@@ -307,7 +307,7 @@ class TestMergePreflightHardFail:
         with pytest.raises(CanonicalStatusNotFoundError):
             _mark_wp_merged_done(
                 repo_root=tmp_path,
-                feature_slug=feature_dir.name,
+                mission_slug=feature_dir.name,
                 wp_id="WP01",
                 target_branch="main",
             )

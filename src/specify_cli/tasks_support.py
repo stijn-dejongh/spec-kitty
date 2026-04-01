@@ -367,8 +367,13 @@ def locate_work_package(repo_root: Path, mission_slug: str, wp_id: str) -> WorkP
             if path.name.lower() == "readme.md":
                 continue
             if wp_pattern.match(path.name):
-                # Get lane from frontmatter
-                lane = get_lane_from_frontmatter(path, warn_on_missing=False)
+                # Get lane from canonical event log; fall back to "planned"
+                # when the event log doesn't exist yet.
+                from specify_cli.status.lane_reader import CanonicalStatusNotFoundError
+                try:
+                    lane = get_lane_from_frontmatter(path, warn_on_missing=False)
+                except CanonicalStatusNotFoundError:
+                    lane = "planned"
                 candidates.append((lane, path, tasks_root))
 
     if not candidates:
@@ -399,17 +404,19 @@ def load_meta(meta_path: Path) -> dict:
 
 
 def get_lane_from_frontmatter(wp_path: Path, warn_on_missing: bool = True) -> str:
-    """Return canonical lane for a WP from the event log.
+    """Return canonical lane for a WP.
 
-    Reads exclusively from the canonical event log via ``get_wp_lane()``.
-    Raises ``CanonicalStatusNotFoundError`` when the event log is absent.
+    Prefers the canonical event log via ``get_wp_lane()`` when available.
+    Falls back to reading the ``lane:`` field from frontmatter when the
+    event log is absent (e.g. before ``finalize-tasks`` has been run).
 
     Args:
         wp_path: Path to the work package markdown file
         warn_on_missing: Unused; retained for call-site compatibility
 
     Returns:
-        Lane value from event log, or ``"uninitialized"`` when WP has no events.
+        Lane value from event log (preferred), frontmatter, or ``"planned"``
+        as last-resort default.
     """
     # Derive mission_dir: WP files live at kitty-specs/<slug>/tasks/WP01.md
     mission_dir = wp_path.parent.parent

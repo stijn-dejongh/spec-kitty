@@ -1,0 +1,8 @@
+schema_version: "1.0"
+id: minimal-procedure
+name: Minimal Procedure
+purpose: A minimal procedure for testing.
+entry_condition: Always applicable
+exit_condition: Procedure complete
+steps:
+  - title: Do the thing

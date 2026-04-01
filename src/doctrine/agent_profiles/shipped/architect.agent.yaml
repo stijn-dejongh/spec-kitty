@@ -130,6 +130,6 @@ directive-references:
   - code: "032"
     name: Conceptual Alignment
     rationale: Domain terminology in any design task must be confirmed with the requester before proceeding to avoid misaligned implementations
-  - code: "033"
+  - code: "035"
     name: Prestudy Requirement
     rationale: Significant architectural decisions must be preceded by a System Context Canvas and Lightweight Prestudy before solution design begins

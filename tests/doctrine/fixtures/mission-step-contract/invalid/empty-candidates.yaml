@@ -1,0 +1,11 @@
+# delegates_to.candidates must have at least one entry
+schema_version: "1.0"
+id: empty-candidates
+action: implement
+mission: software-dev
+steps:
+  - id: bad-step
+    description: Step with empty candidates
+    delegates_to:
+      kind: tactic
+      candidates: []

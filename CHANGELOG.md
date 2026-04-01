@@ -7,30 +7,45 @@ All notable changes to the Spec Kitty CLI and templates are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.1.0] - Unreleased
+
+### Added
+
+- **`src/kernel/` package** — shared dependency floor providing path resolution (`ProjectPaths`), atomic-write primitives, and glossary-boundary types; enforced by ADR and architectural dependency tests.
+- **Doctrine curation engine** — `src/doctrine/curation/` provides a structured workflow for auditing, importing, and promoting doctrine artifacts (directives, tactics, styleguides, toolguides, paradigms).
+- **Agent profile infrastructure** — shipped profiles for 9 agent roles (architect, curator, designer, generic-agent, implementer, planner, python-implementer, researcher, reviewer) with YAML schema validation, capability matching, and inheritance resolution.
+- **Doctrine CLI subcommand group** — `spec-kitty doctrine` provides artifact listing, detail views, and governance surface access from the command line.
+- **Mission step contracts** — shipped `implement`, `plan`, `review`, and `specify` step-contract YAML definitions with repository and model support.
+- **9-lane state machine** — adds `IN_REVIEW` lane between `FOR_REVIEW` and `APPROVED`, with 30 allowed transitions (up from 24).
+- **Structured actor identity (`ActorIdentity`)** — status events now carry structured identity (`tool`, `model`, `profile`, `role`); bare-string actors auto-coerced via `ActorIdentity.from_legacy()` for backward compatibility.
+- **Architectural dependency tests** — `tests/architectural/test_layer_rules.py` enforces the `kernel` -> `doctrine` -> `constitution` -> `specify_cli` layering via `pytestarch`.
+- **Mission template repository** — `doctrine.missions.repository.MissionRepository` provides typed access to mission configs, command templates, expected artifacts, and action indexes.
+- **Import candidate models** — `doctrine.import_candidates` provides schema-validated models for curating and promoting proposed doctrine artifacts.
+- **Model-to-task-type routing** — `doctrine.model_task_routing` maps LLM model capabilities to appropriate task types with YAML schema support.
 
 ### Changed
 
 - **Rebased doctrine-stack work onto `main`'s execution architecture** — carry forward the doctrine, constitution, and template-repository work from PR #305 into PR #348 while preserving `main`'s context, ownership, event-log, merge-engine, and shim foundations instead of reviving deleted subsystems.
-- **Kernel established as the shared dependency floor** — `src/kernel/` now owns shared path, atomic-write, and glossary-boundary primitives; doctrine no longer reaches back into `specify_cli`, and the package boundary is documented by ADRs and enforced by architectural tests.
 - **Constitution now acts as the local routing layer for governance assets** — project-local mission path construction flows through `ProjectMissionPaths`, while doctrine-backed mission/template access is routed through `MissionTemplateRepository` and constitution-facing resolvers instead of scattered path assembly.
-- **Mission terminology split clarified as the architectural answer to issue #241** — a direct `--feature` → `--mission` rename would have collided with the existing mission-type concept, so the branch now separates `mission type` (`--mission-type`) from `mission run` (`--mission-run`) and keeps legacy `--feature` compatibility where required during the deprecation window.
+- **Mission terminology split clarified as the architectural answer to issue #241** — a direct `--feature` -> `--mission` rename would have collided with the existing mission-type concept, so the branch now separates `mission type` (`--mission-type`) from `mission run` (`--mission-run`) and keeps legacy `--feature` compatibility where required during the deprecation window.
 - **Mission path and selector authority tightened across active runtime surfaces** — active mission-path construction now routes through the shared path layer, and operator-facing command/query surfaces teach `--mission-type`, `--mission-run`, and `--mission` according to their distinct roles instead of relying on scattered feature-era selectors.
 - **Legacy compatibility surfaces narrowed to explicit adapter boundaries** — active `agent feature` and orchestrator compatibility commands remain callable, but their option surfaces now prefer mission-first selectors and relegate `--feature` to hidden deprecated aliases instead of leaving bare feature-named flags in active CLI contracts.
 - **CI flows extended for the new package layout** — quality workflows now cover doctrine and kernel explicitly, including dedicated kernel coverage enforcement and updated readiness/release paths.
 - **Fork-safe SonarCloud targeting via repository variables** — CI now resolves SonarCloud settings from `SONAR_ORGANIZATION`, `SONAR_PROJECT_KEY`, and optional `SONAR_HOST_URL`, with upstream-safe defaults and a fallback project-key convention of `<organization>_<repo-name>` when `SONAR_PROJECT_KEY` is unset.
+- **Stale mission content migrated from `specify_cli` to `doctrine`** — duplicate `mission.yaml`, `mission-runtime.yaml`, and `expected-artifacts.yaml` files removed from `src/specify_cli/missions/` in favor of the authoritative copies in `src/doctrine/missions/`; `manifest.py` now resolves expected artifacts through `MissionRepository`.
 
 ### Fixed
 
 - **Narrow exception handlers in doctrine repositories** — Replace 21 bare `except Exception` handlers across `src/doctrine/` with specific exception tuples (`YAMLError`, `ValidationError`, `OSError`, `ModuleNotFoundError`, `TypeError`, `UnicodeDecodeError`) matching actual failure modes. Addresses PR #305 review finding M1.
 - **Fix `spec-kitty --help` crash** — Add missing `Optional` import to `workflow.py` and `tasks.py`. `from __future__ import annotations` defers annotation evaluation; Typer's `eval()` of `Optional[str]` annotations raised `NameError` at app construction time.
-- **Address PR #305 architectural review gaps in the rebased branch** — resolve the core review findings by removing doctrine→`specify_cli` dependency leakage, bringing doctrine into CI coverage, lifting shared glossary/path primitives into kernel, and documenting the resulting boundary in the architecture corpus.
+- **Address PR #305 architectural review gaps in the rebased branch** — resolve the core review findings by removing doctrine->`specify_cli` dependency leakage, bringing doctrine into CI coverage, lifting shared glossary/path primitives into kernel, and documenting the resulting boundary in the architecture corpus.
 - **Repair mission-run/bootstrap compatibility after the 3.0 rebase** — restore the finalize-tasks bootstrap bridge, mission-run detection payload compatibility, and related wrapper contracts so the rebased branch preserves the canonical status/bootstrap model without regressing existing mission/feature adapter flows.
 - **Fix subprocess CLI runtime bootstrap under test isolation** — test-mode runtime home now resolves to a writable temp-scoped global cache instead of failing on `~/.kittify/cache/.update.lock` during subprocess-based CLI integration tests.
+- **Fix legacy event log deserialization for `feature_slug` keyed data** — `StatusEvent.from_dict` and `StatusSnapshot.from_dict` now correctly fall back to `feature_slug` when `mission_slug` is absent, preventing `KeyError` on pre-mission-era event logs.
 
 ### Documentation
 
-- **Recorded the remaining follow-on work after the PR #305 → PR #348 transition** — the compiler-backed mission-bundle follow-up remains relevant, the skills-vs-mission-composition boundary still needs to stay explicit, constitution-local routing should expand beyond mission-path centralization, issue #241 still has compatibility/documentation cleanup left on older `--feature`-based surfaces, and residual runtime/test debt remains outside this rebase-focused integration.
+- **Recorded the remaining follow-on work after the PR #305 -> PR #348 transition** — the compiler-backed mission-bundle follow-up remains relevant, the skills-vs-mission-composition boundary still needs to stay explicit, constitution-local routing should expand beyond mission-path centralization, issue #241 still has compatibility/documentation cleanup left on older `--feature`-based surfaces, and residual runtime/test debt remains outside this rebase-focused integration.
 
 ## [3.0.3] - 2026-04-01
 

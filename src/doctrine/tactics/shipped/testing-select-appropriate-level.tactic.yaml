@@ -37,48 +37,54 @@ notes: >
   missing migrations). Balanced investment: the pyramid is a cost signal;
   invest in the cheapest test that catches each bug category.
 steps:
-  - title: Identify the change
-    description: State what is being introduced or modified in one sentence.
-  - title: Assess scope of impact
-    description: >
-      Classify the change as local (single function or class), cross-module (multiple components or services),
-      or system-wide (affects user-visible behavior or data flow).
-  - title: Evaluate risk of failure
-    description: >
-      Rate as high (data loss, security, correctness of critical logic),
-      medium (degraded UX, maintainability, performance),
-      or low (cosmetic, easily reversible).
-  - title: Map change to test levels
-    description: >
-      Unit tests for isolated logic and algorithms.
-      Integration tests for interactions between components.
-      System tests for end-to-end behavior and user scenarios.
-    examples:
-      - "Local scope + low risk = unit tests only."
-      - "Cross-module + high risk = unit + integration tests."
-      - "System-wide + high risk = all three levels."
-  - title: Select the minimal sufficient set
-    description: Choose the fewest test levels that provide confidence proportional to the risk. Do not default to a single level for all changes.
-  - title: Document what is not tested and why
-    description: Explicitly state any untested areas and the rationale for accepting that gap.
-    examples:
-      - "Performance under concurrent load is not tested; risk is low and manual profiling covers it."
+- title: Identify the change
+  description: State what is being introduced or modified in one sentence.
+- title: Assess scope of impact
+  description: >
+    Classify the change as local (single function or class), cross-module (multiple components or services),
+    or system-wide (affects user-visible behavior or data flow).
+- title: Evaluate risk of failure
+  description: >
+    Rate as high (data loss, security, correctness of critical logic),
+    medium (degraded UX, maintainability, performance),
+    or low (cosmetic, easily reversible).
+- title: Map change to test levels
+  description: >
+    Unit tests for isolated logic and algorithms.
+    Integration tests for interactions between components.
+    System tests for end-to-end behavior and user scenarios.
+  examples:
+  - "Local scope + low risk = unit tests only."
+  - "Cross-module + high risk = unit + integration tests."
+  - "System-wide + high risk = all three levels."
+- title: Select the minimal sufficient set
+  description: Choose the fewest test levels that provide confidence proportional to the risk. Do not default to a 
+    single level for all changes.
+- title: Document what is not tested and why
+  description: Explicitly state any untested areas and the rationale for accepting that gap.
+  examples:
+  - "Performance under concurrent load is not tested; risk is low and manual profiling covers it."
 failure_modes:
-  - "Defaulting to one test level for all changes (always unit tests or always E2E)."
-  - "Over-testing low-risk changes, wasting effort and slowing feedback."
-  - "Relying solely on E2E tests: slow, brittle, hard to debug."
-  - "Under-testing high-risk changes due to time pressure."
-  - "Refactoring with no behavior change but writing new tests instead of relying on existing coverage."
+- name: Defaulting to one test
+  description: Defaulting to one test level for all changes (always unit tests or always E2E).
+- name: Over-testing low-risk changes, wasting
+  description: Over-testing low-risk changes, wasting effort and slowing feedback.
+- name: Relying solely on E2E tests
+  description: slow, brittle, hard to debug.
+- name: Under-testing high-risk changes due
+  description: Under-testing high-risk changes due to time pressure.
+- name: Refactoring with no behavior
+  description: Refactoring with no behavior change but writing new tests instead of relying on existing coverage.
 references:
-  - name: Test Boundaries by Responsibility
-    type: tactic
-    id: test-boundaries-by-responsibility
-    when: Determining what to mock vs test real within the chosen test level
-  - name: Test Pyramid Progression
-    type: tactic
-    id: test-pyramid-progression
-    when: Executing tests in pyramid order after they are written
-  - name: Acceptance Test First
-    type: tactic
-    id: acceptance-test-first
-    when: Aligning system-level tests with acceptance criteria defined by ATDD
+- name: Test Boundaries by Responsibility
+  type: tactic
+  id: test-boundaries-by-responsibility
+  when: Determining what to mock vs test real within the chosen test level
+- name: Test Pyramid Progression
+  type: tactic
+  id: test-pyramid-progression
+  when: Executing tests in pyramid order after they are written
+- name: Acceptance Test First
+  type: tactic
+  id: acceptance-test-first
+  when: Aligning system-level tests with acceptance criteria defined by ATDD

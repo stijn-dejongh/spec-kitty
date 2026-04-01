@@ -37,7 +37,7 @@ def _seed_wp_lane(feature_dir: Path, wp_id: str, lane: str) -> None:
     canonical_lane = _lane_alias.get(lane, lane)
     event = StatusEvent(
         event_id=f"test-{wp_id}-{canonical_lane}",
-        feature_slug=feature_dir.name,
+        mission_slug=feature_dir.name,
         wp_id=wp_id,
         from_lane=Lane.PLANNED,
         to_lane=Lane(canonical_lane),
@@ -109,7 +109,7 @@ class TestFinalizeTasksBootstrap:
 
     @patch("specify_cli.cli.commands.agent.tasks._ensure_target_branch_checked_out")
     @patch("specify_cli.cli.commands.agent.tasks.locate_project_root")
-    @patch("specify_cli.cli.commands.agent.tasks._find_feature_slug")
+    @patch("specify_cli.cli.commands.agent.tasks._find_mission_slug")
     @patch("specify_cli.cli.commands.agent.tasks.bootstrap_canonical_state")
     def test_finalize_calls_bootstrap(
         self,
@@ -137,7 +137,7 @@ class TestFinalizeTasksBootstrap:
             wp_details={"WP01": "initialized", "WP02": "initialized"},
         )
 
-        result = runner.invoke(app, ["finalize-tasks", "--feature", feature_slug, "--json"])
+        result = runner.invoke(app, ["finalize-tasks", "--mission-run", feature_slug, "--json"])
         assert result.exit_code == 0, f"CLI error: {result.output}"
 
         # bootstrap was called
@@ -153,7 +153,7 @@ class TestFinalizeTasksBootstrap:
 
     @patch("specify_cli.cli.commands.agent.tasks._ensure_target_branch_checked_out")
     @patch("specify_cli.cli.commands.agent.tasks.locate_project_root")
-    @patch("specify_cli.cli.commands.agent.tasks._find_feature_slug")
+    @patch("specify_cli.cli.commands.agent.tasks._find_mission_slug")
     @patch("specify_cli.cli.commands.agent.tasks.bootstrap_canonical_state")
     def test_finalize_validate_only_passes_dry_run(
         self,
@@ -178,7 +178,7 @@ class TestFinalizeTasksBootstrap:
         )
 
         result = runner.invoke(
-            app, ["finalize-tasks", "--feature", feature_slug, "--json", "--validate-only"]
+            app, ["finalize-tasks", "--mission-run", feature_slug, "--json", "--validate-only"]
         )
         assert result.exit_code == 0, f"CLI error: {result.output}"
 
@@ -198,12 +198,12 @@ class TestBodyNotesNoLane:
     @patch("specify_cli.cli.commands.agent.tasks.safe_commit")
     @patch("specify_cli.cli.commands.agent.tasks.emit_status_transition")
     @patch("specify_cli.cli.commands.agent.tasks.read_events")
-    @patch("specify_cli.cli.commands.agent.tasks.feature_status_lock")
+    @patch("specify_cli.cli.commands.agent.tasks.mission_status_lock")
     @patch("specify_cli.cli.commands.agent.tasks._validate_ready_for_review")
     @patch("specify_cli.cli.commands.agent.tasks._check_unchecked_subtasks")
     @patch("specify_cli.cli.commands.agent.tasks._ensure_target_branch_checked_out")
     @patch("specify_cli.cli.commands.agent.tasks.locate_project_root")
-    @patch("specify_cli.cli.commands.agent.tasks._find_feature_slug")
+    @patch("specify_cli.cli.commands.agent.tasks._find_mission_slug")
     @patch("specify_cli.cli.commands.agent.tasks.locate_work_package")
     def test_move_task_body_note_no_lane(
         self,
@@ -235,7 +235,7 @@ class TestBodyNotesNoLane:
         wp_file = feature_dir / "tasks" / "WP01-test.md"
         from specify_cli.tasks_support import WorkPackage
         mock_wp = WorkPackage(
-            feature=feature_slug,
+            mission_slug=feature_slug,
             path=wp_file,
             current_lane="claimed",
             relative_subpath=Path("tasks/WP01-test.md"),
@@ -262,7 +262,7 @@ class TestBodyNotesNoLane:
                 "move-task", "WP01",
                 "--to", "in_progress",
                 "--agent", "testbot",
-                "--feature", feature_slug,
+                "--mission-run", feature_slug,
                 "--force",
                 "--json",
                 "--no-auto-commit",
@@ -279,7 +279,7 @@ class TestBodyNotesNoLane:
     @patch("specify_cli.cli.commands.agent.tasks.emit_history_added")
     @patch("specify_cli.cli.commands.agent.tasks._ensure_target_branch_checked_out")
     @patch("specify_cli.cli.commands.agent.tasks.locate_project_root")
-    @patch("specify_cli.cli.commands.agent.tasks._find_feature_slug")
+    @patch("specify_cli.cli.commands.agent.tasks._find_mission_slug")
     @patch("specify_cli.cli.commands.agent.tasks.locate_work_package")
     def test_add_history_body_note_no_lane(
         self,
@@ -304,7 +304,7 @@ class TestBodyNotesNoLane:
         wp_file = feature_dir / "tasks" / "WP01-test.md"
         from specify_cli.tasks_support import WorkPackage
         mock_wp = WorkPackage(
-            feature=feature_slug,
+            mission_slug=feature_slug,
             path=wp_file,
             current_lane="in_progress",
             relative_subpath=Path("tasks/WP01-test.md"),
@@ -320,7 +320,7 @@ class TestBodyNotesNoLane:
                 "add-history", "WP01",
                 "--note", "Implementation progressing",
                 "--agent", "testbot",
-                "--feature", feature_slug,
+                "--mission-run", feature_slug,
                 "--json",
             ],
         )
@@ -342,13 +342,13 @@ class TestBodyNotesNoLane:
 class TestMoveTaskHardFail:
     """move_task must raise RuntimeError when WP has no canonical status."""
 
-    @patch("specify_cli.cli.commands.agent.tasks.feature_status_lock")
+    @patch("specify_cli.cli.commands.agent.tasks.mission_status_lock")
     @patch("specify_cli.cli.commands.agent.tasks.read_events")
     @patch("specify_cli.cli.commands.agent.tasks._validate_ready_for_review")
     @patch("specify_cli.cli.commands.agent.tasks._check_unchecked_subtasks")
     @patch("specify_cli.cli.commands.agent.tasks._ensure_target_branch_checked_out")
     @patch("specify_cli.cli.commands.agent.tasks.locate_project_root")
-    @patch("specify_cli.cli.commands.agent.tasks._find_feature_slug")
+    @patch("specify_cli.cli.commands.agent.tasks._find_mission_slug")
     @patch("specify_cli.cli.commands.agent.tasks.locate_work_package")
     def test_move_task_hard_fails_no_canonical_event(
         self,
@@ -380,7 +380,7 @@ class TestMoveTaskHardFail:
         wp_file = feature_dir / "tasks" / "WP01-test.md"
         from specify_cli.tasks_support import WorkPackage
         mock_wp = WorkPackage(
-            feature=feature_slug,
+            mission_slug=feature_slug,
             path=wp_file,
             current_lane="planned",
             relative_subpath=Path("tasks/WP01-test.md"),
@@ -396,7 +396,7 @@ class TestMoveTaskHardFail:
                 "move-task", "WP01",
                 "--to", "claimed",
                 "--agent", "testbot",
-                "--feature", feature_slug,
+                "--mission-run", feature_slug,
                 "--force",
                 "--json",
             ],
@@ -415,12 +415,12 @@ class TestMoveTaskHardFail:
     @patch("specify_cli.cli.commands.agent.tasks.safe_commit")
     @patch("specify_cli.cli.commands.agent.tasks.emit_status_transition")
     @patch("specify_cli.cli.commands.agent.tasks.read_events")
-    @patch("specify_cli.cli.commands.agent.tasks.feature_status_lock")
+    @patch("specify_cli.cli.commands.agent.tasks.mission_status_lock")
     @patch("specify_cli.cli.commands.agent.tasks._validate_ready_for_review")
     @patch("specify_cli.cli.commands.agent.tasks._check_unchecked_subtasks")
     @patch("specify_cli.cli.commands.agent.tasks._ensure_target_branch_checked_out")
     @patch("specify_cli.cli.commands.agent.tasks.locate_project_root")
-    @patch("specify_cli.cli.commands.agent.tasks._find_feature_slug")
+    @patch("specify_cli.cli.commands.agent.tasks._find_mission_slug")
     @patch("specify_cli.cli.commands.agent.tasks.locate_work_package")
     def test_move_task_succeeds_with_canonical_event(
         self,
@@ -458,7 +458,7 @@ class TestMoveTaskHardFail:
         wp_file = feature_dir / "tasks" / "WP01-test.md"
         from specify_cli.tasks_support import WorkPackage
         mock_wp = WorkPackage(
-            feature=feature_slug,
+            mission_slug=feature_slug,
             path=wp_file,
             current_lane="planned",
             relative_subpath=Path("tasks/WP01-test.md"),
@@ -477,7 +477,7 @@ class TestMoveTaskHardFail:
                 "move-task", "WP01",
                 "--to", "claimed",
                 "--agent", "testbot",
-                "--feature", feature_slug,
+                "--mission-run", feature_slug,
                 "--force",
                 "--json",
                 "--no-auto-commit",

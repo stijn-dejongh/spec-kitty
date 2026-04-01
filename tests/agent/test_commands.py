@@ -75,17 +75,17 @@ def test_verify_setup_command_runs(monkeypatch, tmp_path: Path) -> None:
 def test_specify_command_delegates_to_agent_lifecycle(monkeypatch) -> None:
     captured: dict[str, object] = {}
 
-    def fake_create_mission(mission_slug: str, mission=None, json_output: bool = False):
-        captured["mission_slug"] = mission_slug
-        captured["mission"] = mission
+    def fake_create_mission(mission_name: str, mission_type=None, json_output: bool = False, **kwargs):
+        captured["mission_name"] = mission_name
+        captured["mission_type"] = mission_type
         captured["json_output"] = json_output
 
-    monkeypatch.setattr(lifecycle_module.agent_mission, "create_feature", fake_create_mission)
+    monkeypatch.setattr(lifecycle_module.agent_mission, "create_mission", fake_create_mission)
 
     result = runner.invoke(cli_app, ["specify", "My Great Mission"])
     assert result.exit_code == 0
-    assert captured["mission_slug"] == "my-great-mission"
-    assert captured["mission"] is None
+    assert captured["mission_name"] == "my-great-mission"
+    assert captured["mission_type"] is None
     assert captured["json_output"] is False
 
 

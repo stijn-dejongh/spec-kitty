@@ -1895,7 +1895,7 @@ def finalize_tasks(  # noqa: C901
                 _emit_json({
                     "result": "validation_passed",
                     "mission_slug": mission_slug,
-                    "wp_count": wp_count,
+                    "wp_count": len(wp_files),
                     "validate_only": True,
                     "bootstrap": bootstrap_stats,
                     "lanes": lanes_stats,
@@ -1904,7 +1904,7 @@ def finalize_tasks(  # noqa: C901
             else:
                 console.print("[green]✓[/green] All validations passed (--validate-only mode, no commit)")
                 console.print(f"  Mission: {mission_slug}")
-                console.print(f"  WPs validated: {wp_count}")
+                console.print(f"  WPs validated: {len(wp_files)}")
                 console.print(
                     f"  Bootstrap: {bootstrap_result.newly_seeded} WPs would be seeded, "
                     f"{bootstrap_result.already_initialized} already initialized"

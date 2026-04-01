@@ -127,6 +127,9 @@ out/reports/**
 
 src/doctrine/curation/imports/**
 !src/doctrine/curation/imports/.gitkeep
+!src/doctrine/curation/imports/__init__.py
+!src/doctrine/curation/imports/example-zombies/
+!src/doctrine/curation/imports/example-zombies/**
 
 work
 out

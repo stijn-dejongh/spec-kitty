@@ -69,6 +69,10 @@ properties:
     - testing
     - operations
     - glossary
+  tags:
+    type: array
+    items:
+      type: string
   principles:
     type: array
     minItems: 1

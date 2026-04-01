@@ -63,6 +63,22 @@ def _get_command_templates_dir() -> Path | None:
     return None
 
 
+def _get_central_templates_dir() -> Path | None:
+    """Return the central (mission-agnostic) command-templates directory."""
+    from specify_cli.runtime.home import get_package_asset_root
+
+    try:
+        pkg_root = get_package_asset_root()
+        # Central templates live one level up from mission-specific dirs
+        central = pkg_root.parent / "templates" / "command-templates"
+        if central.is_dir():
+            return central
+    except FileNotFoundError:
+        pass
+
+    return None
+
+
 def _resolve_script_type() -> str:
     """Return the platform-appropriate script type."""
     return "ps" if os.name == "nt" else _DEFAULT_SCRIPT_TYPE
@@ -104,6 +120,7 @@ def _generate_prompt_templates(repo_root: Path) -> list[Path]:
         logger.warning("Command templates directory not found — skipping prompt-driven templates")
         return []
 
+    central_dir = _get_central_templates_dir()
     script_type = _resolve_script_type()
     agent_dirs = get_agent_dirs_for_project(repo_root)
     written: list[Path] = []
@@ -122,6 +139,8 @@ def _generate_prompt_templates(repo_root: Path) -> list[Path]:
 
         for command in sorted(PROMPT_DRIVEN_COMMANDS):
             template_path = templates_dir / f"{command}.md"
+            if not template_path.is_file() and central_dir is not None:
+                template_path = central_dir / f"{command}.md"
             if not template_path.is_file():
                 logger.warning("Template not found: %s — skipping", template_path)
                 continue

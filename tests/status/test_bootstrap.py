@@ -85,7 +85,7 @@ class TestBootstrapSeedsUninitialized:
         # All events should target "planned"
         for event in events:
             assert str(event.to_lane) == "planned"
-            assert event.actor == "finalize-tasks"
+            assert str(event.actor) == "finalize-tasks"
             assert event.force is True
 
         # Verify status.json was materialized

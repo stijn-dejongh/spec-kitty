@@ -19,13 +19,14 @@ from typing import Any
 from .models import StatusSnapshot
 from .reducer import materialize
 
-# Default lane weights for the 8-lane state machine.
+# Default lane weights for the 9-lane state machine.
 # blocked and canceled contribute 0 — they don't represent forward progress.
 DEFAULT_LANE_WEIGHTS: dict[str, float] = {
     "planned": 0.0,
     "claimed": 0.05,
     "in_progress": 0.3,
     "for_review": 0.6,
+    "in_review": 0.7,
     "approved": 0.8,
     "done": 1.0,
     "blocked": 0.0,

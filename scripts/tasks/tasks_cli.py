@@ -518,7 +518,7 @@ def status_command(args: argparse.Namespace) -> None:
         _handle_encoding_failure(exc, args.normalize_encoding)
         return
     if args.json:
-        print(json.dumps(summary.to_dict(), indent=2))
+        print(json.dumps(summary.to_dict(), indent=2, default=str))
         return
     for line in _summary_to_text(summary):
         print(line)
@@ -538,7 +538,7 @@ def verify_command(args: argparse.Namespace) -> None:
         _handle_encoding_failure(exc, args.normalize_encoding)
         return
     if args.json:
-        print(json.dumps(summary.to_dict(), indent=2))
+        print(json.dumps(summary.to_dict(), indent=2, default=str))
         sys.exit(0 if summary.ok else 1)
     lines = _summary_to_text(summary)
     for line in lines:
@@ -562,7 +562,7 @@ def accept_command(args: argparse.Namespace) -> None:
 
     if args.mode == "checklist":
         if args.json:
-            print(json.dumps(summary.to_dict(), indent=2))
+            print(json.dumps(summary.to_dict(), indent=2, default=str))
         else:
             for line in _summary_to_text(summary):
                 print(line)
@@ -590,7 +590,7 @@ def accept_command(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     if args.json:
-        print(json.dumps(result.to_dict(), indent=2))
+        print(json.dumps(result.to_dict(), indent=2, default=str))
         return
 
     print(f"✅ Mission '{feature}' accepted at {result.accepted_at} by {result.accepted_by}")

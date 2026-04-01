@@ -100,6 +100,11 @@ class TestResolveMissionCommandTemplatesDir:
         _make_package_asset_root_with_templates(pkg_root)
         monkeypatch.setenv("SPEC_KITTY_TEMPLATE_ROOT", str(pkg_root))
 
+        # Isolate from the real ~/.kittify so only the package tier is active.
+        empty_home = tmp_path / "empty_home"
+        empty_home.mkdir()
+        monkeypatch.setenv("SPEC_KITTY_HOME", str(empty_home))
+
         project = tmp_path / "project"
         project.mkdir()
         (project / ".kittify").mkdir()

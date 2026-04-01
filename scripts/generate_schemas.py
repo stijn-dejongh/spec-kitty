@@ -33,9 +33,9 @@ from ruamel.yaml import YAML
 
 SCHEMA_DIR = Path(__file__).resolve().parent.parent / "src" / "doctrine" / "schemas"
 
-# Subset of ArtifactKind values used in cross-reference enums.
-# The full ArtifactKind includes agent_profile, mission_step_contract, template
-# which are not valid in reference "type" fields.
+# Subset of ArtifactKind values used in cross-reference enums,
+# plus informational markers (related, checklist) that are not traversed
+# by the reference resolver but preserve useful cross-reference context.
 _REFERENCE_KINDS = [
     "directive",
     "tactic",
@@ -44,6 +44,8 @@ _REFERENCE_KINDS = [
     "paradigm",
     "procedure",
     "template",
+    "related",
+    "checklist",
 ]
 
 _CONTRADICTION_KINDS = ["directive", "tactic", "paradigm"]
@@ -95,6 +97,7 @@ register(
         },
     ),
 )
+
 
 # --- Tactic ---
 def _tactic_fixups(schema: dict) -> dict:
@@ -172,8 +175,7 @@ def _procedure_fixups(schema: dict) -> dict:
     props = schema.get("properties", {})
     if "notes" in props:
         props["notes"]["description"] = (
-            "Free-form notes, rationale, or supplementary material "
-            "that does not fit into structured fields."
+            "Free-form notes, rationale, or supplementary material that does not fit into structured fields."
         )
     if "anti_patterns" in props:
         props["anti_patterns"]["description"] = (
@@ -184,9 +186,7 @@ def _procedure_fixups(schema: dict) -> dict:
     ref_def = defs.get("procedure_reference", {})
     ref_props = ref_def.get("properties", {})
     if "reason" in ref_props:
-        ref_props["reason"]["description"] = (
-            "Why this reference is relevant to the procedure."
-        )
+        ref_props["reason"]["description"] = "Why this reference is relevant to the procedure."
     return schema
 
 
@@ -215,8 +215,7 @@ def _styleguide_fixups(schema: dict) -> dict:
         )
     if "tooling" in props:
         props["tooling"]["description"] = (
-            "Recommended tools for enforcing the styleguide (formatters, linters, "
-            "type checkers, test runners, etc.)."
+            "Recommended tools for enforcing the styleguide (formatters, linters, type checkers, test runners, etc.)."
         )
     return schema
 
@@ -266,6 +265,39 @@ register(
 )
 
 
+# --- Mission Step Contract ---
+def _step_contract_fixups(schema: dict) -> dict:
+    """Expand delegates_to.kind enum to include all ArtifactKind values."""
+    defs = schema.get("definitions", {})
+    dt_def = defs.get("delegates_to", {})
+    dt_props = dt_def.get("properties", {})
+    if "kind" in dt_props:
+        kind_prop = dt_props["kind"]
+        # Ensure the full ArtifactKind enum is included (not just _REFERENCE_KINDS)
+        kind_prop["enum"] = [
+            "directive",
+            "tactic",
+            "styleguide",
+            "toolguide",
+            "paradigm",
+            "procedure",
+            "agent_profile",
+            "mission_step_contract",
+            "template",
+        ]
+    return schema
+
+
+register(
+    "mission-step-contract",
+    "doctrine.mission_step_contracts.models",
+    "MissionStepContract",
+    "Mission Step Contract",
+    "Schema for mission step contracts — structural steps of a mission action.",
+    extra=_step_contract_fixups,
+)
+
+
 # --- Model-to-task_type ---
 def _model_task_fixups(schema: dict) -> dict:
     """Add format/description annotations matching the hand-written schema."""
@@ -273,9 +305,7 @@ def _model_task_fixups(schema: dict) -> dict:
     if "generated_at" in props:
         props["generated_at"]["format"] = "date-time"
     if "source_snapshot" in props:
-        props["source_snapshot"]["description"] = (
-            "Optional source snapshot ID/hash for traceability."
-        )
+        props["source_snapshot"]["description"] = "Optional source snapshot ID/hash for traceability."
     # Add format: uri to cost.pricing_source_url
     defs = schema.get("definitions", {})
     cost_def = defs.get("model_cost", {})
@@ -318,8 +348,7 @@ def _agent_profile_fixups(schema: dict) -> dict:
         "schema-version": "Schema version for compatibility",
         "purpose": "The agent's primary purpose or mission statement",
         "role": (
-            "Agent role (architect, implementer, reviewer, planner, etc.) "
-            "- accepts both known roles and custom roles"
+            "Agent role (architect, implementer, reviewer, planner, etc.) - accepts both known roles and custom roles"
         ),
         "capabilities": "List of capabilities this agent can perform",
         "specializes-from": "Parent profile ID this agent specializes from (for hierarchy)",
@@ -424,8 +453,7 @@ def _agent_profile_fixups(schema: dict) -> dict:
             dr_props[field_name]["description"] = desc
 
     # Tactic/toolguide/styleguide reference descriptions
-    for ref_def_name in ("agent_tactic_reference", "agent_toolguide_reference",
-                         "agent_styleguide_reference"):
+    for ref_def_name in ("agent_tactic_reference", "agent_toolguide_reference", "agent_styleguide_reference"):
         ref_def = defs.get(ref_def_name, {})
         ref_props = ref_def.get("properties", {})
         kind = ref_def_name.replace("agent_", "").replace("_reference", "").capitalize()
@@ -543,8 +571,7 @@ def _process_variant(raw: dict, title: str) -> dict:
 
     # Order: type, title, additionalProperties, required, properties
     ordered: dict[str, Any] = {}
-    for key in ("title", "type", "additionalProperties", "required", "properties",
-                "allOf"):
+    for key in ("title", "type", "additionalProperties", "required", "properties", "allOf"):
         if key in schema:
             ordered[key] = schema[key]
     for key in schema:
@@ -554,8 +581,7 @@ def _process_variant(raw: dict, title: str) -> dict:
     # Order property definitions
     if "properties" in ordered:
         ordered["properties"] = {
-            k: dict(_order_property(v)) if isinstance(v, dict) else v
-            for k, v in ordered["properties"].items()
+            k: dict(_order_property(v)) if isinstance(v, dict) else v for k, v in ordered["properties"].items()
         }
 
     return ordered
@@ -581,7 +607,7 @@ def _rewrite_refs(obj: Any, old_prefix: str, new_prefix: str, renames: dict[str,
         result = {}
         for k, v in obj.items():
             if k == "$ref" and isinstance(v, str) and v.startswith(old_prefix):
-                old_name = v[len(old_prefix):]
+                old_name = v[len(old_prefix) :]
                 new_name = renames.get(old_name, _pascal_to_snake(old_name))
                 result[k] = f"{new_prefix}{new_name}"
             else:
@@ -609,7 +635,7 @@ def _remove_titles(obj: Any, *, inside_properties: bool = False) -> Any:
                 continue
             # When recursing into a "properties" dict, mark that we are
             # now at the level where keys are real field names.
-            child_inside_props = (k == "properties")
+            child_inside_props = k == "properties"
             result[k] = _remove_titles(v, inside_properties=child_inside_props)
         return result
     elif isinstance(obj, list):
@@ -694,7 +720,7 @@ def _inline_all_enum_refs(obj: Any, defs: dict) -> Any:
         if "$ref" in obj:
             ref = obj["$ref"]
             if ref.startswith("#/$defs/"):
-                def_name = ref[len("#/$defs/"):]
+                def_name = ref[len("#/$defs/") :]
                 if def_name in defs and _is_enum_def(defs[def_name]):
                     enum_def = defs[def_name]
                     result: dict[str, Any] = {"type": "string", "enum": enum_def["enum"]}
@@ -704,7 +730,7 @@ def _inline_all_enum_refs(obj: Any, defs: dict) -> Any:
                             result[k] = v
                     return result
             elif ref.startswith("#/definitions/"):
-                def_name = ref[len("#/definitions/"):]
+                def_name = ref[len("#/definitions/") :]
                 if def_name in defs and _is_enum_def(defs[def_name]):
                     enum_def = defs[def_name]
                     result = {"type": "string", "enum": enum_def["enum"]}
@@ -728,7 +754,7 @@ def _inline_all_refs(obj: Any, defs: dict, renames: dict[str, str]) -> Any:
         if "$ref" in obj and len(obj) == 1:
             ref = obj["$ref"]
             if ref.startswith("#/$defs/"):
-                def_name = ref[len("#/$defs/"):]
+                def_name = ref[len("#/$defs/") :]
                 if def_name in defs:
                     # Recursively inline nested refs in the definition body
                     return _inline_all_refs(dict(defs[def_name]), defs, renames)
@@ -885,16 +911,12 @@ def _deep_order(schema: dict) -> dict:
     # Order top-level properties
     if "properties" in result:
         result["properties"] = {
-            k: dict(_order_property(v)) if isinstance(v, dict) else v
-            for k, v in result["properties"].items()
+            k: dict(_order_property(v)) if isinstance(v, dict) else v for k, v in result["properties"].items()
         }
 
     # Order oneOf entries (for import-candidate)
     if "oneOf" in result:
-        result["oneOf"] = [
-            _deep_order_variant(v) if isinstance(v, dict) else v
-            for v in result["oneOf"]
-        ]
+        result["oneOf"] = [_deep_order_variant(v) if isinstance(v, dict) else v for v in result["oneOf"]]
 
     return result
 
@@ -902,7 +924,11 @@ def _deep_order(schema: dict) -> dict:
 def _deep_order_variant(variant: dict) -> dict:
     """Order keys within a oneOf variant (no definitions section)."""
     key_order = [
-        "title", "type", "additionalProperties", "required", "properties",
+        "title",
+        "type",
+        "additionalProperties",
+        "required",
+        "properties",
         "allOf",
     ]
     ordered: dict[str, Any] = {}
@@ -914,8 +940,7 @@ def _deep_order_variant(variant: dict) -> dict:
             ordered[key] = variant[key]
     if "properties" in ordered:
         ordered["properties"] = {
-            k: dict(_order_property(v)) if isinstance(v, dict) else v
-            for k, v in ordered["properties"].items()
+            k: dict(_order_property(v)) if isinstance(v, dict) else v for k, v in ordered["properties"].items()
         }
     return ordered
 
@@ -1072,9 +1097,7 @@ def main() -> int:
             print(f"  Generated: {path.name}")
 
     if args.check and not all_ok:
-        print(
-            "\nSchemas are stale. Run `python scripts/generate_schemas.py` to update."
-        )
+        print("\nSchemas are stale. Run `python scripts/generate_schemas.py` to update.")
         return 1
 
     return 0

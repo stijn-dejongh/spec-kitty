@@ -436,11 +436,17 @@ class TestManifestIntegration:
 class TestManifestYAMLFormat:
     """Test YAML file format and loading."""
 
+    _MISSIONS_ROOT = (
+        Path(__file__).parent.parent.parent.parent
+        / "src"
+        / "specify_cli"
+        / "missions"
+    )
+
     def test_from_yaml_file_software_dev(self):
         """Load software-dev manifest from YAML file."""
         yaml_path = (
-            Path(__file__).parent.parent.parent
-            / "missions"
+            self._MISSIONS_ROOT
             / "software-dev"
             / "expected-artifacts.yaml"
         )
@@ -451,8 +457,7 @@ class TestManifestYAMLFormat:
     def test_from_yaml_file_research(self):
         """Load research manifest from YAML file."""
         yaml_path = (
-            Path(__file__).parent.parent.parent
-            / "missions"
+            self._MISSIONS_ROOT
             / "research"
             / "expected-artifacts.yaml"
         )
@@ -463,8 +468,7 @@ class TestManifestYAMLFormat:
     def test_from_yaml_file_documentation(self):
         """Load documentation manifest from YAML file."""
         yaml_path = (
-            Path(__file__).parent.parent.parent
-            / "missions"
+            self._MISSIONS_ROOT
             / "documentation"
             / "expected-artifacts.yaml"
         )

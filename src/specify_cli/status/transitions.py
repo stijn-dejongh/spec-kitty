@@ -93,9 +93,12 @@ def is_terminal(lane: str) -> bool:
     return resolve_lane_alias(lane) in TERMINAL_LANES
 
 
-def _guard_actor_required(actor: str | None) -> tuple[bool, str | None]:
+def _guard_actor_required(actor: object | None) -> tuple[bool, str | None]:
     """Guard: planned -> claimed requires actor identity."""
-    if not actor or not actor.strip():
+    if not actor:
+        return False, "Transition planned -> claimed requires actor identity"
+    actor_str = str(actor).strip() if actor else ""
+    if not actor_str:
         return False, "Transition planned -> claimed requires actor identity"
     return True, None
 

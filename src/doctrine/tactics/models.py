@@ -7,17 +7,21 @@ ReferenceType enum for cross-artifact references.
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from doctrine.artifact_kinds import ArtifactKind
-from doctrine.shared.models import Contradiction
+from doctrine.shared.models import Contradiction, FailureMode
 
 
 class TacticReference(BaseModel):
-    """Cross-artifact reference within a tactic or step."""
+    """Cross-artifact reference within a tactic or step.
+
+    The ``type`` field accepts any :class:`~doctrine.artifact_kinds.ArtifactKind`
+    value **plus** informational markers such as ``"related"`` and ``"checklist"``
+    that are not traversed by the reference resolver but preserve useful context.
+    """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     name: str
-    type: ArtifactKind
+    type: str = Field(min_length=1)
     id: str = Field(pattern=r"^[A-Za-z][A-Za-z0-9_-]*$")
     when: str
 
@@ -47,8 +51,9 @@ class Tactic(BaseModel):
     schema_version: str = Field(pattern=r"^1\.0$", alias="schema_version")
     name: str
     purpose: str | None = None
+    tags: list[str] = Field(default_factory=list)
     steps: list[TacticStep] = Field(min_length=1)
-    failure_modes: list[str] = Field(default_factory=list)
+    failure_modes: list[FailureMode] = Field(default_factory=list)
     references: list[TacticReference] = Field(default_factory=list)
     opposed_by: list[Contradiction] = Field(default_factory=list)
     notes: str | None = None

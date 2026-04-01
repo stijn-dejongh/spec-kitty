@@ -14,6 +14,7 @@ tactic_refs:
   - premortem-risk-identification
   - adr-drafting-workflow
   - ammerse-impact-analysis
+  - design-decision-debiasing
   - avoid-gold-plating
   - easy-to-change
   - safe-to-fail-experiment
@@ -37,9 +38,9 @@ procedures:
   - Record project constraints (budget, timeline, team size, regulatory requirements)
     that influenced attribute prioritisation. Constraints that override attribute
     preferences must be stated, not assumed.
-  - For high-stakes decisions, apply an AMMERSE impact analysis to surface
-    first- and second-order effects across the seven AMMERSE values. For routine
-    decisions, first-order reasoning is sufficient.
+  - For high-stakes decisions, apply the AMMERSE impact analysis tactic
+    (see tactic_refs). For routine decisions, first-order reasoning is
+    sufficient — do not escalate to a full AMMERSE pass.
   - Capture the assessment and accepted trade-offs in the ADR or design document.
     Use the Quality Attribute Assessment template when a standalone record is
     warranted.
@@ -52,6 +53,29 @@ integrity_rules:
     a new architectural decision is layered on top of an existing one.
   - The depth of analysis must match the risk profile of the decision. Do not
     apply full AMMERSE analysis to low-stakes or easily reversible choices.
+failure_modes:
+  - name: Over-analysis
+    description: >
+      Spending disproportionate effort on trade-off analysis relative to the
+      decision's reversibility and blast radius. Symptoms include multi-page
+      assessments for low-stakes choices or repeated assessment cycles that
+      delay delivery without surfacing new information.
+  - name: Unnecessary complexity escalation
+    description: >
+      Applying the full protocol (including AMMERSE analysis) to decisions
+      that do not warrant it — e.g. easily reversible configuration changes,
+      cosmetic refactors, or local implementation details with no cross-cutting
+      impact.
+  - name: Confirmation-bias assessment
+    description: >
+      Performing the assessment after the decision has already been emotionally
+      committed to, resulting in a post-hoc rationalisation rather than a
+      genuine evaluation of alternatives and trade-offs.
+  - name: Attribute exhaustion
+    description: >
+      Enumerating every conceivable quality attribute instead of scoping to
+      those materially affected by the decision. This dilutes focus and makes
+      the assessment unactionable.
 validation_criteria:
   - The design document or ADR names at least two quality attributes relevant
     to the decision.

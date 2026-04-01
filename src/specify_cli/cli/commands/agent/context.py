@@ -11,6 +11,7 @@ from rich.console import Console
 from typing_extensions import Annotated
 
 from specify_cli.core.paths import get_mission_dir, locate_project_root, require_explicit_mission
+from specify_cli.core.mission_detection import detect_mission_directory
 from specify_cli.core.execution_context import (
     ACTION_NAMES,
     ActionName,
@@ -30,6 +31,9 @@ console = Console()
 def _find_mission_directory(repo_root: Path, cwd: Path, explicit_mission: str | None = None) -> Path:
     """Find the mission directory from an explicit mission slug.
 
+    Delegates to :func:`~specify_cli.core.mission_detection.detect_mission_directory`
+    when possible, falling back to direct path resolution for backward compatibility.
+
     Args:
         repo_root: Repository root path
         cwd: Current working directory (unused — kept for signature compatibility)
@@ -42,13 +46,17 @@ def _find_mission_directory(repo_root: Path, cwd: Path, explicit_mission: str | 
         ValueError: If mission slug is not provided or directory doesn't exist
     """
     slug = require_explicit_mission(explicit_mission, command_hint="--mission <slug>")
-    mission_dir = get_mission_dir(repo_root, slug)
-    if not mission_dir.exists():
-        raise ValueError(
-            f"Mission directory not found: {mission_dir}. "
-            f"Check that '{slug}' is the correct mission slug."
-        )
-    return mission_dir
+    try:
+        return detect_mission_directory(repo_root, explicit_mission=slug)
+    except Exception:
+        # Fallback: direct path resolution
+        mission_dir = get_mission_dir(repo_root, slug)
+        if not mission_dir.exists():
+            raise ValueError(
+                f"Mission directory not found: {mission_dir}. "
+                f"Check that '{slug}' is the correct mission slug."
+            )
+        return mission_dir
 
 
 @app.command(name="resolve")

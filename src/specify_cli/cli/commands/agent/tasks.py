@@ -26,6 +26,7 @@ from specify_cli.status.transitions import resolve_lane_alias
 from specify_cli.status.store import read_events
 
 from specify_cli.core.dependency_graph import build_dependency_graph, get_dependents
+from specify_cli.core.mission_detection import detect_mission_directory
 from specify_cli.core.paths import locate_project_root, get_main_repo_root, is_worktree_context
 from specify_cli.core.paths import (
     get_mission_dir,

@@ -14,6 +14,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field
 
 from doctrine.artifact_kinds import ArtifactKind
+from doctrine.shared.models import FailureMode
 
 
 class ActorRole(StrEnum):
@@ -73,7 +74,9 @@ class Procedure(BaseModel):
     purpose: str
     entry_condition: str
     exit_condition: str
+    tags: list[str] = Field(default_factory=list)
     steps: list[ProcedureStep] = Field(min_length=1)
+    failure_modes: list[FailureMode] = Field(default_factory=list)
     anti_patterns: list[ProcedureAntiPattern] = Field(default_factory=list)
     notes: str | None = None
     references: list[ProcedureReference] = Field(default_factory=list)

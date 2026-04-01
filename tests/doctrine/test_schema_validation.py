@@ -13,8 +13,10 @@ FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
 
 SCHEMA_FILES = {
     "mission": SCHEMA_DIR / "mission.schema.yaml",
+    "mission-step-contract": SCHEMA_DIR / "mission-step-contract.schema.yaml",
     "directive": SCHEMA_DIR / "directive.schema.yaml",
     "tactic": SCHEMA_DIR / "tactic.schema.yaml",
+    "procedure": SCHEMA_DIR / "procedure.schema.yaml",
     "import-candidate": SCHEMA_DIR / "import-candidate.schema.yaml",
     "agent-profile": SCHEMA_DIR / "agent-profile.schema.yaml",
     "paradigm": SCHEMA_DIR / "paradigm.schema.yaml",

@@ -141,7 +141,7 @@ if source_register.exists():
   - Save feedback to a file and run `spec-kitty agent tasks move-task <TASK_ID> --to planned --review-feedback-file <feedback-file>` (use the PowerShell equivalent on Windows) so rollback validation captures the feedback source deterministically.
 - **Approved**:
   - Append Activity Log entry capturing approval details (capture shell PID via `echo $$` or helper script).
-  - Update frontmatter: set `lane=done`, set reviewer metadata (`agent`, `shell_pid`), optional `assignee` for approver.
+   - Update frontmatter: set reviewer metadata (`agent`, `shell_pid`), optional `assignee` for approver.
   - Use helper script to mark the task complete in `tasks.md` (see Step 6).
   - Run `spec-kitty agent tasks move-task <FEATURE> <TASK_ID> done --note "Approved for release"` (PowerShell variant available) to transition the prompt into `tasks/`.
 

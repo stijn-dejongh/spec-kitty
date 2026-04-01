@@ -56,6 +56,7 @@ class Styleguide(BaseModel):
     schema_version: str = Field(pattern=r"^1\.0$", alias="schema_version")
     title: str
     scope: StyleguideScope
+    tags: list[str] = Field(default_factory=list)
     principles: list[str] = Field(min_length=1)
     patterns: list[Pattern] = Field(default_factory=list)
     anti_patterns: list[AntiPattern] = Field(default_factory=list)

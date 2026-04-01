@@ -1,0 +1,5 @@
+# Missing required field: steps
+schema_version: "1.0"
+id: missing-steps
+action: implement
+mission: software-dev

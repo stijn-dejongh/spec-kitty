@@ -41,8 +41,8 @@ class DashboardRouter(APIHandler, MissionHandler, StaticHandler):
             self.handle_shutdown()
             return
 
-        if path == '/api/features':
-            self.handle_features_list()
+        if path in ('/api/missions', '/api/features'):
+            self.handle_missions_list()
             return
 
         if path.startswith('/api/kanban/'):

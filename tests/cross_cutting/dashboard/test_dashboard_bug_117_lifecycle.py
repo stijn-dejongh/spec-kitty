@@ -150,7 +150,9 @@ class TestDashboardLifecycleImprovement:
         with patch("specify_cli.dashboard.lifecycle.start_dashboard") as mock_start, \
              patch("specify_cli.dashboard.lifecycle._check_dashboard_health") as mock_health, \
              patch("specify_cli.dashboard.lifecycle._is_process_alive") as mock_alive, \
-             patch("specify_cli.dashboard.lifecycle.psutil.Process") as mock_proc:
+             patch("specify_cli.dashboard.lifecycle._is_spec_kitty_dashboard", return_value=False), \
+             patch("specify_cli.dashboard.lifecycle.psutil.Process") as mock_proc, \
+             patch("specify_cli.dashboard.lifecycle.time.sleep"):
 
             mock_start.return_value = (mock_port, mock_pid)
             mock_health.return_value = False

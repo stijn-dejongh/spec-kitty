@@ -14,6 +14,7 @@ from rich.console import Console
 from typing import Annotated
 
 from specify_cli.cli import StepTracker
+from specify_cli.core.mission_detection import detect_mission_directory
 from specify_cli.core.dependency_graph import (
     build_dependency_graph,
     get_dependents,
@@ -27,6 +28,7 @@ from specify_cli.frontmatter import update_fields
 from specify_cli.tasks_support import (
     TaskCliError,
     find_repo_root,
+    locate_work_package,
 )
 from specify_cli.workspace_context import WorkspaceContext, save_context
 from specify_cli.core.multi_parent_merge import create_multi_parent_base
@@ -1089,6 +1091,7 @@ def implement(
 
     except Exception as e:
         # Non-fatal: workspace created but lane update failed
+        import sys; print(f"DEBUG STEP4 EXCEPTION: {type(e).__name__}: {e}", file=sys.stderr); import traceback; traceback.print_exc(file=sys.stderr)
         console.print(f"[yellow]Warning:[/yellow] Could not update WP status: {e}")
 
     # Success

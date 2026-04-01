@@ -19,10 +19,10 @@ pytestmark = pytest.mark.fast
 
 class TestConstants:
     def test_canonical_lanes_count(self) -> None:
-        assert len(CANONICAL_LANES) == 8
+        assert len(CANONICAL_LANES) == 9
 
     def test_allowed_transitions_count(self) -> None:
-        assert len(ALLOWED_TRANSITIONS) == 24
+        assert len(ALLOWED_TRANSITIONS) == 30
 
     def test_terminal_lanes(self) -> None:
         assert frozenset({"done", "canceled"}) == TERMINAL_LANES

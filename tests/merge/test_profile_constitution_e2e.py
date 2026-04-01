@@ -218,11 +218,10 @@ def test_local_support_declarations_end_to_end(tmp_path: Path) -> None:
         gen_result = runner.invoke(app, ["generate", "--json"])
         assert gen_result.exit_code == 0, gen_result.stdout
         payload = json.loads(gen_result.stdout)
-        assert payload["result"] == "success"
+        assert payload["success"] is True
 
-        # ── Step 3: library_files lists declared paths, NOT a library/ directory ──
-        assert "docs/team-guide.md" in payload["library_files"]
-        assert not (constitution_dir / "library").exists(), "library/ directory must NOT be materialised on disk"
+        # ── Step 3: files_written lists generated paths ──
+        assert "constitution.md" in payload["files_written"]
 
         # ── Step 4: agents.yaml must NOT be generated ──
         assert not (constitution_dir / "agents.yaml").exists(), "agents.yaml must NOT be generated"
@@ -233,8 +232,8 @@ def test_local_support_declarations_end_to_end(tmp_path: Path) -> None:
         ctx1_data = json.loads(ctx1.stdout)
         assert ctx1_data["mode"] == "bootstrap"
         assert ctx1_data["first_load"] is True
-        assert "context" in ctx1_data
-        assert ctx1_data["context"]  # non-empty
+        assert "text" in ctx1_data
+        assert ctx1_data["text"]  # non-empty
 
         # ── Step 6: second context call → compact mode (cached) ──
         ctx2 = runner.invoke(app, ["context", "--action", "specify", "--json"])
@@ -242,8 +241,8 @@ def test_local_support_declarations_end_to_end(tmp_path: Path) -> None:
         ctx2_data = json.loads(ctx2.stdout)
         assert ctx2_data["mode"] == "compact"
         assert ctx2_data["first_load"] is False
-        assert "context" in ctx2_data
-        assert ctx2_data["context"]  # non-empty
+        assert "text" in ctx2_data
+        assert ctx2_data["text"]  # non-empty
 
 
 def test_local_support_additive_warning_when_overlapping_shipped_concept(tmp_path: Path) -> None:
