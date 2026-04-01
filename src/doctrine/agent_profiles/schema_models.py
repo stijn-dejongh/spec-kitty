@@ -9,8 +9,8 @@ from the domain model in ``profile.py`` because:
 * The schema includes reference sections (``tactic-references``,
   ``toolguide-references``, ``styleguide-references``, ``self-review-protocol``)
   that the domain model does not carry.
-* The domain model has runtime fields (``sentinel``, ``excluding``) that are
-  not part of the canonical schema.
+* The domain model has runtime fields (``excluding``) that are not part of
+  the canonical schema.
 * The domain model uses ``BeforeValidator`` / ``Role`` coercion that should
   not leak into schema generation.
 
@@ -163,6 +163,7 @@ class AgentProfileSchema(BaseModel):
     schema_version: str | None = Field(default=None, alias="schema-version", pattern=r"^1\.0$")
     purpose: str
     role: str | None = None
+    sentinel: bool = Field(default=False)
     tags: list[str] = Field(default_factory=list)
     capabilities: list[str] = Field(default_factory=list)
     specializes_from: str | None = Field(default=None, alias="specializes-from")
