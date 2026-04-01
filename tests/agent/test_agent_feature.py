@@ -331,7 +331,7 @@ class TestCreateMissionCommand:
         assert meta["slug"] == "001-test-mission"
         assert meta["mission_slug"] == "001-test-mission"
         assert meta["mission"] == "software-dev"
-        assert meta["target_branch"] == "main"
+        assert meta["target_branch"] == "develop"
 
     @patch(f"{_CORE}.emit_mission_created")
     @patch(f"{_CORE}._commit_mission_file")

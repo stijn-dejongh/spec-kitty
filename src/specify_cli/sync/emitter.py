@@ -98,6 +98,7 @@ _ULID_PATTERN = re.compile(r"^[0-9A-HJKMNP-TV-Z]{26}$")  # kept for test compat
 
 # Broader ID validation via normalize_event_id (accepts ULID + UUID)
 from specify_cli.spec_kitty_events import normalize_event_id as _normalize_event_id
+
 _WP_ID_PATTERN = re.compile(r"^WP\d{2}$")
 _MISSION_SLUG_PATTERN = re.compile(r"^\d{3}-[a-z0-9-]+$")
 _MISSION_NUMBER_PATTERN = re.compile(r"^\d{3}$")
@@ -123,8 +124,34 @@ _PAYLOAD_RULES: dict[str, dict[str, Any]] = {
         "required": {"wp_id", "from_lane", "to_lane"},
         "validators": {
             "wp_id": lambda v: isinstance(v, str) and bool(_WP_ID_PATTERN.match(v)),
-            "from_lane": lambda v: v in {"planned", "claimed", "in_progress", "for_review", "in_review", "approved", "done", "blocked", "canceled"},
-            "to_lane": lambda v: v in {"planned", "claimed", "in_progress", "for_review", "in_review", "approved", "done", "blocked", "canceled"},
+            "from_lane": lambda v: (
+                v
+                in {
+                    "planned",
+                    "claimed",
+                    "in_progress",
+                    "for_review",
+                    "in_review",
+                    "approved",
+                    "done",
+                    "blocked",
+                    "canceled",
+                }
+            ),
+            "to_lane": lambda v: (
+                v
+                in {
+                    "planned",
+                    "claimed",
+                    "in_progress",
+                    "for_review",
+                    "in_review",
+                    "approved",
+                    "done",
+                    "blocked",
+                    "canceled",
+                }
+            ),
             "actor": lambda v: isinstance(v, str) if v is not None else True,
             "mission_slug": lambda v: _is_nullable_string(v),
             "policy_metadata": lambda v: v is None or isinstance(v, dict),
@@ -136,8 +163,9 @@ _PAYLOAD_RULES: dict[str, dict[str, Any]] = {
             "wp_id": lambda v: isinstance(v, str) and bool(_WP_ID_PATTERN.match(v)),
             "title": lambda v: isinstance(v, str) and len(v) >= 1,
             "mission_slug": lambda v: isinstance(v, str) and len(v) >= 1,
-            "dependencies": lambda v: isinstance(v, list)
-            and all(isinstance(item, str) and _WP_ID_PATTERN.match(item) for item in v),
+            "dependencies": lambda v: (
+                isinstance(v, list) and all(isinstance(item, str) and _WP_ID_PATTERN.match(item) for item in v)
+            ),
         },
     },
     "WPAssigned": {
@@ -197,7 +225,15 @@ _PAYLOAD_RULES: dict[str, dict[str, Any]] = {
     },
     # WP04: Dossier events
     "MissionDossierArtifactIndexed": {
-        "required": {"mission_slug", "artifact_key", "artifact_class", "relative_path", "content_hash_sha256", "size_bytes", "required_status"},
+        "required": {
+            "mission_slug",
+            "artifact_key",
+            "artifact_class",
+            "relative_path",
+            "content_hash_sha256",
+            "size_bytes",
+            "required_status",
+        },
         "validators": {
             "mission_slug": lambda v: isinstance(v, str) and len(v) >= 1,
             "artifact_key": lambda v: isinstance(v, str) and len(v) >= 1,
@@ -211,7 +247,14 @@ _PAYLOAD_RULES: dict[str, dict[str, Any]] = {
         },
     },
     "MissionDossierArtifactMissing": {
-        "required": {"mission_slug", "artifact_key", "artifact_class", "expected_path_pattern", "reason_code", "blocking"},
+        "required": {
+            "mission_slug",
+            "artifact_key",
+            "artifact_class",
+            "expected_path_pattern",
+            "reason_code",
+            "blocking",
+        },
         "validators": {
             "mission_slug": lambda v: isinstance(v, str) and len(v) >= 1,
             "artifact_key": lambda v: isinstance(v, str) and len(v) >= 1,
@@ -245,11 +288,15 @@ _PAYLOAD_RULES: dict[str, dict[str, Any]] = {
     },
     "MissionOriginBound": {
         "required": {
-            "feature_slug", "provider", "external_issue_id",
-            "external_issue_key", "external_issue_url", "title",
+            "feature_slug",
+            "provider",
+            "external_issue_id",
+            "external_issue_key",
+            "external_issue_url",
+            "title",
         },
         "validators": {
-            "feature_slug": lambda v: isinstance(v, str) and bool(_FEATURE_SLUG_PATTERN.match(v)),
+            "feature_slug": lambda v: isinstance(v, str) and bool(_MISSION_SLUG_PATTERN.match(v)),
             "provider": lambda v: v in {"jira", "linear"},
             "external_issue_id": lambda v: isinstance(v, str) and len(v) >= 1,
             "external_issue_key": lambda v: isinstance(v, str) and len(v) >= 1,
@@ -332,6 +379,7 @@ class EventEmitter:
         """Lazy-load AuthClient to avoid circular imports."""
         if self._auth is None:
             from .auth import AuthClient
+
             self._auth = AuthClient()
         return self._auth
 
@@ -589,7 +637,8 @@ class EventEmitter:
             clock_value = self.clock.tick()
             logger.debug(
                 "Emitting %s event with Lamport clock: %d",
-                event_type, clock_value,
+                event_type,
+                clock_value,
             )
 
             # Resolve identity and team_slug
@@ -625,9 +674,7 @@ class EventEmitter:
 
             # Check project_uuid: if missing, queue only (no WebSocket send)
             if not event.get("project_uuid"):
-                _console.print(
-                    "[yellow]Warning: Event missing project_uuid; queued locally only[/yellow]"
-                )
+                _console.print("[yellow]Warning: Event missing project_uuid; queued locally only[/yellow]")
                 self.queue.queue_event(event)
                 return event
 
@@ -679,18 +726,13 @@ class EventEmitter:
                 return False
 
             if event.get("aggregate_type") not in VALID_AGGREGATE_TYPES:
-                _console.print(
-                    f"[yellow]Warning: Invalid aggregate_type: "
-                    f"{event.get('aggregate_type')}[/yellow]"
-                )
+                _console.print(f"[yellow]Warning: Invalid aggregate_type: {event.get('aggregate_type')}[/yellow]")
                 return False
 
             # 3. Validate event_type is one of the 8 known types
             event_type = event["event_type"]
             if event_type not in VALID_EVENT_TYPES:
-                _console.print(
-                    f"[yellow]Warning: Unknown event_type: {event_type}[/yellow]"
-                )
+                _console.print(f"[yellow]Warning: Unknown event_type: {event_type}[/yellow]")
                 return False
 
             # 3b. Normalize + validate envelope IDs (ULID or UUID accepted)
@@ -736,10 +778,7 @@ class EventEmitter:
         # Check required fields
         missing = rules["required"] - set(payload.keys())
         if missing:
-            _console.print(
-                f"[yellow]Warning: {event_type} payload missing required "
-                f"fields: {missing}[/yellow]"
-            )
+            _console.print(f"[yellow]Warning: {event_type} payload missing required fields: {missing}[/yellow]")
             return False
 
         # Run field-level validators
@@ -773,6 +812,7 @@ class EventEmitter:
             if authenticated and self.ws_client is not None and self.ws_client.connected:
                 try:
                     import asyncio
+
                     loop = asyncio.get_event_loop()
                     if loop.is_running():
                         asyncio.ensure_future(self.ws_client.send_event(event))
@@ -780,17 +820,12 @@ class EventEmitter:
                         loop.run_until_complete(self.ws_client.send_event(event))
                     return True
                 except Exception as e:
-                    _console.print(
-                        f"[yellow]Warning: WebSocket send failed, "
-                        f"queueing: {e}[/yellow]"
-                    )
+                    _console.print(f"[yellow]Warning: WebSocket send failed, queueing: {e}[/yellow]")
                     # Fall through to queue
 
             # Queue event for later sync
             return self.queue.queue_event(event)
 
         except Exception as e:
-            _console.print(
-                f"[yellow]Warning: Event routing failed: {e}[/yellow]"
-            )
+            _console.print(f"[yellow]Warning: Event routing failed: {e}[/yellow]")
             return False
