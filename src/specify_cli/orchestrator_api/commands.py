@@ -132,7 +132,7 @@ class _JSONErrorGroup(TyperGroup):
             raise SystemExit(2) from exc
         except click.Abort:
             self._emit_error("Command aborted")
-            raise SystemExit(2)
+            raise SystemExit(2) from None
         except SystemExit:
             raise
 

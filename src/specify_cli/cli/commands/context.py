@@ -8,12 +8,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
 from rich.table import Table
-from typing_extensions import Annotated
+from typing import Annotated
 
 from specify_cli.tasks_support import find_repo_root, TaskCliError
 from specify_cli.core.paths import locate_project_root
@@ -240,7 +239,7 @@ def mission_resolve_command(
     wp: Annotated[str, typer.Option("--wp", help="Work package code (e.g., WP01)")],
     mission: Annotated[str | None, typer.Option("--mission", help="Mission slug (e.g., 057-mission-name)")] = None,
     feature: Annotated[str | None, typer.Option("--feature", hidden=True, help="[Deprecated] Use --mission")] = None,
-    agent: Annotated[Optional[str], typer.Option("--agent", help="Agent name (default: 'unknown')")] = None,
+    agent: Annotated[str | None, typer.Option("--agent", help="Agent name (default: 'unknown')")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output full JSON context (default: token only)")] = False,
 ) -> None:
     """Resolve and persist a MissionContext token.

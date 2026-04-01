@@ -46,6 +46,27 @@ from specify_cli.ownership import infer_ownership, validate_ownership
 from specify_cli.status.bootstrap import bootstrap_canonical_state
 from specify_cli.sync.events import emit_mission_created, emit_wp_created, get_emitter
 
+__all__ = [
+    "app",
+    "build_git_preflight_failure_payload",
+    "check_prerequisites",
+    "console",
+    "create_mission",
+    "finalize_tasks",
+    "get_current_branch",
+    "get_next_mission_number",
+    "is_git_repo",
+    "is_worktree_context",
+    "locate_project_root",
+    "run_command",
+    "run_git_preflight",
+    "safe_commit",
+    "setup_plan",
+    "top_level_accept",
+    "top_level_merge",
+    "validate_mission_structure",
+]
+
 app: typer.Typer = typer.Typer(
     name="mission-run",
     help="Mission lifecycle commands for AI agents",
@@ -224,7 +245,9 @@ def _show_branch_context(
         if not resolution.should_notify:
             console.print(f"[bold cyan]Branch:[/bold cyan] {current_branch} (target for this mission)")
         else:
-            console.print(f"[bold yellow]Branch:[/bold yellow] on '{resolution.current}', mission targets '{resolution.target}'")
+            console.print(
+                f"[bold yellow]Branch:[/bold yellow] on '{resolution.current}', mission targets '{resolution.target}'"
+            )
 
     return main_repo_root, resolution.current
 
@@ -442,9 +465,7 @@ def _build_setup_plan_detection_error(
 
     # One example command so the LLM knows the exact syntax
     args_suffix = f" {' '.join(command_args)}" if command_args else ""
-    payload["example_command"] = (
-        f"spec-kitty agent mission-run {command_name} --mission {slugs[0]}{args_suffix}"
-    )
+    payload["example_command"] = f"spec-kitty agent mission-run {command_name} --mission {slugs[0]}{args_suffix}"
     payload["remediation"] = "Re-run with --mission <slug>"
     return payload
 
@@ -488,12 +509,16 @@ def branch_context(
                 console.print(f"[red]Error:[/red] {error_msg}")
             raise typer.Exit(1)
 
-        resolved_target_branch = str(target_branch).strip() if target_branch and str(target_branch).strip() else current_branch
+        resolved_target_branch = (
+            str(target_branch).strip() if target_branch and str(target_branch).strip() else current_branch
+        )
         payload = {
             "result": "success",
             "repo_root": str(repo_root.resolve()),
             "target_branch_source": "cli_arg" if target_branch else "current_branch",
-            "next_step": ("Use this deterministic branch contract during specify/plan prompts; do not rediscover branch state inside the LLM."),
+            "next_step": (
+                "Use this deterministic branch contract during specify/plan prompts; do not rediscover branch state inside the LLM."
+            ),
         }
         enriched = _inject_branch_contract(
             payload,
@@ -516,16 +541,22 @@ def branch_context(
             _emit_json({"error": str(e)})
         else:
             console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command(name="create-mission")
 def create_mission(  # noqa: C901
     mission_name: Annotated[str, typer.Argument(help="Mission slug (e.g., 'user-auth')")],
-    mission_type: Annotated[str | None, typer.Option("--mission-type", help="Mission type (e.g., 'documentation', 'software-dev')")] = None,
-    mission_legacy: Annotated[str | None, typer.Option("--mission", help="Deprecated: use --mission-type instead.", hidden=True)] = None,
+    mission_type: Annotated[
+        str | None, typer.Option("--mission-type", help="Mission type (e.g., 'documentation', 'software-dev')")
+    ] = None,
+    mission_legacy: Annotated[
+        str | None, typer.Option("--mission", help="Deprecated: use --mission-type instead.", hidden=True)
+    ] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
-    target_branch: Annotated[str | None, typer.Option("--target-branch", help="Target branch (defaults to current branch)")] = None,
+    target_branch: Annotated[
+        str | None, typer.Option("--target-branch", help="Target branch (defaults to current branch)")
+    ] = None,
 ) -> None:
     """Create new mission directory structure in planning repository.
 
@@ -842,7 +873,9 @@ spec-kitty agent tasks move-task WP01 --to doing
 
 @app.command(name="check-prerequisites")
 def check_prerequisites(  # noqa: C901
-    mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (e.g., '020-my-mission')")] = None,
+    mission_run: Annotated[
+        str | None, typer.Option("--mission-run", help="Mission run slug (e.g., '020-my-mission')")
+    ] = None,
     mission: Annotated[
         str | None,
         typer.Option("--mission", hidden=True, help="Compatibility alias for mission selection"),
@@ -986,7 +1019,9 @@ def check_prerequisites(  # noqa: C901
 
 @app.command(name="setup-plan")
 def setup_plan(  # noqa: C901
-    mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (e.g., '020-my-mission')")] = None,
+    mission_run: Annotated[
+        str | None, typer.Option("--mission-run", help="Mission run slug (e.g., '020-my-mission')")
+    ] = None,
     mission: Annotated[
         str | None,
         typer.Option("--mission", hidden=True, help="Compatibility alias for mission selection"),
@@ -1126,7 +1161,9 @@ def setup_plan(  # noqa: C901
                     if docs_dir.exists():
                         gap_analysis_output = mission_dir / "gap-analysis.md"
                         try:
-                            analysis = generate_gap_analysis_report(docs_dir, gap_analysis_output, project_root=repo_root)
+                            analysis = generate_gap_analysis_report(
+                                docs_dir, gap_analysis_output, project_root=repo_root
+                            )
                             gap_analysis_path = str(gap_analysis_output)
                             # Update documentation state with audit metadata
                             set_audit_metadata(
@@ -1145,7 +1182,9 @@ def setup_plan(  # noqa: C901
                                 )
                             if not json_output:
                                 coverage_pct = analysis.coverage_matrix.get_coverage_percentage() * 100
-                                console.print(f"[cyan]→ Gap analysis generated: {gap_analysis_output.name} (coverage: {coverage_pct:.1f}%)[/cyan]")
+                                console.print(
+                                    f"[cyan]→ Gap analysis generated: {gap_analysis_output.name} (coverage: {coverage_pct:.1f}%)[/cyan]"
+                                )
                         except Exception as gap_err:
                             if not json_output:
                                 console.print(f"[yellow]Warning:[/yellow] Gap analysis failed: {gap_err}")
@@ -1167,7 +1206,9 @@ def setup_plan(  # noqa: C901
                             }
                         )
                         if not json_output:
-                            console.print(f"[cyan]→ Detected {gen.name} generator (languages: {', '.join(gen.languages)})[/cyan]")
+                            console.print(
+                                f"[cyan]→ Detected {gen.name} generator (languages: {', '.join(gen.languages)})[/cyan]"
+                            )
 
             if generators_detected and meta_file.exists():
                 try:
@@ -1302,7 +1343,9 @@ def _get_current_branch(repo_root: Path) -> str:
 
 @app.command(name="accept")
 def accept_mission(
-    mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (auto-detected if not specified)")] = None,
+    mission_run: Annotated[
+        str | None, typer.Option("--mission-run", help="Mission run slug (auto-detected if not specified)")
+    ] = None,
     mission: Annotated[
         str | None,
         typer.Option("--mission", hidden=True, help="Compatibility alias for mission selection"),
@@ -1363,7 +1406,9 @@ def accept_mission(
 
 @app.command(name="merge")
 def merge_mission(
-    mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (auto-detected if not specified)")] = None,
+    mission_run: Annotated[
+        str | None, typer.Option("--mission-run", help="Mission run slug (auto-detected if not specified)")
+    ] = None,
     mission: Annotated[
         str | None,
         typer.Option("--mission", hidden=True, help="Compatibility alias for mission selection"),
@@ -1372,12 +1417,18 @@ def merge_mission(
         str | None,
         typer.Option("--feature", hidden=True, help="Legacy compatibility alias for mission selection"),
     ] = None,
-    target: Annotated[str | None, typer.Option("--target", help="Target branch to merge into (auto-detected if not specified)")] = None,
+    target: Annotated[
+        str | None, typer.Option("--target", help="Target branch to merge into (auto-detected if not specified)")
+    ] = None,
     strategy: Annotated[str, typer.Option("--strategy", help="Merge strategy: merge, squash, rebase")] = "merge",
     push: Annotated[bool, typer.Option("--push", help="Push to origin after merging")] = False,
     dry_run: Annotated[bool, typer.Option("--dry-run", help="Show actions without executing")] = False,
-    keep_branch: Annotated[bool, typer.Option("--keep-branch", help="Keep mission branch after merge (default: delete)")] = False,
-    keep_worktree: Annotated[bool, typer.Option("--keep-worktree", help="Keep worktree after merge (default: remove)")] = False,
+    keep_branch: Annotated[
+        bool, typer.Option("--keep-branch", help="Keep mission branch after merge (default: delete)")
+    ] = False,
+    keep_worktree: Annotated[
+        bool, typer.Option("--keep-worktree", help="Keep worktree after merge (default: remove)")
+    ] = False,
     auto_retry: Annotated[
         bool,
         typer.Option(
@@ -1439,13 +1490,19 @@ def merge_mission(
 
             if not is_mission_branch:
                 if not selected_mission:
-                    raise RuntimeError(f"Not on mission branch ({current_branch}). Auto-retry requires --mission-run to choose a deterministic worktree.")
+                    raise RuntimeError(
+                        f"Not on mission branch ({current_branch}). Auto-retry requires --mission-run to choose a deterministic worktree."
+                    )
 
                 retry_worktree = _find_mission_worktree(repo_root, selected_mission)
                 if not retry_worktree:
-                    raise RuntimeError(f"Could not find worktree for mission {selected_mission} under {repo_root / '.worktrees'}.")
+                    raise RuntimeError(
+                        f"Could not find worktree for mission {selected_mission} under {repo_root / '.worktrees'}."
+                    )
 
-                console.print(f"[yellow]Auto-retry:[/yellow] Not on mission branch ({current_branch}). Running merge in {retry_worktree.name}")
+                console.print(
+                    f"[yellow]Auto-retry:[/yellow] Not on mission branch ({current_branch}). Running merge in {retry_worktree.name}"
+                )
 
                 # Set env var to prevent infinite recursion
                 env = os.environ.copy()
@@ -1502,7 +1559,9 @@ def merge_mission(
 
 @app.command(name="finalize-tasks")
 def finalize_tasks(  # noqa: C901
-    mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (e.g., '020-my-mission')")] = None,
+    mission_run: Annotated[
+        str | None, typer.Option("--mission-run", help="Mission run slug (e.g., '020-my-mission')")
+    ] = None,
     mission: Annotated[
         str | None,
         typer.Option("--mission", hidden=True, help="Compatibility alias for mission selection"),
@@ -1512,7 +1571,13 @@ def finalize_tasks(  # noqa: C901
         typer.Option("--feature", hidden=True, help="Legacy compatibility alias for mission selection"),
     ] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
-    validate_only: Annotated[bool, typer.Option("--validate-only", help="Run all validations without committing. Reports issues that would block finalization.")] = False,
+    validate_only: Annotated[
+        bool,
+        typer.Option(
+            "--validate-only",
+            help="Run all validations without committing. Reports issues that would block finalization.",
+        ),
+    ] = False,
 ) -> None:
     """Parse dependencies from tasks.md and update WP frontmatter, then commit to target branch.
 
@@ -1722,8 +1787,12 @@ def finalize_tasks(  # noqa: C901
                 parts = raw_content.split("---", 2)
                 if len(parts) >= 3:
                     frontmatter_text = parts[1]
-                    has_dependencies_line = re.search(r"^\s*dependencies\s*:", frontmatter_text, re.MULTILINE) is not None
-                    has_requirement_refs_line = re.search(r"^\s*requirement_refs\s*:", frontmatter_text, re.MULTILINE) is not None
+                    has_dependencies_line = (
+                        re.search(r"^\s*dependencies\s*:", frontmatter_text, re.MULTILINE) is not None
+                    )
+                    has_requirement_refs_line = (
+                        re.search(r"^\s*requirement_refs\s*:", frontmatter_text, re.MULTILINE) is not None
+                    )
 
             # Read current frontmatter
             try:
@@ -1800,6 +1869,7 @@ def finalize_tasks(  # noqa: C901
                 wp_bodies[wp_id] = wp_body
                 if fm.get("execution_mode") and fm.get("owned_files"):
                     from specify_cli.ownership.models import OwnershipManifest
+
                     wp_manifests[wp_id] = OwnershipManifest.from_frontmatter(fm)
             except Exception:
                 pass  # Skip WPs with unreadable frontmatter
@@ -1821,8 +1891,6 @@ def finalize_tasks(  # noqa: C901
 
         # Profile suggestion — add agent_profile hints to WPs that lack one
         try:
-            import yaml as _yaml  # noqa: PLC0415
-
             from specify_cli.task_profile import (  # noqa: PLC0415
                 apply_profile_suggestions,
                 display_profile_suggestions,
@@ -1832,6 +1900,7 @@ def finalize_tasks(  # noqa: C901
             _mission_config: dict[str, object] = {}
             try:
                 from doctrine.missions import MissionTemplateRepository
+
                 _config_result = MissionTemplateRepository.default().get_mission_config(mission_key)
                 if _config_result is not None:
                     _mission_config = _config_result.parsed
@@ -1864,7 +1933,9 @@ def finalize_tasks(  # noqa: C901
         if validate_only:
             # Bootstrap dry-run: report what would be seeded (no mutation)
             bootstrap_result = bootstrap_canonical_state(
-                mission_dir, mission_slug, dry_run=True,
+                mission_dir,
+                mission_slug,
+                dry_run=True,
             )
             bootstrap_stats = {
                 "total_wps": bootstrap_result.total_wps,
@@ -1892,15 +1963,17 @@ def finalize_tasks(  # noqa: C901
                 }
 
             if json_output:
-                _emit_json({
-                    "result": "validation_passed",
-                    "mission_slug": mission_slug,
-                    "wp_count": len(wp_files),
-                    "validate_only": True,
-                    "bootstrap": bootstrap_stats,
-                    "lanes": lanes_stats,
-                    "message": "All validations passed. Run without --validate-only to commit.",
-                })
+                _emit_json(
+                    {
+                        "result": "validation_passed",
+                        "mission_slug": mission_slug,
+                        "wp_count": len(wp_files),
+                        "validate_only": True,
+                        "bootstrap": bootstrap_stats,
+                        "lanes": lanes_stats,
+                        "message": "All validations passed. Run without --validate-only to commit.",
+                    }
+                )
             else:
                 console.print("[green]✓[/green] All validations passed (--validate-only mode, no commit)")
                 console.print(f"  Mission: {mission_slug}")
@@ -1915,13 +1988,12 @@ def finalize_tasks(  # noqa: C901
 
         # Bootstrap canonical status state for all WPs
         bootstrap_result = bootstrap_canonical_state(
-            mission_dir, mission_slug, dry_run=False,
+            mission_dir,
+            mission_slug,
+            dry_run=False,
         )
         if not json_output and bootstrap_result.newly_seeded:
-            console.print(
-                f"[green]✓[/green] Bootstrapped canonical status: "
-                f"{bootstrap_result.newly_seeded} WPs seeded"
-            )
+            console.print(f"[green]✓[/green] Bootstrapped canonical status: {bootstrap_result.newly_seeded} WPs seeded")
 
         # Compute execution lanes from dependency graph + ownership manifests
         lanes_path = None
@@ -2036,7 +2108,9 @@ def finalize_tasks(  # noqa: C901
 
                 if commit_success:
                     # Commit succeeded - get hash
-                    _rc, stdout, _stderr = run_command(["git", "rev-parse", "HEAD"], check_return=True, capture=True, cwd=repo_root)
+                    _rc, stdout, _stderr = run_command(
+                        ["git", "rev-parse", "HEAD"], check_return=True, capture=True, cwd=repo_root
+                    )
                     commit_hash = stdout.strip()
                     commit_created = True
 

@@ -9,7 +9,7 @@ no heuristic fallback, and no single-feature auto-detection.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 
 from ruamel.yaml import YAML
@@ -198,17 +198,14 @@ def resolve_context(
     )
 
     # Compute authoritative_ref: branch name for code_change, None for planning_artifact
-    if execution_mode == "planning_artifact":
-        authoritative_ref = None
-    else:
-        authoritative_ref = f"{mission_slug}-{wp_code}"
+    authoritative_ref = None if execution_mode == "planning_artifact" else f"{mission_slug}-{wp_code}"
 
     # Compute dependency_mode
     dependency_mode = "chained" if dependencies else "independent"
 
     # Generate opaque token
     token = _generate_token()
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
 
     # Build context
     context = MissionContext(

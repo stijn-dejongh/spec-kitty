@@ -6,8 +6,6 @@ from __future__ import annotations
 import logging
 import os
 import re
-
-logger = logging.getLogger(__name__)
 from dataclasses import dataclass, field
 from datetime import datetime, UTC
 from pathlib import Path
@@ -32,8 +30,9 @@ from specify_cli.core.paths import (
     get_mission_dir,
     require_explicit_mission as _require_explicit_mission,
 )
-from specify_cli.core.mission_detection import MissionDetectionError
 from specify_cli.core.tool_config import get_auto_commit_default
+
+logger = logging.getLogger(__name__)
 
 AcceptanceMode = str  # Expected values: "pr", "local", "checklist"
 
@@ -266,9 +265,9 @@ def _iter_work_packages(repo_root: Path, mission_slug: str) -> Iterable[WorkPack
 def detect_mission_slug(
     repo_root: Path,
     *,
-    explicit_mission: Optional[str] = None,
-    env: Optional[Mapping[str, str]] = None,  # noqa: ARG001 -- kept for signature compat
-    cwd: Optional[Path] = None,  # noqa: ARG001 -- kept for signature compat
+    explicit_mission: str | None = None,
+    env: Mapping[str, str] | None = None,  # noqa: ARG001 -- kept for signature compat
+    cwd: Path | None = None,  # noqa: ARG001 -- kept for signature compat
     announce_fallback: bool = True,  # noqa: ARG001 -- kept for signature compat
 ) -> str:
     """Require an explicit mission slug; no auto-detection.
@@ -295,9 +294,9 @@ def detect_mission_slug(
 def detect_feature_slug(
     repo_root: Path,
     *,
-    explicit_feature: Optional[str] = None,
-    env: Optional[Mapping[str, str]] = None,
-    cwd: Optional[Path] = None,
+    explicit_feature: str | None = None,
+    env: Mapping[str, str] | None = None,
+    cwd: Path | None = None,
     announce_fallback: bool = True,
 ) -> str:
     """Compatibility alias for legacy callers renamed to mission terminology."""
@@ -484,16 +483,14 @@ def collect_mission_summary(
     metadata_issues: list[str] = []
     activity_issues: list[str] = []
 
-    use_legacy = is_legacy_format(mission_dir)
+    is_legacy_format(mission_dir)
 
     # ── Canonical state validation via reducer-only snapshot ──────────────
     events_path = mission_dir / EVENTS_FILENAME
     use_legacy_lane_fallback = not events_path.exists()
     if not events_path.exists():
-        activity_issues.append(
-            f"No canonical state found for mission '{mission_slug}': missing {EVENTS_FILENAME}."
-        )
-        snapshot_wps: dict[str, dict] = {}
+        activity_issues.append(f"No canonical state found for mission '{mission_slug}': missing {EVENTS_FILENAME}.")
+        snapshot_wps: dict[str, dict[str, str | None]] = {}
     else:
         try:
             from specify_cli.status.reducer import reduce
@@ -504,9 +501,7 @@ def collect_mission_summary(
             raise AcceptanceError(f"Status event log is corrupted for mission '{mission_slug}': {exc}") from exc
         snapshot_wps = snapshot.work_packages
         if not snapshot_wps:
-            activity_issues.append(
-                f"No canonical state found for mission '{mission_slug}' in {EVENTS_FILENAME}."
-            )
+            activity_issues.append(f"No canonical state found for mission '{mission_slug}' in {EVENTS_FILENAME}.")
             use_legacy_lane_fallback = True
 
     # Collect WP IDs from task files
@@ -534,9 +529,9 @@ def collect_mission_summary(
         else:
             lanes["planned"].append(wp_id)
 
-        metadata: Dict[str, Optional[str]] = {
+        metadata: dict[str, str | None] = {
             "lane": canonical_lane,
-            "agent": wp.agent,
+            "agent": wp.agent.to_compact() if wp.agent else None,
             "assignee": wp.assignee,
             "shell_pid": wp.shell_pid,
         }
@@ -784,21 +779,26 @@ def perform_acceptance(
     # Determine whether `branch` is the integration/target branch itself.
     # If so, merge and branch-deletion guidance is nonsensical and dangerous
     # (e.g. "git merge main" or "git branch -d main" when already on main).
-    _WELL_KNOWN_INTEGRATION_BRANCHES = frozenset({
-        "main", "master", "develop", "development", "2.x", "3.x",
-    })
+    _WELL_KNOWN_INTEGRATION_BRANCHES = frozenset(
+        {
+            "main",
+            "master",
+            "develop",
+            "development",
+            "2.x",
+            "3.x",
+        }
+    )
     _meta = load_meta(summary.mission_dir)
     _target_branch = (_meta or {}).get("target_branch")
-    _is_integration_branch = (
-        branch == _target_branch
-        or (_target_branch is None and branch in _WELL_KNOWN_INTEGRATION_BRANCHES)
+    _is_integration_branch = branch == _target_branch or (
+        _target_branch is None and branch in _WELL_KNOWN_INTEGRATION_BRANCHES
     )
 
     if mode == "pr":
         if _is_integration_branch:
             instructions.append(
-                f"Acceptance recorded on integration branch `{branch}`. "
-                "Push and open a pull request if needed."
+                f"Acceptance recorded on integration branch `{branch}`. Push and open a pull request if needed."
             )
         else:
             instructions.extend(
@@ -811,9 +811,7 @@ def perform_acceptance(
             )
     elif mode == "local":
         if _is_integration_branch:
-            instructions.append(
-                f"Acceptance recorded directly on `{branch}`. No merge needed."
-            )
+            instructions.append(f"Acceptance recorded directly on `{branch}`. No merge needed.")
         else:
             instructions.extend(
                 [

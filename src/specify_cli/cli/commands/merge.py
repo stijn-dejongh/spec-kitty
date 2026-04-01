@@ -34,7 +34,6 @@ from specify_cli.merge.preflight import (
 )
 from specify_cli.merge.state import (
     MergeState,
-    abort_git_merge,
     clear_state,
     detect_git_merge_state,
     get_state_path,
@@ -582,7 +581,7 @@ def merge_workspace_per_wp(
         except Exception as exc:
             tracker.error("checkout", str(exc))
             console.print(tracker.render())
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
 
         tracker.start("pull")
         try:
@@ -600,7 +599,7 @@ def merge_workspace_per_wp(
             console.print(tracker.render())
             console.print(f"\n[yellow]Warning:[/yellow] Could not fast-forward {target_branch}.")
             console.print("You may need to resolve conflicts manually.")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
 
         # Merge all WP branches
         tracker.start("merge")
@@ -659,7 +658,7 @@ def merge_workspace_per_wp(
             tracker.error("merge", str(exc))
             console.print(tracker.render())
             console.print("\n[red]Merge failed.[/red] Resolve conflicts and try again.")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
 
         # Push if requested
         if push:
@@ -875,7 +874,7 @@ def merge(
             repo_root = find_repo_root()
         except TaskCliError as exc:
             console.print(f"[red]Error:[/red] {exc}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
 
         main_repo = get_main_repo_root(repo_root)
 
@@ -890,7 +889,7 @@ def merge(
             console.print(f"  Progress was: {len(state.completed_wps)}/{len(state.wp_order)} WPs complete")
 
         engine_abort_merge(main_repo)
-        console.print(f"[green]✓[/green] Merge aborted and state cleared")
+        console.print("[green]✓[/green] Merge aborted and state cleared")
 
         raise typer.Exit(0)
 
@@ -901,7 +900,7 @@ def merge(
             repo_root = find_repo_root()
         except TaskCliError as exc:
             console.print(f"[red]Error:[/red] {exc}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
 
         main_repo = get_main_repo_root(repo_root)
         resume_state = load_state(main_repo)
@@ -932,26 +931,25 @@ def merge(
 
         eng_result = engine_resume_merge(main_repo, keep_workspace=keep_workspace)
         if eng_result.success:
-            console.print(f"[bold green]✓ Merge resumed and completed successfully.[/bold green]")
+            console.print("[bold green]✓ Merge resumed and completed successfully.[/bold green]")
             if eng_result.merged_wps:
                 console.print(f"  Merged: {', '.join(eng_result.merged_wps)}")
             if eng_result.skipped_wps:
                 console.print(f"  Skipped (already done): {', '.join(eng_result.skipped_wps)}")
         else:
             if eng_result.conflicts:
-                console.print(f"[yellow]Merge paused — unresolved conflicts:[/yellow]")
+                console.print("[yellow]Merge paused — unresolved conflicts:[/yellow]")
                 for f in eng_result.conflicts:
                     console.print(f"  {f}")
                 console.print("Resolve conflicts, then run 'spec-kitty merge --resume'.")
             else:
-                console.print(f"[red]Merge failed:[/red]")
+                console.print("[red]Merge failed:[/red]")
                 for err in eng_result.errors:
                     console.print(f"  {err}")
             raise typer.Exit(1)
         raise typer.Exit(0)
 
         # Set mission from state and override options (kept for legacy paths below)
-        mission_run = resume_state.mission_slug
         target_branch = resume_state.target_branch
         strategy = resume_state.strategy
 
@@ -959,7 +957,7 @@ def merge(
         repo_root = find_repo_root()
     except TaskCliError as exc:
         console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     _enforce_git_preflight(repo_root, json_output=json_output)
 
@@ -1283,7 +1281,7 @@ def merge(
     except Exception as exc:
         tracker.error("detect", str(exc))
         console.print(tracker.render())
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     # Detect workspace structure and extract mission slug
     mission_slug = resolved_mission or extract_mission_slug(current_branch)
@@ -1354,7 +1352,7 @@ def merge(
     except Exception as exc:
         tracker.error("verify", str(exc))
         console.print(tracker.render())
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     merge_root, mission_worktree_path = merge_root.resolve(), mission_worktree_path.resolve()
     if dry_run:
@@ -1402,7 +1400,7 @@ def merge(
     except Exception as exc:
         tracker.error("checkout", str(exc))
         console.print(tracker.render())
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     tracker.start("pull")
     try:
@@ -1420,7 +1418,7 @@ def merge(
         console.print(tracker.render())
         console.print(f"\n[yellow]Warning:[/yellow] Could not fast-forward {target_branch}.")
         console.print("You may need to resolve conflicts manually.")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     tracker.start("merge")
     try:
@@ -1447,7 +1445,7 @@ def merge(
         tracker.error("merge", str(exc))
         console.print(tracker.render())
         console.print("\n[red]Merge failed.[/red] You may need to resolve conflicts.")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     if push:
         tracker.start("push")

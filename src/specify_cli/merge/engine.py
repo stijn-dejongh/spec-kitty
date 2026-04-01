@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from specify_cli.merge.conflict_resolver import ResolutionResult, resolve_owned_conflicts
+from specify_cli.merge.conflict_resolver import resolve_owned_conflicts
 from specify_cli.merge.ordering import MergeOrderError, get_merge_order
 from specify_cli.merge.preflight import run_preflight, run_preflight_from_context
 from specify_cli.merge.reconciliation import reconcile_done_state
@@ -39,7 +39,6 @@ from specify_cli.merge.state import (
 from specify_cli.merge.workspace import (
     cleanup_merge_workspace,
     create_merge_workspace,
-    get_merge_workspace,
 )
 from specify_cli.core.paths import get_mission_dir, get_mission_meta_path
 
@@ -476,14 +475,13 @@ def resume_merge(
 
     # Check for pending git conflicts that must be resolved first
     workspace_path = Path(state.workspace_path) if state.workspace_path else None
-    if workspace_path and workspace_path.exists():
-        if detect_git_merge_state(workspace_path):
-            result = MergeResult(success=False)
-            result.errors.append(
-                "Git merge in progress in workspace. Resolve conflicts and "
-                "run 'spec-kitty merge --resume' again."
-            )
-            return result
+    if workspace_path and workspace_path.exists() and detect_git_merge_state(workspace_path):
+        result = MergeResult(success=False)
+        result.errors.append(
+            "Git merge in progress in workspace. Resolve conflicts and "
+            "run 'spec-kitty merge --resume' again."
+        )
+        return result
 
     logger.info(
         "Resuming merge of %s: %d/%d WPs complete",

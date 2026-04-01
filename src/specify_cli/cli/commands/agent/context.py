@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, cast
+from typing import cast
 
 import typer
 from rich.console import Console
-from typing_extensions import Annotated
+from typing import Annotated
 
 from specify_cli.core.paths import get_mission_dir, locate_project_root, require_explicit_mission
 from specify_cli.core.mission_detection import detect_mission_directory
@@ -19,11 +19,7 @@ from specify_cli.core.execution_context import (
     resolve_action_context,
 )
 
-app = typer.Typer(
-    name="context",
-    help="Agent context management commands",
-    no_args_is_help=True
-)
+app = typer.Typer(name="context", help="Agent context management commands", no_args_is_help=True)
 
 console = Console()
 
@@ -53,9 +49,8 @@ def _find_mission_directory(repo_root: Path, cwd: Path, explicit_mission: str | 
         mission_dir = get_mission_dir(repo_root, slug)
         if not mission_dir.exists():
             raise ValueError(
-                f"Mission directory not found: {mission_dir}. "
-                f"Check that '{slug}' is the correct mission slug."
-            )
+                f"Mission directory not found: {mission_dir}. Check that '{slug}' is the correct mission slug."
+            ) from None
         return mission_dir
 
 
@@ -65,17 +60,14 @@ def resolve_context(
         str,
         typer.Option(
             "--action",
-            help=(
-                "Action to resolve context for "
-                f"({', '.join(ACTION_NAMES)})"
-            ),
+            help=(f"Action to resolve context for ({', '.join(ACTION_NAMES)})"),
         ),
     ],
-    mission: Annotated[Optional[str], typer.Option("--mission", help="Mission slug (e.g., '020-my-mission')")] = None,
-    feature: Annotated[Optional[str], typer.Option("--feature", hidden=True, help="[Deprecated] Use --mission")] = None,
-    wp_id: Annotated[Optional[str], typer.Option("--wp-id", help="Work package ID (e.g., WP01)")] = None,
-    base: Annotated[Optional[str], typer.Option("--base", help="Explicit base WP for implement")] = None,
-    agent: Annotated[Optional[str], typer.Option("--agent", help="Agent name for exact command rendering")] = None,
+    mission: Annotated[str | None, typer.Option("--mission", help="Mission slug (e.g., '020-my-mission')")] = None,
+    feature: Annotated[str | None, typer.Option("--feature", hidden=True, help="[Deprecated] Use --mission")] = None,
+    wp_id: Annotated[str | None, typer.Option("--wp-id", help="Work package ID (e.g., WP01)")] = None,
+    base: Annotated[str | None, typer.Option("--base", help="Explicit base WP for implement")] = None,
+    agent: Annotated[str | None, typer.Option("--agent", help="Agent name for exact command rendering")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output results as JSON")] = False,
 ) -> None:
     """Resolve canonical mission/work-package/action context for prompt execution."""
@@ -121,8 +113,7 @@ def resolve_context(
             print(json.dumps({"success": False, "error_code": exc.code, "error": str(exc)}, indent=2))
         else:
             console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(1)
-
+        raise typer.Exit(1) from None
 
 
 # update-context command removed — agent_context.py was deleted in WP10.

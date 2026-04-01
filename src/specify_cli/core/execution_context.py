@@ -19,7 +19,7 @@ from specify_cli.core.implement_validation import (
     validate_and_resolve_base,
 )
 from specify_cli.status.transitions import resolve_lane_alias
-from specify_cli.tasks_support import extract_scalar, locate_work_package, split_frontmatter
+from specify_cli.tasks_support import locate_work_package
 
 
 ActionName = Literal[

@@ -14,7 +14,6 @@ from collections.abc import Callable
 
 import typer
 from kernel.paths import (
-    get_project_constitution_dir,
     get_project_constitution_interview_path,
     get_project_constitution_path,
 )

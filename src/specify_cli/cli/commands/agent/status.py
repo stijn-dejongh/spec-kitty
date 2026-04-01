@@ -10,12 +10,12 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import typer
 from rich.console import Console
 from rich.table import Table
-from typing_extensions import Annotated
+from typing import Annotated
 
 from specify_cli.core.paths import (
     get_mission_dir,
@@ -52,7 +52,7 @@ def _find_mission_slug(explicit_mission: str | None = None) -> str:
         return require_explicit_mission(explicit_mission, command_hint="--mission <slug>")
     except ValueError as e:
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 def _output_result(json_mode: bool, data: dict, success_message: str | None = None):
@@ -101,15 +101,15 @@ def emit(
     wp_id: Annotated[str, typer.Argument(help="Work package ID (e.g., WP01)")],
     to: Annotated[str, typer.Option("--to", help="Target lane (e.g., claimed, in_progress, for_review, approved, done)")] = ...,
     actor: Annotated[str, typer.Option("--actor", help="Who is making this transition")] = ...,
-    mission: Annotated[Optional[str], typer.Option("--mission", help="Mission slug (required in multi-mission repos)")] = None,
-    feature: Annotated[Optional[str], typer.Option("--feature", hidden=True, help="[Deprecated] Use --mission")] = None,
+    mission: Annotated[str | None, typer.Option("--mission", help="Mission slug (required in multi-mission repos)")] = None,
+    feature: Annotated[str | None, typer.Option("--feature", hidden=True, help="[Deprecated] Use --mission")] = None,
     force: Annotated[bool, typer.Option("--force", help="Force transition bypassing guards")] = False,
-    reason: Annotated[Optional[str], typer.Option("--reason", help="Reason for forced transition")] = None,
-    evidence_json: Annotated[Optional[str], typer.Option("--evidence-json", help="JSON string with done evidence")] = None,
-    review_ref: Annotated[Optional[str], typer.Option("--review-ref", help="Review feedback reference")] = None,
-    workspace_context: Annotated[Optional[str], typer.Option("--workspace-context", help="Workspace context identifier for claimed->in_progress")] = None,
-    subtasks_complete: Annotated[Optional[bool], typer.Option("--subtasks-complete", help="Whether required subtasks are complete for in_progress->for_review")] = None,
-    implementation_evidence_present: Annotated[Optional[bool], typer.Option("--implementation-evidence-present", help="Whether implementation evidence exists for in_progress->for_review")] = None,
+    reason: Annotated[str | None, typer.Option("--reason", help="Reason for forced transition")] = None,
+    evidence_json: Annotated[str | None, typer.Option("--evidence-json", help="JSON string with done evidence")] = None,
+    review_ref: Annotated[str | None, typer.Option("--review-ref", help="Review feedback reference")] = None,
+    workspace_context: Annotated[str | None, typer.Option("--workspace-context", help="Workspace context identifier for claimed->in_progress")] = None,
+    subtasks_complete: Annotated[bool | None, typer.Option("--subtasks-complete", help="Whether required subtasks are complete for in_progress->for_review")] = None,
+    implementation_evidence_present: Annotated[bool | None, typer.Option("--implementation-evidence-present", help="Whether implementation evidence exists for in_progress->for_review")] = None,
     execution_mode: Annotated[str, typer.Option("--execution-mode", help="Execution mode (worktree or direct_repo)")] = "worktree",
     json_output: Annotated[bool, typer.Option("--json", help="Machine-readable JSON output")] = False,
 ) -> None:
@@ -152,7 +152,7 @@ def emit(
                     f"Invalid JSON in --evidence-json: {exc}\n"
                     f"Expected valid JSON object, e.g.: '{example}'",
                 )
-                raise typer.Exit(1)
+                raise typer.Exit(1) from None
 
         # Lazy import to avoid circular imports
         from specify_cli.status.emit import (
@@ -206,13 +206,13 @@ def emit(
         except ImportError:
             pass
         _output_error(json_output, str(exc))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command()
 def materialize(
-    mission: Annotated[Optional[str], typer.Option("--mission", help="Mission slug (required in multi-mission repos)")] = None,
-    feature: Annotated[Optional[str], typer.Option("--feature", hidden=True, help="[Deprecated] Use --mission")] = None,
+    mission: Annotated[str | None, typer.Option("--mission", help="Mission slug (required in multi-mission repos)")] = None,
+    feature: Annotated[str | None, typer.Option("--feature", hidden=True, help="[Deprecated] Use --mission")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Machine-readable JSON output")] = False,
 ) -> None:
     """Rebuild status.json from the canonical event log.
@@ -286,7 +286,7 @@ def materialize(
         raise
     except Exception as exc:
         _output_error(json_output, str(exc))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 # ---------------------------------------------------------------------------
@@ -297,11 +297,11 @@ def materialize(
 @app.command()
 def doctor(
     mission: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--mission", help="Mission slug"),
     ] = None,
     feature: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--feature", hidden=True, help="[Deprecated] Use --mission"),
     ] = None,
     stale_claimed: Annotated[
@@ -358,7 +358,7 @@ def doctor(
             )
         else:
             console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     overall_healthy = result.is_healthy and not global_has_issues
 
@@ -406,11 +406,11 @@ def doctor(
         console.print(f"\n[bold]Mission Status: {result.mission_slug}[/bold]")
         if result.is_healthy:
             console.print(
-                f"  [green]Healthy[/green]"
+                "  [green]Healthy[/green]"
             )
         else:
             console.print(
-                f"  [yellow]Issues found[/yellow]"
+                "  [yellow]Issues found[/yellow]"
             )
             table = Table(title="Doctor Findings")
             table.add_column("Severity", style="bold")
@@ -513,11 +513,11 @@ def _print_rich_migrate_output(result: Any, *, dry_run: bool) -> None:
 @app.command()
 def migrate(
     mission: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--mission", help="Mission slug to migrate"),
     ] = None,
     feature: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--feature", "-f", hidden=True, help="[Deprecated] Use --mission"),
     ] = None,
     all_features: Annotated[
@@ -566,11 +566,11 @@ def migrate(
 @app.command()
 def validate(
     mission: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--mission", help="Mission slug (required in multi-mission repos)"),
     ] = None,
     feature: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--feature", hidden=True, help="[Deprecated] Use --mission"),
     ] = None,
     json_output: Annotated[
@@ -591,8 +591,7 @@ def validate(
         spec-kitty agent status validate --mission 034-my-mission
         spec-kitty agent status validate --json
     """
-    from specify_cli.status.reducer import reduce
-    from specify_cli.status.store import read_events, read_events_raw
+    from specify_cli.status.store import read_events_raw
     from specify_cli.status.validate import (
         ValidationResult,
         validate_done_evidence,
@@ -709,11 +708,11 @@ def validate(
 @app.command()
 def reconcile(
     mission: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--mission", help="Mission slug (required in multi-mission repos)"),
     ] = None,
     feature: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--feature", "-f", hidden=True, help="[Deprecated] Use --mission"),
     ] = None,
     dry_run: Annotated[
@@ -721,7 +720,7 @@ def reconcile(
         typer.Option("--dry-run/--apply", help="Preview vs persist reconciliation events"),
     ] = True,
     target_repo: Annotated[
-        Optional[list[Path]],
+        list[Path] | None,
         typer.Option("--target-repo", "-t", help="Target repo path(s) to scan"),
     ] = None,
     json_output: Annotated[

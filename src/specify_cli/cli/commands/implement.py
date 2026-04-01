@@ -14,7 +14,6 @@ from rich.console import Console
 from typing import Annotated
 
 from specify_cli.cli import StepTracker
-from specify_cli.core.mission_detection import detect_mission_directory
 from specify_cli.core.dependency_graph import (
     build_dependency_graph,
     get_dependents,
@@ -93,7 +92,7 @@ def _json_safe_output(func):
                 if wp_id:
                     payload["wp_id"] = str(wp_id)
                 print(json.dumps(payload))
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
         finally:
             console.quiet = previous_quiet
 
@@ -118,7 +117,7 @@ def detect_mission_context(mission_flag: str | None = None) -> tuple[str, str]:
         slug = require_explicit_mission(mission_flag, command_hint="--mission-run <slug>")
     except ValueError as e:
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     match = re.match(r'^(\d{3})-', slug)
     if not match:
@@ -370,7 +369,7 @@ def check_for_dependents(repo_root: Path, mission_slug: str, wp_id: str) -> None
     incomplete_deps = []
     for dep_id in dependents:
         try:
-            dep_file = find_wp_file(repo_root, mission_slug, dep_id)
+            find_wp_file(repo_root, mission_slug, dep_id)
             from specify_cli.status.lane_reader import get_wp_lane
             dep_mission_dir = get_mission_dir(repo_root, mission_slug, main_repo=False)
             lane = get_wp_lane(dep_mission_dir, dep_id)
@@ -515,7 +514,7 @@ def _ensure_vcs_in_meta(mission_dir: Path, repo_root: Path) -> VCSBackend:
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
         console.print(f"[red]Error:[/red] Invalid JSON in meta.json: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     # Check if VCS is already locked
     if "vcs" in meta:
@@ -583,7 +582,7 @@ def implement(
     except (TaskCliError, typer.Exit) as exc:
         tracker.error("detect", str(exc) if isinstance(exc, TaskCliError) else "failed")
         console.print(tracker.render())
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     # Step 2: Validate dependencies
     tracker.start("validate")
@@ -649,7 +648,7 @@ def implement(
                 console.print(tracker.render())
                 console.print(f"\n[red]Error:[/red] Base work package {base} does not exist")
                 console.print(f"Mission: {mission_slug}")
-                raise typer.Exit(1)
+                raise typer.Exit(1) from None
 
             if base_lane == "done":
                 # Base is merged - will branch from target branch (no workspace validation needed)
@@ -681,7 +680,7 @@ def implement(
         if not isinstance(exc, typer.Exit):
             tracker.error("validate", str(exc))
             console.print(tracker.render())
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     # Step 2.5: Ensure planning artifacts are committed (v0.11.0 requirement)
     # All planning must happen on the mission target branch before workspace creation.
@@ -714,7 +713,7 @@ def implement(
             raise
         except Exception as e:
             console.print(f"\n[red]Error:[/red] Failed to validate planning artifacts: {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
 
     # Step 3: Create workspace
     tracker.start("create")
@@ -895,13 +894,13 @@ def implement(
             try:
                 find_wp_file(repo_root, mission_slug, base)
                 base_lane = _get_wp_lane_from_event_log(mission_dir, base)
-            except Exception as e:
+            except Exception:
                 # Base WP file not found
                 tracker.error("create", f"base WP {base} not found")
                 console.print(tracker.render())
                 console.print(f"[red]Error:[/red] Base work package {base} does not exist")
                 console.print(f"Mission: {mission_slug}")
-                raise typer.Exit(1)
+                raise typer.Exit(1) from None
 
             if base_lane == "done":
                 target_branch = get_mission_target_branch(repo_root, mission_slug)
@@ -1020,7 +1019,7 @@ def implement(
     try:
         import os
 
-        wp = locate_work_package(repo_root, mission_slug, wp_id)
+        locate_work_package(repo_root, mission_slug, wp_id)
         lane_changed = False
 
         # Only update if currently planned (avoid overwriting existing doing/review state)

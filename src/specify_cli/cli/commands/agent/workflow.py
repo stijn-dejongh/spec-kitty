@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 import subprocess
@@ -12,7 +11,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 import typer
-from typing import Annotated, Optional
+from typing import Annotated
 from kernel.paths import get_project_constitution_agents_dir
 
 from specify_cli.cli.commands.implement import implement as top_level_implement
@@ -22,7 +21,6 @@ from specify_cli.core.implement_validation import (
     validate_and_resolve_base,
     validate_base_workspace_exists,
 )
-from specify_cli.core.mission_detection import detect_mission_directory
 from specify_cli.core.paths import (
     get_main_repo_root,
     get_mission_dir,
@@ -35,8 +33,6 @@ from specify_cli.git import safe_commit
 from specify_cli.mission import get_deliverables_path, get_mission_key
 from specify_cli.status.emit import emit_status_transition
 from specify_cli.status.locking import mission_status_lock
-from specify_cli.status.transitions import resolve_lane_alias
-from specify_cli.status.store import read_events
 from specify_cli.cli.commands.agent.tasks import _collect_status_artifacts
 from specify_cli.tasks_support import (
     append_activity_log,
@@ -263,7 +259,7 @@ def _find_mission_slug(explicit_mission: str | None = None) -> str:
         return require_explicit_mission(explicit_mission, command_hint="--mission-run <slug>")
     except ValueError as e:
         print(f"Error: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 def _resolve_workflow_mission_slug(
@@ -368,12 +364,12 @@ def _find_first_planned_wp(repo_root: Path, mission_slug: str) -> str | None:
 
 @app.command(name="implement")
 def implement(
-    wp_id: Annotated[Optional[str], typer.Argument(help="Work package ID (e.g., WP01, wp01, WP01-slug) - auto-detects first planned if omitted")] = None,
-    mission_run: Annotated[Optional[str], typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
-    mission: Annotated[Optional[str], typer.Option("--mission", hidden=True, help="Compatibility alias for mission selection")] = None,
-    feature: Annotated[Optional[str], typer.Option("--feature", hidden=True, help="Legacy compatibility alias for mission selection")] = None,
-    agent: Annotated[Optional[str], typer.Option("--agent", help="Agent name (required for auto-move to doing lane)")] = None,
-    base: Annotated[Optional[str], typer.Option("--base", help="Base WP to branch from (e.g., WP01) - creates worktree if provided")] = None,
+    wp_id: Annotated[str | None, typer.Argument(help="Work package ID (e.g., WP01, wp01, WP01-slug) - auto-detects first planned if omitted")] = None,
+    mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
+    mission: Annotated[str | None, typer.Option("--mission", hidden=True, help="Compatibility alias for mission selection")] = None,
+    feature: Annotated[str | None, typer.Option("--feature", hidden=True, help="Legacy compatibility alias for mission selection")] = None,
+    agent: Annotated[str | None, typer.Option("--agent", help="Agent name (required for auto-move to doing lane)")] = None,
+    base: Annotated[str | None, typer.Option("--base", help="Base WP to branch from (e.g., WP01) - creates worktree if provided")] = None,
     allow_missing_profile: Annotated[bool, typer.Option("--allow-missing-profile", help="Degrade to warning when agent profile cannot be resolved")] = False,
 ) -> None:
     """Display work package prompt with implementation instructions.
@@ -427,12 +423,12 @@ def implement(
         except RuntimeError as e:
             if _is_missing_canonical_status_error(e):
                 print(f"Error: {_missing_canonical_status_message(normalized_wp_id, mission_slug)}")
-                raise typer.Exit(1)
+                raise typer.Exit(1) from None
             print(f"Error locating work package: {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
         except Exception as e:
             print(f"Error locating work package: {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from None
 
         # Validate dependencies and resolve base workspace
         # This will error if:
@@ -480,7 +476,7 @@ def implement(
                 raise
             except Exception as e:
                 print(f"Error creating worktree: {e}")
-                raise typer.Exit(1)
+                raise typer.Exit(1) from None
 
         # Load work package
         try:
@@ -856,7 +852,7 @@ def implement(
 
     except Exception as e:
         print(f"Error: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 def _resolve_review_context(
@@ -1015,11 +1011,11 @@ def _find_first_for_review_wp(repo_root: Path, mission_slug: str) -> str | None:
 
 @app.command(name="review")
 def review(
-    wp_id: Annotated[Optional[str], typer.Argument(help="Work package ID (e.g., WP01) - auto-detects first for_review if omitted")] = None,
-    mission_run: Annotated[Optional[str], typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
-    mission: Annotated[Optional[str], typer.Option("--mission", hidden=True, help="Compatibility alias for mission selection")] = None,
-    feature: Annotated[Optional[str], typer.Option("--feature", hidden=True, help="Legacy compatibility alias for mission selection")] = None,
-    agent: Annotated[Optional[str], typer.Option("--agent", help="Agent name (required for auto-move to doing lane)")] = None,
+    wp_id: Annotated[str | None, typer.Argument(help="Work package ID (e.g., WP01) - auto-detects first for_review if omitted")] = None,
+    mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
+    mission: Annotated[str | None, typer.Option("--mission", hidden=True, help="Compatibility alias for mission selection")] = None,
+    feature: Annotated[str | None, typer.Option("--feature", hidden=True, help="Legacy compatibility alias for mission selection")] = None,
+    agent: Annotated[str | None, typer.Option("--agent", help="Agent name (required for auto-move to doing lane)")] = None,
 ) -> None:
     """Display work package prompt with review instructions.
 
@@ -1393,4 +1389,4 @@ def review(
 
     except Exception as e:
         print(f"Error: {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None

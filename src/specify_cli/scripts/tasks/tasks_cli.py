@@ -62,7 +62,7 @@ from specify_cli.status.transitions import resolve_lane_alias  # noqa: E402
 
 def _derive_current_lane(feature_dir: Path, wp_id: str) -> str:
     """Derive current canonical lane for a WP from reduced status events."""
-    from specify_cli.status.store import StoreError, read_events
+    from specify_cli.status.store import read_events
 
     events = read_events(feature_dir)  # raises StoreError on corrupt JSONL
     if not events:
@@ -415,10 +415,7 @@ def rollback_command(args: argparse.Namespace) -> None:
             f"No canonical status events for {wp_id}. Cannot determine the previous lane."
         )
 
-    if len(wp_events) == 1:
-        previous_lane_canonical = str(wp_events[0].from_lane)
-    else:
-        previous_lane_canonical = str(wp_events[-2].to_lane)
+    previous_lane_canonical = str(wp_events[0].from_lane) if len(wp_events) == 1 else str(wp_events[-2].to_lane)
     reverse_aliases: Dict[str, str] = {"in_progress": "doing"}
     previous_lane = ensure_lane(reverse_aliases.get(previous_lane_canonical, previous_lane_canonical))
     current_event = wp_events[-1]

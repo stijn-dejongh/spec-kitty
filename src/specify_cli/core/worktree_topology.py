@@ -18,12 +18,10 @@ import json
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 from specify_cli.core.dependency_graph import build_dependency_graph, topological_sort
 from specify_cli.core.paths import get_main_repo_root, get_mission_dir, get_mission_target_branch
 from specify_cli.workspace_context import list_contexts
-from specify_cli.frontmatter import read_frontmatter
 
 
 @dataclass
@@ -31,9 +29,9 @@ class WPTopologyEntry:
     """Per-WP topology information."""
 
     wp_id: str
-    branch_name: Optional[str]  # None if worktree not yet created
-    base_branch: Optional[str]  # None if worktree not yet created
-    base_wp: Optional[str]  # WP ID of base, or None if based on target branch
+    branch_name: str | None  # None if worktree not yet created
+    base_branch: str | None  # None if worktree not yet created
+    base_wp: str | None  # WP ID of base, or None if based on target branch
     dependencies: list[str] = field(default_factory=list)
     lane: str = "planned"
     worktree_exists: bool = False
@@ -53,7 +51,7 @@ class MissionTopology:
         """True if any WP bases on another WP rather than target branch."""
         return any(e.base_wp is not None for e in self.entries)
 
-    def get_entry(self, wp_id: str) -> Optional[WPTopologyEntry]:
+    def get_entry(self, wp_id: str) -> WPTopologyEntry | None:
         """Get entry for a specific WP."""
         for entry in self.entries:
             if entry.wp_id == wp_id:
@@ -72,7 +70,7 @@ def _resolve_base_wp(
     base_branch: str,
     mission_slug: str,
     wp_branches: dict[str, str],
-) -> Optional[str]:
+) -> str | None:
     """Determine if base_branch is another WP's branch.
 
     Args:

@@ -14,7 +14,7 @@ from pathlib import Path
 
 import typer
 from rich.console import Console
-from typing import Annotated, Optional
+from typing import Annotated
 
 from specify_cli.sync.events import (
     emit_history_added,
@@ -26,7 +26,6 @@ from specify_cli.status.transitions import resolve_lane_alias
 from specify_cli.status.store import read_events
 
 from specify_cli.core.dependency_graph import build_dependency_graph, get_dependents
-from specify_cli.core.mission_detection import detect_mission_directory
 from specify_cli.core.paths import locate_project_root, get_main_repo_root, is_worktree_context
 from specify_cli.core.paths import (
     get_mission_dir,
@@ -52,13 +51,11 @@ def resolve_primary_branch(repo_root: Path) -> str:
     from specify_cli.core.git_ops import resolve_primary_branch as _resolve
     return _resolve(repo_root)
 from specify_cli.tasks_support import (
-    LANES,
     append_activity_log,
     build_document,
     ensure_lane,
     extract_scalar,
     locate_work_package,
-    populate_review_feedback,
     set_scalar,
     split_frontmatter,
 )
@@ -153,7 +150,7 @@ def _find_mission_slug(explicit_mission: str | None = None) -> str:
         return require_explicit_mission(explicit_mission, command_hint="--mission-run <slug>")
     except ValueError as e:
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 def _output_result(json_mode: bool, data: dict, success_message: str | None = None):
@@ -839,15 +836,15 @@ def _list_wp_branch_kitty_specs_changes(worktree_path: Path, base_branch: str) -
 def move_task(
     task_id: Annotated[str, typer.Argument(help="Task ID (e.g., WP01)")],
     to: Annotated[str, typer.Option("--to", help="Target lane (planned/doing/for_review/approved/done)")],
-    mission_run: Annotated[Optional[str], typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
-    agent: Annotated[Optional[str], typer.Option("--agent", help="Agent name")] = None,
-    assignee: Annotated[Optional[str], typer.Option("--assignee", help="Assignee name (sets assignee when moving to doing)")] = None,
-    shell_pid: Annotated[Optional[str], typer.Option("--shell-pid", help="Shell PID")] = None,
-    note: Annotated[Optional[str], typer.Option("--note", help="History note")] = None,
-    review_feedback_file: Annotated[Optional[Path], typer.Option("--review-feedback-file", help="Path to review feedback file (required for --to planned, including with --force)")] = None,
-    approval_ref: Annotated[Optional[str], typer.Option("--approval-ref", help="Approval reference for approval/done transitions (e.g., PR#42)")] = None,
-    reviewer: Annotated[Optional[str], typer.Option("--reviewer", help="Reviewer name (auto-detected from git if omitted)")] = None,
-    done_override_reason: Annotated[Optional[str], typer.Option("--done-override-reason", help="Required when --to done and merge ancestry cannot be verified; recorded in history/event reason")] = None,
+    mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
+    agent: Annotated[str | None, typer.Option("--agent", help="Agent name")] = None,
+    assignee: Annotated[str | None, typer.Option("--assignee", help="Assignee name (sets assignee when moving to doing)")] = None,
+    shell_pid: Annotated[str | None, typer.Option("--shell-pid", help="Shell PID")] = None,
+    note: Annotated[str | None, typer.Option("--note", help="History note")] = None,
+    review_feedback_file: Annotated[Path | None, typer.Option("--review-feedback-file", help="Path to review feedback file (required for --to planned, including with --force)")] = None,
+    approval_ref: Annotated[str | None, typer.Option("--approval-ref", help="Approval reference for approval/done transitions (e.g., PR#42)")] = None,
+    reviewer: Annotated[str | None, typer.Option("--reviewer", help="Reviewer name (auto-detected from git if omitted)")] = None,
+    done_override_reason: Annotated[str | None, typer.Option("--done-override-reason", help="Required when --to done and merge ancestry cannot be verified; recorded in history/event reason")] = None,
     force: Annotated[bool, typer.Option("--force", help="Force move even with unchecked subtasks (does not bypass planned rollback feedback requirement)")] = False,
     auto_commit: Annotated[bool | None, typer.Option("--auto-commit/--no-auto-commit", help="Automatically commit WP file changes to target branch (default: from project config)")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
@@ -1246,15 +1243,15 @@ def move_task(
         except Exception:
             pass  # Don't block on error logging
         _output_error(json_output, str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command(name="mark-status")
 def mark_status(
     task_ids: Annotated[list[str], typer.Argument(help="Task ID(s) - space-separated (e.g., T001 T002 T003)")],
     status: Annotated[str, typer.Option("--status", help="Status: done/pending")],
-    mission_run: Annotated[Optional[str], typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
-    auto_commit: Annotated[Optional[bool], typer.Option("--auto-commit/--no-auto-commit", help="Automatically commit tasks.md changes to target branch (default: from project config)")] = None,
+    mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
+    auto_commit: Annotated[bool | None, typer.Option("--auto-commit/--no-auto-commit", help="Automatically commit tasks.md changes to target branch (default: from project config)")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
 ) -> None:
     """Update task checkbox status in tasks.md for one or more tasks.
@@ -1429,14 +1426,14 @@ def mark_status(
         except Exception:
             pass  # Don't block on error logging
         _output_error(json_output, str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command(name="list-tasks")
 def list_tasks(
-    lane: Annotated[Optional[str], typer.Option("--lane", help="Filter by lane")] = None,
-    mission: Annotated[Optional[str], typer.Option("--mission", help="Mission slug (required in multi-mission repos)")] = None,
-    mission_run: Annotated[Optional[str], typer.Option("--mission-run", hidden=True, help="[Deprecated] Use --mission")] = None,
+    lane: Annotated[str | None, typer.Option("--lane", help="Filter by lane")] = None,
+    mission: Annotated[str | None, typer.Option("--mission", help="Mission slug (required in multi-mission repos)")] = None,
+    mission_run: Annotated[str | None, typer.Option("--mission-run", hidden=True, help="[Deprecated] Use --mission")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
 ) -> None:
     """List tasks with optional lane filtering.
@@ -1517,16 +1514,16 @@ def list_tasks(
 
     except Exception as e:
         _output_error(json_output, str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command(name="add-history")
 def add_history(
     task_id: Annotated[str, typer.Argument(help="Task ID (e.g., WP01)")],
     note: Annotated[str, typer.Option("--note", help="History note")],
-    mission_run: Annotated[Optional[str], typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
-    agent: Annotated[Optional[str], typer.Option("--agent", help="Agent name")] = None,
-    shell_pid: Annotated[Optional[str], typer.Option("--shell-pid", help="Shell PID")] = None,
+    mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
+    agent: Annotated[str | None, typer.Option("--agent", help="Agent name")] = None,
+    shell_pid: Annotated[str | None, typer.Option("--shell-pid", help="Shell PID")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
 ) -> None:
     """Append history entry to task activity log.
@@ -1600,12 +1597,12 @@ def add_history(
         except Exception:
             pass  # Don't block on error logging
         _output_error(json_output, str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command(name="finalize-tasks")
 def finalize_tasks(
-    mission_run: Annotated[Optional[str], typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
+    mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
     validate_only: Annotated[bool, typer.Option("--validate-only", help="Validate without writing changes")] = False,
 ) -> None:
@@ -1743,7 +1740,7 @@ def finalize_tasks(
                 stack_trace=traceback.format_exc(),
             )
         _output_error(json_output, str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command(name="map-requirements")
@@ -1768,7 +1765,7 @@ def map_requirements(
         ),
     ] = False,
     mission_run: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)"),
     ] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
@@ -1835,7 +1832,7 @@ def map_requirements(
                 parsed_batch = json.loads(batch)
             except json.JSONDecodeError as exc:
                 _output_error(json_output, f"Invalid JSON in --batch: {exc}")
-                raise typer.Exit(1)
+                raise typer.Exit(1) from None
             if not isinstance(parsed_batch, dict):
                 _output_error(json_output, "--batch must be a JSON object {WP_ID: [refs]}")
                 raise typer.Exit(1)
@@ -2064,14 +2061,14 @@ def map_requirements(
         raise
     except Exception as exc:
         _output_error(json_output, str(exc))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command(name="validate-workflow")
 def validate_workflow(
     task_id: Annotated[str, typer.Argument(help="Task ID (e.g., WP01)")],
-    mission: Annotated[Optional[str], typer.Option("--mission", help="Mission slug (required in multi-mission repos)")] = None,
-    mission_run: Annotated[Optional[str], typer.Option("--mission-run", hidden=True, help="[Deprecated] Use --mission")] = None,
+    mission: Annotated[str | None, typer.Option("--mission", help="Mission slug (required in multi-mission repos)")] = None,
+    mission_run: Annotated[str | None, typer.Option("--mission-run", hidden=True, help="[Deprecated] Use --mission")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
 ) -> None:
     """Validate task metadata structure and workflow consistency.
@@ -2163,17 +2160,17 @@ def validate_workflow(
                 stack_trace=traceback.format_exc(),
             )
         _output_error(json_output, str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command(name="status")
 def status(
     mission: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--mission", help="Mission slug (e.g., 012-documentation-mission). Required in multi-mission repos.")
     ] = None,
     mission_run: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--mission-run", hidden=True, help="[Deprecated] Use --mission")
     ] = None,
     json_output: Annotated[
@@ -2492,14 +2489,14 @@ def status(
 
     except Exception as e:
         _output_error(json_output, str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
 
 @app.command(name="list-dependents")
 def list_dependents(
     wp_id: Annotated[str, typer.Argument(help="Work package ID (e.g., WP01)")],
-    mission: Annotated[Optional[str], typer.Option("--mission", help="Mission slug (required in multi-mission repos)")] = None,
-    mission_run: Annotated[Optional[str], typer.Option("--mission-run", hidden=True, help="[Deprecated] Use --mission")] = None,
+    mission: Annotated[str | None, typer.Option("--mission", help="Mission slug (required in multi-mission repos)")] = None,
+    mission_run: Annotated[str | None, typer.Option("--mission-run", hidden=True, help="[Deprecated] Use --mission")] = None,
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
 ) -> None:
     """Find all WPs that depend on a given WP (downstream dependents).
@@ -2562,4 +2559,4 @@ def list_dependents(
 
     except Exception as e:
         _output_error(json_output, str(e))
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None

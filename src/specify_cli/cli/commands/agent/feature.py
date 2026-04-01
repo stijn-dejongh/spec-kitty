@@ -83,7 +83,9 @@ def _sync_runtime_globals() -> None:
 def create_feature(
     feature_name: Annotated[str, typer.Argument(help="Mission slug (legacy compatibility wrapper)")],
     json_output: Annotated[bool, typer.Option("--json", help="Output JSON format")] = False,
-    target_branch: Annotated[str | None, typer.Option("--target-branch", help="Target branch (defaults to current branch)")] = None,
+    target_branch: Annotated[
+        str | None, typer.Option("--target-branch", help="Target branch (defaults to current branch)")
+    ] = None,
 ) -> None:
     """Legacy wrapper for mission creation using feature terminology."""
     _sync_create_globals()
@@ -159,7 +161,7 @@ def accept_feature(
     mission_slug = mission or feature
     try:
         top_level_accept(
-            feature=mission_slug,
+            mission=mission_slug,
             mode=mode,
             actor=None,
             test=[],
@@ -168,26 +170,6 @@ def accept_feature(
             no_commit=no_commit,
             allow_fail=False,
         )
-    except TypeError:
-        try:
-            _canonical_accept(
-                mission=mission_slug,
-                mode=mode,
-                actor=None,
-                test=[],
-                json_output=json_output,
-                lenient=lenient,
-                no_commit=no_commit,
-                allow_fail=False,
-            )
-        except typer.Exit:
-            raise
-        except Exception as exc:
-            if json_output:
-                _mission_run._emit_json({"error": str(exc), "success": False})
-            else:
-                console.print(f"[red]Error:[/red] {exc}")
-            raise typer.Exit(1) from exc
     except typer.Exit:
         raise
     except Exception as exc:
@@ -238,7 +220,8 @@ def merge_feature(
                 )
                 raise typer.Exit(1)
             console.print(
-                f"[yellow]Auto-retry:[/yellow] Not on mission branch ({current_branch}). Running merge in {retry_worktree.name}"
+                f"[yellow]Auto-retry:[/yellow] Not on mission branch ({current_branch}). "
+                f"Running merge in {retry_worktree.name}"
             )
             env = dict(os.environ)
             env["SPEC_KITTY_AUTORETRY"] = "1"
@@ -264,30 +247,12 @@ def merge_feature(
             delete_branch=not keep_branch,
             remove_worktree=not keep_worktree,
             push=push,
-            target_branch=target,
+            target_branch=target or "",
             dry_run=dry_run,
-            feature=mission_slug,
+            mission=mission_slug or "",
             resume=False,
             abort=False,
         )
-    except TypeError:
-        try:
-            _canonical_merge(
-                strategy=strategy,
-                delete_branch=not keep_branch,
-                remove_worktree=not keep_worktree,
-                push=push,
-                target_branch=target,
-                dry_run=dry_run,
-                mission=mission_slug,
-                resume=False,
-                abort=False,
-            )
-        except typer.Exit:
-            raise
-        except Exception as exc:
-            _mission_run._emit_json({"error": str(exc), "success": False})
-            raise typer.Exit(1) from exc
     except typer.Exit:
         raise
     except Exception as exc:

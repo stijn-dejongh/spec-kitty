@@ -40,7 +40,7 @@ def validate_tasks(
         repo_root = find_repo_root()
     except TaskCliError as exc:
         console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     project_root = get_project_root_or_exit(repo_root)
     check_version_compatibility(project_root, "validate-tasks")
@@ -97,7 +97,7 @@ def validate_tasks(
         mission_slug = require_explicit_mission(mission, command_hint="--mission <slug>")
     except ValueError as exc:
         console.print(f"[red]Error:[/red] {exc}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     mission_dir = resolve_worktree_aware_mission_dir(repo_root, mission_slug, Path.cwd(), console)
 
