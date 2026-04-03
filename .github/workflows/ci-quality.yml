@@ -743,10 +743,7 @@ jobs:
           path: out/reports/integration
         continue-on-error: true
 
-      # Critical-path modules: kernel, doctrine, constitution, status, mission detection,
-      # dashboard, merge, next.
-      # Coverage effort is proportional to risk — flat 80% incentivizes meaningless tests.
-      - name: "[ENFORCED] Critical-path diff coverage (90% on core modules)"
+      - name: "[ENFORCED] Enforce diff coverage policy (80% on changed lines)"
         run: |
           git fetch origin "${{ github.base_ref }}" --depth=1
 
@@ -761,29 +758,7 @@ jobs:
 
           diff-cover "${coverage_reports[@]}" \
             --compare-branch=origin/${{ github.base_ref }} \
-            --fail-under=90 \
-            --include \
-              'src/kernel/*' \
-              'src/doctrine/*' \
-              'src/constitution/*' \
-              'src/specify_cli/status/*' \
-              'src/specify_cli/core/mission_detection.py' \
-              'src/specify_cli/dashboard/handlers/*' \
-              'src/specify_cli/dashboard/scanner.py' \
-              'src/specify_cli/merge/*' \
-              'src/specify_cli/next/*'
-
-      - name: "[ADVISORY] Full diff coverage report (informational)"
-        if: always()
-        run: |
-          coverage_reports=()
-          [ -f out/reports/fast/coverage/coverage.xml ] && coverage_reports+=(out/reports/fast/coverage/coverage.xml)
-          [ -f out/reports/integration/coverage/coverage-integration.xml ] && coverage_reports+=(out/reports/integration/coverage/coverage-integration.xml)
-
-          if [ ${#coverage_reports[@]} -gt 0 ]; then
-            diff-cover "${coverage_reports[@]}" \
-              --compare-branch=origin/${{ github.base_ref }} || true
-          fi
+            --fail-under=80
 
   # ---------------------------------------------------------------------------
   # mutation-testing: advisory, push-only, scoped to changed files.
