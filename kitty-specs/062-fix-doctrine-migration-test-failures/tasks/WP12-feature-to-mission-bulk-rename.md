@@ -1,7 +1,7 @@
 ---
 work_package_id: WP12
 title: Feature-to-Mission Bulk Rename
-dependencies: [WP11]
+dependencies: "[]"
 requirement_refs:
 - FR-015
 planning_base_branch: feature/agent-profile-implementation-rebased
@@ -140,3 +140,5 @@ task_type: implement
 ## Activity Log
 
 - 2026-04-03T20:00:00Z -- human -- WP created from WP08 review follow-up item 3.
+- 2026-04-03T20:02:14Z – unknown – Moved to in_progress
+- 2026-04-03T20:32:27Z – unknown – Done override: All subtasks T043-T047 complete, 1686 tests pass, merged

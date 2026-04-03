@@ -1,6 +1,6 @@
-"""Bootstrap canonical status state for work packages in a feature.
+"""Bootstrap canonical status state for work packages in a mission.
 
-Scans WP files in a feature directory, checks the canonical event log
+Scans WP files in a mission directory, checks the canonical event log
 for existing state, and emits initial ``planned`` events for any WP
 that lacks one.  After seeding, materializes ``status.json`` so the
 snapshot is immediately consistent.
@@ -83,14 +83,14 @@ def _classify_wp_ids(
 
 
 def bootstrap_canonical_state(
-    feature_dir: Path,
-    feature_slug: str,
+    mission_dir: Path,
+    mission_slug: str,
     *,
     dry_run: bool = False,
 ) -> BootstrapResult:
-    """Ensure every WP in a feature has canonical status state.
+    """Ensure every WP in a mission has canonical status state.
 
-    Scans ``feature_dir/tasks/`` for ``WP*.md`` files, reads each
+    Scans ``mission_dir/tasks/`` for ``WP*.md`` files, reads each
     file's frontmatter to extract ``work_package_id``, then checks
     the canonical event log for existing events.  Uninitialized WPs
     receive a ``planned`` event via :func:`emit_status_transition`.
@@ -99,8 +99,8 @@ def bootstrap_canonical_state(
     :func:`materialize` to write a fresh ``status.json``.
 
     Args:
-        feature_dir: Path to the kitty-specs feature directory.
-        feature_slug: Feature identifier (e.g. ``"060-feature-name"``).
+        mission_dir: Path to the kitty-specs mission directory.
+        mission_slug: Mission identifier (e.g. ``"060-mission-name"``).
         dry_run: If ``True``, report what would happen without mutating
             any files.
 
@@ -109,7 +109,7 @@ def bootstrap_canonical_state(
     """
     result = BootstrapResult()
 
-    tasks_dir = feature_dir / "tasks"
+    tasks_dir = mission_dir / "tasks"
     if not tasks_dir.is_dir():
         return result
 
@@ -120,7 +120,7 @@ def bootstrap_canonical_state(
     result.total_wps = len(wp_ids)
 
     # Read existing events and build set of WP IDs that already have state
-    existing_events = read_events(feature_dir)
+    existing_events = read_events(mission_dir)
     initialized_wp_ids: set[str] = {e.wp_id for e in existing_events}
 
     wps_to_seed = _classify_wp_ids(wp_ids, initialized_wp_ids, result)
@@ -134,8 +134,8 @@ def bootstrap_canonical_state(
     # Emit planned events for uninitialized WPs
     for wp_id in wps_to_seed:
         emit_status_transition(
-            mission_dir=feature_dir,
-            mission_slug=feature_slug,
+            mission_dir=mission_dir,
+            mission_slug=mission_slug,
             wp_id=wp_id,
             to_lane="planned",
             actor="finalize-tasks",
@@ -150,6 +150,6 @@ def bootstrap_canonical_state(
     # we call it once more to guarantee the final snapshot is coherent
     # across all newly seeded WPs.
     if wps_to_seed:
-        materialize(feature_dir)
+        materialize(mission_dir)
 
     return result

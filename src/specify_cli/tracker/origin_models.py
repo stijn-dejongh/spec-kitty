@@ -52,7 +52,7 @@ class MissionFromTicketResult:
     result dict make immutability impractical.
     """
 
-    feature_dir: Path
-    feature_slug: str
+    mission_dir: Path
+    mission_slug: str
     origin_ticket: dict[str, str]
     event_emitted: bool

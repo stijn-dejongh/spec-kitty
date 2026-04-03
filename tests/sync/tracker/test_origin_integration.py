@@ -108,10 +108,10 @@ def repo_with_tracker(tmp_path: Path) -> Path:
 
 
 @pytest.fixture()
-def feature_dir_with_meta(repo_with_tracker: Path) -> Path:
-    """Create a feature dir with valid meta.json."""
-    feature_dir = repo_with_tracker / "kitty-specs" / "061-test-feature"
-    feature_dir.mkdir(parents=True)
+def mission_dir_with_meta(repo_with_tracker: Path) -> Path:
+    """Create a mission dir with valid meta.json."""
+    mission_dir = repo_with_tracker / "kitty-specs" / "061-test-feature"
+    mission_dir.mkdir(parents=True)
     meta: dict[str, Any] = {
         "mission_number": "061",
         "slug": "test-feature",
@@ -121,11 +121,11 @@ def feature_dir_with_meta(repo_with_tracker: Path) -> Path:
         "target_branch": "main",
         "created_at": "2026-04-01T00:00:00+00:00",
     }
-    (feature_dir / "meta.json").write_text(
+    (mission_dir / "meta.json").write_text(
         json.dumps(meta, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    return feature_dir
+    return mission_dir
 
 
 @pytest.fixture()
@@ -194,7 +194,7 @@ class TestSearchConfirmBindFlow:
         self,
         mock_http_cls: MagicMock,
         repo_with_tracker: Path,
-        feature_dir_with_meta: Path,
+        mission_dir_with_meta: Path,
         mock_client: SaaSTrackerClient,
     ) -> None:
         """Full happy path: search -> pick candidate -> bind -> verify meta."""
@@ -243,7 +243,7 @@ class TestSearchConfirmBindFlow:
             mock_get_emitter.return_value = mock_emitter
 
             meta, emitted = bind_mission_origin(
-                feature_dir_with_meta,
+                mission_dir_with_meta,
                 candidate,
                 "linear",
                 "linear_team",
@@ -265,7 +265,7 @@ class TestSearchConfirmBindFlow:
 
         # Step 4: Verify meta.json on disk matches
         disk_meta = json.loads(
-            (feature_dir_with_meta / "meta.json").read_text(encoding="utf-8"),
+            (mission_dir_with_meta / "meta.json").read_text(encoding="utf-8"),
         )
         assert disk_meta["origin_ticket"] == ot
 
@@ -288,7 +288,7 @@ class TestStartMissionFromTicket:
         mock_http_cls: MagicMock,
         mock_create: MagicMock,
         repo_with_tracker: Path,
-        feature_dir_with_meta: Path,
+        mission_dir_with_meta: Path,
         mock_client: SaaSTrackerClient,
     ) -> None:
         """Mock create_mission_core + httpx -> real bind -> result."""
@@ -296,7 +296,7 @@ class TestStartMissionFromTicket:
 
         # create_mission_core returns a result pointing at our feature dir
         mock_create.return_value = MagicMock(
-            mission_dir=feature_dir_with_meta,
+            mission_dir=mission_dir_with_meta,
             mission_slug="061-test-feature",
         )
 
@@ -322,14 +322,14 @@ class TestStartMissionFromTicket:
             )
 
         assert isinstance(result, MissionFromTicketResult)
-        assert result.feature_slug == "061-test-feature"
+        assert result.mission_slug == "061-test-feature"
         assert result.event_emitted is True
         assert result.origin_ticket["provider"] == "linear"
         assert result.origin_ticket["external_issue_key"] == "WEB-123"
 
         # Verify meta.json on disk has origin_ticket
         disk_meta = json.loads(
-            (feature_dir_with_meta / "meta.json").read_text(encoding="utf-8"),
+            (mission_dir_with_meta / "meta.json").read_text(encoding="utf-8"),
         )
         assert "origin_ticket" in disk_meta
 
@@ -381,7 +381,7 @@ class TestErrorPropagation:
     def test_409_bind_propagates_as_origin_error(
         self,
         mock_http_cls: MagicMock,
-        feature_dir_with_meta: Path,
+        mission_dir_with_meta: Path,
         mock_client: SaaSTrackerClient,
     ) -> None:
         """HTTP 409 -> SaaSTrackerClientError -> OriginBindingError with conflict message."""
@@ -401,7 +401,7 @@ class TestErrorPropagation:
             match="already bound to a different issue",
         ):
             bind_mission_origin(
-                feature_dir_with_meta,
+                mission_dir_with_meta,
                 candidate,
                 "linear",
                 "linear_team",
@@ -467,7 +467,7 @@ class TestSaaSFirstWriteOrdering:
     def test_500_does_not_write_local_meta(
         self,
         mock_http_cls: MagicMock,
-        feature_dir_with_meta: Path,
+        mission_dir_with_meta: Path,
         mock_client: SaaSTrackerClient,
     ) -> None:
         """HTTP 500 from SaaS -> meta.json must NOT have origin_ticket."""
@@ -481,7 +481,7 @@ class TestSaaSFirstWriteOrdering:
 
         with pytest.raises(OriginBindingError):
             bind_mission_origin(
-                feature_dir_with_meta,
+                mission_dir_with_meta,
                 candidate,
                 "linear",
                 "linear_team",
@@ -491,7 +491,7 @@ class TestSaaSFirstWriteOrdering:
 
         # THE INVARIANT: meta.json must NOT have origin_ticket
         meta = json.loads(
-            (feature_dir_with_meta / "meta.json").read_text(encoding="utf-8"),
+            (mission_dir_with_meta / "meta.json").read_text(encoding="utf-8"),
         )
         assert "origin_ticket" not in meta
 
@@ -499,7 +499,7 @@ class TestSaaSFirstWriteOrdering:
     def test_409_does_not_write_local_meta(
         self,
         mock_http_cls: MagicMock,
-        feature_dir_with_meta: Path,
+        mission_dir_with_meta: Path,
         mock_client: SaaSTrackerClient,
     ) -> None:
         """HTTP 409 conflict -> meta.json must NOT have origin_ticket."""
@@ -513,7 +513,7 @@ class TestSaaSFirstWriteOrdering:
 
         with pytest.raises(OriginBindingError):
             bind_mission_origin(
-                feature_dir_with_meta,
+                mission_dir_with_meta,
                 candidate,
                 "linear",
                 "linear_team",
@@ -522,7 +522,7 @@ class TestSaaSFirstWriteOrdering:
             )
 
         meta = json.loads(
-            (feature_dir_with_meta / "meta.json").read_text(encoding="utf-8"),
+            (mission_dir_with_meta / "meta.json").read_text(encoding="utf-8"),
         )
         assert "origin_ticket" not in meta
 
@@ -530,7 +530,7 @@ class TestSaaSFirstWriteOrdering:
     def test_401_does_not_write_local_meta(
         self,
         mock_http_cls: MagicMock,
-        feature_dir_with_meta: Path,
+        mission_dir_with_meta: Path,
         mock_client: SaaSTrackerClient,
     ) -> None:
         """HTTP 401 expired session -> meta.json must NOT have origin_ticket."""
@@ -548,7 +548,7 @@ class TestSaaSFirstWriteOrdering:
             pytest.raises(OriginBindingError),
         ):
             bind_mission_origin(
-                feature_dir_with_meta,
+                mission_dir_with_meta,
                 candidate,
                 "linear",
                 "linear_team",
@@ -557,7 +557,7 @@ class TestSaaSFirstWriteOrdering:
             )
 
         meta = json.loads(
-            (feature_dir_with_meta / "meta.json").read_text(encoding="utf-8"),
+            (mission_dir_with_meta / "meta.json").read_text(encoding="utf-8"),
         )
         assert "origin_ticket" not in meta
 
@@ -565,7 +565,7 @@ class TestSaaSFirstWriteOrdering:
     def test_403_does_not_write_local_meta(
         self,
         mock_http_cls: MagicMock,
-        feature_dir_with_meta: Path,
+        mission_dir_with_meta: Path,
         mock_client: SaaSTrackerClient,
     ) -> None:
         """HTTP 403 forbidden -> meta.json must NOT have origin_ticket."""
@@ -579,7 +579,7 @@ class TestSaaSFirstWriteOrdering:
 
         with pytest.raises(OriginBindingError):
             bind_mission_origin(
-                feature_dir_with_meta,
+                mission_dir_with_meta,
                 candidate,
                 "linear",
                 "linear_team",
@@ -588,7 +588,7 @@ class TestSaaSFirstWriteOrdering:
             )
 
         meta = json.loads(
-            (feature_dir_with_meta / "meta.json").read_text(encoding="utf-8"),
+            (mission_dir_with_meta / "meta.json").read_text(encoding="utf-8"),
         )
         assert "origin_ticket" not in meta
 
@@ -596,7 +596,7 @@ class TestSaaSFirstWriteOrdering:
     def test_422_does_not_write_local_meta(
         self,
         mock_http_cls: MagicMock,
-        feature_dir_with_meta: Path,
+        mission_dir_with_meta: Path,
         mock_client: SaaSTrackerClient,
     ) -> None:
         """HTTP 422 validation error -> meta.json must NOT have origin_ticket."""
@@ -610,7 +610,7 @@ class TestSaaSFirstWriteOrdering:
 
         with pytest.raises(OriginBindingError):
             bind_mission_origin(
-                feature_dir_with_meta,
+                mission_dir_with_meta,
                 candidate,
                 "linear",
                 "linear_team",
@@ -619,7 +619,7 @@ class TestSaaSFirstWriteOrdering:
             )
 
         meta = json.loads(
-            (feature_dir_with_meta / "meta.json").read_text(encoding="utf-8"),
+            (mission_dir_with_meta / "meta.json").read_text(encoding="utf-8"),
         )
         assert "origin_ticket" not in meta
 
@@ -627,11 +627,11 @@ class TestSaaSFirstWriteOrdering:
     def test_meta_unchanged_byte_for_byte(
         self,
         mock_http_cls: MagicMock,
-        feature_dir_with_meta: Path,
+        mission_dir_with_meta: Path,
         mock_client: SaaSTrackerClient,
     ) -> None:
         """On SaaS failure, meta.json content is byte-for-byte identical."""
-        meta_path = feature_dir_with_meta / "meta.json"
+        meta_path = mission_dir_with_meta / "meta.json"
         original_bytes = meta_path.read_bytes()
 
         mock_http = _setup_mock_http(mock_http_cls)
@@ -644,7 +644,7 @@ class TestSaaSFirstWriteOrdering:
 
         with pytest.raises(OriginBindingError):
             bind_mission_origin(
-                feature_dir_with_meta,
+                mission_dir_with_meta,
                 candidate,
                 "linear",
                 "linear_team",
@@ -667,7 +667,7 @@ class TestOfflineEventQueuing:
     def test_event_queued_when_no_websocket(
         self,
         mock_http_cls: MagicMock,
-        feature_dir_with_meta: Path,
+        mission_dir_with_meta: Path,
         mock_client: SaaSTrackerClient,
         tmp_path: Path,
     ) -> None:
@@ -695,7 +695,7 @@ class TestOfflineEventQueuing:
 
         with patch("specify_cli.sync.events.get_emitter", return_value=emitter):
             bind_mission_origin(
-                feature_dir_with_meta,
+                mission_dir_with_meta,
                 candidate,
                 "linear",
                 "linear_team",

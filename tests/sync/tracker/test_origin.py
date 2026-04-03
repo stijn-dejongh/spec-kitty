@@ -72,32 +72,32 @@ def _setup_repo(
     return tmp_path
 
 
-def _setup_feature(
+def _setup_mission(
     tmp_path: Path,
     *,
-    feature_slug: str = "061-add-clerk-auth",
+    mission_slug: str = "061-add-clerk-auth",
     provider: str = "linear",
     project_slug: str = "acme-web",
 ) -> Path:
-    """Create a repo with a feature directory containing meta.json."""
+    """Create a repo with a mission directory containing meta.json."""
     repo_root = _setup_repo(tmp_path, provider=provider, project_slug=project_slug)
-    feature_dir = repo_root / "kitty-specs" / feature_slug
-    feature_dir.mkdir(parents=True, exist_ok=True)
+    mission_dir = repo_root / "kitty-specs" / mission_slug
+    mission_dir.mkdir(parents=True, exist_ok=True)
 
     meta = {
         "mission_number": "061",
-        "slug": feature_slug,
-        "mission_slug": feature_slug,
+        "slug": mission_slug,
+        "mission_slug": mission_slug,
         "friendly_name": "add clerk auth",
         "mission": "software-dev",
         "target_branch": "main",
         "created_at": "2026-04-01T00:00:00+00:00",
     }
-    (feature_dir / "meta.json").write_text(
+    (mission_dir / "meta.json").write_text(
         json.dumps(meta, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    return feature_dir
+    return mission_dir
 
 
 def _make_search_response(
@@ -297,7 +297,7 @@ class TestSearchOriginCandidates:
 class TestBindMissionOrigin:
     def test_happy_path(self, tmp_path: Path) -> None:
         """SaaS succeeds -> meta.json updated -> returns meta."""
-        feature_dir = _setup_feature(tmp_path)
+        mission_dir = _setup_mission(tmp_path)
         candidate = _make_candidate()
         client = MagicMock()
         client.bind_mission_origin.return_value = {
@@ -310,7 +310,7 @@ class TestBindMissionOrigin:
             mock_get_emitter.return_value = mock_emitter
 
             result, emitted = bind_mission_origin(
-                feature_dir,
+                mission_dir,
                 candidate,
                 "linear",
                 "linear_team",
@@ -336,18 +336,18 @@ class TestBindMissionOrigin:
         tmp_path: Path,
     ) -> None:
         """MOST CRITICAL TEST: SaaS fails -> meta.json NOT written."""
-        feature_dir = _setup_feature(tmp_path)
+        mission_dir = _setup_mission(tmp_path)
         candidate = _make_candidate()
         client = MagicMock()
         client.bind_mission_origin.side_effect = SaaSTrackerClientError("409 Conflict: different origin already bound")
 
         # Read meta before the call
-        meta_before = json.loads((feature_dir / "meta.json").read_text(encoding="utf-8"))
+        meta_before = json.loads((mission_dir / "meta.json").read_text(encoding="utf-8"))
         assert "origin_ticket" not in meta_before
 
         with pytest.raises(OriginBindingError, match="409 Conflict"):
             bind_mission_origin(
-                feature_dir,
+                mission_dir,
                 candidate,
                 "linear",
                 "linear_team",
@@ -356,7 +356,7 @@ class TestBindMissionOrigin:
             )
 
         # Verify meta.json was NOT modified
-        meta_after = json.loads((feature_dir / "meta.json").read_text(encoding="utf-8"))
+        meta_after = json.loads((mission_dir / "meta.json").read_text(encoding="utf-8"))
         assert "origin_ticket" not in meta_after
 
     def test_saas_first_ordering_set_origin_ticket_not_called(
@@ -364,7 +364,7 @@ class TestBindMissionOrigin:
         tmp_path: Path,
     ) -> None:
         """Verify set_origin_ticket is NOT called when SaaS fails."""
-        feature_dir = _setup_feature(tmp_path)
+        mission_dir = _setup_mission(tmp_path)
         candidate = _make_candidate()
         client = MagicMock()
         client.bind_mission_origin.side_effect = SaaSTrackerClientError("fail")
@@ -374,7 +374,7 @@ class TestBindMissionOrigin:
             pytest.raises(OriginBindingError),
         ):
             bind_mission_origin(
-                feature_dir,
+                mission_dir,
                 candidate,
                 "linear",
                 "linear_team",
@@ -386,7 +386,7 @@ class TestBindMissionOrigin:
 
     def test_same_origin_noop(self, tmp_path: Path) -> None:
         """Same-origin re-bind: SaaS returns success, local overwrites."""
-        feature_dir = _setup_feature(tmp_path)
+        mission_dir = _setup_mission(tmp_path)
         candidate = _make_candidate()
         client = MagicMock()
         client.bind_mission_origin.return_value = {
@@ -396,7 +396,7 @@ class TestBindMissionOrigin:
 
         with patch("specify_cli.sync.events.get_emitter"):
             result1, _ = bind_mission_origin(
-                feature_dir,
+                mission_dir,
                 candidate,
                 "linear",
                 "linear_team",
@@ -404,7 +404,7 @@ class TestBindMissionOrigin:
                 client=client,
             )
             result2, _ = bind_mission_origin(
-                feature_dir,
+                mission_dir,
                 candidate,
                 "linear",
                 "linear_team",
@@ -417,7 +417,7 @@ class TestBindMissionOrigin:
 
     def test_different_origin_409_raises(self, tmp_path: Path) -> None:
         """Different-origin 409: SaaS raises -> OriginBindingError."""
-        feature_dir = _setup_feature(tmp_path)
+        mission_dir = _setup_mission(tmp_path)
         candidate = _make_candidate()
         client = MagicMock()
         # First bind succeeds
@@ -427,7 +427,7 @@ class TestBindMissionOrigin:
 
         with patch("specify_cli.sync.events.get_emitter"):
             bind_mission_origin(
-                feature_dir,
+                mission_dir,
                 candidate,
                 "linear",
                 "linear_team",
@@ -443,7 +443,7 @@ class TestBindMissionOrigin:
 
         with pytest.raises(OriginBindingError, match="409"):
             bind_mission_origin(
-                feature_dir,
+                mission_dir,
                 different_candidate,
                 "linear",
                 "linear_team",
@@ -453,14 +453,14 @@ class TestBindMissionOrigin:
 
     def test_origin_ticket_has_all_required_keys(self, tmp_path: Path) -> None:
         """origin_ticket block has all 7 required keys."""
-        feature_dir = _setup_feature(tmp_path)
+        mission_dir = _setup_mission(tmp_path)
         candidate = _make_candidate()
         client = MagicMock()
         client.bind_mission_origin.return_value = {"origin_link_id": "x"}
 
         with patch("specify_cli.sync.events.get_emitter"):
             result, _ = bind_mission_origin(
-                feature_dir,
+                mission_dir,
                 candidate,
                 "linear",
                 "linear_team",
@@ -482,7 +482,7 @@ class TestBindMissionOrigin:
 
     def test_event_emitted_with_correct_args(self, tmp_path: Path) -> None:
         """Verify emit_mission_origin_bound called with correct args."""
-        feature_dir = _setup_feature(tmp_path)
+        mission_dir = _setup_mission(tmp_path)
         candidate = _make_candidate()
         client = MagicMock()
         client.bind_mission_origin.return_value = {"origin_link_id": "x"}
@@ -492,7 +492,7 @@ class TestBindMissionOrigin:
             mock_get_emitter.return_value = mock_emitter
 
             bind_mission_origin(
-                feature_dir,
+                mission_dir,
                 candidate,
                 "linear",
                 "linear_team",
@@ -511,13 +511,13 @@ class TestBindMissionOrigin:
 
     def test_missing_meta_json_raises(self, tmp_path: Path) -> None:
         """No meta.json -> OriginBindingError."""
-        feature_dir = tmp_path / "kitty-specs" / "061-missing"
-        feature_dir.mkdir(parents=True, exist_ok=True)
+        mission_dir = tmp_path / "kitty-specs" / "061-missing"
+        mission_dir.mkdir(parents=True, exist_ok=True)
         candidate = _make_candidate()
 
         with pytest.raises(OriginBindingError, match="No meta.json"):
             bind_mission_origin(
-                feature_dir,
+                mission_dir,
                 candidate,
                 "linear",
                 "linear_team",
@@ -538,11 +538,11 @@ class TestStartMissionFromTicket:
         tmp_path: Path,
     ) -> None:
         """Full flow: creation + bind -> MissionFromTicketResult."""
-        feature_dir = _setup_feature(tmp_path)
+        mission_dir = _setup_mission(tmp_path)
         candidate = _make_candidate()
 
         mock_create.return_value = MagicMock(
-            mission_dir=feature_dir,
+            mission_dir=mission_dir,
             mission_slug="061-add-clerk-auth",
         )
 
@@ -564,8 +564,8 @@ class TestStartMissionFromTicket:
             )
 
         assert isinstance(result, MissionFromTicketResult)
-        assert result.feature_dir == feature_dir
-        assert result.feature_slug == "061-add-clerk-auth"
+        assert result.mission_dir == mission_dir
+        assert result.mission_slug == "061-add-clerk-auth"
         assert result.origin_ticket["provider"] == "linear"
         assert result.event_emitted is True
 
@@ -604,10 +604,10 @@ class TestStartMissionFromTicket:
         tmp_path: Path,
     ) -> None:
         """'WEB-123' -> feature slug contains 'web-123'."""
-        feature_dir = _setup_feature(tmp_path)
+        mission_dir = _setup_mission(tmp_path)
 
         mock_create.return_value = MagicMock(
-            mission_dir=feature_dir,
+            mission_dir=mission_dir,
             mission_slug="061-add-clerk-auth",
         )
 
@@ -637,13 +637,13 @@ class TestStartMissionFromTicket:
         tmp_path: Path,
     ) -> None:
         """Bind failure after creation: OriginBindingError propagates."""
-        feature_dir = _setup_feature(
+        mission_dir = _setup_mission(
             tmp_path,
-            feature_slug="061-web-123",
+            mission_slug="061-web-123",
         )
 
         mock_create.return_value = MagicMock(
-            mission_dir=feature_dir,
+            mission_dir=mission_dir,
             mission_slug="061-web-123",
         )
         candidate = _make_candidate()

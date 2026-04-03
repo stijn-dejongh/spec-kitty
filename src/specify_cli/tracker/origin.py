@@ -55,7 +55,7 @@ _SLUG_SANITIZE_RE = re.compile(r"[^a-z0-9]+")
 
 
 def _derive_slug_from_ticket(candidate: OriginCandidate) -> str:
-    """Derive a kebab-case feature slug from the ticket key.
+    """Derive a kebab-case mission slug from the ticket key.
 
     Rules (per research R5):
     - Use ``external_issue_key`` lowercased as the slug base
@@ -232,7 +232,7 @@ def bind_mission_origin(
         actual_client.bind_mission_origin(
             provider,
             project_slug,
-            feature_slug=mission_slug,
+            mission_slug=mission_slug,
             external_issue_id=candidate.external_issue_id,
             external_issue_key=candidate.external_issue_key,
             external_issue_url=candidate.url,
@@ -359,8 +359,8 @@ def start_mission_from_ticket(
         raise
 
     return MissionFromTicketResult(
-        feature_dir=creation_result.mission_dir,
-        feature_slug=creation_result.mission_slug,
+        mission_dir=creation_result.mission_dir,
+        mission_slug=creation_result.mission_slug,
         origin_ticket=origin_ticket,
         event_emitted=event_emitted,
     )

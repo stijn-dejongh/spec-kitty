@@ -209,7 +209,7 @@ def get_next_mission_number(repo_root: Path) -> int:
     return max_number + 1
 
 
-def create_feature_worktree(
+def create_mission_worktree(
     repo_root: Path,
     mission_slug: str,
     mission_number: int | None = None
@@ -327,13 +327,13 @@ def create_feature_worktree(
     return (worktree_path, mission_dir)
 
 
-def create_mission_worktree(
+def create_feature_worktree(
     repo_root: Path,
     mission_slug: str,
     mission_number: int | None = None,
 ) -> tuple[Path, Path]:
-    """Compatibility alias for callers updated from feature to mission wording."""
-    return create_feature_worktree(
+    """Backward-compat alias for create_mission_worktree."""
+    return create_mission_worktree(
         repo_root,
         mission_slug,
         mission_number=mission_number,
@@ -356,7 +356,7 @@ def setup_mission_directory(
     - tasks/README.md
 
     Args:
-        mission_dir: Feature directory path
+        mission_dir: Mission directory path
         worktree_path: Worktree root path
         repo_root: Main repository root path
         create_symlinks: If True, create symlinks; else copy files (Windows)
@@ -535,7 +535,7 @@ def validate_mission_structure(
     - Optional: tasks.md (if check_tasks=True)
 
     Args:
-        mission_dir: Feature directory path
+        mission_dir: Mission directory path
         check_tasks: If True, validate tasks.md and task files exist
 
     Returns:

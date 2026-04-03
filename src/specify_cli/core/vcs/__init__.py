@@ -16,8 +16,8 @@ Usage:
     )
 
     # Get appropriate VCS implementation
-    vcs = get_vcs(feature_path)  # Auto-detect
-    vcs = get_vcs(feature_path, backend=VCSBackend.GIT)  # Explicit git
+    vcs = get_vcs(mission_path)  # Auto-detect
+    vcs = get_vcs(mission_path, backend=VCSBackend.GIT)  # Explicit git
 """
 
 from __future__ import annotations
@@ -34,6 +34,7 @@ from .types import (
     ChangeInfo,
     ConflictInfo,
     FeatureVCSConfig,
+    MissionVCSConfig,
     OperationInfo,
     ProjectVCSConfig,
     SyncResult,
@@ -83,6 +84,7 @@ __all__ = [
     "OperationInfo",
     "WorkspaceCreateResult",
     "ProjectVCSConfig",
+    "MissionVCSConfig",
     "FeatureVCSConfig",
     # Capability constants
     "GIT_CAPABILITIES",

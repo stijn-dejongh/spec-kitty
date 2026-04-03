@@ -158,7 +158,7 @@ class TestFullMigration:
         report = run_migration(root)
 
         assert report.success, f"Migration failed: {report.errors}"
-        assert report.features_migrated == 2
+        assert report.missions_migrated == 2
         assert not report.failed_step
 
     def test_schema_version_updated(self, tmp_path: Path) -> None:
@@ -389,8 +389,8 @@ class TestPerformance:
 
 
 class TestMigrationReportCounters:
-    def test_features_migrated_matches_feature_count(self, tmp_path: Path) -> None:
-        """features_migrated in report matches the number of features."""
+    def test_missions_migrated_matches_mission_count(self, tmp_path: Path) -> None:
+        """missions_migrated in report matches the number of missions."""
         root = _make_legacy_project(
             tmp_path,
             features=[
@@ -402,7 +402,7 @@ class TestMigrationReportCounters:
         report = run_migration(root)
 
         assert report.success, report.errors
-        assert report.features_migrated == 2
+        assert report.missions_migrated == 2
 
     def test_wps_backfilled_is_nonzero(self, tmp_path: Path) -> None:
         """wps_backfilled reflects WPs that received IDs."""

@@ -80,7 +80,7 @@ class M300CanonicalContext(BaseMigration):
 
         if report.success:
             summary = (
-                f"Migrated {report.features_migrated} feature(s), "
+                f"Migrated {report.missions_migrated} mission(s), "
                 f"{report.wps_backfilled} WPs backfilled, "
                 f"{report.events_generated} events generated"
             )

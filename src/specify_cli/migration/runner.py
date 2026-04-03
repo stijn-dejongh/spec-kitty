@@ -48,7 +48,7 @@ class MigrationReport:
     """Aggregate outcome of the full one-shot migration."""
 
     success: bool = False
-    features_migrated: int = 0
+    missions_migrated: int = 0
     wps_backfilled: int = 0
     events_generated: int = 0
     files_moved: list[str] = field(default_factory=list)
@@ -168,20 +168,20 @@ def _cleanup_backup(repo_root: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Helper: discover feature directories
+# Helper: discover mission directories
 # ---------------------------------------------------------------------------
 
 
-def _discover_features(repo_root: Path) -> list[Path]:
-    """Return sorted list of feature directories under kitty-specs/."""
+def _discover_missions(repo_root: Path) -> list[Path]:
+    """Return sorted list of mission directories under kitty-specs/."""
     kitty_specs = repo_root / "kitty-specs"
     if not kitty_specs.is_dir():
         return []
-    features = [
+    missions = [
         d for d in sorted(kitty_specs.iterdir())
         if d.is_dir() and (d / "meta.json").exists()
     ]
-    return features
+    return missions
 
 
 # ---------------------------------------------------------------------------
@@ -434,11 +434,11 @@ def run_migration(repo_root: Path, dry_run: bool = False) -> MigrationReport:  #
 
     if dry_run:
         # Dry-run: just report what would be done
-        features = _discover_features(repo_root)
-        report.features_migrated = len(features)
+        missions = _discover_missions(repo_root)
+        report.missions_migrated = len(missions)
         report.success = True
         report.warnings.append(
-            f"DRY RUN: would migrate {len(features)} feature(s) to schema v3"
+            f"DRY RUN: would migrate {len(missions)} mission(s) to schema v3"
         )
         return report
 
@@ -468,10 +468,10 @@ def run_migration(repo_root: Path, dry_run: bool = False) -> MigrationReport:  #
     except Exception as exc:
         return _fail("identity_backfill", f"mission ID backfill failed: {exc}")
 
-    # WP IDs for each feature
+    # WP IDs for each mission
     all_wp_id_maps: dict[str, dict[str, str]] = {}
     total_wps = 0
-    for mission_dir in _discover_features(repo_root):
+    for mission_dir in _discover_missions(repo_root):
         slug = mission_dir.name
         mid = mission_id_map.get(slug, "")
         try:
@@ -488,7 +488,7 @@ def run_migration(repo_root: Path, dry_run: bool = False) -> MigrationReport:  #
     # Step 3: Ownership backfill
     # ------------------------------------------------------------------
     logger.info("Migration step 3/10: Ownership backfill")
-    for mission_dir in _discover_features(repo_root):
+    for mission_dir in _discover_missions(repo_root):
         slug = mission_dir.name
         try:
             backfill_ownership(mission_dir, slug)
@@ -500,7 +500,7 @@ def run_migration(repo_root: Path, dry_run: bool = False) -> MigrationReport:  #
     # ------------------------------------------------------------------
     logger.info("Migration step 4/10: State rebuild")
     total_events_generated = 0
-    for mission_dir in _discover_features(repo_root):
+    for mission_dir in _discover_missions(repo_root):
         slug = mission_dir.name
         wp_id_map = all_wp_id_maps.get(slug, {})
         try:
@@ -519,7 +519,7 @@ def run_migration(repo_root: Path, dry_run: bool = False) -> MigrationReport:  #
     # Step 5: Strip frontmatter (AFTER state rebuild)
     # ------------------------------------------------------------------
     logger.info("Migration step 5/10: Strip frontmatter")
-    for mission_dir in _discover_features(repo_root):
+    for mission_dir in _discover_missions(repo_root):
         slug = mission_dir.name
         try:
             strip_mutable_fields(mission_dir)
@@ -582,12 +582,12 @@ def run_migration(repo_root: Path, dry_run: bool = False) -> MigrationReport:  #
     # ------------------------------------------------------------------
     _cleanup_backup(repo_root)
 
-    features = _discover_features(repo_root)
-    report.features_migrated = len(features)
+    missions = _discover_missions(repo_root)
+    report.missions_migrated = len(missions)
     report.success = True
     logger.info(
-        "Migration complete: %d features, %d WPs, %d events generated",
-        report.features_migrated,
+        "Migration complete: %d missions, %d WPs, %d events generated",
+        report.missions_migrated,
         report.wps_backfilled,
         report.events_generated,
     )

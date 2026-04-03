@@ -286,7 +286,7 @@ class TestBindMissionOrigin:
     """Tests for SaaSTrackerClient.bind_mission_origin()."""
 
     _BIND_KWARGS: dict[str, Any] = {
-        "feature_slug": "061-ticket-first",
+        "mission_slug": "061-ticket-first",
         "external_issue_id": "12345",
         "external_issue_key": "PROJ-42",
         "external_issue_url": "https://jira.example.com/browse/PROJ-42",

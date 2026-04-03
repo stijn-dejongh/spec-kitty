@@ -327,15 +327,15 @@ class TestMigrationIdempotency:
 
 
 # ---------------------------------------------------------------------------
-# T071: Multi-feature project migration
+# T071: Multi-mission project migration
 # ---------------------------------------------------------------------------
 
-class TestMultiFeatureMigration:
-    """Migrating a project with many features in mixed states."""
+class TestMultiMissionMigration:
+    """Migrating a project with many missions in mixed states."""
 
-    def test_all_features_migrated_or_skipped(self, tmp_path: Path) -> None:
-        """A project with 5 features all migrate successfully."""
-        feature_configs: list[tuple[str, list[tuple[str, str]]]] = [
+    def test_all_missions_migrated_or_skipped(self, tmp_path: Path) -> None:
+        """A project with 5 missions all migrate successfully."""
+        mission_configs: list[tuple[str, list[tuple[str, str]]]] = [
             ("010-feature-alpha", [("WP01", "in_progress"), ("WP02", "done")]),
             ("011-feature-beta", [("WP01", "in_progress"), ("WP02", "for_review")]),
             ("012-feature-gamma", [("WP01", "done"), ("WP02", "done"), ("WP03", "done")]),
@@ -344,7 +344,7 @@ class TestMultiFeatureMigration:
         ]
 
         results: list[RebuildResult] = []
-        for slug, wps in feature_configs:
+        for slug, wps in mission_configs:
             mission_dir = _create_legacy_feature(tmp_path, slug, wps)
             result = rebuild_event_log(mission_dir, mission_dir.name, {})
             results.append(result)
