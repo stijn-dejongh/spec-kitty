@@ -1,12 +1,15 @@
 ---
 name: spec-kitty-mission-system
 description: >-
-  Understand how Spec Kitty missions work: the 4 built-in missions, how they
-  define workflows, how features and work packages relate, how templates are
-  resolved, and how to select the right mission for a project.
+  Understand how Spec Kitty missions work: the 4 built-in mission types, how
+  they define workflows via step contracts and action indices, how missions and
+  work packages relate, how templates are resolved through the 5-tier chain,
+  and how doctrine artifacts (procedures, tactics, directives) compose mission
+  behavior.
   Triggers: "what missions are available", "how do missions work",
   "which mission should I use", "explain the mission system",
-  "what is a mission", "change the mission", "mission templates".
+  "what is a mission", "change the mission", "mission templates",
+  "step contracts", "action index", "mission procedures".
   Does NOT handle: runtime loop advancement (use runtime-next),
   setup or repair (use setup-doctor), governance (use constitution-doctrine),
   or glossary curation (use glossary-context).
@@ -27,7 +30,7 @@ success.
 
 A mission answers: "What process should we follow to achieve this goal?"
 
-Different goals need different processes. Building a software feature is
+Different goals need different processes. Building a software component is
 different from conducting research or writing documentation. Each mission
 provides domain-appropriate:
 
@@ -38,12 +41,12 @@ provides domain-appropriate:
 - **Validation** — checks that verify the output quality
 - **Agent context** — personality and instructions for the AI agent
 
-### The Hierarchy: Mission → Feature → Work Package → Workspace
+### The Hierarchy: Mission Type → Mission → Work Package → Workspace
 
 ```
-Mission (e.g., software-dev)
-  └── Feature (kitty-specs/042-auth-system/)
-        ├── meta.json           ← links feature to mission + target branch
+Mission Type (e.g., software-dev)
+  └── Mission (kitty-specs/042-auth-system/)
+        ├── meta.json           ← links mission to mission type + target branch
         ├── spec.md             ← what we're building
         ├── plan.md             ← how we'll build it
         ├── tasks.md            ← WP breakdown
@@ -54,14 +57,14 @@ Mission (e.g., software-dev)
                     └── Workspace (.worktrees/042-auth-system-WP03/)
 ```
 
-- **Mission** = the workflow blueprint (reusable across features)
-- **Feature** = a concrete thing you're building, linked to a mission via `meta.json`
-- **Work Package (WP)** = one parallelizable slice of work within a feature
+- **Mission Type** = the workflow blueprint (reusable across missions)
+- **Mission** = a concrete thing you're building, linked to a mission type via `meta.json`
+- **Work Package (WP)** = one parallelizable slice of work within a mission
 - **Workspace** = an isolated git worktree for implementing a single WP
 
-### meta.json (Feature → Mission Link)
+### meta.json (Mission → Mission Type Link)
 
-Every feature has a `meta.json` that records which mission it uses:
+Every mission has a `meta.json` that records which mission type it uses:
 
 ```json
 {
@@ -79,7 +82,7 @@ apply. Default is `software-dev` if omitted.
 
 ---
 
-## The 4 Built-In Missions
+## The 4 Built-In Mission Types
 
 ### software-dev (default)
 
@@ -100,7 +103,7 @@ discovery → specify → plan → tasks_outline → tasks_packages → tasks_fi
 
 **Agent context:** TDD practices, library-first architecture, tests before code.
 
-**Use when:** Building features, fixing bugs, refactoring code — any work that
+**Use when:** Building components, fixing bugs, refactoring code — any work that
 produces code changes.
 
 ### research
@@ -161,13 +164,13 @@ analysis identifies missing documentation by classifying existing docs and
 finding coverage gaps.
 
 **Use when:** Creating docs for a project, filling documentation gaps,
-documenting a specific feature or API.
+documenting a specific component or API.
 
 ---
 
-## Mission Definition Files
+## Mission Type Definition Files
 
-Each mission lives in `src/specify_cli/missions/{mission-key}/` with:
+Each mission type lives in `src/doctrine/missions/{mission-key}/` with:
 
 ### mission-runtime.yaml (Runtime DAG)
 
@@ -264,13 +267,122 @@ Scaffolding files for artifacts:
 
 ---
 
+## Doctrine Composition Layer
+
+Missions are backed by structured doctrine artifacts that define action
+behavior and link to reusable knowledge.
+
+### MissionStepContract (Action Contracts)
+
+Each public action (specify, plan, implement, review) has a step contract
+that defines its internal structure:
+
+```yaml
+# implement.step-contract.yaml
+id: implement
+action: implement
+mission: software-dev
+schema_version: "1.0"
+steps:
+  - id: setup-workspace
+    description: "Create or enter the WP workspace"
+  - id: implement-code
+    description: "Write code following governance constraints"
+    delegates_to:
+      kind: tactic
+      candidates: [tdd-red-green-refactor, zombies-tdd]
+  - id: validate
+    description: "Run tests and lint checks"
+```
+
+The `delegates_to` field links a step to doctrine artifacts. This is how
+mission behavior connects to the knowledge layer: the contract says *what*
+to do, the referenced tactic/directive/procedure says *how*.
+
+### Procedure (Reusable Workflow Primitives)
+
+Procedures are multi-step doctrine artifacts with prerequisites and ordered
+steps. They are the reusable building blocks that step contracts delegate to.
+Each procedure describes a complete mini-workflow (e.g., a refactoring
+sequence, a test-first bug fix, a situational assessment).
+
+Procedures live in `src/doctrine/procedures/shipped/` (shipped) or
+`.kittify/procedures/` (project-local). Access via `DoctrineService`:
+
+```python
+procedure = service.procedures.get("refactoring")
+# procedure.steps → ordered list of actions
+# procedure.prerequisites → what must be true before starting
+```
+
+```bash
+spec-kitty doctrine list --kind procedure
+```
+
+### Agent Profiles (Role-Based WP Assignment)
+
+Agent profiles define roles, specializations, and boundaries for work
+package assignment. Each profile has 6 sections: context_sources, purpose,
+specialization (languages, frameworks, boundaries), collaboration (handoffs,
+outputs), mode_defaults, and initialization_declaration.
+
+Profiles form a hierarchy via `specializes_from` — a language-specific
+profile inherits from a general implementer profile, adding language-scoped
+capabilities. The DDR-011 algorithm resolves which profile best matches a
+given task context based on weighted signals (language, framework,
+file-pattern, keyword, exact-id).
+
+The `mission.yaml` `task_types` section maps WP actions to agent roles:
+
+```yaml
+task_types:
+  implement:
+    agent_role: implementer
+  review:
+    agent_role: reviewer
+  plan:
+    agent_role: planner
+```
+
+```bash
+# Discover available profiles
+spec-kitty agent profile list
+
+# Inspect a profile's boundaries and initialization context
+spec-kitty agent profile show <profile-id>
+
+# Visualize the specialization hierarchy
+spec-kitty agent profile hierarchy
+```
+
+### Action Indices (Doctrine Scoping)
+
+Each mission action has an index that declares which doctrine artifacts are
+relevant to that step:
+
+```yaml
+# src/doctrine/missions/software-dev/actions/implement/index.yaml
+action: implement
+directives: [TEST_FIRST]
+tactics: [tdd-red-green-refactor, zombies-tdd, acceptance-test-first]
+styleguides: [python-implementation]
+toolguides: []
+procedures: [implementation-handoff]
+```
+
+The constitution context builder uses these indices to scope what gets
+injected into the agent prompt at each step. This prevents agents from
+seeing review-scoped doctrine during implementation and vice versa.
+
+---
+
 ## 6 Guard Primitives
 
 Guards block step transitions until conditions are met:
 
 | Guard | Syntax | What it checks |
 |---|---|---|
-| `artifact_exists` | `artifact_exists("spec.md")` | File exists in feature dir |
+| `artifact_exists` | `artifact_exists("spec.md")` | File exists in mission dir |
 | `gate_passed` | `gate_passed("review_approved")` | Event exists in mission event log |
 | `all_wp_status` | `all_wp_status("done")` | Every WP is in the specified lane |
 | `any_wp_status` | `any_wp_status("for_review")` | At least one WP is in the lane |
@@ -292,7 +404,7 @@ When a command template is needed, spec-kitty searches 5 locations in order:
 | 2. Legacy | `.kittify/command-templates/` | Deprecated pre-migration |
 | 3. Global Mission | `~/.kittify/missions/{mission}/command-templates/` | User global |
 | 4. Global | `~/.kittify/command-templates/` | User global fallback |
-| 5. Package | `src/specify_cli/missions/{mission}/command-templates/` | Built-in default |
+| 5. Package | `src/doctrine/missions/{mission}/command-templates/` | Built-in default |
 
 First match wins. Override a template by placing your version in
 `.kittify/overrides/command-templates/`. The package default is always the
@@ -302,29 +414,29 @@ Content templates (`templates/`) follow the same 5-tier resolution.
 
 ---
 
-## Selecting a Mission
+## Selecting a Mission Type
 
-The mission is set when you create a feature with `/spec-kitty.specify`.
+The mission type is set when you create a mission with `/spec-kitty.specify`.
 It's recorded in `meta.json` and cannot be changed after creation.
 
 **Commands:**
 
 ```bash
-# List available missions
+# List available mission types
 spec-kitty list-missions
 
-# Specify a feature with a specific mission
+# Specify a mission with a specific mission type
 spec-kitty specify --mission research "What are the best auth patterns?"
 
-# Check which mission a feature uses
-cat kitty-specs/<feature-slug>/meta.json | jq .mission
+# Check which mission type a mission uses
+cat kitty-specs/<mission-slug>/meta.json | jq .mission
 ```
 
 **Decision guide:**
 
-| If you're... | Use mission |
+| If you're... | Use mission type |
 |---|---|
-| Building a feature, fixing a bug, refactoring | `software-dev` |
+| Building a component, fixing a bug, refactoring | `software-dev` |
 | Investigating, evaluating options, literature review | `research` |
 | Planning architecture, roadmaps, design docs | `plan` |
 | Writing tutorials, API docs, how-to guides | `documentation` |
@@ -335,7 +447,7 @@ cat kitty-specs/<feature-slug>/meta.json | jq .mission
 
 Missions involve two orthogonal state machines:
 
-**Mission state** — which phase of the workflow are we in?
+**Mission-type state** — which phase of the workflow are we in?
 ```
 discovery → specify → plan → tasks → implement → review → accept
 ```
@@ -368,4 +480,4 @@ This ensures `~/.kittify/` always matches the installed spec-kitty version.
 
 ## References
 
-- `references/mission-comparison-matrix.md` -- Side-by-side comparison of all 4 missions
+- `references/mission-comparison-matrix.md` -- Side-by-side comparison of all 4 mission types

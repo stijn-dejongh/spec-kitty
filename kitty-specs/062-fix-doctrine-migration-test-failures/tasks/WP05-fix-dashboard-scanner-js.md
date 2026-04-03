@@ -1,7 +1,7 @@
 ---
 work_package_id: WP05
 title: Fix Dashboard Scanner and JS Key Mismatch
-dependencies: []
+dependencies: "[]"
 requirement_refs:
 - FR-008
 - FR-009

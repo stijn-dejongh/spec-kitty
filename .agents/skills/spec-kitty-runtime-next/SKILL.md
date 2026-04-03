@@ -2,7 +2,8 @@
 name: spec-kitty-runtime-next
 description: >-
   Drive the canonical spec-kitty next --agent <name> control loop for mission
-  advancement.
+  advancement. Load agent profiles at init, apply action-scoped doctrine
+  context at each step boundary, and pull specific tactics/directives on demand.
   Triggers: "run the next step", "what should runtime do next", "advance the
   mission", "what is the next task", "continue the workflow", "what step comes
   next".
@@ -13,7 +14,8 @@ description: >-
 # spec-kitty-runtime-next
 
 This skill teaches agents how to advance a Spec Kitty mission through the
-canonical runtime control loop.
+canonical runtime control loop, including doctrine-aware context loading at
+each step boundary.
 
 ## When to Use This Skill
 
@@ -123,13 +125,13 @@ Every call to `spec-kitty next` returns exactly one decision kind:
 {
   "kind": "step",
   "agent": "claude",
-  "feature_slug": "042-test-feature",
+  "mission_slug": "042-test-mission",
   "mission": "software-dev",
   "mission_state": "implementing",
   "action": "implement",
   "wp_id": "WP02",
-  "workspace_path": ".worktrees/042-test-feature-WP02",
-  "prompt_file": "/tmp/spec-kitty-next-claude-042-test-feature-implement-WP02.md",
+  "workspace_path": ".worktrees/042-test-mission-WP02",
+  "prompt_file": "/tmp/spec-kitty-next-claude-042-test-mission-implement-WP02.md",
   "reason": null,
   "guard_failures": [],
   "progress": {
@@ -154,7 +156,7 @@ Guards block step transitions by returning failure descriptions:
 
 | Guard | Syntax | Checks |
 |---|---|---|
-| `artifact_exists` | `artifact_exists("spec.md")` | File exists relative to feature dir |
+| `artifact_exists` | `artifact_exists("spec.md")` | File exists relative to mission dir |
 | `gate_passed` | `gate_passed("review_gate")` | Gate event in mission-events.jsonl |
 | `all_wp_status` | `all_wp_status("done")` | All WPs in specific lane |
 | `any_wp_status` | `any_wp_status("for_review")` | At least one WP in lane |
@@ -166,9 +168,9 @@ Guards never raise exceptions — they return `false` on missing context.
 ### Prompt File Generation
 
 The runtime generates a temp file at:
-`/tmp/spec-kitty-next-{agent}-{feature_slug}-{action}[-{wp_id}].md`
+`/tmp/spec-kitty-next-{agent}-{mission_slug}-{action}[-{wp_id}].md`
 
-**Template actions** (specify, plan, tasks): Feature context header + governance
+**Template actions** (specify, plan, tasks): Mission context header + governance
 context + action-specific template content.
 
 **WP actions** (implement, review): Full isolation-aware prompt containing:
@@ -188,22 +190,119 @@ Runtime state is persisted between calls:
 
 ```
 .kittify/runtime/
-├── feature-runs.json       # Index: {"feature-slug": {"run_id": "...", "run_dir": "..."}}
+├── mission-runs.json       # Index: {"mission-slug": {"run_id": "...", "run_dir": "..."}}
 └── runs/
     └── <run_id>/
         └── state.json      # Runtime snapshot (current step, inputs, etc.)
 ```
 
-### Feature Detection
+### Mission Detection
 
-When `--feature` is omitted, the runtime detects the feature via (in order):
-1. `SPECIFY_FEATURE` environment variable
+When `--mission` is omitted, the runtime detects the mission via (in order):
+1. `SPECIFY_MISSION` environment variable
 2. Git branch name (strips `-WP##` suffix for worktree branches)
-3. Current directory path (walks up looking for `###-feature-name`)
-4. Single feature auto-detect (only if exactly one feature exists)
+3. Current directory path (walks up looking for `###-mission-name`)
+4. Single mission auto-detect (only if exactly one mission exists)
 5. Error with guidance if ambiguous
 
-**NOTE:** Always use `--feature <slug>` in multi-feature repositories.
+**NOTE:** Always use `--mission <slug>` in multi-mission repositories.
+
+---
+
+## Doctrine-Aware Step Execution
+
+The runtime-next loop should load doctrine context **iteratively** — not all
+at once. Each step boundary is a context loading opportunity.
+
+### Agent Profile at Init
+
+At the start of a session, resolve the active agent profile. This scopes
+your role, boundaries, and initialization context:
+
+```bash
+# List available profiles
+spec-kitty agent profile list
+
+# Show your resolved profile (includes initialization_declaration)
+spec-kitty agent profile show <profile-id>
+```
+
+The profile's `initialization_declaration` is your startup context. Its
+`specialization.boundaries` defines what you should and should not do. Consult
+boundaries before acting outside your stated role.
+
+Profiles are loaded from `DoctrineService.agent_profiles`:
+
+```python
+from doctrine.service import DoctrineService
+
+service = DoctrineService(shipped_root, project_root)
+profile = service.agent_profiles.find_best_match(task_context)
+# Use profile.initialization_declaration as startup context
+# Check profile.specialization.boundaries before acting outside role
+```
+
+### Action-Scoped Context at Each Step
+
+At each step boundary (when `spec-kitty next` returns a `step` decision),
+load governance context scoped to the current action — not the full doctrine:
+
+```bash
+# Load only what's relevant to this action (compact after first load)
+spec-kitty constitution context --action implement --json
+```
+
+The context system uses two depth levels:
+
+| Depth | When | Content |
+|---|---|---|
+| `bootstrap` (depth-2) | First load for this action | Full policy summary + reference list |
+| `compact` (depth-1) | Subsequent loads | Resolved paradigms, directives, tools only |
+
+First-load state is tracked per action in
+`.kittify/constitution/context-state.json`. This means `implement` and
+`review` each get their own first-load bootstrap independently.
+
+### Pull Specific Doctrine On Demand
+
+When you need governance guidance mid-step (e.g., how to structure tests,
+which review criteria apply), pull the specific tactic or directive by ID
+rather than re-loading the full context:
+
+```python
+from doctrine.service import DoctrineService
+
+service = DoctrineService(shipped_root, project_root)
+
+# Pull a specific tactic when it becomes relevant
+tactic = service.tactics.get("tdd-red-green-refactor")
+
+# Pull a specific directive
+directive = service.directives.get("TEST_FIRST")
+```
+
+The action index (`actions/<action>/index.yaml`) tells you which doctrine
+artifacts are relevant to the current step. Load the index to discover what
+to pull:
+
+```python
+from doctrine.missions.action_index import load_action_index
+
+index = load_action_index(missions_root, "software-dev", "implement")
+# index.directives → ["TEST_FIRST", ...]
+# index.tactics → ["tdd-red-green-refactor", ...]
+# index.procedures → [...]
+```
+
+### Anti-Pattern: Upfront Context Dump
+
+Do NOT load all doctrine into context at session start. This wastes tokens
+and dilutes relevance. Instead:
+
+1. **At init**: Load agent profile + initialization declaration.
+2. **At each step boundary**: Call `constitution context --action <action>`.
+3. **When stuck or need guidance**: Pull specific tactic/directive by ID.
+4. **When reviewing**: Pull review-scoped doctrine, not implement-scoped.
 
 ---
 
@@ -214,16 +313,16 @@ Before invoking the runtime, gather the current state.
 **Commands:**
 
 ```bash
-# Check WP status for a feature
-spec-kitty agent tasks status --feature <feature-slug>
+# Check WP status for a mission
+spec-kitty agent tasks status --mission <mission-slug>
 
 # Check current context for an action
-spec-kitty agent context resolve --action implement --feature <feature-slug> --json
+spec-kitty agent context resolve --action implement --mission <mission-slug> --json
 ```
 
 **What to look for:**
 
-- Active feature slug and mission type
+- Active mission slug and mission type
 - Current WP lane status (planned, claimed, in_progress, for_review, approved, done, blocked, canceled)
 - Whether there are WPs ready for implementation or review
 - Any blocked WPs that need attention first
@@ -234,16 +333,16 @@ spec-kitty agent context resolve --action implement --feature <feature-slug> --j
 
 ```bash
 # Run the next step
-spec-kitty next --agent <agent> --feature <feature-slug> --json
+spec-kitty next --agent <agent> --mission <mission-slug> --json
 
 # After completing a step successfully
-spec-kitty next --agent <agent> --feature <feature-slug> --result success --json
+spec-kitty next --agent <agent> --mission <mission-slug> --result success --json
 
 # After a step failed
-spec-kitty next --agent <agent> --feature <feature-slug> --result failed --json
+spec-kitty next --agent <agent> --mission <mission-slug> --result failed --json
 
 # After a step was blocked
-spec-kitty next --agent <agent> --feature <feature-slug> --result blocked --json
+spec-kitty next --agent <agent> --mission <mission-slug> --result blocked --json
 ```
 
 The `--result` flag tells the runtime the outcome of the previous step.
@@ -284,7 +383,7 @@ When the runtime needs input:
 ```bash
 # The decision includes question, options, and decision_id
 # Answer using:
-spec-kitty next --agent <agent> --feature <feature-slug> \
+spec-kitty next --agent <agent> --mission <mission-slug> \
   --answer "<choice>" --decision-id "<decision_id>" --json
 ```
 
@@ -301,10 +400,10 @@ See `references/blocked-state-recovery.md` for detailed recovery patterns.
 
 ```bash
 # Check WP status and dependency graph
-spec-kitty agent tasks status --feature <feature-slug>
+spec-kitty agent tasks status --mission <mission-slug>
 
 # Check specific WP dependencies
-spec-kitty agent tasks list-dependents WP## --feature <feature-slug>
+spec-kitty agent tasks list-dependents WP## --mission <mission-slug>
 ```
 
 **Common blockers:**
@@ -325,7 +424,7 @@ The complete agent loop pattern:
 
 ```bash
 # 1. Start the loop
-DECISION=$(spec-kitty next --agent claude --feature 042-feature --json)
+DECISION=$(spec-kitty next --agent claude --mission 042-mission --json)
 KIND=$(echo "$DECISION" | jq -r '.kind')
 
 # 2. Loop until terminal or unresolvable block
@@ -353,7 +452,7 @@ while [ "$KIND" = "step" ] || [ "$KIND" = "decision_required" ]; do
     RESULT="success"
   fi
 
-  DECISION=$(spec-kitty next --agent claude --feature 042-feature --result "$RESULT" --json)
+  DECISION=$(spec-kitty next --agent claude --mission 042-mission --result "$RESULT" --json)
   KIND=$(echo "$DECISION" | jq -r '.kind')
 done
 
@@ -374,7 +473,7 @@ fi
 ## Important: Runtime Precedence Rules
 
 1. **Always use `spec-kitty next`** rather than manually sequencing phases
-2. **Always pass `--feature`** in multi-feature repositories
+2. **Always pass `--mission`** in multi-mission repositories
 3. **Respect mission state machine transitions** — do not skip steps
 4. **Read the `prompt_file`** — it contains the full context the agent needs
 5. **Check `guard_failures`** on every decision, not just blocked ones
@@ -386,8 +485,8 @@ fi
 
 ## Known Issues
 
-**#335 — Completed features return `step` instead of `terminal`.** When
-`spec-kitty next` is called on a feature with all WPs done but no prior
+**#335 — Completed missions return `step` instead of `terminal`.** When
+`spec-kitty next` is called on a mission with all WPs done but no prior
 runtime run state, it creates a new run starting at `discovery` instead of
 recognizing the mission is complete. **Workaround:** Check
 `progress.done_wps == progress.total_wps` as a secondary completion signal.

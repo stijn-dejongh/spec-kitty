@@ -1,7 +1,7 @@
 ---
 work_package_id: WP02
 title: Fix Terminology and Assertion Mismatches
-dependencies: []
+dependencies: "[]"
 requirement_refs:
 - FR-002
 planning_base_branch: feature/agent-profile-implementation-rebased

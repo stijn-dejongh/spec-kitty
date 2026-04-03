@@ -1,7 +1,7 @@
 ---
 work_package_id: WP01
 title: Update Hardcoded Mission Paths
-dependencies: []
+dependencies: "[]"
 requirement_refs:
 - FR-001
 - C-002

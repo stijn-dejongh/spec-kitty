@@ -1,7 +1,7 @@
 ---
 work_package_id: WP03
 title: Repair Mock Targets and Missing Fixtures
-dependencies: []
+dependencies: "[]"
 requirement_refs:
 - FR-003
 - FR-004

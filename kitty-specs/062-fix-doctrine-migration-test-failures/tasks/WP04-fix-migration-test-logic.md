@@ -1,7 +1,7 @@
 ---
 work_package_id: WP04
 title: Fix Migration Test Logic
-dependencies: []
+dependencies: "[]"
 requirement_refs:
 - FR-005
 planning_base_branch: feature/agent-profile-implementation-rebased

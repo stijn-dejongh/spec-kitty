@@ -4,21 +4,11 @@
 
 spec_kitty:
   version: 3.1.0
-  initialized_at: '2026-03-30T20:42:29.894875'
-  last_upgraded_at: '2026-04-02T12:47:36.690912'
+  initialized_at: '2026-04-03T07:53:37.108485'
+  last_upgraded_at: null
 environment:
-  python_version: 3.11.14
-  platform: darwin
-  platform_version: macOS-15.7.3-arm64-arm-64bit
+  python_version: 3.13.12
+  platform: linux
+  platform_version: Linux-6.19.0-061900-generic-x86_64-with-glibc2.39
 migrations:
-  applied:
-  - id: 3.0.0_canonical_context
-    applied_at: '2026-03-31T16:02:07.771453'
-    result: success
-    notes: Migrated 56 feature(s), 302 WPs backfilled, 10 events generated; Moved
-      45 derived file(s)
-  - id: 3.0.2_restore_prompt_commands
-    applied_at: '2026-04-01T16:34:26.728073'
-    result: success
-    notes: Processed 3 agent directories; Wrote 48 command files; Deleted 0 stale
-      files
+  applied: []

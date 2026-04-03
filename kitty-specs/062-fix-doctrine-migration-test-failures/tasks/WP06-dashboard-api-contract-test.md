@@ -1,7 +1,7 @@
 ---
 work_package_id: WP06
 title: Add Dashboard API Contract Test
-dependencies: [WP05]
+dependencies: "[]"
 requirement_refs:
 - FR-010
 planning_base_branch: feature/agent-profile-implementation-rebased
