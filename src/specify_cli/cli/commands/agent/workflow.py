@@ -368,9 +368,13 @@ def implement(
     mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
     mission: Annotated[str | None, typer.Option("--mission", hidden=True, help="Compatibility alias for mission selection")] = None,
     feature: Annotated[str | None, typer.Option("--feature", hidden=True, help="Legacy compatibility alias for mission selection")] = None,
-    agent: Annotated[str | None, typer.Option("--agent", help="Agent name (required for auto-move to doing lane)")] = None,
+    agent: Annotated[str | None, typer.Option("--agent", help="Agent name or compact identity (tool:model:profile:role)")] = None,
     base: Annotated[str | None, typer.Option("--base", help="Base WP to branch from (e.g., WP01) - creates worktree if provided")] = None,
     allow_missing_profile: Annotated[bool, typer.Option("--allow-missing-profile", help="Degrade to warning when agent profile cannot be resolved")] = False,
+    tool: Annotated[str | None, typer.Option("--tool", help="Agent tool name (e.g., claude, opencode). Mutually exclusive with --agent")] = None,
+    model: Annotated[str | None, typer.Option("--model", help="AI model identifier (e.g., opus, gpt-4)")] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help="Agent profile ID (e.g., python-implementer). Overrides WP frontmatter agent_profile")] = None,
+    role: Annotated[str | None, typer.Option("--role", help="Agent role (e.g., implementer, reviewer)")] = None,
 ) -> None:
     """Display work package prompt with implementation instructions.
 
@@ -381,12 +385,24 @@ def implement(
 
     If --base is provided, creates a worktree for this WP branching from the base WP's branch.
 
+    Agent identity can be provided in two ways:
+      - Compact: --agent tool:model:profile:role  (e.g., --agent opencode:gpt-4:python-implementer:implementer)
+      - Explicit: --tool opencode --model gpt-4 --profile python-implementer --role implementer
+
     Examples:
         spec-kitty agent workflow implement WP01 --agent claude
+        spec-kitty agent workflow implement WP01 --agent opencode:gpt-4:python-implementer:implementer
+        spec-kitty agent workflow implement WP01 --tool opencode --model gpt-4 --profile python-implementer --role implementer
         spec-kitty agent workflow implement WP02 --agent claude --base WP01  # Create worktree from WP01
-        spec-kitty agent workflow implement wp01 --agent codex
         spec-kitty agent workflow implement --agent gemini  # auto-detects first planned WP
     """
+    # Resolve structured agent identity from CLI flags
+    from specify_cli.identity import parse_agent_identity
+
+    actor_identity = parse_agent_identity(
+        agent=agent, tool=tool, model=model, profile=profile, role=role,
+    )
+
     try:
         # Get repo root and mission slug
         repo_root = locate_project_root()
@@ -511,17 +527,19 @@ def implement(
         needs_agent_assignment = current_agent is None or str(current_agent).strip() == ""
 
         if current_lane != "doing" or needs_agent_assignment:
-            # Require --agent parameter to track who is working
-            if not agent:
+            # Require identity to track who is working
+            if not actor_identity:
                 if current_lane == "doing" and not needs_agent_assignment:
                     # Already in doing with an agent; allow prompt display
                     pass
                 else:
-                    print("Error: --agent parameter required when starting implementation.")
+                    print("Error: Agent identity required when starting implementation.")
                     print(f"  Usage: spec-kitty agent workflow implement {normalized_wp_id} --agent <your-name>")
-                    print("  Example: spec-kitty agent workflow implement WP01 --agent claude")
+                    print(f"     or: spec-kitty agent workflow implement {normalized_wp_id} --tool <tool> --model <model> --profile <profile> --role <role>")
                     print()
-                    print("If you're using a generated agent command file, --agent is already included.")
+                    print("  Compact:  --agent opencode:gpt-4:python-implementer:implementer")
+                    print("  Explicit: --tool opencode --model gpt-4 --profile python-implementer --role implementer")
+                    print()
                     print("This tracks WHO is working on the WP (prevents abandoned tasks).")
                     raise typer.Exit(1)
 
@@ -531,12 +549,14 @@ def implement(
             # Capture current shell PID
             shell_pid = str(os.getppid())  # Parent process ID (the shell running this command)
 
+            # Build compact actor string for status events
+            _actor = actor_identity.to_compact() if actor_identity else "unknown"
+
             # Emit status events (canonical lane authority)
             # Must follow allowed transitions: planned→claimed→in_progress
             try:
                 from specify_cli.status.emit import emit_status_transition
                 _impl_mission_dir = get_mission_dir(main_repo_root, mission_slug, main_repo=False)
-                _actor = agent or "unknown"
 
                 if current_lane == "planned" or current_lane == "canceled":
                     # Two-step: planned→claimed, claimed→in_progress
@@ -578,16 +598,18 @@ def implement(
                 logger.warning("Could not emit status event: %s", _evt_err)
 
             # Update operational metadata in frontmatter (NO lane — event log is sole authority)
+            _agent_display = actor_identity.tool if actor_identity else (agent or "unknown")
             updated_front = wp.frontmatter
-            updated_front = set_scalar(updated_front, "agent", agent)
+            updated_front = set_scalar(updated_front, "agent", _agent_display)
             updated_front = set_scalar(updated_front, "shell_pid", shell_pid)
 
             # Build history entry (no lane= segment; event log is sole lane authority)
             timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+            _actor_log = actor_identity.to_compact() if actor_identity else _agent_display
             if current_lane != "doing":
-                history_entry = f"- {timestamp} – {agent} – shell_pid={shell_pid} – Started implementation via workflow command"
+                history_entry = f"- {timestamp} – {_actor_log} – shell_pid={shell_pid} – Started implementation via workflow command"
             else:
-                history_entry = f"- {timestamp} – {agent} – shell_pid={shell_pid} – Assigned agent via workflow command"
+                history_entry = f"- {timestamp} – {_actor_log} – shell_pid={shell_pid} – Assigned agent via workflow command"
 
             # Add history entry to body
             updated_body = append_activity_log(wp.body, history_entry)
@@ -601,7 +623,7 @@ def implement(
             commit_success = safe_commit(
                 repo_path=main_repo_root,
                 files_to_commit=[actual_wp_path],
-                commit_message=f"chore: Start {normalized_wp_id} implementation [{agent}]",
+                commit_message=f"chore: Start {normalized_wp_id} implementation [{_agent_display}]",
                 allow_empty=True,  # OK if already in this state
             )
             if not commit_success:
@@ -611,7 +633,7 @@ def implement(
                 )
                 raise typer.Exit(1)
 
-            print(f"✓ Claimed {normalized_wp_id} (agent: {agent}, PID: {shell_pid}, target: {target_branch})")
+            print(f"✓ Claimed {normalized_wp_id} (agent: {_actor_log}, PID: {shell_pid}, target: {target_branch})")
 
             # Dossier sync (fire-and-forget)
             try:
@@ -1015,7 +1037,11 @@ def review(
     mission_run: Annotated[str | None, typer.Option("--mission-run", help="Mission run slug (required in multi-mission repos)")] = None,
     mission: Annotated[str | None, typer.Option("--mission", hidden=True, help="Compatibility alias for mission selection")] = None,
     feature: Annotated[str | None, typer.Option("--feature", hidden=True, help="Legacy compatibility alias for mission selection")] = None,
-    agent: Annotated[str | None, typer.Option("--agent", help="Agent name (required for auto-move to doing lane)")] = None,
+    agent: Annotated[str | None, typer.Option("--agent", help="Agent name or compact identity (tool:model:profile:role)")] = None,
+    tool: Annotated[str | None, typer.Option("--tool", help="Agent tool name (e.g., claude, opencode). Mutually exclusive with --agent")] = None,
+    model: Annotated[str | None, typer.Option("--model", help="AI model identifier (e.g., opus, gpt-4)")] = None,
+    profile: Annotated[str | None, typer.Option("--profile", help="Agent profile ID (e.g., reviewer, architect)")] = None,
+    role: Annotated[str | None, typer.Option("--role", help="Agent role (e.g., reviewer, implementer)")] = None,
 ) -> None:
     """Display work package prompt with review instructions.
 
@@ -1024,11 +1050,23 @@ def review(
 
     Automatically moves WP from for_review to in_review lane (requires --agent to track who is reviewing).
 
+    Agent identity can be provided in two ways:
+      - Compact: --agent tool:model:profile:role
+      - Explicit: --tool opencode --model gpt-4 --profile reviewer --role reviewer
+
     Examples:
         spec-kitty agent workflow review WP01 --agent claude
-        spec-kitty agent workflow review wp02 --agent codex
+        spec-kitty agent workflow review WP01 --agent claude:opus:reviewer:reviewer
+        spec-kitty agent workflow review WP01 --tool claude --model opus --profile reviewer --role reviewer
         spec-kitty agent workflow review --agent gemini  # auto-detects first for_review WP
     """
+    # Resolve structured agent identity from CLI flags
+    from specify_cli.identity import parse_agent_identity
+
+    actor_identity = parse_agent_identity(
+        agent=agent, tool=tool, model=model, profile=profile, role=role,
+    )
+
     try:
         # Get repo root and mission slug
         repo_root = locate_project_root()
@@ -1091,13 +1129,15 @@ def review(
             raise typer.Exit(1)
 
         if current_lane not in {"doing", "in_review"}:
-            # Require --agent parameter to track who is reviewing
-            if not agent:
-                print("Error: --agent parameter required when starting review.")
+            # Require identity to track who is reviewing
+            if not actor_identity:
+                print("Error: Agent identity required when starting review.")
                 print(f"  Usage: spec-kitty agent workflow review {normalized_wp_id} --agent <your-name>")
-                print("  Example: spec-kitty agent workflow review WP01 --agent claude")
+                print(f"     or: spec-kitty agent workflow review {normalized_wp_id} --tool <tool> --model <model> --profile <profile> --role <role>")
                 print()
-                print("If you're using a generated agent command file, --agent is already included.")
+                print("  Compact:  --agent claude:opus:reviewer:reviewer")
+                print("  Explicit: --tool claude --model opus --profile reviewer --role reviewer")
+                print()
                 print("This tracks WHO is reviewing the WP (prevents abandoned reviews).")
                 raise typer.Exit(1)
 
@@ -1107,14 +1147,18 @@ def review(
             # Capture current shell PID
             shell_pid = str(os.getppid())  # Parent process ID (the shell running this command)
 
+            # Build compact actor string for status events
+            _actor = actor_identity.to_compact()
+            _agent_display = actor_identity.tool
+
             with mission_status_lock(main_repo_root, mission_slug):
-                # Emit the actual for_review -> in_progress transition
+                # Emit the actual for_review -> in_review transition
                 emit_status_transition(
                     mission_dir=mission_dir,
                     mission_slug=mission_slug,
                     wp_id=normalized_wp_id,
                     to_lane="in_review",
-                    actor=agent,
+                    actor=_actor,
                     force=True,  # review claim is always allowed
                     reason="Started review via workflow command",
                     review_ref="workflow-review-claim",
@@ -1125,13 +1169,14 @@ def review(
                 # Post-emit: apply operational metadata fields to WP file (lane is event-log-only)
                 wp_content = wp.path.read_text(encoding="utf-8-sig")
                 updated_front, updated_body, updated_padding = split_frontmatter(wp_content)
-                updated_front = set_scalar(updated_front, "agent", agent)
+                updated_front = set_scalar(updated_front, "agent", _agent_display)
                 updated_front = set_scalar(updated_front, "role", "reviewer")
                 updated_front = set_scalar(updated_front, "shell_pid", shell_pid)
 
                 # Build history entry (no lane= segment; event log is sole lane authority)
                 timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-                history_entry = f"- {timestamp} – {agent} – shell_pid={shell_pid} – Started review via workflow command"
+                _actor_log = actor_identity.to_compact()
+                history_entry = f"- {timestamp} – {_actor_log} – shell_pid={shell_pid} – Started review via workflow command"
 
                 # Add history entry to body
                 updated_body = append_activity_log(updated_body, history_entry)
@@ -1146,7 +1191,7 @@ def review(
                 commit_success = safe_commit(
                     repo_path=main_repo_root,
                     files_to_commit=[actual_wp_path] + status_artifacts,
-                    commit_message=f"chore: Start {normalized_wp_id} review [{agent}]",
+                    commit_message=f"chore: Start {normalized_wp_id} review [{_agent_display}]",
                     allow_empty=True,  # OK if already in this state
                 )
                 if not commit_success:
@@ -1156,7 +1201,7 @@ def review(
                     )
                     raise typer.Exit(1)
 
-            print(f"✓ Claimed {normalized_wp_id} for review (agent: {agent}, PID: {shell_pid}, target: {target_branch})")
+            print(f"✓ Claimed {normalized_wp_id} for review (agent: {_actor_log}, PID: {shell_pid}, target: {target_branch})")
 
             # Reload to get updated content
             wp = locate_work_package(repo_root, mission_slug, normalized_wp_id)

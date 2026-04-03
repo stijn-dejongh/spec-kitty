@@ -52,7 +52,14 @@ spec-kitty agent workflow implement $ARGUMENTS --agent <your-name>
 
 </details>
 
-**CRITICAL**: You MUST provide `--agent <your-name>` to track who is implementing!
+> **Agent identity** (required — tracks WHO is working on the WP):
+>
+> **Compact form**: `--agent <tool>:<model>:<profile>:<role>` (e.g., `--agent claude:opus:researcher:implementer`)
+>
+> **Explicit flags** (mutually exclusive with `--agent`):
+> `--tool <tool> --model <model> --profile <profile> --role <role>`
+
+**CRITICAL**: You MUST provide agent identity (`--agent` or explicit flags) to track who is implementing!
 
 ### Step 1: Navigate to Your Worktree
 

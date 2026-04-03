@@ -12,6 +12,70 @@ spec-kitty constitution context --action implement --json
 
 Use JSON `text` as governance context. On first load (`mode=bootstrap`), follow referenced docs as needed.
 
+## Agent Profile Adoption and Incremental Context Loading (required)
+
+After claiming a WP, the workflow implement command outputs an **Agent Identity** section
+derived from the WP's `agent_profile` frontmatter field. You MUST adopt this profile and
+load doctrine context **incrementally** as the work demands it — not all at once.
+
+### Phase 1: Profile Identity (load once, at WP start)
+
+Resolve the assigned profile and internalize its identity, boundaries, and directive scope.
+Use the Python API — do NOT read YAML files directly.
+
+```python
+from doctrine.agent_profiles import AgentProfileRepository
+
+repo = AgentProfileRepository(project_dir=project_agents_dir)
+profile = repo.get("<profile-id>")  # e.g. "python-implementer"
+
+# Internalize identity
+profile.initialization_declaration  # Your persona startup statement
+profile.specialization.primary_focus  # What you actively do
+profile.specialization.avoidance_boundary  # What you must NOT do
+profile.collaboration.handoff_to  # Roles to defer to when out of scope
+
+# Load only the directives this profile references
+from doctrine.service import DoctrineService
+
+service = DoctrineService(shipped_root, project_root)
+for ref in profile.directive_references:
+    directive = service.directives.get(f"DIRECTIVE_{ref.code}")
+    # Apply this directive's constraints to your behavior
+```
+
+### Phase 2: Incremental Tactical Context (load per-subtask, discard when done)
+
+As you work through subtasks, load ONLY the doctrine artifacts relevant to your
+current activity. When you move to a different activity, discard the previous
+tactical context and load the new one. This keeps your context focused and avoids
+overloading with irrelevant guidance.
+
+**All doctrine artifacts MUST be loaded through the Python API (repository classes),
+never by reading YAML files directly.**
+
+| Activity | What to load | How to load | When to discard |
+|----------|-------------|-------------|-----------------|
+| Writing tests | Test tactics, styleguides, procedures | `service.tactics.get("tdd-red-green-refactor")`, `service.tactics.get("acceptance-test-first")`, `service.styleguides.get("python-conventions")` | When tests pass and you move to production code |
+| Implementing production code | Coding styleguides, relevant design tactics | `service.styleguides.get("python-conventions")`, `service.tactics.get("change-apply-smallest-viable-diff")` | When implementation is complete |
+| Refactoring | Refactoring procedure and refactoring tactics | `service.procedures.get("refactoring")`, `service.tactics.get("<specific-refactoring>")` | When refactoring is complete |
+| Bug fixing | Test-first bug fix procedure | `service.procedures.get("test-first-bug-fixing")` | When the fix is verified |
+
+**Example flow for a Python implementer working a subtask:**
+
+1. Subtask says "write tests for the new validator" →
+   Load: `service.tactics.get("tdd-red-green-refactor")`, `service.styleguides.get("python-conventions")`
+2. Tests written and failing for the right reason →
+   Discard test tactics. Load: `service.tactics.get("change-apply-smallest-viable-diff")`
+3. Implementation done, reviewer feedback says "extract helper" →
+   Discard implementation tactics. Load: `service.procedures.get("refactoring")`
+
+**Key rules:**
+- Load tactical context **when you need it**, not upfront
+- Discard tactical context **when the activity changes** — stale context creates drift
+- Profile-level context (identity, boundaries, directives) persists for the entire WP
+- Tactical context (tactics, procedures, styleguides) is scoped to the current activity
+
 ## ⚠️ CRITICAL: Working Directory Requirement
 
 **After running `spec-kitty implement WP##`, you MUST:**
@@ -61,15 +125,30 @@ spec-kitty agent workflow implement $ARGUMENTS --agent <your-name>
 > **Explicit slash-command argument from the caller**: `$ARGUMENTS` above is forwarded directly from
 > the slash-command invocation (e.g., `/spec-kitty.implement WP03 --base WP01`).
 > Pass it as-is to `spec-kitty agent workflow implement`; do not modify or strip it.
-> Example with explicit WP, base and agent-profile args:
-> `spec-kitty agent workflow implement --wp-id WP03 --base WP01 --agent <your-name> --profile <profile-id> --role <role> --model <model>`
 >
-> **Agent-profile arguments** (from agent-profile implementation):
-> - `--profile <profile-id>`: Use a specific agent profile (e.g., `implementer`, `architect`). Overrides the `agent_profile` field in WP frontmatter.
-> - `--role <role>`: Set the agent's role for this WP (e.g., `implementer`, `reviewer`).
-> - `--model <model>`: Specify the AI model to use for this WP.
+> **Agent identity** (required — tracks WHO is working on the WP):
+>
+> You can provide your identity in two ways:
+>
+> **Compact form** (all-in-one via `--agent`):
+> ```
+> --agent <tool>:<model>:<profile>:<role>
+> ```
+> Example: `--agent opencode:gpt-4:python-implementer:implementer`
+>
+> Partial compact strings are allowed (missing fields default to `unknown`):
+> - `--agent claude` → tool=claude, model/profile/role=unknown
+> - `--agent claude:opus` → tool=claude, model=opus, profile/role=unknown
+>
+> **Explicit flags** (mutually exclusive with `--agent`):
+> - `--tool <tool>`: Agent tool name (e.g., `claude`, `opencode`)
+> - `--model <model>`: AI model identifier (e.g., `opus`, `gpt-4`)
+> - `--profile <profile-id>`: Agent profile (e.g., `python-implementer`, `implementer`)
+> - `--role <role>`: Agent role (e.g., `implementer`, `reviewer`)
+>
+> Example: `spec-kitty agent workflow implement WP03 --base WP01 --tool opencode --model gpt-4 --profile python-implementer --role implementer`
 
-**CRITICAL**: You MUST provide `--agent <your-name>` to track who is implementing!
+**CRITICAL**: You MUST provide agent identity (`--agent` or explicit flags) to track who is implementing!
 
 If no WP ID is provided, it will automatically find the first work package with `lane: "planned"` and move it to "doing" for you.
 

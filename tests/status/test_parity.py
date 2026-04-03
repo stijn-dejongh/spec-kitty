@@ -409,7 +409,7 @@ class TestReducerDeterminism:
         assert snap.work_packages["WP01"]["actor"] == {
             "tool": "original-actor",
             "model": "unknown",
-            "profile": "unknown",
+            "profile": "generic",
             "role": "unknown",
         }
 

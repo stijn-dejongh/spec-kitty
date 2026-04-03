@@ -66,7 +66,7 @@ class TestExtractAgentIdentityRead:
         assert result is not None
         assert result.tool == "claude"
         assert result.model == "unknown"
-        assert result.profile == "unknown"
+        assert result.profile == "generic"
         assert result.role == "unknown"
 
     def test_scalar_unquoted_string(self):
@@ -86,7 +86,7 @@ class TestExtractAgentIdentityRead:
         assert result is not None
         assert result.tool == "gemini"
         assert result.model == "pro"
-        assert result.profile == "unknown"
+        assert result.profile == "generic"
         assert result.role == "unknown"
 
     def test_empty_agent_returns_none(self):

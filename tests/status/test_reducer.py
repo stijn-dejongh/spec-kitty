@@ -92,7 +92,7 @@ class TestReduceSingleEvent:
         assert "WP01" in snapshot.work_packages
         wp = snapshot.work_packages["WP01"]
         assert wp["lane"] == "claimed"
-        assert wp["actor"] == {"tool": "claude-opus", "model": "unknown", "profile": "unknown", "role": "unknown"}
+        assert wp["actor"] == {"tool": "claude-opus", "model": "unknown", "profile": "generic", "role": "unknown"}
         assert wp["last_transition_at"] == "2026-02-08T12:00:00Z"
         assert wp["last_event_id"] == "01HXYZ0000000000000000000A"
         assert wp["force_count"] == 0
@@ -192,7 +192,7 @@ class TestReduceDeduplication:
         snapshot = reduce([event, duplicate])
 
         assert snapshot.event_count == 1
-        expected_actor = {"tool": "claude-opus", "model": "unknown", "profile": "unknown", "role": "unknown"}
+        expected_actor = {"tool": "claude-opus", "model": "unknown", "profile": "generic", "role": "unknown"}
         assert snapshot.work_packages["WP01"]["actor"] == expected_actor
 
 

@@ -363,12 +363,12 @@ def scan_all_missions(project_dir: Path) -> list[dict[str, Any]]:
                         kanban_stats["total"] += count
                 except CanonicalStatusNotFoundError:
                     logger.warning(
-                        "No event log for feature '%s' — skipping kanban counts",
-                        feature_dir.name,
+                        "No event log for mission '%s' — skipping kanban counts",
+                        mission_dir.name,
                     )
                     kanban_stats["error"] = (
-                        f"Event log not found. Run: spec-kitty agent feature "
-                        f"finalize-tasks --feature {feature_dir.name}"
+                        f"Event log not found. Run: spec-kitty agent tasks "
+                        f"finalize-tasks --mission {mission_dir.name}"
                     )
 
         worktree_root = project_dir / ".worktrees"

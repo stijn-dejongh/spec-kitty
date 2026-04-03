@@ -467,6 +467,8 @@ function renderKanban(lanes) {
             <div class="card-title">${task.title}</div>
             <div class="card-meta">
                 ${task.agent ? `<span class="badge agent">${task.agent}</span>` : ''}
+                ${task.agent_profile ? `<span class="badge profile">${task.agent_profile}</span>` : ''}
+                ${task.role ? `<span class="badge role">${task.role}</span>` : ''}
                 ${task.subtasks && task.subtasks.length > 0 ?
                   `<span class="badge subtasks">${task.subtasks.length} subtask${task.subtasks.length !== 1 ? 's' : ''}</span>` : ''}
             </div>
@@ -1241,9 +1243,9 @@ function fetchData(isInitialLoad = false) {
         .then(data => {
             // Use full update on initial load, silent update on polls
             if (isInitialLoad) {
-                updateFeatureList(data.features, data.active_feature_id || null);
+                updateFeatureList(data.missions || data.features, data.active_mission_id || data.active_feature_id || null);
             } else {
-                updateFeatureListSilent(data.features);
+                updateFeatureListSilent(data.missions || data.features);
 
                 // Refresh kanban board if currently viewing it
                 if (currentPage === 'kanban' && !isConstitutionView && currentFeature) {

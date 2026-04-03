@@ -530,6 +530,16 @@ body {
     color: #8b5a00;
 }
 
+.badge.profile {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.badge.role {
+    background: #dcfce7;
+    color: #166534;
+}
+
 .badge.subtasks {
     background: var(--lavender);
     color: #5a3a6e;

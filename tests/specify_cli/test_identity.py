@@ -27,7 +27,7 @@ def test_from_compact_partial_two() -> None:
     ai = ActorIdentity.from_compact("claude:opus")
     assert ai.tool == "claude"
     assert ai.model == "opus"
-    assert ai.profile == "unknown"
+    assert ai.profile == "generic"
     assert ai.role == "unknown"
 
 
@@ -35,7 +35,7 @@ def test_from_compact_single() -> None:
     ai = ActorIdentity.from_compact("claude")
     assert ai.tool == "claude"
     assert ai.model == "unknown"
-    assert ai.profile == "unknown"
+    assert ai.profile == "generic"
     assert ai.role == "unknown"
 
 
@@ -59,7 +59,7 @@ def test_from_dict_partial_defaults_to_unknown() -> None:
     ai = ActorIdentity.from_dict({"tool": "cursor"})
     assert ai.tool == "cursor"
     assert ai.model == "unknown"
-    assert ai.profile == "unknown"
+    assert ai.profile == "generic"
     assert ai.role == "unknown"
 
 
@@ -194,7 +194,7 @@ def test_parse_agent_identity_from_individual_flags() -> None:
     assert ai is not None
     assert ai.tool == "claude"
     assert ai.model == "opus"
-    assert ai.profile == "unknown"
+    assert ai.profile == "generic"
 
 
 def test_parse_agent_identity_mutual_exclusion_raises() -> None:

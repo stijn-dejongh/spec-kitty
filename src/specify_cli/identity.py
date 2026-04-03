@@ -13,6 +13,7 @@ import typer
 
 
 _UNKNOWN = "unknown"
+_PROFILE_DEFAULT = "generic"
 _FIELDS = ("tool", "model", "profile", "role")
 
 
@@ -62,7 +63,7 @@ class ActorIdentity:
         return cls(
             tool=str(data.get("tool", _UNKNOWN)) or _UNKNOWN,
             model=str(data.get("model", _UNKNOWN)) or _UNKNOWN,
-            profile=str(data.get("profile", _UNKNOWN)) or _UNKNOWN,
+            profile=str(data.get("profile", _PROFILE_DEFAULT)) or _PROFILE_DEFAULT,
             role=str(data.get("role", _UNKNOWN)) or _UNKNOWN,
         )
 
@@ -78,12 +79,13 @@ class ActorIdentity:
             from_compact("claude:opus:impl:impl")  # all four explicit
         """
         parts = value.split(":") if value else []
-        # Pad to exactly 4 elements
-        padded = parts[:4] + [_UNKNOWN] * max(0, 4 - len(parts))
+        # Pad to exactly 4 elements (profile defaults to "generic", others to "unknown")
+        defaults = [_UNKNOWN, _UNKNOWN, _PROFILE_DEFAULT, _UNKNOWN]
+        padded = parts[:4] + defaults[len(parts[:4]):]
         return cls(
             tool=padded[0] or _UNKNOWN,
             model=padded[1] or _UNKNOWN,
-            profile=padded[2] or _UNKNOWN,
+            profile=padded[2] or _PROFILE_DEFAULT,
             role=padded[3] or _UNKNOWN,
         )
 
@@ -127,7 +129,7 @@ def parse_agent_identity(
         return ActorIdentity(
             tool=tool or _UNKNOWN,
             model=model or _UNKNOWN,
-            profile=profile or _UNKNOWN,
+            profile=profile or _PROFILE_DEFAULT,
             role=role or _UNKNOWN,
         )
 

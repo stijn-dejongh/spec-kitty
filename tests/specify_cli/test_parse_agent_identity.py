@@ -64,7 +64,7 @@ def test_agent_bare_string_returns_actor_identity():
     assert isinstance(result, ActorIdentity)
     assert result.tool == "claude"
     assert result.model == "unknown"
-    assert result.profile == "unknown"
+    assert result.profile == "generic"
     assert result.role == "unknown"
 
 
@@ -95,7 +95,7 @@ def test_tool_and_model_partial_flags():
     assert result is not None
     assert result.tool == "gemini"
     assert result.model == "pro"
-    assert result.profile == "unknown"
+    assert result.profile == "generic"
 
 
 # ---------------------------------------------------------------------------
