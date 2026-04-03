@@ -13,11 +13,11 @@ import pytest
 import yaml
 from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
 
+from tests.doctrine.conftest import DOCTRINE_SOURCE_ROOT, REPO_ROOT
 
 pytestmark = pytest.mark.doctrine
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-DOCTRINE_DIR = REPO_ROOT / "src" / "doctrine"
+DOCTRINE_DIR = DOCTRINE_SOURCE_ROOT
 SCHEMA_DIR = DOCTRINE_DIR / "schemas"
 
 
