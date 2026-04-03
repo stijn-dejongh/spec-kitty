@@ -2,7 +2,7 @@
 work_package_id: WP09
 title: Dashboard In-Review Lane Display and WP Card Identity
 dependencies: [WP05]
-requirement_refs: []
+requirement_refs: [FR-011, FR-012]
 planning_base_branch: feature/agent-profile-implementation-rebased
 merge_target_branch: feature/agent-profile-implementation-rebased
 branch_strategy: Planning artifacts for this mission were generated on feature/agent-profile-implementation-rebased. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feature/agent-profile-implementation-rebased unless the human explicitly redirects the landing branch.
@@ -111,3 +111,5 @@ task_type: implement
 ## Activity Log
 
 - 2026-04-03T12:00:00Z -- human -- WP created during mission 062 WP02 implementation.
+- 2026-04-03T19:22:33Z – unknown – Claimed by opencode for implementation. Worktree created manually (WP05 dependency already done/merged).
+- 2026-04-03T19:29:48Z – unknown – Moved to for_review

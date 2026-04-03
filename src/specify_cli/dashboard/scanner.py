@@ -296,6 +296,7 @@ def _count_wps_by_lane(tasks_dir: Path) -> Dict[str, int]:
     mission_dir = tasks_dir.parent
 
     from specify_cli.status.lane_reader import get_all_wp_lanes
+
     event_lanes = get_all_wp_lanes(mission_dir)
 
     for wp_file in tasks_dir.glob("WP*.md"):
@@ -356,6 +357,7 @@ def scan_all_missions(project_dir: Path) -> list[dict[str, Any]]:
             else:
                 # New format: count WPs by canonical event log lane
                 from specify_cli.status.lane_reader import CanonicalStatusNotFoundError
+
                 try:
                     lane_counts = _count_wps_by_lane(tasks_dir)
                     for lane, count in lane_counts.items():
@@ -367,8 +369,7 @@ def scan_all_missions(project_dir: Path) -> list[dict[str, Any]]:
                         mission_dir.name,
                     )
                     kanban_stats["error"] = (
-                        f"Event log not found. Run: spec-kitty agent tasks "
-                        f"finalize-tasks --mission {mission_dir.name}"
+                        f"Event log not found. Run: spec-kitty agent tasks finalize-tasks --mission {mission_dir.name}"
                     )
 
         worktree_root = project_dir / ".worktrees"
@@ -455,13 +456,12 @@ def _process_wp_file(
         # No event log at either level — use default_lane only for legacy
         # missions (where the directory structure IS the lane). For flat-task
         # missions the event log is mandatory; let the caller handle it.
-        mission_candidate = (
-            candidate if candidate.name != "tasks" else candidate.parent
-        )
+        mission_candidate = candidate if candidate.name != "tasks" else candidate.parent
         if is_legacy_format(mission_candidate):
             lane = default_lane
         else:
             from specify_cli.status.lane_reader import CanonicalStatusNotFoundError
+
             raise CanonicalStatusNotFoundError(
                 f"Canonical status not found for mission "
                 f"'{mission_candidate.name}'. Run 'spec-kitty agent mission-run "
@@ -536,6 +536,7 @@ def scan_mission_kanban(project_dir: Path, mission_id: str) -> dict[str, list[di
     else:
         # New format: scan flat tasks/ directory, lane from event log
         from specify_cli.status.lane_reader import CanonicalStatusNotFoundError
+
         for prompt_file in tasks_dir.glob("WP*.md"):
             try:
                 task_data = _process_wp_file(prompt_file, project_dir, "planned")
@@ -550,10 +551,10 @@ def scan_mission_kanban(project_dir: Path, mission_id: str) -> dict[str, list[di
                     lanes[lane].append(task_data)
             except CanonicalStatusNotFoundError:
                 logger.warning(
-                    "No event log for feature '%s' — cannot render kanban",
-                    feature_dir.name,
+                    "No event log for mission '%s' — cannot render kanban",
+                    mission_dir.name,
                 )
-                return lanes  # Return empty kanban — feature not finalized
+                return lanes  # Return empty kanban — mission not finalized
             except Exception as exc:
                 logger.error(f"Unexpected error processing {prompt_file.name}: {exc}")
                 continue

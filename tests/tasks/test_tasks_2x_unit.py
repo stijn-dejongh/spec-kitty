@@ -48,20 +48,34 @@ class TestFindFeatureSlug:
         """_find_mission_slug returns explicit slug when provided.
 
         After WP02 removed heuristic detection, _find_mission_slug requires
-        an explicit slug.  No cwd scanning or git branch parsing is performed.
+        an explicit slug.  The centralized detector validates the mission
+        directory exists on disk.
         """
         from specify_cli.cli.commands.agent.tasks import _find_mission_slug
 
-        slug = _find_mission_slug(explicit_mission="008-test-mission")
+        # Create mission directory structure so validation passes
+        mission_dir = tmp_path / "kitty-specs" / "008-test-mission"
+        mission_dir.mkdir(parents=True)
+        (mission_dir / "meta.json").write_text('{"slug": "008-test-mission"}')
+
+        with patch(
+            "specify_cli.cli.commands.agent.tasks.locate_project_root",
+            return_value=tmp_path,
+        ):
+            slug = _find_mission_slug(explicit_mission="008-test-mission")
         assert slug == "008-test-mission"
 
-    def test_find_raises_on_missing_slug(self):
+    def test_find_raises_on_missing_slug(self, tmp_path: Path):
         """_find_mission_slug raises typer.Exit when no explicit slug is given."""
         from specify_cli.cli.commands.agent.tasks import _find_mission_slug
         from click.exceptions import Exit
 
-        with pytest.raises(Exit):
-            _find_mission_slug(explicit_mission=None)
+        with patch(
+            "specify_cli.cli.commands.agent.tasks.locate_project_root",
+            return_value=tmp_path,
+        ):
+            with pytest.raises(Exit):
+                _find_mission_slug(explicit_mission=None)
 
 
 class TestStatusInProgressLane:
