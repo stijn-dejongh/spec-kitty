@@ -55,7 +55,7 @@ def _load_acceptance_api():
 
 globals().update(_load_acceptance_api())
 
-__all__ = [
+__all__ = [  # noqa: F822
     "AcceptanceError",
     "AcceptanceMode",
     "AcceptanceResult",

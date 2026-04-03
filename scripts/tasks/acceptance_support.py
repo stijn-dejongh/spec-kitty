@@ -73,7 +73,7 @@ normalize_mission_encoding = globals()["normalize_feature_encoding"]
 # through this module (e.g. acc.run_git in tests).
 from task_helpers import run_git  # noqa: E402, F401
 
-__all__ = [
+__all__ = [  # noqa: F822
     "AcceptanceError",
     "AcceptanceMode",
     "AcceptanceResult",

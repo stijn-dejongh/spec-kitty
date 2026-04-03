@@ -28,12 +28,12 @@ class TemplateResult:
     @property
     def content(self) -> str:
         """Raw template text (UTF-8)."""
-        return self._data["content"]
+        return str(self._data["content"])
 
     @property
     def origin(self) -> str:
         """Human-readable origin label (e.g. 'doctrine/software-dev/command-templates/implement.md')."""
-        return self._data["origin"]
+        return str(self._data["origin"])
 
     @property
     def tier(self) -> Any:
@@ -53,7 +53,7 @@ class ConfigResult:
 
     __slots__ = ("_data",)
 
-    def __init__(self, content: str, origin: str, parsed: dict | list) -> None:
+    def __init__(self, content: str, origin: str, parsed: dict[str, Any] | list[Any]) -> None:
         self._data: dict[str, Any] = {
             "content": content,
             "origin": origin,
@@ -63,17 +63,19 @@ class ConfigResult:
     @property
     def content(self) -> str:
         """Raw YAML text (UTF-8)."""
-        return self._data["content"]
+        return str(self._data["content"])
 
     @property
     def origin(self) -> str:
         """Human-readable origin label (e.g. 'doctrine/software-dev/mission.yaml')."""
-        return self._data["origin"]
+        return str(self._data["origin"])
 
     @property
-    def parsed(self) -> dict | list:
+    def parsed(self) -> dict[str, Any] | list[Any]:
         """Pre-parsed YAML data (parsed with ruamel.yaml YAML(typ='safe'))."""
-        return self._data["parsed"]
+        result = self._data["parsed"]
+        assert isinstance(result, (dict, list))
+        return result
 
     def __repr__(self) -> str:
         return f"ConfigResult(origin={self.origin!r})"

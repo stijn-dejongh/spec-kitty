@@ -151,21 +151,21 @@ class TestMergeEventLogs:
         ours = e1 + "\n"
         theirs = e1 + "\n"  # Same event in both
         result = _merge_event_logs(ours, theirs)
-        lines = [l for l in result.splitlines() if l.strip()]
+        lines = [line for line in result.splitlines() if line.strip()]
         assert len(lines) == 1
 
     def test_both_sides_merged(self):
         e1 = self._evt("AAAA", "2026-01-01T10:00:00+00:00")
         e2 = self._evt("BBBB", "2026-01-01T11:00:00+00:00")
         result = _merge_event_logs(e1 + "\n", e2 + "\n")
-        lines = [l for l in result.splitlines() if l.strip()]
+        lines = [line for line in result.splitlines() if line.strip()]
         assert len(lines) == 2
 
     def test_sorted_by_timestamp(self):
         e1 = self._evt("AAAA", "2026-01-01T12:00:00+00:00")  # Later
         e2 = self._evt("BBBB", "2026-01-01T10:00:00+00:00")  # Earlier
         result = _merge_event_logs(e1 + "\n", e2 + "\n")
-        lines = [l for l in result.splitlines() if l.strip()]
+        lines = [line for line in result.splitlines() if line.strip()]
         assert len(lines) == 2
         first = json.loads(lines[0])
         assert first["event_id"] == "BBBB"  # Earlier event first
@@ -174,7 +174,7 @@ class TestMergeEventLogs:
         e1 = self._evt("AAAA", "2026-01-01T10:00:00+00:00")
         ours = e1 + "\nNOT_JSON\n"
         result = _merge_event_logs(ours, "")
-        lines = [l for l in result.splitlines() if l.strip()]
+        lines = [line for line in result.splitlines() if line.strip()]
         assert len(lines) == 1
 
     def test_empty_both_sides(self):
@@ -407,7 +407,7 @@ class TestFullMergeIntegration:
 
         # Create worktree directories to simulate workspace-per-WP
         worktrees_dir = git_repo / ".worktrees"
-        for wp_id, branch in [("WP01", b1), ("WP02", b2), ("WP03", b3)]:
+        for _wp_id, branch in [("WP01", b1), ("WP02", b2), ("WP03", b3)]:
             wt_dir = worktrees_dir / branch
             wt_dir.mkdir(parents=True, exist_ok=True)
             # Add .git pointer so find_wp_worktrees sees it as valid

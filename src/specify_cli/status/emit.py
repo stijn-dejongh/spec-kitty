@@ -22,12 +22,13 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from typing import Any
 
 import ulid as _ulid_mod
 
+from specify_cli.identity import ActorIdentity
 from .models import (
     DoneEvidence,
     Lane,
@@ -49,13 +50,13 @@ class TransitionError(Exception):
 def _generate_ulid() -> str:
     """Generate a new ULID string."""
     if hasattr(_ulid_mod, "new"):
-        return _ulid_mod.new().str
+        return str(_ulid_mod.new().str)
     return str(_ulid_mod.ULID())
 
 
 def _now_utc() -> str:
     """Return the current UTC time as an ISO 8601 string."""
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _derive_from_lane(mission_dir: Path, wp_id: str) -> str:
@@ -169,14 +170,14 @@ def emit_status_transition(
     *,
     force: bool = False,
     reason: str | None = None,
-    evidence: dict | None = None,
+    evidence: dict[str, object] | None = None,
     review_ref: str | None = None,
     workspace_context: str | None = None,
     subtasks_complete: bool | None = None,
     implementation_evidence_present: bool | None = None,
     execution_mode: str = "worktree",
     repo_root: Path | None = None,
-    policy_metadata: dict | None = None,
+    policy_metadata: dict[str, object] | None = None,
 ) -> StatusEvent:
     """Central orchestration function for all status state changes.
 
@@ -263,7 +264,7 @@ def emit_status_transition(
         from_lane=Lane(from_lane),
         to_lane=Lane(resolved_lane),
         at=_now_utc(),
-        actor=actor,
+        actor=ActorIdentity.from_legacy(actor),
         force=force,
         execution_mode=execution_mode,
         reason=reason,
@@ -310,7 +311,7 @@ def _saas_fan_out(
     mission_slug: str,
     repo_root: Path | None,
     *,
-    policy_metadata: dict | None = None,
+    policy_metadata: dict[str, object] | None = None,
 ) -> None:
     """Conditionally emit a SaaS telemetry event via the sync pipeline.
 
@@ -325,7 +326,7 @@ def _saas_fan_out(
             wp_id=event.wp_id,
             from_lane=str(event.from_lane),
             to_lane=str(event.to_lane),
-            actor=event.actor,
+            actor=str(event.actor),
             mission_slug=mission_slug,
             policy_metadata=policy_metadata,
         )

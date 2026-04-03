@@ -73,6 +73,7 @@ def get_default_branch(repo_path: Path) -> str:
             ["git", "rev-parse", "--verify", branch],
             cwd=repo_path,
             capture_output=True,
+            text=True,
             timeout=5,
         )
         if result.returncode == 0:
@@ -288,7 +289,7 @@ def find_worktree_for_wp(
 def check_doing_wps_for_staleness(
     main_repo_root: Path,
     mission_slug: str,
-    doing_wps: list[dict],
+    doing_wps: list[dict[str, object]],
     threshold_minutes: int = 10,
 ) -> dict[str, StaleCheckResult]:
     """

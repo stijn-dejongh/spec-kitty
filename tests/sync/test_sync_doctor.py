@@ -12,7 +12,7 @@ pytestmark = pytest.mark.fast
 from rich.console import Console
 
 from specify_cli.cli.commands.sync import format_queue_health
-from specify_cli.sync.queue import DEFAULT_MAX_QUEUE_SIZE, QueueStats
+from specify_cli.sync.queue import QueueStats
 
 
 class TestFormatQueueHealthCapacity:

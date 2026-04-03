@@ -97,7 +97,7 @@ class TestRewriteAgentShims:
             # Prompt templates should NOT contain the shim marker
             assert "spec-kitty agent shim" not in content
             # They should be substantial (not thin)
-            lines = [l for l in content.splitlines() if l.strip()]
+            lines = [line for line in content.splitlines() if line.strip()]
             assert len(lines) > 10, f"Prompt template {command} too short ({len(lines)} lines)"
 
     def test_stale_files_deleted(self, tmp_path: Path) -> None:

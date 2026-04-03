@@ -14,7 +14,7 @@ import pytest
 import jsonschema
 from ruamel.yaml import YAML
 
-from tests.doctrine.conftest import DOCTRINE_SOURCE_ROOT, REPO_ROOT
+from tests.doctrine.conftest import DOCTRINE_SOURCE_ROOT
 
 pytestmark = [pytest.mark.fast, pytest.mark.doctrine]
 

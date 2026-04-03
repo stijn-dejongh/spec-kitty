@@ -156,7 +156,7 @@ def reconcile_done_state(
     events = read_events(mission_dir)
     snapshot = reduce(events)
     wp_lanes: dict[str, str] = {}
-    for wp_id, wp_state in snapshot.work_packages.items():
+    for _wp_id, wp_state in snapshot.work_packages.items():
         lane = wp_state.get("lane", "planned")
         if isinstance(lane, str):
             wp_lanes[wp_id] = lane
@@ -196,7 +196,7 @@ def reconcile_done_state(
         merge_commit = _get_merge_commit(branch, target_branch, workspace_path) or "unknown"
         files_touched = _get_files_touched(branch, workspace_path)
 
-        evidence = {
+        evidence: dict[str, object] = {
             "review": {
                 "reviewer": "merge-reconciliation",
                 "verdict": "approved",

@@ -77,7 +77,7 @@ class StateSurface:
     atomic_write: bool = False
     notes: str = ""
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, object]:
         """Return a JSON-serializable dictionary representation."""
         return {
             "name": self.name,

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from specify_cli.skills.registry import CanonicalSkill, SkillRegistry
+from specify_cli.skills.registry import SkillRegistry
 
 
 pytestmark = pytest.mark.integration

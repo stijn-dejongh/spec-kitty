@@ -501,8 +501,8 @@ def _generate_import_candidate_schema() -> dict:
     import importlib
 
     mod = importlib.import_module("doctrine.import_candidates.models")
-    legacy_cls = getattr(mod, "LegacyImportCandidate")
-    curation_cls = getattr(mod, "CurationImportCandidate")
+    legacy_cls = mod.LegacyImportCandidate
+    curation_cls = mod.CurationImportCandidate
 
     # Generate each variant
     legacy_raw = legacy_cls.model_json_schema()
@@ -797,7 +797,7 @@ def _add_minlength_to_string_fields(obj: Any, required_fields: list[str] | None 
                 prop_def["minLength"] = 1
 
     # Recurse into definitions
-    for def_name, def_body in obj.get("definitions", {}).items():
+    for _def_name, def_body in obj.get("definitions", {}).items():
         if isinstance(def_body, dict) and "properties" in def_body:
             _add_minlength_to_string_fields(def_body)
 

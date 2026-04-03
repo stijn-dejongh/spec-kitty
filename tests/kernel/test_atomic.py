@@ -7,8 +7,6 @@ independent of all higher-level modules.
 
 from __future__ import annotations
 
-import os
-import stat
 from pathlib import Path
 from unittest.mock import patch
 
@@ -30,7 +28,7 @@ class TestAtomicWriteStr:
     def test_encodes_str_to_utf8(self, tmp_path: Path) -> None:
         target = tmp_path / "unicode.txt"
         atomic_write(target, "café ñoño 中文")
-        assert target.read_bytes() == "café ñoño 中文".encode("utf-8")
+        assert target.read_bytes() == "café ñoño 中文".encode()
 
     def test_overwrites_existing_file(self, tmp_path: Path) -> None:
         target = tmp_path / "file.txt"
@@ -98,9 +96,8 @@ class TestAtomicWriteAtomicity:
 
     def test_no_temp_file_left_on_write_error(self, tmp_path: Path) -> None:
         target = tmp_path / "file.txt"
-        with patch("os.replace", side_effect=OSError("disk full")):
-            with pytest.raises(OSError):
-                atomic_write(target, "content")
+        with patch("os.replace", side_effect=OSError("disk full")), pytest.raises(OSError):
+            atomic_write(target, "content")
         leftover = list(tmp_path.glob(".atomic-*.tmp"))
         assert leftover == [], f"Temp file not cleaned up: {leftover}"
 

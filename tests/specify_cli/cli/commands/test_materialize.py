@@ -194,7 +194,6 @@ def test_materialize_command_feature_not_found(tmp_path):
 def test_materialize_command_json_output(tmp_path):
     """materialize --json outputs a machine-readable summary."""
     from specify_cli.cli.commands.materialize import materialize
-    from typer.testing import CliRunner
     import typer
 
     _setup_feature(tmp_path, "007-json", {"WP01": "done"})
@@ -227,7 +226,6 @@ def test_materialize_if_stale_skips_when_fresh(tmp_path):
     """materialize_if_stale does not regenerate when derived files are up-to-date."""
     from specify_cli.status.views import materialize_if_stale, write_derived_views
     from specify_cli.status.progress import generate_progress_json
-    import time
 
     mission_dir = _setup_feature(tmp_path, "009-fresh", {"WP01": "done"})
     derived_dir = tmp_path / ".kittify" / "derived"

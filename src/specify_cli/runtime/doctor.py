@@ -169,7 +169,7 @@ def check_governance_resolution(project_dir: Path) -> DoctorCheck:
     )
 
 
-def check_command_file_health(project_path: Path) -> list[dict]:
+def check_command_file_health(project_path: Path) -> list[dict[str, object]]:
     """Check all agent command files for correctness.
 
     For each configured agent and each of the 16 consumer commands, this
@@ -215,7 +215,7 @@ def check_command_file_health(project_path: Path) -> list[dict]:
             stem = stem.replace("-", "_")
         return f"spec-kitty.{stem}.{ext}" if ext else f"spec-kitty.{stem}"
 
-    issues: list[dict] = []
+    issues: list[dict[str, object]] = []
     agent_dirs = get_agent_dirs_for_project(project_path)
 
     for agent_root, subdir in agent_dirs:

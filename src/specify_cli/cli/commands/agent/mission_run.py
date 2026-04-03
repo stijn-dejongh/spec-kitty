@@ -44,7 +44,7 @@ from specify_cli.frontmatter import read_frontmatter, write_frontmatter
 from specify_cli.mission import get_mission_key
 from specify_cli.ownership import infer_ownership, validate_ownership
 from specify_cli.status.bootstrap import bootstrap_canonical_state
-from specify_cli.sync.events import emit_mission_created, emit_wp_created, get_emitter
+from specify_cli.sync.events import emit_wp_created, get_emitter
 
 __all__ = [
     "app",

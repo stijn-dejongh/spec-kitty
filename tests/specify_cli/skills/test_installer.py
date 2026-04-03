@@ -11,7 +11,7 @@ from specify_cli.core.config import (
     SKILL_CLASS_SHARED,
 )
 from specify_cli.skills.installer import install_all_skills, install_skills_for_agent
-from specify_cli.skills.manifest import ManagedFileEntry, compute_content_hash
+from specify_cli.skills.manifest import compute_content_hash
 from specify_cli.skills.registry import CanonicalSkill, SkillRegistry
 
 

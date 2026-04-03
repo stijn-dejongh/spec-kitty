@@ -280,7 +280,7 @@ def resolve_active_mission(
     return None
 
 
-def _count_wps_by_lane(tasks_dir: Path) -> Dict[str, int]:
+def _count_wps_by_lane(tasks_dir: Path) -> dict[str, int]:
     """Count work packages by lane from the canonical event log.
 
     Raises ``CanonicalStatusNotFoundError`` when the event log is absent.

@@ -3,20 +3,15 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
-from pathlib import Path
 
 import pytest
 
 from specify_cli.status.models import Lane, StatusEvent, StatusSnapshot
 from specify_cli.status.progress import (
     DEFAULT_LANE_WEIGHTS,
-    ProgressResult,
-    WPProgress,
     compute_weighted_progress,
     generate_progress_json,
 )
-from specify_cli.status.reducer import reduce
 from specify_cli.status.store import append_event
 
 

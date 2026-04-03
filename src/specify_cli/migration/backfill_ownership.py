@@ -83,7 +83,7 @@ def backfill_ownership(mission_dir: Path, mission_slug: str) -> None:
         return
 
     manager = FrontmatterManager()
-    manifests: dict = {}  # wp_code → OwnershipManifest
+    manifests: dict[str, object] = {}  # wp_code → OwnershipManifest
 
     # Locate repo root: walk up until we find a .git directory
     repo_root: Path | None = None
@@ -137,7 +137,7 @@ def backfill_ownership(mission_dir: Path, mission_slug: str) -> None:
                 wp_branch = f"{mission_slug}-{wp_code}"
                 git_files = _git_diff_files(repo_root, base_branch, wp_branch)
 
-        updates: dict = {}
+        updates: dict[str, str] = {}
 
         if not has_mode:
             mode = infer_execution_mode(full_content, git_files)

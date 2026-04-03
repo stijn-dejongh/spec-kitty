@@ -86,7 +86,7 @@ def create_wp_workspace(
     repo_root: Path,
     workspace_path: Path,
     workspace_name: str,
-    wp_frontmatter: dict,
+    wp_frontmatter: dict[str, object],
     base_branch: str | None = None,
     base_commit: str | None = None,
 ) -> Path:
@@ -526,7 +526,7 @@ spec-kitty agent tasks move-task WP01 --to doing
 def validate_mission_structure(
     mission_dir: Path,
     check_tasks: bool = False
-) -> dict:
+) -> dict[str, object]:
     """Validate mission directory structure and required files.
 
     Checks for:
@@ -553,8 +553,8 @@ def validate_mission_structure(
         >>> assert "valid" in result
         >>> assert "errors" in result
     """
-    errors = []
-    warnings = []
+    errors: list[str] = []
+    warnings: list[str] = []
     paths: dict[str, str] = {}
     artifact_files: dict[str, str] = {}
     artifact_dirs: dict[str, str] = {}

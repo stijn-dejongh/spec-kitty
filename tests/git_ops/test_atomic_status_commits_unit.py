@@ -10,7 +10,6 @@ Verifies that:
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import time
 from contextlib import contextmanager
@@ -200,10 +199,9 @@ class TestMissionStatusLock:
         with patch(
             "specify_cli.status.locking.FileLock.acquire",
             side_effect=Timeout("test.lock"),
-        ):
-            with pytest.raises(MissionStatusLockTimeout, match="Timed out acquiring mission status lock"):
-                with mission_status_lock(repo, "017-test-mission", timeout=0):
-                    pass
+        ), pytest.raises(MissionStatusLockTimeout, match="Timed out acquiring mission status lock"):
+            with mission_status_lock(repo, "017-test-mission", timeout=0):
+                pass
 
     # test_lock_serializes_parallel_processes removed — pre-existing flaky
     # race condition dependent on OS scheduling (fails intermittently).

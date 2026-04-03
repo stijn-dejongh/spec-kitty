@@ -474,7 +474,7 @@ def merge_workspace_per_wp(
         raise typer.Exit(1)
 
     console.print(f"\n[cyan]Workspace-per-WP mission detected:[/cyan] {len(wp_workspaces)} work packages")
-    for wt_path, wp_id, branch in wp_workspaces:
+    for _wt_path, wp_id, branch in wp_workspaces:
         console.print(f"  - {wp_id}: {branch}")
 
     # Validate all WP workspaces are ready
@@ -509,7 +509,7 @@ def merge_workspace_per_wp(
             f"git checkout {target_branch}",
             "git pull --ff-only",
         ]
-        for wt_path, wp_id, branch in effective_workspaces:
+        for _wt_path, wp_id, branch in effective_workspaces:
             if strategy == "squash":
                 steps.extend(
                     [
@@ -524,14 +524,14 @@ def merge_workspace_per_wp(
             steps.append(f"git push origin {target_branch}")
 
         if remove_worktree:
-            for wt_path, wp_id, branch in wp_workspaces:
+            for wt_path, wp_id, _branch in wp_workspaces:
                 if wt_path.exists():
                     steps.append(f"git worktree remove {wt_path}")
                 else:
                     steps.append(f"# skip worktree removal for {wp_id} (path not present)")
 
         if delete_branch:
-            for wt_path, wp_id, branch in wp_workspaces:
+            for _wt_path, _wp_id, branch in wp_workspaces:
                 steps.append(f"git branch -d {branch}")
 
         if json_output:
@@ -607,7 +607,7 @@ def merge_workspace_per_wp(
             merged_count = 0
             skipped_count = 0
             skipped_count += len(merge_plan["skipped_already_in_target"]) + len(merge_plan["skipped_ancestor_of"])  # type: ignore[arg-type,index]
-            for wt_path, wp_id, branch in effective_workspaces:
+            for _wt_path, wp_id, branch in effective_workspaces:
                 console.print(f"[cyan]Merging {wp_id} ({branch})...[/cyan]")
 
                 if strategy == "squash":
@@ -676,7 +676,7 @@ def merge_workspace_per_wp(
     if remove_worktree:
         tracker.start("worktree")
         failed_removals = []
-        for wt_path, wp_id, branch in wp_workspaces:
+        for wt_path, wp_id, _branch in wp_workspaces:
             try:
                 run_command(
                     ["git", "worktree", "remove", str(wt_path), "--force"],
@@ -699,7 +699,7 @@ def merge_workspace_per_wp(
     if delete_branch:
         tracker.start("branch")
         failed_deletions = []
-        for wt_path, wp_id, branch in wp_workspaces:
+        for _wt_path, _wp_id, branch in wp_workspaces:
             try:
                 run_command(["git", "branch", "-d", branch], cwd=merge_root)
                 console.print(f"[green]✓[/green] Deleted branch: {branch}")

@@ -315,7 +315,7 @@ class WorkPackage:
         return extract_scalar(self.frontmatter, "shell_pid")
 
     @property
-    def lane(self) -> Optional[str]:
+    def lane(self) -> str | None:
         from specify_cli.status.lane_reader import get_wp_lane
         # WP files are at kitty-specs/<mission_slug>/tasks/WP01.md
         # mission_dir is the parent of the tasks/ directory

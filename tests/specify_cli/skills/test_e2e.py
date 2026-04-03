@@ -17,13 +17,12 @@ from specify_cli.core.config import (
 )
 from specify_cli.skills.installer import install_all_skills, install_skills_for_agent
 from specify_cli.skills.manifest import (
-    ManagedFileEntry,
     ManagedSkillManifest,
     compute_content_hash,
     load_manifest,
     save_manifest,
 )
-from specify_cli.skills.registry import CanonicalSkill, SkillRegistry
+from specify_cli.skills.registry import SkillRegistry
 from specify_cli.skills.verifier import repair_skills, verify_installed_skills
 
 import pytest
@@ -198,7 +197,7 @@ def test_manifest_persistence(tmp_path: Path) -> None:
 
     # Verify entries match
     assert len(loaded.entries) == len(original_manifest.entries)
-    for orig, reloaded in zip(original_manifest.entries, loaded.entries):
+    for orig, reloaded in zip(original_manifest.entries, loaded.entries, strict=True):
         assert reloaded.skill_name == orig.skill_name
         assert reloaded.source_file == orig.source_file
         assert reloaded.installed_path == orig.installed_path

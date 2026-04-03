@@ -16,7 +16,6 @@ from typing import Any
 
 import pytest
 
-import kernel.glossary_runner as gr
 from kernel.glossary_runner import (
     GlossaryRunnerProtocol,
     clear_registry,

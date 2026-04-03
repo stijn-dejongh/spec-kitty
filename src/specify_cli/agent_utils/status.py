@@ -15,6 +15,7 @@ from rich.table import Table
 from rich.text import Text
 
 from specify_cli.core.paths import get_mission_dir, get_main_repo_root, locate_project_root
+from specify_cli.tasks_support import split_frontmatter, extract_scalar
 
 console = Console()
 

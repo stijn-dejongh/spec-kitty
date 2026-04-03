@@ -1,6 +1,5 @@
 """Tests for documentation mission configuration."""
 
-from pathlib import Path
 
 import pytest
 

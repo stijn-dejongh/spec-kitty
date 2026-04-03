@@ -90,7 +90,7 @@ def _run_git(
     args: list[str],
     cwd: Path,
     check: bool = True,
-) -> subprocess.CompletedProcess:
+) -> subprocess.CompletedProcess[str]:
     """Run a git command; raise RuntimeError with stderr on failure."""
     result = subprocess.run(
         ["git", *args],
@@ -556,7 +556,7 @@ def _resolve_target_branch(
             data = json.loads(meta_path.read_text(encoding="utf-8"))
             tb = data.get("target_branch") or data.get("merge_target_branch")
             if tb and isinstance(tb, str):
-                return tb.strip()
+                return str(tb.strip())
         except (json.JSONDecodeError, OSError):
             pass
 

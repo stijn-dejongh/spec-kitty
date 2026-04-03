@@ -11,7 +11,6 @@ from collections.abc import Callable, Iterator
 import pytest
 import yaml
 
-from tests.branch_contract import IS_2X_BRANCH
 from tests.mutmut_env import prepare_mutants_environment_from_cwd
 from tests.test_isolation_helpers import get_installed_version
 from tests.utils import REPO_ROOT, run, write_wp

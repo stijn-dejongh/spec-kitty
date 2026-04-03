@@ -14,7 +14,7 @@ from pathlib import Path
 
 import typer
 from rich.console import Console
-from typing import Annotated
+from typing import Annotated, Any
 
 from specify_cli.sync.events import (
     emit_history_added,

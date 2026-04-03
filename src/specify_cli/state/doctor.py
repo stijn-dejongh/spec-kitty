@@ -62,7 +62,7 @@ class StateRootsReport:
         """True when no warnings were generated."""
         return len(self.warnings) == 0
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, object]:
         """Return a JSON-serializable dictionary representation."""
         return {
             "healthy": self.healthy,

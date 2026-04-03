@@ -9,14 +9,12 @@ Verifies:
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from specify_cli.core.worktree import create_wp_workspace
-from specify_cli.ownership.models import ExecutionMode
 
 
 pytestmark = pytest.mark.fast
@@ -211,14 +209,13 @@ class TestCodeChangeWorkspace:
         workspace_path.mkdir(parents=True)
         # No .git file/dir — not a valid worktree
 
-        with patch("specify_cli.core.worktree.get_vcs"):
-            with pytest.raises(FileExistsError, match="not a worktree"):
-                create_wp_workspace(
-                    repo_root=tmp_path,
-                    workspace_path=workspace_path,
-                    workspace_name="test-feature-WP01",
-                    wp_frontmatter=_make_frontmatter(execution_mode="code_change"),
-                )
+        with patch("specify_cli.core.worktree.get_vcs"), pytest.raises(FileExistsError, match="not a worktree"):
+            create_wp_workspace(
+                repo_root=tmp_path,
+                workspace_path=workspace_path,
+                workspace_name="test-feature-WP01",
+                wp_frontmatter=_make_frontmatter(execution_mode="code_change"),
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -239,14 +236,13 @@ class TestExecutionModeDefaults:
         fail_result.error = "test"
         mock_vcs.create_workspace.return_value = fail_result
 
-        with patch("specify_cli.core.worktree.get_vcs", return_value=mock_vcs):
-            with pytest.raises(RuntimeError):
-                create_wp_workspace(
-                    repo_root=tmp_path,
-                    workspace_path=workspace_path,
-                    workspace_name="WP99",
-                    wp_frontmatter=frontmatter,
-                )
+        with patch("specify_cli.core.worktree.get_vcs", return_value=mock_vcs), pytest.raises(RuntimeError):
+            create_wp_workspace(
+                repo_root=tmp_path,
+                workspace_path=workspace_path,
+                workspace_name="WP99",
+                wp_frontmatter=frontmatter,
+            )
         # The VCS path was taken (not planning_artifact path)
         mock_vcs.create_workspace.assert_called_once()
 
@@ -264,14 +260,13 @@ class TestExecutionModeDefaults:
         fail_result.error = "test"
         mock_vcs.create_workspace.return_value = fail_result
 
-        with patch("specify_cli.core.worktree.get_vcs", return_value=mock_vcs):
-            with pytest.raises(RuntimeError):
-                create_wp_workspace(
-                    repo_root=tmp_path,
-                    workspace_path=workspace_path,
-                    workspace_name="WP99",
-                    wp_frontmatter=frontmatter,
-                )
+        with patch("specify_cli.core.worktree.get_vcs", return_value=mock_vcs), pytest.raises(RuntimeError):
+            create_wp_workspace(
+                repo_root=tmp_path,
+                workspace_path=workspace_path,
+                workspace_name="WP99",
+                wp_frontmatter=frontmatter,
+            )
         mock_vcs.create_workspace.assert_called_once()
 
 

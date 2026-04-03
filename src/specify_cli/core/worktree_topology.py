@@ -243,7 +243,7 @@ def render_topology_json(
     # Build entries list
     entries_json = []
     for entry in topology.entries:
-        entry_data: dict = {
+        entry_data: dict[str, object] = {
             "wp": entry.wp_id,
             "lane": entry.lane,
             "branch": entry.branch_name,

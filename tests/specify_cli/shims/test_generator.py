@@ -9,7 +9,7 @@ from specify_cli.shims.generator import (
     generate_shim_content,
     generate_all_shims,
 )
-from specify_cli.shims.registry import CLI_DRIVEN_COMMANDS, CONSUMER_SKILLS, PROMPT_DRIVEN_COMMANDS
+from specify_cli.shims.registry import CLI_DRIVEN_COMMANDS, PROMPT_DRIVEN_COMMANDS
 
 import pytest
 

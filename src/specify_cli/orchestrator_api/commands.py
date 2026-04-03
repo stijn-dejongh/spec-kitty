@@ -1021,7 +1021,7 @@ def merge_mission(
 
     # Execute merges using git directly (simplified)
     merged_wps = []
-    for wt_path, wp_id, branch_name in ordered_workspaces:
+    for _wt_path, wp_id, branch_name in ordered_workspaces:
         try:
             # Checkout target branch and merge
             subprocess.run(

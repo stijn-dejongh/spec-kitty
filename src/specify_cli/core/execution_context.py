@@ -58,7 +58,7 @@ class ActionContext:
     commands: dict[str, str] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, object]:
         return asdict(self)
 
 

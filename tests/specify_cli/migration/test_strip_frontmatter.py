@@ -16,7 +16,6 @@ from pathlib import Path
 
 from specify_cli.migration.strip_frontmatter import (
     MUTABLE_FIELDS,
-    STATIC_FIELDS,
     StripResult,
     strip_mutable_fields,
 )

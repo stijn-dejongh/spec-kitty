@@ -73,9 +73,8 @@ class TestFindFeatureSlug:
         with patch(
             "specify_cli.cli.commands.agent.tasks.locate_project_root",
             return_value=tmp_path,
-        ):
-            with pytest.raises(Exit):
-                _find_mission_slug(explicit_mission=None)
+        ), pytest.raises(Exit):
+            _find_mission_slug(explicit_mission=None)
 
 
 class TestStatusInProgressLane:

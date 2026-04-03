@@ -70,10 +70,7 @@ def _globs_overlap(pattern_a: str, pattern_b: str) -> bool:
             return True
 
     # Fnmatch cross-check: does pattern_a match the literal prefix_b (or vice versa)?
-    if fnmatch.fnmatch(prefix_b, pattern_a) or fnmatch.fnmatch(prefix_a, pattern_b):
-        return True
-
-    return False
+    return fnmatch.fnmatch(prefix_b, pattern_a) or fnmatch.fnmatch(prefix_a, pattern_b)
 
 
 def validate_no_overlap(manifests: dict[str, OwnershipManifest]) -> list[str]:

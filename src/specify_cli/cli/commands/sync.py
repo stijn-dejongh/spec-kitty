@@ -31,7 +31,7 @@ from specify_cli.sync.feature_flags import (
     is_saas_sync_enabled,
     saas_sync_disabled_message,
 )
-from datetime import UTC
+from datetime import UTC, timedelta
 
 console = Console()
 

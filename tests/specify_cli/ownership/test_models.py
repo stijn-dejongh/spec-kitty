@@ -41,11 +41,11 @@ class TestExecutionMode:
 
 class TestOwnershipManifest:
     def _make(self, **kwargs) -> OwnershipManifest:
-        defaults = dict(
-            execution_mode=ExecutionMode.CODE_CHANGE,
-            owned_files=("src/specify_cli/ownership/**",),
-            authoritative_surface="src/specify_cli/ownership/",
-        )
+        defaults = {
+            "execution_mode": ExecutionMode.CODE_CHANGE,
+            "owned_files": ("src/specify_cli/ownership/**",),
+            "authoritative_surface": "src/specify_cli/ownership/",
+        }
         defaults.update(kwargs)
         return OwnershipManifest(**defaults)
 

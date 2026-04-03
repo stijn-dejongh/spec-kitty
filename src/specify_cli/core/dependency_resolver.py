@@ -10,7 +10,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from specify_cli.frontmatter import read_frontmatter
 
 
 @dataclass
@@ -87,7 +86,7 @@ def check_dependency_status(mission_dir: Path, wp_id: str, dependencies: list[st
     Returns:
         DependencyStatus with analysis and recommendation
     """
-    tasks_dir = mission_dir / "tasks"
+    mission_dir / "tasks"
     lanes = {}
 
     # Read lane status for each dependency from the canonical event log

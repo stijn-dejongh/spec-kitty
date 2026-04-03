@@ -10,7 +10,6 @@ Covers:
 
 import json
 import sqlite3
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -18,7 +17,6 @@ import pytest
 pytestmark = pytest.mark.fast
 
 from specify_cli.sync.queue import (
-    COALESCEABLE_EVENT_TYPES,
     DEFAULT_MAX_QUEUE_SIZE,
     OfflineQueue,
     QueueStats,

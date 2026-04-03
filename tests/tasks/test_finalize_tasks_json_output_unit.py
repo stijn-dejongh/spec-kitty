@@ -141,7 +141,7 @@ class TestFinalizeTasks:
         assert result.exit_code == 0, result.stdout
         import json
 
-        lines = [l for l in result.stdout.splitlines() if l.strip().startswith("{")]
+        lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
         payload = json.loads(lines[-1])
         assert "commit_hash" in payload
         commit_hash = payload["commit_hash"]
@@ -174,7 +174,7 @@ class TestFinalizeTasks:
         assert result.exit_code == 0, result.stdout
         import json
 
-        lines = [l for l in result.stdout.splitlines() if l.strip().startswith("{")]
+        lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
         payload = json.loads(lines[-1])
         assert payload["commit_created"] is True
         assert isinstance(payload["commit_created"], bool)
@@ -202,7 +202,7 @@ class TestFinalizeTasks:
         assert result.exit_code == 0, result.stdout
         import json
 
-        lines = [l for l in result.stdout.splitlines() if l.strip().startswith("{")]
+        lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
         payload = json.loads(lines[-1])
         assert payload["commit_created"] is False
 
@@ -230,7 +230,7 @@ class TestFinalizeTasks:
         assert result.exit_code == 0, result.stdout
         import json
 
-        lines = [l for l in result.stdout.splitlines() if l.strip().startswith("{")]
+        lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
         payload = json.loads(lines[-1])
         assert isinstance(payload["files_committed"], list)
         files = payload["files_committed"]
@@ -269,7 +269,7 @@ class TestFinalizeTasks:
         assert result.exit_code == 0, result.stdout
         import json
 
-        lines = [l for l in result.stdout.splitlines() if l.strip().startswith("{")]
+        lines = [line for line in result.stdout.splitlines() if line.strip().startswith("{")]
         payload = json.loads(lines[-1])
         for field in required_fields:
             assert field in payload, f"Missing required field: {field!r}"

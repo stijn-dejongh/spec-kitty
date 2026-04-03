@@ -22,7 +22,7 @@ def _write_config(project_path: Path, agents: list[str]) -> None:
     kittify = project_path / ".kittify"
     kittify.mkdir(parents=True, exist_ok=True)
     (kittify / "config.yaml").write_text(
-        f"tools:\n  available:\n"
+        "tools:\n  available:\n"
         + "".join(f"    - {a}\n" for a in agents)
     )
 

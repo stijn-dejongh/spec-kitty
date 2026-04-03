@@ -16,9 +16,8 @@ import os
 import re
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
-from typing import Tuple
 
 import pytest
 
@@ -47,7 +46,7 @@ def _create_test_mission(
     mission_slug: str = _MISSION_SLUG,
     *,
     malformed_events: str | None = None,
-) -> Tuple[Path, Path]:
+) -> tuple[Path, Path]:
     """Create a minimal but valid mission for acceptance testing.
 
     Returns (repo_root, mission_dir).
@@ -111,7 +110,7 @@ def _create_test_mission(
         # Build a valid transition chain: planned -> done (with force to skip intermediate)
         from ulid import ULID
 
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
         event = StatusEvent(
             event_id=str(ULID()),
             mission_slug=mission_slug,
