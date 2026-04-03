@@ -83,7 +83,7 @@ class TestCanonicalFanOut:
             wp_id="WP01",
             from_lane=str(from_lane),
             to_lane=str(to_lane),
-            actor=event.actor,
+            actor=str(event.actor),
             mission_slug="039-test-mission",
             policy_metadata=None,
         )

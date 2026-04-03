@@ -162,6 +162,9 @@ def test_all_imports_from_centralized_module(repo_root: Path):
 def test_centralized_imports_used(repo_root: Path):
     """Verify files that need mission detection import from centralized module."""
     # Files that should import from centralized module
+    # Files that should import from centralized module.
+    # NOTE: acceptance.py is excluded because it correctly uses
+    # require_explicit_mission from core.paths (no auto-detection).
     files_to_check = [
         "cli/commands/implement.py",
         "cli/commands/agent/mission.py",
@@ -170,7 +173,6 @@ def test_centralized_imports_used(repo_root: Path):
         "cli/commands/agent/tasks.py",
         "cli/commands/mission.py",
         "cli/commands/orchestrate.py",
-        "acceptance.py",
         "agent_utils/status.py",
     ]
 
@@ -247,9 +249,10 @@ def test_acceptance_module_backward_compatible(repo_root: Path):
     # Should still export detect_mission_slug function
     assert "def detect_mission_slug(" in content
 
-    # Should convert MissionDetectionError to AcceptanceError for compatibility
+    # Should convert errors to AcceptanceError for compatibility
     assert "AcceptanceError" in content
-    assert "MissionDetectionError" in content
+    # Uses require_explicit_mission (ValueError) instead of MissionDetectionError
+    assert "require_explicit_mission" in content
 
 
 def test_implement_module_backward_compatible(repo_root: Path):

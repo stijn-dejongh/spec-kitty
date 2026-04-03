@@ -728,7 +728,7 @@ class TestSaasFanOut:
             wp_id="WP01",
             from_lane="claimed",
             to_lane="in_progress",
-            actor=event.actor,
+            actor=str(event.actor),
             mission_slug="034-test-mission",
             policy_metadata=None,
         )
