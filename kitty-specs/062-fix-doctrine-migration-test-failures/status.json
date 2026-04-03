@@ -1,18 +1,18 @@
 {
-  "event_count": 60,
-  "last_event_id": "01KNADEFNW8TD69MNZKYXE6XWQ",
-  "materialized_at": "2026-04-03T19:34:45.693778+00:00",
+  "event_count": 72,
+  "last_event_id": "01KNAEAR7247HDRW03J36HW41P",
+  "materialized_at": "2026-04-03T19:50:11.939665+00:00",
   "mission_slug": "062-fix-doctrine-migration-test-failures",
   "summary": {
-    "approved": 3,
+    "approved": 0,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
-    "done": 6,
+    "done": 10,
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 0
+    "planned": 2
   },
   "work_packages": {
     "WP01": {
@@ -92,36 +92,72 @@
         "model": "unknown",
         "profile": "generic",
         "role": "unknown",
-        "tool": "user"
+        "tool": "opencode"
       },
       "force_count": 2,
-      "lane": "approved",
-      "last_event_id": "01KNABGKGXEHAXC3J3WBWNCEHB",
-      "last_transition_at": "2026-04-03T19:00:58.013120+00:00"
+      "lane": "done",
+      "last_event_id": "01KNAEAPB0N7QFQDQ5FMTC94YB",
+      "last_transition_at": "2026-04-03T19:50:10.016350+00:00"
     },
     "WP08": {
       "actor": {
         "model": "unknown",
         "profile": "generic",
         "role": "unknown",
-        "tool": "user"
+        "tool": "opencode"
       },
       "force_count": 4,
-      "lane": "approved",
-      "last_event_id": "01KNADA2AV7CE8VVBDYKTW4H63",
-      "last_transition_at": "2026-04-03T19:32:20.955819+00:00"
+      "lane": "done",
+      "last_event_id": "01KNAEAQ45RYDEC5VNKS3HWES9",
+      "last_transition_at": "2026-04-03T19:50:10.821705+00:00"
     },
     "WP09": {
       "actor": {
         "model": "unknown",
         "profile": "generic",
         "role": "unknown",
-        "tool": "user"
+        "tool": "opencode"
       },
       "force_count": 3,
-      "lane": "approved",
-      "last_event_id": "01KNADEFNW8TD69MNZKYXE6XWQ",
-      "last_transition_at": "2026-04-03T19:34:45.693013+00:00"
+      "lane": "done",
+      "last_event_id": "01KNAEAQTMRHC40GM2YHJ1TTQQ",
+      "last_transition_at": "2026-04-03T19:50:11.540130+00:00"
+    },
+    "WP10": {
+      "actor": {
+        "model": "unknown",
+        "profile": "generic",
+        "role": "unknown",
+        "tool": "finalize-tasks"
+      },
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KNADMXBVE56ZEDRGSQ4X46PK",
+      "last_transition_at": "2026-04-03T19:38:16.315657+00:00"
+    },
+    "WP11": {
+      "actor": {
+        "model": "unknown",
+        "profile": "generic",
+        "role": "unknown",
+        "tool": "opencode"
+      },
+      "force_count": 2,
+      "lane": "done",
+      "last_event_id": "01KNAEAR7247HDRW03J36HW41P",
+      "last_transition_at": "2026-04-03T19:50:11.939019+00:00"
+    },
+    "WP12": {
+      "actor": {
+        "model": "unknown",
+        "profile": "generic",
+        "role": "unknown",
+        "tool": "finalize-tasks"
+      },
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KNADMXCBX7J01TCSTEXVKVQH",
+      "last_transition_at": "2026-04-03T19:38:16.331827+00:00"
     }
   }
 }

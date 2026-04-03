@@ -1,7 +1,7 @@
 ---
 work_package_id: WP08
 title: Architectural Fitness Review
-dependencies: [WP07]
+dependencies: "[]"
 requirement_refs:
 - FR-007
 planning_base_branch: feature/agent-profile-implementation-rebased
@@ -132,3 +132,4 @@ task_type: review
 - 2026-04-03T19:13:45Z – opencode – shell_pid=254171 – Architectural review complete. Verdict: APPROVE with follow-up items. All subtasks T028-T031 done. Force-override: review.md is in WP08 owned_files allowlist.
 - 2026-04-03T19:31:07Z – opencode:unknown:generic:unknown – shell_pid=254171 – Started review via workflow command
 - 2026-04-03T19:32:20Z – opencode – shell_pid=254171 – Review passed: All 4 subtasks (T028-T031) thoroughly addressed. Path convention rationale is sound, JS backward-compat dead-code correctly identified, ~30 rename gaps well-categorized with wire-format risk flagged, verdict format matches spec. Follow-ups already materialized as WP10-12.
+- 2026-04-03T19:50:10Z – opencode – shell_pid=254171 – Done override: Merged into feature/agent-profile-implementation-rebased (worktree removed)

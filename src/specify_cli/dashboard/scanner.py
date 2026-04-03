@@ -414,6 +414,7 @@ def _process_wp_file(
             "lane": default_lane,
             "subtasks": [],
             "agent": "",
+            "model": "",
             "assignee": "",
             "phase": "",
             "agent_profile": "",
@@ -471,7 +472,16 @@ def _process_wp_file(
 
     agent_raw = frontmatter.get("agent", "")
     # Normalize structured agent mapping (e.g. {tool: claude, model: opus, ...}) to tool string
-    agent_str = agent_raw.get("tool", "") if isinstance(agent_raw, dict) else str(agent_raw) if agent_raw else ""
+    if isinstance(agent_raw, dict):
+        agent_str = agent_raw.get("tool", "")
+        model_str = agent_raw.get("model", "")
+    else:
+        agent_str = str(agent_raw) if agent_raw else ""
+        model_str = ""
+
+    # Also check top-level frontmatter 'model' key as fallback
+    if not model_str:
+        model_str = str(frontmatter.get("model", "")) if frontmatter.get("model") else ""
 
     return {
         "id": wp_id,
@@ -479,6 +489,7 @@ def _process_wp_file(
         "lane": lane,
         "subtasks": frontmatter.get("subtasks", []),
         "agent": agent_str,
+        "model": model_str,
         "assignee": frontmatter.get("assignee", ""),
         "phase": frontmatter.get("phase", ""),
         "agent_profile": frontmatter.get("agent_profile", ""),

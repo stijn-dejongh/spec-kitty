@@ -12,7 +12,7 @@ __all__ = ["DashboardRouter"]
 
 
 class DashboardRouter(APIHandler, MissionHandler, StaticHandler):
-    """Dispatch GET/POST requests to API, feature, or static handlers."""
+    """Dispatch GET/POST requests to API, mission, or static handlers."""
 
     def do_POST(self) -> None:  # noqa: N802 (BaseHTTPRequestHandler signature)
         parsed_path = urllib.parse.urlparse(self.path)
@@ -41,7 +41,7 @@ class DashboardRouter(APIHandler, MissionHandler, StaticHandler):
             self.handle_shutdown()
             return
 
-        if path in ('/api/missions', '/api/features'):
+        if path == '/api/missions':
             self.handle_missions_list()
             return
 

@@ -42,25 +42,35 @@ def create_meta_json(mission_dir: Path, vcs: str = "git") -> Path:
 class TestDetectFeatureContext:
     """Tests for detect_mission_context().
 
-    After WP02 removed heuristic detection, detect_mission_context requires
-    an explicit mission flag.  No branch parsing, git, or cwd detection occurs.
+    detect_mission_context delegates to centralized_detect_mission which
+    performs repo-root lookup and slug validation. Tests mock the
+    underlying detection layer to stay unit-level.
     """
 
     def test_detect_with_explicit_flag(self, tmp_path):
         """Explicit mission flag returns correct (number, slug) tuple."""
-        number, slug = detect_mission_context("010-workspace-per-wp")
+        # Create minimal kitty-specs structure so centralized detection succeeds
+        mission_dir = tmp_path / "kitty-specs" / "010-workspace-per-wp"
+        mission_dir.mkdir(parents=True)
+        (mission_dir / "meta.json").write_text('{"slug": "010-workspace-per-wp"}')
+
+        with patch("specify_cli.cli.commands.implement.find_repo_root", return_value=tmp_path):
+            number, slug = detect_mission_context("010-workspace-per-wp")
         assert number == "010"
         assert slug == "010-workspace-per-wp"
 
-    def test_detect_failure_no_flag(self):
-        """No mission flag raises typer.Exit (no auto-detection)."""
-        with pytest.raises(typer.Exit):
-            detect_mission_context(None)
+    def test_detect_failure_no_flag(self, tmp_path):
+        """No mission flag with no missions on disk raises typer.Exit."""
+        # Empty repo — no kitty-specs at all
+        with patch("specify_cli.cli.commands.implement.find_repo_root", return_value=tmp_path):
+            with pytest.raises(typer.Exit):
+                detect_mission_context(None)
 
-    def test_detect_invalid_format(self):
+    def test_detect_invalid_format(self, tmp_path):
         """Invalid slug format (missing ###- prefix) raises typer.Exit."""
-        with pytest.raises(typer.Exit):
-            detect_mission_context("workspace-per-wp")  # Missing number prefix
+        with patch("specify_cli.cli.commands.implement.find_repo_root", return_value=tmp_path):
+            with pytest.raises(typer.Exit):
+                detect_mission_context("workspace-per-wp")  # Missing number prefix
 
 
 class TestFindWpFile:

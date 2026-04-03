@@ -128,6 +128,7 @@ class TestContextDetection:
         assert ctx.repo_root is None
 
 
+@pytest.mark.real_worktree_detection
 class TestRequireMainRepo:
     """Tests for @require_main_repo decorator."""
 
@@ -178,6 +179,7 @@ class TestRequireMainRepo:
         # (Note: rich console output may not be captured perfectly in tests)
 
 
+@pytest.mark.real_worktree_detection
 class TestRequireWorktree:
     """Tests for @require_worktree decorator."""
 
@@ -362,6 +364,7 @@ class TestEnvironmentVariables:
         assert "SPEC_KITTY_WORKTREE_PATH" not in os.environ
 
 
+@pytest.mark.real_worktree_detection
 class TestWorktreeNestingPrevention:
     """Critical tests for worktree nesting prevention."""
 

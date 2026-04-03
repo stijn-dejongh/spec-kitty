@@ -1,7 +1,7 @@
 ---
 work_package_id: WP09
 title: Dashboard In-Review Lane Display and WP Card Identity
-dependencies: [WP05]
+dependencies: "[]"
 requirement_refs: [FR-011, FR-012]
 planning_base_branch: feature/agent-profile-implementation-rebased
 merge_target_branch: feature/agent-profile-implementation-rebased
@@ -118,3 +118,4 @@ task_type: implement
 - 2026-04-03T19:29:48Z – unknown – Moved to for_review
 - 2026-04-03T19:32:57Z – opencode:unknown:generic:unknown – shell_pid=254171 – Started review via workflow command
 - 2026-04-03T19:34:45Z – opencode – shell_pid=254171 – Review passed: T032 correctly combines in_review+for_review in For Review column with distinct CSS, T033 adds agent identity badges in modal with non-empty gating, T034 exposes model field from scanner with dict/scalar/fallback handling, T035 verified via 28 passing unit tests (no Playwright infra exists). Clean diff, only owned_files touched, no regressions.
+- 2026-04-03T19:50:11Z – opencode – shell_pid=254171 – Done override: Merged into feature/agent-profile-implementation-rebased via WP11 (worktree removed)
