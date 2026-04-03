@@ -26,12 +26,9 @@ from specify_cli.status.lane_reader import CanonicalStatusNotFoundError
 from specify_cli.mission_metadata import load_meta, record_acceptance, write_meta
 from specify_cli.mission import MissionError, get_mission_for_mission_dir
 from specify_cli.validators.paths import PathValidationError, validate_mission_paths
-from specify_cli.core.mission_detection import (
-    MissionDetectionError,
-    detect_mission_slug as centralized_detect_mission_slug,
-)
 from specify_cli.core.paths import (
     get_mission_dir,
+    require_explicit_mission,
 )
 from specify_cli.core.tool_config import get_auto_commit_default
 
@@ -266,36 +263,31 @@ def _iter_work_packages(repo_root: Path, mission_slug: str) -> Iterable[WorkPack
 
 
 def detect_mission_slug(
-    repo_root: Path,
+    repo_root: Path,  # noqa: ARG001 -- kept for signature compat
     *,
     explicit_mission: str | None = None,
-    env: Mapping[str, str] | None = None,
-    cwd: Path | None = None,
+    env: Mapping[str, str] | None = None,  # noqa: ARG001 -- kept for signature compat
+    cwd: Path | None = None,  # noqa: ARG001 -- kept for signature compat
     announce_fallback: bool = True,  # noqa: ARG001 -- kept for signature compat
 ) -> str:
-    """Backward-compatible wrapper over centralized mission detection.
+    """Require an explicit mission slug; no auto-detection.
 
     Args:
-        repo_root: Repository root path.
-        explicit_mission: Explicit mission slug, when available.
-        env: Optional environment mapping for deterministic tests.
-        cwd: Optional current working directory for deterministic tests.
+        repo_root: Repository root path (unused — kept for signature compatibility).
+        explicit_mission: Mission slug to use (required).
+        env: Unused; kept for backward-compatible call sites.
+        cwd: Unused; kept for backward-compatible call sites.
         announce_fallback: Unused; kept for backward-compatible call sites.
 
     Returns:
         Mission slug (e.g., "020-my-mission")
 
     Raises:
-        AcceptanceError: If mission detection fails.
+        AcceptanceError: If no explicit mission slug is provided.
     """
     try:
-        return centralized_detect_mission_slug(
-            repo_root,
-            explicit_mission=explicit_mission,
-            env=env,
-            cwd=cwd,
-        )
-    except MissionDetectionError as e:
+        return require_explicit_mission(explicit_mission, command_hint="--mission <slug>")
+    except ValueError as e:
         raise AcceptanceError(str(e)) from e
 
 
