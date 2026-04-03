@@ -189,8 +189,11 @@ directive = service.directives.get("DIRECTIVE_034")
 # directive.applies_to → ["implement", "review"]
 ```
 
+Use the Python API for exact artifact lookup. The CLI currently exposes curation
+and summary commands rather than a generic browse surface.
+
 ```bash
-spec-kitty doctrine list --kind directive
+spec-kitty doctrine status
 ```
 
 **Tactics** — Reusable implementation approaches that describe *how* to do
@@ -279,13 +282,12 @@ for step in contract.steps:
 ### Discovering Available Artifacts
 
 ```bash
-# List all artifacts of a kind
-spec-kitty doctrine list --kind directive
-spec-kitty doctrine list --kind tactic
-spec-kitty doctrine list --kind paradigm
+# Inspect shipped vs proposed doctrine counts
+spec-kitty doctrine status
 
-# Show detail for one artifact
-spec-kitty doctrine show DIRECTIVE_034
+# Curate or promote a specific doctrine kind
+spec-kitty doctrine curate --type directives
+spec-kitty doctrine promote DIRECTIVE_034 --type directives
 
 # List agent profiles
 spec-kitty agent profile list

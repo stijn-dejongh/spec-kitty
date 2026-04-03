@@ -41,7 +41,7 @@ def _create_events_file(
                     "from_lane": "planned",
                     "to_lane": lane,
                     "at": timestamp,
-                    "actor": "agent",
+                    "actor": {"tool": "agent", "model": "unknown", "profile": "unknown", "role": "unknown"},
                     "force": False,
                     "execution_mode": "worktree",
                 }
@@ -661,7 +661,7 @@ class TestRunDoctor:
                     "from_lane": "planned",
                     "to_lane": "claimed",
                     "at": recent,
-                    "actor": "agent",
+                    "actor": {"tool": "agent", "model": "unknown", "profile": "unknown", "role": "unknown"},
                     "force": False,
                     "execution_mode": "worktree",
                 }
@@ -674,7 +674,7 @@ class TestRunDoctor:
                     "from_lane": "claimed",
                     "to_lane": "in_progress",
                     "at": recent,
-                    "actor": "agent",
+                    "actor": {"tool": "agent", "model": "unknown", "profile": "unknown", "role": "unknown"},
                     "force": False,
                     "execution_mode": "worktree",
                 }
@@ -722,7 +722,7 @@ class TestRunDoctor:
                     "from_lane": "planned",
                     "to_lane": "claimed",
                     "at": old,
-                    "actor": "agent",
+                    "actor": {"tool": "agent", "model": "unknown", "profile": "unknown", "role": "unknown"},
                     "force": False,
                     "execution_mode": "worktree",
                 }
@@ -795,14 +795,14 @@ class TestRunDoctor:
             "work_packages": {
                 "WP01": {
                     "lane": "claimed",
-                    "actor": "agent",
+                    "actor": {"tool": "agent", "model": "unknown", "profile": "unknown", "role": "unknown"},
                     "last_transition_at": old,
                     "last_event_id": "01ABC",
                     "force_count": 0,
                 },
                 "WP02": {
                     "lane": "in_progress",
-                    "actor": "agent2",
+                    "actor": {"tool": "agent2", "model": "unknown", "profile": "unknown", "role": "unknown"},
                     "last_transition_at": old,
                     "last_event_id": "01DEF",
                     "force_count": 0,

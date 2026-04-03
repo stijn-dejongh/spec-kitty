@@ -316,7 +316,7 @@ procedure = service.procedures.get("refactoring")
 ```
 
 ```bash
-spec-kitty doctrine list --kind procedure
+spec-kitty doctrine status
 ```
 
 ### Agent Profiles (Role-Based WP Assignment)

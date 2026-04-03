@@ -57,7 +57,11 @@ def load_doctrine_catalog(*, include_proposed: bool = False) -> DoctrineCatalog:
 
     domains_present: set[str] = set()
 
-    paradigms, paradigms_present = _load_yaml_id_catalog_with_presence(doctrine_root / "paradigms", "**/*.paradigm.yaml", include_proposed=include_proposed)
+    paradigms, paradigms_present = _load_yaml_id_catalog_with_presence(
+        doctrine_root / "paradigms",
+        "**/*.paradigm.yaml",
+        include_proposed=include_proposed,
+    )
     if paradigms_present:
         domains_present.add("paradigms")
 
@@ -71,7 +75,11 @@ def load_doctrine_catalog(*, include_proposed: bool = False) -> DoctrineCatalog:
     if template_sets_present:
         domains_present.add("template_sets")
 
-    tactics, tactics_present = _load_yaml_id_catalog_with_presence(doctrine_root / "tactics", "**/*.tactic.yaml", include_proposed=include_proposed)
+    tactics, tactics_present = _load_yaml_id_catalog_with_presence(
+        doctrine_root / "tactics",
+        "**/*.tactic.yaml",
+        include_proposed=include_proposed,
+    )
     if tactics_present:
         domains_present.add("tactics")
 
@@ -166,7 +174,12 @@ def _load_yaml_id_catalog(
         include_proposed: Whether `_proposed/` artifacts should be included in
                   addition to `shipped/` artifacts. Defaults to shipped-only.
     """
-    ids, _ = _load_yaml_id_catalog_with_presence(directory, pattern, id_field=id_field, include_proposed=include_proposed)
+    ids, _ = _load_yaml_id_catalog_with_presence(
+        directory,
+        pattern,
+        id_field=id_field,
+        include_proposed=include_proposed,
+    )
     return ids
 
 
@@ -253,10 +266,11 @@ def _load_template_sets_with_presence(doctrine_root: Path) -> tuple[set[str], bo
     """
     from doctrine.missions import MissionTemplateRepository
 
-    repo = MissionTemplateRepository.default()
+    missions_root = doctrine_root / "missions"
+    repo = MissionTemplateRepository(missions_root)
     mission_names = repo.list_missions()
 
-    if not mission_names and not repo._missions_root.is_dir():
+    if not mission_names and not missions_root.is_dir():
         return set(), False
 
     template_sets = {f"{name}-default" for name in mission_names}

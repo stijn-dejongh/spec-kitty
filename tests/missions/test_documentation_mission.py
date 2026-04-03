@@ -10,12 +10,12 @@ pytestmark = pytest.mark.fast
 
 # Get source missions directory for testing
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SOURCE_MISSIONS_DIR = REPO_ROOT / "src" / "specify_cli"
+SOURCE_MISSIONS_DIR = REPO_ROOT / "src" / "doctrine"
 
 
 # T054: Test mission.yaml Loading
 def test_documentation_mission_loads():
-    """Test documentation mission loads from src/specify_cli/missions/."""
+    """Test documentation mission loads from src/doctrine/missions/."""
     mission_dir = SOURCE_MISSIONS_DIR / "missions" / "documentation"
     mission = Mission(mission_dir)
 

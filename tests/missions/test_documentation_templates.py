@@ -8,7 +8,7 @@ from specify_cli.mission import Mission
 pytestmark = pytest.mark.fast
 # Get source missions directory for testing
 REPO_ROOT = Path(__file__).resolve().parents[2]
-MISSION_DIR = REPO_ROOT / "src" / "specify_cli" / "missions" / "documentation"
+MISSION_DIR = REPO_ROOT / "src" / "doctrine" / "missions" / "documentation"
 
 
 # T058: Test Divio Template Frontmatter
@@ -101,5 +101,4 @@ def test_explanation_template_required_sections():
     assert "## Background" in content or "## Overview" in content
     assert "## Concepts" in content or "## How It Works" in content
     assert "## Design" in content or "## Trade-offs" in content or "## Alternatives" in content
-
 

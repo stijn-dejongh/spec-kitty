@@ -21,6 +21,7 @@ from pathlib import Path
 
 from specify_cli.core.dependency_graph import build_dependency_graph, topological_sort
 from specify_cli.core.paths import get_main_repo_root, get_mission_dir, get_mission_target_branch
+from specify_cli.frontmatter import read_frontmatter  # noqa: F401
 from specify_cli.workspace_context import list_contexts
 
 

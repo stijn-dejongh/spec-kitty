@@ -57,7 +57,7 @@ spec-kitty constitution generate    # Compile answers into governance bundle
 ### Runtime context injection (Agent tools)
 
 ```bash
-spec-kitty constitution context --action implement --depth 2
+spec-kitty constitution context --action implement
 ```
 
 ### Python API

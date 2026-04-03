@@ -32,11 +32,14 @@ from specify_cli.tasks_support import (
 from specify_cli.workspace_context import WorkspaceContext, save_context
 from specify_cli.core.multi_parent_merge import create_multi_parent_base
 from specify_cli.core.context_validation import require_main_repo
+from specify_cli.core.mission_detection import (
+    MissionDetectionError,
+    detect_mission as centralized_detect_mission,
+)
 from specify_cli.core.paths import (
     get_mission_dir,
     get_mission_tasks_dir,
     get_mission_target_branch,
-    require_explicit_mission,
 )
 from specify_cli.mission_metadata import set_vcs_lock
 from specify_cli.git import safe_commit
@@ -100,34 +103,29 @@ def _json_safe_output(func):
 
 
 def detect_mission_context(mission_flag: str | None = None) -> tuple[str, str]:
-    """Require an explicit mission run slug and return (number, slug).
+    """Detect the active mission and return ``(number, slug)``.
 
     Args:
-        mission_flag: Explicit mission run slug from --mission-run flag (required)
+        mission_flag: Explicit mission run slug from ``--mission`` / ``--mission-run``
 
     Returns:
         Tuple of (mission_number, mission_slug)
         Example: ("010", "010-workspace-per-wp")
 
     Raises:
-        typer.Exit: If mission run slug is not provided or has invalid format
+        typer.Exit: If mission detection fails
     """
-    import re
     try:
-        slug = require_explicit_mission(mission_flag, command_hint="--mission-run <slug>")
-    except ValueError as e:
+        repo_root = find_repo_root()
+        ctx = centralized_detect_mission(
+            repo_root,
+            explicit_mission=mission_flag,
+        )
+    except (MissionDetectionError, TaskCliError) as e:
         console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(1) from None
 
-    match = re.match(r'^(\d{3})-', slug)
-    if not match:
-        console.print(
-            f"[red]Error:[/red] Invalid mission run slug format: {slug}\n"
-            "Expected format: ###-mission-name (e.g., 010-workspace-per-wp)"
-        )
-        raise typer.Exit(1)
-
-    return match.group(1), slug
+    return ctx.number, ctx.slug
 
 
 def find_wp_file(repo_root: Path, mission_slug: str, wp_id: str) -> Path:

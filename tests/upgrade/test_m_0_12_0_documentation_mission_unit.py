@@ -128,8 +128,7 @@ def test_apply_installs_mission(migration: InstallDocumentationMission, tmp_path
     doc_mission = kittify / "missions" / "documentation"
     assert doc_mission.exists()
     assert (doc_mission / "mission.yaml").exists()
-    # WP10: command-templates were deleted; migration copies mission without them
-    assert not (doc_mission / "command-templates").exists()
+    assert (doc_mission / "command-templates").exists()
 
 
 def test_apply_copies_all_files(migration: InstallDocumentationMission, tmp_path: Path) -> None:
@@ -141,8 +140,8 @@ def test_apply_copies_all_files(migration: InstallDocumentationMission, tmp_path
 
     doc_mission = kittify / "missions" / "documentation"
 
-    # WP10: command-templates were deleted; verify they are NOT copied
-    assert not (doc_mission / "command-templates").exists()
+    assert (doc_mission / "command-templates").exists()
+    assert (doc_mission / "command-templates" / "implement.md").exists()
 
     # mission.yaml must be present
     assert (doc_mission / "mission.yaml").exists()

@@ -21,13 +21,16 @@ from specify_cli.core.implement_validation import (
     validate_and_resolve_base,
     validate_base_workspace_exists,
 )
+from specify_cli.core.mission_detection import (
+    MissionDetectionError,
+    detect_mission_slug as centralized_detect_mission_slug,
+)
 from specify_cli.core.paths import (
     get_main_repo_root,
     get_mission_dir,
     get_mission_tasks_dir,
     is_worktree_context,
     locate_project_root,
-    require_explicit_mission,
 )
 from specify_cli.git import safe_commit
 from specify_cli.mission import get_deliverables_path, get_mission_key
@@ -244,20 +247,24 @@ def _ensure_target_branch_checked_out(repo_root: Path, mission_slug: str) -> tup
 
 
 def _find_mission_slug(explicit_mission: str | None = None) -> str:
-    """Require an explicit mission run slug (no auto-detection).
+    """Resolve the active mission slug via the centralized detector.
 
     Args:
-        explicit_mission: Mission run slug provided via --mission-run flag.
+        explicit_mission: Mission slug provided via ``--mission`` / ``--mission-run``.
 
     Returns:
         Mission slug (e.g., "008-unified-python-cli")
 
     Raises:
-        typer.Exit: If mission run slug is not provided.
+        typer.Exit: If mission detection fails.
     """
     try:
-        return require_explicit_mission(explicit_mission, command_hint="--mission-run <slug>")
-    except ValueError as e:
+        repo_root = locate_project_root(Path.cwd()) or Path.cwd()
+        return centralized_detect_mission_slug(
+            repo_root,
+            explicit_mission=explicit_mission,
+        )
+    except MissionDetectionError as e:
         print(f"Error: {e}")
         raise typer.Exit(1) from None
 
