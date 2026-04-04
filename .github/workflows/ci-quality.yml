@@ -961,6 +961,7 @@ jobs:
           {
             echo "sonar.organization=${{ steps.sonar_settings.outputs.organization }}"
             echo "sonar.projectKey=${{ steps.sonar_settings.outputs.project_key }}"
+            echo "sonar.branch.name=${{ github.head_ref || github.ref_name }}"
           } >> "$tmp_file"
 
           mv "$tmp_file" sonar-project.properties
