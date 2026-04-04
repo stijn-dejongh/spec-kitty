@@ -434,8 +434,8 @@ def merge_workspace_per_wp(
 
     _pol = _load_pol(main_repo)
     _wp_ids = [wp_id for _, wp_id, _ in wp_workspaces]
-    _feature_dir = main_repo / "kitty-specs" / feature_slug
-    _gate_eval = _eval_gates(_feature_dir, feature_slug, _wp_ids, _pol.merge_gates, main_repo)
+    _mission_dir = main_repo / "kitty-specs" / mission_slug
+    _gate_eval = _eval_gates(_mission_dir, mission_slug, _wp_ids, _pol.merge_gates, main_repo)
     for _g in _gate_eval.gates:
         _icon = "✓" if _g.verdict == "pass" else "⚠" if not _g.blocking else "✗"
         console.print(f"  {_icon} Gate {_g.gate_name}: {_g.details}")
@@ -1060,10 +1060,10 @@ def merge(
 
         if structure == "lane-based":
             from specify_cli.lanes.persistence import read_lanes_json
-            lanes_manifest = read_lanes_json(main_repo / "kitty-specs" / feature_slug)
+            lanes_manifest = read_lanes_json(main_repo / "kitty-specs" / mission_slug)
             print(json.dumps({
                 "spec_kitty_version": SPEC_KITTY_VERSION,
-                "feature_slug": feature_slug,
+                "mission_slug": mission_slug,
                 "structure": "lane-based",
                 "mission_branch": lanes_manifest.mission_branch if lanes_manifest else None,
                 "lanes": [l.to_dict() for l in lanes_manifest.lanes] if lanes_manifest else [],
@@ -1290,7 +1290,7 @@ def merge(
     # Lane-based merge: two-tier flow (lane→mission, then mission→target)
     if structure == "lane-based":
         _run_lane_based_merge(
-            repo_root, feature_slug, push=push,
+            repo_root, mission_slug, push=push,
             delete_branch=delete_branch, remove_worktree=remove_worktree,
         )
 

@@ -1692,9 +1692,10 @@ def finalize_tasks(  # noqa: C901
 
         # Prepare metadata for event emission
         meta_path = mission_dir / "meta.json"
+        meta = None
         if meta_path.exists():
             try:
-                json.loads(meta_path.read_text(encoding="utf-8"))
+                meta = json.loads(meta_path.read_text(encoding="utf-8"))
             except (json.JSONDecodeError, OSError) as exc:
                 console.print(f"[yellow]Warning:[/yellow] Failed to read meta.json for event emission: {exc}")
         else:
@@ -1726,7 +1727,7 @@ def finalize_tasks(  # noqa: C901
                 lanes_manifest_dry = _compute_lanes_validate(
                     dependency_graph=wp_dependencies,
                     ownership_manifests=wp_manifests,  # type: ignore[arg-type]
-                    feature_slug=feature_slug,
+                    feature_slug=mission_slug,
                     target_branch=target_branch,
                     wp_bodies=wp_bodies,
                     mission_id=meta.get("mission_id") if meta else None,
@@ -1780,12 +1781,12 @@ def finalize_tasks(  # noqa: C901
             lanes_manifest = compute_lanes(
                 dependency_graph=wp_dependencies,
                 ownership_manifests=wp_manifests,  # type: ignore[arg-type]
-                feature_slug=feature_slug,
+                feature_slug=mission_slug,
                 target_branch=target_branch,
                 wp_bodies=wp_bodies,
                 mission_id=meta.get("mission_id") if meta else None,
             )
-            lanes_path = write_lanes_json(feature_dir, lanes_manifest)
+            lanes_path = write_lanes_json(mission_dir, lanes_manifest)
             if not json_output:
                 console.print(
                     f"[green]✓[/green] Computed {len(lanes_manifest.lanes)} execution lane(s)"
