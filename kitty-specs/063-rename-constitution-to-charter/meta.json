@@ -2,8 +2,10 @@
   "created_at": "2026-04-05T05:15:31.876416+00:00",
   "feature_number": "063",
   "feature_slug": "063-rename-constitution-to-charter",
-  "friendly_name": "rename constitution to charter",
+  "friendly_name": "Rename Constitution to Charter",
   "mission": "software-dev",
   "slug": "063-rename-constitution-to-charter",
-  "target_branch": "main"
+  "source_description": "Rename all active constitution references to charter across the codebase, as described in GitHub issue #379. Scope: 3 directory modules, 7 kernel API functions, 15+ classes/types, CLI command, skill, templates, and user-facing content. Must NOT rename migration files, migration tests, kitty-specs archives, changelog entries, or legacy agent configs. Must add backward-compat CLI alias. Must add migration for user projects renaming .kittify/constitution/ to .kittify/charter/.",
+  "target_branch": "main",
+  "vcs": "git"
 }

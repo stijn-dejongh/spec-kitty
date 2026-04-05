@@ -119,11 +119,28 @@ task_type: implement
          )
          # Forward to charter app
      ```
-  2. Alternative simpler approach: register `charter_module.app` under both names, with a callback that prints the warning for the `constitution` name. Investigate what pattern Typer best supports.
-  3. Write a test that invokes the deprecated command and asserts the warning appears.
+  2. **Recommended pattern**: Register `charter_module.app` as a second Typer group under the name `"constitution"`, but wrap it with a callback that prints the deprecation warning to stderr before forwarding. Concrete approach:
+     ```python
+     import sys
+
+     # Primary registration
+     app.add_typer(charter_module.app, name="charter")
+
+     # Deprecated alias — re-register the SAME app object under the old name
+     # with a callback that emits the deprecation warning
+     @app.callback("constitution", invoke_without_command=True, hidden=True)
+     def _constitution_compat(ctx: typer.Context):
+         print(
+             "DeprecationWarning: 'spec-kitty constitution' is deprecated. "
+             "Use 'spec-kitty charter' instead.",
+             file=sys.stderr,
+         )
+     ```
+     If Typer doesn't support `@app.callback("constitution")`, use the alternative: create a thin Typer subapp that mirrors all subcommands by importing them from `charter_module.app` and adding the warning in its callback. The simplest working approach is to register `charter_module.app` under both names and add a `rich.console.Console(stderr=True).print()` warning in a custom callback for the `constitution` name.
+  3. Write a test that invokes the deprecated command and asserts the warning appears on stderr.
 - **Files**: `src/specify_cli/cli/commands/__init__.py`
 - **Parallel?**: No.
-- **Notes**: The exact Typer deprecation pattern may need experimentation. The key requirement is: `spec-kitty constitution context --action specify --json` must work AND emit a warning.
+- **Notes**: The key requirement is: `spec-kitty constitution context --action specify --json` must work AND emit a warning to stderr. Use `print(..., file=sys.stderr)` rather than `warnings.warn()` for reliable stderr output in CLI context.
 
 ### Subtask T023 – Update shim dispatch
 
