@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "feature_slug": "063-rename-constitution-to-charter",
+  "mission_id": "063-rename-constitution-to-charter",
+  "mission_branch": "kitty/mission-063-rename-constitution-to-charter",
+  "target_branch": "063-rename-constitution-to-charter",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01",
+        "WP02",
+        "WP03",
+        "WP04",
+        "WP05",
+        "WP06",
+        "WP07",
+        "WP08"
+      ],
+      "write_scope": [
+        "architecture/**/*.md",
+        "docs/**/*.md",
+        "src/charter/**",
+        "src/doctrine/charter/defaults.yaml",
+        "src/doctrine/paradigms/shipped/test-first.paradigm.yaml",
+        "src/doctrine/skills/spec-kitty-charter-doctrine/**",
+        "src/specify_cli/.contextive/governance.yml",
+        "src/specify_cli/charter/**",
+        "src/specify_cli/cli/commands/__init__.py",
+        "src/specify_cli/cli/commands/agent/feature.py",
+        "src/specify_cli/cli/commands/agent/workflow.py",
+        "src/specify_cli/cli/commands/charter.py",
+        "src/specify_cli/cli/commands/shim.py",
+        "src/specify_cli/dashboard/charter_path.py",
+        "src/specify_cli/missions/**/command-templates/charter.md",
+        "src/specify_cli/missions/**/templates/*.md",
+        "src/specify_cli/upgrade/migrations/m_*_rename_constitution_to_charter.py",
+        "tests/charter/**",
+        "tests/specify_cli/upgrade/migrations/test_m_*_rename_constitution_to_charter.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "dashboard",
+        "legacy-cleanup",
+        "tests",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-04-05T05:59:03.639955+00:00",
+  "computed_from": "dependency_graph+ownership"
+}
