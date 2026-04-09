@@ -179,8 +179,6 @@ src/
 │   └── _safe_re.py            # WP01: SIM105 fix
 └── specify_cli/
     ├── acceptance.py           # WP02: E402/UP035/F401 root-cause fix
-    ├── dossier/tests/
-    │   └── test_snapshot.py    # WP03: MissionDossier/ArtifactRef schema drift
     ├── post_merge/stale_assertions.py  # WP04: stale type: ignore (×4)
     ├── tracker/credentials.py  # WP04: stale type: ignore (×1)
     ├── merge/config.py         # WP04: stale type: ignore (×1)
@@ -199,6 +197,7 @@ src/
     └── cli/commands/materialize.py     # WP05: incompatible assignment
 
 tests/
+├── dossier/        # WP03/WP05: dossier test updates after test move
 ├── next/          # WP08: shift-left candidates (5 git_repo tests)
 ├── missions/      # WP08: shift-left candidates (7 git_repo tests)
 ├── lanes/         # WP07: FR-016 marker cataloguing (0 markers on 12 test files)

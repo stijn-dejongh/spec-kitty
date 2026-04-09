@@ -18,6 +18,8 @@ subtasks:
 - T029
 - T030
 - T031
+agent: "opencode"
+shell_pid: "40632"
 history:
 - date: '2026-04-09'
   action: created
@@ -50,6 +52,10 @@ honest ("do not regress") rather than aspirational ("reach a new target").
 **Dependency chain:** WP01–WP05 must be merged first so the baseline is measured against a
 clean, passing codebase. Measuring before the lint/type fixes would produce an inaccurate
 baseline (some tests may have been failing).
+
+**Current test layout note:** Dossier tests now live under `tests/dossier/` rather than
+`src/specify_cli/dossier/tests/`. When exploring residual test directories for baseline
+measurement, treat `tests/dossier/` as the canonical dossier test location.
 
 **Tier definitions (from research.md R-02):**
 
@@ -171,7 +177,7 @@ pytest tests/post_merge/ --cov=src/specify_cli/post_merge \
   --cov-report=term-missing -q 2>&1 | tail -8
 
 # core-misc: residual modules not in dedicated dirs
-# Find what tests exist for policy/, schemas/, validators/, core/, etc.
+# Find what tests exist for policy/, schemas/, validators/, core/, dossier/, etc.
 pytest tests/ \
   --ignore=tests/status --ignore=tests/lanes --ignore=tests/sync \
   --ignore=tests/next --ignore=tests/review --ignore=tests/merge \
@@ -183,7 +189,8 @@ pytest tests/ \
 ```
 
 For `core-misc`, the exact test directory structure may differ from the list above —
-explore `tests/` to find the residual test directories.
+explore `tests/` to find the residual test directories. Include `tests/dossier/` in that
+discovery rather than relying on the legacy in-tree dossier test path.
 
 ---
 
@@ -272,3 +279,7 @@ and any known failures are documented.
   "below tier minimum — floor set to measured to avoid blocking CI; tighten in follow-up".
 - **`core-misc` is ill-defined:** The residual cluster is a catch-all. Measure what you can;
   document what modules it includes.
+
+## Activity Log
+
+- 2026-04-09T17:03:22Z – opencode – shell_pid=40632 – Started implementation via action command

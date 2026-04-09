@@ -180,6 +180,7 @@ WP06 must complete first (produces `coverage-baseline.md`). WP07 follows (marker
 **Priority:** High | **Effort:** Small | **Estimated prompt:** ~260 lines
 **Goal:** Run the full test suite (all markers) per module cluster and produce `coverage-baseline.md` with measured percentages and calibrated floors.
 **Success:** `coverage-baseline.md` committed; no test failures during baseline run.
+**Note:** Dossier tests now live under `tests/dossier/`; use that path when exploring residual module coverage inputs.
 
 **Includes:**
 - [x] T027 Measure aggregate coverage for Tier A modules (status, lanes, kernel, sync) (WP06)
