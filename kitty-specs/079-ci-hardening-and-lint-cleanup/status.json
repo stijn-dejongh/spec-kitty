@@ -1,7 +1,7 @@
 {
-  "event_count": 24,
-  "last_event_id": "01KNSC2WWQ644H4RW09YST7E2W",
-  "materialized_at": "2026-04-09T14:59:33.911095+00:00",
+  "event_count": 25,
+  "last_event_id": "01KNSC645BCGWE5SQNZ0TC0Y5P",
+  "materialized_at": "2026-04-09T15:01:19.659114+00:00",
   "mission_number": "079",
   "mission_slug": "079-ci-hardening-and-lint-cleanup",
   "mission_type": "software-dev",
@@ -12,17 +12,17 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 2,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 8
+    "planned": 9
   },
   "work_packages": {
     "WP01": {
-      "actor": "opencode",
+      "actor": "user",
       "force_count": 4,
-      "lane": "in_progress",
-      "last_event_id": "01KNSBZJH682VWGE0S1V6WJ3GD",
-      "last_transition_at": "2026-04-09T14:57:44.998791+00:00"
+      "lane": "planned",
+      "last_event_id": "01KNSC645BCGWE5SQNZ0TC0Y5P",
+      "last_transition_at": "2026-04-09T15:01:19.659114+00:00"
     },
     "WP02": {
       "actor": "implement-command",
