@@ -16,7 +16,7 @@ subtasks:
 - T012
 - T013
 shell_pid: "40632"
-agent: "codex:gpt-5:python-implementer:implementer"
+agent: "opencode"
 history:
 - date: '2026-04-09'
   action: created
@@ -202,3 +202,4 @@ statements) is unchanged — only constructor call argument lists should differ.
 - 2026-04-09T15:13:09Z – opencode – shell_pid=43579 – Implementation complete: mypy 0 errors, 28/28 tests pass, only test_snapshot.py modified
 - 2026-04-09T15:13:13Z – opencode – shell_pid=40632 – Started review via action command
 - 2026-04-09T15:13:36Z – codex:gpt-5:python-implementer:implementer – shell_pid=40632 – Moved to for_review
+- 2026-04-09T15:48:11Z – opencode – shell_pid=40632 – Review passed: 20x mission_type->mission_slug fixes correct, ArtifactRef/MissionDossier explicit None values correct, return types added, datetime modernization good. Minor: F401 unused pytest import in test_snapshot.py and follow_imports=skip mypy override in pyproject.toml to address later. Test relocation to tests/dossier/ deferred.
