@@ -1,4 +1,15 @@
 ---
+affected_files: []
+cycle_number: 2
+mission_slug: 079-ci-hardening-and-lint-cleanup
+reproduction_command:
+reviewed_at: '2026-04-09T15:01:19Z'
+reviewer_agent: unknown
+verdict: rejected
+wp_id: WP01
+---
+
+---
 affected_files:
 - src/doctrine/missions/repository.py
 cycle_number: 2
