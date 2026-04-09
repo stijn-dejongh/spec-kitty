@@ -36,10 +36,10 @@
 | T025 | Add `types-requests` to dev dependencies in `pyproject.toml` | WP05 | P | [D] |
 | T026 | Verify `mypy --strict src/` exits 0 for all FR-002 files; run full test suite | WP05 | | [D] |
 | T027 | Measure aggregate coverage for Tier A modules (status, lanes, kernel, sync) | WP06 | P | [D] |
-| T028 | Measure aggregate coverage for Tier B modules (next, review, merge, cli, missions, upgrade) | WP06 | P |
-| T029 | Measure aggregate coverage for Tier C modules (dashboard, release, orchestrator_api, post_merge, core-misc) | WP06 | P |
-| T030 | Apply floor formula and write `coverage-baseline.md` | WP06 | |
-| T031 | Verify zero test failures in baseline run; flag any failures before proceeding | WP06 | |
+| T028 | Measure aggregate coverage for Tier B modules (next, review, merge, cli, missions, upgrade) | WP06 | P | [D] |
+| T029 | Measure aggregate coverage for Tier C modules (dashboard, release, orchestrator_api, post_merge, core-misc) | WP06 | P | [D] |
+| T030 | Apply floor formula and write `coverage-baseline.md` | WP06 | | [D] |
+| T031 | Verify zero test failures in baseline run; flag any failures before proceeding | WP06 | | [D] |
 | T032 | Classify and add markers to all 12 `tests/lanes/` test files | WP07 | P |
 | T033 | Classify and add markers to all 6 `tests/review/` test files | WP07 | P |
 | T034 | Classify and add markers to all 7 `tests/merge/` test files | WP07 | P |
