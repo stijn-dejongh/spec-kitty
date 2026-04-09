@@ -45,7 +45,7 @@
 | T034 | Classify and add markers to all 7 `tests/merge/` test files | WP07 | P | [D] |
 | T035 | Classify and add markers to all 3 `tests/cli/` test files | WP07 | P | [D] |
 | T036 | Verify all newly-marked tests pass; confirm `pytest -m fast` runs cleanly for these modules | WP07 | | [D] |
-| T037 | Inspect `tests/next/` git_repo tests; identify shift-left candidates | WP08 | |
+| T037 | Inspect `tests/next/` git_repo tests; identify shift-left candidates | WP08 | | [D] |
 | T038 | Convert eligible `tests/next/` git_repo tests to fast; document non-eligible ones | WP08 | |
 | T039 | Inspect `tests/missions/` git_repo tests; identify shift-left candidates | WP08 | |
 | T040 | Convert eligible `tests/missions/` git_repo tests to fast; document non-eligible ones | WP08 | |
@@ -219,7 +219,7 @@ WP06 must complete first (produces `coverage-baseline.md`). WP07 follows (marker
 **Success:** At least 3 tests shifted to fast tier; no coverage decrease; all tests pass.
 
 **Includes:**
-- [ ] T037 Inspect `tests/next/` git_repo tests; identify shift-left candidates (WP08)
+- [x] T037 Inspect `tests/next/` git_repo tests; identify shift-left candidates (WP08)
 - [ ] T038 Convert eligible `tests/next/` tests from git_repo to fast (WP08)
 - [ ] T039 Inspect `tests/missions/` git_repo tests; identify shift-left candidates (WP08)
 - [ ] T040 Convert eligible `tests/missions/` tests from git_repo to fast (WP08)
