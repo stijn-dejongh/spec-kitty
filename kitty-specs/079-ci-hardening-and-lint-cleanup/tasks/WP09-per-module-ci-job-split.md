@@ -470,3 +470,4 @@ Any other dependency encoding is a violation of the verified import graph.
 
 - 2026-04-09T17:43:53Z – opencode – shell_pid=40632 – Assigned agent via action command
 - 2026-04-09T17:51:10Z – opencode – shell_pid=40632 – Moved to for_review
+- 2026-04-09T17:51:25Z – opencode – shell_pid=40632 – Review passed. 36 jobs total (up from 14). DAG verified: merge=T0, status->sync, lanes->status+merge. YAML valid. Coverage floors from baseline applied. Skip-pass shims deferred to WP10. NFR-002 (draft PR validation) deferred to post-merge CI run.
