@@ -15,7 +15,8 @@ subtasks:
 - T007
 - T008
 - T009
-shell_pid: '50468'
+shell_pid: "50468"
+agent: "claude"
 history:
 - date: '2026-04-09'
   action: created
@@ -206,3 +207,7 @@ If tests fail:
 The diff should show: (1) `logger = ...` line moved down, (2) 2–3 import lines deleted,
 (3) `typing` import rewrites. Any behavioral change in the file's logic would be a red flag.
 The function bodies should be unchanged.
+
+## Activity Log
+
+- 2026-04-09T14:41:27Z – claude – shell_pid=50468 – Assigned agent via action command
