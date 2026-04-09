@@ -14,6 +14,8 @@ subtasks:
 - T039
 - T040
 - T041
+agent: "opencode"
+shell_pid: "40632"
 history:
 - date: '2026-04-09'
   action: created
@@ -240,3 +242,7 @@ The diff should show: `@pytest.mark.git_repo` → `@pytest.mark.fast` changes, f
 parameter renames (`git_repo_path` → `tmp_path`), and any directory/file setup that replaces
 git repo setup. Any new `subprocess.run` or `os.system` call in a converted test is a red
 flag — the conversion is invalid if the test still invokes external processes.
+
+## Activity Log
+
+- 2026-04-09T17:34:12Z – opencode – shell_pid=40632 – Started implementation via action command
