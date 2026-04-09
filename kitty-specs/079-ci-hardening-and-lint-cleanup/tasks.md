@@ -44,7 +44,7 @@
 | T033 | Classify and add markers to all 6 `tests/review/` test files | WP07 | P | [D] |
 | T034 | Classify and add markers to all 7 `tests/merge/` test files | WP07 | P | [D] |
 | T035 | Classify and add markers to all 3 `tests/cli/` test files | WP07 | P | [D] |
-| T036 | Verify all newly-marked tests pass; confirm `pytest -m fast` runs cleanly for these modules | WP07 | |
+| T036 | Verify all newly-marked tests pass; confirm `pytest -m fast` runs cleanly for these modules | WP07 | | [D] |
 | T037 | Inspect `tests/next/` git_repo tests; identify shift-left candidates | WP08 | |
 | T038 | Convert eligible `tests/next/` git_repo tests to fast; document non-eligible ones | WP08 | |
 | T039 | Inspect `tests/missions/` git_repo tests; identify shift-left candidates | WP08 | |
@@ -205,7 +205,7 @@ WP06 must complete first (produces `coverage-baseline.md`). WP07 follows (marker
 - [x] T033 Classify and add markers to all 6 `tests/review/` test files (WP07)
 - [x] T034 Classify and add markers to all 7 `tests/merge/` test files (WP07)
 - [x] T035 Classify and add markers to all 3 `tests/cli/` test files (WP07)
-- [ ] T036 Verify all newly-marked tests pass; confirm `pytest -m fast` runs cleanly (WP07)
+- [x] T036 Verify all newly-marked tests pass; confirm `pytest -m fast` runs cleanly (WP07)
 
 **Dependencies:** Depends on WP06 (coverage-baseline.md must exist before marking changes coverage accounting)
 **Prompt:** [WP07-test-marker-cataloguing.md](tasks/WP07-test-marker-cataloguing.md)
