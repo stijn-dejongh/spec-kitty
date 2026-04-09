@@ -157,7 +157,7 @@ All five WPs are independent and can run simultaneously in separate lanes. None 
 
 **Includes:**
 - [x] T020 Fix bare `dict`/`list` generics (4 files) (WP05)
-- [ ] T021 Fix `no-any-return` violations (4 files) (WP05)
+- [x] T021 Fix `no-any-return` violations (4 files) (WP05)
 - [ ] T022 Fix missing return type annotations in `sync/config.py` (WP05)
 - [ ] T023 Fix type incompatibilities in `conflict_resolver.py` and `materialize.py` (WP05)
 - [ ] T024 Fix `tracker/credentials.py`: stale ignore + None→Module assignment (WP05)
