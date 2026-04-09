@@ -53,7 +53,7 @@
 | T042 | Add workflow-level `paths:` trigger to `ci-quality.yml` for docs-only skip | WP09 | | [D] |
 | T043 | Add `changes` detection job using `dorny/paths-filter` with module-level filters | WP09 | | [D] |
 | T044 | Define Tier 0 per-module `fast-tests` jobs (sync, merge, missions, post_merge, release) with `if:` path conditions | WP09 | | [D] |
-| T045 | Define Tier 1 `fast-tests-status` job with `needs: [changes, fast-tests-sync]` and path condition | WP09 | |
+| T045 | Define Tier 1 `fast-tests-status` job with `needs: [changes, fast-tests-sync]` and path condition | WP09 | | [D] |
 | T046 | Define Tier 2 `fast-tests` jobs (review, next, lanes, dashboard, upgrade) with DAG `needs:` and path conditions | WP09 | |
 | T047 | Define Tier 3 `fast-tests` jobs (cli, orchestrator_api, core-misc) with full DAG `needs:` | WP09 | |
 | T048 | Add `integration-tests-<module>` job pairs for modules with git_repo/integration tests; apply coverage floors from `coverage-baseline.md` | WP09 | |
@@ -246,7 +246,7 @@ WP09 must complete and merge before WP10 begins. WP10 depends on per-module job 
 - [x] T042 Add workflow-level `paths:` trigger for docs-only skip (WP09)
 - [x] T043 Add `changes` detection job using `dorny/paths-filter` (WP09)
 - [x] T044 Define Tier 0 `fast-tests` jobs with path conditions (WP09)
-- [ ] T045 Define Tier 1 `fast-tests-status` job with DAG `needs:` (WP09)
+- [x] T045 Define Tier 1 `fast-tests-status` job with DAG `needs:` (WP09)
 - [ ] T046 Define Tier 2 `fast-tests` jobs with DAG `needs:` and path conditions (WP09)
 - [ ] T047 Define Tier 3 `fast-tests` jobs (cli, orchestrator_api, core-misc) (WP09)
 - [ ] T048 Add `integration-tests-<module>` job pairs with coverage floors (WP09)
