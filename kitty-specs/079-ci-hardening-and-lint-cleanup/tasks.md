@@ -61,7 +61,7 @@
 | T050 | Add skip-pass shim jobs for all jobs that are required branch-protection checks | WP09 | | [D] |
 | T051 | Confirm current required-checks list with repo owner (pre-merge gate for WP10) | WP10 | | [D] |
 | T052 | Add path filter to `orchestrator-boundary.yml` (FR-014) | WP10 | | [D] |
-| T053 | Add path filter to `check-spec-kitty-events-alignment.yml` (FR-015) | WP10 | |
+| T053 | Add path filter to `check-spec-kitty-events-alignment.yml` (FR-015) | WP10 | | [D] |
 | T054 | Validate docs-only PR behavior: open a draft PR with only `*.md` changes; confirm no Python jobs run | WP10 | |
 | T055 | Confirm `quality-gate` passes on `main` with full migration applied | WP10 | |
 
@@ -267,7 +267,7 @@ WP09 must complete and merge before WP10 begins. WP10 depends on per-module job 
 **Includes:**
 - [x] T051 Confirm current required-checks list with repo owner (WP10)
 - [x] T052 Add path filter to `orchestrator-boundary.yml` (FR-014) (WP10)
-- [ ] T053 Add path filter to `check-spec-kitty-events-alignment.yml` (FR-015) (WP10)
+- [x] T053 Add path filter to `check-spec-kitty-events-alignment.yml` (FR-015) (WP10)
 - [ ] T054 Validate docs-only PR behavior via draft PR (WP10)
 - [ ] T055 Confirm `quality-gate` passes on `main` (WP10)
 
