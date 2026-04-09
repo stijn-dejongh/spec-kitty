@@ -2,9 +2,9 @@
   "event_count": 0,
   "last_event_id": null,
   "materialized_at": "",
-  "mission_number": "030",
+  "mission_number": "079",
   "mission_slug": "",
-  "mission_type": "documentation",
+  "mission_type": "software-dev",
   "summary": {
     "approved": 0,
     "blocked": 0,
