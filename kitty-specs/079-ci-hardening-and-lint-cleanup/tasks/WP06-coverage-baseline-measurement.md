@@ -285,3 +285,4 @@ and any known failures are documented.
 - 2026-04-09T17:03:22Z – opencode – shell_pid=40632 – Started implementation via action command
 - 2026-04-09T17:23:55Z – opencode – shell_pid=40632 – Moved to for_review
 - 2026-04-09T17:24:00Z – opencode – shell_pid=40632 – Started review via action command
+- 2026-04-09T17:24:09Z – opencode – shell_pid=40632 – Review passed: coverage-baseline.md has measurements for 14 module clusters, floor formula applied correctly with risk-based exceptions for below-tier modules (cli, missions, upgrade), 21 pre-existing failures documented.
