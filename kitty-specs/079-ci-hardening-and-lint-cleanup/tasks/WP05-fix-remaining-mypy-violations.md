@@ -20,7 +20,8 @@ subtasks:
 - T025
 - T026
 - T027
-shell_pid: '40632'
+shell_pid: "40632"
+agent: "opencode"
 history:
 - date: '2026-04-09'
   action: created
@@ -402,3 +403,7 @@ If mypy reports errors:
 The diff should contain: type annotation additions/changes, a `pyproject.toml` change with
 `types-requests`, and possibly a `cast()` or `assert isinstance()` call. No logic changes.
 If any conditional branches are added or removed, that is outside the scope of a type-only fix.
+
+## Activity Log
+
+- 2026-04-09T15:51:19Z – opencode – shell_pid=40632 – Assigned agent via action command
