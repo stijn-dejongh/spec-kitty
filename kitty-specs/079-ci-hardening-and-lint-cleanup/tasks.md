@@ -140,7 +140,7 @@ All five WPs are independent and can run simultaneously in separate lanes. None 
 - [x] T015 Remove stale ignore from `merge/config.py:57` (WP04)
 - [x] T016 Remove stale ignore from `migration/rebuild_state.py:38` (WP04)
 - [x] T017 Fix `migration/backfill_identity.py:36`: fix no-any-return + remove stale ignore (WP04)
-- [ ] T018 Fix `policy/audit.py:27`: fix no-any-return + remove stale ignore (WP04)
+- [x] T018 Fix `policy/audit.py:27`: fix no-any-return + remove stale ignore (WP04)
 - [ ] T019 Verify mypy passes for all 5 WP04 files; no regressions (WP04)
 
 **Parallel opportunities:** T014–T018 each touch a different file.
