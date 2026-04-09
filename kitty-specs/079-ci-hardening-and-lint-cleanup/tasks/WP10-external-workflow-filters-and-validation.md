@@ -15,6 +15,8 @@ subtasks:
 - T053
 - T054
 - T055
+agent: "opencode"
+shell_pid: "40632"
 history:
 - date: '2026-04-09'
   action: created
@@ -248,3 +250,7 @@ verify:
 The diff should show only `on:` section additions (path filters) in the two workflow files.
 No job logic should change in this WP — that is WP09's territory. Any change to job steps,
 environment variables, or test commands in this PR is out of scope and must be moved to WP09.
+
+## Activity Log
+
+- 2026-04-09T17:51:45Z – opencode – shell_pid=40632 – Started implementation via action command
