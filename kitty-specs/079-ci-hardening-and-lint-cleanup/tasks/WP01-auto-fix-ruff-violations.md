@@ -13,8 +13,8 @@ subtasks:
 - T003
 - T004
 - T005
-agent: "codex:gpt-5:python-implementer:implementer"
-shell_pid: "43579"
+agent: "opencode"
+shell_pid: "40632"
 history:
 - date: '2026-04-09'
   action: created
@@ -231,3 +231,4 @@ minimal: 1–5 lines per file. Any change larger than that warrants investigatio
 - 2026-04-09T14:44:36Z – codex:gpt-5:python-implementer:implementer – shell_pid=43579 – Started implementation via action command
 - 2026-04-09T14:47:34Z – codex:gpt-5:python-implementer:implementer – shell_pid=43579 – Blocked: WP01 fixes committed in 1a211d566; ruff and fast charter/kernel tests pass, but mypy still fails in external file src/doctrine/missions/repository.py when checking src/doctrine/missions/glossary_hook.py.
 - 2026-04-09T14:53:23Z – codex:gpt-5:python-implementer:implementer – shell_pid=43579 – Ready for review: fixed targeted Ruff violations and strict-typing spillover needed for scoped mypy pass; forced past unrelated WP02 task artifact
+- 2026-04-09T14:57:45Z – opencode – shell_pid=40632 – Started review via action command
