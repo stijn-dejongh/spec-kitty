@@ -208,9 +208,18 @@ The diff should show: (1) `logger = ...` line moved down, (2) 2–3 import lines
 (3) `typing` import rewrites. Any behavioral change in the file's logic would be a red flag.
 The function bodies should be unchanged.
 
+## Review Feedback
+
+Latest rejection feedback: [review-cycle-1.md](WP02-fix-acceptance-import-ordering/review-cycle-1.md)
+
+Blocking issue summary:
+- The exact gate `mypy src/specify_cli/acceptance.py` still exits non-zero in the WP02 lane workspace because mypy reports imported-module errors elsewhere in the repo.
+- Before resubmitting, verify that exact command exits 0 in the lane workspace with the checked-in configuration.
+
 ## Activity Log
 
 - 2026-04-09T14:41:27Z – claude – shell_pid=50468 – Assigned agent via action command
 - 2026-04-09T15:47:39Z – claude – shell_pid=50468 – Moved to for_review
 - 2026-04-09T15:50:15Z – codex:gpt-5:python-reviewer:reviewer – shell_pid=83775 – Started review via action command
 - 2026-04-09T15:51:01Z – codex:gpt-5:python-reviewer:reviewer – shell_pid=83775 – Moved to planned
+- 2026-04-09T15:51:01Z – codex:gpt-5:python-reviewer:reviewer – shell_pid=83775 – Review feedback recorded in `tasks/WP02-fix-acceptance-import-ordering/review-cycle-1.md`

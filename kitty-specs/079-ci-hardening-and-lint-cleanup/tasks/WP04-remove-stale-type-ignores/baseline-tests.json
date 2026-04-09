@@ -1,0 +1,12 @@
+{
+  "wp_id": "WP04",
+  "captured_at": "2026-04-09T15:52:15Z",
+  "base_branch": "feat/079-ci-hardening-and-lint-cleanup",
+  "base_commit": "e3c722c0fe0a81b842843aca09ac7f06fb63a8b2",
+  "test_runner": "pytest",
+  "total": 9913,
+  "passed": 9856,
+  "failed": 0,
+  "skipped": 57,
+  "failures": []
+}
