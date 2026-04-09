@@ -15,7 +15,7 @@
 | T004 | Fix SIM105: try/except/pass → `contextlib.suppress` in `_safe_re.py:185` | WP01 | P | [D] |
 | T005 | Verify WP01 files pass ruff check and tests | WP01 | | [D] |
 | T006 | Move logger init below imports in `acceptance.py` (E402 root cause) | WP02 | | [D] |
-| T007 | Remove unused imports (MutableMapping, extract_scalar, find_repo_root) | WP02 | |
+| T007 | Remove unused imports (MutableMapping, extract_scalar, find_repo_root) | WP02 | | [D] |
 | T008 | Replace deprecated `typing.*` with builtins/`collections.abc` (UP035) | WP02 | |
 | T009 | Verify `acceptance.py` passes ruff + mypy, run affected tests | WP02 | |
 | T010 | Inspect current `MissionDossier` and `ArtifactRef` constructor signatures | WP03 | | [D] |
@@ -102,7 +102,7 @@ All five WPs are independent and can run simultaneously in separate lanes. None 
 
 **Includes:**
 - [x] T006 Move logger init below imports in `acceptance.py` (E402 root cause) (WP02)
-- [ ] T007 Remove unused imports (MutableMapping, extract_scalar, find_repo_root) (WP02)
+- [x] T007 Remove unused imports (MutableMapping, extract_scalar, find_repo_root) (WP02)
 - [ ] T008 Replace deprecated `typing.*` with builtins/`collections.abc` (UP035) (WP02)
 - [ ] T009 Verify `acceptance.py` passes ruff + mypy, run affected tests (WP02)
 
