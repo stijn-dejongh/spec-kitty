@@ -8,6 +8,9 @@ requirement_refs:
 planning_base_branch: feat/079-ci-hardening-and-lint-cleanup
 merge_target_branch: feat/079-ci-hardening-and-lint-cleanup
 branch_strategy: Planning artifacts for this feature were generated on feat/079-ci-hardening-and-lint-cleanup. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/079-ci-hardening-and-lint-cleanup unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-079-ci-hardening-and-lint-cleanup
+base_commit: a9a38afc46d26b59fa7d74715a584b845220ae00
+created_at: '2026-04-09T15:51:19.564908+00:00'
 subtasks:
 - T020
 - T021
@@ -17,6 +20,7 @@ subtasks:
 - T025
 - T026
 - T027
+shell_pid: '40632'
 history:
 - date: '2026-04-09'
   action: created
