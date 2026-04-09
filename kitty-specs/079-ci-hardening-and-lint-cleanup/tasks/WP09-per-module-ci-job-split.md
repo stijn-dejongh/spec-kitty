@@ -438,6 +438,7 @@ to verify YAML syntax before committing.
 - [ ] `report` and `quality-gate` jobs list all new per-module job names in `needs:`
 - [ ] Skip-pass shim jobs added for all required-check jobs
 - [ ] YAML parses without error
+- [ ] **NFR-002 validated:** Open a draft PR touching only `src/specify_cli/dashboard/` (or any single module); confirm all relevant CI jobs complete within 5 minutes from push to `quality-gate` passing
 - [ ] Changes committed to `feat/079-ci-hardening-and-lint-cleanup`
 
 ## Risks

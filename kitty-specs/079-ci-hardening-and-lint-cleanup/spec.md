@@ -129,7 +129,7 @@ for that module is computed independently against a calibrated floor for the rev
 | FR-004 | The CI workflow must define a dedicated fast-tests job and integration-tests job for each of the following module clusters: `dashboard`, `merge`, `review`, `sync`, `next`, `lanes`, `upgrade`, `missions`, `cli`, `post_merge`, `release`, `orchestrator_api`, and a residual `core-misc` cluster | proposed |
 | FR-005 | Each per-module CI job must scope its test invocation only to that module's source and test paths; it must not run tests for other modules | proposed |
 | FR-006 | Each per-module CI job must have an independently configured coverage floor appropriate to that module's current coverage level | proposed |
-| FR-007 | The CI job DAG must express the internal dependency ordering between module clusters: `next` and `review` jobs must complete successfully before the `merge` job begins; any other module dependency relationships identified during implementation must be encoded in the same way | proposed |
+| FR-007 | The CI job DAG must express the verified import-graph dependency ordering between module clusters. The authoritative structure (from research.md R-01) is: `sync` (Tier 0, leaf) → `status` (Tier 1) → `{review, next, lanes, dashboard, upgrade}` (Tier 2) → `{cli, orchestrator_api}` (Tier 3). `merge` is a Tier 0 leaf node with no dependencies on `next` or `review`. All DAG edges must be derived from the verified import graph, not assumed. | proposed |
 | FR-008 | The monolithic `fast-tests-core` and `integration-tests-core` jobs must be replaced by the per-module jobs; they must not run alongside the new jobs | proposed |
 | FR-009 | The `report` and `quality-gate` jobs must be updated to collect results from all new per-module jobs | proposed |
 | FR-010 | A documentation-only PR (changes limited to `*.md`, `architecture/**`, `docs/**`, `kitty-specs/**`) must not trigger Python test jobs, ruff, or mypy | proposed |
@@ -149,7 +149,7 @@ for that module is computed independently against a calibrated floor for the rev
 | NFR-002 | A PR touching a single module cluster must complete CI in under 5 minutes from push to all relevant jobs finishing | ≤ 5 minutes for single-module PRs | proposed |
 | NFR-003 | After the ruff/mypy cleanup (FR-001/FR-002), the lint job must report zero violations on `main` | 0 ruff violations, 0 mypy errors on `main` | proposed |
 | NFR-004 | No existing passing test must be broken by the mypy fixes (dossier schema drift fixes must not change test behavior, only fix the call signatures to match the current data model) | 100% of previously passing tests remain passing | proposed |
-| NFR-005 | Per-module coverage floors must be set no lower than the actual current coverage for that module (floors cannot decrease from the pre-split baseline) | coverage_floor(module) ≥ current_coverage(module) | proposed |
+| NFR-005 | Per-module coverage floors must be set no lower than 2 percentage points below the actual current coverage for that module; the 2% buffer accounts for natural test-run variance while still functioning as a "do not regress" gate | coverage_floor(module) ≥ current_coverage(module) − 2% | proposed |
 
 ### Constraints
 
