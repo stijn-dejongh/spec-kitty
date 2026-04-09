@@ -48,7 +48,7 @@
 | T037 | Inspect `tests/next/` git_repo tests; identify shift-left candidates | WP08 | | [D] |
 | T038 | Convert eligible `tests/next/` git_repo tests to fast; document non-eligible ones | WP08 | | [D] |
 | T039 | Inspect `tests/missions/` git_repo tests; identify shift-left candidates | WP08 | | [D] |
-| T040 | Convert eligible `tests/missions/` git_repo tests to fast; document non-eligible ones | WP08 | |
+| T040 | Convert eligible `tests/missions/` git_repo tests to fast; document non-eligible ones | WP08 | | [D] |
 | T041 | Verify full test suite passes; confirm coverage does not decrease post-shift | WP08 | |
 | T042 | Add workflow-level `paths:` trigger to `ci-quality.yml` for docs-only skip | WP09 | |
 | T043 | Add `changes` detection job using `dorny/paths-filter` with module-level filters | WP09 | |
@@ -222,7 +222,7 @@ WP06 must complete first (produces `coverage-baseline.md`). WP07 follows (marker
 - [x] T037 Inspect `tests/next/` git_repo tests; identify shift-left candidates (WP08)
 - [x] T038 Convert eligible `tests/next/` tests from git_repo to fast (WP08)
 - [x] T039 Inspect `tests/missions/` git_repo tests; identify shift-left candidates (WP08)
-- [ ] T040 Convert eligible `tests/missions/` tests from git_repo to fast (WP08)
+- [x] T040 Convert eligible `tests/missions/` tests from git_repo to fast (WP08)
 - [ ] T041 Verify full test suite passes; confirm coverage does not decrease (WP08)
 
 **Dependencies:** Depends on WP07 (marker cataloguing must complete so overall marker state is stable)
