@@ -40,7 +40,7 @@
 | T029 | Measure aggregate coverage for Tier C modules (dashboard, release, orchestrator_api, post_merge, core-misc) | WP06 | P | [D] |
 | T030 | Apply floor formula and write `coverage-baseline.md` | WP06 | | [D] |
 | T031 | Verify zero test failures in baseline run; flag any failures before proceeding | WP06 | | [D] |
-| T032 | Classify and add markers to all 12 `tests/lanes/` test files | WP07 | P |
+| T032 | Classify and add markers to all 12 `tests/lanes/` test files | WP07 | P | [D] |
 | T033 | Classify and add markers to all 6 `tests/review/` test files | WP07 | P |
 | T034 | Classify and add markers to all 7 `tests/merge/` test files | WP07 | P |
 | T035 | Classify and add markers to all 3 `tests/cli/` test files | WP07 | P |
@@ -201,7 +201,7 @@ WP06 must complete first (produces `coverage-baseline.md`). WP07 follows (marker
 **Success:** Zero unmarked test functions in the four targeted module directories.
 
 **Includes:**
-- [ ] T032 Classify and add markers to all 12 `tests/lanes/` test files (WP07)
+- [x] T032 Classify and add markers to all 12 `tests/lanes/` test files (WP07)
 - [ ] T033 Classify and add markers to all 6 `tests/review/` test files (WP07)
 - [ ] T034 Classify and add markers to all 7 `tests/merge/` test files (WP07)
 - [ ] T035 Classify and add markers to all 3 `tests/cli/` test files (WP07)
