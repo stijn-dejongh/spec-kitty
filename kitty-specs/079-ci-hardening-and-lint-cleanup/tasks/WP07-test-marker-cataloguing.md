@@ -245,3 +245,4 @@ additions where missing. No test assertion logic should change. A diff that modi
 
 - 2026-04-09T17:26:47Z – opencode – shell_pid=40632 – Assigned agent via action command
 - 2026-04-09T17:33:26Z – opencode – shell_pid=40632 – Moved to for_review
+- 2026-04-09T17:33:31Z – opencode – shell_pid=40632 – Started review via action command
