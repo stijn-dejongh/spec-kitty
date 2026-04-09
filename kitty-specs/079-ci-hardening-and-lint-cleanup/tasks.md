@@ -17,7 +17,7 @@
 | T006 | Move logger init below imports in `acceptance.py` (E402 root cause) | WP02 | | [D] |
 | T007 | Remove unused imports (MutableMapping, extract_scalar, find_repo_root) | WP02 | | [D] |
 | T008 | Replace deprecated `typing.*` with builtins/`collections.abc` (UP035) | WP02 | | [D] |
-| T009 | Verify `acceptance.py` passes ruff + mypy, run affected tests | WP02 | |
+| T009 | Verify `acceptance.py` passes ruff + mypy, run affected tests | WP02 | | [D] |
 | T010 | Inspect current `MissionDossier` and `ArtifactRef` constructor signatures | WP03 | | [D] |
 | T011 | Fix `MissionDossier(...)` call sites in `test_snapshot.py` (3 sites) | WP03 | | [D] |
 | T012 | Fix `ArtifactRef(...)` call sites in `test_snapshot.py` (6 sites) | WP03 | | [D] |
@@ -104,7 +104,7 @@ All five WPs are independent and can run simultaneously in separate lanes. None 
 - [x] T006 Move logger init below imports in `acceptance.py` (E402 root cause) (WP02)
 - [x] T007 Remove unused imports (MutableMapping, extract_scalar, find_repo_root) (WP02)
 - [x] T008 Replace deprecated `typing.*` with builtins/`collections.abc` (UP035) (WP02)
-- [ ] T009 Verify `acceptance.py` passes ruff + mypy, run affected tests (WP02)
+- [x] T009 Verify `acceptance.py` passes ruff + mypy, run affected tests (WP02)
 
 **Dependencies:** None
 **Prompt:** [WP02-fix-acceptance-import-ordering.md](tasks/WP02-fix-acceptance-import-ordering.md)
