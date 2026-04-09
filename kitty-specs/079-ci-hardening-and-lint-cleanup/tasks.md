@@ -35,7 +35,7 @@
 | T024 | Fix `tracker/credentials.py`: remove stale ignore (line 15) + fix None→Module assignment (line 17) | WP05 | P | [D] |
 | T025 | Add `types-requests` to dev dependencies in `pyproject.toml` | WP05 | P | [D] |
 | T026 | Verify `mypy --strict src/` exits 0 for all FR-002 files; run full test suite | WP05 | | [D] |
-| T027 | Measure aggregate coverage for Tier A modules (status, lanes, kernel, sync) | WP06 | P |
+| T027 | Measure aggregate coverage for Tier A modules (status, lanes, kernel, sync) | WP06 | P | [D] |
 | T028 | Measure aggregate coverage for Tier B modules (next, review, merge, cli, missions, upgrade) | WP06 | P |
 | T029 | Measure aggregate coverage for Tier C modules (dashboard, release, orchestrator_api, post_merge, core-misc) | WP06 | P |
 | T030 | Apply floor formula and write `coverage-baseline.md` | WP06 | |
@@ -182,7 +182,7 @@ WP06 must complete first (produces `coverage-baseline.md`). WP07 follows (marker
 **Success:** `coverage-baseline.md` committed; no test failures during baseline run.
 
 **Includes:**
-- [ ] T027 Measure aggregate coverage for Tier A modules (status, lanes, kernel, sync) (WP06)
+- [x] T027 Measure aggregate coverage for Tier A modules (status, lanes, kernel, sync) (WP06)
 - [ ] T028 Measure aggregate coverage for Tier B modules (next, review, merge, cli, missions, upgrade) (WP06)
 - [ ] T029 Measure aggregate coverage for Tier C modules (dashboard, release, orchestrator_api, post_merge, core-misc) (WP06)
 - [ ] T030 Apply floor formula and write `coverage-baseline.md` (WP06)
