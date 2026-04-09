@@ -16,7 +16,7 @@ subtasks:
 - T012
 - T013
 shell_pid: "43579"
-agent: "codex:gpt-5:python-implementer:implementer"
+agent: "opencode"
 history:
 - date: '2026-04-09'
   action: created
@@ -199,3 +199,4 @@ statements) is unchanged — only constructor call argument lists should differ.
 - 2026-04-09T14:59:33Z – codex:gpt-5:python-reviewer:reviewer – shell_pid=43579 – Moved to planned
 - 2026-04-09T15:03:35Z – codex:gpt-5:python-implementer:implementer – shell_pid=43579 – Started implementation via action command
 - 2026-04-09T15:06:55Z – codex:gpt-5:python-implementer:implementer – shell_pid=43579 – Blocked: exact review gates fail on out-of-scope issues. 'mypy src/specify_cli/dossier/tests/test_snapshot.py' only passes with a broad specify_cli.* follow_imports=skip override, and 'pytest src/specify_cli/dossier/tests/ -q' fails due repeated mission_type kwargs in other dossier test files outside WP03 ownership.
+- 2026-04-09T15:13:09Z – opencode – shell_pid=43579 – Implementation complete: mypy 0 errors, 28/28 tests pass, only test_snapshot.py modified
