@@ -18,7 +18,7 @@
 | T007 | Remove unused imports (MutableMapping, extract_scalar, find_repo_root) | WP02 | |
 | T008 | Replace deprecated `typing.*` with builtins/`collections.abc` (UP035) | WP02 | |
 | T009 | Verify `acceptance.py` passes ruff + mypy, run affected tests | WP02 | |
-| T010 | Inspect current `MissionDossier` and `ArtifactRef` constructor signatures | WP03 | |
+| T010 | Inspect current `MissionDossier` and `ArtifactRef` constructor signatures | WP03 | | [D] |
 | T011 | Fix `MissionDossier(...)` call sites in `test_snapshot.py` (3 sites) | WP03 | |
 | T012 | Fix `ArtifactRef(...)` call sites in `test_snapshot.py` (6 sites) | WP03 | |
 | T013 | Verify mypy passes for `test_snapshot.py`; all dossier tests pass | WP03 | |
@@ -118,7 +118,7 @@ All five WPs are independent and can run simultaneously in separate lanes. None 
 **Success:** `mypy src/specify_cli/dossier/tests/test_snapshot.py` exits 0; all dossier tests pass.
 
 **Includes:**
-- [ ] T010 Inspect current `MissionDossier` and `ArtifactRef` constructor signatures (WP03)
+- [x] T010 Inspect current `MissionDossier` and `ArtifactRef` constructor signatures (WP03)
 - [ ] T011 Fix `MissionDossier(...)` call sites in `test_snapshot.py` (3 sites) (WP03)
 - [ ] T012 Fix `ArtifactRef(...)` call sites in `test_snapshot.py` (6 sites) (WP03)
 - [ ] T013 Verify mypy passes for `test_snapshot.py`; all dossier tests pass (WP03)
