@@ -161,7 +161,7 @@ All five WPs are independent and can run simultaneously in separate lanes. None 
 - [x] T022 Fix missing return type annotations in `sync/config.py` (WP05)
 - [x] T023 Fix type incompatibilities in `conflict_resolver.py` and `materialize.py` (WP05)
 - [x] T024 Fix `tracker/credentials.py`: stale ignore + None→Module assignment (WP05)
-- [ ] T025 Add `types-requests` to dev dependencies in `pyproject.toml` (WP05)
+- [x] T025 Add `types-requests` to dev dependencies in `pyproject.toml` (WP05)
 - [ ] T026 Verify `mypy --strict src/` exits 0 for all FR-002 files; full test suite passes (WP05)
 
 **Dependencies:** None (T017/T018 in WP04 are coordinated by file ownership, no overlap)
