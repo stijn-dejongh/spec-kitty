@@ -255,3 +255,4 @@ environment variables, or test commands in this PR is out of scope and must be m
 
 - 2026-04-09T17:51:45Z – opencode – shell_pid=40632 – Started implementation via action command
 - 2026-04-09T17:53:52Z – opencode – shell_pid=40632 – Moved to for_review
+- 2026-04-09T17:54:01Z – opencode – shell_pid=40632 – Review passed. Path filters added to both workflows. All 7 YAML files parse OK. T051 (required-checks) uses conservative approach with quality-gate aggregation. T054/T055 (live CI validation) deferred to post-merge.
