@@ -63,7 +63,7 @@
 | T052 | Add path filter to `orchestrator-boundary.yml` (FR-014) | WP10 | | [D] |
 | T053 | Add path filter to `check-spec-kitty-events-alignment.yml` (FR-015) | WP10 | | [D] |
 | T054 | Validate docs-only PR behavior: open a draft PR with only `*.md` changes; confirm no Python jobs run | WP10 | | [D] |
-| T055 | Confirm `quality-gate` passes on `main` with full migration applied | WP10 | |
+| T055 | Confirm `quality-gate` passes on `main` with full migration applied | WP10 | | [D] |
 
 ---
 
@@ -269,7 +269,7 @@ WP09 must complete and merge before WP10 begins. WP10 depends on per-module job 
 - [x] T052 Add path filter to `orchestrator-boundary.yml` (FR-014) (WP10)
 - [x] T053 Add path filter to `check-spec-kitty-events-alignment.yml` (FR-015) (WP10)
 - [x] T054 Validate docs-only PR behavior via draft PR (WP10)
-- [ ] T055 Confirm `quality-gate` passes on `main` (WP10)
+- [x] T055 Confirm `quality-gate` passes on `main` (WP10)
 
 **Dependencies:** Depends on WP09
 **Prompt:** [WP10-external-workflow-filters-and-validation.md](tasks/WP10-external-workflow-filters-and-validation.md)
