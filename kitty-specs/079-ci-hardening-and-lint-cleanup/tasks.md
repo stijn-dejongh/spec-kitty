@@ -21,7 +21,7 @@
 | T010 | Inspect current `MissionDossier` and `ArtifactRef` constructor signatures | WP03 | | [D] |
 | T011 | Fix `MissionDossier(...)` call sites in `test_snapshot.py` (3 sites) | WP03 | | [D] |
 | T012 | Fix `ArtifactRef(...)` call sites in `test_snapshot.py` (6 sites) | WP03 | | [D] |
-| T013 | Verify mypy passes for `test_snapshot.py`; all dossier tests pass | WP03 | |
+| T013 | Verify mypy passes for `test_snapshot.py`; all dossier tests pass | WP03 | | [D] |
 | T014 | Remove 4 stale ignores from `post_merge/stale_assertions.py` (lines 317,319,322,324) | WP04 | P |
 | T015 | Remove stale ignore from `merge/config.py:57` | WP04 | P |
 | T016 | Remove stale ignore from `migration/rebuild_state.py:38` | WP04 | P |
@@ -121,7 +121,7 @@ All five WPs are independent and can run simultaneously in separate lanes. None 
 - [x] T010 Inspect current `MissionDossier` and `ArtifactRef` constructor signatures (WP03)
 - [x] T011 Fix `MissionDossier(...)` call sites in `test_snapshot.py` (3 sites) (WP03)
 - [x] T012 Fix `ArtifactRef(...)` call sites in `test_snapshot.py` (6 sites) (WP03)
-- [ ] T013 Verify mypy passes for `test_snapshot.py`; all dossier tests pass (WP03)
+- [x] T013 Verify mypy passes for `test_snapshot.py`; all dossier tests pass (WP03)
 
 **Risk:** If tests are testing deprecated behavior (not just wrong signatures), escalate — do not silently fix.
 **Dependencies:** None
