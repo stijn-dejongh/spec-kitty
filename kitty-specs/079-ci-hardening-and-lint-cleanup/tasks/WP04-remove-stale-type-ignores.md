@@ -17,7 +17,8 @@ subtasks:
 - T017
 - T018
 - T019
-shell_pid: '82150'
+shell_pid: "82150"
+agent: "claude"
 history:
 - date: '2026-04-09'
   action: created
@@ -234,3 +235,7 @@ Each subtask's diff should be extremely small: one line changed per `# type: ign
 For T017 and T018, the diff will be slightly larger (a return expression or annotation change
 plus the comment removal). Reject any diff that modifies logic beyond what is needed for type
 correctness.
+
+## Activity Log
+
+- 2026-04-09T15:48:39Z – claude – shell_pid=82150 – Assigned agent via action command
