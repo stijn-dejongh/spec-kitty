@@ -28,13 +28,13 @@
 | T017 | Fix `migration/backfill_identity.py:36`: fix no-any-return + remove stale ignore | WP04 | P |
 | T018 | Fix `policy/audit.py:27`: fix no-any-return + remove stale ignore | WP04 | P |
 | T019 | Verify mypy passes for all 5 WP04 files; no regressions | WP04 | |
-| T020 | Fix bare `dict`/`list` generics in state_contract.py, acceptance_matrix.py, doctrine/missions/repository.py, migration/backfill_ownership.py | WP05 | P |
-| T021 | Fix `no-any-return` in version_utils.py, upgrade/feature_meta.py, doctrine/missions/repository.py, migration/backfill_identity.py | WP05 | P |
-| T022 | Fix missing return type annotations in `sync/config.py:15,39` | WP05 | P |
-| T023 | Fix type incompatibilities in `merge/conflict_resolver.py:172` and `cli/commands/materialize.py:123` | WP05 | P |
-| T024 | Fix `tracker/credentials.py`: remove stale ignore (line 15) + fix None→Module assignment (line 17) | WP05 | P |
-| T025 | Add `types-requests` to dev dependencies in `pyproject.toml` | WP05 | P |
-| T026 | Verify `mypy --strict src/` exits 0 for all FR-002 files; run full test suite | WP05 | |
+| T020 | Fix bare `dict`/`list` generics in state_contract.py, acceptance_matrix.py, doctrine/missions/repository.py, migration/backfill_ownership.py | WP05 | P | [D] |
+| T021 | Fix `no-any-return` in version_utils.py, upgrade/feature_meta.py, doctrine/missions/repository.py, migration/backfill_identity.py | WP05 | P | [D] |
+| T022 | Fix missing return type annotations in `sync/config.py:15,39` | WP05 | P | [D] |
+| T023 | Fix type incompatibilities in `merge/conflict_resolver.py:172` and `cli/commands/materialize.py:123` | WP05 | P | [D] |
+| T024 | Fix `tracker/credentials.py`: remove stale ignore (line 15) + fix None→Module assignment (line 17) | WP05 | P | [D] |
+| T025 | Add `types-requests` to dev dependencies in `pyproject.toml` | WP05 | P | [D] |
+| T026 | Verify `mypy --strict src/` exits 0 for all FR-002 files; run full test suite | WP05 | | [D] |
 | T027 | Measure aggregate coverage for Tier A modules (status, lanes, kernel, sync) | WP06 | P |
 | T028 | Measure aggregate coverage for Tier B modules (next, review, merge, cli, missions, upgrade) | WP06 | P |
 | T029 | Measure aggregate coverage for Tier C modules (dashboard, release, orchestrator_api, post_merge, core-misc) | WP06 | P |
@@ -156,7 +156,7 @@ All five WPs are independent and can run simultaneously in separate lanes. None 
 **Success:** `mypy --strict src/` reports zero errors for all files in FR-002.
 
 **Includes:**
-- [ ] T020 Fix bare `dict`/`list` generics (4 files) (WP05)
+- [x] T020 Fix bare `dict`/`list` generics (4 files) (WP05)
 - [ ] T021 Fix `no-any-return` violations (4 files) (WP05)
 - [ ] T022 Fix missing return type annotations in `sync/config.py` (WP05)
 - [ ] T023 Fix type incompatibilities in `conflict_resolver.py` and `materialize.py` (WP05)
