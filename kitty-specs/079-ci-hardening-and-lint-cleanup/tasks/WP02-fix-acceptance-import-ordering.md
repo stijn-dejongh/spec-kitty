@@ -223,3 +223,4 @@ Blocking issue summary:
 - 2026-04-09T15:50:15Z – codex:gpt-5:python-reviewer:reviewer – shell_pid=83775 – Started review via action command
 - 2026-04-09T15:51:01Z – codex:gpt-5:python-reviewer:reviewer – shell_pid=83775 – Moved to planned
 - 2026-04-09T15:51:01Z – codex:gpt-5:python-reviewer:reviewer – shell_pid=83775 – Review feedback recorded in `tasks/WP02-fix-acceptance-import-ordering/review-cycle-1.md`
+- 2026-04-09T16:25:44Z – codex:gpt-5:python-reviewer:reviewer – shell_pid=83775 – Moved to for_review
