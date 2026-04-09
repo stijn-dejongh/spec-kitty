@@ -9,11 +9,11 @@
 
 | ID | Description | WP | [P] |
 |----|-------------|-----|-----|
-| T001 | Fix ARG001: unused `doctrine_root` arg in `charter/catalog.py:245` | WP01 | P |
-| T002 | Fix SIM108: if/else → ternary in `charter/resolver.py:120` | WP01 | P |
-| T003 | Fix B009: `getattr` with constant → direct attr in `glossary_hook.py:134` | WP01 | P |
-| T004 | Fix SIM105: try/except/pass → `contextlib.suppress` in `_safe_re.py:185` | WP01 | P |
-| T005 | Verify WP01 files pass ruff check and tests | WP01 | |
+| T001 | Fix ARG001: unused `doctrine_root` arg in `charter/catalog.py:245` | WP01 | P | [D] |
+| T002 | Fix SIM108: if/else → ternary in `charter/resolver.py:120` | WP01 | P | [D] |
+| T003 | Fix B009: `getattr` with constant → direct attr in `glossary_hook.py:134` | WP01 | P | [D] |
+| T004 | Fix SIM105: try/except/pass → `contextlib.suppress` in `_safe_re.py:185` | WP01 | P | [D] |
+| T005 | Verify WP01 files pass ruff check and tests | WP01 | | [D] |
 | T006 | Move logger init below imports in `acceptance.py` (E402 root cause) | WP02 | |
 | T007 | Remove unused imports (MutableMapping, extract_scalar, find_repo_root) | WP02 | |
 | T008 | Replace deprecated `typing.*` with builtins/`collections.abc` (UP035) | WP02 | |
@@ -82,11 +82,11 @@ All five WPs are independent and can run simultaneously in separate lanes. None 
 **Success:** `ruff check src/charter/catalog.py src/charter/resolver.py src/doctrine/missions/glossary_hook.py src/kernel/_safe_re.py` exits 0.
 
 **Includes:**
-- [ ] T001 Fix ARG001: unused `doctrine_root` arg in `charter/catalog.py:245` (WP01)
-- [ ] T002 Fix SIM108: if/else → ternary in `charter/resolver.py:120` (WP01)
-- [ ] T003 Fix B009: `getattr` with constant → direct attr in `glossary_hook.py:134` (WP01)
-- [ ] T004 Fix SIM105: try/except/pass → `contextlib.suppress` in `_safe_re.py:185` (WP01)
-- [ ] T005 Verify WP01 files pass ruff check and tests (WP01)
+- [x] T001 Fix ARG001: unused `doctrine_root` arg in `charter/catalog.py:245` (WP01)
+- [x] T002 Fix SIM108: if/else → ternary in `charter/resolver.py:120` (WP01)
+- [x] T003 Fix B009: `getattr` with constant → direct attr in `glossary_hook.py:134` (WP01)
+- [x] T004 Fix SIM105: try/except/pass → `contextlib.suppress` in `_safe_re.py:185` (WP01)
+- [x] T005 Verify WP01 files pass ruff check and tests (WP01)
 
 **Parallel opportunities:** T001–T004 each touch a different file; safe to apply all at once.
 **Dependencies:** None
