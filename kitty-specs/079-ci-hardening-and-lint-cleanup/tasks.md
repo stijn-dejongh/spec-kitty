@@ -22,12 +22,12 @@
 | T011 | Fix `MissionDossier(...)` call sites in `test_snapshot.py` (3 sites) | WP03 | | [D] |
 | T012 | Fix `ArtifactRef(...)` call sites in `test_snapshot.py` (6 sites) | WP03 | | [D] |
 | T013 | Verify mypy passes for `test_snapshot.py`; all dossier tests pass | WP03 | | [D] |
-| T014 | Remove 4 stale ignores from `post_merge/stale_assertions.py` (lines 317,319,322,324) | WP04 | P |
-| T015 | Remove stale ignore from `merge/config.py:57` | WP04 | P |
-| T016 | Remove stale ignore from `migration/rebuild_state.py:38` | WP04 | P |
-| T017 | Fix `migration/backfill_identity.py:36`: fix no-any-return + remove stale ignore | WP04 | P |
-| T018 | Fix `policy/audit.py:27`: fix no-any-return + remove stale ignore | WP04 | P |
-| T019 | Verify mypy passes for all 5 WP04 files; no regressions | WP04 | |
+| T014 | Remove 4 stale ignores from `post_merge/stale_assertions.py` (lines 317,319,322,324) | WP04 | P | [D] |
+| T015 | Remove stale ignore from `merge/config.py:57` | WP04 | P | [D] |
+| T016 | Remove stale ignore from `migration/rebuild_state.py:38` | WP04 | P | [D] |
+| T017 | Fix `migration/backfill_identity.py:36`: fix no-any-return + remove stale ignore | WP04 | P | [D] |
+| T018 | Fix `policy/audit.py:27`: fix no-any-return + remove stale ignore | WP04 | P | [D] |
+| T019 | Verify mypy passes for all 5 WP04 files; no regressions | WP04 | | [D] |
 | T020 | Fix bare `dict`/`list` generics in state_contract.py, acceptance_matrix.py, doctrine/missions/repository.py, migration/backfill_ownership.py | WP05 | P | [D] |
 | T021 | Fix `no-any-return` in version_utils.py, upgrade/feature_meta.py, doctrine/missions/repository.py, migration/backfill_identity.py | WP05 | P | [D] |
 | T022 | Fix missing return type annotations in `sync/config.py:15,39` | WP05 | P | [D] |
@@ -136,7 +136,7 @@ All five WPs are independent and can run simultaneously in separate lanes. None 
 **Success:** Zero `unused-ignore` mypy errors across all 5 files.
 
 **Includes:**
-- [ ] T014 Remove 4 stale ignores from `post_merge/stale_assertions.py` (lines 317,319,322,324) (WP04)
+- [x] T014 Remove 4 stale ignores from `post_merge/stale_assertions.py` (lines 317,319,322,324) (WP04)
 - [ ] T015 Remove stale ignore from `merge/config.py:57` (WP04)
 - [ ] T016 Remove stale ignore from `migration/rebuild_state.py:38` (WP04)
 - [ ] T017 Fix `migration/backfill_identity.py:36`: fix no-any-return + remove stale ignore (WP04)
