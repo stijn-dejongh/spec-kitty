@@ -16,6 +16,7 @@ subtasks:
 - T024
 - T025
 - T026
+- T027
 history:
 - date: '2026-04-09'
   action: created
@@ -34,6 +35,8 @@ owned_files:
 - src/specify_cli/cli/commands/materialize.py
 - src/specify_cli/migration/backfill_ownership.py
 - src/doctrine/missions/repository.py
+- src/specify_cli/dossier/tests/
+- tests/dossier/
 - pyproject.toml
 tags: []
 ---
@@ -290,6 +293,52 @@ The body_transport.py errors about missing `requests` stubs should be gone.
 
 ---
 
+### T027 — Relocate `src/specify_cli/dossier/tests/` to `tests/dossier/` and clean up WP03 residuals
+
+**Background (from WP03 review-cycle-3):** WP03 added a broad `follow_imports = "skip"` mypy
+override for all of `specify_cli.*` in `pyproject.toml` because checking a test file under
+`src/specify_cli/` causes mypy to walk the entire package import graph. Relocating the dossier
+tests to the project-standard `tests/` directory eliminates the need for this override.
+
+**Steps:**
+
+1. **Move the test directory:**
+   ```bash
+   git mv src/specify_cli/dossier/tests/ tests/dossier/
+   ```
+
+2. **Update imports in the moved test files.** The import paths should remain the same
+   (they import from `specify_cli.dossier.*` which is the production package, not relative
+   imports). Verify no relative imports break:
+   ```bash
+   grep -rn "from \.\." tests/dossier/
+   ```
+   If any relative imports exist, convert them to absolute imports.
+
+3. **Remove the unused `import pytest`** from `tests/dossier/test_snapshot.py` (F401 from
+   WP03 review). The file does not use any pytest fixtures or markers directly.
+
+4. **Remove or narrow the `follow_imports = "skip"` override** that WP03 added to
+   `pyproject.toml`. If the override is no longer needed after the relocation, remove the
+   entire `[[tool.mypy.overrides]]` block for `specify_cli.*`. If other files still need it,
+   narrow the module pattern to only those specific modules.
+
+5. **Verify the relocated tests still pass:**
+   ```bash
+   pytest tests/dossier/ -q
+   mypy tests/dossier/test_snapshot.py
+   ruff check tests/dossier/
+   ```
+
+6. **Ensure `src/specify_cli/dossier/tests/` no longer exists** and no stale `__init__.py`
+   or `conftest.py` remains behind.
+
+**Note:** The dossier test files have 44 pre-existing ruff violations (27 auto-fixable). Fixing
+those is out of scope for this subtask but can be batch-fixed with `ruff check --fix tests/dossier/`
+if time permits.
+
+---
+
 ### T026 — Verify `mypy --strict src/` exits 0 for all FR-002 files; run full test suite
 
 **Final verification gate:**
@@ -309,7 +358,10 @@ mypy --strict \
   src/specify_cli/migration/backfill_ownership.py \
   src/doctrine/missions/repository.py
 
-# 2. Run the full fast test suite to catch any regressions
+# 2. Verify relocated dossier tests pass from new location
+pytest tests/dossier/ -q
+
+# 3. Run the full fast test suite to catch any regressions
 pytest tests/ -m fast -q 2>&1 | tail -5
 ```
 
@@ -324,6 +376,8 @@ If mypy reports errors:
 
 - [ ] `mypy --strict` exits 0 for all 11 source files listed in `owned_files` + `body_transport.py`
 - [ ] `types-requests` is in dev dependencies only (not in `[project.dependencies]`)
+- [ ] Dossier tests relocated from `src/specify_cli/dossier/tests/` to `tests/dossier/` and passing
+- [ ] `follow_imports = "skip"` override for `specify_cli.*` removed or narrowed in `pyproject.toml`
 - [ ] All existing tests pass
 - [ ] No production behavior changed (type annotations only, plus the `None` guard for `tracker/credentials.py`)
 - [ ] Changes committed to `feat/079-ci-hardening-and-lint-cleanup`
