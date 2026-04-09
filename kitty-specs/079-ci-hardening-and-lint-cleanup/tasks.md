@@ -187,7 +187,7 @@ WP06 must complete first (produces `coverage-baseline.md`). WP07 follows (marker
 - [x] T028 Measure aggregate coverage for Tier B modules (next, review, merge, cli, missions, upgrade) (WP06)
 - [x] T029 Measure aggregate coverage for Tier C modules (dashboard, release, orchestrator_api, post_merge, core-misc) (WP06)
 - [x] T030 Apply floor formula and write `coverage-baseline.md` (WP06)
-- [ ] T031 Verify zero test failures in baseline run (WP06)
+- [x] T031 Verify zero test failures in baseline run (WP06)
 
 **Dependencies:** WP01, WP02, WP03, WP04, WP05 (clean baseline requires passing tests)
 **Prompt:** [WP06-coverage-baseline-measurement.md](tasks/WP06-coverage-baseline-measurement.md)
