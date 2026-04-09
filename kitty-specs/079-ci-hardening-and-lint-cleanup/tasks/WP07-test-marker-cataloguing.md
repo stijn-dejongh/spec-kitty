@@ -17,7 +17,8 @@ subtasks:
 - T034
 - T035
 - T036
-shell_pid: '40632'
+shell_pid: "40632"
+agent: "opencode"
 history:
 - date: '2026-04-09'
   action: created
@@ -239,3 +240,7 @@ verify the marker decorator syntax is correct (common mistake: missing `@pytest.
 Every changed file should show only `@pytest.mark.X` decorator additions and `import pytest`
 additions where missing. No test assertion logic should change. A diff that modifies any
 `assert` statement or test setup logic is out of scope for this WP.
+
+## Activity Log
+
+- 2026-04-09T17:26:47Z – opencode – shell_pid=40632 – Assigned agent via action command
