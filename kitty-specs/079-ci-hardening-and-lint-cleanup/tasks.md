@@ -19,7 +19,7 @@
 | T008 | Replace deprecated `typing.*` with builtins/`collections.abc` (UP035) | WP02 | |
 | T009 | Verify `acceptance.py` passes ruff + mypy, run affected tests | WP02 | |
 | T010 | Inspect current `MissionDossier` and `ArtifactRef` constructor signatures | WP03 | | [D] |
-| T011 | Fix `MissionDossier(...)` call sites in `test_snapshot.py` (3 sites) | WP03 | |
+| T011 | Fix `MissionDossier(...)` call sites in `test_snapshot.py` (3 sites) | WP03 | | [D] |
 | T012 | Fix `ArtifactRef(...)` call sites in `test_snapshot.py` (6 sites) | WP03 | |
 | T013 | Verify mypy passes for `test_snapshot.py`; all dossier tests pass | WP03 | |
 | T014 | Remove 4 stale ignores from `post_merge/stale_assertions.py` (lines 317,319,322,324) | WP04 | P |
@@ -119,7 +119,7 @@ All five WPs are independent and can run simultaneously in separate lanes. None 
 
 **Includes:**
 - [x] T010 Inspect current `MissionDossier` and `ArtifactRef` constructor signatures (WP03)
-- [ ] T011 Fix `MissionDossier(...)` call sites in `test_snapshot.py` (3 sites) (WP03)
+- [x] T011 Fix `MissionDossier(...)` call sites in `test_snapshot.py` (3 sites) (WP03)
 - [ ] T012 Fix `ArtifactRef(...)` call sites in `test_snapshot.py` (6 sites) (WP03)
 - [ ] T013 Verify mypy passes for `test_snapshot.py`; all dossier tests pass (WP03)
 
