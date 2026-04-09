@@ -17,8 +17,8 @@ subtasks:
 - T017
 - T018
 - T019
-shell_pid: "82150"
-agent: "claude"
+shell_pid: "40632"
+agent: "opencode"
 history:
 - date: '2026-04-09'
   action: created
@@ -240,3 +240,4 @@ correctness.
 
 - 2026-04-09T15:48:39Z – claude – shell_pid=82150 – Assigned agent via action command
 - 2026-04-09T17:02:35Z – claude – shell_pid=82150 – Moved to for_review
+- 2026-04-09T17:02:42Z – opencode – shell_pid=40632 – Started review via action command
