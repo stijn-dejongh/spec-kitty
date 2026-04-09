@@ -57,7 +57,7 @@
 | T046 | Define Tier 2 `fast-tests` jobs (review, next, lanes, dashboard, upgrade) with DAG `needs:` and path conditions | WP09 | | [D] |
 | T047 | Define Tier 3 `fast-tests` jobs (cli, orchestrator_api, core-misc) with full DAG `needs:` | WP09 | | [D] |
 | T048 | Add `integration-tests-<module>` job pairs for modules with git_repo/integration tests; apply coverage floors from `coverage-baseline.md` | WP09 | | [D] |
-| T049 | Remove `fast-tests-core` and `integration-tests-core`; update `report` and `quality-gate` jobs | WP09 | |
+| T049 | Remove `fast-tests-core` and `integration-tests-core`; update `report` and `quality-gate` jobs | WP09 | | [D] |
 | T050 | Add skip-pass shim jobs for all jobs that are required branch-protection checks | WP09 | |
 | T051 | Confirm current required-checks list with repo owner (pre-merge gate for WP10) | WP10 | |
 | T052 | Add path filter to `orchestrator-boundary.yml` (FR-014) | WP10 | |
@@ -250,7 +250,7 @@ WP09 must complete and merge before WP10 begins. WP10 depends on per-module job 
 - [x] T046 Define Tier 2 `fast-tests` jobs with DAG `needs:` and path conditions (WP09)
 - [x] T047 Define Tier 3 `fast-tests` jobs (cli, orchestrator_api, core-misc) (WP09)
 - [x] T048 Add `integration-tests-<module>` job pairs with coverage floors (WP09)
-- [ ] T049 Remove old monolithic jobs; update `report` and `quality-gate` (WP09)
+- [x] T049 Remove old monolithic jobs; update `report` and `quality-gate` (WP09)
 - [ ] T050 Add skip-pass shim jobs for required-check jobs (WP09)
 
 **Dependencies:** Depends on WP06 (coverage floors), WP07 (all tests marked), WP08 (shift-left done)
