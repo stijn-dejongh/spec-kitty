@@ -15,7 +15,8 @@ subtasks:
 - T011
 - T012
 - T013
-shell_pid: '40632'
+shell_pid: "40632"
+agent: "opencode"
 history:
 - date: '2026-04-09'
   action: created
@@ -188,3 +189,7 @@ If tests fail:
 The diff should only touch `test_snapshot.py`. Any change to production dataclass files is
 a violation of C-007 and must be rejected. Check that test assertion logic (the `assert`
 statements) is unchanged — only constructor call argument lists should differ.
+
+## Activity Log
+
+- 2026-04-09T14:43:44Z – opencode – shell_pid=40632 – Assigned agent via action command
