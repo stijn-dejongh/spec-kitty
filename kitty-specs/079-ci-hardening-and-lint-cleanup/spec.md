@@ -138,6 +138,8 @@ for that module is computed independently against a calibrated floor for the rev
 | FR-013 | Skip-pass shim jobs must be added for any per-module job that is a required branch-protection check, so that PRs where those jobs are skipped are not blocked | proposed |
 | FR-014 | The `orchestrator-boundary.yml` workflow must add a path filter so it only runs when `src/specify_cli/orchestrator_api/**` is touched | proposed |
 | FR-015 | The `check-spec-kitty-events-alignment.yml` workflow must add a path filter so it only runs when `src/specify_cli/sync/**`, `pyproject.toml`, or the events package version changes | proposed |
+| FR-016 | All test files in per-module test directories must have at least one pytest marker applied (`fast`, `git_repo`, `slow`, `integration`, or `e2e`); unmarked test functions must be catalogued before the CI job split so coverage accounting is accurate | proposed |
+| FR-017 | Tests in `tests/next/` and `tests/missions/` currently marked `git_repo` that do not require a real git repository (i.e., they only need filesystem isolation) must be identified; any confirmed shift-left candidate must be re-marked `fast` and refactored to remove the git subprocess dependency | proposed |
 
 ### Non-Functional Requirements
 
