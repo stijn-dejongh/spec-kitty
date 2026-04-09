@@ -7,8 +7,8 @@ requirement_refs:
 - FR-014
 - FR-015
 planning_base_branch: feat/079-ci-hardening-and-lint-cleanup
-merge_target_branch: main
-branch_strategy: 'Work executes in the lane worktree for this WP (resolved from lanes.json). Planning/base branch: feat/079-ci-hardening-and-lint-cleanup. Final merge target: main. WP09 must be merged and all per-module jobs passing before starting this WP.'
+merge_target_branch: feat/079-ci-hardening-and-lint-cleanup
+branch_strategy: Planning artifacts for this feature were generated on feat/079-ci-hardening-and-lint-cleanup. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/079-ci-hardening-and-lint-cleanup unless the human explicitly redirects the landing branch.
 subtasks:
 - T051
 - T052
