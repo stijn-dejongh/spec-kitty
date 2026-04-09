@@ -51,7 +51,7 @@
 | T040 | Convert eligible `tests/missions/` git_repo tests to fast; document non-eligible ones | WP08 | | [D] |
 | T041 | Verify full test suite passes; confirm coverage does not decrease post-shift | WP08 | | [D] |
 | T042 | Add workflow-level `paths:` trigger to `ci-quality.yml` for docs-only skip | WP09 | | [D] |
-| T043 | Add `changes` detection job using `dorny/paths-filter` with module-level filters | WP09 | |
+| T043 | Add `changes` detection job using `dorny/paths-filter` with module-level filters | WP09 | | [D] |
 | T044 | Define Tier 0 per-module `fast-tests` jobs (sync, merge, missions, post_merge, release) with `if:` path conditions | WP09 | |
 | T045 | Define Tier 1 `fast-tests-status` job with `needs: [changes, fast-tests-sync]` and path condition | WP09 | |
 | T046 | Define Tier 2 `fast-tests` jobs (review, next, lanes, dashboard, upgrade) with DAG `needs:` and path conditions | WP09 | |
@@ -244,7 +244,7 @@ WP09 must complete and merge before WP10 begins. WP10 depends on per-module job 
 
 **Includes:**
 - [x] T042 Add workflow-level `paths:` trigger for docs-only skip (WP09)
-- [ ] T043 Add `changes` detection job using `dorny/paths-filter` (WP09)
+- [x] T043 Add `changes` detection job using `dorny/paths-filter` (WP09)
 - [ ] T044 Define Tier 0 `fast-tests` jobs with path conditions (WP09)
 - [ ] T045 Define Tier 1 `fast-tests-status` job with DAG `needs:` (WP09)
 - [ ] T046 Define Tier 2 `fast-tests` jobs with DAG `needs:` and path conditions (WP09)
