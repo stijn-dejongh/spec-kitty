@@ -1,7 +1,7 @@
 {
-  "event_count": 14,
-  "last_event_id": "01KPJYA3MR41T70SZMN8TXRH70",
-  "materialized_at": "2026-04-19T13:19:05.368690+00:00",
+  "event_count": 15,
+  "last_event_id": "01KPJYHGM369M1YP43GFD5MDR7",
+  "materialized_at": "2026-04-19T13:23:08.035349+00:00",
   "mission_number": "",
   "mission_slug": "migration-shim-ownership-rules-01KPDYDW",
   "mission_type": "software-dev",
@@ -11,8 +11,8 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 2,
-    "in_progress": 1,
+    "for_review": 3,
+    "in_progress": 0,
     "in_review": 0,
     "planned": 3
   },
@@ -39,11 +39,11 @@
       "last_transition_at": "2026-04-19T12:59:04.489277+00:00"
     },
     "WP04": {
-      "actor": "claude",
+      "actor": "user",
       "force_count": 1,
-      "lane": "in_progress",
-      "last_event_id": "01KPJYA3MR41T70SZMN8TXRH70",
-      "last_transition_at": "2026-04-19T13:19:05.368690+00:00"
+      "lane": "for_review",
+      "last_event_id": "01KPJYHGM369M1YP43GFD5MDR7",
+      "last_transition_at": "2026-04-19T13:23:08.035349+00:00"
     },
     "WP05": {
       "actor": "finalize-tasks",

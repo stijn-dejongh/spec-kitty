@@ -217,3 +217,4 @@ document the "no-shim baseline case" explicitly:
 ## Activity Log
 
 - 2026-04-19T13:19:05Z – claude – shell_pid=1340356 – Started implementation via action command
+- 2026-04-19T13:23:08Z – claude – shell_pid=1340356 – Rulebook and registry written. All 4 rule families covered. Worked example documents charter no-shim baseline case.
