@@ -8,9 +8,13 @@ requirement_refs:
 planning_base_branch: kitty/mission-migration-shim-ownership-rules-01KPDYDW
 merge_target_branch: kitty/mission-migration-shim-ownership-rules-01KPDYDW
 branch_strategy: Planning artifacts for this feature were generated on kitty/mission-migration-shim-ownership-rules-01KPDYDW. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into kitty/mission-migration-shim-ownership-rules-01KPDYDW unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-migration-shim-ownership-rules-01KPDYDW
+base_commit: 0a5c5d1eed4d096c227a79bc7e879a90e6a54f40
+created_at: '2026-04-19T12:59:36.875691+00:00'
 subtasks:
 - T001
 - T002
+shell_pid: '1334330'
 history:
 - date: '2026-04-19'
   event: created
