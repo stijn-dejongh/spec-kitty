@@ -239,3 +239,4 @@ __all__ = ["check_shim_registry", "ShimRegistryReport", "ShimStatus", "ShimStatu
 ## Activity Log
 
 - 2026-04-19T13:17:31Z – claude – shell_pid=1339370 – Started implementation via action command
+- 2026-04-19T13:19:00Z – claude – shell_pid=1339370 – compat package implemented: registry.py, doctor.py, __init__.py — mypy strict passes, smoke tests pass
