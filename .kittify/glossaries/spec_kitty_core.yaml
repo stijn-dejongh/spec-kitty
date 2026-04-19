@@ -111,3 +111,8 @@ terms:
     definition: Stable machine fingerprint (12-char hex). Unchanged from pre-081.
     confidence: 1.0
     status: active
+
+  - surface: agent profile
+    definition: Declarative specification of an AI agent's role, capabilities, directive bindings, and collaboration contract within the doctrine stack. Profiles are shipped as YAML artifacts and selected by routing priority when a task matches the agent's specialization context.
+    confidence: 1.0
+    status: active
