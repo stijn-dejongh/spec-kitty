@@ -14,7 +14,8 @@ created_at: '2026-04-19T12:59:36.875691+00:00'
 subtasks:
 - T001
 - T002
-shell_pid: '1334330'
+shell_pid: "1334330"
+agent: "claude"
 history:
 - date: '2026-04-19'
   event: created
@@ -152,3 +153,7 @@ The `packaging` library is used for semver comparison (R1 decision in `research.
 
 - If `uv sync` fails after adding `packaging`: check for version conflicts with other deps. The `packaging` library is extremely stable; conflicts are unlikely but possible with pinned transitive versions.
 - If `src/specify_cli/compat/` name conflicts with an installed package: verify with `python -c "import compat"` in a clean environment — unlikely since `compat` is not a well-known top-level package name.
+
+## Activity Log
+
+- 2026-04-19T12:59:37Z – claude – shell_pid=1334330 – Assigned agent via action command
