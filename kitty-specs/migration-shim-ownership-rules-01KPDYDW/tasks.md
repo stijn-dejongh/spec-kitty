@@ -18,8 +18,8 @@ merge_target_branch: main
 
 | ID | Description | WP | Parallel |
 |----|-------------|----|---------:|
-| T001 | Audit existing shims: grep `src/specify_cli/` for `__deprecated__`; document zero-shim baseline | WP01 | |
-| T002 | Confirm `packaging` is an explicit dep in `pyproject.toml`; add if absent | WP01 | [P] |
+| T001 | Audit existing shims: grep `src/specify_cli/` for `__deprecated__`; document zero-shim baseline | WP01 | | [D] |
+| T002 | Confirm `packaging` is an explicit dep in `pyproject.toml`; add if absent | WP01 | [D] |
 | T003 | Create `src/specify_cli/compat/` package (`__init__.py` with public exports) | WP02 | |
 | T004 | Implement `src/specify_cli/compat/registry.py`: load + validate `shim-registry.yaml` | WP02 | |
 | T005 | Implement `src/specify_cli/compat/doctor.py`: `check_shim_registry()` engine | WP02 | |
@@ -43,8 +43,8 @@ merge_target_branch: main
 **Dependencies**: none
 
 **Included subtasks**:
-- [ ] T001 Audit existing shims: grep `src/specify_cli/` for `__deprecated__`; document zero-shim baseline (WP01)
-- [ ] T002 Confirm `packaging` is an explicit dep in `pyproject.toml`; add if absent (WP01)
+- [x] T001 Audit existing shims: grep `src/specify_cli/` for `__deprecated__`; document zero-shim baseline (WP01)
+- [x] T002 Confirm `packaging` is an explicit dep in `pyproject.toml`; add if absent (WP01)
 - [ ] T003 Create `src/specify_cli/compat/` package (`__init__.py` with public exports) (WP01)
 
 **Implementation sketch**:
