@@ -17,6 +17,8 @@ subtasks:
 - T003
 - T004
 - T005
+agent: "claude"
+shell_pid: "1339370"
 history:
 - date: '2026-04-19'
   event: created
@@ -233,3 +235,7 @@ __all__ = ["check_shim_registry", "ShimRegistryReport", "ShimStatus", "ShimStatu
 
 - Pre-release version string in `pyproject.toml` (currently `3.2.0`): `Version("3.3.0") >= Version("3.2.0")` is True, `Version("3.3.0a1") >= Version("3.3.0")` is False — verify these semantics in a quick REPL check.
 - `ruamel.yaml` safe loader may return Python `bool` for YAML `true`/`false` — that's correct. YAML `"true"` (string) returns a string, which the validator must reject. Test both cases.
+
+## Activity Log
+
+- 2026-04-19T13:17:31Z – claude – shell_pid=1339370 – Started implementation via action command
