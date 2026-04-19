@@ -157,3 +157,4 @@ The `packaging` library is used for semver comparison (R1 decision in `research.
 ## Activity Log
 
 - 2026-04-19T12:59:37Z – claude – shell_pid=1334330 – Assigned agent via action command
+- 2026-04-19T13:14:46Z – claude – shell_pid=1334330 – T001: zero deprecated shims confirmed. T002: packaging>=23.0 already present. T003 moved to WP02 scope.
