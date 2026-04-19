@@ -21,6 +21,8 @@ branch_strategy: Planning artifacts for this feature were generated on kitty/mis
 subtasks:
 - T007
 - T008
+agent: "claude"
+shell_pid: "1340356"
 history:
 - date: '2026-04-19'
   event: created
@@ -211,3 +213,7 @@ document the "no-shim baseline case" explicitly:
 
 - Charter mission artifacts may be partially removed (if #610 fully merged before this WP). In that case, document the worked example from what is present and note the missing artifacts explicitly. Do not invent artifact paths that don't exist.
 - The `architecture/2.x/` directory may have a README or index that needs updating — check and update if it exists.
+
+## Activity Log
+
+- 2026-04-19T13:19:05Z – claude – shell_pid=1340356 – Started implementation via action command
