@@ -26,6 +26,7 @@ history:
   event: created
 authoritative_surface: architecture/2.x/
 execution_mode: planning_artifact
+agent_profile: architect
 mission_id: 01KPDYDWVF8W838HNJK7FC3S7T
 mission_slug: migration-shim-ownership-rules-01KPDYDW
 owned_files:
