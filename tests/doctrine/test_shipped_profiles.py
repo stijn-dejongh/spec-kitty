@@ -24,15 +24,16 @@ SHIPPED_DIR = Path(__file__).parent.parent.parent / "src" / "doctrine" / "agent_
 
 EXPECTED_PROFILE_IDS = {
     "architect",
+    "curator",
     "designer",
     "generic-agent",
     "human-in-charge",
     "implementer",
+    "java-implementer",
     "planner",
     "python-implementer",
     "researcher",
     "reviewer",
-    "curator",
 }
 
 # Sentinel profiles are workflow markers, not real agents.  They intentionally
@@ -95,14 +96,15 @@ class TestShippedProfilesRoles:
         "profile_id,expected_role",
         [
             ("architect", Role.ARCHITECT),
+            ("curator", Role.CURATOR),
             ("designer", Role.DESIGNER),
             ("generic-agent", Role.IMPLEMENTER),
             ("implementer", Role.IMPLEMENTER),
+            ("java-implementer", Role.IMPLEMENTER),
             ("python-implementer", Role.IMPLEMENTER),
             ("reviewer", Role.REVIEWER),
             ("planner", Role.PLANNER),
             ("researcher", Role.RESEARCHER),
-            ("curator", Role.CURATOR),
         ],
     )
     def test_profile_has_correct_role(
@@ -149,14 +151,15 @@ class TestShippedProfilesContent:
         "profile_id,expected_priority",
         [
             ("architect", 50),
+            ("curator", 40),
             ("designer", 50),
             ("generic-agent", 10),
             ("implementer", 50),
+            ("java-implementer", 80),
             ("python-implementer", 80),
             ("reviewer", 50),
             ("planner", 50),
             ("researcher", 40),
-            ("curator", 40),
         ],
     )
     def test_routing_priority(
@@ -176,14 +179,15 @@ class TestShippedProfilesContent:
         "profile_id,expected_max",
         [
             ("architect", 3),
+            ("curator", 6),
             ("designer", 4),
             ("generic-agent", 5),
             ("implementer", 5),
+            ("java-implementer", 5),
             ("python-implementer", 5),
             ("reviewer", 8),
             ("planner", 3),
             ("researcher", 4),
-            ("curator", 6),
         ],
     )
     def test_max_concurrent_tasks(

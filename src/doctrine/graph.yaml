@@ -112,12 +112,18 @@ nodes:
 - urn: styleguide:aggregate-design-rules
   kind: styleguide
   label: Aggregate Design Rules
+- urn: styleguide:java-conventions
+  kind: styleguide
+  label: Java Conventions Styleguide
 - urn: styleguide:kitty-glossary-writing
   kind: styleguide
   label: Kitty Glossary Writing Styleguide
 - urn: styleguide:python-conventions
   kind: styleguide
   label: Python Conventions Styleguide
+- urn: styleguide:testing-principles
+  kind: styleguide
+  label: Testing Principles Styleguide
 - urn: tactic:acceptance-test-first
   kind: tactic
   label: Acceptance Test Driven Development (ATDD)
@@ -201,6 +207,9 @@ nodes:
 - urn: tactic:entity-value-object-classification
   kind: tactic
   label: Entity vs Value Object Classification
+- urn: tactic:formalized-constraint-testing
+  kind: tactic
+  label: Formalized Constraint Testing
 - urn: tactic:glossary-curation-interview
   kind: tactic
   label: Glossary Curation Interview
@@ -308,6 +317,9 @@ nodes:
 - urn: tactic:tdd-red-green-refactor
   kind: tactic
   label: Test Driven Development (TDD)
+- urn: tactic:test-minimisation
+  kind: tactic
+  label: Test Minimisation
 - urn: tactic:test-boundaries-by-responsibility
   kind: tactic
   label: Test Boundaries by Functional Responsibility
@@ -329,6 +341,9 @@ nodes:
 - urn: toolguide:git-agent-commit-signing
   kind: toolguide
   label: Git Agent Commit Signing
+- urn: toolguide:maven-review-checks
+  kind: toolguide
+  label: Maven Review Checks
 - urn: toolguide:mermaid-diagramming
   kind: toolguide
   label: Mermaid Diagramming
@@ -338,6 +353,15 @@ nodes:
 - urn: toolguide:python-review-checks
   kind: toolguide
   label: Python Review Checks
+- urn: agent_profile:implementer
+  kind: agent_profile
+  label: Generic Implementer
+- urn: agent_profile:java-implementer
+  kind: agent_profile
+  label: Java Jenny
+- urn: agent_profile:python-implementer
+  kind: agent_profile
+  label: Python Pedro
 edges:
 - source: action:software-dev/implement
   target: directive:DIRECTIVE_024
@@ -1089,4 +1113,79 @@ edges:
   relation: requires
 - source: directive:DIRECTIVE_037
   target: tactic:usage-examples-sync
+  relation: requires
+- source: action:software-dev/implement
+  target: tactic:formalized-constraint-testing
+  relation: scope
+- source: action:software-dev/review
+  target: tactic:test-minimisation
+  relation: scope
+- source: tactic:formalized-constraint-testing
+  target: directive:DIRECTIVE_034
+  relation: suggests
+  when: Contract tests should be written before production code when defining value objects or serialization layers.
+- source: tactic:formalized-constraint-testing
+  target: directive:DIRECTIVE_030
+  relation: suggests
+  when: Contract tests form part of the quality gate that must pass before handoff.
+- source: tactic:formalized-constraint-testing
+  target: tactic:black-box-integration-testing
+  relation: suggests
+  when: Contract tests are a form of behavioral testing — combine with black-box integration testing for components with external interfaces.
+- source: tactic:formalized-constraint-testing
+  target: tactic:acceptance-test-first
+  relation: suggests
+  when: Use acceptance-test-first to anchor the behavioral contract before formalising it with constraint tests.
+- source: tactic:test-minimisation
+  target: tactic:formalized-constraint-testing
+  relation: suggests
+  when: Contract tests are a common reason to minimise overlapping spot-checks; apply formalized-constraint-testing first, then minimise redundant tests.
+- source: tactic:test-minimisation
+  target: directive:DIRECTIVE_034
+  relation: suggests
+  when: Minimisation removes waste from the test suite; the remaining tests must still satisfy the test-first contract.
+- source: tactic:test-minimisation
+  target: directive:DIRECTIVE_030
+  relation: suggests
+  when: Coverage must not drop below the project threshold after minimisation.
+- source: agent_profile:java-implementer
+  target: agent_profile:implementer
+  relation: requires
+  when: java-implementer specialises from the generic implementer; implementer profile is the routing fallback.
+- source: agent_profile:java-implementer
+  target: directive:DIRECTIVE_010
+  relation: requires
+- source: agent_profile:java-implementer
+  target: directive:DIRECTIVE_024
+  relation: requires
+- source: agent_profile:java-implementer
+  target: directive:DIRECTIVE_025
+  relation: requires
+- source: agent_profile:java-implementer
+  target: directive:DIRECTIVE_030
+  relation: requires
+- source: agent_profile:java-implementer
+  target: directive:DIRECTIVE_034
+  relation: requires
+- source: agent_profile:java-implementer
+  target: tactic:tdd-red-green-refactor
+  relation: suggests
+- source: agent_profile:java-implementer
+  target: tactic:acceptance-test-first
+  relation: suggests
+- source: agent_profile:java-implementer
+  target: styleguide:java-conventions
+  relation: requires
+- source: agent_profile:java-implementer
+  target: toolguide:maven-review-checks
+  relation: requires
+- source: agent_profile:python-implementer
+  target: agent_profile:implementer
+  relation: requires
+  when: python-implementer specialises from the generic implementer; implementer profile is the routing fallback.
+- source: agent_profile:python-implementer
+  target: styleguide:python-conventions
+  relation: requires
+- source: agent_profile:python-implementer
+  target: toolguide:python-review-checks
   relation: requires

@@ -101,6 +101,7 @@ sdd-*/
 # Keep spec_kitty_core.yaml tracked (canonical terms)
 !.kittify/glossaries/spec_kitty_core.yaml
 doctrine_ref
+src/doctrine/_reference/
 /work/
 
 # Mutation testing
