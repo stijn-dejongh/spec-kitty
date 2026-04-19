@@ -1,0 +1,23 @@
+schema_version: "1.0"
+id: maven-review-checks
+tool: maven
+title: Maven Review Checks
+guide_path: src/doctrine/toolguides/shipped/MAVEN_REVIEW_CHECKS.md
+applies_to_languages:
+  - java
+summary: >
+  Catalog of automated checks a reviewer should run or verify have been run
+  before approving Java code. Organized by category: build and test, code style,
+  static analysis, test coverage, and dependency security.
+commands:
+  - mvn
+  - mvn verify
+  - mvn test
+  - mvn checkstyle:check
+  - mvn spotless:check
+  - mvn spotbugs:check
+  - mvn pmd:check
+  - mvn dependency-check:check
+  - mvn enforcer:enforce
+  - archunit (via JUnit 5 test suite)
+last_updated: "2026-04-18"

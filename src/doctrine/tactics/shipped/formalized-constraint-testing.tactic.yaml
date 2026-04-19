@@ -1,0 +1,120 @@
+schema_version: "1.0"
+id: formalized-constraint-testing
+name: Formalized Constraint Testing
+purpose: >
+  Verify that a component upholds its mathematical contracts across a
+  representative set of inputs rather than testing specific input-output
+  pairs. If the invariants hold, the implementation is correct with respect
+  to those constraints — making these tests maximally resistant to mutation
+  and safe across refactoring.
+steps:
+  - title: Identify the contracts
+    description: >
+      Before writing any test, enumerate the implicit and explicit contracts
+      the component must satisfy. Every data type and operation has contracts:
+      equality semantics, hash alignment, serialization fidelity, ordering
+      consistency. Name each contract; the name becomes the test name.
+    examples:
+      - "For a value object: equality is reflexive, symmetric, transitive, null-safe, and type-safe."
+      - "For a serializable record: round-trip through serialize/deserialize is lossless."
+      - "For a sparse DTO: empty collections and null optional fields are absent from the serialized form."
+
+  - title: Write round-trip symmetry tests
+    description: >
+      For any transformation that must be lossless — serialization, encoding,
+      mapping — assert that applying the inverse recovers the original value
+      exactly: `f_inverse(f(x)) == x`. Also write the negative counterpart:
+      a deliberately mutated intermediate form must NOT equal the original
+      after deserialization. The positive test validates both directions of
+      the transformation simultaneously with no handcrafted expected values.
+    examples:
+      - "deserialize(serialize(record)) equals record (positive)."
+      - "deserialize(serialized form with one field mutated) does NOT equal original record (negative)."
+
+  - title: Write equality contract tests
+    description: >
+      Assert all five properties of a well-formed equality relation.
+      Use parameterized tests to cover objects differing in each field
+      individually — a single field difference must make objects unequal,
+      and inequality must hold in both directions (symmetry of inequality).
+    examples:
+      - "Reflexive: x.equals(x) is true."
+      - "Symmetric: x.equals(y) == y.equals(x) for both equal and unequal pairs."
+      - "Transitive: if x == y and y == z then x == z."
+      - "Null-safe: x.equals(null) is false."
+      - "Type-safe: x.equals(object_of_different_type) is false."
+      - "Field-discriminating (parameterized): for each field F, objects identical except in F are not equal."
+
+  - title: Write hash-code alignment tests
+    description: >
+      Assert the two mandatory hash-code properties. Do not assert strict
+      hash uniqueness — collisions are permitted. A distribution note may
+      document expected behavior without treating it as a hard gate.
+    examples:
+      - "Consistent: x.hashCode() == x.hashCode() across multiple calls on the same instance."
+      - "Equals-aligned: if x.equals(y) then x.hashCode() == y.hashCode()."
+
+  - title: Write sparse serialization tests
+    description: >
+      When the serialization contract specifies that absent or empty values
+      are omitted from output, assert their absence explicitly. This validates
+      that the production code carries the required serialization annotations
+      or configuration.
+    examples:
+      - "Serialized form of an object with an empty collection field does NOT contain that field name."
+      - "Serialized form of an object with a null optional field does NOT contain that field name."
+
+  - title: Pair every positive assertion with a negative counterpart
+    description: >
+      For each contract property verified in the positive direction, write
+      a corresponding negative test that demonstrates the contract is
+      violated when the condition is not met. Without negative tests,
+      always-true implementations can pass all positive assertions.
+    examples:
+      - "Positive: equal objects have equal hash codes."
+      - "Negative: objects that differ in any field are not equal (parameterized by field)."
+
+  - title: Parameterize for edge cases
+    description: >
+      Use parameterized test variants to cover empty/zero values, boundary
+      values, null values where applicable, maximum/extreme values, and mixed
+      populated/empty states. A single test definition with multiple cases
+      is more maintainable and more complete than many hand-written spot-checks.
+    examples:
+      - "Variants: all fields populated, all fields empty, first field only, last field only, boundary-length strings."
+
+failure_modes:
+  - "Testing only the happy path — writing positive assertions without negative counterparts leaves mutations undetected."
+  - "Hardcoding expected serialized strings — brittle against field reordering or whitespace changes; use round-trip comparison instead."
+  - "Testing the implementation rather than the contract — assertions that call private methods or inspect internal state break on refactoring."
+  - "Single equality test — asserting only reflexivity misses the symmetric, transitive, null-safe, and field-discriminating properties."
+  - "Ignoring null and empty edge cases — leaving the contract undefined at boundaries creates silent defects."
+  - "Treating hash distribution as a hard contract — failing the test on any hash collision is incorrect; collisions are allowed."
+
+references:
+  - name: Test-First Development
+    type: directive
+    id: DIRECTIVE_034
+    when: Contract tests should be written before production code when defining value objects or serialization layers.
+  - name: Test and Typecheck Quality Gate
+    type: directive
+    id: DIRECTIVE_030
+    when: Contract tests form part of the quality gate that must pass before handoff.
+  - name: Black-Box Integration Testing
+    type: tactic
+    id: black-box-integration-testing
+    when: Contract tests are a form of behavioral (black-box) testing — combine with black-box integration testing for components with external interfaces.
+  - name: Acceptance Test First
+    type: tactic
+    id: acceptance-test-first
+    when: Use acceptance-test-first to anchor the behavioral contract before formalising it with constraint tests.
+
+notes: >
+  Formalized constraint testing is closely related to property-based testing
+  (where inputs are generated automatically) and formal verification (where
+  proofs replace tests). It differs from both in that it operates with a
+  representative hand-chosen sample of inputs rather than exhaustive or
+  generated coverage. This makes it practical in standard unit test frameworks
+  without additional tooling. The approach is language-agnostic and applies
+  wherever a component has a mathematical contract — equality, ordering,
+  serialization, or other algebraic properties.

@@ -1,0 +1,142 @@
+schema_version: "1.0"
+id: testing-principles
+title: Testing Principles Styleguide
+scope: testing
+applies_to_languages: []
+
+principles:
+  - "Isolated: a test's result must not depend on the execution order of other tests. No shared mutable state between tests."
+  - "Composable: test orthogonal dimensions of variability separately; combine focused tests rather than writing monolithic scenarios."
+  - "Deterministic: identical inputs always produce identical results. Control all sources of randomness, time, and external state."
+  - "Fast: tests must run quickly enough to provide rapid feedback. Milliseconds per test is the target for unit-level work."
+  - "Readable: the intent of a test is obvious to any reader without tracing the production code. Test names state the invariant or behavior under test."
+  - "Behavioral: tests must be sensitive to behavioral changes. A test that passes after a behavior regression is not a test."
+  - "Structure-insensitive: tests must survive internal refactoring that preserves observable behavior. Tests that break on rename or extraction are coupled to implementation."
+  - "Specific: when a test fails, the cause is immediately obvious. Use focused assertions and descriptive failure messages."
+  - "Automated: no human intervention is required to run or interpret the result. Tests integrate into CI without manual steps."
+  - "One behavior per test: each test method verifies a single behavior or contract. Use parameterized tests for variations over the same contract."
+  - "Slice by functionality, not by layer: test boundaries are drawn around features and responsibilities, not around architectural tiers. Avoid test suites organized as 'presentation layer tests', 'business layer tests', 'data layer tests' — these couple tests to structure."
+  - "Prefer the fastest feedback loop that achieves sufficient coverage: a slower, more realistic test is only warranted when a faster test cannot detect the class of defect in question."
+  - "Test names document contracts: the name equals_reflexive or transfer_reduces_source_balance is self-explanatory; generic names like test1 or shouldWork are not."
+
+patterns:
+  - name: Quadruple-A Test Structure
+    description: >
+      Every test follows four explicit stages: Arrange (set up all preconditions),
+      Assumption-check (assert that the arrangement produced the intended precondition
+      state), Act (perform exactly one behavior), Assert (verify expected outcomes).
+      An optional fifth stage, After, resets shared resources for isolation.
+      Separating Arrange from Assumption-check makes hidden setup failures immediately
+      visible rather than producing a misleading assertion failure in the Act phase.
+    good_example: |
+      test "transfer reduces source balance by the transferred amount":
+          # Arrange
+          source = Account(balance=100)
+          target = Account(balance=0)
+
+          # Assumption
+          assert source.balance >= 25, "precondition: source has enough funds"
+          assert source.is_active()
+          assert target.is_active()
+
+          # Act
+          result = transfer(source, target, amount=25)
+
+          # Assert
+          assert result.is_ok()
+          assert source.balance == 75
+          assert target.balance == 25
+
+          # After
+          cleanup_accounts(source, target)
+
+  - name: Clear Test Boundaries
+    description: >
+      Draw the boundary of a test around a feature or functional responsibility,
+      not around a technical layer. Run real collaborators inside the boundary;
+      stub only systems that are genuinely external to the responsibility
+      (databases the feature doesn't own, third-party APIs, the network clock).
+      This makes tests survive internal refactoring and keeps assertion count low.
+    bad_example: |
+      # Layer-sliced — tightly coupled to structure
+      def test_business_layer_create_order():
+          mock_repo = Mock()
+          mock_repo.save.return_value = None
+          service = OrderService(repo=mock_repo)
+          service.create(order_data)
+          mock_repo.save.assert_called_once()  # asserts internal wiring, not behavior
+    good_example: |
+      # Feature-sliced — survives refactoring
+      def test_create_order_stores_and_returns_id():
+          # Arrange: real service + in-memory repository (inside responsibility)
+          repo = InMemoryOrderRepository()
+          service = OrderService(repo=repo)
+          # Act
+          order_id = service.create({"item": "widget", "qty": 2})
+          # Assert: observable outcome, not internal call sequence
+          assert order_id is not None
+          assert repo.find(order_id).item == "widget"
+
+  - name: Testing Pyramid
+    description: >
+      Organise the test suite across a spectrum from isolated to integrated.
+      Unit-level tests (single function or class, no real collaborators) form
+      the large base: fast, numerous, and cheap to write. Acceptance-level tests
+      (feature completion gates driven through a public API) form the middle.
+      Integration tests (multiple components, real external dependencies) and
+      end-to-end tests (full system, critical user journeys) form the small apex.
+      Inverting the pyramid — many slow E2E tests, few unit tests — produces
+      slow feedback and high maintenance cost.
+    good_example: |
+      # Healthy distribution (approximate):
+      # Unit tests:        70–80%  (milliseconds each)
+      # Acceptance tests:  10–15%  (fast, feature-scoped)
+      # Integration tests:  5–10%  (medium, real dependencies)
+      # E2E tests:          1–5%   (slow, critical journeys only)
+
+anti_patterns:
+  - name: Over-Mocking
+    description: "Mocking collaborators that are inside the test's responsibility boundary produces tests that verify wiring rather than behavior, and break on every internal refactoring."
+    bad_example: |
+      # Mocking the repository that the service owns — tests internal wiring
+      mock_repo = Mock()
+      service = OrderService(repo=mock_repo)
+      service.create(data)
+      mock_repo.save.assert_called_once_with(ANY)
+    good_example: |
+      # Use an in-memory fake for collaborators inside the responsibility
+      repo = InMemoryOrderRepository()
+      service = OrderService(repo=repo)
+      order_id = service.create(data)
+      assert repo.find(order_id) is not None
+
+  - name: Testing Implementation Structure
+    description: "Asserting on method call counts, argument capture, or internal attribute access couples the test to implementation details. The test will break when the structure changes even if the behavior is preserved."
+    bad_example: |
+      verify(mock).processOrder(captor.capture())
+      assertEquals("expected-arg", captor.getValue())
+    good_example: |
+      // Assert on the observable outcome, not the internal call
+      assertThat(orderRepository.findById(orderId)).isPresent();
+
+  - name: No Negative Tests
+    description: "A test suite with only positive (happy-path) cases cannot detect that invalid inputs are rejected or that contracts are enforced. Mutations that remove validation survive entirely."
+    bad_example: |
+      @Test
+      void create_validInput_returnsId() { ... }
+      // No test for null input, duplicate ID, missing required field
+    good_example: |
+      @Test
+      void create_nullInput_throwsNullPointerException() { ... }
+
+      @Test
+      void create_duplicateId_throwsConflictException() { ... }
+
+  - name: Shared Mutable State
+    description: "Tests that modify shared state produce order-dependent results. A test that passes in isolation may fail when run in a suite, or vice versa."
+    bad_example: |
+      static List<String> log = new ArrayList<>();  // shared across tests
+      @Test void test_a() { log.add("a"); assertThat(log).hasSize(1); }
+      @Test void test_b() { log.add("b"); assertThat(log).hasSize(1); } // fails if test_a runs first
+    good_example: |
+      @BeforeEach void setUp() { log = new ArrayList<>(); }  // fresh state per test

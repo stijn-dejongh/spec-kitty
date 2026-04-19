@@ -1,0 +1,198 @@
+schema_version: "1.0"
+id: java-conventions
+title: Java Conventions Styleguide
+scope: code
+applies_to_languages:
+  - java
+
+principles:
+  - "Naming conventions: classes and interfaces use PascalCase; methods and variables use camelCase; constants use UPPER_SNAKE_CASE; package names use lowercase.separated; enum types use PascalCase, enum values use UPPER_SNAKE_CASE."
+  - "Guard clauses over nesting: validate inputs at method entry and return or throw immediately, keeping the happy path at low indentation."
+  - "Null safety by design: prefer Optional<T> for return types that may be absent; never return null from public methods."
+  - "Meaningful names over comments: class, method, and variable names must express intent; comments explain why, not what."
+  - "Single responsibility: each class encapsulates one concept; extract when a class has more than one reason to change."
+  - "Immutability by default: mark fields final where possible; prefer immutable value objects over mutable beans."
+  - "Test structure — GivenWhenThen: every test method follows Given (arrange), When (act), Then (assert) naming and structure."
+  - "One assertion focus per test: each test validates a single behavior; use parameterized tests for variations."
+  - "Package by feature, not layer: group related classes by domain concept, not by technical tier (controller/service/repository)."
+  - "Checked exceptions for recoverable conditions only: prefer unchecked RuntimeException for programming errors."
+  - "Explicit character encoding: always specify StandardCharsets.UTF_8 when reading from or writing to files; never rely on the platform default encoding."
+  - "Try-with-resources for all AutoCloseable: wrap streams, readers, writers, and connections in try-with-resources to guarantee closure even on exception."
+  - "Conventional commit messages: follow type(scope): summary format aligned to DIRECTIVE_029."
+
+patterns:
+  - name: Guard Clauses
+    description: "Validate preconditions at method entry and throw immediately, avoiding deep nesting."
+    bad_example: |
+      public Invoice processOrder(Order order) {
+          if (order != null) {
+              if (order.getItems().isEmpty()) {
+                  throw new IllegalArgumentException("No items");
+              }
+              return invoiceService.create(order);
+          }
+          throw new NullPointerException("order is null");
+      }
+    good_example: |
+      public Invoice processOrder(Order order) {
+          Objects.requireNonNull(order, "order must not be null");
+          if (order.getItems().isEmpty()) {
+              throw new IllegalArgumentException("order must have at least one item");
+          }
+          return invoiceService.create(order);
+      }
+
+  - name: Optional Return Type
+    description: "Return Optional<T> rather than null when a value may legitimately be absent."
+    bad_example: |
+      public User findByEmail(String email) {
+          return userRepository.findByEmail(email); // may return null
+      }
+    good_example: |
+      public Optional<User> findByEmail(String email) {
+          return Optional.ofNullable(userRepository.findByEmail(email));
+      }
+
+  - name: GivenWhenThen Test Structure
+    description: "Tests follow the Given–When–Then pattern in both structure and naming."
+    bad_example: |
+      @Test
+      void test1() {
+          var svc = new OrderService(mockRepo);
+          var result = svc.processOrder(new Order(List.of(item)));
+          assertEquals("INV-001", result.getId());
+      }
+    good_example: |
+      @Test
+      void processOrder_singleItem_returnsInvoiceWithId() {
+          // Given
+          var order = new Order(List.of(anItem()));
+          // When
+          var invoice = orderService.processOrder(order);
+          // Then
+          assertThat(invoice.getId()).startsWith("INV-");
+      }
+
+  - name: Immutable Value Objects
+    description: "Use records or final fields for domain value objects; avoid setters."
+    bad_example: |
+      public class Money {
+          private BigDecimal amount;
+          private String currency;
+          public void setAmount(BigDecimal amount) { this.amount = amount; }
+          public void setCurrency(String currency) { this.currency = currency; }
+      }
+    good_example: |
+      public record Money(BigDecimal amount, String currency) {
+          public Money {
+              Objects.requireNonNull(amount, "amount");
+              Objects.requireNonNull(currency, "currency");
+              if (amount.compareTo(BigDecimal.ZERO) < 0) {
+                  throw new IllegalArgumentException("amount must be non-negative");
+              }
+          }
+      }
+
+  - name: Test Data Builder
+    description: >
+      For complex domain objects, provide a fixture builder with sensible defaults
+      so each test specifies only the fields relevant to the behavior under test.
+      This prevents tests from being coupled to unrelated fields and reduces the
+      maintenance cost when the object gains new required fields.
+    bad_example: |
+      // Every test must supply all fields, even irrelevant ones
+      @Test
+      void shouldRejectExpiredRecord() {
+          var record = new ExposureRecord("REP_001", "lot-20", "Corporates",
+              "2025-01-01", "2024-12-31", BigDecimal.TEN, "EUR", null, null);
+          assertThat(validator.validate(record)).isFalse();
+      }
+    good_example: |
+      // Fixture builder carries defaults; test only sets what matters
+      @Test
+      void shouldRejectExpiredRecord() {
+          var record = ExposureRecordFixtures.aRecord()
+              .expiryDate("2024-12-31")
+              .build();
+          assertThat(validator.validate(record)).isFalse();
+      }
+
+anti_patterns:
+  - name: Returning Null
+    description: "Returning null from a public method forces callers to guard against NullPointerException and obscures intent."
+    bad_example: |
+      public User getUser(String id) {
+          return users.get(id); // null if missing
+      }
+    good_example: |
+      public Optional<User> getUser(String id) {
+          return Optional.ofNullable(users.get(id));
+      }
+
+  - name: Deep Nesting via if-else Chains
+    description: "Multiple nested if-else blocks hide the happy path and make code hard to follow."
+    bad_example: |
+      if (user != null) {
+          if (user.isActive()) {
+              if (permission.isGranted()) {
+                  doWork();
+              }
+          }
+      }
+    good_example: |
+      Objects.requireNonNull(user);
+      if (!user.isActive()) return;
+      if (!permission.isGranted()) return;
+      doWork();
+
+  - name: Asserting Overly Broad Exception Types
+    description: >
+      Testing that a method throws Exception or RuntimeException rather than the
+      specific documented type lets incorrect exception types pass the test. Always
+      assert the exact exception class the contract specifies.
+    bad_example: |
+      // Code throws NullPointerException, but test expects a different type —
+      // this documents the wrong contract and will fail on correct code.
+      assertThatThrownBy(() -> service.process(null))
+          .isInstanceOf(IllegalArgumentException.class);
+
+      // Or too broad — any exception passes, masking wrong exception types:
+      assertThatThrownBy(() -> service.process(null))
+          .isInstanceOf(RuntimeException.class);
+    good_example: |
+      // Assert the precise exception type the method is documented to throw
+      assertThatThrownBy(() -> service.process(null))
+          .isInstanceOf(NullPointerException.class);
+
+  - name: Default Platform Encoding for File I/O
+    description: >
+      Relying on the JVM's default file encoding produces code that behaves
+      correctly on the developer's machine but silently corrupts data on
+      systems with a different default encoding. Always specify the encoding
+      explicitly.
+    bad_example: |
+      // Uses system default encoding — may corrupt non-ASCII characters
+      try (var reader = new FileReader(path)) {
+          // ...
+      }
+    good_example: |
+      // Explicit UTF-8 encoding — consistent across all platforms
+      try (var reader = new InputStreamReader(
+              new FileInputStream(path), StandardCharsets.UTF_8)) {
+          // ...
+      };
+
+tooling:
+  formatter: "google-java-format or spotless (Maven plugin)"
+  linter: "Checkstyle (google_checks.xml or project-specific ruleset)"
+  static_analysis: "SpotBugs + PMD"
+  test_runner: "JUnit 5 via Maven Surefire / Failsafe"
+  type_safety: "N/A (Java is statically typed)"
+  coverage: "JaCoCo (Maven plugin)"
+
+quality_test: "mvn verify -Dcheckstyle.failOnViolation=true"
+
+references:
+  - "https://google.github.io/styleguide/javaguide.html"
+  - "https://junit.org/junit5/docs/current/user-guide/"
+  - "https://maven.apache.org/plugins/maven-checkstyle-plugin/"

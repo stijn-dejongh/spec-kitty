@@ -1,0 +1,96 @@
+schema_version: "1.0"
+id: test-minimisation
+name: Test Minimisation
+purpose: >
+  Identify and remove logically redundant tests — those that assert the same
+  contract or invariant as another test — without reducing coverage of
+  distinct behaviors. A lean test suite is faster, easier to maintain, and
+  more trustworthy than one inflated with overlapping assertions.
+steps:
+  - title: Distinguish logical duplication from code path overlap
+    description: >
+      Code path overlap — multiple tests executing the same lines — is
+      acceptable and often expected. Logical duplication — multiple tests
+      asserting the same invariant or contract, differing only in phrasing
+      or input fixture — is the target for removal. Identify the type before
+      proceeding: only logical duplication warrants deletion.
+    examples:
+      - "Two tests both verify that an empty list returns zero total: logical duplication — remove one."
+      - "A round-trip test and a spot-check test both cover the serialize path: code path overlap — retain both if they assert different things."
+
+  - title: Run baseline coverage
+    description: >
+      Run the full test suite with coverage measurement and record the
+      baseline metrics — line coverage, branch coverage, and the number
+      of passing tests. This snapshot is the reference point for the
+      minimisation steps that follow.
+    examples:
+      - "Record: 94% line coverage, 88% branch coverage, 312 tests passing."
+
+  - title: Identify logically duplicative tests
+    description: >
+      Review the test suite for tests that assert the same invariant or
+      contract as a more general test. Common signals: spot-checks that
+      validate what a parameterized contract test already covers; manual
+      input variants duplicated by a parameterized test; assertion on a
+      specific JSON fragment when a round-trip test already covers
+      serialization correctness.
+    examples:
+      - "A spot-check `json.contains('name')` is duplicated by a round-trip test that already proves the field survives serialization."
+      - "Three manually written equality tests are superseded by a parameterized equality contract test."
+
+  - title: Disable candidates before deletion
+    description: >
+      Comment out or mark candidates as disabled rather than deleting them
+      immediately. This preserves them for the coverage comparison in the
+      next step and allows reversal without a version-control lookup.
+    examples:
+      - "Mark with @Disabled, skip, or the framework equivalent, with a comment explaining the redundancy (e.g. 'covered by parameterized contract test')."
+
+  - title: Re-run coverage and compare
+    description: >
+      Run the full test suite again with the candidates disabled. Compare
+      the new coverage metrics to the baseline recorded in step 2.
+    examples:
+      - "Baseline: 94% line, 88% branch. After disable: 94% line, 88% branch — no change, proceed to delete."
+      - "After disable: 91% line — coverage dropped, restore the disabled test."
+
+  - title: Delete confirmed redundancies; restore the rest
+    description: >
+      Delete tests whose removal produced no coverage change. Restore any
+      test that caused a coverage drop — it was covering a distinct path
+      or contract even if it appeared redundant on inspection.
+    examples:
+      - "Delete: three spot-check equality tests superseded by the parameterized contract test."
+      - "Restore: the round-trip test for the empty-collection case, because the parameterized test did not cover that variant."
+
+  - title: Retain regression and documentation exceptions
+    description: >
+      Bug regression tests should be retained even if they overlap
+      logically — they document a specific historical defect and serve
+      as an early warning if the defect resurfaces. Tests whose primary
+      value is illustrating expected format or behavior to human readers
+      may also be retained when they significantly aid comprehension.
+    examples:
+      - "Retain: test_null_id_returns_404, written when a specific production bug was fixed."
+      - "Retain: a single readable example test alongside a parameterized contract test, when it aids onboarding."
+
+failure_modes:
+  - "Deleting tests based on visual inspection without running coverage comparison — a test that looks redundant may cover an unchecked branch."
+  - "Treating code path overlap as logical duplication and removing tests that assert different contracts over the same code."
+  - "Removing bug regression tests because they overlap with a contract test — regressions recur; keep the specific test."
+  - "Minimising without first establishing a baseline — no baseline means no way to detect accidental coverage loss."
+
+references:
+  - name: Formalized Constraint Testing
+    type: tactic
+    id: formalized-constraint-testing
+    when: Contract tests are a common reason to minimise overlapping spot-checks; apply formalized-constraint-testing first, then minimise redundant tests.
+  - name: Test-First Development
+    type: directive
+    id: DIRECTIVE_034
+    when: Minimisation removes waste from the test suite; the remaining tests must still satisfy the test-first contract before production code is written.
+  - name: Test and Typecheck Quality Gate
+    type: directive
+    id: DIRECTIVE_030
+    when: Coverage must not drop below the project threshold after minimisation.
