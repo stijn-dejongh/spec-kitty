@@ -24,8 +24,8 @@ merge_target_branch: main
 | T004 | Implement `src/specify_cli/compat/registry.py`: load + validate `shim-registry.yaml` | WP02 | | [D] |
 | T005 | Implement `src/specify_cli/compat/doctor.py`: `check_shim_registry()` engine | WP02 | | [D] |
 | T006 | Add `spec-kitty doctor shim-registry` subcommand to `src/specify_cli/cli/commands/doctor.py` | WP03 | |
-| T007 | Write `architecture/2.x/shim-registry.yaml` (initial empty registry) | WP04 | |
-| T008 | Write `architecture/2.x/06_migration_and_shim_rules.md` (rulebook, 4 rule families + worked example) | WP04 | [P] |
+| T007 | Write `architecture/2.x/shim-registry.yaml` (initial empty registry) | WP04 | | [D] |
+| T008 | Write `architecture/2.x/06_migration_and_shim_rules.md` (rulebook, 4 rule families + worked example) | WP04 | [D] |
 | T009 | Write `tests/architectural/test_shim_registry_schema.py` (FR-011 schema validation) | WP05 | |
 | T010 | Write `tests/architectural/test_unregistered_shim_scanner.py` (FR-010 AST scanner) | WP05 | [P] |
 | T011 | Write `tests/doctor/test_shim_registry.py` (FR-009 CLI integration) | WP06 | |
@@ -111,8 +111,8 @@ merge_target_branch: main
 **Dependencies**: none (can run in parallel with WP01)
 
 **Included subtasks**:
-- [ ] T007 Write `architecture/2.x/shim-registry.yaml` (initial empty registry) (WP04)
-- [ ] T008 Write `architecture/2.x/06_migration_and_shim_rules.md` (rulebook) (WP04)
+- [x] T007 Write `architecture/2.x/shim-registry.yaml` (initial empty registry) (WP04)
+- [x] T008 Write `architecture/2.x/06_migration_and_shim_rules.md` (rulebook) (WP04)
 
 **Implementation sketch**:
 1. `shim-registry.yaml`: top-level `shims: []`. Add a YAML comment block at the top citing the schema contract (`contracts/shim-registry-schema.yaml`) and the rulebook section for new entries.
