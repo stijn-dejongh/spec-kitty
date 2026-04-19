@@ -20,9 +20,9 @@ merge_target_branch: main
 |----|-------------|----|---------:|
 | T001 | Audit existing shims: grep `src/specify_cli/` for `__deprecated__`; document zero-shim baseline | WP01 | | [D] |
 | T002 | Confirm `packaging` is an explicit dep in `pyproject.toml`; add if absent | WP01 | [D] |
-| T003 | Create `src/specify_cli/compat/` package (`__init__.py` with public exports) | WP02 | |
-| T004 | Implement `src/specify_cli/compat/registry.py`: load + validate `shim-registry.yaml` | WP02 | |
-| T005 | Implement `src/specify_cli/compat/doctor.py`: `check_shim_registry()` engine | WP02 | |
+| T003 | Create `src/specify_cli/compat/` package (`__init__.py` with public exports) | WP02 | | [D] |
+| T004 | Implement `src/specify_cli/compat/registry.py`: load + validate `shim-registry.yaml` | WP02 | | [D] |
+| T005 | Implement `src/specify_cli/compat/doctor.py`: `check_shim_registry()` engine | WP02 | | [D] |
 | T006 | Add `spec-kitty doctor shim-registry` subcommand to `src/specify_cli/cli/commands/doctor.py` | WP03 | |
 | T007 | Write `architecture/2.x/shim-registry.yaml` (initial empty registry) | WP04 | |
 | T008 | Write `architecture/2.x/06_migration_and_shim_rules.md` (rulebook, 4 rule families + worked example) | WP04 | [P] |
@@ -45,7 +45,7 @@ merge_target_branch: main
 **Included subtasks**:
 - [x] T001 Audit existing shims: grep `src/specify_cli/` for `__deprecated__`; document zero-shim baseline (WP01)
 - [x] T002 Confirm `packaging` is an explicit dep in `pyproject.toml`; add if absent (WP01)
-- [ ] T003 Create `src/specify_cli/compat/` package (`__init__.py` with public exports) (WP01)
+- [x] T003 Create `src/specify_cli/compat/` package (`__init__.py` with public exports) (WP01)
 
 **Implementation sketch**:
 1. Grep `src/specify_cli/` for `__deprecated__ = True`; commit the empty result as the baseline fact in a code comment inside `compat/__init__.py`.
@@ -66,8 +66,8 @@ merge_target_branch: main
 **Dependencies**: WP01
 
 **Included subtasks**:
-- [ ] T004 Implement `src/specify_cli/compat/registry.py`: load + validate `shim-registry.yaml` (WP02)
-- [ ] T005 Implement `src/specify_cli/compat/doctor.py`: `check_shim_registry()` engine (WP02)
+- [x] T004 Implement `src/specify_cli/compat/registry.py`: load + validate `shim-registry.yaml` (WP02)
+- [x] T005 Implement `src/specify_cli/compat/doctor.py`: `check_shim_registry()` engine (WP02)
 
 **Implementation sketch**:
 1. `registry.py`: `load_registry(repo_root) -> list[ShimEntry]`, `validate_registry(entries) -> None | raise RegistrySchemaError`. Uses `ruamel.yaml` safe loader. Manual field-by-field validation per data-model.md rules. `ShimEntry` is a frozen dataclass.
