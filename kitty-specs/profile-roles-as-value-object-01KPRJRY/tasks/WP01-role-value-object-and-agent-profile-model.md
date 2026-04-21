@@ -17,7 +17,7 @@ requirement_refs:
 - NFR-004
 planning_base_branch: doctrine/profile_reinforcement
 merge_target_branch: doctrine/profile_reinforcement
-branch_strategy: Execute in worktree branched from doctrine/profile_reinforcement. Merge back to doctrine/profile_reinforcement when done.
+branch_strategy: Planning artifacts for this feature were generated on doctrine/profile_reinforcement. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into doctrine/profile_reinforcement unless the human explicitly redirects the landing branch.
 subtasks:
 - T001
 - T002
