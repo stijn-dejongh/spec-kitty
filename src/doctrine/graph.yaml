@@ -350,7 +350,7 @@ nodes:
 - urn: toolguide:typescript-mutation-tools
   kind: toolguide
   label: TypeScript Mutation Testing with Stryker
-- urn: agent_profile:implementer
+- urn: agent_profile:implementer-ivan
   kind: agent_profile
   label: Implementer Ivan
 - urn: agent_profile:java-jenny
@@ -411,12 +411,30 @@ nodes:
   kind: tactic
   label: Function Over Form Testing
 # reviewer profile node
-- urn: agent_profile:reviewer
+- urn: agent_profile:reviewer-renata
   kind: agent_profile
   label: Reviewer Renata
-- urn: agent_profile:architect
+- urn: agent_profile:architect-alphonso
   kind: agent_profile
   label: Architect Alphonso
+- urn: agent_profile:curator-carla
+  kind: agent_profile
+  label: Curator Carla
+- urn: agent_profile:designer-dagmar
+  kind: agent_profile
+  label: Designer Dagmar
+- urn: agent_profile:generic-agent
+  kind: agent_profile
+  label: Generic Agent
+- urn: agent_profile:human-in-charge
+  kind: agent_profile
+  label: Human In Charge
+- urn: agent_profile:planner-priti
+  kind: agent_profile
+  label: Planner Priti
+- urn: agent_profile:researcher-robbie
+  kind: agent_profile
+  label: Researcher Robbie
 edges:
 - source: action:software-dev/implement
   target: directive:DIRECTIVE_024
@@ -1196,21 +1214,21 @@ edges:
 # ---------------------------------------------------------------------------
 # Agent profile nodes — specialisation hierarchy and doctrine context wiring
 # ---------------------------------------------------------------------------
-- source: agent_profile:implementer
+- source: agent_profile:implementer-ivan
   target: directive:DIRECTIVE_010
   relation: requires
-- source: agent_profile:implementer
+- source: agent_profile:implementer-ivan
   target: tactic:tdd-red-green-refactor
   relation: suggests
-- source: agent_profile:implementer
+- source: agent_profile:implementer-ivan
   target: tactic:acceptance-test-first
   relation: suggests
-- source: agent_profile:implementer
+- source: agent_profile:implementer-ivan
   target: procedure:test-first-bug-fixing
   relation: suggests
 # python-pedro specialises from implementer
 - source: agent_profile:python-pedro
-  target: agent_profile:implementer
+  target: agent_profile:implementer-ivan
   relation: delegates_to
 - source: agent_profile:python-pedro
   target: directive:DIRECTIVE_010
@@ -1250,7 +1268,7 @@ edges:
   relation: suggests
 # java-jenny specialises from implementer
 - source: agent_profile:java-jenny
-  target: agent_profile:implementer
+  target: agent_profile:implementer-ivan
   relation: delegates_to
 - source: agent_profile:java-jenny
   target: directive:DIRECTIVE_010
@@ -1326,39 +1344,39 @@ edges:
   when: PIT mutation testing is the optional high-cost gate in the Maven quality stack
 
 # reviewer agent profile
-- source: agent_profile:reviewer
+- source: agent_profile:reviewer-renata
   target: directive:DIRECTIVE_001
   relation: requires
-- source: agent_profile:reviewer
+- source: agent_profile:reviewer-renata
   target: directive:DIRECTIVE_024
   relation: requires
-- source: agent_profile:reviewer
+- source: agent_profile:reviewer-renata
   target: directive:DIRECTIVE_030
   relation: requires
-- source: agent_profile:reviewer
+- source: agent_profile:reviewer-renata
   target: directive:DIRECTIVE_032
   relation: requires
-- source: agent_profile:reviewer
+- source: agent_profile:reviewer-renata
   target: tactic:code-review-incremental
   relation: requires
-- source: agent_profile:reviewer
+- source: agent_profile:reviewer-renata
   target: tactic:reverse-speccing
   relation: requires
-- source: agent_profile:reviewer
+- source: agent_profile:reviewer-renata
   target: tactic:secure-design-checklist
   relation: requires
-- source: agent_profile:reviewer
+- source: agent_profile:reviewer-renata
   target: tactic:test-to-system-reconstruction
   relation: suggests
   when: Validates test suite documentation quality during review
-- source: agent_profile:reviewer
+- source: agent_profile:reviewer-renata
   target: tactic:work-package-completion-validation
   relation: requires
-- source: agent_profile:reviewer
+- source: agent_profile:reviewer-renata
   target: tactic:code-documentation-analysis
   relation: suggests
   when: Boundary ambiguity or ubiquitous-language drift detected in a diff
-- source: agent_profile:reviewer
+- source: agent_profile:reviewer-renata
   target: tactic:analysis-extract-before-interpret
   relation: requires
   when: Separating observations from judgments in review feedback
@@ -1414,37 +1432,37 @@ edges:
   relation: requires
 
 # architect agent profile edges
-- source: agent_profile:architect
+- source: agent_profile:architect-alphonso
   target: directive:DIRECTIVE_001
   relation: requires
-- source: agent_profile:architect
+- source: agent_profile:architect-alphonso
   target: directive:DIRECTIVE_003
   relation: requires
-- source: agent_profile:architect
+- source: agent_profile:architect-alphonso
   target: directive:DIRECTIVE_024
   relation: requires
-- source: agent_profile:architect
+- source: agent_profile:architect-alphonso
   target: directive:DIRECTIVE_032
   relation: requires
-- source: agent_profile:architect
+- source: agent_profile:architect-alphonso
   target: tactic:context-boundary-inference
   relation: requires
-- source: agent_profile:architect
+- source: agent_profile:architect-alphonso
   target: tactic:code-documentation-analysis
   relation: requires
-- source: agent_profile:architect
+- source: agent_profile:architect-alphonso
   target: tactic:traceable-decisions
   relation: requires
-- source: agent_profile:architect
+- source: agent_profile:architect-alphonso
   target: tactic:dependency-hygiene
   relation: suggests
-- source: agent_profile:architect
+- source: agent_profile:architect-alphonso
   target: tactic:locality-of-change
   relation: suggests
-- source: agent_profile:architect
+- source: agent_profile:architect-alphonso
   target: tactic:analysis-extract-before-interpret
   relation: suggests
-- source: agent_profile:architect
+- source: agent_profile:architect-alphonso
   target: tactic:secure-design-checklist
   relation: suggests
 
@@ -1488,10 +1506,10 @@ edges:
   relation: suggests
 
 # implementer profile edges for new approach-derived tactics
-- source: agent_profile:implementer
+- source: agent_profile:implementer-ivan
   target: tactic:behavior-driven-development
   relation: requires
-- source: agent_profile:implementer
+- source: agent_profile:implementer-ivan
   target: tactic:function-over-form-testing
   relation: requires
 - source: agent_profile:java-jenny
