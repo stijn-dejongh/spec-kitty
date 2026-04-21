@@ -111,9 +111,10 @@ subtasks: {subtasks}
 owned_files: {owned_files}
 authoritative_surface: "{longest common path prefix of owned_files}"
 execution_mode: "{execution_mode}"
-profile: ""        # filled in Step 4a
-role: ""           # filled in Step 4a
-tool: ""           # filled in Step 4a
+agent_profile: ""  # filled in Step 4a — profile identifier (e.g., implementer-ivan)
+role: ""           # filled in Step 4a — role within the profile (e.g., "implementer")
+agent: ""          # filled in Step 4a — CLI agent identifier (claude, codex, copilot, etc.)
+model: ""          # filled in Step 4a — model identifier (e.g., claude-sonnet-4-6), optional
 ---
 ```
 
@@ -213,18 +214,19 @@ spec-kitty agent profile list --json
 > If this command is unavailable, look for profiles under `src/doctrine/agent_profiles/shipped/` and any user-defined profiles in `.kittify/agent_profiles/` or equivalent.
 
 For each WP, select the best-matching profile based on `task_type`, `authoritative_surface`, `owned_files`, and subtask content. Then update the WP prompt file's frontmatter **in place** with:
-- `profile`: the profile identifier (e.g., `"implementer"`, `"architect"`, `"curator"`)
-- `role`: the human-readable role described in the profile (e.g., `"Senior Python Developer"`)
-- `tool`: the primary tool or skill focus (e.g., `"pytest"`, `"git"`, `"ruff"`)
+- `agent_profile`: the profile identifier (e.g., `"implementer-ivan"`, `"architect-alphonso"`, `"curator-carla"`)
+- `role`: the role within the profile (e.g., `"implementer"`, `"reviewer"`)
+- `agent`: the CLI agent/tool identifier (e.g., `"claude"`, `"codex"`, `"copilot"`)
+- `model`: the model identifier (optional, e.g., `"claude-sonnet-4-6"`)
 
-Also update the corresponding entry in `wps.yaml` with these three fields.
+Also update the corresponding entry in `wps.yaml` with these fields.
 
 ### 5. Self-Check
 
 After all sub-agents complete, verify each generated prompt:
 - Subtask count: 3-7? ✓ | 8-10? ⚠️ | 11+? ❌ needs splitting
 - Estimated lines: 200-500? ✓ | 500-700? ⚠️ | 700+? ❌ needs splitting
-- `profile`, `role`, `tool` set for every WP? ✓
+- `agent_profile`, `role`, `agent` set for every WP? ✓
 - owned_files glob patterns non-overlapping across all WPs? ✓
 - Can implement in one session? ✓ | Multiple sessions needed? ❌ needs splitting
 

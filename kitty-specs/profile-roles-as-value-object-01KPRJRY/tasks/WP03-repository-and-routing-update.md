@@ -197,11 +197,11 @@ in `repository.py`.
 
 ---
 
-### T020 — Write new routing tests
+### T020 — Write new routing and lookup tests
 
 **File**: `tests/doctrine/test_profile_repository.py`
 
-Add a new test class (do not remove existing tests):
+Add two new test classes (do not remove existing tests):
 
 ```python
 class TestMultiRoleRouting:
@@ -251,21 +251,84 @@ class TestMultiRoleRouting:
         ctx = TaskContext(required_role=Role("arch-alex"))
         assert _exact_id_signal(ctx, p) == 1.0
 
-    def test_find_by_role_returns_secondary_role_profiles(self):
-        """find_by_role checks all roles, not just the primary."""
-        from doctrine.agent_profiles.repository import AgentProfileRepository
+
+class TestRoleLookup:
+    """find_by_role returns ALL profiles that list the role (primary or secondary).
+    get() returns the unique profile for a profile_id or None.
+    """
+
+    def _repo_with(self, *profiles: AgentProfile) -> AgentProfileRepository:
         repo = AgentProfileRepository.__new__(AgentProfileRepository)
-        primary  = self._make_profile("arch-alex", ["architect"])
+        repo._profiles = {p.profile_id: p for p in profiles}
+        repo._hierarchy_index = None
+        return repo
+
+    def _make_profile(self, profile_id: str, roles: list[str]) -> AgentProfile:
+        return AgentProfile(**{
+            "profile-id": profile_id,
+            "name": f"Test {profile_id}",
+            "version": "1.0",
+            "roles": roles,
+        })
+
+    # ── find_by_role: role-based search, many results ─────────────────────
+
+    def test_find_by_role_returns_primary_role_profile(self):
+        p = self._make_profile("arch-alex", ["architect"])
+        repo = self._repo_with(p)
+        assert p in repo.find_by_role("architect")
+
+    def test_find_by_role_returns_secondary_role_profile(self):
+        """find_by_role checks all roles, not just the primary."""
+        p = self._make_profile("arch-bob", ["implementer", "architect"])
+        repo = self._repo_with(p)
+        assert p in repo.find_by_role("architect")
+
+    def test_find_by_role_returns_multiple_profiles_sharing_a_role(self):
+        """When several profiles list the same role, all are returned."""
+        primary   = self._make_profile("arch-alex", ["architect"])
         secondary = self._make_profile("arch-bob",  ["implementer", "architect"])
-        repo._profiles = {"arch-alex": primary, "arch-bob": secondary}
+        repo = self._repo_with(primary, secondary)
 
         result = repo.find_by_role("architect")
-        assert primary  in result
+        assert len(result) == 2
+        assert primary   in result
         assert secondary in result
+
+    def test_find_by_role_returns_empty_when_no_match(self):
+        p = self._make_profile("arch-alex", ["architect"])
+        repo = self._repo_with(p)
+        assert repo.find_by_role("implementer") == []
+
+    def test_find_by_role_with_role_instance(self):
+        """find_by_role accepts a Role instance, not just a plain string."""
+        p = self._make_profile("impl-ivan", ["implementer"])
+        repo = self._repo_with(p)
+        assert p in repo.find_by_role(Role.IMPLEMENTER)
+
+    # ── get(): profile_id lookup, unique result ───────────────────────────
+
+    def test_get_returns_profile_for_known_id(self):
+        p = self._make_profile("arch-alex", ["architect"])
+        repo = self._repo_with(p)
+        assert repo.get("arch-alex") is p
+
+    def test_get_returns_none_for_unknown_id(self):
+        repo = self._repo_with()
+        assert repo.get("nonexistent") is None
+
+    def test_get_is_unique_two_profiles_with_different_ids(self):
+        """Different profile_ids never collide — dict guarantees uniqueness."""
+        p1 = self._make_profile("arch-alex", ["architect"])
+        p2 = self._make_profile("arch-bob",  ["architect"])
+        repo = self._repo_with(p1, p2)
+        assert repo.get("arch-alex") is p1
+        assert repo.get("arch-bob")  is p2
+        assert repo.get("arch-alex") is not p2
 ```
 
-Adjust imports and `TaskContext` construction to match actual module paths. Run
-`pytest tests/doctrine/test_profile_repository.py -v` to confirm all pass.
+Adjust imports and `TaskContext` / `AgentProfileRepository` construction to match
+actual module paths. Run `pytest tests/doctrine/test_profile_repository.py -v` to confirm all pass.
 
 ---
 
@@ -273,9 +336,12 @@ Adjust imports and `TaskContext` construction to match actual module paths. Run
 
 - [ ] `_filter_candidates_by_role` checks `required_role in profile.roles` (any position)
 - [ ] `_exact_id_signal` returns 1.0 for primary match, 0.5 for secondary, 0.0 for none
-- [ ] `find_by_role` checks `role in profile.roles`
+- [ ] `find_by_role(role)` checks `role in profile.roles` — returns **all** profiles that list the role at any position; multiple results are expected and correct
+- [ ] `get(profile_id)` returns the unique profile for that ID or `None` — uniqueness is guaranteed by the dict key; no profile_id maps to more than one result
 - [ ] No `isinstance(p.role, Role)` or `isinstance(p.role, str)` branches remain
 - [ ] `pytest tests/doctrine/test_profile_repository.py -v` passes (old + new tests)
+- [ ] `TestRoleLookup::test_find_by_role_returns_multiple_profiles_sharing_a_role` explicitly verifies the many-results case
+- [ ] `TestRoleLookup::test_get_is_unique_two_profiles_with_different_ids` explicitly verifies profile_id uniqueness
 
 ## Risks
 

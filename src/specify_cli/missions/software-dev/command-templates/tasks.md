@@ -179,7 +179,7 @@ Prompts do not rediscover feature context. Commands do.
      - Derive a kebab-case slug from the title; filename: `WPxx-slug.md`
      - Full path example: `feature_dir/tasks/WP01-create-html-page.md` (use ABSOLUTE path from feature_dir variable)
      - Follow the WP prompt template structure defined below in this prompt (**do NOT write instructions to read a template file from `.kittify/`**) to capture:
-     - Frontmatter with `work_package_id`, `subtasks` array, `dependencies`, `planning_base_branch`, `merge_target_branch`, `branch_strategy`, `owned_files`, `authoritative_surface`, `execution_mode`, `profile`, `role`, `tool`, and history entry
+     - Frontmatter with `work_package_id`, `subtasks` array, `dependencies`, `planning_base_branch`, `merge_target_branch`, `branch_strategy`, `owned_files`, `authoritative_surface`, `execution_mode`, `agent_profile`, `role`, `agent`, `model` (optional), and history entry
        - Objective, context, detailed guidance per subtask
        - A Branch Strategy section that repeats the planning branch, final merge target, and explains that execution worktrees are allocated per computed lane from `lanes.json`
        - Test strategy (only if requested)
@@ -526,9 +526,10 @@ For each work package, select the best-matching profile based on:
 - Subtask content (what skills are required)
 
 Update each WP prompt file's frontmatter **directly** (do NOT re-run `finalize-tasks`) with:
-- `profile`: the profile identifier (e.g., `"implementer"`, `"architect"`, `"curator"`)
-- `role`: the human-readable role described in the profile (e.g., `"Senior Python Developer"`)
-- `tool`: the primary tool or skill focus (e.g., `"pytest"`, `"git"`, `"ruff"`)
+- `agent_profile`: the profile identifier (e.g., `"implementer-ivan"`, `"architect-alphonso"`, `"curator-carla"`)
+- `role`: the role within the profile (e.g., `"implementer"`, `"reviewer"`)
+- `agent`: the CLI agent/tool identifier (e.g., `"claude"`, `"codex"`, `"copilot"`)
+- `model`: the model identifier (optional, e.g., `"claude-sonnet-4-6"`)
 
 ### Step 9: Report
 
