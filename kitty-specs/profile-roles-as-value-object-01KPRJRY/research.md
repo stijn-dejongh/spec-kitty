@@ -76,6 +76,44 @@ a `name` update (the `profile-id` rename is the primary change for the others):
 
 ---
 
+## Decision 7 — Epic #461 alignment audit (Phase 4 / Phase 6)
+
+Reviewed issues #461, #466, #468, #519, and #647 for divergence before proceeding to tasks.
+No blocking conflicts found. Four cross-phase contracts recorded:
+
+**7a — Half-open `Role` validated by Phase 6 WP6.6 (#468)**
+Phase 6 introduces a `retrospective-facilitator` profile requiring a `retrospect` action.
+`"facilitator"` is not in the current controlled vocabulary. The half-open `str` subclass
+(Decision 1) makes `Role("facilitator")` valid without any code change. This is the
+canonical use case for the open half of the value object.
+
+**7b — `<role>-<character>` id convention enables Phase 4 short-name CLI (#466, #519)**
+Phase 4 acceptance gate 2 is `spec-kitty ask pedro "..."`. The resolver (ADR-3, #519)
+must map "pedro" → `python-pedro`. Every shipped profile-id follows `<role>-<character>`,
+making the character name a stable, unambiguous suffix. This naming is an intentional
+contract with Phase 4's routing implementation; it must not be violated by future profiles.
+
+**7c — Computed `role` property protects Phase 4 callers (#466 WP4.1)**
+`ProfileInvocationExecutor` (Phase 4 WP4.1) will read `AgentProfile.role` to determine
+routing context. The computed `@property role → roles[0]` means Phase 4 can ship without
+a separate migration to `.roles[0]` access — the property is a stable read surface.
+
+**7d — `avatar_image` is the missing data-model link for #647 Phase 1**
+Issue #647 confirms `agent_profile`, `role`, `agent`, `model`, `assignee` are already
+surfaced in `api_types.py` but no image asset path exists. Our `avatar_image: str | None`
+field is precisely what #647 Phase 1 needs to render a profile avatar on WP cards.
+The field is deliberately kept as a plain path string with no load-time validation;
+#647 owns the rendering and resolution logic.
+
+**7e — Atomic commit constraint on `specializes-from` rename**
+`implementer` → `implementer-ivan` must be committed atomically with the corresponding
+`specializes-from: implementer-ivan` update in `java-jenny.agent.yaml` and
+`python-pedro.agent.yaml`. `validate_hierarchy()` rejects dangling references; a split
+commit would break CI. Phase 4's `ProfileInvocationExecutor` traverses the specialisation
+hierarchy for context inheritance — a stale reference at any point would silently corrupt it.
+
+---
+
 ## Decision 6 — `avatar_image` field
 
 **Decision**: Add `avatar_image: str | None = None` with YAML alias `avatar-image`.

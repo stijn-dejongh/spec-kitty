@@ -31,6 +31,28 @@ forward-compatibility.
 
 ---
 
+## Epic Alignment (#461 / #466 / #468)
+
+This mission is a prerequisite for Phase 4 and Phase 6 of EPIC #461. Key cross-phase
+contracts established here:
+
+| Concern | This mission | Consuming phase |
+|---------|-------------|-----------------|
+| Half-open `Role` extensibility | `Role("facilitator")` valid without code change | #468 WP6.6 — `retrospective-facilitator` profile needs a role value outside the closed enum |
+| `<role>-<character>` profile-id convention | All shipped ids follow `<role>-<character>` (e.g. `python-pedro`) | #466 WP4.3 — `spec-kitty ask pedro "..."` resolves by matching the character-name suffix; naming is the stable contract |
+| Computed `role` property | `AgentProfile.role` returns `roles[0]`; no callers need to update | #466 WP4.1 — `ProfileInvocationExecutor` can read `.role` on any profile without awaiting a separate refactor |
+| `avatar_image` field | Optional path string on `AgentProfile` | #647 Phase 1 — dashboard renders the avatar; our field is the missing data-model link |
+
+**Atomic constraint on WP05 (specializes-from rename):** `implementer` → `implementer-ivan`
+must be committed atomically: the rename of `implementer.agent.yaml` and the update of
+`specializes-from: implementer-ivan` in `java-jenny.agent.yaml` and `python-pedro.agent.yaml`
+must land in the same commit. `validate_hierarchy()` rejects dangling `specializes-from`
+references — a split commit would cause CI to fail on the intermediate state. Phase 4's
+`ProfileInvocationExecutor` will traverse the specialisation hierarchy; a stale reference
+at any point would corrupt context inheritance.
+
+---
+
 ## Charter Check
 
 Governance directives in scope:
@@ -121,7 +143,8 @@ tests/specify_cli/status/
 - `Role("my-custom-role")` constructs without error
 - `Role.is_known(Role.IMPLEMENTER)` → `True`; `Role.is_known(Role("custom"))` → `False`
 - `Role` class carries a docstring covering:
-  1. Why `str` subclass and not `StrEnum` (open extensibility — custom roles require no code change)
+  1. Why `str` subclass and not `StrEnum` (open extensibility — custom roles require no code change;
+     Phase 6 WP6.6 requires `Role("facilitator")` for the `retrospective-facilitator` profile)
   2. The `is_known()` classmethod as the way to distinguish well-known from custom roles
   3. Forward-compatibility note: description field and YAML-registry loading are
      intentional future extension points; do not add them without a new spec
@@ -248,7 +271,10 @@ tests/specify_cli/status/
 1. `git mv` each renamed YAML file (7 files)
 2. Update `profile-id` and `role:` → `roles: [...]` in each renamed file
 3. Update `name` in `planner-priti.agent.yaml` and `researcher-robbie.agent.yaml`
-4. Update `specializes-from` in `java-jenny.agent.yaml` and `python-pedro.agent.yaml`
+4. **[ATOMIC]** Update `specializes-from: implementer` → `specializes-from: implementer-ivan`
+   in `java-jenny.agent.yaml` and `python-pedro.agent.yaml` **in the same commit** as the
+   `implementer.agent.yaml` → `implementer-ivan.agent.yaml` rename. Do not split across
+   commits — `validate_hierarchy()` will reject the dangling reference on any intermediate state.
 5. Update `role:` → `roles:` in `generic-agent.agent.yaml` and `human-in-charge.agent.yaml`
 6. Update `graph.yaml`: 7 URN renames + label corrections
 7. Update `README.md`
