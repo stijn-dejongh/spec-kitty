@@ -1,0 +1,123 @@
+schema_version: "1.0"
+id: context-boundary-inference
+name: Context Boundary Inference
+purpose: >
+  Detect bounded context boundaries from team ownership patterns and terminology
+  conflicts. Use systematic organizational and linguistic analysis to surface
+  implicit domain boundaries before they calcify into accidental coupling.
+
+apply_when:
+  - A monolith or shared codebase is growing beyond a single team's cognitive bandwidth
+  - Teams argue about what a shared term means (a reliable signal of a boundary)
+  - Cross-team coupling makes deployment or testing painful
+  - A strategic design or domain modelling effort is beginning
+
+steps:
+  - title: Map organizational communication structure
+    description: >
+      Document teams, their communication frequency, and shared artifacts.
+      Apply Conway's Law as a prediction: expect semantic boundaries to align
+      with low-frequency communication boundaries. High-communication teams
+      tend to share vocabulary; low-communication teams tend to diverge.
+    examples:
+      - |
+        Communication matrix sketch:
+        - Team A ↔ Team B: daily (expect shared vocabulary)
+        - Team A ↔ Team C: monthly (expect diverged vocabulary, possible boundary)
+
+  - title: Detect terminology conflict clusters
+    description: >
+      Ask teams to define key domain terms independently, then compare.
+      Same definition → shared context. Different definitions → a boundary exists.
+      Supplement with code analysis: the same class name appearing in multiple
+      codebases with different fields is a reliable boundary signal.
+    examples:
+      - |
+        # Detect multiple definitions of the same term across modules
+        rg "class Order" --with-filename
+        # If Order has different fields per module, a boundary likely exists between them
+      - |
+        # Look for translation functions as boundary evidence
+        rg "to.*Order|from.*Order" --only-matching
+
+  - title: Map vocabulary ownership via git history and directory structure
+    description: >
+      Identify which teams commit predominantly to files containing each key term.
+      Cross-boundary terms — terms with significant commit history across multiple
+      teams — are high-priority coupling risks worth investigating further.
+    examples:
+      - |
+        # Who owns files mentioning "Order"?
+        git log --all --format='%an' -- '*Order*' | sort | uniq -c | sort -rn
+
+  - title: Overlay vocabulary boundaries on organizational boundaries
+    description: >
+      Align proposed context boundaries with both the semantic cluster analysis and
+      the team ownership map. Where the two align, a boundary is strongly supported.
+      Where they diverge, treat the mismatch as a design smell requiring explicit
+      discussion. Define context relationships (upstream/downstream, anti-corruption
+      layer, published language) for each proposed boundary.
+    examples:
+      - |
+        Proposed boundary: Sales Context | Fulfillment Context
+        Evidence: 'Order' defined differently per team, low cross-team commit frequency.
+        Relationship: Sales is upstream. Fulfillment translates SalesOrder → PickingInstruction via ACL.
+
+  - title: Validate with domain experts and iterate
+    description: >
+      Present proposed boundaries to the involved teams. Ask whether the boundaries
+      match natural process flows, whether ownership feels right, and where the
+      proposed split would cause friction. Boundaries that teams reject or that cut
+      across natural workflows are probably wrong.
+    examples:
+      - "Red flag: most interactions across the boundary require translation (too fragmented)."
+      - "Green flag: teams recognize vocabulary differences and accept proposed ownership."
+
+  - title: Document context boundaries as a context map
+    description: >
+      Produce a context canvas per identified context (ubiquitous language, ownership,
+      bounded-by, upstream/downstream relationships, translation rules) and a context
+      map diagram showing how contexts interact. Record the key design decisions in an ADR.
+    examples:
+      - |
+        ## Sales Context
+        Ubiquitous Language: Customer, Quote, Contract, SalesOrder
+        Ownership: Sales Engineering
+        Downstream to: Fulfillment Context via OrderPlaced event
+        Translation: SalesOrder → FulfillmentOrder at Fulfillment ACL
+
+success_criteria:
+  - Each proposed context has explicit ownership
+  - Ubiquitous language documented per context
+  - Translation rules defined at each boundary
+  - No shared mutable state across context boundaries
+  - Proposed boundaries validated with domain experts
+  - Design decisions recorded in an ADR
+
+failure_modes:
+  - name: Too many contexts
+    description: >
+      Starting with more than 3 contexts for a small system usually produces artificial
+      boundaries. Start with 2-3, split only when cognitive load or team structure demands.
+  - name: Artificial boundaries imposed top-down
+    description: >
+      Boundaries defined by architects without team input rarely stick. Teams build
+      workarounds that re-introduce the coupling the boundary was meant to prevent.
+  - name: Constant cross-boundary coupling after refactoring
+    description: >
+      If most operations still require cross-context calls or translations after the split,
+      the boundary placement is probably wrong. Reconsider the split point.
+
+references:
+  - name: Language-Driven Design
+    type: tactic
+    id: language-driven-design
+  - name: Code and Documentation Analysis for Boundary Discovery
+    type: tactic
+    id: code-documentation-analysis
+  - name: Conceptual Alignment
+    type: directive
+    id: "032"
+  - name: Architectural Integrity Standard
+    type: directive
+    id: "001"

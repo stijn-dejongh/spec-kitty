@@ -1,0 +1,104 @@
+schema_version: "1.0"
+id: behavior-driven-development
+name: Behavior-Driven Development
+purpose: >
+  Define system behavior through concrete examples before implementation, ensuring
+  shared understanding between stakeholders and implementers. BDD scenarios serve
+  as behavioral contracts, acceptance criteria, and executable test definitions simultaneously.
+
+apply_when:
+  - A feature, capability, or business rule is being defined
+  - Stakeholders and domain knowledge are available
+  - The behavior can be expressed in observable outcomes
+  - Behavioral ambiguity must be resolved before implementation begins
+
+exclusions:
+  - Implementation-only tasks with no behavioral ambiguity
+  - Purely technical refactoring with no user-visible changes
+  - When stakeholders are unavailable and behavior is already unambiguously specified
+
+steps:
+  - title: Identify the behavior to define
+    description: >
+      Name the specific behavior being specified. Avoid specifying an entire feature
+      in one scenario — break it down to a single observable outcome per scenario.
+      If a behavior cannot be described in one sentence, it is likely more than one behavior.
+
+  - title: Write scenarios in Given/When/Then form
+    description: >
+      For each behavior, write one or more scenarios using concrete examples:
+      - Given: the preconditions and context in place before the action
+      - When: the specific action or event that triggers the behavior
+      - Then: the observable outcome that proves the behavior occurred
+
+      Use domain language throughout. Avoid technical implementation details in scenarios.
+    examples:
+      - |
+        # Poor: encodes implementation detail
+        Given the database is initialized
+        When a record is inserted
+        Then the output is correct
+
+      - |
+        # Good: observable, domain-language, concrete
+        Given a customer with an active subscription
+        When the customer cancels their subscription
+        Then the customer receives a confirmation email within 5 minutes
+        And the subscription status changes to "cancelled"
+
+  - title: Validate scenarios with domain experts
+    description: >
+      Share the written scenarios with the stakeholder or domain expert who owns
+      the requirement. Scenarios that confuse or surprise domain experts are wrong —
+      revise until they read naturally to a non-technical audience.
+
+  - title: Use scenarios as acceptance criteria
+    description: >
+      The validated scenarios become the acceptance criteria for implementation.
+      Each scenario defines one "done" condition. Implementation is complete when
+      all scenarios are demonstrably satisfied by the production code.
+
+  - title: Wire scenarios to executable tests
+    description: >
+      Translate each scenario into an automated acceptance test. If BDD tooling
+      (Cucumber, Behave, SpecFlow, etc.) is in use, the Gherkin scenario steps
+      directly map to test step definitions. If not, express each scenario as a
+      named test with Arrange/Assumption/Act/Assert structure.
+
+exit_criteria:
+  - All scenarios are written in Given/When/Then form
+  - Scenarios are understandable to a non-technical reader
+  - Expected outcomes are explicit and testable
+  - Scenarios cover both happy paths and edge cases
+  - Scenarios have been validated with a domain expert or stakeholder
+
+failure_modes:
+  - name: Encoding implementation details in scenarios
+    description: >
+      Scenarios that mention databases, API calls, or method names couple tests
+      to implementation. They break on refactoring even when behavior is unchanged.
+      Test observable outcomes, not mechanism.
+  - name: Abstract or generic scenarios
+    description: >
+      Scenarios that use placeholders ("a valid user", "appropriate data") cannot
+      be used as acceptance criteria because "valid" and "appropriate" are undefined.
+      Always use concrete, specific examples.
+  - name: Treating scenarios as documentation only
+    description: >
+      BDD scenarios that are never wired to executable tests provide no ongoing
+      regression protection. Each scenario should map to a runnable test.
+  - name: Skipping stakeholder validation
+    description: >
+      Scenarios written by engineers without domain input often specify the wrong behavior.
+      Validation is not optional.
+
+references:
+  - name: Acceptance Test Driven Development
+    type: tactic
+    id: acceptance-test-first
+  - name: Test-First Development
+    type: directive
+    id: "034"
+  - name: Testing Principles Styleguide
+    type: styleguide
+    id: testing-principles

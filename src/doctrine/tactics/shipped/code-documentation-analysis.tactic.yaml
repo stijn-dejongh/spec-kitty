@@ -1,0 +1,112 @@
+schema_version: "1.0"
+id: code-documentation-analysis
+name: Code and Documentation Analysis for Boundary Discovery
+purpose: >
+  Extract terminology from a codebase and its documentation to identify semantic clusters
+  that reveal implicit context boundaries. Used during domain modelling and architectural
+  review to surface unacknowledged bounded contexts before they calcify into accidental
+  coupling.
+
+apply_when:
+  - Before splitting a monolith or extracting a service
+  - When team ownership boundaries feel unclear or contested
+  - During architectural review of a new or evolving domain model
+  - When glossary inconsistencies are noticed across the codebase
+
+steps:
+  - title: Extract terminology from code artifacts
+    description: >
+      Collect domain terms from class/module/function names, code comments, docstrings,
+      test descriptions, and documentation section headers. Aim for 100–500 terms.
+      Filter generic terms (data, info, manager, handler) early to reduce noise.
+    examples:
+      - |
+        # Extract class names
+        rg "^class (\w+)" --only-matching | sort | uniq
+
+        # Extract test descriptions
+        rg "def test_\w+" --only-matching | sort | uniq
+
+        # Extract documentation sections
+        find docs/ -name "*.md" -exec grep -h "^##" {} \; | sort | uniq
+
+  - title: Cluster terms by semantic similarity
+    description: >
+      Group related terms using co-occurrence analysis (which terms appear in the same
+      files?), definition conflict detection (same term with different meanings?), and
+      optionally LLM-assisted semantic similarity scoring. Terms that never co-occur
+      are strong candidates for separate bounded contexts.
+    examples:
+      - |
+        # Files containing "Order"
+        rg -l "Order" > order_files.txt
+        # Files containing "Customer"
+        rg -l "Customer" > customer_files.txt
+        # Intersection = co-occurrence
+        comm -12 <(sort order_files.txt) <(sort customer_files.txt)
+      - |
+        # Detect multiple definitions of the same term
+        rg "class Order" --with-filename
+
+  - title: Map clusters to code ownership
+    description: >
+      Identify which teams or directories own each vocabulary domain using git history
+      and directory structure analysis. Cross-boundary terms (a term with significant
+      commit history across multiple teams) are high-priority coupling risks.
+    examples:
+      - |
+        # Who commits to files mentioning "Order"?
+        git log --all --format='%an' -- '*Order*' | sort | uniq -c | sort -rn
+
+  - title: Propose context boundaries
+    description: >
+      Align proposed boundaries with semantic clusters and validate them against team
+      ownership. Where a proposed boundary crosses team lines, treat it as a design
+      smell requiring explicit discussion. Where the same term appears in multiple
+      clusters with different meanings, treat it as a ubiquitous-language violation
+      requiring disambiguation.
+    examples:
+      - "Cluster A (Customer, Order, Quote) owned by Sales team → Cluster B (Shipment, Warehouse) owned by Fulfillment team → propose boundary between clusters."
+
+  - title: Document and review findings
+    description: >
+      Produce a boundary discovery report listing proposed context boundaries with
+      supporting evidence (co-occurrence data, ownership data, definition conflicts).
+      Present to domain experts for validation before any refactoring begins.
+    examples:
+      - "Report structure: cluster table → ownership map → proposed boundaries → open questions."
+
+success_criteria:
+  - 100–500 terms extracted from codebase
+  - Terms clustered by semantic similarity
+  - Clusters mapped to team or directory ownership
+  - Proposed boundaries validated with domain experts
+  - Cross-boundary risks identified and documented
+
+failure_modes:
+  - name: Too many terms (noise dominates)
+    description: >
+      Without filtering generic terms early, the cluster analysis produces ambiguous
+      groups where everything is connected to everything. Apply the noise filter in
+      step 1 before clustering.
+  - name: Cluster boundaries remain unclear
+    description: >
+      When terms co-occur broadly, direct clustering is difficult. Use a co-occurrence
+      matrix and visualize it as a network graph. Terms with high centrality and broad
+      co-occurrence are candidates for a shared kernel, not a boundary.
+  - name: LLM similarity scores are unreliable
+    description: >
+      LLM-based semantic scoring is a useful secondary signal but should not drive
+      primary clustering decisions. Co-occurrence from the actual codebase is the
+      primary signal; use LLM scoring to validate or break ties.
+
+references:
+  - name: Language-Driven Design
+    type: tactic
+    id: language-driven-design
+  - name: Architectural Integrity Standard
+    type: directive
+    id: "001"
+  - name: Conceptual Alignment
+    type: directive
+    id: "032"

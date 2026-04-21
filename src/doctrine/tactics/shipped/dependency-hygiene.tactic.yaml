@@ -1,0 +1,121 @@
+schema_version: "1.0"
+id: dependency-hygiene
+name: Dependency Hygiene
+purpose: >
+  Keep a project's dependency tree free of known vulnerabilities and non-compliant
+  licenses. Apply at project creation, when adding any dependency, and as part of
+  regular pre-release maintenance.
+
+apply_when:
+  - Starting a new project (establish hygiene from day one)
+  - Adding or upgrading any dependency
+  - A vulnerability scanner reports new CVEs on existing components
+  - Preparing a release (pre-release audit)
+
+steps:
+  - title: Pin all direct dependency versions explicitly
+    description: >
+      Every direct dependency must have an explicit version declared in a central
+      properties or constraints block. Never rely on inherited or transitive version
+      resolution for direct dependencies; implicit resolution hides future breakage.
+    examples:
+      - |
+        # Maven: declare all versions in <properties> first
+        <properties>
+            <spring-boot.version>3.4.5</spring-boot.version>
+            <commons-lang3.version>3.17.0</commons-lang3.version>
+        </properties>
+      - |
+        # Python (uv): commit a lockfile
+        uv lock && git add uv.lock
+
+  - title: Import BOMs before declaring overrides (Java/Maven)
+    description: >
+      Import BOM dependencies at the top of dependencyManagement, before any version
+      overrides. This ensures your explicit pins take precedence over BOM-managed
+      transitive versions. Document the reason for each version override.
+
+  - title: Audit and exclude vulnerable transitives
+    description: >
+      Identify vulnerable transitive dependencies and exclude them explicitly.
+      Do not rely on upgrades of parent components to resolve transitive CVEs.
+      For each exclusion, add a comment explaining the CVE or vulnerability motivation.
+    examples:
+      - |
+        # Java: exclude known deserialization vector
+        <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <exclusions>
+                <exclusion>
+                    <!-- commons-beanutils deserialization vulnerability -->
+                    <groupId>commons-beanutils</groupId>
+                    <artifactId>commons-beanutils</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+  - title: Restrict dependency resolution to approved registries
+    description: >
+      Explicitly configure the build tool to resolve only from approved registries
+      (e.g., Maven Central, PyPI). Unintended resolution from unapproved or untrusted
+      registries is a supply-chain risk.
+    examples:
+      - |
+        # Maven: restrict to Maven Central
+        <repositories>
+            <repository>
+                <id>central</id>
+                <url>https://repo.maven.apache.org/maven2</url>
+                <snapshots><enabled>false</enabled></snapshots>
+            </repository>
+        </repositories>
+
+  - title: Audit license compliance before adding a new dependency
+    description: >
+      Before adding any new component, verify its license. Permissive licenses
+      (Apache 2.0, MIT, BSD-3-Clause) are typically safe to use. Limited-copyleft
+      licenses (LGPL, MPL, EPL) require evaluation. Strong-copyleft licenses
+      (GPL-2.0, GPL-3.0) require explicit approval; do not add without prior review.
+      Document the license decision in an ADR or a comment when the choice is non-obvious.
+
+  - title: Run the dependency update report periodically
+    description: >
+      At least once per release cycle, run a full outdated-dependency report.
+      Prioritize upgrades for components with known CVEs. Read the component's
+      changelog before upgrading to detect API incompatibilities.
+    examples:
+      - "mvn versions:dependency-updates-report"
+      - "uv run pip-audit --format=markdown"
+
+  - title: Regenerate the SBOM after any dependency change
+    description: >
+      After adding, removing, or upgrading any dependency, regenerate the Software
+      Bill of Materials and commit it. SBOM drift causes silent gaps in vulnerability
+      tracking. If a dependency scanner is configured in CI, verify it resubmits.
+    examples:
+      - "mvn -Pcompliance cyclonedx:makeAggregateBom"
+      - "uv run cyclonedx-py environment --output-format JSON --output-file bom.json"
+
+failure_modes:
+  - name: Relying on transitive version resolution
+    description: >
+      When direct dependency versions are not pinned, a transitive upgrade can silently
+      pull in a vulnerable or breaking version. Always pin direct dependencies.
+  - name: Excluding transitives without a comment
+    description: >
+      Exclusions without an explanatory comment become maintenance liabilities.
+      Future contributors remove them assuming they are stale, re-introducing
+      the vulnerability.
+  - name: Skipping the SBOM update
+    description: >
+      A stale SBOM is worse than no SBOM — it creates false assurance. Always
+      regenerate after any dependency change.
+
+references:
+  - name: Architectural Integrity Standard
+    type: directive
+    id: "001"
+  - name: Secure Design Checklist
+    type: tactic
+    id: secure-design-checklist

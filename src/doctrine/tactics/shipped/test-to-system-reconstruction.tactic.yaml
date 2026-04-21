@@ -1,0 +1,115 @@
+schema_version: "1.0"
+id: test-to-system-reconstruction
+name: Test-to-System Reconstruction
+purpose: >
+  Dual-agent validation that reconstructs system understanding purely from test code,
+  measuring how effectively tests serve as executable specifications. Produces a scored
+  gap analysis that identifies where tests fail to communicate behavioral, architectural,
+  or operational intent.
+
+apply_when:
+  - After major test suite refactoring to validate the improvement
+  - Before significant releases as a comprehensive quality gate
+  - During periodic quality audits to track test suite evolution
+  - When onboarding new contributors (simulates newcomer perspective)
+
+preconditions:
+  - Target test directory scoped (50-100 tests recommended)
+  - Scope boundaries clearly defined before starting
+  - 60-90 minutes allocated for execution
+
+exclusions:
+  - Modules with fewer than 20 tests (insufficient signal)
+  - Rapidly changing experimental code (high staleness risk)
+  - Do not apply to every commit (too time-intensive)
+
+steps:
+  - title: "Phase 1 — Naive Reconstruction (Agent A)"
+    description: >
+      Read test code only — no implementation, no documentation. Reconstruct a behavioral
+      narrative of the system from test observations alone. Enforce zero external context.
+      Document what components exist, what behaviors they exhibit, what edge cases are
+      handled, and what workflows are supported. Flag uncertainties and areas where
+      context is clearly absent.
+    examples:
+      - "Write a narrative: 'From the tests, the Order component appears to support...'"
+      - "Flag gaps: 'The tests reference a retry mechanism but its trigger conditions are not clear.'"
+
+  - title: "Phase 2 — Expert Review (Agent B)"
+    description: >
+      With full access to code, ADRs, and documentation, compare Agent A's reconstruction
+      against ground truth. Score accuracy across three dimensions: behavioral (50% weight),
+      architectural (30% weight), and operational (20% weight). For each discrepancy,
+      categorize by type (behavioral/architectural/operational) and assign severity
+      (critical/high/medium/low). Generate specific improvement recommendations.
+    examples:
+      - |
+        Behavioral score: 82/100 — core workflows clear, retry semantics not captured by tests.
+        Architectural score: 70/100 — design structure understood, rationale for adapter layer unclear.
+        Operational score: 65/100 — runtime context absent; tests do not cover scaling behavior.
+
+  - title: "Phase 3 — Synthesis and Improvement Roadmap"
+    description: >
+      Calculate the weighted overall score: (Behavioral × 0.5) + (Architectural × 0.3) +
+      (Operational × 0.2). Categorize all identified gaps by severity. Prioritize improvements
+      using an impact vs. effort matrix. Produce a roadmap with immediate fixes (< 1 hour),
+      short-term improvements (< 1 day), and longer-horizon enhancements.
+    examples:
+      - "Overall: 75.5 — below the 85% threshold. Immediate: add retry-trigger test; Short-term: embed ADR link in adapter tests."
+
+scoring_rubric:
+  behavioral:
+    weight: 0.50
+    thresholds:
+      100: "Complete, accurate understanding of all behaviors"
+      90: "Minor edge cases unclear; core behaviors fully captured"
+      75: "Some nuances missed; primary workflows clear"
+      50: "Significant gaps; partial understanding only"
+      below_50: "Fundamental misunderstanding of system behavior"
+  architectural:
+    weight: 0.30
+    thresholds:
+      100: "Complete design understanding including rationale"
+      90: "Structure understood; rationale requires minor inference"
+      75: "Structure clear; significant rationale gaps"
+      50: "Structure partially understood; rationale opaque"
+      below_50: "Design choices misunderstood"
+  operational:
+    weight: 0.20
+    thresholds:
+      100: "Full runtime, scaling, and recovery context captured"
+      90: "Core operational aspects clear; minor details missing"
+      75: "Basic operation understood; scaling/recovery not covered"
+      50: "Operational context largely absent"
+      below_50: "No operational context discernible from tests"
+
+success_thresholds:
+  behavioral: 90
+  architectural: 80
+  operational: 75
+  overall: 85
+
+failure_modes:
+  - name: Testing only the happy path
+    description: >
+      If tests only exercise success cases, the reconstruction score will be artificially
+      high for behavioral accuracy while masking gaps in error handling and edge cases.
+  - name: Skipping the synthesis phase
+    description: >
+      Without Phase 3, individual scores do not produce an actionable roadmap.
+      Gaps remain identified but unprioritized.
+  - name: Using too narrow a scope
+    description: >
+      Fewer than 20 tests do not provide enough signal. The reconstruction will be
+      dominated by noise and gaps will be uninterpretable.
+
+references:
+  - name: Acceptance Test Driven Development
+    type: tactic
+    id: acceptance-test-first
+  - name: Test-First Development
+    type: directive
+    id: "034"
+  - name: Testing Principles Styleguide
+    type: styleguide
+    id: testing-principles

@@ -1,0 +1,83 @@
+schema_version: "1.0"
+id: analysis-extract-before-interpret
+name: Extract Before Interpret
+purpose: >
+  Prevent premature interpretation by first extracting observable facts and patterns
+  before assigning meaning or drawing conclusions. Separating extraction from
+  interpretation creates a shared factual foundation that reduces bias and allows
+  independent review of raw evidence before reasoning begins.
+
+apply_when:
+  - Analysis or synthesis is required and the risk of premature judgment exists
+  - Reviewing code, logs, or specifications where familiarity might cause assumptions
+  - Any multi-step reasoning task where the source material is ambiguous or complex
+  - Collaborative analysis where multiple perspectives will later interpret the same facts
+
+exclusions:
+  - When immediate interpretation is required for time-critical decisions
+  - When source material is already structured, unambiguous, and fully understood
+  - Purely generative tasks that involve no analysis
+
+steps:
+  - title: Identify source material and scope
+    description: >
+      Define what will be extracted: which files, logs, requirements, or code regions
+      are in scope. Record what questions the extraction is intended to answer.
+      Extraction without a defined purpose produces noise, not signal.
+
+  - title: Extract observable elements verbatim
+    description: >
+      List structures, tokens, statements, and patterns exactly as they appear in the
+      source — without paraphrasing, summarising, or inferring meaning. Organise
+      extracted elements into simple lists or tables. Label the output explicitly as
+      "extraction only" to signal that no interpretation has occurred yet.
+    examples:
+      - "Classes found: OrderService, OrderRepository, OrderEvent, FulfillmentAdapter"
+      - "Test names (verbatim): shouldRejectExpiredOrder, shouldApplyDiscount, shouldEmitCreatedEvent"
+      - "Stop without asking 'what does this mean?' — that is the next step."
+
+  - title: Explicitly stop before interpreting
+    description: >
+      When the extraction is complete, halt. Do not collapse extraction and interpretation
+      into a single step. The boundary between the two phases is the value of this tactic.
+      A brief review of the extraction artifact is appropriate here; drawing conclusions is not.
+
+  - title: Proceed with interpretation as a separate step
+    description: >
+      Only after extraction is complete, begin interpretation using the extraction artifact
+      as the primary input. Reference source material to validate interpretations, but do
+      not revise the extraction to fit your interpretation. If the extraction is incomplete,
+      return to step 2 rather than filling gaps with inference.
+    examples:
+      - "From the extracted class list: 'OrderService orchestrates; OrderRepository persists' — this is interpretation."
+      - "From the extracted test names: 'discount and expiry are the two primary validation rules' — this is interpretation."
+
+exit_criteria:
+  - Extracted data contains no interpretation or judgment
+  - Source references are preserved for each extracted item
+  - The extraction artifact can be reviewed and validated independently without domain knowledge
+  - The extraction is complete enough to support the planned interpretation
+
+failure_modes:
+  - name: Collapsing extraction and interpretation
+    description: >
+      Writing "OrderService orchestrates requests" during extraction embeds an
+      interpretation before the extraction is complete. The interpretation may
+      be correct, but it is now unverifiable from the raw evidence.
+  - name: Premature normalization
+    description: >
+      Renaming, grouping, or paraphrasing extracted elements during extraction
+      loses source fidelity. Extract terms as they appear; rename and group during
+      interpretation.
+  - name: Omitting details that seem irrelevant
+    description: >
+      Relevance judgement is a form of interpretation. During extraction, prefer
+      completeness over relevance filtering.
+
+references:
+  - name: Review Intent and Risk First
+    type: tactic
+    id: review-intent-and-risk-first
+  - name: Acceptance Test Driven Development
+    type: tactic
+    id: acceptance-test-first
