@@ -28,6 +28,7 @@ EXPECTED_PROFILE_IDS = {
     "generic-agent",
     "human-in-charge",
     "implementer",
+    "java-implementer",
     "planner",
     "python-implementer",
     "researcher",
