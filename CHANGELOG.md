@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased - 3.2.0]
 
+### Added
+
+- **`java-implementer` agent profile** (`src/doctrine/agent_profiles/shipped/java-implementer.agent.yaml`) — Java Jenny, the JVM-language counterpart to Python Pedro. ATDD/TDD discipline with Maven lifecycle quality gate; `routing-priority: 80` so it wins for `*.java` WPs. Directives 010/024/025/030/034. Adapted from the `quickstart_agent-augmented-development` publication. Relates to #461 (language-specialist profile line), #519 (profile routing prerequisite), #647 (WP card avatar source field).
+- **`java-conventions` styleguide** (`src/doctrine/styleguides/shipped/java-conventions.styleguide.yaml`) — naming conventions (PascalCase/camelCase/UPPER_SNAKE_CASE), null-safety with Optional, try-with-resources, explicit-encoding discipline (StandardCharsets.UTF_8), Test Data Builder pattern, specific-exception anti-pattern, AssertJ examples, Quad-A test structure. Enriched from the craft-guidelines-library `java-conventions-enrichment` import record.
+- **`maven-review-checks` toolguide** (`src/doctrine/toolguides/shipped/maven-review-checks.toolguide.yaml` + `MAVEN_REVIEW_CHECKS.md`) — mirrors `python-review-checks` for Java. Covers compile, test, JaCoCo coverage, Checkstyle, SpotBugs, ArchUnit, OWASP Dependency-Check, and optional PIT mutation testing; ordered cheapest-first review checklist.
+
+<!-- Rationale (doctrine/profile_reinforcement branch, Java specialist, 2026-04-21):
+  Java Jenny fills the gap left by the generic implementer profile for Java-first or polyglot projects.
+  routing-priority: 80 ensures automatic WP assignment picks her over the generic implementer whenever
+  owned_files contain *.java patterns, matching the same convention established by Python Pedro.
+  The companion java-conventions styleguide and maven-review-checks toolguide mirror the Python
+  pairing (python-conventions + python-review-checks) so the shipped doctrine is symmetric across
+  the two primary implementation languages. These are additive-only doc/YAML artifacts with no
+  runtime dependency — safe to ship ahead of the #461 + #612 consolidation.
+-->
+
 ## [3.2.0a4] - 2026-04-21
 
 ### Added
