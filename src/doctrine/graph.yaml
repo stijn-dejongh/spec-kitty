@@ -350,6 +350,30 @@ nodes:
 - urn: toolguide:typescript-mutation-tools
   kind: toolguide
   label: TypeScript Mutation Testing with Stryker
+- urn: agent_profile:implementer
+  kind: agent_profile
+  label: Implementer Ivan
+- urn: agent_profile:java-implementer
+  kind: agent_profile
+  label: Java Jenny
+- urn: agent_profile:python-implementer
+  kind: agent_profile
+  label: Python Pedro
+- urn: styleguide:java-conventions
+  kind: styleguide
+  label: Java Conventions Styleguide
+- urn: styleguide:testing-principles
+  kind: styleguide
+  label: Testing Principles Styleguide
+- urn: toolguide:maven-review-checks
+  kind: toolguide
+  label: Maven Review Checks
+- urn: tactic:test-minimisation
+  kind: tactic
+  label: Test Minimisation
+- urn: tactic:formalized-constraint-testing
+  kind: tactic
+  label: Formalized Constraint Testing
 edges:
 - source: action:software-dev/implement
   target: directive:DIRECTIVE_024
@@ -1126,3 +1150,134 @@ edges:
 - source: toolguide:python-mutation-tools
   target: styleguide:mutation-aware-test-design
   relation: requires
+# ---------------------------------------------------------------------------
+# Agent profile nodes — specialisation hierarchy and doctrine context wiring
+# ---------------------------------------------------------------------------
+- source: agent_profile:implementer
+  target: directive:DIRECTIVE_010
+  relation: requires
+- source: agent_profile:implementer
+  target: tactic:tdd-red-green-refactor
+  relation: suggests
+- source: agent_profile:implementer
+  target: tactic:acceptance-test-first
+  relation: suggests
+- source: agent_profile:implementer
+  target: procedure:test-first-bug-fixing
+  relation: suggests
+# python-implementer specialises from implementer
+- source: agent_profile:python-implementer
+  target: agent_profile:implementer
+  relation: delegates_to
+- source: agent_profile:python-implementer
+  target: directive:DIRECTIVE_010
+  relation: requires
+- source: agent_profile:python-implementer
+  target: directive:DIRECTIVE_024
+  relation: requires
+- source: agent_profile:python-implementer
+  target: directive:DIRECTIVE_025
+  relation: requires
+- source: agent_profile:python-implementer
+  target: directive:DIRECTIVE_030
+  relation: requires
+- source: agent_profile:python-implementer
+  target: directive:DIRECTIVE_034
+  relation: requires
+- source: agent_profile:python-implementer
+  target: styleguide:python-conventions
+  relation: requires
+- source: agent_profile:python-implementer
+  target: toolguide:python-review-checks
+  relation: requires
+- source: agent_profile:python-implementer
+  target: tactic:tdd-red-green-refactor
+  relation: requires
+- source: agent_profile:python-implementer
+  target: tactic:acceptance-test-first
+  relation: requires
+- source: agent_profile:python-implementer
+  target: procedure:test-first-bug-fixing
+  relation: requires
+- source: agent_profile:python-implementer
+  target: styleguide:testing-principles
+  relation: suggests
+- source: agent_profile:python-implementer
+  target: tactic:mutation-testing-workflow
+  relation: suggests
+# java-implementer specialises from implementer
+- source: agent_profile:java-implementer
+  target: agent_profile:implementer
+  relation: delegates_to
+- source: agent_profile:java-implementer
+  target: directive:DIRECTIVE_010
+  relation: requires
+- source: agent_profile:java-implementer
+  target: directive:DIRECTIVE_024
+  relation: requires
+- source: agent_profile:java-implementer
+  target: directive:DIRECTIVE_025
+  relation: requires
+- source: agent_profile:java-implementer
+  target: directive:DIRECTIVE_030
+  relation: requires
+- source: agent_profile:java-implementer
+  target: directive:DIRECTIVE_034
+  relation: requires
+- source: agent_profile:java-implementer
+  target: styleguide:java-conventions
+  relation: requires
+- source: agent_profile:java-implementer
+  target: toolguide:maven-review-checks
+  relation: requires
+- source: agent_profile:java-implementer
+  target: tactic:tdd-red-green-refactor
+  relation: requires
+- source: agent_profile:java-implementer
+  target: tactic:acceptance-test-first
+  relation: requires
+- source: agent_profile:java-implementer
+  target: procedure:test-first-bug-fixing
+  relation: requires
+- source: agent_profile:java-implementer
+  target: styleguide:testing-principles
+  relation: suggests
+- source: agent_profile:java-implementer
+  target: tactic:formalized-constraint-testing
+  relation: suggests
+# ---------------------------------------------------------------------------
+# New testing tactics
+# ---------------------------------------------------------------------------
+- source: tactic:formalized-constraint-testing
+  target: directive:DIRECTIVE_034
+  relation: requires
+- source: tactic:formalized-constraint-testing
+  target: directive:DIRECTIVE_030
+  relation: requires
+- source: tactic:formalized-constraint-testing
+  target: tactic:black-box-integration-testing
+  relation: suggests
+  when: Contract tests complement black-box integration tests — apply both at system boundaries
+- source: tactic:formalized-constraint-testing
+  target: tactic:acceptance-test-first
+  relation: suggests
+  when: Define acceptance criteria first, then formalise constraints as contract tests
+- source: tactic:formalized-constraint-testing
+  target: tactic:test-minimisation
+  relation: suggests
+  when: Once contract tests cover a behavior class, minimise redundant spot-checks
+- source: tactic:test-minimisation
+  target: tactic:formalized-constraint-testing
+  relation: suggests
+  when: Contract tests establish the coverage baseline that makes spot-check removal safe
+- source: tactic:test-minimisation
+  target: directive:DIRECTIVE_034
+  relation: requires
+- source: tactic:test-minimisation
+  target: directive:DIRECTIVE_030
+  relation: requires
+# maven-review-checks toolguide
+- source: toolguide:maven-review-checks
+  target: tactic:mutation-testing-workflow
+  relation: suggests
+  when: PIT mutation testing is the optional high-cost gate in the Maven quality stack

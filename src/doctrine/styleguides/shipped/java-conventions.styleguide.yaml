@@ -58,16 +58,16 @@ patterns:
     description: "Centralise test object construction in a dedicated builder/fixture class. Keeps test methods readable and makes structural changes easy to propagate."
     bad_example: |
       @Test
-      void shouldCalculatePremium() {
-          Policy policy = new Policy("P-001", PolicyType.ANNUAL,
-                  LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31), 50000L);
-          assertThat(calculator.calculate(policy)).isEqualByComparingTo("500.00");
+      void shouldCalculateTotalPrice() {
+          Order order = new Order("ORD-001", OrderType.STANDARD,
+                  LocalDate.now(), List.of(new LineItem("SKU-A", 3, BigDecimal.valueOf(10))));
+          assertThat(pricer.calculate(order)).isEqualByComparingTo("30.00");
       }
     good_example: |
       @Test
-      void shouldCalculatePremium() {
-          Policy policy = PolicyFixtures.annualPolicy().withCoverage(50000L).build();
-          assertThat(calculator.calculate(policy)).isEqualByComparingTo("500.00");
+      void shouldCalculateTotalPrice() {
+          Order order = OrderFixtures.standardOrder().withLineItem("SKU-A", 3, 10).build();
+          assertThat(pricer.calculate(order)).isEqualByComparingTo("30.00");
       }
 
   - name: Quad-A Test Structure
@@ -131,11 +131,11 @@ anti_patterns:
   - name: Constructor Sprawl in Tests
     description: "Calling new SomeEntity(a, b, c, ...) in every test binds tests to the constructor signature. Any structural change requires updating every test."
     bad_example: |
-      Policy p1 = new Policy("P-001", ANNUAL, start, end, 50000L);
-      Policy p2 = new Policy("P-002", MONTHLY, start, end, 10000L);
+      Order o1 = new Order("ORD-001", STANDARD, start, customerId, 50000L);
+      Order o2 = new Order("ORD-002", EXPRESS, start, customerId, 10000L);
     good_example: |
-      Policy p1 = PolicyFixtures.annualPolicy().withCoverage(50000L).build();
-      Policy p2 = PolicyFixtures.monthlyPolicy().withCoverage(10000L).build();
+      Order o1 = OrderFixtures.standardOrder().withAmount(50000L).build();
+      Order o2 = OrderFixtures.expressOrder().withAmount(10000L).build();
 
 tooling:
   build: "Maven (mvn)"
