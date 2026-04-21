@@ -4,38 +4,25 @@ name: Test-to-System Reconstruction
 purpose: >
   Dual-agent validation that reconstructs system understanding purely from test code,
   measuring how effectively tests serve as executable specifications. Produces a scored
-  gap analysis that identifies where tests fail to communicate behavioral, architectural,
-  or operational intent.
-
-apply_when:
-  - After major test suite refactoring to validate the improvement
-  - Before significant releases as a comprehensive quality gate
-  - During periodic quality audits to track test suite evolution
-  - When onboarding new contributors (simulates newcomer perspective)
-
-preconditions:
-  - Target test directory scoped (50-100 tests recommended)
-  - Scope boundaries clearly defined before starting
-  - 60-90 minutes allocated for execution
-
-exclusions:
-  - Modules with fewer than 20 tests (insufficient signal)
-  - Rapidly changing experimental code (high staleness risk)
-  - Do not apply to every commit (too time-intensive)
-
+  gap analysis identifying where tests fail to communicate behavioral, architectural,
+  or operational intent. Target overall accuracy: >=85% (behavioral 50% weight >=90%,
+  architectural 30% weight >=80%, operational 20% weight >=75%).
+  Score formula: (behavioral * 0.5) + (architectural * 0.3) + (operational * 0.2).
+  Apply when: after major test suite refactoring, before significant releases,
+  quarterly quality audits, or onboarding validation. Minimum scope: 20 tests.
+  Recommended scope: 50-100 tests. Estimated time: 60-90 minutes.
 steps:
-  - title: "Phase 1 — Naive Reconstruction (Agent A)"
+  - title: "Phase 1 — Naive Reconstruction (Agent A, ~30 min)"
     description: >
-      Read test code only — no implementation, no documentation. Reconstruct a behavioral
-      narrative of the system from test observations alone. Enforce zero external context.
-      Document what components exist, what behaviors they exhibit, what edge cases are
-      handled, and what workflows are supported. Flag uncertainties and areas where
-      context is clearly absent.
+      Read test code only — no implementation, no documentation, no ADRs. Reconstruct a
+      behavioral narrative of the system from test observations alone. Document what
+      components exist, what behaviors they exhibit, what edge cases are handled, and what
+      workflows are supported. Flag uncertainties and areas where context is clearly absent.
     examples:
       - "Write a narrative: 'From the tests, the Order component appears to support...'"
       - "Flag gaps: 'The tests reference a retry mechanism but its trigger conditions are not clear.'"
 
-  - title: "Phase 2 — Expert Review (Agent B)"
+  - title: "Phase 2 — Expert Review (Agent B, ~20 min)"
     description: >
       With full access to code, ADRs, and documentation, compare Agent A's reconstruction
       against ground truth. Score accuracy across three dimensions: behavioral (50% weight),
@@ -43,73 +30,45 @@ steps:
       categorize by type (behavioral/architectural/operational) and assign severity
       (critical/high/medium/low). Generate specific improvement recommendations.
     examples:
-      - |
-        Behavioral score: 82/100 — core workflows clear, retry semantics not captured by tests.
-        Architectural score: 70/100 — design structure understood, rationale for adapter layer unclear.
-        Operational score: 65/100 — runtime context absent; tests do not cover scaling behavior.
+      - "Behavioral: 82/100 — core workflows clear, retry semantics not captured."
+      - "Architectural: 70/100 — adapter layer rationale unclear; ADR reference would fix this."
+      - "Operational: 65/100 — runtime context absent; no tests cover scaling or recovery paths."
 
-  - title: "Phase 3 — Synthesis and Improvement Roadmap"
+  - title: "Phase 3 — Synthesis and Improvement Roadmap (~15 min)"
     description: >
-      Calculate the weighted overall score: (Behavioral × 0.5) + (Architectural × 0.3) +
-      (Operational × 0.2). Categorize all identified gaps by severity. Prioritize improvements
-      using an impact vs. effort matrix. Produce a roadmap with immediate fixes (< 1 hour),
-      short-term improvements (< 1 day), and longer-horizon enhancements.
+      Calculate the weighted overall score. Categorize all gaps by severity. Prioritize
+      improvements by impact: missing critical behavioral tests first, then ADR references
+      for design rationale, then operational context scenarios.
     examples:
-      - "Overall: 75.5 — below the 85% threshold. Immediate: add retry-trigger test; Short-term: embed ADR link in adapter tests."
+      - "Overall 75.5% — below threshold. Immediate: add retry-trigger test. Short-term: embed ADR link in adapter tests."
 
-scoring_rubric:
-  behavioral:
-    weight: 0.50
-    thresholds:
-      100: "Complete, accurate understanding of all behaviors"
-      90: "Minor edge cases unclear; core behaviors fully captured"
-      75: "Some nuances missed; primary workflows clear"
-      50: "Significant gaps; partial understanding only"
-      below_50: "Fundamental misunderstanding of system behavior"
-  architectural:
-    weight: 0.30
-    thresholds:
-      100: "Complete design understanding including rationale"
-      90: "Structure understood; rationale requires minor inference"
-      75: "Structure clear; significant rationale gaps"
-      50: "Structure partially understood; rationale opaque"
-      below_50: "Design choices misunderstood"
-  operational:
-    weight: 0.20
-    thresholds:
-      100: "Full runtime, scaling, and recovery context captured"
-      90: "Core operational aspects clear; minor details missing"
-      75: "Basic operation understood; scaling/recovery not covered"
-      50: "Operational context largely absent"
-      below_50: "No operational context discernible from tests"
-
-success_thresholds:
-  behavioral: 90
-  architectural: 80
-  operational: 75
-  overall: 85
+  - title: Common gap patterns and fixes
+    description: >
+      Design rationale gap (tests show what but not why) — fix: add ADR reference in test docstring.
+      Operational context gap (runtime behavior unclear) — fix: add scenario test for deployment or recovery path.
+      Security boundary gap (trust model invisible) — fix: add inline comment or dedicated boundary test.
+      Behavioral gap (behavior undocumented) — fix: add missing test scenario.
 
 failure_modes:
-  - name: Testing only the happy path
-    description: >
-      If tests only exercise success cases, the reconstruction score will be artificially
-      high for behavioral accuracy while masking gaps in error handling and edge cases.
-  - name: Skipping the synthesis phase
-    description: >
-      Without Phase 3, individual scores do not produce an actionable roadmap.
-      Gaps remain identified but unprioritized.
-  - name: Using too narrow a scope
-    description: >
-      Fewer than 20 tests do not provide enough signal. The reconstruction will be
-      dominated by noise and gaps will be uninterpretable.
+  - "Testing only the happy path — behavioral score appears high while gaps in error handling and edge cases remain hidden."
+  - "Skipping the synthesis phase — without Phase 3, gaps remain identified but unprioritized and unaddressed."
+  - "Scope too narrow — fewer than 20 tests cannot produce enough signal; reconstruction is dominated by noise."
+  - "One-off exercise — reconstruction scores drift as the codebase evolves; quarterly cadence is required."
 
 references:
   - name: Acceptance Test Driven Development
     type: tactic
     id: acceptance-test-first
+    when: ATDD produces the behavioral test scenarios whose clarity is evaluated by this tactic
   - name: Test-First Development
     type: directive
-    id: "034"
+    id: DIRECTIVE_034
+    when: Test-first discipline is a prerequisite for the test suite to serve as a living specification
   - name: Testing Principles Styleguide
     type: styleguide
     id: testing-principles
+    when: Inspiring and Exemplary test desiderata define what a reconstruction-worthy test suite looks like
+  - name: Reverse Speccing
+    type: tactic
+    id: reverse-speccing
+    when: Reverse speccing provides the evaluative philosophy; this tactic is the scored execution procedure

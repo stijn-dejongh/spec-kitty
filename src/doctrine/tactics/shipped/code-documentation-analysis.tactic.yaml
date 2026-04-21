@@ -5,19 +5,14 @@ purpose: >
   Extract terminology from a codebase and its documentation to identify semantic clusters
   that reveal implicit context boundaries. Used during domain modelling and architectural
   review to surface unacknowledged bounded contexts before they calcify into accidental
-  coupling.
-
-apply_when:
-  - Before splitting a monolith or extracting a service
-  - When team ownership boundaries feel unclear or contested
-  - During architectural review of a new or evolving domain model
-  - When glossary inconsistencies are noticed across the codebase
-
+  coupling. Success criteria: 100-500 terms extracted, clustered by semantic similarity,
+  clusters mapped to team/directory ownership, proposed boundaries validated with domain
+  experts, and cross-boundary risks identified and documented.
 steps:
   - title: Extract terminology from code artifacts
     description: >
       Collect domain terms from class/module/function names, code comments, docstrings,
-      test descriptions, and documentation section headers. Aim for 100–500 terms.
+      test descriptions, and documentation section headers. Aim for 100-500 terms.
       Filter generic terms (data, info, manager, handler) early to reduce noise.
     examples:
       - |
@@ -40,9 +35,7 @@ steps:
       - |
         # Files containing "Order"
         rg -l "Order" > order_files.txt
-        # Files containing "Customer"
-        rg -l "Customer" > customer_files.txt
-        # Intersection = co-occurrence
+        # Intersection with "Customer" = co-occurrence
         comm -12 <(sort order_files.txt) <(sort customer_files.txt)
       - |
         # Detect multiple definitions of the same term
@@ -51,8 +44,8 @@ steps:
   - title: Map clusters to code ownership
     description: >
       Identify which teams or directories own each vocabulary domain using git history
-      and directory structure analysis. Cross-boundary terms (a term with significant
-      commit history across multiple teams) are high-priority coupling risks.
+      and directory structure analysis. Cross-boundary terms — with significant commit
+      history across multiple teams — are high-priority coupling risks.
     examples:
       - |
         # Who commits to files mentioning "Order"?
@@ -66,7 +59,7 @@ steps:
       clusters with different meanings, treat it as a ubiquitous-language violation
       requiring disambiguation.
     examples:
-      - "Cluster A (Customer, Order, Quote) owned by Sales team → Cluster B (Shipment, Warehouse) owned by Fulfillment team → propose boundary between clusters."
+      - "Cluster A (Customer, Order, Quote) owned by Sales team → Cluster B (Shipment, Warehouse) owned by Fulfillment → propose boundary between clusters."
 
   - title: Document and review findings
     description: >
@@ -76,37 +69,21 @@ steps:
     examples:
       - "Report structure: cluster table → ownership map → proposed boundaries → open questions."
 
-success_criteria:
-  - 100–500 terms extracted from codebase
-  - Terms clustered by semantic similarity
-  - Clusters mapped to team or directory ownership
-  - Proposed boundaries validated with domain experts
-  - Cross-boundary risks identified and documented
-
 failure_modes:
-  - name: Too many terms (noise dominates)
-    description: >
-      Without filtering generic terms early, the cluster analysis produces ambiguous
-      groups where everything is connected to everything. Apply the noise filter in
-      step 1 before clustering.
-  - name: Cluster boundaries remain unclear
-    description: >
-      When terms co-occur broadly, direct clustering is difficult. Use a co-occurrence
-      matrix and visualize it as a network graph. Terms with high centrality and broad
-      co-occurrence are candidates for a shared kernel, not a boundary.
-  - name: LLM similarity scores are unreliable
-    description: >
-      LLM-based semantic scoring is a useful secondary signal but should not drive
-      primary clustering decisions. Co-occurrence from the actual codebase is the
-      primary signal; use LLM scoring to validate or break ties.
+  - "Too many terms (noise dominates) — without filtering generic terms early, cluster analysis produces ambiguous groups; apply the noise filter in step 1 before clustering."
+  - "Cluster boundaries remain unclear — when terms co-occur broadly, use a co-occurrence matrix visualized as a network graph; high-centrality terms are shared kernel candidates, not boundary candidates."
+  - "LLM similarity scores are unreliable — co-occurrence from the actual codebase is the primary signal; use LLM scoring only to validate or break ties."
 
 references:
   - name: Language-Driven Design
     type: tactic
     id: language-driven-design
+    when: Terminology analysis feeds directly into the language-driven design process for naming decisions
   - name: Architectural Integrity Standard
     type: directive
-    id: "001"
+    id: DIRECTIVE_001
+    when: Context boundary proposals must be validated against the existing architectural integrity constraints
   - name: Conceptual Alignment
     type: directive
-    id: "032"
+    id: DIRECTIVE_032
+    when: Terminology conflicts discovered during analysis must be resolved to maintain conceptual alignment

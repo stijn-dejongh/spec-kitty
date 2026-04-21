@@ -76,36 +76,30 @@ steps:
     description: >
       Once contract tests cover a behavior class exhaustively, individual spot-checks for
       that class can be minimised. See the test-minimisation tactic for the safe removal process.
-    references:
-      - name: Test Minimisation
-        type: tactic
-        id: test-minimisation
-        when: After contract tests are green, use minimisation to identify which spot-checks are now redundant.
 
 failure_modes:
-  - name: Incomplete equality contract
-    description: >
-      Testing only equals() without hashCode() leaves the contract incomplete; objects placed
-      in HashMaps or HashSets will behave incorrectly.
-  - name: Round-trip with only happy-path data
-    description: >
-      Testing serialize/deserialize only with fully populated objects misses edge cases where
-      null fields, empty collections, or boundary values are dropped or transformed.
-  - name: Missing violation tests
-    description: >
-      Constraint tests without a corresponding violation case only demonstrate that the happy
-      path works, not that the invariant is actually enforced.
+  - "Incomplete equality contract — testing only equals() without hashCode() leaves the contract incomplete; objects placed in HashMaps or HashSets will behave incorrectly."
+  - "Round-trip with only happy-path data — testing serialize/deserialize only with fully populated objects misses edge cases where null fields, empty collections, or boundary values are dropped or transformed."
+  - "Missing violation tests — constraint tests without a corresponding violation case only demonstrate that the happy path works, not that the invariant is actually enforced."
 
 references:
   - name: Test-First Development
     type: directive
-    id: "034"
+    id: DIRECTIVE_034
+    when: Contract tests are written test-first; write the failing constraint test before the implementation
   - name: Test and Typecheck Quality Gate
     type: directive
-    id: "030"
+    id: DIRECTIVE_030
+    when: Constraint tests must pass as part of the quality gate before merge
   - name: Black-Box Integration Testing
     type: tactic
     id: black-box-integration-testing
+    when: Contract tests complement black-box integration tests at system boundaries
   - name: Acceptance Test Driven Development
     type: tactic
     id: acceptance-test-first
+    when: Define acceptance criteria first, then formalise constraints as contract tests
+  - name: Test Minimisation
+    type: tactic
+    id: test-minimisation
+    when: Once contract tests cover a behavior class, use minimisation to identify which spot-checks are now redundant

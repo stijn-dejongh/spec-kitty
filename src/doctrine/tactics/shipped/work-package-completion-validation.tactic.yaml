@@ -5,12 +5,6 @@ purpose: >
   Validate that a work package meets all required quality gates before its status is
   advanced to for_review or done. Prevents premature transitions that accumulate
   technical debt in the review queue.
-
-apply_when:
-  - Before emitting a status transition to for_review or done
-  - After a reviewer requests changes and the implementer believes those changes are complete
-  - As a self-check before handing off any work package to another agent
-
 steps:
   - title: Verify test suite and type checks pass
     description: >
@@ -19,8 +13,7 @@ steps:
       rationalise partial compliance.
     examples:
       - "cd src && pytest --tb=short -q"
-      - "mypy src/"
-      - "ruff check ."
+      - "mypy src/ && ruff check ."
       - "mvn verify"
 
   - title: Confirm acceptance criteria are addressed
@@ -29,14 +22,14 @@ steps:
       confirm it is demonstrably met by the current state of the code. If a criterion
       cannot be verified mechanically, describe the manual evidence.
     examples:
-      - "Criterion: 'should emit a status event on transition' → verified by test test_emit_transition_fires_event."
-      - "Criterion: 'should reject invalid lane name' → verified by test test_invalid_lane_raises."
+      - "Criterion: 'should emit a status event on transition' — verified by test test_emit_transition_fires_event."
+      - "Criterion: 'should reject invalid lane name' — verified by test test_invalid_lane_raises."
 
   - title: Confirm no unintended scope expansion
     description: >
       Review the diff against the work package description. Changes outside the stated
       scope are a flag — either the scope was too narrow (discuss with planner) or
-      the change should be reverted to a separate work package.
+      the change should be split to a separate work package.
     examples:
       - "The WP covers the status emitter only. If the diff includes changes to the CLI layer, split them out."
 
@@ -56,22 +49,19 @@ steps:
       - "spec-kitty agent tasks transition WP01 for_review"
 
 failure_modes:
-  - name: Transitioning on green tests alone
-    description: >
-      Green tests are necessary but not sufficient. A WP can have all tests passing
-      while acceptance criteria are unaddressed or the diff contains unintended scope.
-  - name: Advancing status before fixing reviewer feedback
-    description: >
-      Re-advancing to for_review before every reviewer comment is addressed (or
-      explicitly deferred with agreement) produces churn and erodes reviewer trust.
+  - "Transitioning on green tests alone — passing tests are necessary but not sufficient; acceptance criteria may be unaddressed and the diff may contain unintended scope."
+  - "Re-advancing to for_review before all reviewer feedback is addressed (or explicitly deferred with agreement) — produces churn and erodes reviewer trust."
 
 references:
   - name: Test and Typecheck Quality Gate
     type: directive
-    id: "030"
+    id: DIRECTIVE_030
+    when: The quality gate must be green before any WP status transition
   - name: Test-First Development
     type: directive
-    id: "034"
+    id: DIRECTIVE_034
+    when: Tests validating acceptance criteria must exist before the WP is marked complete
   - name: Test Minimisation
     type: tactic
     id: test-minimisation
+    when: Redundant test removal is only safe after the completion validation confirms coverage is intact

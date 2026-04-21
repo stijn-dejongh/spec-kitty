@@ -2,17 +2,17 @@ schema_version: "1.0"
 id: locality-of-change
 name: Locality of Change Assessment
 purpose: >
-  Provide a systematic decision protocol for evaluating whether a proposed change
-  adds necessary complexity or introduces premature abstraction. Complements Directive 024
-  (Locality of Change) by giving implementers and reviewers a structured method for
-  assessing scope before committing to a solution.
-
-core_principle: >
-  Do not add complexity to solve problems that do not demonstrably exist.
-  Before introducing a new pattern, abstraction, or architectural enhancement,
-  verify the problem exists in practice, measure its impact, and evaluate
-  whether the current approach already handles it adequately.
-
+  Systematic decision protocol for evaluating whether a proposed change adds necessary
+  complexity or introduces premature abstraction. Implements Directive 024 by giving
+  implementers and reviewers a structured method for assessing scope before committing
+  to a solution. Core principle: do not add complexity to solve problems that do not
+  demonstrably exist.
+  Decision checklist — proceed only if 5+ of 7 apply: (1) Can I point to 3+ real
+  instances where the current approach failed? (2) Have I quantified the impact?
+  (3) Have I evaluated "do nothing" as an option? (4) Have I explored simpler
+  alternatives first? (5) Does the change preserve or enhance core architectural
+  values? (6) Am I not prescribing too early? (7) Does the change achieve significant
+  value at proportional cost?
 steps:
   - title: Gather evidence that the problem exists in practice
     description: >
@@ -22,7 +22,7 @@ steps:
     examples:
       - "Identify 3+ real instances where the current approach failed or caused friction."
       - "Log review: retry failures occurred 12 times in the last 30 deployments — this is evidence."
-      - "No actual failures found, only theoretical risk — the 'do nothing' option must now be justified in the analysis."
+      - "No actual failures found, only theoretical risk — the 'do nothing' option must now be justified."
 
   - title: Measure severity and quantify impact
     description: >
@@ -33,7 +33,7 @@ steps:
       - "Frequency: 3/20 handoffs (15%). Cost: 5 minutes manual correction per incident. Risk: silent data loss."
       - "Frequency: 1/200 deploys. Cost: 2 hours investigation. Risk: none — no data affected."
 
-  - title: Always evaluate "do nothing" as a baseline
+  - title: Evaluate "do nothing" as a baseline
     description: >
       Include "keep current approach" in the trade-off analysis. State clearly what
       the cost of staying with the current approach is and under what conditions it
@@ -50,53 +50,33 @@ steps:
 
   - title: Cross-check against architectural principles
     description: >
-      Before committing, verify the proposed change aligns with established ADRs
-      and architectural patterns. A change that conflicts with an existing ADR must
-      either propose to supersede it or be rejected. Complexity that drifts from
-      core architectural values requires explicit justification.
+      Verify the proposed change aligns with established ADRs and architectural patterns.
+      A change that conflicts with an existing ADR must either propose to supersede it
+      or be rejected. Complexity that drifts from core architectural values requires
+      explicit justification.
 
   - title: Accept or reject with documented rationale
     description: >
-      Record the decision: the problem evidence, the severity measurement, the
-      alternatives considered, and why the chosen approach was selected. Include
-      the "do nothing" baseline and why it was rejected (or accepted). This
-      documentation is required for architectural decisions; it is optional but
-      encouraged for lower-impact changes.
-
-decision_checklist:
-  - "Can I point to 3+ real instances where the current approach failed?"
-  - "Have I quantified the impact (frequency, cost, risk)?"
-  - "Have I evaluated 'do nothing' as an option?"
-  - "Have I explored documentation or convention as a simpler alternative?"
-  - "Does the proposed change preserve or enhance core architectural values?"
-  - "Am I prescribing too early instead of letting a pattern emerge naturally?"
-  - "Does the change achieve significant value at proportional cost?"
+      Record the decision: the problem evidence, severity measurement, alternatives
+      considered, and why the chosen approach was selected. Include the "do nothing"
+      baseline and why it was rejected (or accepted). This documentation is required
+      for architectural decisions.
 
 failure_modes:
-  - name: Gold plating
-    description: >
-      Adding features "just in case" or "for completeness". Solving hypothetical
-      future problems. Over-engineering for flexibility that will never be exercised.
-      These are violations of the locality principle: the work is not local to
-      a real, present problem.
-  - name: Premature abstraction
-    description: >
-      Creating lookup tables or helper frameworks before the pattern has stabilised.
-      Each instance of "this will be useful later" that is not grounded in current
-      evidence is a premature abstraction.
-  - name: Complexity creep
-    description: >
-      Each small addition seems reasonable in isolation, but the cumulative effect
-      degrades simplicity over time. Apply this tactic for small changes too — ask
-      whether the change is truly necessary before adding it.
+  - "Gold plating — adding features 'just in case' or 'for completeness'; solving hypothetical future problems; over-engineering for flexibility that will never be exercised."
+  - "Premature abstraction — creating lookup tables or helper frameworks before the pattern has stabilised; each 'this will be useful later' not grounded in current evidence is a premature abstraction."
+  - "Complexity creep — each small addition seems reasonable in isolation but the cumulative effect degrades simplicity; apply this tactic for small changes too."
 
 references:
   - name: Locality of Change
     type: directive
-    id: "024"
+    id: DIRECTIVE_024
+    when: This tactic is the practical application protocol for Directive 024; use the directive for policy, this tactic for evaluation procedure
   - name: Architectural Integrity Standard
     type: directive
-    id: "001"
+    id: DIRECTIVE_001
+    when: Proposed changes that expand architectural scope must pass the integrity standard check
   - name: Decision Documentation Requirement
     type: directive
-    id: "003"
+    id: DIRECTIVE_003
+    when: The rationale for accepting or rejecting a change must be documented per the decision documentation requirement

@@ -4,14 +4,9 @@ name: Dependency Hygiene
 purpose: >
   Keep a project's dependency tree free of known vulnerabilities and non-compliant
   licenses. Apply at project creation, when adding any dependency, and as part of
-  regular pre-release maintenance.
-
-apply_when:
-  - Starting a new project (establish hygiene from day one)
-  - Adding or upgrading any dependency
-  - A vulnerability scanner reports new CVEs on existing components
-  - Preparing a release (pre-release audit)
-
+  regular pre-release maintenance. Apply when: starting a new project, adding or
+  upgrading any dependency, a vulnerability scanner reports new CVEs, or preparing
+  a release.
 steps:
   - title: Pin all direct dependency versions explicitly
     description: >
@@ -42,24 +37,17 @@ steps:
       For each exclusion, add a comment explaining the CVE or vulnerability motivation.
     examples:
       - |
-        # Java: exclude known deserialization vector
-        <dependency>
-            <groupId>com.opencsv</groupId>
-            <artifactId>opencsv</artifactId>
-            <exclusions>
-                <exclusion>
-                    <!-- commons-beanutils deserialization vulnerability -->
-                    <groupId>commons-beanutils</groupId>
-                    <artifactId>commons-beanutils</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+        <!-- commons-beanutils deserialization vulnerability — excluded from opencsv -->
+        <exclusion>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+        </exclusion>
 
   - title: Restrict dependency resolution to approved registries
     description: >
       Explicitly configure the build tool to resolve only from approved registries
-      (e.g., Maven Central, PyPI). Unintended resolution from unapproved or untrusted
-      registries is a supply-chain risk.
+      (e.g., Maven Central, PyPI). Unintended resolution from unapproved registries
+      is a supply-chain risk.
     examples:
       - |
         # Maven: restrict to Maven Central
@@ -71,13 +59,13 @@ steps:
             </repository>
         </repositories>
 
-  - title: Audit license compliance before adding a new dependency
+  - title: Audit license compliance before adding a dependency
     description: >
       Before adding any new component, verify its license. Permissive licenses
-      (Apache 2.0, MIT, BSD-3-Clause) are typically safe to use. Limited-copyleft
-      licenses (LGPL, MPL, EPL) require evaluation. Strong-copyleft licenses
-      (GPL-2.0, GPL-3.0) require explicit approval; do not add without prior review.
-      Document the license decision in an ADR or a comment when the choice is non-obvious.
+      (Apache 2.0, MIT, BSD-3-Clause) are typically safe. Limited-copyleft licenses
+      (LGPL, MPL, EPL) require evaluation. Strong-copyleft licenses (GPL-2.0, GPL-3.0)
+      require explicit approval. Document the license decision in an ADR or comment
+      when the choice is non-obvious.
 
   - title: Run the dependency update report periodically
     description: >
@@ -92,30 +80,22 @@ steps:
     description: >
       After adding, removing, or upgrading any dependency, regenerate the Software
       Bill of Materials and commit it. SBOM drift causes silent gaps in vulnerability
-      tracking. If a dependency scanner is configured in CI, verify it resubmits.
+      tracking.
     examples:
       - "mvn -Pcompliance cyclonedx:makeAggregateBom"
       - "uv run cyclonedx-py environment --output-format JSON --output-file bom.json"
 
 failure_modes:
-  - name: Relying on transitive version resolution
-    description: >
-      When direct dependency versions are not pinned, a transitive upgrade can silently
-      pull in a vulnerable or breaking version. Always pin direct dependencies.
-  - name: Excluding transitives without a comment
-    description: >
-      Exclusions without an explanatory comment become maintenance liabilities.
-      Future contributors remove them assuming they are stale, re-introducing
-      the vulnerability.
-  - name: Skipping the SBOM update
-    description: >
-      A stale SBOM is worse than no SBOM — it creates false assurance. Always
-      regenerate after any dependency change.
+  - "Relying on transitive version resolution — when direct dependency versions are not pinned, a transitive upgrade can silently pull in a vulnerable or breaking version."
+  - "Excluding transitives without a comment — exclusions without an explanatory comment become maintenance liabilities; future contributors remove them assuming they are stale, re-introducing the vulnerability."
+  - "Skipping the SBOM update — a stale SBOM is worse than no SBOM because it creates false assurance; always regenerate after any dependency change."
 
 references:
   - name: Architectural Integrity Standard
     type: directive
-    id: "001"
+    id: DIRECTIVE_001
+    when: Dependency decisions affect the architectural integrity of the system; treat supply-chain choices as first-class architectural decisions
   - name: Secure Design Checklist
     type: tactic
     id: secure-design-checklist
+    when: Dependency hygiene is a prerequisite for the Least Common Mechanism principle in the secure design checklist

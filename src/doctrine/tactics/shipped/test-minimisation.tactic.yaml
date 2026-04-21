@@ -31,11 +31,6 @@ steps:
       - "After adding a round-trip symmetry test for a serializer, spot-checks verifying
          individual field survival are redundant. Mark them @Disabled / @Ignore with a comment
          before removing them permanently."
-    references:
-      - name: Formalized Constraint Testing
-        type: tactic
-        id: formalized-constraint-testing
-        when: Use contract tests to establish broad behavioral coverage before minimising spot-checks.
 
   - title: Disable before delete
     description: >
@@ -67,24 +62,20 @@ steps:
       - "\"test(minimise): collapse 3 redundant email-format spot-checks covered by contract test\""
 
 failure_modes:
-  - name: Deleting without a baseline
-    description: Removing tests before measuring coverage leads to silent regressions.
-  - name: Confusing overlap types
-    description: >
-      Mistaking two tests that look similar but cover different branches for logical duplicates
-      removes genuine behavioral coverage.
-  - name: Removing regression tests
-    description: >
-      Regression tests prevent re-introduction of past defects; collapsing them into contract
-      tests loses the explicit defect reference.
+  - "Deleting without a baseline — removing tests before measuring coverage leads to silent regressions."
+  - "Confusing overlap types — mistaking two tests that look similar but cover different branches for logical duplicates removes genuine behavioral coverage."
+  - "Removing regression tests — regression tests prevent re-introduction of past defects; collapsing them into contract tests loses the explicit defect reference."
 
 references:
   - name: Formalized Constraint Testing
     type: tactic
     id: formalized-constraint-testing
+    when: Contract tests establish the coverage baseline that makes spot-check removal safe
   - name: Test-First Development
     type: directive
-    id: "034"
+    id: DIRECTIVE_034
+    when: Test minimisation applies after a test-first cycle has produced coverage — never use it to avoid writing tests
   - name: Test and Typecheck Quality Gate
     type: directive
-    id: "030"
+    id: DIRECTIVE_030
+    when: Coverage must meet the quality gate after removals

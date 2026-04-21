@@ -3,19 +3,22 @@ id: secure-design-checklist
 name: Secure Design Checklist
 purpose: >
   Apply the nine foundational secure design principles (Saltzer & Schroeder) at the
-  design phase of a new feature or component, so that security properties are built in
+  design phase of a new feature or component so that security properties are built in
   rather than retrofitted. Apply before implementation begins, not after.
-
-apply_when:
-  - Starting the design of a new component, service, or feature
-  - Reviewing an architectural proposal before implementation begins
-  - Assessing an existing design for security gaps during an audit
-
+  Principles: (1) Least Privilege — minimum access for minimum time.
+  (2) Fail-Safe Defaults — deny by default, permit explicitly.
+  (3) Economy of Mechanism — keep security paths simple and centralized.
+  (4) Complete Mediation — check every access every time, no indefinite caching.
+  (5) Open Design — security must hold even if the attacker knows the source code.
+  (6) Separation of Privilege — no single condition sufficient to grant access.
+  (7) Least Common Mechanism — do not share access mechanisms unnecessarily.
+  (8) Psychological Acceptability — security must not significantly impede usability.
+  (9) Defense in Depth — layer independent barriers; assume each layer can fail.
 steps:
-  - title: Apply the checklist principle by principle
+  - title: Apply each principle to the design under review
     description: >
-      For each of the nine principles below, confirm it has been considered and document
-      the decision. "N/A" is acceptable if genuinely not applicable — state why.
+      Work through all nine principles. For each, confirm it has been considered and
+      document the decision. "N/A" is acceptable if genuinely not applicable — state why.
       A blank entry is never acceptable.
     examples:
       - "Least Privilege: API token scoped to read-only operations on the reporting namespace only."
@@ -25,8 +28,8 @@ steps:
     description: >
       Identify every data element the component handles. Classify each as Public,
       Internal, Restricted, or Confidential. Apply encryption requirements based on
-      classification: Restricted and Confidential data must be encrypted in transit
-      (TLS); Confidential data must be encrypted at rest.
+      classification: Restricted and Confidential data must be encrypted in transit (TLS);
+      Confidential data must be encrypted at rest.
     examples:
       - "User session tokens — Confidential. Encrypted in transit (TLS 1.3), encrypted at rest (AES-256-GCM)."
       - "Public API response schema — Public. No encryption requirement."
@@ -35,12 +38,12 @@ steps:
     description: >
       Record cipher suite choices and justify alignment with current standards
       (e.g., AES-256-GCM for symmetric, RSA-2048+ or ECDSA P-256 for asymmetric).
-      Prefer an agile crypto adapter pattern so cipher suites can be swapped
-      without touching business logic.
+      Prefer an agile crypto adapter pattern so cipher suites can be swapped without
+      touching business logic.
     examples:
       - "Symmetric: AES-256-GCM via CryptoAdapter interface. Suite is configurable; default matches BSI TR-02102."
 
-  - title: Determine if a threat assessment is warranted
+  - title: Determine if a formal threat assessment is warranted
     description: >
       Request a formal threat assessment when the component handles sensitive data
       (payments, PII, credentials), is internet-facing, exposes a public API,
@@ -50,98 +53,25 @@ steps:
 
   - title: Record sign-off before implementation begins
     description: >
-      Record that all nine principles were considered, data classification is complete,
+      Confirm that all nine principles were considered, data classification is complete,
       encryption decisions are documented, and any required threat assessment has been
       requested. No implementation should begin until sign-off is recorded.
 
-checklist:
-  least_privilege:
-    description: >
-      Grant the minimum access rights needed, for the minimum time needed.
-    checks:
-      - Every process/service runs with the minimum OS/network permissions required
-      - Database accounts are scoped to only the operations needed
-      - API tokens/service accounts are scoped to specific resources, not admin-level
-      - Time-bound credentials are used where applicable
-  fail_safe_defaults:
-    description: >
-      Access is denied by default; access is only permitted when explicitly granted.
-    checks:
-      - Default state of all new feature flags, permissions, and endpoints is deny
-      - A configuration error (missing value, malformed config) results in safe deny behavior
-      - Default passwords and default open ports are absent from the design
-  economy_of_mechanism:
-    description: >
-      Keep the design as simple as possible. Complexity hides vulnerabilities.
-    checks:
-      - Security-relevant code path is as short and readable as possible
-      - Authentication/authorization logic is centralized, not scattered
-      - Design can be simplified without losing security properties
-  complete_mediation:
-    description: >
-      Check every access to every resource, every time. Never cache authorization decisions indefinitely.
-    checks:
-      - Every endpoint is explicitly protected (none forgotten)
-      - Authorization is re-checked server-side for every request
-      - Batch operations are checked at the record level, not only the batch level
-  open_design:
-    description: >
-      Security must not depend on the secrecy of the design or implementation.
-    checks:
-      - If an attacker knew the source code, security would still hold
-      - Cryptographic security derives from key secrecy, not algorithm obscurity
-      - Security-by-obscurity mechanisms are documented as risks, not controls
-  separation_of_privilege:
-    description: >
-      No single condition should be sufficient to grant access. Require multiple conditions.
-    checks:
-      - High-value operations are protected by multi-factor or dual approval
-      - Separate roles exist for read and write operations
-      - Cross-service operations are validated independently by both services
-  least_common_mechanism:
-    description: >
-      Do not share access mechanisms across components that do not need to share them.
-    checks:
-      - Security-critical modules are isolated from unrelated business logic
-      - Shared infrastructure (auth tokens, session stores) is scoped to the minimum necessary consumers
-      - Test environments are isolated from production secrets and data
-  psychological_acceptability:
-    description: >
-      Security controls must not significantly impede usability. If they do, users will find workarounds.
-    checks:
-      - Security controls are the path of least resistance, not an obstacle
-      - Authentication flows are clear and concise
-      - Error messages help legitimate users but do not assist attackers
-  defense_in_depth:
-    description: >
-      Layer multiple independent barriers. Assume each layer can fail.
-    checks:
-      - If the authentication layer fails, the authorization layer still holds
-      - If the application layer is compromised, the database layer still restricts access
-      - Secrets are protected at multiple levels (encrypted at rest, access-limited, audited)
-      - Input is validated at multiple layers rather than relying on a single gate
-
 failure_modes:
-  - name: Security as a post-implementation concern
-    description: >
-      Applying this checklist after code is written typically results in costly rework.
-      The checklist is a design-phase artifact, not a code-review artifact.
-  - name: Blanket N/A without justification
-    description: >
-      Marking principles N/A without stating why produces an unverifiable record.
-      Each N/A must carry a brief justification that a reviewer can confirm.
-  - name: Skipping the threat assessment trigger
-    description: >
-      Components handling PII, payments, or public APIs frequently skip the threat
-      assessment step. A missed formal assessment is a hard gap in the security audit trail.
+  - "Security as a post-implementation concern — applying this checklist after code is written typically results in costly rework; it is a design-phase artifact, not a code-review artifact."
+  - "Blanket N/A without justification — marking principles N/A without stating why produces an unverifiable record; each N/A must carry a brief justification a reviewer can confirm."
+  - "Skipping the threat assessment trigger — components handling PII, payments, or public APIs frequently skip this step; a missed formal assessment is a hard gap in the security audit trail."
 
 references:
   - name: Architectural Integrity Standard
     type: directive
-    id: "001"
+    id: DIRECTIVE_001
+    when: Security boundaries are architectural boundaries; enforce both during design review
   - name: Black-Box Integration Testing
     type: tactic
     id: black-box-integration-testing
+    when: Verify security enforcement at integration boundaries, not only via unit tests
   - name: Code Review (Incremental)
     type: tactic
     id: code-review-incremental
+    when: Use the nine-principle checklist as a secondary review lens during code review of security-relevant changes

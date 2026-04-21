@@ -6,18 +6,11 @@ purpose: >
   before assigning meaning or drawing conclusions. Separating extraction from
   interpretation creates a shared factual foundation that reduces bias and allows
   independent review of raw evidence before reasoning begins.
-
-apply_when:
-  - Analysis or synthesis is required and the risk of premature judgment exists
-  - Reviewing code, logs, or specifications where familiarity might cause assumptions
-  - Any multi-step reasoning task where the source material is ambiguous or complex
-  - Collaborative analysis where multiple perspectives will later interpret the same facts
-
-exclusions:
-  - When immediate interpretation is required for time-critical decisions
-  - When source material is already structured, unambiguous, and fully understood
-  - Purely generative tasks that involve no analysis
-
+  Apply when: analysis or synthesis is required and the risk of premature judgment exists,
+  reviewing code or logs where familiarity might cause assumptions, or any multi-step
+  reasoning task where source material is ambiguous.
+  Not applicable: time-critical decisions requiring immediate interpretation, or
+  source material that is already fully structured and unambiguous.
 steps:
   - title: Identify source material and scope
     description: >
@@ -52,32 +45,26 @@ steps:
       - "From the extracted class list: 'OrderService orchestrates; OrderRepository persists' — this is interpretation."
       - "From the extracted test names: 'discount and expiry are the two primary validation rules' — this is interpretation."
 
-exit_criteria:
-  - Extracted data contains no interpretation or judgment
-  - Source references are preserved for each extracted item
-  - The extraction artifact can be reviewed and validated independently without domain knowledge
-  - The extraction is complete enough to support the planned interpretation
+notes: >
+  Exit criteria: extracted data contains no interpretation or judgment; source references
+  are preserved for each extracted item; the extraction artifact can be reviewed
+  independently without domain knowledge; extraction is complete enough to support
+  the planned interpretation.
+  Pairs well with: code review (extract patterns before interpreting intent or risk),
+  log analysis (extract events before inferring causation), requirement gathering
+  (extract stated needs before proposing solutions).
 
 failure_modes:
-  - name: Collapsing extraction and interpretation
-    description: >
-      Writing "OrderService orchestrates requests" during extraction embeds an
-      interpretation before the extraction is complete. The interpretation may
-      be correct, but it is now unverifiable from the raw evidence.
-  - name: Premature normalization
-    description: >
-      Renaming, grouping, or paraphrasing extracted elements during extraction
-      loses source fidelity. Extract terms as they appear; rename and group during
-      interpretation.
-  - name: Omitting details that seem irrelevant
-    description: >
-      Relevance judgement is a form of interpretation. During extraction, prefer
-      completeness over relevance filtering.
+  - "Collapsing extraction and interpretation — writing 'OrderService orchestrates requests' during extraction embeds an interpretation before the extraction is complete."
+  - "Premature normalization — renaming, grouping, or paraphrasing extracted elements during extraction loses source fidelity; extract terms as they appear, rename during interpretation."
+  - "Omitting details that seem irrelevant — relevance judgement is a form of interpretation; during extraction, prefer completeness over relevance filtering."
 
 references:
   - name: Review Intent and Risk First
     type: tactic
     id: review-intent-and-risk-first
+    when: The intent-first review tactic applies extraction-before-interpretation to the review context
   - name: Acceptance Test Driven Development
     type: tactic
     id: acceptance-test-first
+    when: Extracting observable acceptance criteria before interpreting implementation requirements

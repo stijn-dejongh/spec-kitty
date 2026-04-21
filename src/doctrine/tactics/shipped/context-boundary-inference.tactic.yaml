@@ -3,15 +3,14 @@ id: context-boundary-inference
 name: Context Boundary Inference
 purpose: >
   Detect bounded context boundaries from team ownership patterns and terminology
-  conflicts. Use systematic organizational and linguistic analysis to surface
-  implicit domain boundaries before they calcify into accidental coupling.
-
-apply_when:
-  - A monolith or shared codebase is growing beyond a single team's cognitive bandwidth
-  - Teams argue about what a shared term means (a reliable signal of a boundary)
-  - Cross-team coupling makes deployment or testing painful
-  - A strategic design or domain modelling effort is beginning
-
+  conflicts. Use systematic organizational and linguistic analysis to surface implicit
+  domain boundaries before they calcify into accidental coupling.
+  Apply when: a monolith is growing beyond a single team's cognitive bandwidth,
+  teams disagree on what a shared term means, cross-team coupling makes deployment
+  or testing painful, or a strategic design effort is beginning.
+  Success criteria: each proposed context has explicit ownership, ubiquitous language
+  documented per context, translation rules defined at each boundary, no shared mutable
+  state across context boundaries, proposed boundaries validated with domain experts.
 steps:
   - title: Map organizational communication structure
     description: >
@@ -20,22 +19,19 @@ steps:
       with low-frequency communication boundaries. High-communication teams
       tend to share vocabulary; low-communication teams tend to diverge.
     examples:
-      - |
-        Communication matrix sketch:
-        - Team A ↔ Team B: daily (expect shared vocabulary)
-        - Team A ↔ Team C: monthly (expect diverged vocabulary, possible boundary)
+      - "Teams A and B communicate daily — expect shared vocabulary, probably one context."
+      - "Teams A and C communicate monthly — expect diverged vocabulary, probable boundary."
 
   - title: Detect terminology conflict clusters
     description: >
       Ask teams to define key domain terms independently, then compare.
-      Same definition → shared context. Different definitions → a boundary exists.
+      Same definition implies a shared context. Different definitions signal a boundary.
       Supplement with code analysis: the same class name appearing in multiple
       codebases with different fields is a reliable boundary signal.
     examples:
       - |
         # Detect multiple definitions of the same term across modules
         rg "class Order" --with-filename
-        # If Order has different fields per module, a boundary likely exists between them
       - |
         # Look for translation functions as boundary evidence
         rg "to.*Order|from.*Order" --only-matching
@@ -54,70 +50,51 @@ steps:
     description: >
       Align proposed context boundaries with both the semantic cluster analysis and
       the team ownership map. Where the two align, a boundary is strongly supported.
-      Where they diverge, treat the mismatch as a design smell requiring explicit
-      discussion. Define context relationships (upstream/downstream, anti-corruption
-      layer, published language) for each proposed boundary.
+      Where they diverge, treat the mismatch as a design smell requiring discussion.
+      Define context relationships (upstream/downstream, anti-corruption layer,
+      published language) for each proposed boundary.
     examples:
-      - |
-        Proposed boundary: Sales Context | Fulfillment Context
-        Evidence: 'Order' defined differently per team, low cross-team commit frequency.
-        Relationship: Sales is upstream. Fulfillment translates SalesOrder → PickingInstruction via ACL.
+      - "Proposed: Sales Context | Fulfillment Context. Evidence: 'Order' defined differently per team, low cross-team commit frequency. Relationship: Sales upstream; Fulfillment translates via ACL."
 
   - title: Validate with domain experts and iterate
     description: >
-      Present proposed boundaries to the involved teams. Ask whether the boundaries
-      match natural process flows, whether ownership feels right, and where the
-      proposed split would cause friction. Boundaries that teams reject or that cut
-      across natural workflows are probably wrong.
-    examples:
-      - "Red flag: most interactions across the boundary require translation (too fragmented)."
-      - "Green flag: teams recognize vocabulary differences and accept proposed ownership."
+      Present proposed boundaries to the involved teams. Red flags: boundaries that cut
+      across natural process flows, teams that reject proposed ownership, or most
+      interactions requiring translation (too fragmented). Green flags: teams recognize
+      vocabulary differences and accept proposed ownership.
 
   - title: Document context boundaries as a context map
     description: >
       Produce a context canvas per identified context (ubiquitous language, ownership,
-      bounded-by, upstream/downstream relationships, translation rules) and a context
-      map diagram showing how contexts interact. Record the key design decisions in an ADR.
+      bounded-by, upstream/downstream relationships, translation rules) and a context map
+      diagram showing how contexts interact. Record key design decisions in an ADR.
     examples:
       - |
         ## Sales Context
         Ubiquitous Language: Customer, Quote, Contract, SalesOrder
         Ownership: Sales Engineering
         Downstream to: Fulfillment Context via OrderPlaced event
-        Translation: SalesOrder → FulfillmentOrder at Fulfillment ACL
-
-success_criteria:
-  - Each proposed context has explicit ownership
-  - Ubiquitous language documented per context
-  - Translation rules defined at each boundary
-  - No shared mutable state across context boundaries
-  - Proposed boundaries validated with domain experts
-  - Design decisions recorded in an ADR
+        Translation: SalesOrder -> FulfillmentOrder at Fulfillment ACL
 
 failure_modes:
-  - name: Too many contexts
-    description: >
-      Starting with more than 3 contexts for a small system usually produces artificial
-      boundaries. Start with 2-3, split only when cognitive load or team structure demands.
-  - name: Artificial boundaries imposed top-down
-    description: >
-      Boundaries defined by architects without team input rarely stick. Teams build
-      workarounds that re-introduce the coupling the boundary was meant to prevent.
-  - name: Constant cross-boundary coupling after refactoring
-    description: >
-      If most operations still require cross-context calls or translations after the split,
-      the boundary placement is probably wrong. Reconsider the split point.
+  - "Too many contexts — starting with more than 3 contexts for a small system produces artificial boundaries; start with 2-3, split only when cognitive load or team structure demands."
+  - "Artificial boundaries imposed top-down — boundaries defined without team input rarely stick; teams build workarounds that re-introduce the coupling the boundary was meant to prevent."
+  - "Constant cross-boundary coupling after the split — if most operations still require cross-context calls after refactoring, the boundary placement is probably wrong."
 
 references:
   - name: Language-Driven Design
     type: tactic
     id: language-driven-design
+    when: Terminology clusters from boundary inference become the ubiquitous language inputs for language-driven design
   - name: Code and Documentation Analysis for Boundary Discovery
     type: tactic
     id: code-documentation-analysis
+    when: Code and documentation analysis provides the terminology extraction and co-occurrence data used in steps 1-2
   - name: Conceptual Alignment
     type: directive
-    id: "032"
+    id: DIRECTIVE_032
+    when: Context boundaries make conceptual alignment explicit; terminology violations at boundaries are directive violations
   - name: Architectural Integrity Standard
     type: directive
-    id: "001"
+    id: DIRECTIVE_001
+    when: Proposed context boundaries must be evaluated against the existing architectural integrity constraints
