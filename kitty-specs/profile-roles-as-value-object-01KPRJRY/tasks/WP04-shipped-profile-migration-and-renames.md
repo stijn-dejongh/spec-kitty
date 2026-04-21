@@ -42,6 +42,18 @@ tags: []
 
 # WP04 — Shipped Profile Migration and Renames
 
+## ⚡ Do This First: Load Agent Profile
+
+Use the `/ad-hoc-profile-load` skill to load the agent profile specified in the frontmatter, and behave according to its guidance before parsing the rest of this prompt.
+
+- **Profile**: `python-pedro`
+- **Role**: `implementer`
+- **Agent/tool**: `claude`
+
+If no profile is specified, run `spec-kitty agent profile list` and select the best match for this work package's `task_type` and `authoritative_surface`.
+
+---
+
 ## Objective
 
 Migrate all 11 shipped profiles from the deprecated `role: <scalar>` key to

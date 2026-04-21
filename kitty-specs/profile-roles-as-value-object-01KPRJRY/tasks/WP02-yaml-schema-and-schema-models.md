@@ -37,6 +37,18 @@ tags: []
 
 # WP02 — YAML Schema + Schema Models
 
+## ⚡ Do This First: Load Agent Profile
+
+Use the `/ad-hoc-profile-load` skill to load the agent profile specified in the frontmatter, and behave according to its guidance before parsing the rest of this prompt.
+
+- **Profile**: `python-pedro`
+- **Role**: `implementer`
+- **Agent/tool**: `claude`
+
+If no profile is specified, run `spec-kitty agent profile list` and select the best match for this work package's `task_type` and `authoritative_surface`.
+
+---
+
 ## Objective
 
 Update `agent-profile.schema.yaml` to accept `roles` (array of strings) and the
