@@ -5,7 +5,7 @@ schema-version: "1.0"
 role: implementer
 applies_to_languages:
   - java
-specializes-from: implementer
+specializes-from: implementer-ivan
 capabilities:
   - java-implementation
   - junit-testing

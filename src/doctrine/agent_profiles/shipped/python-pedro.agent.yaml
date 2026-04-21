@@ -5,7 +5,7 @@ schema-version: "1.0"
 role: implementer
 applies_to_languages:
   - python
-specializes-from: implementer
+specializes-from: implementer-ivan
 capabilities:
   - python-implementation
   - pytest-testing
