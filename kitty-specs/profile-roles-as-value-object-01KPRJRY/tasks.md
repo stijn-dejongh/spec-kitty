@@ -29,7 +29,7 @@
 | T017 | Rewrite `_exact_id_signal` with primary (1.0) / secondary (0.5) scoring | WP03 | [P] |
 | T018 | Rewrite `find_by_role` to check `role in profile.roles` | WP03 | [P] |
 | T019 | Remove dead `isinstance(p.role, ...)` branches from `repository.py` | WP03 | [P] |
-| T020 | Write new routing tests for secondary-role inclusion and scoring signals | WP03 | [P] |
+| T020 | Write new routing tests + audit existing tests for old `.role.value` / StrEnum patterns | WP03 | [P] |
 | T021 | `git mv` 7 renamed YAML files (atomic with T022+T023) | WP04 | |
 | T022 | Update `profile-id` + `role:` → `roles: [...]` in 7 renamed files; update names for planner/researcher | WP04 | |
 | T023 | [ATOMIC with T021] Update `specializes-from: implementer-ivan` in java-jenny + python-pedro | WP04 | |
@@ -42,7 +42,8 @@
 | T030 | Fix `tests/charter/test_catalog.py` — fixture profiles | WP05 | [P] |
 | T031 | Fix `tests/specify_cli/status/test_wp_metadata.py` — agent_profile strings | WP05 | [P] |
 | T032 | Run full test suite; fix any remaining failures | WP05 | |
-| T033 | Run `mypy src/doctrine/agent_profiles/`; fix any type annotation issues | WP05 | |
+| T033 | Run `mypy --strict src/doctrine/agent_profiles/ tests/doctrine/`; fix any type annotation issues | WP05 | |
+| T036 | Performance gate: load all shipped profiles, assert ≤5% regression vs pre-migration timing | WP05 | [P] |
 | T034 | Fix `implement.md` — correct stale field names + add `for_review` profile-handoff guidance | WP06 | [P] |
 | T035 | Update `review.md` — add profile-load step + add reject profile-handoff guidance | WP06 | [P] |
 
@@ -159,7 +160,8 @@ old Role enum, or old scalar role field. Verify full suite passes with zero fail
 - [ ] T030 Fix `tests/charter/test_catalog.py` (WP05)
 - [ ] T031 Fix `tests/specify_cli/status/test_wp_metadata.py` (WP05)
 - [ ] T032 Run full test suite; fix remaining failures (WP05)
-- [ ] T033 Run mypy; fix type annotation issues (WP05)
+- [ ] T033 Run `mypy --strict`; fix type annotation issues (WP05)
+- [ ] T036 Performance gate: profile load time ≤5% regression (WP05)
 
 **Prompt file**: `tasks/WP05-test-suite-alignment.md`
 

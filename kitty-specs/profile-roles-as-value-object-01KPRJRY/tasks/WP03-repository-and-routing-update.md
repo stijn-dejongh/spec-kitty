@@ -213,11 +213,26 @@ in `repository.py`.
 
 ---
 
-### T020 — Write new routing and lookup tests
+### T020 — Audit existing tests + write new routing and lookup tests
 
 **File**: `tests/doctrine/test_profile_repository.py`
 
-Add two new test classes (do not remove existing tests):
+#### Part A — Audit existing tests for old patterns (do this first)
+
+Before adding new tests, scan and fix patterns left over from the `StrEnum` era:
+
+```bash
+rg "\.role\.value" tests/doctrine/test_profile_repository.py
+rg "isinstance.*role.*Role" tests/doctrine/test_profile_repository.py
+rg '"role":' tests/doctrine/test_profile_repository.py
+```
+
+For each hit:
+- `profile.role.value` → replace with `profile.role` (already a `str`)
+- `isinstance(x, Role)` assertions that rely on StrEnum behavior → update to `isinstance(x, str)` or a direct equality check
+- `"role": "implementer"` fixture dicts → change to `"roles": ["implementer"]` (unless the test intentionally exercises the deprecation coercion path; if so, add a `warnings.catch_warnings` block and a comment)
+
+#### Part B — Add two new test classes (do not remove existing tests)
 
 ```python
 class TestMultiRoleRouting:
@@ -355,6 +370,7 @@ actual module paths. Run `pytest tests/doctrine/test_profile_repository.py -v` t
 - [ ] `find_by_role(role)` checks `role in profile.roles` — returns **all** profiles that list the role at any position; multiple results are expected and correct
 - [ ] `get(profile_id)` returns the unique profile for that ID or `None` — uniqueness is guaranteed by the dict key; no profile_id maps to more than one result
 - [ ] No `isinstance(p.role, Role)` or `isinstance(p.role, str)` branches remain
+- [ ] Existing tests audited: no `.role.value`, no StrEnum-dependent `isinstance` checks, no scalar `"role":` fixture dicts (unless intentionally testing coercion path with comment)
 - [ ] `pytest tests/doctrine/test_profile_repository.py -v` passes (old + new tests)
 - [ ] `TestRoleLookup::test_find_by_role_returns_multiple_profiles_sharing_a_role` explicitly verifies the many-results case
 - [ ] `TestRoleLookup::test_get_is_unique_two_profiles_with_different_ids` explicitly verifies profile_id uniqueness
