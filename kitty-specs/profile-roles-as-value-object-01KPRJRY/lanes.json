@@ -39,11 +39,28 @@
       ],
       "depends_on_lanes": [],
       "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "src/specify_cli/missions/software-dev/command-templates/implement.md",
+        "src/specify_cli/missions/software-dev/command-templates/review.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
     }
   ],
-  "computed_at": "2026-04-21T18:34:14.140580+00:00",
+  "computed_at": "2026-04-21T18:53:33.172289+00:00",
   "computed_from": "dependency_graph+ownership",
-  "planning_artifact_wps": [],
+  "planning_artifact_wps": [
+    "WP06"
+  ],
   "collapse_report": {
     "events": [
       {

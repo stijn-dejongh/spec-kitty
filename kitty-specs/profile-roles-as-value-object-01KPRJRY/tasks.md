@@ -43,6 +43,8 @@
 | T031 | Fix `tests/specify_cli/status/test_wp_metadata.py` — agent_profile strings | WP05 | [P] |
 | T032 | Run full test suite; fix any remaining failures | WP05 | |
 | T033 | Run `mypy src/doctrine/agent_profiles/`; fix any type annotation issues | WP05 | |
+| T034 | Fix `implement.md` — correct stale field names + add `for_review` profile-handoff guidance | WP06 | [P] |
+| T035 | Update `review.md` — add profile-load step + add reject profile-handoff guidance | WP06 | [P] |
 
 ---
 
@@ -160,3 +162,23 @@ old Role enum, or old scalar role field. Verify full suite passes with zero fail
 - [ ] T033 Run mypy; fix type annotation issues (WP05)
 
 **Prompt file**: `tasks/WP05-test-suite-alignment.md`
+
+---
+
+### WP06 — Review Workflow Agent Profile Handoff
+
+**Priority**: Normal — quality-of-life for implement/review cycle
+**Estimated prompt size**: ~200 lines
+**Dependencies**: none
+**Parallelizes with**: WP01–WP05 (touches only command templates)
+
+**Goal**: Update `implement.md` and `review.md` to (a) fix stale field names (`profile`→`agent_profile`,
+`tool`→`agent`) and (b) add explicit guidance for updating `agent_profile` in WP frontmatter
+when handing off between implementer and reviewer roles — forward when moving to `for_review`,
+and backward when rejecting.
+
+**Included subtasks**:
+- [ ] T034 Fix `implement.md` — correct stale field names + add `for_review` profile-handoff guidance (WP06)
+- [ ] T035 Update `review.md` — add profile-load step + add reject profile-handoff guidance (WP06)
+
+**Prompt file**: `tasks/WP06-review-workflow-agent-profile-handoff.md`
