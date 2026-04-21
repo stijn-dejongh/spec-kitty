@@ -1,0 +1,10 @@
+{
+  "created_at": "2026-04-21T17:52:55.610645+00:00",
+  "friendly_name": "profile roles as value object",
+  "mission_id": "01KPRJRY9WC8Q7PVRJ6AKTY109",
+  "mission_number": null,
+  "mission_slug": "profile-roles-as-value-object-01KPRJRY",
+  "mission_type": "software-dev",
+  "slug": "profile-roles-as-value-object-01KPRJRY",
+  "target_branch": "doctrine/profile_reinforcement"
+}
