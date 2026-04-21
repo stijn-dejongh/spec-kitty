@@ -353,10 +353,10 @@ nodes:
 - urn: agent_profile:implementer
   kind: agent_profile
   label: Implementer Ivan
-- urn: agent_profile:java-implementer
+- urn: agent_profile:java-jenny
   kind: agent_profile
   label: Java Jenny
-- urn: agent_profile:python-implementer
+- urn: agent_profile:python-pedro
   kind: agent_profile
   label: Python Pedro
 - urn: styleguide:java-conventions
@@ -1208,84 +1208,84 @@ edges:
 - source: agent_profile:implementer
   target: procedure:test-first-bug-fixing
   relation: suggests
-# python-implementer specialises from implementer
-- source: agent_profile:python-implementer
+# python-pedro specialises from implementer
+- source: agent_profile:python-pedro
   target: agent_profile:implementer
   relation: delegates_to
-- source: agent_profile:python-implementer
+- source: agent_profile:python-pedro
   target: directive:DIRECTIVE_010
   relation: requires
-- source: agent_profile:python-implementer
+- source: agent_profile:python-pedro
   target: directive:DIRECTIVE_024
   relation: requires
-- source: agent_profile:python-implementer
+- source: agent_profile:python-pedro
   target: directive:DIRECTIVE_025
   relation: requires
-- source: agent_profile:python-implementer
+- source: agent_profile:python-pedro
   target: directive:DIRECTIVE_030
   relation: requires
-- source: agent_profile:python-implementer
+- source: agent_profile:python-pedro
   target: directive:DIRECTIVE_034
   relation: requires
-- source: agent_profile:python-implementer
+- source: agent_profile:python-pedro
   target: styleguide:python-conventions
   relation: requires
-- source: agent_profile:python-implementer
+- source: agent_profile:python-pedro
   target: toolguide:python-review-checks
   relation: requires
-- source: agent_profile:python-implementer
+- source: agent_profile:python-pedro
   target: tactic:tdd-red-green-refactor
   relation: requires
-- source: agent_profile:python-implementer
+- source: agent_profile:python-pedro
   target: tactic:acceptance-test-first
   relation: requires
-- source: agent_profile:python-implementer
+- source: agent_profile:python-pedro
   target: procedure:test-first-bug-fixing
   relation: requires
-- source: agent_profile:python-implementer
+- source: agent_profile:python-pedro
   target: styleguide:testing-principles
   relation: suggests
-- source: agent_profile:python-implementer
+- source: agent_profile:python-pedro
   target: tactic:mutation-testing-workflow
   relation: suggests
-# java-implementer specialises from implementer
-- source: agent_profile:java-implementer
+# java-jenny specialises from implementer
+- source: agent_profile:java-jenny
   target: agent_profile:implementer
   relation: delegates_to
-- source: agent_profile:java-implementer
+- source: agent_profile:java-jenny
   target: directive:DIRECTIVE_010
   relation: requires
-- source: agent_profile:java-implementer
+- source: agent_profile:java-jenny
   target: directive:DIRECTIVE_024
   relation: requires
-- source: agent_profile:java-implementer
+- source: agent_profile:java-jenny
   target: directive:DIRECTIVE_025
   relation: requires
-- source: agent_profile:java-implementer
+- source: agent_profile:java-jenny
   target: directive:DIRECTIVE_030
   relation: requires
-- source: agent_profile:java-implementer
+- source: agent_profile:java-jenny
   target: directive:DIRECTIVE_034
   relation: requires
-- source: agent_profile:java-implementer
+- source: agent_profile:java-jenny
   target: styleguide:java-conventions
   relation: requires
-- source: agent_profile:java-implementer
+- source: agent_profile:java-jenny
   target: toolguide:maven-review-checks
   relation: requires
-- source: agent_profile:java-implementer
+- source: agent_profile:java-jenny
   target: tactic:tdd-red-green-refactor
   relation: requires
-- source: agent_profile:java-implementer
+- source: agent_profile:java-jenny
   target: tactic:acceptance-test-first
   relation: requires
-- source: agent_profile:java-implementer
+- source: agent_profile:java-jenny
   target: procedure:test-first-bug-fixing
   relation: requires
-- source: agent_profile:java-implementer
+- source: agent_profile:java-jenny
   target: styleguide:testing-principles
   relation: suggests
-- source: agent_profile:java-implementer
+- source: agent_profile:java-jenny
   target: tactic:formalized-constraint-testing
   relation: suggests
 # ---------------------------------------------------------------------------
@@ -1494,16 +1494,16 @@ edges:
 - source: agent_profile:implementer
   target: tactic:function-over-form-testing
   relation: requires
-- source: agent_profile:java-implementer
+- source: agent_profile:java-jenny
   target: tactic:behavior-driven-development
   relation: requires
-- source: agent_profile:java-implementer
+- source: agent_profile:java-jenny
   target: tactic:function-over-form-testing
   relation: requires
-- source: agent_profile:python-implementer
+- source: agent_profile:python-pedro
   target: tactic:behavior-driven-development
   relation: requires
-- source: agent_profile:python-implementer
+- source: agent_profile:python-pedro
   target: tactic:function-over-form-testing
   relation: requires
 

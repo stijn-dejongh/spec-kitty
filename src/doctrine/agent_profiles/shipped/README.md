@@ -11,9 +11,9 @@ with the language name) extend the base `implementer` role for polyglot projects
 | `curator.agent.yaml` | `curator` | curator |
 | `designer.agent.yaml` | `designer` | designer |
 | `implementer.agent.yaml` | `implementer` | implementer |
-| `java-implementer.agent.yaml` | `java-implementer` | implementer (Java specialist) |
+| `java-jenny.agent.yaml` | `java-jenny` | implementer (Java specialist) |
 | `planner.agent.yaml` | `planner` | planner |
-| `python-implementer.agent.yaml` | `python-implementer` | implementer (Python specialist) |
+| `python-pedro.agent.yaml` | `python-pedro` | implementer (Python specialist) |
 | `researcher.agent.yaml` | `researcher` | researcher |
 | `reviewer.agent.yaml` | `reviewer` | reviewer |
 

@@ -64,7 +64,7 @@ specialization-context:
     - system architecture
 """)
 
-    # Child profile: python-implementer (specializes from generic implementer)
+    # Child profile: python-pedro (specializes from generic implementer)
     (shipped / "python-pedro.agent.yaml").write_text("""profile-id: python-pedro
 name: Python Pedro
 purpose: Python implementation specialist

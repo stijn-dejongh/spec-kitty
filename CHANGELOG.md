@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Analyst/architect tactics** — 4 tactics for `Architect Alphonso` shipped and wired: `dependency-hygiene` (Maven + Python SBOM/CVE/license hygiene), `context-boundary-inference` (Conway's Law + terminology conflict analysis for DDD context mapping), `analysis-extract-before-interpret` (separation-of-concerns discipline for review and analysis), `behavior-driven-development` (Given/When/Then scenario specification as behavioral contracts). `agent_profile:architect` node added to graph.
 - **Approach-derived tactics** — 4 public-domain approaches converted to spec-kitty tactics: `locality-of-change` (systematic protocol for assessing whether a change introduces necessary complexity or premature abstraction; implements `DIRECTIVE_024`), `traceable-decisions` (decision-marker and ADR-linking discipline; implements `DIRECTIVE_003`), `function-over-form-testing` (test behavior not construction — natural coverage principle; avoids structural assertions), `reverse-speccing` extended with richer context-gap taxonomy and improvement roadmap patterns (existing tactic preserved, node was already present but now wired to `test-to-system-reconstruction`).
 
+### Changed
+
+- **`java-implementer` → `java-jenny`** — profile renamed to `java-jenny` (`java-jenny.agent.yaml`). Character name aligns with the `python-pedro` convention; `role` stays `implementer` per the controlled vocabulary.
+- **`python-implementer` → `python-pedro`** — profile file and `profile-id` officially renamed; was already referenced as `python-pedro` in the DRG and test suite.
+
 <!-- Rationale (doctrine/profile_reinforcement branch, Java specialist, 2026-04-21):
   Java Jenny fills the gap left by the generic implementer profile for Java-first or polyglot projects.
   routing-priority: 80 ensures automatic WP assignment picks her over the generic implementer whenever

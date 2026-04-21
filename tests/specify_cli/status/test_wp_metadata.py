@@ -243,9 +243,9 @@ class TestWPMetadataExtraFields:
         meta = WPMetadata(
             work_package_id="WP01",
             title="T",
-            agent_profile="python-implementer",
+            agent_profile="python-pedro",
         )
-        assert meta.agent_profile == "python-implementer"
+        assert meta.agent_profile == "python-pedro"
 
 
 class TestWPMetadataDisplayTitle:
@@ -485,12 +485,12 @@ class TestReadWpFrontmatter:
         """Fields formerly stored as extras are now declared on the model."""
         wp_file = tmp_path / "WP01-extra.md"
         wp_file.write_text(
-            "---\nwork_package_id: WP01\ntitle: Extra\nlane: planned\nagent_profile: python-implementer\n---\n\nBody\n",
+            "---\nwork_package_id: WP01\ntitle: Extra\nlane: planned\nagent_profile: python-pedro\n---\n\nBody\n",
             encoding="utf-8",
         )
         meta, _ = read_wp_frontmatter(wp_file)
         assert meta.lane == "planned"
-        assert meta.agent_profile == "python-implementer"
+        assert meta.agent_profile == "python-pedro"
 
 
 # ─────────────────────────────────────────────────────────────

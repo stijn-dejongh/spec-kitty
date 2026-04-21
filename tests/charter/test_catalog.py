@@ -79,8 +79,8 @@ def test_catalog_filters_language_scoped_artifacts(monkeypatch: pytest.MonkeyPat
             "summary": "Generic checks",
         },
         Path("agent_profiles/shipped/python.agent.yaml"): {
-            "profile-id": "python-implementer",
-            "name": "Python Implementer",
+            "profile-id": "python-pedro",
+            "name": "Python Pedro",
             "role": "implementer",
             "purpose": "Python specialist",
             "applies_to_languages": ["python"],
@@ -114,7 +114,7 @@ def test_catalog_filters_language_scoped_artifacts(monkeypatch: pytest.MonkeyPat
     assert "generic-toolguide" in catalog.toolguides
     assert "python-toolguide" not in catalog.toolguides
     assert "generic-implementer" in catalog.agent_profiles
-    assert "python-implementer" not in catalog.agent_profiles
+    assert "python-pedro" not in catalog.agent_profiles
 
 
 def test_catalog_keeps_language_scoped_artifacts_when_active_languages_are_unset(
@@ -143,8 +143,8 @@ def test_catalog_keeps_language_scoped_artifacts_when_active_languages_are_unset
             "applies_to_languages": ["python"],
         },
         Path("agent_profiles/shipped/python.agent.yaml"): {
-            "profile-id": "python-implementer",
-            "name": "Python Implementer",
+            "profile-id": "python-pedro",
+            "name": "Python Pedro",
             "role": "implementer",
             "purpose": "Python specialist",
             "applies_to_languages": ["python"],
@@ -168,7 +168,7 @@ def test_catalog_keeps_language_scoped_artifacts_when_active_languages_are_unset
 
     assert "python-style" in catalog.styleguides
     assert "python-toolguide" in catalog.toolguides
-    assert "python-implementer" in catalog.agent_profiles
+    assert "python-pedro" in catalog.agent_profiles
 
 
 def test_load_yaml_id_catalog_scans_proposed_when_requested(tmp_path: Path) -> None:
