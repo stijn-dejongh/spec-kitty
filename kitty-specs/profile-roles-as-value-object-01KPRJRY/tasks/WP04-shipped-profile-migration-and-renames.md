@@ -4,8 +4,8 @@ title: Shipped Profile Migration and Renames
 dependencies:
 - WP01
 - WP02
-agent_profile: "python-pedro"
-role: "implementer"
+agent_profile: "reviewer-renata"
+role: "reviewer"
 agent: "claude"
 model: "claude-sonnet-4-6"
 requirement_refs:
