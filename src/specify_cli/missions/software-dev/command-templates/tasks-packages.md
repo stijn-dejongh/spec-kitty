@@ -119,6 +119,20 @@ model: ""          # filled in Step 4a — model identifier (e.g., claude-sonnet
 ```
 
 Body sections (in order):
+0. `## ⚡ Do This First: Load Agent Profile` — **REQUIRED. Must be the first section after the H1 title, before Objective.** Instructs the implementing agent to load the assigned profile via `/ad-hoc-profile-load` before reading anything else. Use this exact structure, substituting frontmatter values:
+   ```markdown
+   ## ⚡ Do This First: Load Agent Profile
+
+   Use the `/ad-hoc-profile-load` skill to load the agent profile specified in the frontmatter, and behave according to its guidance before parsing the rest of this prompt.
+
+   - **Profile**: `{agent_profile}`
+   - **Role**: `{role}`
+   - **Agent/tool**: `{agent}`
+
+   If no profile is specified, run `spec-kitty agent profile list` and select the best match for this work package's `task_type` and `authoritative_surface`.
+
+   ---
+   ```
 1. `## Objective` — 1–3 sentence goal
 2. `## Context` — why this WP exists, what depends on it, key design decisions from plan.md
 3. `### Subtask {T-id}: {name}` — one section per subtask, ~60 lines each:
@@ -224,6 +238,7 @@ Also update the corresponding entry in `wps.yaml` with these fields.
 ### 5. Self-Check
 
 After all sub-agents complete, verify each generated prompt:
+- `## ⚡ Do This First: Load Agent Profile` is the **first body section** (before Objective)? ✓ ❌ if missing
 - Subtask count: 3-7? ✓ | 8-10? ⚠️ | 11+? ❌ needs splitting
 - Estimated lines: 200-500? ✓ | 500-700? ⚠️ | 700+? ❌ needs splitting
 - `agent_profile`, `role`, `agent` set for every WP? ✓
