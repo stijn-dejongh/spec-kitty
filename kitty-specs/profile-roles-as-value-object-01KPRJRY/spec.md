@@ -85,6 +85,14 @@ A task requesting an `implementer` slot scores the profile whose primary role is
 `implementer` higher than the profile whose primary role is `reviewer` (even if
 the latter lists `implementer` as a secondary role).
 
+### Scenario F — Shipped profiles carry character names
+
+All profiles shipped with the doctrine package have `profile-id` values that
+include a human character name (e.g. `reviewer-renata`, `architect-alphonso`).
+A consumer browsing the profile list can identify profiles by the character name
+without ambiguity. Generic base profiles (`implementer`, `human-in-charge`) are
+exceptions reserved for structural/sentinel use only.
+
 ---
 
 ## Functional Requirements
@@ -102,6 +110,8 @@ the latter lists `implementer` as a secondary role).
 | FR-009 | The `Role` value object MUST expose all well-known role constants as named attributes (e.g. `Role.IMPLEMENTER`, `Role.REVIEWER`) so callers can reference them without bare strings. | Proposed |
 | FR-010 | `TaskContext.required_role` MUST remain compatible: a caller may pass a well-known `Role` constant, a custom string, or `None`; matching is checked against all entries in `AgentProfile.roles`. | Proposed |
 | FR-011 | The `DRG` node label for each agent-profile node MUST reflect the primary role of the profile as its role annotation. | Proposed |
+| FR-012 | Every shipped agent profile MUST have a `profile-id` and `name` that include a human character name (e.g. `reviewer-renata`, `architect-alphonso`), following the same pattern already established by `java-jenny` and `python-pedro`. Generic role-only IDs (e.g. `implementer`, `reviewer`) are permitted only for base/sentinel profiles that are not intended to be assigned to a real agent. | Proposed |
+| FR-013 | The existing generic base profiles (`implementer`, `reviewer`, `architect`, `designer`, `planner`, `researcher`, `curator`) MUST be evaluated: where a character-named profile does not yet exist as the primary shipping profile for that role, one MUST be created or the existing profile renamed. The decision (create vs. rename) is documented in the plan. | Proposed |
 
 ---
 
@@ -124,7 +134,7 @@ the latter lists `implementer` as a secondary role).
 | C-002 | Python 3.11+ and Pydantic v2 (existing codebase constraints). | Active |
 | C-003 | The `Role` well-known constants MUST remain backward-compatible aliases: any code referencing `Role.IMPLEMENTER` today MUST continue to work unchanged after this feature. | Active |
 | C-004 | YAML schema for agent profiles MUST accept both `role:` (deprecated scalar) and `roles:` (canonical list); validation MUST reject profiles that supply neither. | Active |
-| C-005 | No changes to the `mission_id` or `profile_id` identity fields of any shipped profile as part of this work. | Active |
+| C-005 | Profile renames (FR-012/FR-013) must follow the git `mv` + `profile-id` field update pattern already established by the `java-jenny` / `python-pedro` renames; the `mission_id` identity field in `meta.json` is never affected. | Active |
 
 ---
 
@@ -135,6 +145,7 @@ the latter lists `implementer` as a secondary role).
 3. A profile declaring `roles: [architect, researcher]` is returned by a membership query for both `architect` and `researcher`; routing ranks it under its primary role `architect` for a slot that requests an architect.
 4. A profile with `roles: [my-custom-org-role]` loads without error; `Role("my-custom-org-role")` compares equal to the value stored in `roles[0]`; serialisation round-trip preserves the string.
 5. Full test suite (`pytest tests/doctrine/ tests/charter/ tests/specify_cli/`) passes with zero regressions.
+6. Every shipped profile (excluding generic base profiles `implementer` and sentinel `human-in-charge`) has a `profile-id` containing a character name. The shipped profile set contains no role-only IDs that are used as the primary profile for their role.
 
 ---
 
