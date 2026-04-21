@@ -85,13 +85,24 @@ A task requesting an `implementer` slot scores the profile whose primary role is
 `implementer` higher than the profile whose primary role is `reviewer` (even if
 the latter lists `implementer` as a secondary role).
 
-### Scenario F — Shipped profiles carry character names
+### Scenario F — Avatar image field is present but optional
+
+A shipped profile YAML includes `avatar-image: agent_profiles/avatars/jenny.png`.
+The profile loads successfully and `profile.avatar_image` returns the path string.
+
+A profile YAML that omits `avatar-image` loads successfully and
+`profile.avatar_image` is `None`. No warning is emitted and no default
+image is substituted.
+
+### Scenario G — Shipped profiles carry character names
 
 All profiles shipped with the doctrine package have `profile-id` values that
 include a human character name (e.g. `reviewer-renata`, `architect-alphonso`).
 A consumer browsing the profile list can identify profiles by the character name
 without ambiguity. Generic base profiles (`implementer`, `human-in-charge`) are
 exceptions reserved for structural/sentinel use only.
+
+
 
 ---
 
@@ -112,6 +123,7 @@ exceptions reserved for structural/sentinel use only.
 | FR-011 | The `DRG` node label for each agent-profile node MUST reflect the primary role of the profile as its role annotation. | Proposed |
 | FR-012 | Every shipped agent profile MUST have a `profile-id` and `name` that include a human character name (e.g. `reviewer-renata`, `architect-alphonso`), following the same pattern already established by `java-jenny` and `python-pedro`. Generic role-only IDs (e.g. `implementer`, `reviewer`) are permitted only for base/sentinel profiles that are not intended to be assigned to a real agent. | Proposed |
 | FR-013 | The existing generic base profiles (`implementer`, `reviewer`, `architect`, `designer`, `planner`, `researcher`, `curator`) MUST be evaluated: where a character-named profile does not yet exist as the primary shipping profile for that role, one MUST be created or the existing profile renamed. The decision (create vs. rename) is documented in the plan. | Proposed |
+| FR-014 | `AgentProfile` MUST expose an optional `avatar_image` field that stores a path (string) pointing to an image asset bundled with the doctrine package (e.g. under `src/doctrine/agent_profiles/` or another bundled asset directory). When absent or `null`, profile behaviour is unchanged. The field is a forward-compatibility hook for issue #647 (WP card avatar display); no rendering or resolution logic is required by this feature. | Proposed |
 
 ---
 
@@ -146,6 +158,7 @@ exceptions reserved for structural/sentinel use only.
 4. A profile with `roles: [my-custom-org-role]` loads without error; `Role("my-custom-org-role")` compares equal to the value stored in `roles[0]`; serialisation round-trip preserves the string.
 5. Full test suite (`pytest tests/doctrine/ tests/charter/ tests/specify_cli/`) passes with zero regressions.
 6. Every shipped profile (excluding generic base profiles `implementer` and sentinel `human-in-charge`) has a `profile-id` containing a character name. The shipped profile set contains no role-only IDs that are used as the primary profile for their role.
+7. A profile YAML with `avatar-image: <path>` loads with `profile.avatar_image == "<path>"`. A profile YAML without the field loads with `profile.avatar_image is None`. No exception or warning is raised in either case.
 
 ---
 
@@ -158,6 +171,7 @@ exceptions reserved for structural/sentinel use only.
 | `AgentProfile.role` | **Deprecated** scalar field. Accepted on load; coerced to a single-element `roles` list with a `DeprecationWarning`. |
 | `TaskContext.required_role` | Input constraint for profile matching. Matched against all entries in `AgentProfile.roles`. |
 | Shipped profile YAML | Any `.agent.yaml` file under `src/doctrine/agent_profiles/shipped/`. All must use `roles:` after migration. |
+| `AgentProfile.avatar_image` | Optional string field. Holds a path to a bundled image asset. `None` when not declared. No rendering logic required by this feature. |
 
 ---
 
@@ -175,3 +189,5 @@ exceptions reserved for structural/sentinel use only.
 - Changes to how `profile_id` or `name` are resolved.
 - Any changes to the `sentinel` flag or sentinel profile behaviour.
 - UI or dashboard rendering of multi-role badges.
+- Resolving or validating `avatar_image` paths at load time (existence checks, URL resolution, or rendering are deferred to issue #647).
+- Providing default avatar images for profiles that omit the field.
