@@ -179,7 +179,7 @@ Prompts do not rediscover feature context. Commands do.
      - Derive a kebab-case slug from the title; filename: `WPxx-slug.md`
      - Full path example: `feature_dir/tasks/WP01-create-html-page.md` (use ABSOLUTE path from feature_dir variable)
      - Follow the WP prompt template structure defined below in this prompt (**do NOT write instructions to read a template file from `.kittify/`**) to capture:
-     - Frontmatter with `work_package_id`, `subtasks` array, `dependencies`, `planning_base_branch`, `merge_target_branch`, `branch_strategy`, `owned_files`, `authoritative_surface`, `execution_mode`, and history entry
+     - Frontmatter with `work_package_id`, `subtasks` array, `dependencies`, `planning_base_branch`, `merge_target_branch`, `branch_strategy`, `owned_files`, `authoritative_surface`, `execution_mode`, `profile`, `role`, `tool`, and history entry
        - Objective, context, detailed guidance per subtask
        - A Branch Strategy section that repeats the planning branch, final merge target, and explains that execution worktrees are allocated per computed lane from `lanes.json`
        - Test strategy (only if requested)
@@ -508,6 +508,27 @@ Run the resolver-returned `finalize_tasks` command to:
 
 **DO NOT run git commit after this** - finalize-tasks commits automatically.
 Check JSON output for "commit_created": true and "commit_hash" to verify.
+
+### Step 8a: Assign Agent Profiles
+
+After `finalize-tasks` completes, review all available doctrine-provided and user-created agent profiles and assign the most relevant profile to each work package.
+
+List available profiles:
+```bash
+spec-kitty agent profile list --json
+```
+
+> If this command is unavailable, look for profiles under `src/doctrine/agent_profiles/shipped/` and any user-defined profiles in `.kittify/agent_profiles/` or equivalent.
+
+For each work package, select the best-matching profile based on:
+- `task_type` (implement / review / plan / specify / research)
+- `authoritative_surface` and `owned_files` (what domain the WP touches)
+- Subtask content (what skills are required)
+
+Update each WP prompt file's frontmatter **directly** (do NOT re-run `finalize-tasks`) with:
+- `profile`: the profile identifier (e.g., `"implementer"`, `"architect"`, `"curator"`)
+- `role`: the human-readable role described in the profile (e.g., `"Senior Python Developer"`)
+- `tool`: the primary tool or skill focus (e.g., `"pytest"`, `"git"`, `"ruff"`)
 
 ### Step 9: Report
 

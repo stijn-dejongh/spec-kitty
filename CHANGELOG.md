@@ -17,6 +17,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `_OPTIONAL_KEYS` / `_ALL_KNOWN_KEYS` constants in `specify_cli.compat.registry._validate_entry` — unknown YAML keys now raise `RegistrySchemaError` before `ShimEntry(**entry)` can raise `TypeError`.
 - `model_dump(mode="json")` on WP frontmatter serialization in `finalize_tasks` — prevents `Path` objects from reaching YAML serialization.
 
+### Added
+
+- **Agent profile fields in WP task prompt template** — `profile`, `role`, and `tool` frontmatter fields added to `task-prompt-template.md`. Every generated work package now carries its assigned agent profile identity directly in the prompt file, making it readable by agents before any CLI call is needed. Relates to #461 (Charter as Synthesis north star) and feeds #647 (WP card avatars).
+- **Profile-load preamble in WP prompt files** — new "Do This First: Load Agent Profile" section instructs agents to invoke `/ad-hoc-profile-load` before parsing the rest of the prompt. Falls back to `spec-kitty agent profile list` when the `profile` field is empty.
+- **Step 2a in `/spec-kitty.implement`** — implement template now explicitly loads the agent profile from WP frontmatter as the first action before verifying dependencies or starting code changes.
+- **Step 4a in `/spec-kitty.tasks-packages`** — after all WP prompt files are written, the sub-agent generating them now queries `spec-kitty agent profile list --json`, selects the best-matching profile per WP (by `task_type`, `authoritative_surface`, `owned_files`, and subtask content), and back-fills `profile`/`role`/`tool` into each WP frontmatter and the corresponding `wps.yaml` entry.
+- **Step 8a in `/spec-kitty.tasks`** — same profile-assignment logic added post-`finalize-tasks`, covering the single-agent tasks workflow that does not go through the parallel sub-agent path.
+
+### Changed
+
+- WP frontmatter field list in `/spec-kitty.tasks` updated to include `profile`, `role`, and `tool` alongside existing identity and dependency fields.
+- Self-check in `/spec-kitty.tasks-packages` now verifies that `profile`, `role`, and `tool` are set for every generated WP before reporting success.
+
+<!-- Rationale (doctrine/profile_reinforcement branch, 2026-04-21):
+  These are template-layer changes that reinforce agent profile identity at the point of WP authorship
+  and consumption. They are intentionally scoped to templates and doctrine to avoid touching the runtime
+  until the charter+doctrine+runtime consolidation (EPIC #461 + #612) lands. Once #612 establishes a
+  clear runtime boundary and #461 Phase 4 ships ProfileInvocationExecutor, the `profile` frontmatter
+  field becomes the handoff contract from planning artifacts into the executor. This branch pre-populates
+  that contract so that WPs authored today are already compatible with the forthcoming runtime surface,
+  and so that #647 (WP card avatars) has a reliable source field to read from immediately.
+-->
+
 ## [3.2.0a3] - 2026-04-21
 
 ### Fixed

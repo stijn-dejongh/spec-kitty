@@ -5,6 +5,9 @@ subtasks:
 title: "Replace with work package title"
 task_type: "implement"  # implement | review | plan | specify | research — drives agent_profile suggestion
 phase: "Phase N - Replace with phase name"
+profile: ""       # Agent profile identifier (e.g., implementer, architect, curator)
+role: ""          # Human-readable role described in the profile (e.g., "Senior Python Developer")
+tool: ""          # Primary tool or skill focus (e.g., pytest, git, ruff)
 assignee: ""      # Optional friendly name when claimed/in_progress
 agent: ""         # CLI agent identifier (claude, codex, etc.)
 shell_pid: ""     # PID captured when the task was claimed
@@ -15,6 +18,18 @@ history:
 ---
 
 # Work Package Prompt: {{work_package_id}} – {{title}}
+
+## ⚡ Do This First: Load Agent Profile
+
+Use the `/ad-hoc-profile-load` skill to load the agent profile specified in the frontmatter (or any user-defined profile), and behave according to its guidance before parsing the rest of this prompt.
+
+- **Profile**: `{{profile}}`
+- **Role**: `{{role}}`
+- **Tool focus**: `{{tool}}`
+
+If no profile is specified, run `spec-kitty agent profile list` and select the best match for this work package's `task_type` and `authoritative_surface`.
+
+---
 
 ## ⚠️ IMPORTANT: Review Feedback
 
