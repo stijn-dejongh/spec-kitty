@@ -37,8 +37,7 @@ def _filter_candidates_by_role(candidates: list[AgentProfile], required_role: st
     role_str = required_role.lower() if isinstance(required_role, str) else required_role
     return [
         p for p in candidates
-        if (isinstance(p.role, Role) and p.role.value == role_str)
-        or (isinstance(p.role, str) and p.role.lower() == role_str)
+        if str(p.role).lower() == role_str
         or p.profile_id == role_str
     ]
 
@@ -86,7 +85,7 @@ def _exact_id_signal(context: TaskContext, profile: AgentProfile) -> float:
     if not context.required_role:
         return 0.0
     req = context.required_role.lower() if isinstance(context.required_role, str) else context.required_role
-    role_val = profile.role.value if isinstance(profile.role, Role) else str(profile.role).lower()
+    role_val = str(profile.role).lower()
     return 1.0 if (req == profile.profile_id or req == role_val) else 0.0
 
 
@@ -330,11 +329,11 @@ class AgentProfileRepository:
             List of profiles with matching role
         """
         # Normalize role to string for comparison
-        role_str = role.value if isinstance(role, Role) else role.lower()
+        role_str = str(role).lower()
 
         matches = []
         for profile in self._profiles.values():
-            profile_role = profile.role.value if isinstance(profile.role, Role) else str(profile.role).lower()
+            profile_role = str(profile.role).lower()
             if profile_role == role_str:
                 matches.append(profile)
 
