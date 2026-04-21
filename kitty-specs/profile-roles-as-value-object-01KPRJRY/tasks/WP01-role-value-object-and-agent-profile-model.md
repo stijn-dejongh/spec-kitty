@@ -2,6 +2,10 @@
 work_package_id: WP01
 title: Role Value Object + AgentProfile Model
 dependencies: []
+agent_profile: "python-pedro"
+role: "implementer"
+agent: "claude"
+model: "claude-sonnet-4-6"
 requirement_refs:
 - C-002
 - C-003

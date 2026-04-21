@@ -3,6 +3,10 @@ work_package_id: WP02
 title: YAML Schema + Schema Models
 dependencies:
 - WP01
+agent_profile: "python-pedro"
+role: "implementer"
+agent: "claude"
+model: "claude-sonnet-4-6"
 requirement_refs:
 - C-004
 - FR-001

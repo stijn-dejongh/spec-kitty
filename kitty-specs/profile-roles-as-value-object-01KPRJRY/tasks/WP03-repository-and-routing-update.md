@@ -3,6 +3,10 @@ work_package_id: WP03
 title: Repository and Routing Update
 dependencies:
 - WP01
+agent_profile: "python-pedro"
+role: "implementer"
+agent: "claude"
+model: "claude-sonnet-4-6"
 requirement_refs:
 - FR-007
 - FR-008

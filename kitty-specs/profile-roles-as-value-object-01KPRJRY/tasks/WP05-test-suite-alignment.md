@@ -6,6 +6,10 @@ dependencies:
 - WP02
 - WP03
 - WP04
+agent_profile: "python-pedro"
+role: "implementer"
+agent: "claude"
+model: "claude-sonnet-4-6"
 requirement_refs:
 - NFR-003
 planning_base_branch: doctrine/profile_reinforcement

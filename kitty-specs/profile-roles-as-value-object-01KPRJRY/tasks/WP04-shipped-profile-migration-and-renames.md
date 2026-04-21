@@ -4,6 +4,10 @@ title: Shipped Profile Migration and Renames
 dependencies:
 - WP01
 - WP02
+agent_profile: "python-pedro"
+role: "implementer"
+agent: "claude"
+model: "claude-sonnet-4-6"
 requirement_refs:
 - C-005
 - FR-006
