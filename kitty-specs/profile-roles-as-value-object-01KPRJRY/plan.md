@@ -43,7 +43,7 @@ contracts established here:
 | Computed `role` property | `AgentProfile.role` returns `roles[0]`; no callers need to update | #466 WP4.1 — `ProfileInvocationExecutor` can read `.role` on any profile without awaiting a separate refactor |
 | `avatar_image` field | Optional path string on `AgentProfile` | #647 Phase 1 — dashboard renders the avatar; our field is the missing data-model link |
 
-**Atomic constraint on WP05 (specializes-from rename):** `implementer` → `implementer-ivan`
+**Atomic constraint on WP04 (specializes-from rename):** `implementer` → `implementer-ivan`
 must be committed atomically: the rename of `implementer.agent.yaml` and the update of
 `specializes-from: implementer-ivan` in `java-jenny.agent.yaml` and `python-pedro.agent.yaml`
 must land in the same commit. `validate_hierarchy()` rejects dangling `specializes-from`
@@ -86,48 +86,58 @@ kitty-specs/profile-roles-as-value-object-01KPRJRY/
 
 ### Source Code (relevant paths)
 
+> **Note**: WP numbering below reflects the final tasks.md decomposition, where plan WP01+WP02
+> were merged into a single tasks WP01, shifting subsequent numbers by one.
+
 ```
 src/doctrine/agent_profiles/
-├── profile.py                  WP01, WP02
+├── profile.py                  WP01 (Role value object + AgentProfile model)
 ├── capabilities.py             WP01
-├── repository.py               WP04
-├── schema_models.py            WP03
-├── validation.py               WP03 (minor — schema cache bust)
-├── __init__.py                 WP02 (export list if changed)
+├── repository.py               WP03
+├── schema_models.py            WP02
+├── validation.py               WP02 (minor — schema cache bust)
+├── __init__.py                 WP01 (export list if changed)
 └── shipped/
-    ├── *.agent.yaml            WP05 (all 11 files)
-    └── README.md               WP05
+    ├── *.agent.yaml            WP04 (all 11 files)
+    └── README.md               WP04
 
 src/doctrine/schemas/
-└── agent-profile.schema.yaml   WP03
+└── agent-profile.schema.yaml   WP02
 
 src/doctrine/
-└── graph.yaml                  WP05
+└── graph.yaml                  WP04
 
 tests/doctrine/
-├── test_shipped_profiles.py    WP05, WP06
-├── test_service.py             WP06
-└── test_profile_repository.py  WP04, WP06
+├── test_shipped_profiles.py    WP04, WP05
+├── test_service.py             WP05
+└── test_profile_repository.py  WP03 (new + existing pattern cleanup), WP05
 
 tests/charter/
-└── test_catalog.py             WP06
+└── test_catalog.py             WP05
 
 tests/specify_cli/status/
-└── test_wp_metadata.py         WP06
+└── test_wp_metadata.py         WP05
+
+src/specify_cli/missions/software-dev/command-templates/
+├── implement.md                WP06
+└── review.md                   WP06
 ```
 
 ---
 
 ## Work Package Overview
 
+> WP01 merges the original plan's WP01 (Role VO) and WP02 (AgentProfile model) for cohesion.
+> WP06 was added post-planning to fix implement/review template field names and handoff guidance.
+
 | WP | Title | Key files | Depends on | Parallel with |
 |----|-------|-----------|------------|---------------|
-| WP01 | `Role` value object | `profile.py`, `capabilities.py` | — | — |
-| WP02 | `AgentProfile` model update | `profile.py` | WP01 | WP03 |
-| WP03 | YAML schema + `schema_models.py` | `agent-profile.schema.yaml`, `schema_models.py` | WP01 | WP02 |
-| WP04 | Repository + routing update | `repository.py` | WP02 | WP05 |
-| WP05 | Shipped profile migration + renames | `shipped/*.yaml`, `graph.yaml`, `README.md` | WP02, WP03 | WP04 |
-| WP06 | Test suite alignment | `tests/doctrine/`, `tests/charter/`, `tests/specify_cli/` | WP01–WP05 | — |
+| WP01 | Role value object + AgentProfile model | `profile.py`, `capabilities.py` | — | WP02 |
+| WP02 | YAML schema + `schema_models.py` | `agent-profile.schema.yaml`, `schema_models.py` | WP01 | WP03 |
+| WP03 | Repository + routing update | `repository.py`, `test_profile_repository.py` | WP01 | WP02, WP04 |
+| WP04 | Shipped profile migration + renames | `shipped/*.yaml`, `graph.yaml`, `README.md` | WP01, WP02 | WP03 |
+| WP05 | Test suite alignment | `tests/doctrine/`, `tests/charter/`, `tests/specify_cli/` | WP01–WP04 | — |
+| WP06 | Review workflow agent profile handoff | `implement.md`, `review.md` (templates) | — | WP01–WP05 |
 
 ---
 
