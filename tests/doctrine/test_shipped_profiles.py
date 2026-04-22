@@ -315,3 +315,23 @@ class TestShippedProfilesContextSources:
         profile = repo.get(profile_id)
         assert profile is not None
         assert len(profile.directive_references) > 0, f"Profile '{profile_id}' has no directive references"
+
+
+class TestShippedProfilesPerformance:
+    """Performance gate: loading all shipped profiles must complete quickly."""
+
+    def test_shipped_profile_load_time(self) -> None:
+        """Loading all 11 shipped profiles must complete in under 2 seconds."""
+        import time
+
+        start = time.perf_counter()
+        repo = AgentProfileRepository(shipped_dir=SHIPPED_DIR, project_dir=None)
+        profiles = repo.list_all()
+        elapsed = time.perf_counter() - start
+
+        assert len(profiles) == len(EXPECTED_PROFILE_IDS), (
+            f"Expected {len(EXPECTED_PROFILE_IDS)} profiles, got {len(profiles)}"
+        )
+        assert elapsed < 2.0, (
+            f"Loading all shipped profiles took {elapsed:.3f}s, expected < 2.0s"
+        )

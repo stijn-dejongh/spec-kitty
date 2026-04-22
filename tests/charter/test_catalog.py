@@ -81,7 +81,7 @@ def test_catalog_filters_language_scoped_artifacts(monkeypatch: pytest.MonkeyPat
         Path("agent_profiles/shipped/python.agent.yaml"): {
             "profile-id": "python-pedro",
             "name": "Python Pedro",
-            "role": "implementer",
+            "roles": ["implementer"],
             "purpose": "Python specialist",
             "applies_to_languages": ["python"],
             "specialization": {"primary-focus": "python"},
@@ -89,7 +89,7 @@ def test_catalog_filters_language_scoped_artifacts(monkeypatch: pytest.MonkeyPat
         Path("agent_profiles/shipped/generic.agent.yaml"): {
             "profile-id": "generic-implementer",
             "name": "Generic Implementer",
-            "role": "implementer",
+            "roles": ["implementer"],
             "purpose": "General specialist",
             "specialization": {"primary-focus": "general"},
         },
@@ -145,7 +145,7 @@ def test_catalog_keeps_language_scoped_artifacts_when_active_languages_are_unset
         Path("agent_profiles/shipped/python.agent.yaml"): {
             "profile-id": "python-pedro",
             "name": "Python Pedro",
-            "role": "implementer",
+            "roles": ["implementer"],
             "purpose": "Python specialist",
             "applies_to_languages": ["python"],
             "specialization": {"primary-focus": "python"},
