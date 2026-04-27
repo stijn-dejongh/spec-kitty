@@ -14,9 +14,14 @@ in via ``intake.allow_cross_fs=True`` in ``.kittify/config.yaml``
 from __future__ import annotations
 
 import os
+from contextlib import suppress
 from pathlib import Path
 
-from .errors import IntakeError, IntakeRootInconsistentError
+from .errors import (
+    IntakeError,
+    IntakePathEscapeError,
+    IntakeRootInconsistentError,
+)
 
 
 def _validate_root_consistency(scanner_root: Path, writer_root: Path) -> None:
@@ -41,6 +46,20 @@ def _validate_root_consistency(scanner_root: Path, writer_root: Path) -> None:
         )
 
 
+def _validate_target_within_root(root: Path, candidate: Path) -> Path:
+    """Return the resolved candidate when it stays inside ``root``."""
+    resolved_root = Path(root).resolve(strict=False)
+    resolved_candidate = Path(candidate).resolve(strict=False)
+    try:
+        resolved_candidate.relative_to(resolved_root)
+    except ValueError as exc:
+        raise IntakePathEscapeError(
+            candidate=resolved_candidate,
+            intake_root=resolved_root,
+        ) from exc
+    return resolved_candidate
+
+
 class CrossFilesystemWriteError(IntakeError):
     """Raised when ``target_tmp`` and ``target`` would cross filesystems."""
 
@@ -52,6 +71,32 @@ class CrossFilesystemWriteError(IntakeError):
             "set intake.allow_cross_fs=True in .kittify/config.yaml to override.",
             target=str(target),
         )
+
+
+def _write_payload_via_parent_dirfd(target: Path, payload: bytes) -> None:
+    """Write via the already-resolved parent directory descriptor.
+
+    This keeps the writable directory fixed while addressing only the
+    basename relative to that directory, which avoids constructing a
+    fresh absolute path at the fallback sink.
+    """
+    parent_fd = os.open(target.parent, os.O_RDONLY)
+    target_fd: int | None = None
+    try:
+        target_fd = os.open(
+            target.name,
+            os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
+            0o666,
+            dir_fd=parent_fd,
+        )
+        with os.fdopen(target_fd, "wb", closefd=False) as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+    finally:
+        if target_fd is not None:
+            os.close(target_fd)
+        os.close(parent_fd)
 
 
 def atomic_write_bytes(
@@ -101,8 +146,9 @@ def atomic_write_bytes(
                 if target_dev != tmp_dev:
                     if not allow_cross_fs:
                         raise CrossFilesystemWriteError(target=target)
-                    # Cross-fs fallback: best-effort copy then unlink.
-                    target.write_bytes(payload)
+                    # Cross-fs fallback: best-effort direct write through the
+                    # already-resolved parent directory descriptor.
+                    _write_payload_via_parent_dirfd(target, payload)
                     tmp.unlink(missing_ok=True)
                     return
             except OSError:
@@ -114,10 +160,8 @@ def atomic_write_bytes(
     except BaseException:
         # On *any* failure (incl. KeyboardInterrupt, SystemExit) clean
         # up the tmp file so we never leave partial state behind.
-        try:
+        with suppress(OSError):
             tmp.unlink(missing_ok=True)
-        except OSError:
-            pass
         raise
 
 
@@ -172,6 +216,8 @@ def write_brief_atomic(
     crashed predecessors never collide on the same temp filename.
     """
     _validate_root_consistency(scanner_root, writer_root)
+    _validate_target_within_root(writer_root, brief_path)
+    _validate_target_within_root(writer_root, source_path)
     # Source first so brief.md remains the canonical "commit marker"
     # for the pair. The reader treats source-without-brief as no brief.
     atomic_write_text(source_path, source_yaml, allow_cross_fs=allow_cross_fs)
