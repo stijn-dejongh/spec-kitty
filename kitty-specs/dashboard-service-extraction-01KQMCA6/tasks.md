@@ -12,10 +12,10 @@
 
 | ID | Description | WP | Parallel? |
 |---|---|---|---|
-| T001 | Add `dashboard` slice entry to `05_ownership_map.md` (Audience A procedure) | WP01 | — |
-| T002 | Add `dashboard` key to `05_ownership_manifest.yaml` | WP01 | [P] |
-| T003 | Draft ADR `architecture/2.x/adr/2026-05-02-1-dashboard-service-extraction.md` | WP01 | — |
-| T004 | Cross-link ADR from ownership map entry and from `architecture/2.x/adr/README.md` | WP01 | [P] |
+| T001 | Add `dashboard` slice entry to `05_ownership_map.md` (Audience A procedure) | WP01 | — | [D] |
+| T002 | Add `dashboard` key to `05_ownership_manifest.yaml` | WP01 | [D] |
+| T003 | Draft ADR `architecture/2.x/adr/2026-05-02-1-dashboard-service-extraction.md` | WP01 | — | [D] |
+| T004 | Cross-link ADR from ownership map entry and from `architecture/2.x/adr/README.md` | WP01 | [D] |
 | T005 | Create `src/dashboard/__init__.py` and `src/dashboard/services/__init__.py` | WP02 | — |
 | T006 | Move `api_types.py` to `src/dashboard/api_types.py` | WP02 | — |
 | T007 | Create backward-compat shim at `src/specify_cli/dashboard/api_types.py` | WP02 | — |
@@ -62,10 +62,10 @@ add the machine-readable manifest key, and draft the ADR documenting the extract
 This satisfies FR-001, FR-002, FR-003, and the Audience A governance gate.
 
 **Included subtasks**:
-- [ ] T001 Add `dashboard` slice entry to `05_ownership_map.md` (Audience A procedure) (WP01)
-- [ ] T002 Add `dashboard` key to `05_ownership_manifest.yaml` (WP01)
-- [ ] T003 Draft ADR `architecture/2.x/adr/2026-05-02-1-dashboard-service-extraction.md` (WP01)
-- [ ] T004 Cross-link ADR from ownership map entry and `architecture/2.x/adr/README.md` (WP01)
+- [x] T001 Add `dashboard` slice entry to `05_ownership_map.md` (Audience A procedure) (WP01)
+- [x] T002 Add `dashboard` key to `05_ownership_manifest.yaml` (WP01)
+- [x] T003 Draft ADR `architecture/2.x/adr/2026-05-02-1-dashboard-service-extraction.md` (WP01)
+- [x] T004 Cross-link ADR from ownership map entry and `architecture/2.x/adr/README.md` (WP01)
 
 **Success criterion**: `05_ownership_manifest.yaml` parses without error; ADR is present at
 canonical path and cross-linked; ownership map entry passes Audience A field checklist.
