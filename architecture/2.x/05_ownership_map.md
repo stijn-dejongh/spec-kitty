@@ -208,6 +208,41 @@ may_call = runtime["dependency_rules"]["may_call"]
 
 ---
 
+## Dashboard
+
+| Field                        | Value                                                                                                                        |
+|------------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| `canonical_package`          | `dashboard` (= `src/dashboard/`)                                                                                             |
+| `extraction_sequencing_notes`| Target for mission `dashboard-service-extraction-01KQMCA6`. Depends on this governance WP (WP01) landing before any code change. Scanner, status, and sync subsystems remain in `src/specify_cli/` until their own extraction missions; `src/dashboard/` will have intentional cross-layer imports from those subsystems until they are extracted (staged approach). Full boundary isolation — "no imports from `src/specify_cli/`" — requires scanner (#613) and status (#614) extraction missions as prerequisites. |
+
+**`current_state`** (pre-extraction):
+- `src/specify_cli/dashboard/handlers/features.py` — mission scan, kanban, file-serving routes
+- `src/specify_cli/dashboard/handlers/api.py` — health, sync trigger, diagnostics routing
+- `src/specify_cli/dashboard/api_types.py` — TypedDict response shapes (moves to `src/dashboard/api_types.py` in WP02)
+
+**`adapter_responsibilities`** (remain in `src/specify_cli/dashboard/handlers/` after extraction):
+- HTTP dispatch and request routing (`router.py`)
+- `BaseHTTPRequestHandler` I/O (`send_response`, `wfile.write`, status codes, headers)
+- Token validation for `POST /api/sync/trigger` and `POST /api/shutdown`
+- Static asset serving (`handlers/static.py`)
+- HTTP server bootstrap (`server.py`, `lifecycle.py`)
+
+**`shims`**:
+- path: `src/specify_cli/dashboard/api_types.py`
+  canonical_import: `dashboard.api_types`
+  removal_release: FastAPI transport migration milestone
+
+**`seams`**:
+- `FeatureHandler.handle_features_list` delegates to `MissionScanService.get_features_list`
+- `FeatureHandler.handle_kanban` delegates to `MissionScanService.get_kanban`
+- `APIHandler.handle_health` delegates to `ProjectStateService.get_health`
+- `APIHandler.handle_sync_trigger` delegates to `SyncService.trigger_sync`
+- File-serving handlers (`handle_research`, `handle_contracts`, `handle_checklists`, `handle_artifact`) delegate to `DashboardFileReader`
+
+> **ADR reference**: [2026-05-02-1-dashboard-service-extraction](./adr/2026-05-02-1-dashboard-service-extraction.md)
+
+---
+
 ## Lifecycle Status
 
 | Field                        | Value                                                                                                                               |
