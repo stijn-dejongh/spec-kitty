@@ -10,7 +10,7 @@ requirement_refs:
 - FR-011
 planning_base_branch: feature/650-dashboard-ui-ux-overhaul
 merge_target_branch: feature/650-dashboard-ui-ux-overhaul
-branch_strategy: Implement in the lane worktree allocated by finalize-tasks. Run spec-kitty agent action implement WP05 --agent claude to enter the correct worktree.
+branch_strategy: Planning artifacts for this feature were generated on feature/650-dashboard-ui-ux-overhaul. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feature/650-dashboard-ui-ux-overhaul unless the human explicitly redirects the landing branch.
 subtasks:
 - T023
 - T024
