@@ -15,7 +15,8 @@ subtasks:
 - T002
 - T003
 - T004
-agent: claude
+agent: "claude"
+shell_pid: "930638"
 history:
 - date: '2026-05-02'
   event: created
@@ -341,3 +342,7 @@ Apply the Audience B procedure from `architecture/2.x/05_ownership_map.md`:
 3. Confirm the ADR link resolves to a real file
 4. Confirm the manifest key passes the schema test
 5. Confirm no source code was modified in this WP
+
+## Activity Log
+
+- 2026-05-02T13:48:11Z – claude – shell_pid=930638 – Started implementation via action command

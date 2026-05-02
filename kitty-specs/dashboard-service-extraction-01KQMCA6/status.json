@@ -1,7 +1,7 @@
 {
-  "event_count": 6,
-  "last_event_id": "01KQMECMGFH7FCAAQYFN1VB7A9",
-  "materialized_at": "2026-05-02T13:35:01.647149+00:00",
+  "event_count": 8,
+  "last_event_id": "01KQMF4QYXT8HDFCBQ36QC5NHJ",
+  "materialized_at": "2026-05-02T13:48:11.613297+00:00",
   "mission_number": "",
   "mission_slug": "dashboard-service-extraction-01KQMCA6",
   "mission_type": "software-dev",
@@ -12,17 +12,17 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 6
+    "planned": 5
   },
   "work_packages": {
     "WP01": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
       "force_count": 1,
-      "lane": "planned",
-      "last_event_id": "01KQMECMEZGVTD14SH4A206V2R",
-      "last_transition_at": "2026-05-02T13:35:01.599114+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01KQMF4QYXT8HDFCBQ36QC5NHJ",
+      "last_transition_at": "2026-05-02T13:48:11.613297+00:00"
     },
     "WP02": {
       "actor": "finalize-tasks",
