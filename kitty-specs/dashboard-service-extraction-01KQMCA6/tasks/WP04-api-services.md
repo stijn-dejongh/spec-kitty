@@ -430,6 +430,7 @@ call. Token validation is an HTTP concern and stays in the adapter.
 - [ ] No HTTP symbols (`send_response`, `wfile`, status codes) in service modules
 - [ ] All pre-existing `tests/test_dashboard/` tests pass
 - [ ] `cd src && python -m pytest ../tests/test_dashboard/ -v` → green
+- [ ] `cd src && python -m mypy dashboard/services/project_state.py dashboard/services/sync.py --strict --ignore-missing-imports` → zero errors
 
 ## Reviewer Guidance
 

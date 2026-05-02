@@ -69,8 +69,9 @@ along.
    include the HTTP server bootstrap code, **when** I import the dashboard service objects,
    **then** the import succeeds and the service layer is callable.
 2. **Given** an architectural test that asserts `src/dashboard/` contains no imports from
-   `src/specify_cli/`, **when** the test suite runs, **then** the assertion passes with
-   zero violations.
+   `src/specify_cli/dashboard/`, **when** the test suite runs, **then** the assertion passes
+   with zero violations. (The broader `src/specify_cli/` exclusion requires scanner, status,
+   and sync subsystems to be extracted first — a sequenced follow-up, not in scope here.)
 
 ### User Story 3 — Reviewer validating the ownership map entry (Priority: P1)
 
@@ -102,14 +103,14 @@ reviewed against a consistent, machine-readable standard.
 |---|---|---|
 | FR-001 | A `dashboard` slice entry is added to `architecture/2.x/05_ownership_map.md` following the Audience A procedure: specifying `canonical_package`, `adapter_responsibilities`, `shims`, `seams`, and `extraction_sequencing_notes` | Proposed |
 | FR-002 | A corresponding `dashboard` key is added to `architecture/2.x/05_ownership_manifest.yaml` with machine-readable equivalents of all ownership map fields | Proposed |
-| FR-003 | An Architectural Decision Record is drafted in `architecture/adrs/` documenting the context, decision to extract `src/dashboard/`, rationale, consequences, and rejected alternatives; cross-linked from the ownership map entry | Proposed |
+| FR-003 | An Architectural Decision Record is drafted in `architecture/2.x/adr/` documenting the context, decision to extract `src/dashboard/`, rationale, consequences, and rejected alternatives; cross-linked from the ownership map entry | Proposed |
 | FR-004 | A new top-level `src/dashboard/` package is created as the canonical home for all dashboard business logic | Proposed |
 | FR-005 | All inline query, scan, and read logic currently embedded in `src/specify_cli/dashboard/handlers/features.py` and `src/specify_cli/dashboard/handlers/api.py` is moved to service objects inside `src/dashboard/` | Proposed |
 | FR-006 | `src/dashboard/` exposes typed response objects that are compatible with the existing `api_types.py` TypedDict shapes — no shape or field name changes | Proposed |
 | FR-007 | `src/specify_cli/dashboard/handlers/features.py` and `src/specify_cli/dashboard/handlers/api.py` are reduced to thin delegation adapters; each handler method contains only dispatch and a single call to a `src/dashboard/` service object | Proposed |
 | FR-008 | Shim re-export files are added to `src/specify_cli/dashboard/` for any symbols that callers outside the handler layer import directly; each shim carries a `removal_release` annotation targeting the FastAPI migration milestone | Proposed |
 | FR-009 | A seam test exists for each extracted route, verifying that the CLI adapter delegates correctly to the service layer and that the service layer returns the expected typed response | Proposed |
-| FR-010 | An architectural boundary test in `tests/architectural/` asserts that no module inside `src/dashboard/` imports from `src/specify_cli/` | Proposed |
+| FR-010 | An architectural boundary test in `tests/architectural/` asserts that no module inside `src/dashboard/` imports from `src/specify_cli/dashboard/` (the circular-import boundary for this mission; the broader `src/specify_cli/` exclusion is a sequenced follow-up requiring scanner/status/sync extraction) | Proposed |
 | FR-011 | All existing dashboard tests continue to pass without modification after the extraction — zero behavioral regressions | Proposed |
 | FR-012 | `dashboard.js` is updated so that all fetch calls and response-field references remain aligned with the stabilised endpoint contracts; no new fields are introduced or removed from the frontend perspective | Proposed |
 | FR-013 | The `architecture/2.x/05_ownership_map.md` Audience B review checklist is applied to the extraction PR and every mandatory field is ticked off in the PR description | Proposed |
@@ -139,20 +140,23 @@ reviewed against a consistent, machine-readable standard.
 | Entity | Description |
 |---|---|
 | `src/dashboard/` | New canonical top-level package; owns all dashboard business logic and typed response assembly |
-| `DashboardService` (or equivalent) | Primary service object in `src/dashboard/`; exposes typed query methods consumed by the CLI adapter |
+| `MissionScanService` | Service object in `src/dashboard/services/mission_scan.py`; exposes `get_features_list()` and `get_kanban(feature_id)` |
+| `ProjectStateService` | Service object in `src/dashboard/services/project_state.py`; exposes `get_health()` |
+| `SyncService` | Service object in `src/dashboard/services/sync.py`; exposes `trigger_sync()` |
+| `DashboardFileReader` | File I/O utility in `src/dashboard/file_reader.py`; consolidates path-traversal-safe reads for research/artifact/contracts routes |
 | `src/specify_cli/dashboard/handlers/` | Thin CLI adapter after extraction; each method contains only one delegation call to `src/dashboard/` |
 | `api_types.py` | Existing TypedDict contract file; unchanged by this mission; consumed by `src/dashboard/` response assembly |
 | `05_ownership_map.md` | Updated with `dashboard` slice entry following the Audience A procedure |
 | `05_ownership_manifest.yaml` | Machine-readable companion; updated with `dashboard` key |
-| ADR (new) | Architecture Decision Record documenting the extraction decision; stored in `architecture/adrs/` |
+| ADR (new) | Architecture Decision Record documenting the extraction decision; stored in `architecture/2.x/adr/` |
 | Seam tests | New tests verifying the CLI adapter → service layer delegation boundary for each route |
-| Architectural boundary test | Asserts `src/dashboard/` has zero imports from `src/specify_cli/` |
+| Architectural boundary test | Asserts `src/dashboard/` has zero imports from `src/specify_cli/dashboard/` |
 
 ## Success Criteria
 
 | # | Criterion | How verified |
 |---|---|---|
-| SC-001 | `src/dashboard/` is importable with no `specify_cli` dependency | Architectural boundary test passes in CI |
+| SC-001 | `src/dashboard/` contains no imports from `src/specify_cli/dashboard/` (circular-import boundary) | Architectural boundary test `test_dashboard_boundary.py` passes in CI |
 | SC-002 | All dashboard routes return identical responses before and after extraction | Existing dashboard integration test suite passes with zero regressions |
 | SC-003 | Every handler method in the CLI adapter delegates to a single service call with no inline business logic | Code review against FR-007; seam tests pass |
 | SC-004 | The ownership manifest `dashboard` key is present and valid | Manifest-driven CI tooling parses without error |

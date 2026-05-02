@@ -450,6 +450,7 @@ helper can be removed.
 - [ ] No HTTP symbols (`send_response`, `wfile`, status codes) in service or file_reader modules
 - [ ] All pre-existing `tests/test_dashboard/` tests pass without modification
 - [ ] `cd src && python -m pytest ../tests/test_dashboard/ -v` → green
+- [ ] `cd src && python -m mypy dashboard/services/mission_scan.py dashboard/file_reader.py --strict --ignore-missing-imports` → zero errors
 
 ## Reviewer Guidance
 

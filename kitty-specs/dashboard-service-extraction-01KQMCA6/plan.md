@@ -151,13 +151,12 @@ documents this staged approach. `test_dashboard_boundary.py` asserts the narrowe
 |---|---|---|
 | WP01 | Ownership map entry + ADR | None |
 | WP02 | Scaffold `src/dashboard/`; relocate `api_types.py`; register layer in architectural test | WP01 |
-| WP03 | Extract `MissionScanService`; thin `features.py` handlers | WP02 |
-| WP04 | Extract `ProjectStateService`; thin `handle_health` in `api.py` | WP02 |
-| WP05 | Extract `SyncService`; thin `handle_sync_trigger` in `api.py` | WP02 |
-| WP06 | Add `test_dashboard_boundary.py` + `test_seams.py`; verify all existing tests pass | WP03, WP04, WP05 |
-| WP07 | Adapt `dashboard.js` to stabilised endpoint contracts; smoke-test running dashboard | WP06 |
+| WP03 | Extract `MissionScanService` + `DashboardFileReader`; thin `features.py` handlers | WP02 |
+| WP04 | Extract `ProjectStateService` + `SyncService`; thin `handle_health` + `handle_sync_trigger` in `api.py` (merged: both touch `api.py`, parallel would conflict) | WP02 |
+| WP05 | Add `test_dashboard_boundary.py` + `test_seams.py`; verify all existing tests pass | WP03, WP04 |
+| WP06 | `dashboard.js` field audit + smoke-test running dashboard | WP05 |
 
-WP03, WP04, WP05 are parallel-eligible (different handler files, different service objects).
+WP03 and WP04 are parallel-eligible (WP03 owns `features.py`; WP04 owns `api.py`).
 
 ### Router Structure (preserved)
 

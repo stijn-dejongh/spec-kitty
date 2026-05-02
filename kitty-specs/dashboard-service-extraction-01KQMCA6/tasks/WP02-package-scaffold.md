@@ -292,6 +292,7 @@ packages root) so no `pyproject.toml` changes are needed.
 - [ ] `dashboard` in `_DEFINED_LAYERS` in `test_layer_rules.py`
 - [ ] All pre-existing `tests/test_dashboard/` tests pass
 - [ ] `python -c "import dashboard.api_types"` succeeds from `.venv`
+- [ ] `cd src && python -m mypy dashboard/ --strict --ignore-missing-imports` → zero errors on new modules
 
 ## Reviewer Guidance
 

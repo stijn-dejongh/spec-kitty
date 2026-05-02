@@ -319,10 +319,10 @@ and maps `SyncTriggerResult` fields to the correct HTTP status codes.
 
 ---
 
-## Subtask T027 — Full test suite greenness verification
+## Subtask T027 — Full test suite greenness + NFR verification
 
-**Purpose**: Confirm FR-011 — zero behavioral regressions across all
-`tests/test_dashboard/` tests after the three extraction WPs land.
+**Purpose**: Confirm FR-011 (zero regressions) and spot-check NFR-001/NFR-004
+(startup time and test suite time do not regress beyond thresholds).
 
 **Steps**:
 
@@ -339,16 +339,46 @@ and maps `SyncTriggerResult` fields to the correct HTTP status codes.
    - Tests behavior that was genuinely broken by the extraction (must fix
      the extraction, not the test)
 
-4. Record results in a brief comment in `test_seams.py` docstring:
+4. **NFR-004 spot-check** (test suite time ≤10% increase): time the dashboard
+   test run before and after adding seam tests:
+   ```bash
+   time python -m pytest ../tests/test_dashboard/ --tb=short -q
+   ```
+   If wall-clock time increases >10% vs. the pre-seam-test baseline, investigate
+   slow fixture setup or I/O in the new seam tests.
+
+5. **NFR-001 spot-check** (startup ≤5% regression): verify dashboard still
+   starts in reasonable time:
+   ```bash
+   time python -c "from specify_cli.dashboard import api_types; import dashboard.services.mission_scan"
+   ```
+   Note: a precise baseline is not mandated here (no automated measurement
+   infrastructure exists). The implementer should note in the commit message
+   if any startup behavior changed noticeably.
+
+6. **Charter coverage gate** (90%+ for new code): the seam tests mock the
+   service layer, so `src/dashboard/` service modules may have low direct
+   coverage. Run:
+   ```bash
+   cd src && python -m pytest ../tests/ --cov=dashboard --cov-report=term-missing -q
+   ```
+   If any service module is below 70% coverage, add targeted unit tests directly
+   against the service object (not through the HTTP adapter). Aim for ≥90% on
+   `mission_scan.py`, `project_state.py`, `sync.py` per charter MUST constraint.
+
+7. Record results in a brief comment in `test_seams.py` docstring:
    ```
    # Pre-existing test count: 16; new seam tests: 5; boundary test: 1
-   # Full suite result: all pass (verified 2026-05-02)
+   # Full suite result: all pass (verified <date>)
+   # Coverage: dashboard/ <X>%
    ```
 
 **Validation**:
 - [ ] Zero pre-existing test failures
 - [ ] `test_dashboard_boundary.py` passes
 - [ ] `test_seams.py` all pass
+- [ ] `dashboard/` coverage ≥ 70% (target ≥ 90% per charter)
+- [ ] No obvious startup-time regression noted
 
 ---
 
@@ -358,6 +388,8 @@ and maps `SyncTriggerResult` fields to the correct HTTP status codes.
 - [ ] `tests/test_dashboard/test_seams.py` has at least one test per extracted route (5 tests minimum)
 - [ ] All 16 pre-existing `tests/test_dashboard/` tests pass unchanged
 - [ ] Combined test run: `pytest tests/test_dashboard/ tests/architectural/` → green
+- [ ] `dashboard/` coverage ≥ 70% (target ≥ 90% per charter; add unit tests if seam coverage is insufficient)
+- [ ] NFR-004 test suite time increase ≤ 10% noted / acceptable
 
 ## Reviewer Guidance
 
