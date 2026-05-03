@@ -13,9 +13,9 @@
 | T001 | Audit scanner entry points; document each I/O shape in `src/specify_cli/dashboard/scanner.py` module docstring; add `# TODO(remove with mission-registry-and-api-boundary-doctrine-01KQPDBB)` markers on functions the registry will subsume | WP01 | — | [D] |
 | T002 | Replace the `git update-index --assume-unchanged` workaround for daemon-driven `kitty-specs/*/status.json` drift; chosen direction (stop daemon vs gitignore snapshot) recorded in WP01 review record | WP01 | [D] |
 | T003 | Author `tests/test_dashboard/test_scanner_entrypoint_parity.py` baseline test asserting `scan_all_features` and `build_mission_registry` produce structurally compatible mission identity for the same fixture | WP01 | [D] |
-| T004 | Author `src/doctrine/directives/shipped/api-dependency-direction.directive.yaml` per `contracts/doctrine-artefact-shapes.md` § 1; cross-link to `tests/architectural/test_transport_does_not_import_scanner.py` | WP02 | — |
-| T005 | Author `src/doctrine/directives/shipped/rest-resource-orientation.directive.yaml` per `contracts/doctrine-artefact-shapes.md` § 2; cross-link to `tests/architectural/test_url_naming_convention.py` | WP02 | [P] |
-| T006 | Author `src/doctrine/paradigms/shipped/hateoas-lite.paradigm.yaml` per `contracts/doctrine-artefact-shapes.md` § 3; verify all three artefacts pass `tests/doctrine/` schema validation; if any field is rejected, land an additive schema extension in the same WP | WP02 | — |
+| T004 | Author `src/doctrine/directives/shipped/api-dependency-direction.directive.yaml` per `contracts/doctrine-artefact-shapes.md` § 1; cross-link to `tests/architectural/test_transport_does_not_import_scanner.py` | WP02 | — | [D] |
+| T005 | Author `src/doctrine/directives/shipped/rest-resource-orientation.directive.yaml` per `contracts/doctrine-artefact-shapes.md` § 2; cross-link to `tests/architectural/test_url_naming_convention.py` | WP02 | [D] |
+| T006 | Author `src/doctrine/paradigms/shipped/hateoas-lite.paradigm.yaml` per `contracts/doctrine-artefact-shapes.md` § 3; verify all three artefacts pass `tests/doctrine/` schema validation; if any field is rejected, land an additive schema extension in the same WP | WP02 | — | [D] |
 | T007 | Define `MissionRecord`, `WorkPackageRecord`, `LaneCounts`, `CacheEntry` Python dataclasses in `src/dashboard/services/registry.py` per `data-model.md` (frozen=True; no Pydantic; full type annotations) | WP03 | — |
 | T008 | Implement `MissionRegistry` class in `src/dashboard/services/registry.py` with `list_missions()`, `get_mission()`, `workpackages_for()`, `invalidate_all()` per `contracts/registry-interface.md`; mtime-cache with `(mtime_ns, file_size, sorted_dirent_names_hash)` triple key | WP03 | — |
 | T009 | Implement `WorkPackageRegistry` class in `src/dashboard/services/registry.py` with `list_work_packages()`, `get_work_package()`, `lane_counts()`; per-mission cache scope; shared cache instances via `WeakValueDictionary` | WP03 | — |
@@ -88,9 +88,9 @@ Lane parallelization opportunities (per planner's lane assignment, materialised 
 **Independent test**: three new YAML files exist; `pytest tests/doctrine/` passes; each artefact references its enforcement test.
 
 **Subtasks**:
-- [ ] T004 `DIRECTIVE_API_DEPENDENCY_DIRECTION` YAML
-- [ ] T005 `DIRECTIVE_REST_RESOURCE_ORIENTATION` YAML
-- [ ] T006 `HATEOAS-LITE` paradigm YAML + schema-extension if needed
+- [x] T004 `DIRECTIVE_API_DEPENDENCY_DIRECTION` YAML
+- [x] T005 `DIRECTIVE_REST_RESOURCE_ORIENTATION` YAML
+- [x] T006 `HATEOAS-LITE` paradigm YAML + schema-extension if needed
 
 **Dependencies**: WP01.
 **Estimated prompt size**: ~260 lines.
