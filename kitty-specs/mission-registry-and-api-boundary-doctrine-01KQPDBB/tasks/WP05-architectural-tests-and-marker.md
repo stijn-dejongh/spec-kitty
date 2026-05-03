@@ -456,3 +456,4 @@ Lane-less on `feature/650-dashboard-ui-ux-overhaul`. Four files; commit as a sin
 ## Activity Log
 
 - 2026-05-03T17:06:22Z – opencode:claude-sonnet-4.6:python-pedro:implementer – shell_pid=1508347 – Started implementation via action command
+- 2026-05-03T17:09:37Z – opencode:claude-sonnet-4.6:python-pedro:implementer – shell_pid=1508347 – T014-T017 complete: Link+ResourceModel markers in models.py; 3 architectural tests (scanner boundary, URL naming, HATEOAS-LITE); all 10 new tests pass; 383 total pass.
