@@ -16,7 +16,8 @@ subtasks:
 - T011
 - T012
 - T013
-agent: claude
+agent: "claude:opus-4-7:python-pedro:implementer"
+shell_pid: "1427345"
 history:
 - date: '2026-05-03'
   event: created
@@ -201,3 +202,7 @@ Lane-less on `feature/650-dashboard-ui-ux-overhaul`. Three coordinated changes; 
 - **`features` shape divergence**: the `kanban_stats.weighted_percentage` field was added by mission #01KQN2JA's post-merge fix. Confirm the registry's `MissionRecord.lane_counts` + `weighted_percentage` fields are mapped into the wire `kanban_stats` dict identically.
 - **CLI `display_order` ordering**: the existing `sort_missions_for_display` may sort by display_number THEN by mission_slug; confirm the registry's `list_missions()` returns the same order (it does per the `data-model.md` ordering contract, but verify against the CLI smoke test).
 - **`MissionScanService` constructor backward compat**: external callers (if any) construct `MissionScanService(project_dir=..., _scan_all=...)` with explicit injectables. The registry parameter is additive (default constructs its own); no breakage.
+
+## Activity Log
+
+- 2026-05-03T14:34:22Z – claude:opus-4-7:python-pedro:implementer – shell_pid=1427345 – Started implementation via action command
