@@ -1,7 +1,7 @@
 {
-  "event_count": 24,
-  "last_event_id": "01KQQ4619MB574Y8SMCGNDVJT9",
-  "materialized_at": "2026-05-03T14:34:22.900556+00:00",
+  "event_count": 25,
+  "last_event_id": "01KQQCMDYKCK90QF6ZB505D39Y",
+  "materialized_at": "2026-05-03T17:02:03.219229+00:00",
   "mission_number": "",
   "mission_slug": "mission-registry-and-api-boundary-doctrine-01KQPDBB",
   "mission_type": "software-dev",
@@ -39,11 +39,11 @@
       "last_transition_at": "2026-05-03T14:33:45.442674+00:00"
     },
     "WP04": {
-      "actor": "claude:opus-4-7:python-pedro:implementer",
-      "force_count": 1,
+      "actor": "user",
+      "force_count": 2,
       "lane": "in_progress",
-      "last_event_id": "01KQQ4619MB574Y8SMCGNDVJT9",
-      "last_transition_at": "2026-05-03T14:34:22.900556+00:00"
+      "last_event_id": "01KQQCMDYKCK90QF6ZB505D39Y",
+      "last_transition_at": "2026-05-03T17:02:03.219229+00:00"
     },
     "WP05": {
       "actor": "finalize-tasks",
