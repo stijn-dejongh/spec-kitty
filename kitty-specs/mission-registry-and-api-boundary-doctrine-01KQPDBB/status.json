@@ -1,19 +1,19 @@
 {
-  "event_count": 41,
-  "last_event_id": "01KQQFJ5JK4SQ198YN44PN1R9Z",
-  "materialized_at": "2026-05-03T17:53:14.835470+00:00",
+  "event_count": 42,
+  "last_event_id": "01KQQFKW384S1K5WR2G7SNGTJE",
+  "materialized_at": "2026-05-03T17:54:10.664070+00:00",
   "mission_number": "",
   "mission_slug": "mission-registry-and-api-boundary-doctrine-01KQPDBB",
   "mission_type": "software-dev",
   "summary": {
-    "approved": 5,
+    "approved": 6,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
     "in_progress": 0,
-    "in_review": 1,
+    "in_review": 0,
     "planned": 1
   },
   "work_packages": {
@@ -53,11 +53,11 @@
       "last_transition_at": "2026-05-03T17:10:01.505157+00:00"
     },
     "WP06": {
-      "actor": "opencode",
+      "actor": "user",
       "force_count": 1,
-      "lane": "in_review",
-      "last_event_id": "01KQQFJ5JK4SQ198YN44PN1R9Z",
-      "last_transition_at": "2026-05-03T17:53:14.835470+00:00"
+      "lane": "approved",
+      "last_event_id": "01KQQFKW384S1K5WR2G7SNGTJE",
+      "last_transition_at": "2026-05-03T17:54:10.664070+00:00"
     },
     "WP07": {
       "actor": "finalize-tasks",
