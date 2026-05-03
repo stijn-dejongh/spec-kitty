@@ -16,8 +16,8 @@ subtasks:
 - T004
 - T005
 - T006
-agent: "claude:opus-4-7:architect-alphonso:architect"
-shell_pid: "1366386"
+agent: "claude:opus-4-7:reviewer-renata:reviewer"
+shell_pid: "1370242"
 history:
 - date: '2026-05-03'
   event: created
@@ -142,3 +142,4 @@ Same as WP01: lane-less on `feature/650-dashboard-ui-ux-overhaul`. Three small Y
 
 - 2026-05-03T14:08:27Z – claude:opus-4-7:architect-alphonso:architect – shell_pid=1366386 – Started implementation via action command
 - 2026-05-03T14:15:44Z – claude:opus-4-7:architect-alphonso:architect – shell_pid=1366386 – Three doctrine artefacts shipped (DIRECTIVE_039, DIRECTIVE_040, HATEOAS-LITE); additive schema extension landed for referenced_tests, forbidden_imports, forbidden_patterns, paradigm shape/example/future-graduation fields, plus introduced_by_mission/introduced_at; tests/doctrine/ all green (1554 passed).
+- 2026-05-03T14:16:15Z – claude:opus-4-7:reviewer-renata:reviewer – shell_pid=1370242 – Started review via action command
