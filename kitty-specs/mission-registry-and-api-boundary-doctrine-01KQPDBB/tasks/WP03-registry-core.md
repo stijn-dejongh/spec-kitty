@@ -405,3 +405,4 @@ Lane-less on `feature/650-dashboard-ui-ux-overhaul`. Single mission, single bran
 ## Activity Log
 
 - 2026-05-03T14:21:33Z – claude:opus-4-7:python-pedro:implementer – shell_pid=1377703 – Started implementation via action command
+- 2026-05-03T14:30:35Z – claude:opus-4-7:python-pedro:implementer – shell_pid=1377703 – Ready for review: registry core (MissionRegistry + WorkPackageRegistry) with mtime cache, frozen dataclasses, and 24 edge-case unit tests covering cache invalidation (mtime/size/dirent-hash), corrupted event log, missing meta.json, zero-WP missions, pre-merge mission_number=null, ULID/mid8/slug resolution, ambiguous-mid8 refusal, threading safety, and TOCTOU immutability.
