@@ -10,9 +10,9 @@
 
 | ID | Description | WP | Parallel |
 |----|-------------|------|----------|
-| T001 | Audit scanner entry points; document each I/O shape in `src/specify_cli/dashboard/scanner.py` module docstring; add `# TODO(remove with mission-registry-and-api-boundary-doctrine-01KQPDBB)` markers on functions the registry will subsume | WP01 | — |
-| T002 | Replace the `git update-index --assume-unchanged` workaround for daemon-driven `kitty-specs/*/status.json` drift; chosen direction (stop daemon vs gitignore snapshot) recorded in WP01 review record | WP01 | [P] |
-| T003 | Author `tests/test_dashboard/test_scanner_entrypoint_parity.py` baseline test asserting `scan_all_features` and `build_mission_registry` produce structurally compatible mission identity for the same fixture | WP01 | [P] |
+| T001 | Audit scanner entry points; document each I/O shape in `src/specify_cli/dashboard/scanner.py` module docstring; add `# TODO(remove with mission-registry-and-api-boundary-doctrine-01KQPDBB)` markers on functions the registry will subsume | WP01 | — | [D] |
+| T002 | Replace the `git update-index --assume-unchanged` workaround for daemon-driven `kitty-specs/*/status.json` drift; chosen direction (stop daemon vs gitignore snapshot) recorded in WP01 review record | WP01 | [D] |
+| T003 | Author `tests/test_dashboard/test_scanner_entrypoint_parity.py` baseline test asserting `scan_all_features` and `build_mission_registry` produce structurally compatible mission identity for the same fixture | WP01 | [D] |
 | T004 | Author `src/doctrine/directives/shipped/api-dependency-direction.directive.yaml` per `contracts/doctrine-artefact-shapes.md` § 1; cross-link to `tests/architectural/test_transport_does_not_import_scanner.py` | WP02 | — |
 | T005 | Author `src/doctrine/directives/shipped/rest-resource-orientation.directive.yaml` per `contracts/doctrine-artefact-shapes.md` § 2; cross-link to `tests/architectural/test_url_naming_convention.py` | WP02 | [P] |
 | T006 | Author `src/doctrine/paradigms/shipped/hateoas-lite.paradigm.yaml` per `contracts/doctrine-artefact-shapes.md` § 3; verify all three artefacts pass `tests/doctrine/` schema validation; if any field is rejected, land an additive schema extension in the same WP | WP02 | — |
@@ -74,9 +74,9 @@ Lane parallelization opportunities (per planner's lane assignment, materialised 
 **Independent test**: scanner entry-point table exists in the docstring; `git ls-files -v | grep ^h | grep kitty-specs` is empty; the parity baseline test exists and either passes or fails with documented expected delta.
 
 **Subtasks**:
-- [ ] T001 Audit scanner entry points; document in module docstring; add TODO markers
-- [ ] T002 Replace `assume-unchanged` workaround for daemon-driven status.json drift
-- [ ] T003 Author scanner parity baseline test
+- [x] T001 Audit scanner entry points; document in module docstring; add TODO markers
+- [x] T002 Replace `assume-unchanged` workaround for daemon-driven status.json drift
+- [x] T003 Author scanner parity baseline test
 
 **Estimated prompt size**: ~280 lines.
 
