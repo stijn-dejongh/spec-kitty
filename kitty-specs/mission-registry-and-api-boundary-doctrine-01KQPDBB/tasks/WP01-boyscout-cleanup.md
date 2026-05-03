@@ -11,11 +11,15 @@ requirement_refs:
 planning_base_branch: feature/650-dashboard-ui-ux-overhaul
 merge_target_branch: feature/650-dashboard-ui-ux-overhaul
 branch_strategy: Planning artifacts for this feature were generated on feature/650-dashboard-ui-ux-overhaul. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feature/650-dashboard-ui-ux-overhaul unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-mission-registry-and-api-boundary-doctrine-01KQPDBB
+base_commit: b7cced4da2d6b70635f8f14160d17a8bfa03ac04
+created_at: '2026-05-03T13:58:21.850234+00:00'
 subtasks:
 - T001
 - T002
 - T003
 agent: claude
+shell_pid: '1357077'
 history:
 - date: '2026-05-03'
   event: created
