@@ -210,3 +210,4 @@ Lane-less on `feature/650-dashboard-ui-ux-overhaul`. Three coordinated changes; 
 - 2026-05-03T17:02:09Z – claude:opus-4-7:python-pedro:implementer – shell_pid=1427345 – Stale agent recovery — force-advancing to for_review so we can reject and re-queue cleanly.
 - 2026-05-03T17:02:17Z – claude:opus-4-7:python-pedro:implementer – shell_pid=1427345 – Moved to planned
 - 2026-05-03T17:02:31Z – opencode:claude-sonnet-4.6:python-pedro:implementer – shell_pid=1498620 – Started implementation via action command
+- 2026-05-03T17:04:47Z – opencode:claude-sonnet-4.6:python-pedro:implementer – shell_pid=1498620 – T011/T012/T013 complete: MissionRegistry wired into FastAPI app state + deps + routers + CLI; 270 tests pass; no scanner imports in transport layer
