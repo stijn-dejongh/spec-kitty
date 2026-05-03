@@ -246,6 +246,7 @@ The test must report ≥5 `ResourceModel` subclasses verified and exit 0. If it 
 - [ ] `pytest tests/architectural/test_resource_models_have_links.py -v` passes and is non-vacuous.
 - [ ] `pytest tests/test_dashboard/ -q` exits 0 (no regressions).
 - [ ] Zero new `# type: ignore` directives added.
+- [ ] `mypy --strict src/dashboard/services/registry.py src/dashboard/api/models.py` exits 0.
 
 ## Risks
 
