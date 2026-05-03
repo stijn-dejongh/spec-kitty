@@ -16,7 +16,8 @@ subtasks:
 - T004
 - T005
 - T006
-agent: claude
+agent: "claude:opus-4-7:architect-alphonso:architect"
+shell_pid: "1366386"
 history:
 - date: '2026-05-03'
   event: created
@@ -136,3 +137,7 @@ Same as WP01: lane-less on `feature/650-dashboard-ui-ux-overhaul`. Three small Y
 
 - **Schema extension scope creep**: if the schema needs more than one field, resist the temptation to redesign. Add only what FR-006/007/008 require.
 - **Test files in WP05 don't exist yet**: this is expected. The doctrine references the test path forward; WP05 creates the file at the referenced path. The doctrine's correctness check is "the test path matches what WP05 will create", not "the test file exists today."
+
+## Activity Log
+
+- 2026-05-03T14:08:27Z – claude:opus-4-7:architect-alphonso:architect – shell_pid=1366386 – Started implementation via action command
