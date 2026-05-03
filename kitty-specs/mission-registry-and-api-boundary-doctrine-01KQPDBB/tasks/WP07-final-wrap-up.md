@@ -248,3 +248,4 @@ Lane-less on `feature/650-dashboard-ui-ux-overhaul`. Five files; commit as one o
 ## Activity Log
 
 - 2026-05-03T17:54:27Z – opencode – shell_pid=1539810 – Started implementation via action command
+- 2026-05-03T17:57:52Z – opencode – shell_pid=1539810 – ADR promoted; ownership map+manifest updated; runbook section added; 361 tests pass; snapshot regenerated
