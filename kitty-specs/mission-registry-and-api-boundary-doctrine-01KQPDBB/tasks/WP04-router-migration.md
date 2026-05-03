@@ -208,3 +208,4 @@ Lane-less on `feature/650-dashboard-ui-ux-overhaul`. Three coordinated changes; 
 - 2026-05-03T14:34:22Z – claude:opus-4-7:python-pedro:implementer – shell_pid=1427345 – Started implementation via action command
 - 2026-05-03T17:02:03Z – claude:opus-4-7:python-pedro:implementer – shell_pid=1427345 – Stale agent recovery — previous claude agent (pid=1427345) did not complete. Resuming implementation.
 - 2026-05-03T17:02:09Z – claude:opus-4-7:python-pedro:implementer – shell_pid=1427345 – Stale agent recovery — force-advancing to for_review so we can reject and re-queue cleanly.
+- 2026-05-03T17:02:17Z – claude:opus-4-7:python-pedro:implementer – shell_pid=1427345 – Moved to planned
