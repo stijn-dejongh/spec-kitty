@@ -3,11 +3,11 @@ work_package_id: WP01
 title: Boyscout cleanup — scanner audit + assume-unchanged removal + parity baseline
 dependencies: []
 requirement_refs:
+- C-003
+- C-004
 - FR-013
 - FR-014
 - FR-015
-- C-003
-- C-004
 planning_base_branch: feature/650-dashboard-ui-ux-overhaul
 merge_target_branch: feature/650-dashboard-ui-ux-overhaul
 branch_strategy: Planning artifacts for this feature were generated on feature/650-dashboard-ui-ux-overhaul. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feature/650-dashboard-ui-ux-overhaul unless the human explicitly redirects the landing branch.

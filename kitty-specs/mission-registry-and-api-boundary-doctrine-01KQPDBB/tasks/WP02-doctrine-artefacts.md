@@ -4,11 +4,11 @@ title: Doctrine artefacts — codify the three new directives + paradigm
 dependencies:
 - WP01
 requirement_refs:
+- C-003
 - FR-006
 - FR-007
 - FR-008
 - NFR-007
-- C-003
 planning_base_branch: feature/650-dashboard-ui-ux-overhaul
 merge_target_branch: feature/650-dashboard-ui-ux-overhaul
 branch_strategy: Planning artifacts for this feature were generated on feature/650-dashboard-ui-ux-overhaul. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feature/650-dashboard-ui-ux-overhaul unless the human explicitly redirects the landing branch.
