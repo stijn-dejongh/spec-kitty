@@ -19,7 +19,8 @@ subtasks:
 - T015
 - T016
 - T017
-agent: claude
+agent: "opencode:claude-sonnet-4.6:python-pedro:implementer"
+shell_pid: "1508347"
 history:
 - date: '2026-05-03'
   event: created
@@ -451,3 +452,7 @@ Lane-less on `feature/650-dashboard-ui-ux-overhaul`. Four files; commit as a sin
 - **WP04's migration left a sneaky scanner import**: T015's main scan would catch it; the WP04 reviewer should have caught it earlier. If T015 fails, send the violation back to WP04, do not patch it from this WP.
 - **The action allowlist grows large**: every URL today that doesn't match the resource-noun convention goes in the allowlist with rationale. That's fine for mission A (no rename); mission B prunes the allowlist as it renames URLs.
 - **Pydantic field-name policy on `_links`**: Pydantic v2 may warn or reject leading-underscore field names. If so, switch to `links` and update the paradigm YAML + the test accordingly. Document the change in the WP review.
+
+## Activity Log
+
+- 2026-05-03T17:06:22Z – opencode:claude-sonnet-4.6:python-pedro:implementer – shell_pid=1508347 – Started implementation via action command
