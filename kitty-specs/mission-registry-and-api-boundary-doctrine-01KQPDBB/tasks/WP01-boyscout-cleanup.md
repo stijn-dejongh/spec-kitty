@@ -18,8 +18,8 @@ subtasks:
 - T001
 - T002
 - T003
-agent: claude
-shell_pid: '1357077'
+agent: "claude:opus-4-7:implementer-ivan:implementer"
+shell_pid: "1357077"
 history:
 - date: '2026-05-03'
   event: created
@@ -251,3 +251,7 @@ Execution: lane-less per spec C-001 (mission runs directly on the parent branch)
 - **The daemon mutation has more than one source**: T002 might find that multiple background processes (spec-kitty next, the dashboard's status materialiser, etc.) all mutate `status.json`. Stopping just one may not be sufficient. Mitigation: document the finding; if the source is genuinely diffuse, fall back to gitignore.
 - **The parity test fails on a fresh fixture project**: this would mean the two readers have always diverged. The WP01 reviewer must record this as the baseline; WP03 must not make it worse. The test is informational here, not enforcing.
 - **Scanner audit reveals more entry points than listed**: the table can grow. Add rows; do not skip any public function.
+
+## Activity Log
+
+- 2026-05-03T13:58:23Z – claude:opus-4-7:implementer-ivan:implementer – shell_pid=1357077 – Assigned agent via action command
