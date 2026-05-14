@@ -37,6 +37,7 @@ owned_files:
 - .kittify/glossaries/spec_kitty_core.yaml
 - CHANGELOG.md
 - kitty-specs/quality-devex-hardening-3-2-01KRJGKH/mission-review.md
+- kitty-specs/quality-devex-hardening-3-2-01KRJGKH/nfr-001-smoke-recipe.md
 - kitty-specs/quality-devex-hardening-3-2-01KRJGKH/glossary-fragments/WP10.md
 role: reviewer
 tags: []
@@ -173,30 +174,29 @@ This WP applies the **review** posture, not authorship — it audits the mission
 - Every preceding WP appears in the per-WP table with its tactics cited by id.
 - All four acceptance evidence items are captured.
 
-### T056 — Run NFR-001 release-stability smoke
+### T056 — Prepare NFR-001 release-stability smoke recipe; operator runs
 
-**Purpose**: Verify the post-merge `main` supports a fresh-user cycle without manual repair.
+**Purpose**: NFR-001 — verify post-merge `main` supports a fresh-user cycle without manual repair. The cycle takes 20–30 minutes of interactive command sequencing, which does not fit a sub-agent's autonomous WP session. The implementer prepares the runnable recipe; the operator runs it and pastes results into the mission-review.
 
 **Steps**:
 
-1. In a throwaway directory:
-   ```bash
-   spec-kitty init smoke-test --agent claude
-   cd smoke-test
-   spec-kitty agent mission create smoke --friendly-name "Smoke" \
-     --purpose-tldr "NFR-001 release-stability smoke for quality-devex-hardening-3-2-01KRJGKH" \
-     --purpose-context "Verifies the post-mission main supports a fresh-user cycle without manual state repair or branch reconstruction." --json
-   ```
-2. Walk through specify → plan → tasks → implement (one trivial WP) → review → merge → PR. Use the cheapest possible mission body (e.g. "hello world").
-3. Record at each step: exit code, any error messages, whether manual repair was needed.
-4. If any step requires manual repair, document in `mission-review.md` as a NFR-001 failure and escalate to the operator — the mission cannot be marked release-ready otherwise.
+1. Compose the runnable smoke recipe in `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/nfr-001-smoke-recipe.md`:
+   - Setup: throwaway directory, `spec-kitty init smoke-test --agent claude`.
+   - Walkthrough: specify → plan → tasks → implement (one trivial WP) → review → merge → PR. Cheapest possible mission body (e.g. "hello world").
+   - Per-step capture columns: exit code, error messages, manual-repair-needed flag.
+   - Result rubric: pass if zero manual-repair steps; fail otherwise.
+2. **Hand off to operator**: WP10's commit message includes "NFR-001 handoff:" with the recipe file path and a request for the operator to execute it post-merge.
+3. The operator pastes the executed-recipe results back into `mission-review.md` under "NFR-001 Smoke Results". The implementer of WP10 leaves a placeholder section for this.
 
-**Files**: smoke artifacts in the throwaway dir; results captured in `mission-review.md`.
+**Files**:
+
+- `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/nfr-001-smoke-recipe.md` (new, ~80 lines).
+- `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/mission-review.md` carries the placeholder section.
 
 **Validation**:
 
-- Full cycle completes; PR opens cleanly on GitHub.
-- No manual repair steps recorded.
+- Recipe is executable end-to-end (each command is copy-pastable).
+- Placeholder section in mission-review.md is clearly marked for operator entry.
 
 ### T057 — Update `CHANGELOG.md` with the mission's deliverables
 
@@ -204,7 +204,7 @@ This WP applies the **review** posture, not authorship — it audits the mission
 
 **Steps**:
 
-1. Read each `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/changelog-fragments/WPxx.md` (WP01..WP09 produced these).
+1. Compose CHANGELOG content from the mission's commit history. Read `git log --oneline --reverse <branch-fork-point>..HEAD --grep "CHANGELOG note"` to extract per-WP CHANGELOG-note blocks the implementers placed in their commit messages. (No `changelog-fragments/WPxx.md` files — that pattern was dropped pre-implementation in favor of commit-message blocks.)
 2. Open `CHANGELOG.md`. Author a new section under the appropriate version (likely `## [Unreleased]` or `## [3.2.0]` if the release is imminent):
    - **Added**: stale-lane auto-rebase classifier (#771) with ADR 2026-05-14-1; no-upgrade UX notification (#740) with `SPEC_KITTY_NO_UPGRADE_CHECK` opt-out; `secure-regex-catastrophic-backtracking` and `chain-of-responsibility-rule-pipeline` doctrine tactics; `architecture/2.x/04_implementation_mapping/code-patterns.md` core code-patterns catalog.
    - **Changed**: mypy strict baseline now green for `src/specify_cli src/charter src/doctrine` per decision moment DM-01KRJHT7QD7XQMY33Y5TDTQ80V (option A; #971); push-time Sonar restored (#825) after gate-debt cleanup (#595); `_canonicalize_status_row` refactored onto `CanonicalRule` Protocol with characterization-test coverage; `doctor.py::mission_state` refactored from CC 57 to a thin orchestrator + per-mode runners.
@@ -219,16 +219,7 @@ This WP applies the **review** posture, not authorship — it audits the mission
 - CHANGELOG section is coherent and stakeholder-readable.
 - Every ticket number appears.
 
-### T058 — Glossary fragment for WP10 (audit-pass record)
-
-**Purpose**: Record that WP10 ran the consolidation.
-
-**Steps**:
-
-1. Author `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/glossary-fragments/WP10.md`:
-   - `# WP10 consolidated WP01..WP09 glossary fragments. No new canonical terms introduced.`
-
-**Files**: `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/glossary-fragments/WP10.md` (new, ~3 lines).
+<!-- T058 was an audit-pass record glossary fragment for WP10; it was redundant with T053's consolidation and is dropped. WP10's own glossary fragment is created inline during T053 if needed for traceability. -->
 
 ## Test Strategy
 
@@ -238,11 +229,10 @@ This WP authors documentation and runs the release smoke. No new behavior tests.
 
 - [ ] Every Domain Language term from `spec.md` appears in `.kittify/glossaries/spec_kitty_core.yaml` with `status: active`.
 - [ ] Code-patterns catalog cites `migration/canonicalization.py` (verified, not modified, in this WP).
-- [ ] `mission-review.md` exists with per-WP doctrine table + acceptance evidence + sign-off.
-- [ ] NFR-001 smoke completes successfully (recorded in `mission-review.md`).
+- [ ] `mission-review.md` exists with per-WP doctrine table + acceptance evidence + a placeholder for operator NFR-001 results.
+- [ ] `nfr-001-smoke-recipe.md` is runnable end-to-end and handed off to the operator.
 - [ ] `CHANGELOG.md` documents the mission's deliverables and cross-references all six tickets.
-- [ ] `glossary-fragments/WP10.md` exists.
-- [ ] Mission-review signs off "release-ready" OR explicitly states "not-yet-ready" with blockers enumerated.
+- [ ] Mission-review signs off "release-ready (pending operator NFR-001 smoke)" or explicitly states "not-yet-ready" with blockers enumerated.
 
 ## Risks
 

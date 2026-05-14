@@ -31,10 +31,13 @@
         "kitty-specs/quality-devex-hardening-3-2-01KRJGKH/glossary-fragments/WP07.md",
         "kitty-specs/quality-devex-hardening-3-2-01KRJGKH/glossary-fragments/WP08.md",
         "kitty-specs/quality-devex-hardening-3-2-01KRJGKH/glossary-fragments/WP09.md",
+        "kitty-specs/quality-devex-hardening-3-2-01KRJGKH/sonar-hotspot-rationales.md",
         "pyproject.toml",
+        "src/kernel/_safe_re.py",
         "src/specify_cli/auth/**",
         "src/specify_cli/cli/commands/agent_retrospect.py",
         "src/specify_cli/cli/commands/doctor.py",
+        "src/specify_cli/cli/commands/review/**",
         "src/specify_cli/core/upgrade_notifier.py",
         "src/specify_cli/core/upgrade_probe.py",
         "src/specify_cli/core/version_checker.py",
@@ -49,6 +52,7 @@
         "src/specify_cli/release/changelog.py",
         "src/specify_cli/status/reducer.py",
         "src/specify_cli/sync/**",
+        "src/specify_cli/task_metadata_validation.py",
         "tests/_factories/charters/**",
         "tests/cli/commands/test_agent_config_coverage.py",
         "tests/cli/commands/test_charter_bundle_coverage.py",
@@ -86,7 +90,8 @@
         ".kittify/glossaries/spec_kitty_core.yaml",
         "CHANGELOG.md",
         "kitty-specs/quality-devex-hardening-3-2-01KRJGKH/glossary-fragments/WP10.md",
-        "kitty-specs/quality-devex-hardening-3-2-01KRJGKH/mission-review.md"
+        "kitty-specs/quality-devex-hardening-3-2-01KRJGKH/mission-review.md",
+        "kitty-specs/quality-devex-hardening-3-2-01KRJGKH/nfr-001-smoke-recipe.md"
       ],
       "predicted_surfaces": [
         "planning"
@@ -97,7 +102,7 @@
       "parallel_group": 1
     }
   ],
-  "computed_at": "2026-05-14T06:40:09.291345+00:00",
+  "computed_at": "2026-05-14T08:17:36.072947+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP10"

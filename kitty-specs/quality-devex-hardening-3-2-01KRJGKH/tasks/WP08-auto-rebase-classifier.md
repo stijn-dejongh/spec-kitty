@@ -102,26 +102,31 @@ This WP applies:
 
 ## Subtasks
 
-### T040 — Promote ADR draft to canonical status (operator approval gate)
+### T040 — Promote ADR draft to canonical status (operator approval gate — HALT)
 
-**Purpose**: Constraint C-007 — the ADR MUST land before implementation begins.
+**Purpose**: Constraint C-007 — the ADR MUST land before implementation begins. The three open questions in the draft require operator decisions; the implementer cannot resolve them unilaterally.
 
 **Steps**:
 
-1. Read `contracts/stale-lane-auto-rebase-classifier-policy.md`. Surface to the operator any final open questions:
-   - The ADR's "Open questions for the operator" section lists 3 items (commit-message format, ruff scope, URLS-LIST sort detection).
-   - Resolve each in the new ADR file.
-2. Create `architecture/2.x/adr/2026-05-14-1-stale-lane-auto-rebase-classifier-policy.md` with:
+1. Read `contracts/stale-lane-auto-rebase-classifier-policy.md`. The bottom of that file lists three open questions for the operator:
+   - Auto-rebase commit message format (proposed: include `lane=<id>`).
+   - `ruff --fix --select I001` scope (proposed: keep minimal; add more rules only on operator request).
+   - `R-URLS-LIST-UNION` sort-convention detection (proposed: sample unmodified prefix).
+2. **HALT** the WP and surface these three questions to the operator via the implement-review review cycle. Each question has a Pedro recommendation in the draft — the operator either accepts the recommendation or directs a different resolution.
+3. Once the operator has resolved all three questions (recorded as decision moments or as direct chat answers captured in the WP review record), create `architecture/2.x/adr/2026-05-14-1-stale-lane-auto-rebase-classifier-policy.md` with:
    - Frontmatter status `ACCEPTED`.
-   - Body lifted from the contracts draft, with the open questions resolved inline.
-   - Cross-link to the contracts draft for historical traceability.
-3. **If the operator has not yet approved the policy**, halt and surface the draft for approval. Do NOT proceed to T041 until ACCEPTED.
+   - Body lifted from the contracts draft, with the resolved questions inlined.
+   - Cross-link back to the contracts draft for historical traceability.
+4. Only then proceed to T041.
 
-**Files**: `architecture/2.x/adr/2026-05-14-1-stale-lane-auto-rebase-classifier-policy.md` (new, ~250 lines).
+**Halt behavior**: if the operator approval has not been recorded, the implement-review loop should reject the WP for review and surface the three questions. **Do NOT improvise resolutions** — the ADR is the governance artifact for a behavior change in `spec-kitty merge`; unilateral resolution would violate the locality-of-change directive.
+
+**Files**: `architecture/2.x/adr/2026-05-14-1-stale-lane-auto-rebase-classifier-policy.md` (new, ~250 lines, written only after operator approval).
 
 **Validation**:
 
 - ADR exists at the canonical path with status ACCEPTED.
+- The three open questions are resolved inline with operator-confirmed answers.
 - Contracts draft is updated to cite the ADR as the canonical reference.
 
 ### T041 — Implement `src/specify_cli/merge/conflict_classifier.py`

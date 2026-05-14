@@ -393,15 +393,17 @@ Suggested lane shape:
 
 `finalize-tasks` reads `dependencies` from each WP's frontmatter and computes the actual lanes — the table above is an advisory seed.
 
-## MVP scope
+## Scope policy
 
-If time forces a cut to a subset of WPs, Pedro recommends in priority order:
+The full ten-WP scope is the mission's deliverable. **No WP is deferred.** The mission's binding philosophy (`spec.md` § Mission Philosophy item 3 — "Quality > speed") permits the work to span multiple sessions and to take as long as it takes; it does not permit cutting WPs from scope. Deferrals are reserved for items already named as out-of-scope in `spec.md` § Out of Scope.
 
-1. **WP01** — mypy strict baseline (gate signal).
-2. **WP04 + WP07** — Sonar gate green + push-time flip (release-quality apparatus restored).
-3. **WP02** — quick reliability win.
-4. **WP06** — closes the doctor.py carve-out from WP01.
+If a specific WP becomes blocked (e.g. WP08 awaiting operator ADR approval), the implement-review loop pauses that WP and continues unblocked WPs. The blocked WP resumes when the blocker resolves; the mission does not "ship without" the WP.
 
-Defer WP03, WP05, WP08, WP09 if absolutely necessary. WP10 still runs at the end to consolidate whatever shipped.
+WP-level priority for sequencing (per `plan.md` § Phase 2 dependency graph):
 
-The full mission scope is what makes 3.2.0 trustworthy; cuts are recoverable in 3.2.x patch releases but degrade the release-stability outcome.
+1. **WP01** — mypy strict baseline (foundation).
+2. **WP02** — independent; small; can run in parallel with WP01.
+3. **WP04** — independent; regex hotspots; can run in parallel with WP01.
+4. **WP03, WP05, WP06, WP08, WP09** — depend on WP01; run after it lands.
+5. **WP07** — depends on WP04 + WP05 + WP06 (Sonar gate green precondition).
+6. **WP10** — depends on WP01..WP09; consolidates and runs the post-merge mission-review.

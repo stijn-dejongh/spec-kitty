@@ -170,11 +170,13 @@ This WP applies:
 **Steps**:
 
 1. Create `tests/core/test_upgrade_probe_and_notifier.py`.
-2. Use `requests_mock` (or `httpx`'s built-in `httpx.MockTransport`) to stub PyPI responses for:
-   - 200 with `info.version == cli_version` → `ALREADY_CURRENT`.
-   - 200 with `info.version < cli_version` → `AHEAD_OF_PYPI`.
-   - 200 with `cli_version NOT IN releases.keys()` → `NO_UPGRADE_PATH`.
-   - 404 / 500 / connection error / timeout → `UNKNOWN` with `error` populated.
+2. Mock the network boundary using **`respx`** (httpx-native mock library) or `httpx.MockTransport`. **Do NOT use `requests_mock`** — the project uses `httpx`, not `requests`; `requests_mock` does not intercept httpx calls.
+   - Add `respx` to the dev dependency group in pyproject.toml if not already present.
+   - Stub PyPI responses for:
+     - 200 with `info.version == cli_version` → `ALREADY_CURRENT`.
+     - 200 with `info.version > cli_version` → `AHEAD_OF_PYPI`.
+     - 200 with `cli_version NOT IN releases.keys()` → `NO_UPGRADE_PATH`.
+     - 404 / 500 / connection error / timeout → `UNKNOWN` with `error` populated.
 3. Use `freezegun` to advance time; assert cache freshness boundary at TTL.
 4. Test cache invalidation when `installed_version` changes mid-cache-window.
 5. Test `SPEC_KITTY_NO_UPGRADE_CHECK=1` returns `False` and emits no notice.

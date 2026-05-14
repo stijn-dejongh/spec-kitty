@@ -30,6 +30,7 @@ owned_files:
 - src/specify_cli/release/changelog.py
 - tests/regressions/test_changelog_regex_redos.py
 - kitty-specs/quality-devex-hardening-3-2-01KRJGKH/glossary-fragments/WP04.md
+- kitty-specs/quality-devex-hardening-3-2-01KRJGKH/sonar-hotspot-rationales.md
 role: implementer
 tags: []
 ---
@@ -152,24 +153,25 @@ This WP applies:
 - Test passes against the rewritten code with `elapsed < 0.1`.
 - Test fails against the pre-rewrite code (verified locally; the failure is the proof that the regex was actually vulnerable).
 
-### T021 — Record Sonar rationale annotations for each regex hotspot remediation
+### T021 — Draft Sonar hotspot rationales for operator to apply
 
-**Purpose**: Move `new_security_hotspots_reviewed` toward 100 %. Each remediated hotspot needs a Sonar UI annotation citing the code fix.
+**Purpose**: Move `new_security_hotspots_reviewed` toward 100 %. Each remediated hotspot needs a Sonar UI annotation citing the code fix. Sonar UI write access lives with the operator (HiC), not the implementing agent.
 
 **Steps**:
 
-1. For each Sonar hotspot in `release/changelog.py` (or other files Pedro touched), open the Sonar UI for `Priivacy-ai_spec-kitty`, navigate to the hotspot, and record a "Safe" or "Fixed" review with rationale citing the commit hash + the rewritten regex + the wall-clock test name.
-2. Verify via the Sonar REST helper:
-   ```bash
-   bash work/snippets/sonarcloud_branch_review.sh Priivacy-ai_spec-kitty main | grep -A2 "Hotspot"
-   ```
-3. Confirm each regex-related hotspot is marked reviewed.
+1. For each Sonar regex hotspot Pedro touched, draft a one-paragraph rationale citing:
+   - The commit hash of the rewrite.
+   - The rewritten regex shape and which tactic-ladder option was applied.
+   - The wall-clock regression-test name.
+2. Append the drafted rationales to `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/sonar-hotspot-rationales.md` (create if not present) under a `## Regex hotspots` heading.
+3. **Hand off to operator**: the WP's commit message includes a "Sonar handoff:" block listing each hotspot ID and the file path of the draft rationale; the operator applies the rationale in the Sonar UI as part of the mission-merge review.
 
-**Files**: none (Sonar UI annotations; not in tree).
+**Files**: `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/sonar-hotspot-rationales.md` (new or appended).
 
 **Validation**:
 
-- `new_security_hotspots_reviewed` increases on the next Sonar scan run. (WP07 will verify the gate state holistically.)
+- Each regex hotspot Pedro touched has a draft rationale in the file.
+- WP07 will verify the operator applied them once the gate state is holistically green.
 
 ### T022 — Glossary fragment for "catastrophic backtracking"
 

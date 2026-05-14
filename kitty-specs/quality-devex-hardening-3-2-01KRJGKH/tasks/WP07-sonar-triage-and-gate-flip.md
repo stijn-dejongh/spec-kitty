@@ -82,9 +82,9 @@ This WP applies:
 
 ## Subtasks
 
-### T035 — Triage `127.0.0.1` loopback hotspots (safe-by-design rationale)
+### T035 — Draft `127.0.0.1` loopback hotspot rationales for operator to apply
 
-**Purpose**: Move 4 hotspots from "unreviewed" to "safe" in Sonar.
+**Purpose**: Resolve 4 non-regex hotspots. Sonar UI write access lives with the operator; the implementer drafts rationales for operator-led application.
 
 **Steps**:
 
@@ -99,13 +99,13 @@ This WP applies:
    - The OAuth callback server binds to `127.0.0.1` by design — that is the entire point of the loopback flow (RFC 8252 §7.3). The server accepts only the one-time authorization code; it does not expose any other endpoint or accept any other data.
    - The bound port is ephemeral and the server lifetime is short (only during the auth flow).
    - There is no information-disclosure risk because the address is `localhost`, accessible only from the same host.
-4. Record this rationale in the Sonar UI for each hotspot.
-5. If Sonar UI access is unavailable, write the rationales into `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/sonar-hotspot-rationales.md` and request a maintainer with Sonar admin rights to apply them.
+4. Append the drafted rationales to `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/sonar-hotspot-rationales.md` under a `## Loopback (127.0.0.1) hotspots` heading. WP04 created the file for regex rationales; this WP appends.
+5. Hand off to operator: WP07's commit message includes a "Sonar handoff:" block listing each hotspot ID and the rationale file path.
 
 **Validation**:
 
-- The 4 loopback hotspots move from "unreviewed" to "safe" in Sonar.
-- `new_security_hotspots_reviewed` percentage rises.
+- All 4 loopback hotspots have draft rationales in `sonar-hotspot-rationales.md`.
+- The handoff block is in the commit message.
 
 ### T036 — Triage review-lock signal-safety hotspot
 
@@ -122,13 +122,13 @@ This WP applies:
    - Installs handlers in unexpected scopes.
    - Does not restore previous handlers on cleanup.
 3. Determine if a code fix is warranted:
-   - If the handler calls non-AS-safe functions (e.g. `logging.warning`, file writes), fix: defer to a flag set in the handler, then process on the main path.
-   - If the handler is correct, record a safe-by-design rationale per T035's pattern.
-4. If a code fix is needed AND it crosses `owned_files` outside this WP, escalate to the operator. The default is "rationale only" unless the operator approves the code fix scope expansion.
+   - If the handler calls non-AS-safe functions (e.g. `logging.warning`, file writes), fix: defer to a flag set in the handler, then process on the main path. If the file lies outside WP07's `owned_files`, halt and surface to operator for scope expansion or coordination with the file's owning WP.
+   - If the handler is correct, append a safe-by-design rationale to `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/sonar-hotspot-rationales.md` under `## Review-lock signal safety`.
+4. The operator applies the Sonar UI annotation.
 
 **Validation**:
 
-- The hotspot is either fixed in code or reviewed with documented rationale in Sonar.
+- The hotspot is either fixed in code AND has a regression test, OR has a documented rationale in `sonar-hotspot-rationales.md` for operator application.
 
 ### T037 — Verify Sonar gate is OK on `main`
 

@@ -28,12 +28,14 @@ mission_id: 01KRJGKH4DJCSF277K9QV3WBE7
 mission_slug: quality-devex-hardening-3-2-01KRJGKH
 owned_files:
 - pyproject.toml
-- src/specify_cli/sync/**
-- src/specify_cli/status/reducer.py
-- src/specify_cli/cli/commands/agent_retrospect.py
+- src/kernel/_safe_re.py
 - src/specify_cli/auth/**
+- src/specify_cli/cli/commands/agent_retrospect.py
+- src/specify_cli/cli/commands/review/**
 - src/specify_cli/next/_internal_runtime/**
-- tests/regressions/test_doctor_missionrepairresult_findings.py
+- src/specify_cli/status/reducer.py
+- src/specify_cli/sync/**
+- src/specify_cli/task_metadata_validation.py
 - kitty-specs/quality-devex-hardening-3-2-01KRJGKH/glossary-fragments/WP01.md
 role: implementer
 tags: []
@@ -121,9 +123,10 @@ This WP applies:
    ```bash
    rg -n "^import re2|^from re2" src/
    ```
+   Pedro pre-mission verified exactly one import site exists: `src/kernel/_safe_re.py:51`. If the audit returns zero results, skip this subtask and document the skip.
 2. At each import site, append:
    ```python
-   import re2  # type: ignore[import-untyped]  # see research.md §1; upstream stubs pending
+   import re2 as _re2_mod  # type: ignore[import-untyped]  # see research.md §1; upstream stubs pending
    ```
 3. Re-run mypy and confirm no `Library stubs not installed for "re2"` errors remain.
 
@@ -132,23 +135,19 @@ This WP applies:
 - Every `re2` import carries the localized ignore + comment.
 - mypy reports zero `re2` errors.
 
-### T003 — Regression test for `doctor.py:1092` real-branch bug
+### T003 — Document the `doctor.py:1092` bug for WP06 handoff
 
-**Purpose**: Capture the observable behavior of the `RepairReport` vs `RepoAuditReport` branch in `doctor.py:1092..1125` BEFORE WP06 narrows the type. The mypy error there strongly suggests a real bug; we need a test that fails today and passes after WP06's fix.
+**Purpose**: WP01 does NOT modify `doctor.py` (owned by WP06) and does NOT author the regression test (also owned by WP06). This subtask records the bug evidence so WP06 can author the test + fix without re-discovery.
 
 **Steps**:
 
-1. Read `doctor.py:1092..1125` carefully. Identify the branch where `RepairReport` is returned but a `RepoAuditReport` was expected. Reproduce the call sequence that exercises this branch.
-2. Author `tests/regressions/test_doctor_missionrepairresult_findings.py`:
-   - Set up a minimal `mission_state` invocation that exercises the offending branch via the Typer `CliRunner`.
-   - Assert on the observable output (stdout, exit code, file artifacts) that today's broken behavior produces.
-   - Mark the test with a comment: "Captures pre-WP06 behavior. After WP06's fix, this test must be updated to reflect the correct behavior — fail-loud if the fix changes output."
-3. Run the test on `main`; it should pass (capturing today's broken behavior).
-4. Do **not** modify `doctor.py` — that is WP06's scope.
+1. Read `doctor.py:1080..1130` carefully. Identify the branch where the mypy error reports a `RepairReport` ↔ `RepoAuditReport` confusion and where `MissionRepairResult` is missing `.findings`.
+2. Capture the observable broken behavior in evidence — manual `CliRunner.invoke` reproduction with stdout / exit-code recording. Save as `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/research/doctor-mission-state-1092-bug-evidence.md`.
+3. Hand off to WP06: the test + fix lands there per its T030.
 
-**Files**: `tests/regressions/test_doctor_missionrepairresult_findings.py` (new, ~80 lines).
+**Files**: `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/research/doctor-mission-state-1092-bug-evidence.md` (new, ~60 lines).
 
-**Validation**: test passes against the current (broken) `doctor.py`. WP06 will own the type fix and adjust the test.
+**Validation**: the evidence file documents enough for WP06 to author the regression test without re-reading `doctor.py` from scratch.
 
 ### T004 — [P] Fix typed-code errors in `status/reducer.py`, `sync/__init__.py`, `agent_retrospect.py`
 
@@ -204,23 +203,24 @@ This WP applies:
 - `grep -v "doctor.py" /tmp/wp01-mypy.log | grep -E "error:"` returns empty.
 - `grep -c "doctor.py" /tmp/wp01-mypy.log` returns 5 or fewer (the pre-WP06 doctor.py errors).
 
-### T007 — Record evidence + CHANGELOG entry fragment
+### T007 — Record evidence + glossary fragment
 
-**Purpose**: Document the decision (option A, decision moment ID), the residual doctor.py carve-out, and the CHANGELOG entry text WP10 will consolidate.
+**Purpose**: Document the decision (option A, decision moment ID) and the residual doctor.py carve-out. The CHANGELOG entry text lives in the WP's commit-message body; WP10 reads the mission's commit history to compose `CHANGELOG.md` (no fragment files).
 
 **Steps**:
 
-1. Author `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/changelog-fragments/WP01.md`:
-   - Cite `DM-01KRJHT7QD7XQMY33Y5TDTQ80V` (option A).
-   - Note that `doctor.py` typing closes in WP06.
-   - List the stubs added.
+1. Ensure WP01's final commit message includes a "CHANGELOG note:" block summarizing:
+   - Decision `DM-01KRJHT7QD7XQMY33Y5TDTQ80V` (option A — fix existing mypy strict target).
+   - Stubs added: `types-PyYAML`, `types-toml`, `types-jsonschema`, `types-psutil`, `types-requests`.
+   - `doctor.py` mypy closes in WP06.
 2. Author `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/glossary-fragments/WP01.md`:
-   - WP01 does not introduce new canonical terms; record this fragment as `# WP01 introduces no new canonical terms` for traceability.
-3. Stage and commit both files.
+   - WP01 does not introduce new canonical terms; record `# WP01 introduces no new canonical terms` for traceability.
+3. Stage and commit.
 
 **Validation**:
 
-- Both fragment files exist and are tracked in git.
+- WP01's final commit message contains the CHANGELOG-note block.
+- `glossary-fragments/WP01.md` exists.
 
 ## Test Strategy
 
@@ -231,10 +231,10 @@ This WP applies:
 ## Definition of Done
 
 - [ ] `uv run mypy --strict src/specify_cli src/charter src/doctrine` reports zero errors outside `doctor.py`.
-- [ ] `tests/regressions/test_doctor_missionrepairresult_findings.py` exists and captures pre-WP06 behavior.
+- [ ] `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/research/doctor-mission-state-1092-bug-evidence.md` documents the bug for WP06's handoff.
 - [ ] `pyproject.toml` declares the new stub dev-deps; `uv.lock` reflects them.
-- [ ] Every `re2` import carries the localized ignore + comment.
-- [ ] `changelog-fragments/WP01.md` documents the scope decision and stubs.
+- [ ] Every `re2` import (one as of pre-mission audit) carries the localized ignore + comment.
+- [ ] WP01's final commit message includes a "CHANGELOG note:" block (consumed by WP10).
 - [ ] `glossary-fragments/WP01.md` exists (empty fragment is fine — WP01 introduces no canonical terms).
 - [ ] All existing pytest suites pass.
 

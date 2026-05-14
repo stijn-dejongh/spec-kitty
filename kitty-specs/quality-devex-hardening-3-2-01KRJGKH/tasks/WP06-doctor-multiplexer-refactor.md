@@ -30,6 +30,7 @@ mission_slug: quality-devex-hardening-3-2-01KRJGKH
 owned_files:
 - src/specify_cli/cli/commands/doctor.py
 - tests/cli/commands/test_doctor_mission_state.py
+- tests/regressions/test_doctor_missionrepairresult_findings.py
 - kitty-specs/quality-devex-hardening-3-2-01KRJGKH/glossary-fragments/WP06.md
 role: implementer
 tags: []
@@ -122,32 +123,35 @@ This WP applies:
 - All characterization tests pass against unchanged `doctor.py`.
 - Commit is isolated; the typing fix and refactor land in subsequent commits.
 
-### T030 — Fix typing errors at 631 + 1092..1125 (with `MissionRepairResult.findings` real-branch bug fix)
+### T030 — Author regression test FIRST, then fix typing errors at 631 + 1092..1125
 
-**Purpose**: Close the residual mypy errors in `doctor.py` AND fix the real bug they were flagging.
+**Purpose**: Capture the `MissionRepairResult.findings` real-branch bug in a regression test BEFORE fixing it. Then close the residual mypy errors in `doctor.py` (red → green workflow per `tdd-red-green-refactor`).
 
 **Steps**:
 
-1. Read `doctor.py:1080..1130` carefully. Identify the branch where `repair_repo` returns a `RepairReport` but a `RepoAuditReport` was expected.
-2. Read WP01's T003 regression test (`tests/regressions/test_doctor_missionrepairresult_findings.py`). It captures today's broken behavior — likely a crash or wrong output when `.findings` is accessed on a `MissionRepairResult`.
+1. Read `kitty-specs/quality-devex-hardening-3-2-01KRJGKH/research/doctor-mission-state-1092-bug-evidence.md` (authored by WP01's T003 handoff). It documents the offending branch in `doctor.py:1080..1130` and the observable broken behavior.
+2. Author `tests/regressions/test_doctor_missionrepairresult_findings.py`:
+   - Reproduce the offending branch via `CliRunner.invoke(... mission_state ...)`.
+   - First assertion captures today's broken behavior (crash / wrong output). Test should FAIL after the fix lands — and that failure is the proof the bug is fixed.
+   - Mark with a clear docstring: "Bug was: `repair_repo` returned `RepairReport` where `RepoAuditReport` (with `.findings`) was expected. Fix is in this same commit; assertions reflect post-fix behavior."
 3. Determine the correct fix:
-   - If `repair_repo`'s return type should be `RepoAuditReport` (with `.findings`), update `repair_repo` (but that crosses WP06's owned_files — check; if so, escalate).
+   - If `repair_repo`'s return type should be `RepoAuditReport` (with `.findings`), update the call site to use the right type.
    - If the callsite should branch on the report type and access different attributes, refactor the callsite.
    - If the access path is wrong (e.g. should access `.changes` not `.findings`), correct the access.
-4. Update WP01's T003 regression test to assert the correct post-fix behavior. Comment the test: "Updated by WP06 — captures the correct post-fix behavior; previously captured the broken behavior pre-WP06."
+4. Update the regression test's assertions to reflect post-fix behavior. The test now passes against the fixed code.
 5. Fix `doctor.py:631` — remove the unused `type: ignore` and address the `attr-defined` on `.entries`.
 6. Confirm `uv run mypy --strict src/specify_cli/cli/commands/doctor.py` exits 0.
 
 **Files**:
 
 - `src/specify_cli/cli/commands/doctor.py` (modified, focused on lines 631 + 1080..1130).
-- `tests/regressions/test_doctor_missionrepairresult_findings.py` (modified — update assertion to post-fix behavior).
+- `tests/regressions/test_doctor_missionrepairresult_findings.py` (new — authored as part of this WP).
 
 **Validation**:
 
 - mypy strict on doctor.py exits 0.
 - T029 characterization tests still pass.
-- The regression test asserts the correct (fixed) behavior; the test docstring records the pre-fix / post-fix delta.
+- The regression test asserts the post-fix behavior; its docstring records the pre-fix / post-fix delta.
 
 ### T031 — Extract `_validate_modes`, `_resolve_fail_on`, `_resolve_audit_root` helpers
 
@@ -262,11 +266,12 @@ This WP applies:
 ## Definition of Done
 
 - [ ] T029 characterization-tests commit precedes all subsequent commits in this WP (`git log --oneline -- src/specify_cli/cli/commands/doctor.py tests/cli/commands/test_doctor_mission_state.py`).
+- [ ] T030 regression-test commit lands FIRST in the typing-fix sequence (test fails on pre-fix code; passes on post-fix code).
 - [ ] mypy strict on `doctor.py` exits 0.
 - [ ] `mission_state` cognitive complexity ≤ 10 per Sonar.
 - [ ] Every extracted helper (`_validate_modes`, `_resolve_fail_on`, `_resolve_audit_root`, `_run_repair`, `_run_teamspace_dry_run`, `_run_audit`, `_emit`) has cognitive complexity ≤ 10.
 - [ ] T029 characterization tests pass after every commit.
-- [ ] WP01's T003 regression test is updated to assert post-fix behavior with a docstring noting the WP06 fix.
+- [ ] `tests/regressions/test_doctor_missionrepairresult_findings.py` asserts post-fix behavior with a docstring recording the pre-fix / post-fix delta.
 - [ ] `glossary-fragments/WP06.md` carries "structural debt" and "deliberate linearity" entries.
 
 ## Risks
