@@ -19,7 +19,7 @@ from collections.abc import Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 from urllib.parse import urlsplit
 
 from packaging.version import Version
@@ -1389,17 +1389,22 @@ def _rule_normalize_lanes(
 # Ordered rule tuple — order is part of the contract.
 # Tactics: chain-of-responsibility-rule-pipeline (Transformer flavor)
 # See: contracts/canonicalization-rule-pipeline.md
-_CANONICAL_STATUS_ROW_RULES: tuple[CanonicalRule[_Row], ...] = (
-    _rule_reject_non_status_event,
-    _rule_apply_aliases,
-    _rule_strip_legacy_keys,
-    _rule_stamp_identity,
-    _rule_mint_event_id,
-    _rule_default_at,
-    _rule_default_from_lane,
-    _rule_require_to_lane,
-    _rule_require_wp_id,
-    _rule_normalize_lanes,
+# cast: each function matches CanonicalRule[_Row] by structural subtyping;
+# mypy cannot infer Protocol compliance from bare callables in a tuple literal.
+_CANONICAL_STATUS_ROW_RULES: tuple[CanonicalRule[_Row], ...] = cast(
+    "tuple[CanonicalRule[_Row], ...]",
+    (
+        _rule_reject_non_status_event,
+        _rule_apply_aliases,
+        _rule_strip_legacy_keys,
+        _rule_stamp_identity,
+        _rule_mint_event_id,
+        _rule_default_at,
+        _rule_default_from_lane,
+        _rule_require_to_lane,
+        _rule_require_wp_id,
+        _rule_normalize_lanes,
+    ),
 )
 
 

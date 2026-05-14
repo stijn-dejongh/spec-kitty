@@ -40,7 +40,7 @@ import warnings
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from specify_cli.migration.canonicalization import (
     CanonicalRule,
@@ -498,11 +498,16 @@ def _rule_collect_meta_created_at(
 
 # Ordered source-collection rule tuple.
 # Tactics: chain-of-responsibility-rule-pipeline (Transformer flavor)
-_TIMESTAMP_SOURCE_RULES: tuple[CanonicalRule[_TimestampState], ...] = (
-    _rule_collect_event_timestamps,
-    _rule_collect_materialized_at,
-    _rule_collect_wp_last_transition,
-    _rule_collect_meta_created_at,
+# cast: each function matches CanonicalRule[_TimestampState] by structural subtyping;
+# mypy cannot infer Protocol compliance from bare callables in a tuple literal.
+_TIMESTAMP_SOURCE_RULES: tuple[CanonicalRule[_TimestampState], ...] = cast(
+    "tuple[CanonicalRule[_TimestampState], ...]",
+    (
+        _rule_collect_event_timestamps,
+        _rule_collect_materialized_at,
+        _rule_collect_wp_last_transition,
+        _rule_collect_meta_created_at,
+    ),
 )
 
 
