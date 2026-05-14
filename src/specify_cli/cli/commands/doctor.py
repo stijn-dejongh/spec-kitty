@@ -16,6 +16,9 @@ from specify_cli.core.paths import locate_project_root
 from specify_cli.paths import get_runtime_root, render_runtime_path
 from specify_cli.runtime.home import get_kittify_home
 
+if TYPE_CHECKING:
+    from specify_cli.compat.doctor import ShimRegistryReport
+
 
 # CI env-vars that should force non-interactive behaviour even when stdin
 # happens to be a TTY. Conservative list per WP04 Risks: a false positive
@@ -625,10 +628,10 @@ def sparse_checkout(
     raise typer.Exit(0 if rep.overall_success and not any_failure else 1)
 
 
-def _print_overdue_details(report: object, console: Console) -> None:
+def _print_overdue_details(report: "ShimRegistryReport", console: Console) -> None:
     console.print()
     console.print("[bold red]Overdue shims must be resolved before release:[/bold red]")
-    for e in report.entries:  # type: ignore[union-attr]
+    for e in report.entries:
         if e.status.value == "overdue":
             canonical = (
                 ", ".join(e.entry.canonical_import)
