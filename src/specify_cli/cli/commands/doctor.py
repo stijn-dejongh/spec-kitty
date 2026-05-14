@@ -939,7 +939,7 @@ def _validate_modes(audit: bool, fix: bool, teamspace_dry_run: bool) -> _Mission
     return _MissionStateMode.AUDIT
 
 
-def _resolve_fail_on(fail_on: str | None) -> "tuple[object, bool]":
+def _resolve_fail_on(fail_on: str | None) -> tuple[Severity | None, bool]:
     """Parse --fail-on into (severity, teamspace_blocker_flag).
 
     Returns (None, False) when fail_on is None.
