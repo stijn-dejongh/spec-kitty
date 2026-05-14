@@ -1,9 +1,11 @@
-"""Characterization tests for _canonicalize_status_row (pre-refactor behavior).
+"""Characterization tests for _canonicalize_status_row and _derive_migration_timestamp.
 
-These tests capture today's observable behavior of the monolithic
-``_canonicalize_status_row`` pipeline against a corpus of synthetic fixtures
-derived from real legacy row shapes. They MUST remain green through the
-refactor introduced in WP03.
+These tests capture today's observable behavior of:
+- The monolithic ``_canonicalize_status_row`` pipeline (mission_state.py)
+- The timestamp derivation logic ``_derive_migration_timestamp`` (rebuild_state.py)
+
+Both are pre-refactor characterization tests that MUST remain green through
+the WP03 refactors (NFR-003).
 
 Tactic references:
 - ``tdd-red-green-refactor``: characterization-first, NFR-003 binding.
@@ -22,17 +24,27 @@ Rule coverage:
   Rule 9  — require 'wp_id' (short-circuit on missing)
   Rule 10 — normalize and validate lane values (alias 'doing' -> 'in_progress';
              reject unknown lanes)
+
+rebuild_state._derive_migration_timestamp coverage:
+  Source 1 — collect 'at' timestamps from status.events.jsonl
+  Source 2 — collect 'materialized_at' from status.json
+  Source 3 — collect WP 'last_transition_at' from status.json
+  Source 4 — collect 'created_at' from meta.json
+  Boundary — empty dir falls back to MIGRATION_EPOCH
+  Boundary — multiple sources: latest candidate wins
 """
 
 from __future__ import annotations
 
 import json
+import tempfile
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 from specify_cli.migration.mission_state import _canonicalize_status_row
+from specify_cli.migration.rebuild_state import _derive_migration_timestamp
 
 _FIXTURE_DIR = Path(__file__).parent / "fixtures"
 
@@ -236,3 +248,67 @@ def test_canonicalize_status_row_passes_canonical_row_unchanged() -> None:
     assert actual["row"] == expected["row"]
     assert actual["actions"] == []
     assert actual["error"] is None
+
+
+# ===========================================================================
+# Characterization tests for rebuild_state._derive_migration_timestamp
+# (T014 — added before refactoring rebuild_state.py)
+# Tactic: tdd-red-green-refactor (NFR-003 binding)
+# ===========================================================================
+
+
+def test_derive_migration_timestamp_falls_back_to_epoch_when_no_sources() -> None:
+    """Empty directory with no event/status/meta files returns the MIGRATION_EPOCH."""
+    with tempfile.TemporaryDirectory() as td:
+        result = _derive_migration_timestamp(Path(td))
+    # The epoch constant is '2026-01-01T00:00:00+00:00'
+    assert result == "2026-01-01T00:00:00+00:00"
+
+
+def test_derive_migration_timestamp_collects_from_events_jsonl() -> None:
+    """Latest 'at' timestamp from status.events.jsonl is selected and bumped by 1 second."""
+    with tempfile.TemporaryDirectory() as td:
+        p = Path(td)
+        (p / "status.events.jsonl").write_text(
+            '{"at": "2025-06-01T10:00:00+00:00", "wp_id": "WP01"}\n'
+            '{"at": "2025-07-01T12:00:00+00:00", "wp_id": "WP02"}\n'
+        )
+        result = _derive_migration_timestamp(p)
+    # Latest is 2025-07-01T12:00:00+00:00; bumped by 1 second
+    assert result == "2025-07-01T12:00:01+00:00"
+
+
+def test_derive_migration_timestamp_collects_from_status_json_materialized_at() -> None:
+    """materialized_at from status.json is used when no events are present."""
+    with tempfile.TemporaryDirectory() as td:
+        p = Path(td)
+        status = {"materialized_at": "2025-08-01T09:00:00+00:00", "work_packages": {}}
+        (p / "status.json").write_text(json.dumps(status))
+        result = _derive_migration_timestamp(p)
+    assert result == "2025-08-01T09:00:01+00:00"
+
+
+def test_derive_migration_timestamp_collects_from_meta_json_created_at() -> None:
+    """created_at from meta.json is used when no other sources are present."""
+    with tempfile.TemporaryDirectory() as td:
+        p = Path(td)
+        (p / "meta.json").write_text(json.dumps({"created_at": "2025-09-01T08:00:00+00:00"}))
+        result = _derive_migration_timestamp(p)
+    assert result == "2025-09-01T08:00:01+00:00"
+
+
+def test_derive_migration_timestamp_picks_latest_across_all_sources() -> None:
+    """When multiple sources have timestamps, the latest one wins."""
+    with tempfile.TemporaryDirectory() as td:
+        p = Path(td)
+        (p / "status.events.jsonl").write_text('{"at": "2025-06-01T10:00:00+00:00"}\n')
+        status = {
+            "materialized_at": "2025-09-15T12:00:00+00:00",
+            "work_packages": {
+                "WP01": {"last_transition_at": "2025-10-01T00:00:00+00:00"}
+            },
+        }
+        (p / "status.json").write_text(json.dumps(status))
+        result = _derive_migration_timestamp(p)
+    # WP last_transition_at is the latest: 2025-10-01T00:00:00+00:00 + 1 second
+    assert result == "2025-10-01T00:00:01+00:00"
