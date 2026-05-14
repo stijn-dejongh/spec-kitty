@@ -157,6 +157,7 @@ Canonical terms introduced or reinforced by this mission. Synonyms in the right 
 | FR-010 | Each refactor of a high-cognitive-complexity offender cites in its WP prompt the doctrine refactoring tactic it applies (`refactoring-extract-first-order-concept` / `refactoring-extract-class-by-responsibility-split` / `refactoring-guard-clauses-before-polymorphism`) and the rationale for the classification (debt vs pipeline vs deliberate). | #595 | Active |
 | FR-011 | Rule-pipeline refactors apply the `chain-of-responsibility-rule-pipeline` tactic. The motivating Transformer-flavor refactor lifts a typed `CanonicalRule` Protocol into `src/specify_cli/migration/canonicalization.py`, refactors `_canonicalize_status_row` and the analogous rules in `rebuild_state.py` onto it, and updates `architecture/2.x/04_implementation_mapping/code-patterns.md` to cite the new canonical implementation. | #595 | Active |
 | FR-012 | The mission-review report (produced after merge) explicitly lists every doctrine tactic applied per WP and links the code-patterns catalog where a pattern was applied. Reviewers reject WPs whose prompts do not cite the tactics they should have applied. | (cross-cutting) | Active |
+| FR-013 | The canonical-terminology glossary at `.kittify/glossaries/spec_kitty_core.yaml` carries an entry (`surface`, `definition`, `confidence`, `status: active`) for every canonical term introduced or reinforced by this mission — at minimum: `structural debt`, `deliberate linearity`, `pipeline-shape`, `characterization test`, `Sonar quality gate`, `catastrophic backtracking`, `rule pipeline` (with its three flavors), and any further canonical term that surfaces during plan or implement. Entries cross-reference the doctrine tactic or architectural document that codifies the term where one exists. The glossary update lands in the same WP that introduces or reinforces the term; deferring glossary work to a housekeeping pass is rejected at review. | (cross-cutting) | Active |
 
 ## Non-Functional Requirements
 
@@ -222,6 +223,7 @@ A reviewer can close this mission as release-ready if and only if all of the fol
 - **Tests.** Every new test follows `function-over-form-testing`. No constructor / getter / call-count assertions. Reviewer applied the test-code hygiene checklist (NFR-002).
 - **Refactors.** Every refactor of migration / sync / charter / auth code is preceded by a characterization-test commit (NFR-003 verified via `git log`).
 - **Doctrine citations.** Every WP's prompt cites the doctrine tactics it applied. The mission-review report enumerates them per WP and links the code-patterns catalog where applicable.
+- **Glossary.** `.kittify/glossaries/spec_kitty_core.yaml` carries entries for every canonical term in the Domain Language section, plus any further canonical term that surfaced during plan or implement (FR-013).
 - **Smoke.** NFR-001 release-stability smoke passes on the post-merge `main`.
 
 ## Pre-Mission Research and Intake (binding source documents)
