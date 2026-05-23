@@ -178,9 +178,17 @@ Schema additions across 5 artifact kinds; Pydantic model changes + cross-field v
 Last wave because it touches the broadest file set. Driven by `occurrence_map.yaml` from Phase 1. Includes the architectural regression test FR-016 and the CHANGELOG entry FR-017. Sequencing after Wave 3 ensures the validator advisory text changes from Wave 3 land in the new vocabulary.
 
 ### Cross-cutting (every wave)
-- ADR landed alongside the wave's first WP (Phase 1 lists 3 ADRs).
-- HiC issue assignment on first WP touching each linked GitHub issue (DIR-012).
-- Bulk-edit gate active throughout Wave 4 — every commit in Wave 4 must trace to a row in `occurrence_map.yaml`.
+
+| Concern | Binding | Concrete WP placement |
+|---|---|---|
+| **ADR `2026-05-DD-1-charter-freshness-ux-contract.md`** | DIR-003 | First WP of Wave 1. Outline: problem (#1099/#1100/#1101/#1104), decision (introduce `graph_state` enum + freshness payload + preflight surface), alternatives (eager auto-refresh on every command), consequences (NFR-001 budget). |
+| **ADR `2026-05-DD-2-pack-augmentation-vocabulary.md`** | DIR-003 | First WP of Wave 3. Outline: problem (issue #1291 + `extra="forbid"` block), decision (declarative `overrides`/`enhances` + mutually-exclusive validator + DRG auto-emit), alternatives (drop `extra="forbid"`; magic precedence), consequences (cross-references `2026-05-16-1-doctrine-layer-merge-semantics.md`). |
+| **ADR `2026-05-DD-3-shipped-to-built-in-cutover.md`** | DIR-003, DIR-009 | First WP of Wave 4. Outline: problem (vocabulary asymmetry between disk and code/JSON), decision (straight cutover with CHANGELOG entry), alternatives (deprecation window), consequences (external tooling impact). Treated as a *follow-up* to `2026-05-16-1-...`, not a fresh design. |
+| **Glossary entries for `enhances` / `overrides`** | DIR-032 | Wave 3 first WP — add canonical-term entries to `.kittify/glossaries/spec_kitty_core.yaml` (or the doctrine-pack-vocabulary scope file if one exists). Lists `augments` as a synonym to-avoid for `enhances`; lists `replaces` as a synonym to-avoid for `overrides`. |
+| **HiC issue assignment** | DIR-012 | First WP of any wave that touches one of #1099, #1100, #1101, #1104, #1291. The WP description MUST include a step that runs `gh issue edit <#> --add-assignee @<HiC>` before implementation begins. |
+| **Pre-existing test failure baseline** | DIR-013 | Wave 1 first WP — run `pytest tests/` once at HEAD, capture the failure list, and open a GitHub issue per DIR-013 IF the baseline is non-zero. The issue link MUST be recorded in the WP's notes; subsequent WPs may then treat that baseline as accepted. |
+| **Bulk-edit gate** | C-002 | Wave 4 — every commit must trace to an `occurrence_map.yaml` row; `meta.json` already declares `change_mode: bulk_edit`. |
+| **Architectural test FR-016 scope** | FR-016 | Wave 4 final WP — `tests/architectural/test_no_shipped_layer_label.py` MUST scan the JSON output of: (a) `spec-kitty charter status --json`, (b) `spec-kitty charter lint --json`, (c) `spec-kitty charter preflight --json`, (d) `spec-kitty agent profile list --json`, (e) `spec-kitty doctrine pack validate --json` on a fixture pack. For each, assert no `"shipped"` string appears as a JSON value. Excluded surfaces (preserved-historical per occurrence_map): `CHANGELOG.md`, `architecture/3.x/adr/*` files predating this mission, frozen `kitty-specs/*/spec.md` files. |
 
 ## Complexity Tracking
 

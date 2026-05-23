@@ -184,6 +184,15 @@ built_in_only: true   # NEW — set when synthesize legitimately produced no pro
 
 When `built_in_only: true`, downstream commands report `graph_state="built_in_only"` instead of `"missing"`.
 
+### Conflict resolution rule (architect remediation)
+
+The two states (`built_in_only: true` AND `.kittify/doctrine/graph.yaml` exists) MUST be detected and resolved deterministically:
+
+1. **Authoritative read order**: `synthesis-manifest.yaml.built_in_only` is read first. If `true`, the manifest is authoritative — `graph.yaml` (if present) is treated as **stale residue** from a previous run.
+2. **Reporting**: `charter status` MUST surface this conflict explicitly: `synthesized_drg.state = "invalid"` with `detail = "synthesis manifest declares built_in_only=true but graph.yaml exists; this is a stale artifact"`.
+3. **Remediation**: the remediation hint is `rm .kittify/doctrine/graph.yaml` OR `spec-kitty charter synthesize --force-overwrite` — both are acceptable but the synthesize command path is preferred.
+4. **Synthesize itself**: when `spec-kitty charter synthesize` runs and decides the result is built-in-only, it MUST delete any pre-existing `graph.yaml` and write `built_in_only: true` in the manifest in a single atomic operation. This prevents the conflict state from being created by the synthesizer itself.
+
 ---
 
 ## 7. Pack-validator advisory categories

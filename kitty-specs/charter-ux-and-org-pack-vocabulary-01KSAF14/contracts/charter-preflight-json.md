@@ -66,6 +66,27 @@ When the worktree contains uncommitted changes to `.kittify/charter/` or `.kitti
 - `blocked_reason: "uncommitted generated artifacts; commit or stash and retry"`
 - Each affected file is named in `detail` of the corresponding check.
 
+### Detection mechanism (binding)
+
+Uncommitted-artifact detection MUST use a single `git status --porcelain -- .kittify/charter/ .kittify/doctrine/` invocation, parsed line-by-line. Any output line marks the worktree as dirty for the purposes of `--auto-refresh`. The detection MUST NOT use `git diff`, file-mtime heuristics, or string-matching of pathnames — these all produce known false negatives on Windows.
+
+Failure-mode contract:
+- `git` not on PATH → `passed=false`, `blocked_reason: "git CLI not available; cannot determine worktree cleanliness"`.
+- `git status` returns non-zero → `passed=false`, `blocked_reason` includes the exit code and stderr first line.
+- Detection itself MUST complete within 100 ms on a clean tree to stay under NFR-001.
+
+## Hook caller contract (DIR-031)
+
+The session-start hook callable `run_charter_preflight(...)` is consumed by three entry points. Each consumer obeys the following rules:
+
+| Consumer | On `passed=true` | On `passed=false` |
+|---|---|---|
+| `spec-kitty next` | log a single line at INFO level; continue. | abort with exit code 1; print `result.blocked_reason`; do not perform any state mutation. |
+| `spec-kitty implement WP##` | log + continue. | abort with exit code 1 before creating or reusing any worktree; do not modify `.kittify/`. |
+| `dashboard serve` / `dashboard start` | log + continue. | start the server but render a top-of-page banner (severity=critical) carrying `result.blocked_reason` and the exact remediation command. Do NOT silently fall back to stale doctrine. |
+
+Each consumer MUST call `run_charter_preflight(auto_refresh=<config>)` where `<config>` reads the project-level `preflight.auto_refresh` flag (default `false`). A consumer MUST NOT pass `auto_refresh=True` unconditionally.
+
 ## Exit codes
 
 | Code | Meaning |

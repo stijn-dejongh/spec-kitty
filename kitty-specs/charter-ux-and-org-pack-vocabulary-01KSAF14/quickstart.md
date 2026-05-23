@@ -77,6 +77,20 @@ yq '.built_in_only' .kittify/charter/synthesis-manifest.yaml
 
 ## Step 4 — Pack-authoring vocabulary (FR-010..FR-014)
 
+### 4a. Field-merge edge case lock (architect remediation, C-001 sharp edge)
+
+Before the user-facing flow, the fixture pack MUST include this acceptance case to lock the field-merge behaviour:
+
+A pack tactic with the same ID as a built-in tactic, declaring `enhances: <built-in-id>`, AND providing an empty `steps:` list (or omitting any optional field that the built-in has populated). Per the field-merge ADR `2026-05-16-1`, the expected behaviour is:
+
+- For fields the pack tactic **provides** with a non-empty value: pack value wins.
+- For fields the pack tactic **omits**: built-in value survives.
+- For fields the pack tactic provides as **empty list / null**: the empty value DOES NOT erase the built-in value (this is the sharp edge — empty is treated as "not provided" for merge purposes, per ratified `_merge()` behaviour in `src/doctrine/base.py`).
+
+The fixture test `tests/integration/test_pack_enhances_partial_fields.py` MUST exercise this case and assert the merged DRG node retains the built-in's `steps`, `failure_modes`, and `applies_to_languages` when the pack tactic omits them.
+
+### 4b. Validator behaviour (user-facing flow)
+
 In the fixture pack:
 
 ```bash
