@@ -2,27 +2,19 @@
 #
 # Mission: charter-ux-and-org-pack-vocabulary-01KSAF14
 # Change mode: bulk_edit (declared in meta.json)
-# Source: epic #1111 directive (HiC at handoff: "the 'shipped' vocabulary is to
-# be replaced with `built-in` consistently").
-#
+# Source: epic #1111 directive (HiC at handoff).
 # Spec: FR-015, FR-016, FR-017.
 #
-# Every category below has an explicit action. The bulk-edit gate refuses to
-# start the first WP without this file. Action vocabulary:
-#   - rename-in-place      : straightforward s/shipped/built-in/ in the indicated location
-#   - rename-and-changelog : breaking public JSON / CLI label; requires CHANGELOG row (FR-017)
-#   - update-in-place      : comments, docstrings, README prose
-#   - migrate-tests        : test assertions that pattern-match the literal "shipped"
-#   - preserve-historical  : historical ADR / changelog text that records what the term *was*
-#   - delete               : dead code/comment that should not survive the cutover
+# Valid action vocabulary (enforced by the bulk-edit gate):
+#   - rename                  : straight rename of the literal `shipped` token
+#   - rename_if_user_visible  : rename only when the occurrence is on a public CLI / JSON / docs surface
+#   - manual_review           : implementer must inspect and decide per occurrence
+#   - do_not_change           : preserve as-is (historical text, dead-code candidates that need a delete decision)
 #
-# Counts are from Researcher Robbie's brief (research/mission-brief.md §2 Thread C):
-#   - 63 Python files / ~459 line-occurrences
+# Counts (from research/mission-brief.md §2 Thread C):
+#   - 63 Python files / ~459 line occurrences
 #   - 90 test files
 #   - 48 doc/YAML files
-# The implementation WPs MUST verify these counts via a fresh grep and update
-# this file in-place if drift is detected; the architectural test FR-016 is the
-# final acceptance gate.
 
 schema_version: "1.0"
 mission: charter-ux-and-org-pack-vocabulary-01KSAF14
@@ -40,66 +32,60 @@ categories:
   code_symbols:
     description: >
       Python identifiers, parameter names, variable names, function/method
-      names, and Pydantic field aliases that name the layer.
-    action: rename-in-place
+      names, Pydantic field aliases, docstrings and comments that name the
+      layer.
+    action: rename
     examples:
-      - "src/doctrine/base.py: _shipped_dir -> _built_in_dir, _load_shipped_items -> _load_built_in_items, _apply_org_overrides(..., shipped) parameter -> built_in"
+      - "src/doctrine/base.py: _shipped_dir -> _built_in_dir, _load_shipped_items -> _load_built_in_items"
+      - "src/doctrine/base.py: _apply_org_overrides(..., shipped) parameter -> built_in"
       - "src/doctrine/base.py: docstring 'shipped → org → project' -> 'built-in → org → project'"
-    out_of_scope:
-      - The on-disk directory name 'built-in/' already uses the target term; no rename needed.
 
   import_paths:
     description: >
       Python module / package paths that contain the word `shipped`.
-    action: rename-in-place
-    examples:
-      - "(none found — directories already use 'built-in')"
+    action: do_not_change
     notes: |
-      Per Robbie's brief, `find src -type d -name '*shipped*'` returns only
-      `.mypy_cache` paths, which are not source. No source imports change.
+      Source-tree directories already use `built-in/`. The only `shipped`
+      paths are in `.mypy_cache/` which regenerates automatically.
 
   filesystem_paths:
     description: >
       Source-tree paths and on-disk file/directory names.
-    action: rename-in-place
-    examples:
-      - "(none found at source level — built-in/ directories are already the canonical layout)"
+    action: do_not_change
     notes: |
-      `.mypy_cache/.../shipped/` entries regenerate automatically.
+      `built-in/` directory layout already in place; nothing to rename.
 
   serialized_keys:
     description: >
       JSON keys and string values emitted by public CLI surfaces (charter
       status --json, charter lint --json, agent profile list --json,
       doctrine pack validate --json) and persisted YAML metadata.
-    action: rename-and-changelog
+    action: rename_if_user_visible
     examples:
       - "src/specify_cli/cli/commands/profiles_cmd.py:56 — return value 'shipped' -> 'built-in' (agent profile source label)"
-      - "src/charter/drg.py:328 — layer_label = 'shipped' if existing_provenance == 'built-in' (drop the conversion entirely; emit 'built-in')"
-      - "spec-kitty doctrine pack validate --json issue.message wording — already changed by Wave 3 advisory rework; vocabulary aligns automatically"
+      - "src/charter/drg.py:328 — layer_label = 'shipped' if existing_provenance == 'built-in' (delete the conversion entirely; emit 'built-in')"
     changelog_entry: |
-      "CLI JSON surfaces now report `built-in` instead of `shipped` as the
-      doctrine layer label, matching the on-disk `built-in/` directory layout.
-      External tooling that pattern-matched the string `\"shipped\"` MUST be
-      updated."
+      CLI JSON surfaces now report `built-in` instead of `shipped` as the
+      doctrine layer label, matching the on-disk `built-in/` directory
+      layout. External tooling that pattern-matched the string `"shipped"`
+      MUST be updated.
 
   cli_commands:
     description: >
       Slash-command / CLI subcommand strings.
-    action: rename-in-place
-    examples:
-      - "(none — no CLI command name contains 'shipped')"
+    action: do_not_change
     notes: |
-      The vocabulary lives in argument values, not command names.
+      No CLI command name contains `shipped`. Vocabulary lives in argument
+      values, not command names.
 
   user_facing_strings:
     description: >
       Console banners, advisory text, error messages.
-    action: rename-in-place
+    action: rename
     examples:
-      - "src/specify_cli/doctrine/pack_validator.py:451 — 'overrides a shipped tactic' (subsumed by Wave 3 advisory rework; final wording uses 'built-in')"
+      - "src/specify_cli/doctrine/pack_validator.py:451 — 'overrides a shipped tactic' (subsumed by Wave 3 advisory rework)"
       - "src/charter/drg.py: log line 'Project doctrine overrides %s node' — layer label uses 'built-in'"
-    interaction_with_wave_3: |
+    coordination_note: |
       Wave 3 (FR-013) already reformats the same-ID collision advisory. The
       vocabulary cutover MUST land after Wave 3 so the rewritten advisory is
       authored with the correct term from the start.
@@ -108,7 +94,7 @@ categories:
     description: >
       Test files asserting `"shipped"` as a string literal, plus YAML/JSON
       fixtures that bake the term into expected outputs.
-    action: migrate-tests
+    action: rename
     examples:
       - "tests/integration/test_charter_status_reports_three_layers.py — assert layer label 'shipped' -> 'built-in'"
       - "tests/specify_cli/cli/commands/test_charter_lint.py — banner assertions"
@@ -121,7 +107,7 @@ categories:
   logs_telemetry:
     description: >
       Structured log fields, telemetry events, status-event payloads.
-    action: rename-in-place
+    action: rename
     examples:
       - "src/charter/drg.py:_warn_project_override — log warning emits the layer label"
       - "src/specify_cli/charter_lint/engine.py log line on 'merged DRG not found' — layer name reference"
@@ -132,20 +118,20 @@ categories:
 historical_preservation:
   description: >
     Places where the word "shipped" MUST be preserved because it records
-    history, not current behaviour.
-  action: preserve-historical
-  examples:
-    - "CHANGELOG.md — past release notes mentioning `shipped` doctrine remain untouched."
-    - "architecture/3.x/adr/2026-05-16-1-doctrine-layer-merge-semantics.md — historical decision text; the new ADR (2026-05-DD-3) references the rename instead."
-    - "kitty-specs/*/spec.md committed before this mission — frozen as historical records."
+    history, not current behaviour. These are NOT in the rename set.
+  action: do_not_change
+  paths:
+    - "CHANGELOG.md (entries dated before mission merge)"
+    - "architecture/3.x/adr/2026-05-16-1-doctrine-layer-merge-semantics.md (historical decision text)"
+    - "kitty-specs/*/spec.md committed before this mission (frozen historical records)"
 
-dead_code_or_drift:
+dead_code_candidates:
   description: >
-    Occurrences that should be deleted outright rather than renamed (e.g. dead
-    fallback branches, commented-out code, vestigial back-compat shims).
-  action: delete
+    Occurrences that should be DELETED outright rather than renamed (e.g.
+    dead fallback branches, vestigial back-compat shims).
+  action: manual_review
   examples:
-    - "src/charter/drg.py:328 — the `layer_label = 'shipped' if ... else ...` *conversion* itself is dead once everything else emits 'built-in'; delete the conversion (don't merely rename it)."
+    - "src/charter/drg.py:328 — the `layer_label = 'shipped' if ... else ...` conversion itself is dead once everything else emits 'built-in'; delete the conversion (do not merely rename it)."
 
 acceptance_check:
   command: |
