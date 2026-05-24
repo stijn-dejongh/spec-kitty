@@ -21,7 +21,7 @@ history:
 - by: claude
   at: '2026-05-23T13:30:00+00:00'
   action: generated
-agent_profile: implementer-ivan
+agent_profile: python-pedro
 authoritative_surface: src/
 execution_mode: code_change
 mission_id: 01KSAF14K8FZ56MHYT45EGWHHC
@@ -38,7 +38,7 @@ tags: []
 
 ## ⚡ Do This First: Load Agent Profile
 
-Invoke `/ad-hoc-profile-load` with argument `implementer-ivan` before reading further. ALSO load the `spec-kitty-bulk-edit-classification` skill — this WP is the first WP in Wave 4, and the bulk-edit gate is active.
+Invoke `/ad-hoc-profile-load` with argument `python-pedro` before reading further. Pedro's `refactor` + `python` domains carry the Python identifier-rename mechanics. ALSO load the `spec-kitty-bulk-edit-classification` skill — this WP is the first WP in Wave 4, and the bulk-edit gate is active.
 
 ## Objective
 

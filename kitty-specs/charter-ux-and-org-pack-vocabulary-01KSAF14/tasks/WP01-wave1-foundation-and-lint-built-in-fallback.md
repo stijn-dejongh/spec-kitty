@@ -23,7 +23,7 @@ history:
 - by: claude
   at: '2026-05-23T13:30:00+00:00'
   action: generated
-agent_profile: implementer-ivan
+agent_profile: python-pedro
 authoritative_surface: src/specify_cli/charter_lint/
 execution_mode: code_change
 mission_id: 01KSAF14K8FZ56MHYT45EGWHHC
@@ -43,7 +43,7 @@ tags: []
 
 ## ⚡ Do This First: Load Agent Profile
 
-Before reading anything else in this work package, invoke the `/ad-hoc-profile-load` skill with argument `implementer-ivan`. The profile sets your identity, governance scope (DIR-005..009 quality gates), and avoidance boundary (no design decisions — those are locked in `plan.md` and the ADR you will author here). After the profile is loaded, return here and continue with Objective.
+Before reading anything else in this work package, invoke the `/ad-hoc-profile-load` skill with argument `python-pedro`. Pedro's primary focus (Python 3.12+, pytest, type hints, pydantic, pathlib) matches every subtask in this WP. The profile sets your identity, governance scope (DIR-005..009 quality gates), and avoidance boundary (no design decisions — those are locked in `plan.md` and the ADR you will author here). After the profile is loaded, return here and continue with Objective.
 
 ## Objective
 

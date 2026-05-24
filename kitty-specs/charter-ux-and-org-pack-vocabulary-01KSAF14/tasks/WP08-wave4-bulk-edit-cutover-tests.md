@@ -21,7 +21,7 @@ history:
 - by: claude
   at: '2026-05-23T13:30:00+00:00'
   action: generated
-agent_profile: implementer-ivan
+agent_profile: python-pedro
 authoritative_surface: tests/architectural/
 execution_mode: code_change
 mission_id: 01KSAF14K8FZ56MHYT45EGWHHC
@@ -40,7 +40,7 @@ tags: []
 
 ## ⚡ Do This First: Load Agent Profile
 
-Invoke `/ad-hoc-profile-load` with argument `implementer-ivan` before reading further. The `spec-kitty-bulk-edit-classification` skill remains active for Wave 4.
+Invoke `/ad-hoc-profile-load` with argument `python-pedro` before reading further. Pedro's pytest + refactor domains drive the test-assertion sweep and the new architectural regression test. The `spec-kitty-bulk-edit-classification` skill remains active for Wave 4.
 
 ## Objective
 

@@ -22,7 +22,7 @@ history:
 - by: claude
   at: '2026-05-23T13:30:00+00:00'
   action: generated
-agent_profile: implementer-ivan
+agent_profile: python-pedro
 authoritative_surface: src/charter/synthesizer/
 execution_mode: code_change
 mission_id: 01KSAF14K8FZ56MHYT45EGWHHC
@@ -43,7 +43,7 @@ tags: []
 
 ## ⚡ Do This First: Load Agent Profile
 
-Invoke `/ad-hoc-profile-load` with argument `implementer-ivan` before reading further.
+Invoke `/ad-hoc-profile-load` with argument `python-pedro` before reading further. Pedro's Pydantic + pytest + pathlib focus covers freshness computation, manifest schema updates, and atomic file operations.
 
 ## Objective
 
