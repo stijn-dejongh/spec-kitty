@@ -18,9 +18,11 @@
 
 schema_version: "1.0"
 mission: charter-ux-and-org-pack-vocabulary-01KSAF14
-rename:
-  from: "shipped"
-  to: "built-in"
+
+target:
+  term: "shipped"
+  operation: rename
+  replacement: "built-in"
   scope_notes: |
     Targets the user-facing layer label and its surface in code/identifiers/
     docs/tests. The word "shipped" remains acceptable in generic English
