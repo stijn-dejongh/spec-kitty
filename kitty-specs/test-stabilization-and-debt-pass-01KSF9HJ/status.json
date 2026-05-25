@@ -1,7 +1,7 @@
 {
-  "event_count": 19,
-  "last_event_id": "01KSFS7J14CSKMV2MXXZYQ18KJ",
-  "materialized_at": "2026-05-25T14:39:41.092094+00:00",
+  "event_count": 20,
+  "last_event_id": "01KSFS8FYNCYB3T4NWB93708K9",
+  "materialized_at": "2026-05-25T14:40:11.733331+00:00",
   "mission_number": "",
   "mission_slug": "test-stabilization-and-debt-pass-01KSF9HJ",
   "mission_type": "software-dev",
@@ -11,9 +11,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 2,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 9
   },
   "work_packages": {
@@ -46,11 +46,11 @@
       "last_transition_at": "2026-05-25T13:52:46.526508+00:00"
     },
     "WP05": {
-      "actor": "user",
+      "actor": "claude:opus-4-7:reviewer-renata:reviewer",
       "force_count": 1,
-      "lane": "for_review",
-      "last_event_id": "01KSFS7J14CSKMV2MXXZYQ18KJ",
-      "last_transition_at": "2026-05-25T14:39:41.092094+00:00"
+      "lane": "in_review",
+      "last_event_id": "01KSFS8FYNCYB3T4NWB93708K9",
+      "last_transition_at": "2026-05-25T14:40:11.733331+00:00"
     },
     "WP06": {
       "actor": "finalize-tasks",
