@@ -87,6 +87,25 @@
       "parallel_group": 0
     },
     {
+      "lane_id": "lane-j",
+      "wp_ids": [
+        "WP12"
+      ],
+      "write_scope": [
+        "docs/reference/finalize-tasks-internals.md",
+        "tests/specify_cli/cli/commands/test_finalize_tasks_explicit_empty_owned_files.py",
+        "tests/specify_cli/lanes/test_compute_lane_depths_cycle_safety.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "workspace"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
       "lane_id": "lane-b",
       "wp_ids": [
         "WP03"
@@ -213,7 +232,7 @@
       "parallel_group": 3
     }
   ],
-  "computed_at": "2026-05-25T14:25:51.558824+00:00",
+  "computed_at": "2026-05-25T14:30:12.230630+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP01",

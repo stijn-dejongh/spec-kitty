@@ -13,7 +13,7 @@
 |---|---|---|
 | T — Test triage + targeted fixes | WP01, WP02, WP03, WP04 | Close #1298 by 70% |
 | A — Architectural debt repayment | WP05, WP06, WP07, WP08, WP11 | LD-1, MS-1, LD-3, LD-5, LD-2 |
-| Q — Small quality fixes | WP09, WP10 | #1163 + F-04 + F-10 + F-01 |
+| Q — Small quality fixes | WP09, WP10, WP12 | #1163 + F-04 + F-10 + F-01 + finalize-tasks fix locks |
 
 ## Subtask Index
 
@@ -249,6 +249,22 @@ Subtasks:
 - [ ] T041 [P] F-01 bulk-edit-gate docs (WP10)
 
 Dependencies: none.
+
+---
+
+## WP12 — Wave Q finalize-tasks fix locks (FR-015)
+
+**Priority**: P2
+**Independent test**: regression tests for explicit `owned_files: []` honouring + cycle-safe `_compute_lane_depths`; new reference doc at `docs/reference/finalize-tasks-internals.md`.
+**Estimated prompt size**: ~250 lines
+**Prompt file**: `tasks/WP12-wave-q-finalize-tasks-fixes-lock.md`
+
+Subtasks:
+- [ ] T042 [P] Linter explicit-empty regression test (WP12)
+- [ ] T043 [P] Lane-depth cycle-safety regression test (WP12)
+- [ ] T044 [P] Reference doc at docs/reference/finalize-tasks-internals.md (WP12)
+
+Dependencies: none. The two production fixes already landed on main (commits `0f4e1a383` and `72ff0d723`); this WP locks them with tests so a future refactor can't silently undo them.
 
 ---
 
