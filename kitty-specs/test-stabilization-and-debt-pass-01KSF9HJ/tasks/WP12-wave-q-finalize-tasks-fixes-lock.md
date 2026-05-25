@@ -291,3 +291,4 @@ is a regression.
 ## Activity Log
 
 - 2026-05-25T14:33:47Z – claude:opus-4-7:python-pedro:implementer – shell_pid=1857672 – Assigned agent via action command
+- 2026-05-25T14:40:57Z – claude:opus-4-7:python-pedro:implementer – shell_pid=1857672 – FR-015 locks landed: 11 regression tests + finalize-tasks-internals reference
