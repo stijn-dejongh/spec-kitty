@@ -16,8 +16,8 @@ subtasks:
 - T016
 - T017
 - T018
-agent: claude
-shell_pid: '1856918'
+agent: "claude:opus-4-7:python-pedro:implementer"
+shell_pid: "1856918"
 history:
 - by: claude
   at: '2026-05-25T14:00:00+00:00'
@@ -190,3 +190,7 @@ Expected: 0 net new failures vs the WP01 baseline.
 1. Verify the two old methods are GONE, not just deprecated.
 2. Verify the org path's `for org_dir in self._org_dirs` semantics are preserved (multiple dirs iterated in declaration order).
 3. Verify the project path's `if not (self._project_dir and self._project_dir.exists())` short-circuit is preserved by the empty-list pattern.
+
+## Activity Log
+
+- 2026-05-25T14:33:33Z – claude:opus-4-7:python-pedro:implementer – shell_pid=1856918 – Assigned agent via action command
