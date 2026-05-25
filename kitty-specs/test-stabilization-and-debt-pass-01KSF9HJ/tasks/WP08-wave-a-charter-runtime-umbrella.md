@@ -6,7 +6,8 @@ dependencies:
 requirement_refs:
 - FR-014
 planning_base_branch: kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ
-merge_target_branch: main
+merge_target_branch: kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ
+branch_strategy: Planning artifacts for this mission were generated on kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ unless the human explicitly redirects the landing branch.
 subtasks:
 - T028
 - T029

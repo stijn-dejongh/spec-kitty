@@ -5,7 +5,8 @@ dependencies: []
 requirement_refs:
 - FR-001
 planning_base_branch: kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ
-merge_target_branch: main
+merge_target_branch: kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ
+branch_strategy: Planning artifacts for this mission were generated on kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ unless the human explicitly redirects the landing branch.
 subtasks:
 - T001
 - T002
@@ -17,12 +18,14 @@ history:
   at: '2026-05-25T14:00:00+00:00'
   action: generated
 agent_profile: researcher-robbie
-authoritative_surface: kitty-specs/test-stabilization-and-debt-pass-01KSF9HJ/
+authoritative_surface: docs/wp01-triage-baseline/
 execution_mode: planning_artifact
 mission_id: 01KSF9HJBFKRBC617JVHKZXNE2
 mission_slug: test-stabilization-and-debt-pass-01KSF9HJ
 owned_files:
-- kitty-specs/test-stabilization-and-debt-pass-01KSF9HJ/triage.md
+- docs/wp01-triage-baseline/**
+- tests/sync/tracker/test_origin_integration.py
+- tests/tasks/test_planning_workflow_integration.py
 priority: P0
 role: researcher
 tags: []
@@ -34,7 +37,7 @@ Invoke `/ad-hoc-profile-load` with argument `researcher-robbie` before reading f
 
 ## Objective
 
-Produce `kitty-specs/test-stabilization-and-debt-pass-01KSF9HJ/triage.md` — a comprehensive enumeration of every failure in the current `pytest tests/ -q` baseline (242 failures per the post-mission-122 audit), clustered by hypothesised root cause, with an explicit resolution per cluster (fix-here / sub-issue / accepted-skip-with-rationale).
+Produce `./triage.md (mission feature_dir)` — a comprehensive enumeration of every failure in the current `pytest tests/ -q` baseline (242 failures per the post-mission-122 audit), clustered by hypothesised root cause, with an explicit resolution per cluster (fix-here / sub-issue / accepted-skip-with-rationale).
 
 This WP gates Wave T's remaining WPs (WP02, WP03, WP04). Without `triage.md`, those WPs cannot scope their work.
 
@@ -50,13 +53,13 @@ This WP gates Wave T's remaining WPs (WP02, WP03, WP04). Without `triage.md`, th
 - [`plan.md`](../plan.md) Wave T section.
 - [#1298](https://github.com/Priivacy-ai/spec-kitty/issues/1298) — the original DIR-013 issue + the post-mission triage comment at https://github.com/Priivacy-ai/spec-kitty/issues/1298#issuecomment-4531958466 (16 visible clusters identified in the post-mission audit).
 - The post-mission-122 audit recorded these clusters (counts from the visible FAILED tail):
-  - `tests/sync/test_events.py` — ~27
+  - ``tests` subtree `sync/test_events.py`` — ~27
   - `tests/sync/test_lifecycle_readiness.py` — 2
   - `tests/sync/test_sync_e2e_integration.py` — 2
   - `tests/sync/tracker/test_origin_integration.py` — 1
   - `tests/tasks/test_planning_workflow_integration.py` — 9 (fixed in commit `64ddadc5f`)
-  - `tests/tasks/test_move_task_git_validation_unit.py` — 1
-  - `tests/test_dashboard/test_scanner.py` — 1
+  - ``tests` subtree `tasks/test_move_task_git_validation_unit.py`` — 1
+  - ``tests` subtree `test_dashboard/test_scanner.py`` — 1
   - **Remaining ~190+ failures truncated by pytest's default summary output** — capture them with `-r f` or junitxml.
 
 ## Subtask details
@@ -99,7 +102,7 @@ For each test file with ≥2 failures, run one failing test with `--tb=long` to 
 
 ### T004 — Author `triage.md`
 
-Create `kitty-specs/test-stabilization-and-debt-pass-01KSF9HJ/triage.md` with this structure:
+Create `./triage.md (mission feature_dir)` with this structure:
 
 ```markdown
 # Triage — #1298 post-mission-122 baseline

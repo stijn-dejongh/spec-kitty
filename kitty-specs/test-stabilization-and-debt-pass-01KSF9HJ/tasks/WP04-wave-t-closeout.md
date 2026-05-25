@@ -8,7 +8,8 @@ requirement_refs:
 - FR-005
 - NFR-001
 planning_base_branch: kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ
-merge_target_branch: main
+merge_target_branch: kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ
+branch_strategy: Planning artifacts for this mission were generated on kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ unless the human explicitly redirects the landing branch.
 subtasks:
 - T010
 - T011
@@ -20,12 +21,12 @@ history:
   at: '2026-05-25T14:00:00+00:00'
   action: generated
 agent_profile: reviewer-renata
-authoritative_surface: kitty-specs/test-stabilization-and-debt-pass-01KSF9HJ/
+authoritative_surface: docs/wp04-triage-closeout/
 execution_mode: planning_artifact
 mission_id: 01KSF9HJBFKRBC617JVHKZXNE2
 mission_slug: test-stabilization-and-debt-pass-01KSF9HJ
 owned_files:
-- kitty-specs/test-stabilization-and-debt-pass-01KSF9HJ/triage-closeout.md
+- docs/wp04-triage-closeout/**
 priority: P0
 role: reviewer
 tags: []
@@ -121,12 +122,12 @@ Deferred to follow-up sub-issues:
 - <#1298b — title>
 - ...
 
-`triage.md` archived at `kitty-specs/test-stabilization-and-debt-pass-01KSF9HJ/triage.md`.
+`triage.md` archived at `./triage.md (mission feature_dir)`.
 EOF
 )"
 ```
 
-Also author `kitty-specs/test-stabilization-and-debt-pass-01KSF9HJ/triage-closeout.md` mirroring this comment so the mission's own record persists.
+Also author `./triage-closeout.md (mission feature_dir)` mirroring this comment so the mission's own record persists.
 
 ## Definition of Done
 

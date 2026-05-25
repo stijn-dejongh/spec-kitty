@@ -6,7 +6,8 @@ dependencies:
 requirement_refs:
 - FR-013
 planning_base_branch: kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ
-merge_target_branch: main
+merge_target_branch: kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ
+branch_strategy: Planning artifacts for this mission were generated on kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ unless the human explicitly redirects the landing branch.
 subtasks:
 - T023
 - T024
@@ -25,7 +26,6 @@ mission_id: 01KSF9HJBFKRBC617JVHKZXNE2
 mission_slug: test-stabilization-and-debt-pass-01KSF9HJ
 owned_files:
 - src/specify_cli/charter_freshness/computer.py
-- src/specify_cli/charter_freshness/__init__.py
 - tests/specify_cli/charter_freshness/test_computer.py
 priority: P1
 role: implementer

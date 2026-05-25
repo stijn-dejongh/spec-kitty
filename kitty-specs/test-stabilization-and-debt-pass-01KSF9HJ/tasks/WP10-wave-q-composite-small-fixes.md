@@ -7,7 +7,8 @@ requirement_refs:
 - FR-011
 - FR-012
 planning_base_branch: kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ
-merge_target_branch: main
+merge_target_branch: kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ
+branch_strategy: Planning artifacts for this mission were generated on kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into kitty/mission-test-stabilization-and-debt-pass-01KSF9HJ unless the human explicitly redirects the landing branch.
 subtasks:
 - T039
 - T040
@@ -25,7 +26,6 @@ mission_slug: test-stabilization-and-debt-pass-01KSF9HJ
 owned_files:
 - src/specify_cli/retrospect/generator.py
 - src/specify_cli/tasks/metadata.py
-- src/specify_cli/cli/commands/tasks_finalize.py
 - src/specify_cli/cli/commands/tasks_move.py
 - docs/reference/bulk-edit-gate.md
 - .kittify/doctrine/skills/spec-kitty-bulk-edit-classification/SKILL.md
