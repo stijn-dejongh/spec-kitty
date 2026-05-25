@@ -14,8 +14,8 @@ subtasks:
 - T042
 - T043
 - T044
-agent: claude
-shell_pid: '1857672'
+agent: "claude:opus-4-7:python-pedro:implementer"
+shell_pid: "1857672"
 history:
 - by: claude
   at: '2026-05-25T16:00:00+00:00'
@@ -287,3 +287,7 @@ is a regression.
 
 1. Verify each regression test would FAIL if the corresponding fix is reverted (delete the `in_progress` guard or the `_owned_files_yaml_is_explicit_empty_list` call site, watch the test fail, restore).
 2. Verify the reference doc is linked from the CLI commands index — discoverability is the deliverable.
+
+## Activity Log
+
+- 2026-05-25T14:33:47Z – claude:opus-4-7:python-pedro:implementer – shell_pid=1857672 – Assigned agent via action command
