@@ -133,6 +133,13 @@ This mission is debt-repayment, not new design. Phase 1 artifacts are minimal:
 - **No `quickstart.md`** — no new user-facing scenarios to walk through.
 - **`triage.md`** — produced by WP01 (FR-001) before any other WP runs.
 
+### Architect-resolved open questions from the spec
+
+The spec carries two open questions for Planner Priti. Both are answered here so the tasks-phase doesn't re-derive them:
+
+1. **FR-007 split granularity (one WP or two?)** — **ONE WP** (WP06). The seven subcommands are independent handler functions; the move is mechanical. A two-WP split (skeleton then handlers) adds ceremony without reducing risk. Planner may revisit IF the WP06 prompt grows past 7 subtasks.
+2. **FR-012 doc location** — **`docs/reference/bulk-edit-gate.md`** (alongside existing `cli-commands.md`). Resolved in Wave Q above.
+
 If planner Priti judges that LD-3 (FR-013) needs an explicit chokepoint-contract document at `contracts/charter-freshness-chokepoint.md`, they may add it during /spec-kitty.tasks. This plan does not require it.
 
 ## Implementation waves (dependency-ordered)
@@ -148,21 +155,26 @@ These waves map to dependency clusters in the work-package graph. WPs within a w
 
 Lane-wise: WP02-04 can run in parallel after WP01 produces triage.md, because they touch disjoint test files.
 
-### Wave A — Architectural debt repayment (FR-006, FR-007, FR-013, FR-014)
+### Wave A — Architectural debt repayment (FR-006, FR-007, FR-008, FR-013, FR-014)
 
-- **WP05 — LD-1 consolidation (FR-006)**: rewrite `_apply_org_overrides`/`_apply_project_overrides` → `_apply_overlay_layer`. Behaviour-preserving (C-002).
-- **WP06 — MS-1 split (FR-007)**: split `cli/commands/charter.py` into per-subcommand package. Behaviour-preserving.
-- **WP07 — LD-3 chokepoint routing (FR-013)**: route `charter_freshness/computer.py` reads through `ensure_charter_bundle_fresh`. Preserves public API (C-007).
-- **WP08 — LD-5 charter_runtime umbrella (FR-014)**: group `charter_*` packages under `charter_runtime/`. Shim re-exports + CHANGELOG (C-008).
+- **WP05 — LD-1 consolidation (FR-006)**: rewrite `_apply_org_overrides`/`_apply_project_overrides` → `_apply_overlay_layer`. Behaviour-preservation tests: `tests/doctrine/test_doctrine_layered_resolution.py` + `tests/doctrine/test_doctrine_layer_collision_warnings.py` (existing); these MUST be green at HEAD before and after the refactor commit (C-002).
+- **WP06 — MS-1 split (FR-007)**: split `cli/commands/charter.py` into per-subcommand package. Behaviour-preservation tests: `tests/specify_cli/cli/commands/test_charter_lint.py` + `tests/integration/test_charter_status_freshness.py` + `tests/integration/test_charter_lint_lints_all_layers.py` (existing); these are the green-anchor set.
+- **WP07 — LD-3 chokepoint routing (FR-013)**: route `charter_freshness/computer.py` reads through `ensure_charter_bundle_fresh`. Preserves public API (C-007). Behaviour-preservation tests: `tests/specify_cli/charter_freshness/test_computer.py` + `tests/integration/test_charter_status_freshness.py`. **Architect-mandated additional test**: the data-model §6 conflict-resolution case (`built_in_only=true` AND `graph.yaml` present ⇒ `state="invalid"`) is currently asserted in `test_computer.py::test_invalid_state_when_built_in_only_and_graph_yaml_both_exist` (per mission #122 WP02 deliverables); WP07 MUST keep this assertion green after rerouting through the chokepoint.
+- **WP08 — LD-5 charter_runtime umbrella (FR-014)**: group `charter_*` packages under `charter_runtime/`. Shim re-exports + CHANGELOG (C-008). Behaviour-preservation tests: the full `tests/specify_cli/charter_lint/`, `tests/specify_cli/charter_freshness/`, `tests/specify_cli/charter_preflight/` suites (~120 tests across the three) MUST be green AND a new architectural test `tests/architectural/test_charter_runtime_shim_paths.py` MUST assert that `from specify_cli.charter_lint import LintEngine` (the old path) still resolves to the new canonical class.
+- **WP08b — LD-2 augmentation-test parametrisation (FR-008, stretch)**: collapse the 5 `tests/doctrine/test_{kind}_augmentation_fields.py` files into a single parametrised `tests/doctrine/test_augmentation_fields.py`. Spec NFR-004 marks this as droppable if WP count creeps past 10. Coverage-parity assertion: post-refactor test count ≥ 20 (matching the 4 cases × 5 kinds in the predecessor mission's WP05). **Architect note**: if WP10 below absorbs the 3 small Wave-Q items cleanly, this stretch WP can ride alongside as WP08b (parallel-safe — different files). If WP10 is already at the budget cap, drop this WP and re-file as a sub-mission per NFR-004.
 
-Lane-wise: WP05 is independent (doctrine package). WP06, WP07, WP08 all touch `src/specify_cli/charter*` — they MUST be sequenced (WP06 → WP07 → WP08) because WP08's package move would conflict with WP06's per-subcommand split and WP07's chokepoint changes if run in parallel.
+Lane-wise: **WP05 is independent of WP06/WP07/WP08** (doctrine package, no overlap with `specify_cli/charter*`). **WP06 → WP07 → WP08 MUST be sequenced** because WP08's package move would conflict with WP06's per-subcommand split and WP07's chokepoint changes if run in parallel. WP08b (if included) is independent — `tests/doctrine/` is disjoint from the charter package surface.
 
-### Wave Q — Small quality fixes (FR-009..FR-012)
+### Wave Q — Small quality fixes (FR-009, FR-010, FR-011, FR-012)
 
 - **WP09 — Issue-matrix scaffold (FR-009)**: `/spec-kitty.tasks` emits `issue-matrix.md` skeleton when spec references GH issues. Closes #1163.
-- **WP10 — Composite small fixes (FR-010, FR-011, FR-012)**: retrospective generator mining + `tracker_refs` field on `WPMetadata` + bulk-edit-gate docs. Bundled in one WP because each is small (<100 LOC).
+- **WP10 — Composite small fixes (FR-010, FR-011, FR-012)**: retrospective generator mining + `tracker_refs` field on `WPMetadata` + bulk-edit-gate docs. Bundled in one WP because each is small (<100 LOC). **Doc-location decision** (spec open question 2): `FR-012` documentation lands at `docs/reference/bulk-edit-gate.md` (alongside other CLI reference docs and the existing `cli-commands.md`). Skill prose at `.kittify/doctrine/skills/spec-kitty-bulk-edit-classification/SKILL.md` is updated to link there.
 
 Lane-wise: WP09 and WP10 can run in parallel — disjoint surfaces.
+
+### Wave-A / Wave-Q parallelism (architect note)
+
+**Wave Q does NOT depend on Wave A.** WP09 (`/spec-kitty.tasks` scaffold) touches `src/specify_cli/cli/commands/tasks_*.py` (no overlap with charter/doctrine). WP10's three sub-changes touch `src/specify_cli/retrospect/`, `src/specify_cli/tasks/metadata.py`, and `docs/reference/`. None of these collide with WP05-08 source files. The two waves are sequenced for narrative clarity in the spec, NOT for technical reasons. During `/spec-kitty.tasks` decomposition and `lanes.json` computation, Wave Q WPs should be placed in independent lanes from Wave A.
 
 ### Cross-cutting (every wave)
 
