@@ -140,11 +140,11 @@ Dependencies: WP02, WP03.
 **Prompt file**: `tasks/WP05-wave-a-overlay-layer-consolidation.md`
 
 Subtasks:
-- [ ] T014 Author `_apply_overlay_layer` (WP05)
-- [ ] T015 Migrate org caller (WP05)
-- [ ] T016 Migrate project caller (WP05)
-- [ ] T017 Delete the two old methods (WP05)
-- [ ] T018 Verify behaviour-preservation tests (WP05)
+- [x] T014 Author `_apply_overlay_layer` (WP05)
+- [x] T015 Migrate org caller (WP05)
+- [x] T016 Migrate project caller (WP05)
+- [x] T017 Delete the two old methods (WP05)
+- [x] T018 Verify behaviour-preservation tests (WP05)
 
 Dependencies: none (doctrine package is independent of charter*).
 
