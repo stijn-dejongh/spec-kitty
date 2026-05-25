@@ -18,14 +18,12 @@ history:
   at: '2026-05-25T14:00:00+00:00'
   action: generated
 agent_profile: researcher-robbie
-authoritative_surface: docs/wp01-triage-baseline/
+authoritative_surface: docs/01KSF9HJ-triage/
 execution_mode: planning_artifact
 mission_id: 01KSF9HJBFKRBC617JVHKZXNE2
 mission_slug: test-stabilization-and-debt-pass-01KSF9HJ
 owned_files:
-- docs/wp01-triage-baseline/**
-- tests/sync/tracker/test_origin_integration.py
-- tests/tasks/test_planning_workflow_integration.py
+- docs/01KSF9HJ-triage/triage.md
 priority: P0
 role: researcher
 tags: []

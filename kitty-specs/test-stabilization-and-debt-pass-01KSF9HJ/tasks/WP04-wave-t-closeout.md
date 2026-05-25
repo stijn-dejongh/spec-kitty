@@ -21,12 +21,12 @@ history:
   at: '2026-05-25T14:00:00+00:00'
   action: generated
 agent_profile: reviewer-renata
-authoritative_surface: docs/wp04-triage-closeout/
+authoritative_surface: docs/01KSF9HJ-closeout/
 execution_mode: planning_artifact
 mission_id: 01KSF9HJBFKRBC617JVHKZXNE2
 mission_slug: test-stabilization-and-debt-pass-01KSF9HJ
 owned_files:
-- docs/wp04-triage-closeout/**
+- docs/01KSF9HJ-closeout/triage-closeout.md
 priority: P0
 role: reviewer
 tags: []
