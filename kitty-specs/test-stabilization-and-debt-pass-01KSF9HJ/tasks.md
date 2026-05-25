@@ -260,9 +260,9 @@ Dependencies: none.
 **Prompt file**: `tasks/WP12-wave-q-finalize-tasks-fixes-lock.md`
 
 Subtasks:
-- [ ] T042 [P] Linter explicit-empty regression test (WP12)
-- [ ] T043 [P] Lane-depth cycle-safety regression test (WP12)
-- [ ] T044 [P] Reference doc at docs/reference/finalize-tasks-internals.md (WP12)
+- [x] T042 [P] Linter explicit-empty regression test (WP12)
+- [x] T043 [P] Lane-depth cycle-safety regression test (WP12)
+- [x] T044 [P] Reference doc at docs/reference/finalize-tasks-internals.md (WP12)
 
 Dependencies: none. The two production fixes already landed on main (commits `0f4e1a383` and `72ff0d723`); this WP locks them with tests so a future refactor can't silently undo them.
 
