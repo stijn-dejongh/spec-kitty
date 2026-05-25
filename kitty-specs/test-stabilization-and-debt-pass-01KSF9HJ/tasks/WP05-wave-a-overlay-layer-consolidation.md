@@ -194,3 +194,4 @@ Expected: 0 net new failures vs the WP01 baseline.
 ## Activity Log
 
 - 2026-05-25T14:33:33Z – claude:opus-4-7:python-pedro:implementer – shell_pid=1856918 – Assigned agent via action command
+- 2026-05-25T14:39:41Z – claude:opus-4-7:python-pedro:implementer – shell_pid=1856918 – LD-1 consolidation done; behaviour-preservation tests green
