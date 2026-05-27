@@ -74,6 +74,8 @@ _DEFAULT_PROTECTED_BRANCHES = frozenset({"main", "master"})
 _PROTECTED_BRANCH_COMMIT_EXCEPTIONS = (
     "chore: apply spec-kitty upgrade changes",
     "chore: release ",
+    "chore: Move ",
+    "chore: Mark ",
     "release: ",
 )
 _MERGED_WP_DONE_COMMIT_SUFFIX = ": record done transitions for merged WPs"
