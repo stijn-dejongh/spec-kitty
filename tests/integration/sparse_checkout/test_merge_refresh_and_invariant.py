@@ -203,7 +203,7 @@ class TestPostMergeRefreshAndInvariant:
             call_log.append("safe_commit")
             return True
 
-        import click
+        import typer
 
         with (
             patch("specify_cli.cli.commands.merge.require_lanes_json", return_value=manifest),
@@ -239,7 +239,7 @@ class TestPostMergeRefreshAndInvariant:
             policy.merge_gates = []
             mock_policy.return_value = policy
 
-            with pytest.raises(click.exceptions.Exit):
+            with pytest.raises(typer.Exit):
                 _run_lane_based_merge(
                     repo_root=tmp_path,
                     mission_slug=slug,
