@@ -43,6 +43,7 @@ from .envelope import (
     policy_to_dict,
 )
 
+import click
 from typer import core as typer_core
 from typer.core import TyperGroup
 
