@@ -99,3 +99,4 @@ Test cases:
 ## Activity Log
 
 - 2026-05-30T20:03:42Z – claude:sonnet:python-pedro:implementer – shell_pid=3208161 – Assigned agent via action command
+- 2026-05-30T20:08:09Z – claude:sonnet:python-pedro:implementer – shell_pid=3208161 – Ready for review: integration tests for PackContext wiring into OrgCharterPolicy loader
