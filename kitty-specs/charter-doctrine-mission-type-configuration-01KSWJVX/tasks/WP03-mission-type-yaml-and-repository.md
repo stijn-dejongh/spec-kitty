@@ -12,6 +12,9 @@ tracker_refs: []
 planning_base_branch: feat/doctrine-mission-type-spec-01KSWJVX
 merge_target_branch: feat/doctrine-mission-type-spec-01KSWJVX
 branch_strategy: Planning artifacts for this mission were generated on feat/doctrine-mission-type-spec-01KSWJVX. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/doctrine-mission-type-spec-01KSWJVX unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-charter-doctrine-mission-type-configuration-01KSWJVX
+base_commit: 56775025232aa879026777b03e4aee23066123df
+created_at: '2026-05-30T19:34:43.824443+00:00'
 subtasks:
 - T017
 - T018
@@ -20,6 +23,7 @@ subtasks:
 - T021
 - T022
 agent: claude
+shell_pid: '3138635'
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
