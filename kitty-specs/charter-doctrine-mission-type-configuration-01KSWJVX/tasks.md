@@ -116,11 +116,11 @@
 
 | ID | Subtask |
 |---|---|
-| T048 | Update src/specify_cli/skills/command_renderer.py to read prompt templates from src/doctrine/missions/mission-steps/{mission_type}/{step_id}/prompt.md |
-| T049 | Update src/specify_cli/skills/command_installer.py source path references |
-| T050 | Update upgrade migration pipeline (caller of get_agent_dirs_for_project()) to use new doctrine source path |
-| T051 | Update CLAUDE.md "Template Source Location" section: table row and code example to reflect src/doctrine/missions/mission-steps/ |
-| T052 | Write NFR-004 gate test: verify .claude/commands/specify.md renders from new doctrine path |
+| T048 | Update src/specify_cli/skills/command_renderer.py to read prompt templates from src/doctrine/missions/mission-steps/{mission_type}/{step_id}/prompt.md | [D] |
+| T049 | Update src/specify_cli/skills/command_installer.py source path references | [D] |
+| T050 | Update upgrade migration pipeline (caller of get_agent_dirs_for_project()) to use new doctrine source path | [D] |
+| T051 | Update CLAUDE.md "Template Source Location" section: table row and code example to reflect src/doctrine/missions/mission-steps/ | [D] |
+| T052 | Write NFR-004 gate test: verify .claude/commands/specify.md renders from new doctrine path | [D] |
 
 ### WP09 — OrgCharterPolicy extends: field + chain resolver + error classes
 
