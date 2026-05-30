@@ -55,16 +55,12 @@ FR-012, and the MissionStep assumption.
 
 ---
 
-## M-8 — C-005 inverts ACL dependency direction
+## ~~M-8~~ — RESOLVED
 
-C-005 requires all packs in an `extends:` chain to be listed in `.kittify/config.yaml`.
-This makes the Doctrine resolver depend on a `specify_cli` runtime config artifact,
-inverting the ACL direction declared in C-004.
-
-**Decision needed**: Does the pack registry live in the Doctrine BC (self-contained),
-or does the charter module receive a pre-loaded pack set from the runtime (keeping
-dependency direction correct)? The latter aligns with how `LayerContext` is constructed
-in the dispatch contract.
+C-005 updated: charter module reads `.kittify/config.yaml`, validates the pack set, and
+constructs a `PackContext` object. This `PackContext` is passed to the doctrine resolver;
+the resolver never reads `config.yaml` directly. ACL direction is preserved: `charter →
+doctrine`, not `doctrine → specify_cli`.
 
 ---
 
