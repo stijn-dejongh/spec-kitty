@@ -45,6 +45,50 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-05-30T16:55:33.664056Z",
+      "decision_id": "01KSWWZYGZ79D518YS9PDVVBGB",
+      "final_answer": "P1 + P2 together. CLI surfaces clarified: 'spec-kitty doctrine mission-type list' enumerates all available doctrine mission types (regardless of activation); 'spec-kitty charter mission-type list' (alias 'spec-kitty mission-type list') shows only activated types.",
+      "input_key": "delivery_scope",
+      "mission_id": "01KSWJVX564N81MXT8VJFRQ7AB",
+      "mission_slug": "charter-doctrine-mission-type-configuration-01KSWJVX",
+      "options": [
+        "P1 only (P2 in separate mission)",
+        "P1 + P2 together"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Should this plan target P1 requirements only (core doctrine layer, action sequence dispatch, step migration, activation filter, upgrade migration), or also include P2 (template list CLI, mission-type list/show CLI, template_set dict evolution, template DRG)?",
+      "rationale": null,
+      "resolved_at": "2026-05-30T16:59:34.817482Z",
+      "resolved_by": null,
+      "slot_key": "plan.scope.p1-vs-p2-delivery",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-05-30T17:00:14.822871Z",
+      "decision_id": "01KSWX8H36QHSFF8H4DCK7MEMA",
+      "final_answer": "B \u2014 YAML descriptor + adjacent Markdown files, using directory-per-step layout following the existing actions/{id}/ pattern: mission-steps/{mission_type_id}/{step_id}/step.yaml (descriptor), {step_id}/prompt.md (verbatim command template), {step_id}/guidelines.md (optional). Shadowing key is the compound path {mission_type_id}/{step_id}/ (directory).",
+      "input_key": "mission_step_disk_format",
+      "mission_id": "01KSWJVX564N81MXT8VJFRQ7AB",
+      "mission_slug": "charter-doctrine-mission-type-configuration-01KSWJVX",
+      "options": [
+        "A \u2014 single YAML file, prompt embedded",
+        "B \u2014 YAML descriptor + adjacent .md file"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "What is the on-disk format for MissionStep artifacts under src/doctrine/missions/mission-steps/{mission_type_id}/? The current command-templates are pure Markdown. Should each step be: (A) a single YAML file ({step_id}.yaml) with the prompt content embedded as a YAML field, or (B) a YAML descriptor ({step_id}.yaml) with a prompt_template path pointing to an adjacent Markdown file ({step_id}.md)?",
+      "rationale": null,
+      "resolved_at": "2026-05-30T17:03:02.066089Z",
+      "resolved_by": null,
+      "slot_key": "plan.architecture.mission-step-on-disk-format",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01KSWJVX564N81MXT8VJFRQ7AB",
