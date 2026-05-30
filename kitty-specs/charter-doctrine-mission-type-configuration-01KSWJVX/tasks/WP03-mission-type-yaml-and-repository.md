@@ -11,7 +11,7 @@ requirement_refs:
 tracker_refs: []
 planning_base_branch: feat/doctrine-mission-type-spec-01KSWJVX
 merge_target_branch: feat/doctrine-mission-type-spec-01KSWJVX
-branch_strategy: feature-branch
+branch_strategy: Planning artifacts for this mission were generated on feat/doctrine-mission-type-spec-01KSWJVX. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/doctrine-mission-type-spec-01KSWJVX unless the human explicitly redirects the landing branch.
 subtasks:
 - T017
 - T018
@@ -28,7 +28,6 @@ agent_profile: python-pedro
 authoritative_surface: src/doctrine/missions/
 execution_mode: code_change
 owned_files:
-- src/doctrine/missions/models.py
 - src/doctrine/missions/mission_types/
 - src/doctrine/missions/mission_type_repository.py
 - tests/doctrine/missions/test_mission_type_repository.py

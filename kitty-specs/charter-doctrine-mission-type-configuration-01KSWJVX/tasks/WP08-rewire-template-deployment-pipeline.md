@@ -9,7 +9,7 @@ requirement_refs:
 tracker_refs: []
 planning_base_branch: feat/doctrine-mission-type-spec-01KSWJVX
 merge_target_branch: feat/doctrine-mission-type-spec-01KSWJVX
-branch_strategy: feature-branch
+branch_strategy: Planning artifacts for this mission were generated on feat/doctrine-mission-type-spec-01KSWJVX. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/doctrine-mission-type-spec-01KSWJVX unless the human explicitly redirects the landing branch.
 subtasks:
 - T048
 - T049
@@ -27,7 +27,6 @@ execution_mode: code_change
 owned_files:
 - src/specify_cli/skills/command_renderer.py
 - src/specify_cli/skills/command_installer.py
-- src/specify_cli/upgrade/migrations/
 - CLAUDE.md
 - tests/specify_cli/skills/test_command_renderer.py
 role: implementer
