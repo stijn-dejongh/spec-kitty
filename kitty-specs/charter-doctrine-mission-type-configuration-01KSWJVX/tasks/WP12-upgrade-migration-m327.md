@@ -181,3 +181,4 @@ Test cases:
 ## Activity Log
 
 - 2026-05-30T20:32:43Z – claude:sonnet:python-pedro:implementer – shell_pid=3323919 – Assigned agent via action command
+- 2026-05-30T20:37:30Z – claude:sonnet:python-pedro:implementer – shell_pid=3323919 – Ready for review: m_3_2_7 migration adds mission_type_activations for legacy projects; 17 tests pass, lint clean
