@@ -141,9 +141,9 @@
 
 | ID | Subtask |
 |---|---|
-| T063 | Audit and confirm no config.yaml reads remain in resolver path when PackContext is provided |
-| T064 | Update charter callers (src/charter/drg.py, src/charter/context.py) to pass PackContext to load_org_charter_policies() |
-| T065 | Write integration tests: full chain resolution through PackContext; backward compat for packs without extends: |
+| T063 | Audit and confirm no config.yaml reads remain in resolver path when PackContext is provided | [D] |
+| T064 | Update charter callers (src/charter/drg.py, src/charter/context.py) to pass PackContext to load_org_charter_policies() | [D] |
+| T065 | Write integration tests: full chain resolution through PackContext; backward compat for packs without extends: | [D] |
 
 ### WP11 — Activation-filtered DRG traversal
 
