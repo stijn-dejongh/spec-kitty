@@ -30,26 +30,18 @@ Applied to FR-011.
 
 ---
 
-## M-5 — Live vs. frozen `action_sequence` for in-flight missions
+## ~~M-5~~ — RESOLVED (via M-3)
 
-If `action_sequence` resolves fresh on each `spec-kitty next` call, a mid-flight
-org-pack update can silently change the sequence of a running mission. If frozen
-at create time, the spec must say where the snapshot lives.
-
-**Decision needed**: Is `action_sequence` frozen in `meta.json` at mission create
-time, or re-resolved live at each `spec-kitty next` invocation?
+`action_sequence` resolves live at each `spec-kitty next` invocation. Applied to FR-008.
 
 ---
 
-## M-6 — Mission-type registry: what constitutes "registration"
+## ~~M-6~~ — RESOLVED
 
-FR-009 requires `charter.existing_mission_types(repo_root)` to enumerate registered
-types. But the spec doesn't define what makes a type "registered" in the DRG
-inventory — is it any YAML file present in any layer's `mission-types/` directory,
-or does it require an explicit activation entry in the charter?
-
-**Decision needed**: Is presence in a `mission-types/` directory sufficient for
-registration, or does activation (FR-018) also gate registration?
+"Registered" and "activated" are synonyms in charter behaviour. A mission type is
+registered if and only if it is activated in the project charter. Non-activated
+artifacts are non-canonical and invisible to charter-mediated resolution; doctrine
+module API is the explicit escape hatch. Applied to FR-009, FR-018, and Domain Language.
 
 ---
 
