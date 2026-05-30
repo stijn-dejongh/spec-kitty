@@ -1,0 +1,52 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-05-30T13:59:00.749610Z",
+      "decision_id": "01KSWJWNWDRCFZ18M7E3VAZSTR",
+      "final_answer": "action_sequence field in mission-type governance profile, backed by #883 infrastructure \u2014 no standalone workflow.yaml artifact",
+      "input_key": "issue_682_implementation_depth",
+      "mission_id": "01KSWJVX564N81MXT8VJFRQ7AB",
+      "mission_slug": "charter-doctrine-mission-type-configuration-01KSWJVX",
+      "options": [
+        "Narrowest slice (integrate action only)",
+        "Full v1 schema (declarative workflow.yaml)",
+        "Via mission-type profile action_sequence (backed by #883 infrastructure)",
+        "Design-only (ADR + contracts)"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "How deep should the implementation of #682 (composable workflow sequencing) go?",
+      "rationale": null,
+      "resolved_at": "2026-05-30T13:59:08.165859Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.issue-682-depth",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-05-30T13:59:08.881516Z",
+      "decision_id": "01KSWJWXTH6C83WNMZ1PPVW0A2",
+      "final_answer": "Yes \u2014 #883 is the enabling infrastructure that collapses #682 complexity",
+      "input_key": "include_issue_883",
+      "mission_id": "01KSWJVX564N81MXT8VJFRQ7AB",
+      "mission_slug": "charter-doctrine-mission-type-configuration-01KSWJVX",
+      "options": [
+        "Yes",
+        "No"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Should #883 (mission-type governance profiles) be included in scope?",
+      "rationale": null,
+      "resolved_at": "2026-05-30T13:59:13.098085Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.include-883",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01KSWJVX564N81MXT8VJFRQ7AB",
+  "version": 1
+}
