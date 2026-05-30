@@ -149,12 +149,12 @@
 
 | ID | Subtask |
 |---|---|
-| T066b | Migrate org_pack_loader.py _ORG_DRG_CANONICAL_KINDS alias and imports (deferred from WP01/T004) |
-| T066 | Add activation filter logic to DRG traversal: only include artifacts with IDs present in PackContext.activated_mission_types |
-| T067 | Apply filter across all artifact kinds (directives, tactics, mission types, mission steps, agent profiles) |
-| T068 | Verify PackContext.activated_kinds is populated correctly by WP06 (do NOT modify pack_context.py) |
-| T069 | Non-activated artifacts remain accessible via doctrine module API on explicit request (not through charter) |
-| T070 | Write tests: activation-filtered traversal includes only activated types; non-activated excluded from charter resolution; direct doctrine API still accessible |
+| T066b | Migrate org_pack_loader.py _ORG_DRG_CANONICAL_KINDS alias and imports (deferred from WP01/T004) | [D] |
+| T066 | Add activation filter logic to DRG traversal: only include artifacts with IDs present in PackContext.activated_mission_types | [D] |
+| T067 | Apply filter across all artifact kinds (directives, tactics, mission types, mission steps, agent profiles) | [D] |
+| T068 | Verify PackContext.activated_kinds is populated correctly by WP06 (do NOT modify pack_context.py) | [D] |
+| T069 | Non-activated artifacts remain accessible via doctrine module API on explicit request (not through charter) | [D] |
+| T070 | Write tests: activation-filtered traversal includes only activated types; non-activated excluded from charter resolution; direct doctrine API still accessible | [D] |
 
 ### WP12 — FR-019 upgrade migration (m_3_2_7)
 
