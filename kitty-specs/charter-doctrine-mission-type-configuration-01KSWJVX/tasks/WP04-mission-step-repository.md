@@ -22,8 +22,8 @@ subtasks:
 - T026
 - T027
 - T028
-agent: "claude:sonnet:python-pedro:implementer"
-shell_pid: "3201612"
+agent: "claude:opus:reviewer-renata:reviewer"
+shell_pid: "3216938"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -182,3 +182,5 @@ Use `tmp_path` fixtures (pytest) to create layer directories.
 - 2026-05-30T20:01:36Z – claude:opus:reviewer-renata:reviewer – shell_pid=3190380 – Moved to planned
 - 2026-05-30T20:02:10Z – claude:sonnet:python-pedro:implementer – shell_pid=3201612 – Started implementation via action command
 - 2026-05-30T20:06:23Z – claude:sonnet:python-pedro:implementer – shell_pid=3201612 – Cycle 2 fix: corrected org-layer path from missions/mission-steps to mission-steps, skip built-in pack_root in org loop
+- 2026-05-30T20:06:44Z – claude:opus:reviewer-renata:reviewer – shell_pid=3216938 – Started review via action command
+- 2026-05-30T20:08:15Z – claude:opus:reviewer-renata:reviewer – shell_pid=3216938 – Review passed (reviewer-renata, cycle 2): cycle 1 blocking org-layer path issue resolved — _resolve_org_layer now uses pack_root/mission-steps/{mt_id}/{step_id}/step.yaml per spec, built-in root guard added in both _resolve_org_layer and _collect_org_step_ids helper, regression test test_builtin_pack_root_in_pack_roots_does_not_double_resolve added, docstrings and test fixture corrected, all 29 tests pass
