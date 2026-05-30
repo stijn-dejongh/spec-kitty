@@ -48,13 +48,13 @@
 
 | ID | Subtask |
 |---|---|
-| T010 | Enumerate all existing command-template Markdown files in src/specify_cli/missions/*/command-templates/ |
-| T011 | Create src/doctrine/missions/mission-steps/ with subdirectory structure per mission type and step ID |
-| T012 | Move software-dev command templates verbatim to mission-steps/software-dev/{step_id}/prompt.md |
-| T013 | Move documentation, research, plan command templates verbatim to their respective mission-steps/ subdirectories |
-| T014 | Author step.yaml descriptors for each step (id, display_name, step_type=agent, prompt_template=prompt.md) |
-| T015 | Delete old src/specify_cli/missions/*/command-templates/ directories |
-| T016 | Write tests verifying mission-steps/ directory structure is complete and all step.yaml files are valid |
+| T010 | Enumerate all existing command-template Markdown files in src/specify_cli/missions/*/command-templates/ | [D] |
+| T011 | Create src/doctrine/missions/mission-steps/ with subdirectory structure per mission type and step ID | [D] |
+| T012 | Move software-dev command templates verbatim to mission-steps/software-dev/{step_id}/prompt.md | [D] |
+| T013 | Move documentation, research, plan command templates verbatim to their respective mission-steps/ subdirectories | [D] |
+| T014 | Author step.yaml descriptors for each step (id, display_name, step_type=agent, prompt_template=prompt.md) | [D] |
+| T015 | Delete old src/specify_cli/missions/*/command-templates/ directories | [D] |
+| T016 | Write tests verifying mission-steps/ directory structure is complete and all step.yaml files are valid | [D] |
 
 ### WP03 — Create MissionType YAML definitions + MissionTypeRepository
 
