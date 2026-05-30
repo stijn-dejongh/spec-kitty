@@ -17,8 +17,8 @@ subtasks:
 - T063
 - T064
 - T065
-agent: claude
-shell_pid: '3208161'
+agent: "claude:sonnet:python-pedro:implementer"
+shell_pid: "3208161"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -95,3 +95,7 @@ Test cases:
 - C-005: PackContext isolation — resolver never reads config.yaml
 - WP06: PackContext implementation
 - WP09: _resolve_chain() implementation
+
+## Activity Log
+
+- 2026-05-30T20:03:42Z – claude:sonnet:python-pedro:implementer – shell_pid=3208161 – Assigned agent via action command
