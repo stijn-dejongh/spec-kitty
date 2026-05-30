@@ -7,6 +7,10 @@ reviewed_at: '2026-05-30T20:01:36Z'
 reviewer_agent: unknown
 verdict: rejected
 wp_id: WP04
+review_artifact_override_at: "2026-05-30T20:08:15Z"
+review_artifact_override_actor: "operator"
+review_artifact_override_wp_id: "WP04"
+review_artifact_override_reason: "Review passed (reviewer-renata, cycle 2): cycle 1 blocking org-layer path issue resolved — _resolve_org_layer now uses pack_root/mission-steps/{mt_id}/{step_id}/step.yaml per spec, built-in root guard added in both _resolve_org_layer and _collect_org_step_ids helper, regression test test_builtin_pack_root_in_pack_roots_does_not_double_resolve added, docstrings and test fixture corrected, all 29 tests pass"
 ---
 
 # WP04 Review — Cycle 1
