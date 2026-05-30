@@ -21,8 +21,8 @@ subtasks:
 - T007
 - T008
 - T009
-agent: claude
-shell_pid: '2976400'
+agent: "claude:opus:python-pedro:implementer"
+shell_pid: "2976400"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -189,3 +189,8 @@ Write tests in `tests/doctrine/missions/test_models.py` covering:
 - spec.md §"Assumptions" — fragmentation background
 - data-model.md §"MissionStep (unified)" — field specification
 - `tests/architectural/test_layer_rules.py` — boundary enforcement pattern
+
+## Activity Log
+
+- 2026-05-30T18:09:34Z – claude:opus:python-pedro:implementer – shell_pid=2976400 – Assigned agent via action command
+- 2026-05-30T19:02:01Z – claude:opus:python-pedro:implementer – shell_pid=2976400 – Ready for review: unified MissionStep model, deleted mission_step_contracts subpackage, migrated all callers
