@@ -21,8 +21,8 @@ subtasks:
 - T014
 - T015
 - T016
-agent: claude
-shell_pid: '3118626'
+agent: "claude:sonnet:python-pedro:implementer"
+shell_pid: "3118626"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -180,3 +180,8 @@ Write `tests/doctrine/missions/test_mission_steps_layout.py` with tests that ver
 - FR-011: MissionStep model (step.yaml schema)
 - data-model.md §"MissionStep (unified)" — directory structure
 - research.md §"Research Task 5" — deployment pipeline context
+
+## Activity Log
+
+- 2026-05-30T19:25:44Z – claude:sonnet:python-pedro:implementer – shell_pid=3118626 – Assigned agent via action command
+- 2026-05-30T19:30:30Z – claude:sonnet:python-pedro:implementer – shell_pid=3118626 – Ready for review: mission-steps/ directory structure created, 12 software-dev command templates moved verbatim, step.yaml descriptors authored, old command-templates/ deleted, layout tests passing (124 tests)
