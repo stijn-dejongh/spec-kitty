@@ -193,3 +193,4 @@ Use `tmp_path` fixtures for PackContext construction with test data.
 ## Activity Log
 
 - 2026-05-30T20:10:27Z – claude:opus:python-pedro:implementer – shell_pid=3231293 – Assigned agent via action command
+- 2026-05-30T20:25:16Z – claude:opus:python-pedro:implementer – shell_pid=3231293 – Ready for review: activation-filtered DRG, PackContext wired, org_pack_loader alias migrated, 9 new tests pass
