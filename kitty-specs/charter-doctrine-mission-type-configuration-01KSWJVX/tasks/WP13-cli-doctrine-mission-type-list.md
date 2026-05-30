@@ -20,8 +20,8 @@ subtasks:
 - T079
 - T080
 - T081
-agent: "claude:opus:reviewer-renata:reviewer"
-shell_pid: "3258484"
+agent: "claude:sonnet:python-pedro:implementer"
+shell_pid: "3269780"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -181,3 +181,5 @@ Use `typer.testing.CliRunner` for CLI tests.
 - 2026-05-30T20:15:43Z – claude:sonnet:python-pedro:implementer – shell_pid=3225658 – Ready for review: added doctrine mission-type list command with table/JSON output, 10 tests all passing, ruff+mypy clean
 - 2026-05-30T20:16:12Z – claude:opus:reviewer-renata:reviewer – shell_pid=3258484 – Started review via action command
 - 2026-05-30T20:18:51Z – claude:opus:reviewer-renata:reviewer – shell_pid=3258484 – Moved to planned
+- 2026-05-30T20:19:24Z – claude:sonnet:python-pedro:implementer – shell_pid=3269780 – Started implementation via action command
+- 2026-05-30T20:21:45Z – claude:sonnet:python-pedro:implementer – shell_pid=3269780 – Cycle 2 fix: merged WP03, replaced try/except fallback with direct MissionTypeRepository import
