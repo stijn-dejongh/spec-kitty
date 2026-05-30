@@ -1,7 +1,7 @@
 {
-  "event_count": 43,
-  "last_event_id": "01KSX72NWDN2ADPY42HWCVHY11",
-  "materialized_at": "2026-05-30T19:51:48.877717+00:00",
+  "event_count": 45,
+  "last_event_id": "01KSX73F8QR7EAM04JK5FAKJ9R",
+  "materialized_at": "2026-05-30T19:52:14.870872+00:00",
   "mission_number": "",
   "mission_slug": "charter-doctrine-mission-type-configuration-01KSWJVX",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 11
+    "planned": 10
   },
   "work_packages": {
     "WP01": {
@@ -39,11 +39,11 @@
       "last_transition_at": "2026-05-30T19:43:39.033070+00:00"
     },
     "WP04": {
-      "actor": "finalize-tasks",
+      "actor": "claude:sonnet:python-pedro:implementer",
       "force_count": 1,
-      "lane": "planned",
-      "last_event_id": "01KSWZ7SN23S9DQ9G07V51RJY9",
-      "last_transition_at": "2026-05-30T17:34:47.970706+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01KSX73F8QR7EAM04JK5FAKJ9R",
+      "last_transition_at": "2026-05-30T19:52:14.870872+00:00"
     },
     "WP05": {
       "actor": "finalize-tasks",
