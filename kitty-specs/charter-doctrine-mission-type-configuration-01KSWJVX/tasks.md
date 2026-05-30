@@ -60,12 +60,12 @@
 
 | ID | Subtask |
 |---|---|
-| T017 | Author software-dev.yaml in src/doctrine/missions/mission_types/ with action_sequence from _COMPOSED_ACTIONS_BY_MISSION |
-| T018 | Author documentation.yaml, research.yaml, plan.yaml with their respective action sequences |
-| T019 | Implement MissionType Pydantic model (id, display_name, extends, action_sequence, governance_refs, template_set) in doctrine/missions/models.py |
-| T020 | Implement MissionTypeRepository — load all YAML files from mission_types/ directory, validate, index by id |
-| T021 | Add template_set dict[str, str] field evolution (from string to per-artifact dict); update ATDD test suite |
-| T022 | Write unit tests: YAML round-trip, action_sequence non-empty validation, id matches filename stem |
+| T017 | Author software-dev.yaml in src/doctrine/missions/mission_types/ with action_sequence from _COMPOSED_ACTIONS_BY_MISSION | [D] |
+| T018 | Author documentation.yaml, research.yaml, plan.yaml with their respective action sequences | [D] |
+| T019 | Implement MissionType Pydantic model (id, display_name, extends, action_sequence, governance_refs, template_set) in doctrine/missions/models.py | [D] |
+| T020 | Implement MissionTypeRepository — load all YAML files from mission_types/ directory, validate, index by id | [D] |
+| T021 | Add template_set dict[str, str] field evolution (from string to per-artifact dict); update ATDD test suite | [D] |
+| T022 | Write unit tests: YAML round-trip, action_sequence non-empty validation, id matches filename stem | [D] |
 
 ### WP04 — MissionStepRepository — compound-key resolution
 
