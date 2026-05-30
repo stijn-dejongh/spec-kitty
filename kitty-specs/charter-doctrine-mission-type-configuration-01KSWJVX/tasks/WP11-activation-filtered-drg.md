@@ -23,8 +23,8 @@ subtasks:
 - T068
 - T069
 - T070
-agent: claude
-shell_pid: '3231293'
+agent: "claude:opus:python-pedro:implementer"
+shell_pid: "3231293"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -189,3 +189,7 @@ Use `tmp_path` fixtures for PackContext construction with test data.
 - FR-018: Activation-filtered DRG traversal
 - data-model.md §"PackContext" — activated_kinds and activated_mission_types fields
 - contracts/activation-filtered-drg-contract.md
+
+## Activity Log
+
+- 2026-05-30T20:10:27Z – claude:opus:python-pedro:implementer – shell_pid=3231293 – Assigned agent via action command
