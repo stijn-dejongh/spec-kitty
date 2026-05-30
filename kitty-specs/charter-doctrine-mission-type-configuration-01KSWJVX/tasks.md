@@ -126,16 +126,16 @@
 
 | ID | Subtask |
 |---|---|
-| T053 | Add schema_version: int field to OrgCharterPolicy (with backward-compat str coercion validator if field already exists as str) |
-| T054 | Add extends: str | None optional field to OrgCharterPolicy |
-| T055 | Implement _resolve_chain(pack_name, pack_set) -> list[OrgCharterPolicy] with depth-first traversal |
-| T056 | Add cycle detection: OrgCharterCycleError raised with full cycle path when extends: creates a loop |
-| T057 | Add missing-base detection: OrgCharterExtensionError raised when named base pack not found |
-| T058 | Implement merge logic: union required_directives and required_toolguides; per-key replace interview_defaults |
-| T059 | Implement schema_version mismatch error: structured error with both version values |
-| T060 | Write tests: simple extends chain; depth-2 chain; union semantics; cycle detection; missing base; version mismatch |
-| T061-sig | Update load_org_charter_policies() signature to accept optional PackContext parameter |
-| T062-chain | Wire _resolve_chain to use PackContext.pack_roots; add _build_pack_set() helper |
+| T053 | Add schema_version: int field to OrgCharterPolicy (with backward-compat str coercion validator if field already exists as str) | [D] |
+| T054 | Add extends: str | None optional field to OrgCharterPolicy | [D] |
+| T055 | Implement _resolve_chain(pack_name, pack_set) -> list[OrgCharterPolicy] with depth-first traversal | [D] |
+| T056 | Add cycle detection: OrgCharterCycleError raised with full cycle path when extends: creates a loop | [D] |
+| T057 | Add missing-base detection: OrgCharterExtensionError raised when named base pack not found | [D] |
+| T058 | Implement merge logic: union required_directives and required_toolguides; per-key replace interview_defaults | [D] |
+| T059 | Implement schema_version mismatch error: structured error with both version values | [D] |
+| T060 | Write tests: simple extends chain; depth-2 chain; union semantics; cycle detection; missing base; version mismatch | [D] |
+| T061-sig | Update load_org_charter_policies() signature to accept optional PackContext parameter | [D] |
+| T062-chain | Wire _resolve_chain to use PackContext.pack_roots; add _build_pack_set() helper | [D] |
 
 ### WP10 — PackContext wiring into OrgCharterPolicy loader
 
