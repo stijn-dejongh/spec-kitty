@@ -196,3 +196,4 @@ Extend `tests/charter/test_mission_type_profiles.py` with tests for `resolve_mis
 ## Activity Log
 
 - 2026-05-30T20:09:13Z – claude:sonnet:python-pedro:implementer – shell_pid=3223825 – Assigned agent via action command
+- 2026-05-30T20:22:58Z – claude:sonnet:python-pedro:implementer – shell_pid=3223825 – Ready for review: T029-T035 complete. Opened Literal to str, added UnknownMissionTypeError.registered_ids, implemented existing_mission_types() and resolve_action_sequence(), updated resolve_mission_type_governance() validation, added 30 tests (all passing). Lazy imports with graceful fallback for parallel WP development.
