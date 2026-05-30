@@ -19,8 +19,8 @@ subtasks:
 - T050
 - T051
 - T052
-agent: claude
-shell_pid: '3403375'
+agent: "claude:sonnet:python-pedro:implementer"
+shell_pid: "3403375"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -147,3 +147,7 @@ Also test that all four mission types and all their steps can be rendered withou
 - CLAUDE.md §"Template Source Location" — section to update
 - research.md §"Research Task 5" — deployment pipeline findings
 - CLAUDE.md §"Agent Management Best Practices" — `get_agent_dirs_for_project()` pattern
+
+## Activity Log
+
+- 2026-05-30T20:55:04Z – claude:sonnet:python-pedro:implementer – shell_pid=3403375 – Assigned agent via action command
