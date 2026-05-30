@@ -22,8 +22,8 @@ subtasks:
 - T045
 - T046
 - T047
-agent: claude
-shell_pid: '3321689'
+agent: "claude:sonnet:python-pedro:implementer"
+shell_pid: "3321689"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -182,3 +182,7 @@ Also add a performance smoke test: `charter.resolve_action_sequence("software-de
 - research.md §"Research Task 1" — frozenset call site inventory
 - contracts/action-sequence-dispatch-contract.md — behavioral contract
 - NFR-002: Zero regression gate
+
+## Activity Log
+
+- 2026-05-30T20:32:01Z – claude:sonnet:python-pedro:implementer – shell_pid=3321689 – Assigned agent via action command
