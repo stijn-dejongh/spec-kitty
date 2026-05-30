@@ -22,8 +22,8 @@ subtasks:
 - T026
 - T027
 - T028
-agent: claude
-shell_pid: '3174588'
+agent: "claude:sonnet:python-pedro:implementer"
+shell_pid: "3174588"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -173,3 +173,7 @@ Use `tmp_path` fixtures (pytest) to create layer directories.
 - FR-012: MissionStep compound-key shadowing
 - data-model.md §"MissionStep (unified)" — shadowing key definition
 - WP06: PackContext (may be a stub if WP06 not yet merged)
+
+## Activity Log
+
+- 2026-05-30T19:52:15Z – claude:sonnet:python-pedro:implementer – shell_pid=3174588 – Assigned agent via action command
