@@ -64,15 +64,11 @@ doctrine`, not `doctrine → specify_cli`.
 
 ---
 
-## M-9 — `interview_defaults` per-key override vs. C-002 "add only"
+## ~~M-9~~ — RESOLVED
 
-FR-001 says `interview_defaults` resolve "per-key, overlay key wins" (replacement
-semantics). C-002 says overlay can only "add, never remove." Per-key replacement is
-neither add nor remove — it is overwrite. The two clauses are in tension.
-
-**Decision needed**: Is `interview_defaults` explicitly exempted from C-002's union
-rule (overlay replacement is intentional for defaults), and should C-002 be clarified
-to say "directives and toolguides union only; interview_defaults override per-key"?
+C-002 updated: directives and toolguides follow union-only semantics; `interview_defaults`
+is explicitly exempted and follows per-key replacement semantics (overlay value wins per
+key). Rationale: `interview_defaults` are behavioural preferences, not governance rules.
 
 ---
 
@@ -94,15 +90,15 @@ These can be authored as additional contract files or added to existing contract
 
 ---
 
-## Minor findings (deferred)
+## Minor findings — ALL RESOLVED
 
-| # | Finding | Suggested action |
-|---|---------|-----------------|
-| m-1 | P2 CLI commands (`template list`, `mission-type list`, `mission-type show`) lack `--json`, output format, command group | Add interface sketch when P2 work is planned |
-| m-2 | "restrict" in C-002 contradicts "union only" in FR-001 | Reword C-002: "add only (never remove)" |
-| m-3 | `template_set` precedence vs. project-layer DRG override unspecified | State: project-layer DRG shadow wins over mission-type-level `template_set` |
-| m-4 | Scenario 2 removes `review` step; may break in-flight missions mid-flight | Resolved by M-3 decision |
-| m-5 | NFR-001 label collision: `charter_runtime/preflight` uses NFR-001 for a different budget | Renumber new latency NFR or qualify with module scope |
-| m-6 | `schema_version` not in any entity table; no version policy defined | Add `schema_version` to `OrgCharterExtension` entity; specify integer or semver |
-| m-7 | C-003 enforcement mechanism unspecified | Reference `IDENTIFIER_PATTERN` in `doctrine/missions/models.py` |
-| m-8 | `ResolvedMissionType` has no equality or referential-transparency contract | Add: "pure function of inputs; identical inputs → identical output" |
+| # | Finding | Resolution |
+|---|---------|------------|
+| m-1 | P2 CLI commands lack `--json`/output format | Deferred to P2 planning (no spec change needed now) |
+| m-2 | "restrict" in C-002 contradicts "union only" | Resolved via M-9: C-002 reworded to "add only (never remove)" |
+| m-3 | `template_set` precedence vs. project-layer DRG override unspecified | FR-015 updated: project-layer DRG shadow wins over mission-type-level `template_set` |
+| m-4 | Scenario 2 removes `review` step; may break in-flight missions | Resolved by M-3 decision |
+| m-5 | NFR-001 label collision with `charter_runtime/preflight` | NFR-001 qualified with `(doctrine/mission-type scope)` prefix |
+| m-6 | `schema_version` absent from `OrgCharterExtension` | Added `schema_version: int` (monotonically increasing integer, baseline=1) to entity table |
+| m-7 | C-003 enforcement mechanism unspecified | C-003 updated to reference `IDENTIFIER_PATTERN` in `doctrine/missions/models.py` |
+| m-8 | `ResolvedMissionType` lacks referential-transparency contract | Entity table updated: "pure function of inputs; identical inputs → identical output" |
