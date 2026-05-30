@@ -1,17 +1,17 @@
 {
-  "event_count": 18,
-  "last_event_id": "01KSX47GY3RPSM5GS4VK22HP54",
-  "materialized_at": "2026-05-30T19:02:01.923716+00:00",
+  "event_count": 20,
+  "last_event_id": "01KSX4SC6Y0PCQMB53A5QRHVAV",
+  "materialized_at": "2026-05-30T19:11:46.910847+00:00",
   "mission_number": "",
   "mission_slug": "charter-doctrine-mission-type-configuration-01KSWJVX",
   "mission_type": "software-dev",
   "summary": {
-    "approved": 0,
+    "approved": 1,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
     "planned": 14
@@ -20,9 +20,9 @@
     "WP01": {
       "actor": "user",
       "force_count": 1,
-      "lane": "for_review",
-      "last_event_id": "01KSX47GY3RPSM5GS4VK22HP54",
-      "last_transition_at": "2026-05-30T19:02:01.923716+00:00"
+      "lane": "approved",
+      "last_event_id": "01KSX4SC6Y0PCQMB53A5QRHVAV",
+      "last_transition_at": "2026-05-30T19:11:46.910847+00:00"
     },
     "WP02": {
       "actor": "finalize-tasks",

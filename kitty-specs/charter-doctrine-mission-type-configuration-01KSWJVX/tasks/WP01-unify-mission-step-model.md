@@ -21,8 +21,8 @@ subtasks:
 - T007
 - T008
 - T009
-agent: "claude:opus:python-pedro:implementer"
-shell_pid: "2976400"
+agent: "claude:opus:python-pedro:reviewer"
+shell_pid: "3083834"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -194,3 +194,5 @@ Write tests in `tests/doctrine/missions/test_models.py` covering:
 
 - 2026-05-30T18:09:34Z – claude:opus:python-pedro:implementer – shell_pid=2976400 – Assigned agent via action command
 - 2026-05-30T19:02:01Z – claude:opus:python-pedro:implementer – shell_pid=2976400 – Ready for review: unified MissionStep model, deleted mission_step_contracts subpackage, migrated all callers
+- 2026-05-30T19:03:32Z – claude:opus:python-pedro:reviewer – shell_pid=3083834 – Started review via action command
+- 2026-05-30T19:11:46Z – claude:opus:python-pedro:reviewer – shell_pid=3083834 – Review passed: unified MissionStep model correctly placed in doctrine/missions/models.py with IDENTIFIER_PATTERN, Literal step_type discriminant, and __all__. Legacy doctrine/mission_step_contracts/ subpackage deleted; specify_cli/mission_step_contracts/ correctly preserved. Built-in step-contract YAMLs relocated to doctrine/missions/built_in_step_contracts/ (git rename, R100). Legacy contract types (MissionStepContract*, DelegatesTo) sensibly moved to doctrine/missions/step_contracts.py as compatibility surface. All callers migrated cleanly with import-only changes (mechanical updates to pack_validator, mission_loader/command, mission_loader/registry, mission_loader/contract_synthesis, next/runtime_bridge, doctrine/service, charter/mission_steps). Architectural test extended with TestUnifiedMissionStepBoundary covering legacy-subpackage-gone + new-location anchors. test_no_dead_symbols allowlist updated for WP-in-flight surface. 42 targeted tests pass; 2773 broader doctrine+charter+missions tests pass. One unrelated failing test (specify_cli.scripts.tasks.acceptance_support symbols) is preexisting on the base branch (introduced by upstream commit 4de2a5678), not caused by WP01.
