@@ -171,11 +171,11 @@
 
 | ID | Subtask |
 |---|---|
-| T077 | Add mission-type sub-group (or command) under spec-kitty doctrine CLI group in src/specify_cli/cli/commands/doctrine.py |
-| T078 | Implement list sub-command: enumerate all mission types in doctrine layer (built-in + org + project overrides) regardless of activation |
-| T079 | Output columns: id, source_layer, display_name; support --json flag |
-| T080 | Wire to MissionTypeRepository for layer-aware enumeration |
-| T081 | Write tests: list returns built-in types; list includes org/project overrides when present; --json output schema |
+| T077 | Add mission-type sub-group (or command) under spec-kitty doctrine CLI group in src/specify_cli/cli/commands/doctrine.py | [D] |
+| T078 | Implement list sub-command: enumerate all mission types in doctrine layer (built-in + org + project overrides) regardless of activation | [D] |
+| T079 | Output columns: id, source_layer, display_name; support --json flag | [D] |
+| T080 | Wire to MissionTypeRepository for layer-aware enumeration | [D] |
+| T081 | Write tests: list returns built-in types; list includes org/project overrides when present; --json output schema | [D] |
 
 ### WP14 — CLI: charter mission-type list / mission-type list alias / mission-type show
 
