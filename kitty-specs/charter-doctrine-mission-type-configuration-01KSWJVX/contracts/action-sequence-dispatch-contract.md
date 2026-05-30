@@ -29,7 +29,7 @@ spec-kitty next
   └─ decide_next_via_runtime(agent, mission_slug, result, repo_root)
        └─ charter.resolve_action_sequence(mission_type_id, repo_root)
             └─ doctrine_resolver.resolve_action_sequence(mission_type_id, layer_context)
-                 └─ MissionType.action_sequence  (from shipped → org → project DRG)
+                 └─ MissionType.action_sequence  (from built-in → org → project DRG)
 ```
 
 ### Layer 1 — `specify_cli.next` (runtime entry point)
@@ -45,7 +45,7 @@ action_sequence = resolve_action_sequence(mission_type_id, repo_root)
 
 `_COMPOSED_ACTIONS_BY_MISSION` and `_COMPOSED_ACTIONS_FOR_PROMPT` are removed. The
 tables are not refactored into a new location — they are deleted. Their content
-becomes the shipped `action_sequence` field in the built-in `MissionType` definitions
+becomes the built-in `action_sequence` field in the built-in `MissionType` definitions
 under `src/doctrine/missions/mission-types/`.
 
 ### Layer 2 — `charter.resolve_action_sequence` (source of truth for behavioral findings)
@@ -62,7 +62,7 @@ def resolve_action_sequence(
     """
     Returns the fully resolved action_sequence for the given mission type.
 
-    Resolution order: shipped → org → project (standard DRG precedence).
+    Resolution order: built-in → org → project (standard DRG precedence).
 
     Raises:
         UnknownMissionTypeError: if mission_type_id is not registered in any layer.
@@ -88,7 +88,7 @@ def resolve_action_sequence(
     """
     Resolves MissionType from the DRG chain and returns its action_sequence.
 
-    LayerContext encapsulates: shipped layer root, org pack paths, project .kittify/ root.
+    LayerContext encapsulates: built-in layer root, org pack paths, project .kittify/ root.
     The charter module constructs LayerContext from repo_root; specify_cli never
     constructs it directly (ACL boundary).
     """
@@ -161,7 +161,7 @@ Then:  MissionTypeStepResolutionError is raised with step_id="nonexistent-step"
 ## Migration Note
 
 The content of the existing `_COMPOSED_ACTIONS_BY_MISSION` tables becomes the
-`action_sequence` field in the shipped `MissionType` definition files:
+`action_sequence` field in the built-in `MissionType` definition files:
 
 | Current table entry | Shipped file target |
 |---------------------|---------------------|
