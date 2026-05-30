@@ -71,12 +71,12 @@
 
 | ID | Subtask |
 |---|---|
-| T023 | Design MissionStepRepository class interface: resolve(mission_type_id, step_id, pack_context) -> MissionStep |
-| T024 | Implement built-in layer resolution: find step.yaml at src/doctrine/missions/mission-steps/{mission_type_id}/{step_id}/ |
-| T025 | Implement org-layer shadowing: scan org pack roots for {mission_type_id}/{step_id}/ overrides |
-| T026 | Implement project-layer shadowing: scan .kittify/overrides/mission-steps/{mission_type_id}/{step_id}/ |
-| T027 | Add compound-key collision safety: a software-dev/review shadow does NOT affect documentation/review |
-| T028 | Write layered-resolution tests: built-in only, org shadow, project shadow, compound-key isolation |
+| T023 | Design MissionStepRepository class interface: resolve(mission_type_id, step_id, pack_context) -> MissionStep | [D] |
+| T024 | Implement built-in layer resolution: find step.yaml at src/doctrine/missions/mission-steps/{mission_type_id}/{step_id}/ | [D] |
+| T025 | Implement org-layer shadowing: scan org pack roots for {mission_type_id}/{step_id}/ overrides | [D] |
+| T026 | Implement project-layer shadowing: scan .kittify/overrides/mission-steps/{mission_type_id}/{step_id}/ | [D] |
+| T027 | Add compound-key collision safety: a software-dev/review shadow does NOT affect documentation/review | [D] |
+| T028 | Write layered-resolution tests: built-in only, org shadow, project shadow, compound-key isolation | [D] |
 
 ### WP05 — Charter API: existing_mission_types() + resolve_action_sequence() + open Literal→str
 
