@@ -134,6 +134,7 @@ The resolved set is the union of `regnology-default`'s directives plus the two b
 | FR-015 | A mission-type definition may optionally pin a preferred template variant for a given artifact type (e.g., `plan_template: org-custom-plan.md`). When pinned, the pinned template is resolved from the active layer chain. | P2 | Proposed |
 | FR-016 | `spec-kitty mission-type list` enumerates all registered mission types (shipped + org overrides + project overrides) with their source layer and action sequence. | P2 | Proposed |
 | FR-017 | `spec-kitty mission-type show <id>` renders the fully resolved mission-type definition (merged across all layers) for the current project. | P2 | Proposed |
+| FR-018 | DRG traversal is activation-filtered: only doctrine artifacts that are explicitly activated in the project charter are included in the resolved governance set. Artifacts present in a layer (shipped, org, or project) but not activated are silently ignored during resolution. For example, a built-in agent profile may reference directives that are not activated in the charter; those directives do not appear in the resolved directive set for any mission type. Activation state is resolved by the charter module before DRG traversal begins and passed to the resolver as a filter. | P1 | Proposed |
 
 ---
 
