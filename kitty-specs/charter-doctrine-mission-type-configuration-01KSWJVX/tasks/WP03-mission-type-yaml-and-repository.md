@@ -22,8 +22,8 @@ subtasks:
 - T020
 - T021
 - T022
-agent: claude
-shell_pid: '3138635'
+agent: "claude:sonnet:python-pedro:implementer"
+shell_pid: "3138635"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -224,3 +224,8 @@ Test cases:
 - FR-015: template_set dict evolution
 - data-model.md §"MissionType" — field specification and invariants
 - research.md §"Research Task 1" — action sequence source in runtime_bridge.py
+
+## Activity Log
+
+- 2026-05-30T19:34:44Z – claude:sonnet:python-pedro:implementer – shell_pid=3138635 – Assigned agent via action command
+- 2026-05-30T19:40:27Z – claude:sonnet:python-pedro:implementer – shell_pid=3138635 – Ready for review: MissionType model + 4 built-in YAMLs + MissionTypeRepository + 26 tests, all passing
