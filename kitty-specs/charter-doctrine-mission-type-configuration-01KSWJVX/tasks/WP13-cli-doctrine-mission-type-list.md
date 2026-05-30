@@ -20,8 +20,8 @@ subtasks:
 - T079
 - T080
 - T081
-agent: claude
-shell_pid: '3225658'
+agent: "claude:sonnet:python-pedro:implementer"
+shell_pid: "3225658"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -174,3 +174,7 @@ Use `typer.testing.CliRunner` for CLI tests.
 - FR-014: template DRG layer resolution
 - WP03: MissionTypeRepository
 - WP14: charter mission-type list (activated-only counterpart)
+
+## Activity Log
+
+- 2026-05-30T20:09:29Z – claude:sonnet:python-pedro:implementer – shell_pid=3225658 – Assigned agent via action command
