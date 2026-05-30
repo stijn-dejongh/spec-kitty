@@ -34,15 +34,15 @@
 
 | ID | Subtask |
 |---|---|
-| T001 | Audit existing MissionStep models in doctrine/missions/models.py and doctrine/mission_step_contracts/models.py; document field differences |
-| T002 | Author unified MissionStep Pydantic model with step_type discriminant (agent/human_in_loop/integration) in doctrine/missions/models.py |
-| T003 | Add IDENTIFIER_PATTERN validation for MissionStep.id (C-003) and declare __all__ |
-| T004 | Migrate callers in doctrine/ (artifact_kinds.py, service.py) from mission_step_contracts to unified model; org_pack_loader.py migration deferred to WP11/T066b |
-| T005 | Migrate all callers in specify_cli/ (pack_assembler.py, pack_validator.py, snapshot.py) from mission_step_contracts to the unified model |
-| T006 | Migrate charter/ callers (schemas.py, mission_steps.py, activations.py, context.py, drg.py) to unified model |
-| T007 | Delete doctrine/mission_step_contracts/ subpackage; confirm specify_cli/mission_step_contracts/ is NOT deleted |
-| T008 | Extend tests/architectural/test_layer_rules.py for unified model boundary |
-| T009 | Write unit tests for unified MissionStep model validation (step_type variants, id pattern, field defaults) |
+| T001 | Audit existing MissionStep models in doctrine/missions/models.py and doctrine/mission_step_contracts/models.py; document field differences | [D] |
+| T002 | Author unified MissionStep Pydantic model with step_type discriminant (agent/human_in_loop/integration) in doctrine/missions/models.py | [D] |
+| T003 | Add IDENTIFIER_PATTERN validation for MissionStep.id (C-003) and declare __all__ | [D] |
+| T004 | Migrate callers in doctrine/ (artifact_kinds.py, service.py) from mission_step_contracts to unified model; org_pack_loader.py migration deferred to WP11/T066b | [D] |
+| T005 | Migrate all callers in specify_cli/ (pack_assembler.py, pack_validator.py, snapshot.py) from mission_step_contracts to the unified model | [D] |
+| T006 | Migrate charter/ callers (schemas.py, mission_steps.py, activations.py, context.py, drg.py) to unified model | [D] |
+| T007 | Delete doctrine/mission_step_contracts/ subpackage; confirm specify_cli/mission_step_contracts/ is NOT deleted | [D] |
+| T008 | Extend tests/architectural/test_layer_rules.py for unified model boundary | [D] |
+| T009 | Write unit tests for unified MissionStep model validation (step_type variants, id pattern, field defaults) | [D] |
 
 ### WP02 — Create mission-steps/ directory structure + move command templates
 
