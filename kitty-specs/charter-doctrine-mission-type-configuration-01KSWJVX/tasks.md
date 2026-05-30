@@ -104,13 +104,13 @@
 
 | ID | Subtask |
 |---|---|
-| T041 | Delete _COMPOSED_ACTIONS_BY_MISSION frozenset from runtime_bridge.py (lines 827 region) |
-| T042 | Replace runtime_bridge.py line 876 call site with charter.resolve_action_sequence() |
-| T043 | Replace runtime_bridge.py line 988 call site with charter.resolve_action_sequence() |
-| T044 | Replace runtime_bridge.py line 2090 (_should_dispatch_via_composition) with charter.resolve_action_sequence() |
-| T045 | Delete _COMPOSED_ACTIONS_FOR_PROMPT frozenset from decision.py (lines 535 region) |
-| T046 | Replace decision.py line 573 call site with charter.resolve_action_sequence() |
-| T047 | Write integration tests: all 4 call sites exercise the live charter path; NFR-002 zero-regression verification |
+| T041 | Delete _COMPOSED_ACTIONS_BY_MISSION frozenset from runtime_bridge.py (lines 827 region) | [D] |
+| T042 | Replace runtime_bridge.py line 876 call site with charter.resolve_action_sequence() | [D] |
+| T043 | Replace runtime_bridge.py line 988 call site with charter.resolve_action_sequence() | [D] |
+| T044 | Replace runtime_bridge.py line 2090 (_should_dispatch_via_composition) with charter.resolve_action_sequence() | [D] |
+| T045 | Delete _COMPOSED_ACTIONS_FOR_PROMPT frozenset from decision.py (lines 535 region) | [D] |
+| T046 | Replace decision.py line 573 call site with charter.resolve_action_sequence() | [D] |
+| T047 | Write integration tests: all 4 call sites exercise the live charter path; NFR-002 zero-regression verification | [D] |
 
 ### WP08 — Rewire template deployment pipeline; update CLAUDE.md
 
