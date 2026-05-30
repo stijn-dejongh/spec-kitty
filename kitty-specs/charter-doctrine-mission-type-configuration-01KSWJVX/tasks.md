@@ -94,11 +94,11 @@
 
 | ID | Subtask |
 |---|---|
-| T036 | Implement PackContext frozen dataclass in src/charter/ with fields: activated_kinds, activated_mission_types, pack_roots, org_pack_names |
-| T037 | Add __all__ declaration and full type annotations to PackContext module |
-| T038 | Implement charter-side constructor: read .kittify/config.yaml, validate pack set, build PackContext |
-| T039 | Pass PackContext to existing doctrine resolver calls in charter/ — replace any direct config.yaml reads in resolver |
-| T040 | Write unit tests: PackContext construction from config, immutability assertion, empty config fallback |
+| T036 | Implement PackContext frozen dataclass in src/charter/ with fields: activated_kinds, activated_mission_types, pack_roots, org_pack_names | [D] |
+| T037 | Add __all__ declaration and full type annotations to PackContext module | [D] |
+| T038 | Implement charter-side constructor: read .kittify/config.yaml, validate pack set, build PackContext | [D] |
+| T039 | Pass PackContext to existing doctrine resolver calls in charter/ — replace any direct config.yaml reads in resolver | [D] |
+| T040 | Write unit tests: PackContext construction from config, immutability assertion, empty config fallback | [D] |
 
 ### WP07 — Delete frozensets + wire all 4 call sites to charter
 
