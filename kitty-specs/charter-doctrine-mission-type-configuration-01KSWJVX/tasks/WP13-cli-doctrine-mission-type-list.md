@@ -87,7 +87,11 @@ Example output (`--json`):
 
 ## Subtasks
 
-### T077 — Add mission-type sub-group under spec-kitty doctrine
+### T077 — Verify doctrine CLI group is registered, then add mission-type sub-group
+
+**Before adding any commands**, run `spec-kitty doctrine --help` (or equivalent) to verify the `doctrine` CLI group is registered in the main CLI. There was a prior incident (PR #1352) where the `spec-kitty doctrine` group was accidentally deregistered and a stale test masked the regression. Confirm the group is present and working before extending it.
+
+If the group is missing: re-register it in the main CLI entry point (check `src/specify_cli/cli/main.py`), add a test that verifies `spec-kitty doctrine --help` exits 0, then proceed.
 
 Open `src/specify_cli/cli/commands/doctrine.py`.
 

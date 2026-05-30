@@ -11,8 +11,6 @@ planning_base_branch: feat/doctrine-mission-type-spec-01KSWJVX
 merge_target_branch: feat/doctrine-mission-type-spec-01KSWJVX
 branch_strategy: Planning artifacts for this mission were generated on feat/doctrine-mission-type-spec-01KSWJVX. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/doctrine-mission-type-spec-01KSWJVX unless the human explicitly redirects the landing branch.
 subtasks:
-- T061
-- T062
 - T063
 - T064
 - T065
@@ -49,69 +47,25 @@ WP09 implemented the `extends:` chain resolver in isolation. This WP wires it in
 
 ## Objective
 
-Update `load_org_charter_policies()` signature to accept `PackContext`. Wire `_resolve_chain()` to use `PackContext.pack_roots` for pack location lookup. Update all callers. Write integration tests covering full chain resolution and backward compatibility.
+Wire the `PackContext`-aware `load_org_charter_policies()` (implemented in WP09) into all charter callers. Ensure no config.yaml reads remain in the charter resolver path (beyond `PackContext.from_config()` itself). Write integration tests.
+
+**Note**: The signature update of `load_org_charter_policies()` and the `_resolve_chain` wiring to `PackContext.pack_roots` were moved into WP09 (subtasks T061-sig and T062-chain), since those changes are in `src/specify_cli/doctrine/org_charter.py` which WP09 owns. This WP owns the charter-side callers and the integration test.
 
 ## Subtasks
 
-### T061 — Update load_org_charter_policies() signature
+### T063 — Audit and confirm no config.yaml reads in resolver path
 
-In `src/specify_cli/doctrine/org_charter.py`:
+Audit the call chain starting from `load_org_charter_policies()` through `_resolve_chain()` and `_merge_chain()`. Verify no direct `Path(".kittify/config.yaml").read_text()` or `yaml.safe_load(config_path.read_text())` calls exist inside these functions when a `PackContext` is provided.
 
-Before:
-```python
-def load_org_charter_policies(repo_root: Path) -> list[OrgCharterPolicy]:
-```
+The only permitted direct config.yaml read is in `PackContext.from_config()` itself (charter module, not doctrine module). Document any remaining direct reads as `# TODO: pass PackContext` comments for future cleanup.
 
-After:
-```python
-def load_org_charter_policies(
-    repo_root: Path,
-    pack_context: PackContext | None = None,
-) -> list[OrgCharterPolicy]:
-```
+### T064 — Confirm caller updates are scheduled in the owning WPs
 
-The `PackContext | None` default maintains backward compatibility: if `None`, fall back to reading `.kittify/config.yaml` directly (existing behavior). This allows callers to be migrated incrementally.
+The two main callers of `load_org_charter_policies()` in the charter layer are:
+- `src/charter/drg.py` — owned by WP11. WP11's T064-drg task must wire PackContext there.
+- `src/charter/context.py` — owned by WP01. WP01's T006 touches this file; when done, the implementer should leave a `# TODO (WP10/WP11): wire PackContext.from_config() into load_org_charter_policies() call` comment for the future WPs.
 
-Import `PackContext` from `charter.pack_context`. Do not import from `specify_cli.*` (C-004 direction is `charter → doctrine`, not the reverse — `org_charter.py` is in `specify_cli.doctrine`, which may import from `charter.*`).
-
-Wait — check the import direction. `specify_cli.doctrine.org_charter` importing from `charter.*` is fine per C-004 (the boundary prohibits `specify_cli.*` → `doctrine.*`, not the other way). Confirm this before importing.
-
-Actually, re-read C-004: "specify_cli.* modules must not import from doctrine.* directly". This says `charter.*` may import from `doctrine.*`, and `specify_cli.*` is allowed to import from `charter.*`. So `specify_cli.doctrine.org_charter` can import `PackContext` from `charter.pack_context`.
-
-### T062 — Wire _resolve_chain to use PackContext.pack_roots
-
-In `_resolve_chain()` (from WP09), the function needs to locate packs by name. Currently it receives `pack_set: dict[str, OrgCharterPolicy]`.
-
-When `PackContext` is available, load each pack from its root path in `PackContext.pack_roots` rather than from a pre-loaded dict. Update the internal `pack_set` construction to scan `PackContext.pack_roots` for `org-charter.yaml` files:
-
-```python
-def _build_pack_set(pack_context: PackContext) -> dict[str, OrgCharterPolicy]:
-    """Build a dict[pack_name, policy] by scanning pack_roots."""
-    pack_set: dict[str, OrgCharterPolicy] = {}
-    for pack_root in pack_context.pack_roots:
-        charter_file = pack_root / "org-charter.yaml"
-        if charter_file.exists():
-            policy = OrgCharterPolicy.model_validate(yaml.safe_load(charter_file.read_text()))
-            pack_set[policy.org_name] = policy
-    return pack_set
-```
-
-(Adjust field names to match the actual `OrgCharterPolicy` model.)
-
-### T063 — Ensure resolver never reads config.yaml directly
-
-Audit `load_org_charter_policies()` and all functions it calls. Replace any `Path(".kittify/config.yaml").read_text()` or similar with the data already present in `PackContext` (e.g., `pack_context.org_pack_names`).
-
-The only permitted direct config.yaml read is in `PackContext.from_config()` itself (charter module, not doctrine module).
-
-### T064 — Update all callers of load_org_charter_policies()
-
-Find all call sites in the codebase that call `load_org_charter_policies(repo_root)`. Update them to pass a `PackContext` when one is available. For callers that don't yet have a `PackContext`, leave them using the `None` fallback and add a `# TODO: pass PackContext` comment.
-
-Priority callers to update:
-- `src/charter/drg.py` (if it calls the loader)
-- `src/charter/context.py` (if it calls the loader)
-- CLI entry points that trigger charter loading
+This WP (WP10) does not make source code changes. Its value is the integration test (T065) that proves the full chain works end-to-end once WP09, WP11, and WP01 have all landed in the lane.
 
 ### T065 — Integration tests
 
@@ -125,12 +79,11 @@ Test cases:
 
 ## Acceptance Criteria
 
-- [ ] `load_org_charter_policies()` accepts optional `PackContext` parameter
-- [ ] `_resolve_chain()` uses `PackContext.pack_roots` to locate pack files
-- [ ] No config.yaml reads inside `_resolve_chain()` or `_merge_chain()`
-- [ ] All updated callers pass (no breakage in existing tests)
+- [ ] `src/charter/drg.py` and `src/charter/context.py` call `load_org_charter_policies()` with a `PackContext`
+- [ ] No new direct config.yaml reads in `_resolve_chain()` or `_merge_chain()` when PackContext is provided
+- [ ] All existing charter tests still pass (backward compat via `None` default preserved)
 - [ ] Integration tests for full chain resolution via PackContext pass
-- [ ] `mypy --strict` clean on modified files
+- [ ] `mypy --strict` clean on `src/charter/drg.py` and `src/charter/context.py`
 
 ## References
 

@@ -4,6 +4,7 @@ title: 'Charter API: existing_mission_types() + resolve_action_sequence() + open
 dependencies:
 - WP03
 - WP04
+- WP06
 requirement_refs:
 - FR-007
 - FR-008
@@ -89,9 +90,9 @@ def resolve_action_sequence(
 
 ### T029 — Open MissionTypeProfile.mission_type from Literal to str
 
-In `src/charter/mission_type_profiles.py`, find `mission_type: Literal["software-dev", "documentation", "research", "plan"]` and change it to `mission_type: str`.
+In `src/charter/mission_type_profiles.py`, find `mission_type: Literal["software-dev", "documentation", "research", "plan"]` and change the type annotation to `mission_type: str`.
 
-Remove the Pydantic field validator that enforces the `Literal` constraint.
+**Important Pydantic v2 detail**: In Pydantic v2, `Literal["a", "b"]` is enforced via the type annotation itself — there is no separate `@field_validator` to remove. Simply changing the annotation from `Literal[...]` to `str` is the complete change. Do NOT search for or remove a validator that does not exist; removing code that is not there would cause test failures.
 
 Validation against the activation list moves to `resolve_mission_type_governance()` (T033).
 
@@ -108,11 +109,11 @@ This satisfies FR-009's requirement that the error includes the list of register
 ### T031 — Implement existing_mission_types()
 
 Implementation approach:
-1. Load `PackContext` from `.kittify/config.yaml` (read the charter activation set)
-2. Use `MissionTypeRepository` (from WP03) to enumerate types in the built-in layer
-3. Filter to only types that are activated in the project charter
-4. If no charter configuration exists (new project), return all four built-in types as a fallback
-5. Return sorted, deduplicated list
+1. Use `PackContext.from_config(repo_root)` (from WP06) to load the charter activation set
+2. Return `sorted(pack_context.activated_mission_types)` — the set of types activated in the project charter
+3. `PackContext.from_config()` already handles the new-project fallback (when no config.yaml exists, it defaults all built-in types as activated per FR-019 intent) — do NOT add a separate fallback here
+
+**FR-018 alignment**: Do NOT return types that are not in `pack_context.activated_mission_types`. A non-activated type is invisible to charter-mediated resolution. The FR-019 migration (WP12) ensures every existing project has all built-in types activated before this code is first exercised; the fallback lives in `PackContext.from_config()`, not here.
 
 Ensure this function is the single source of truth for "what mission types are activated" — do not duplicate this logic elsewhere.
 

@@ -5,6 +5,7 @@ dependencies:
 - WP01
 - WP02
 - WP03
+- WP06
 requirement_refs:
 - FR-012
 tracker_refs: []
@@ -23,7 +24,7 @@ history:
 - at: '2026-05-30T17:21:57Z'
   event: created
   note: Initial task breakdown
-agent_profile: architect-alphonso
+agent_profile: python-pedro
 authoritative_surface: src/doctrine/missions/mission_step_repository.py
 execution_mode: code_change
 owned_files:
@@ -37,7 +38,7 @@ tags: []
 
 Before reading anything else, load your agent profile:
 
-/ad-hoc-profile-load architect-alphonso
+/ad-hoc-profile-load python-pedro
 
 This profile contains the coding standards, testing requirements, and
 architectural constraints you must follow throughout this work package.

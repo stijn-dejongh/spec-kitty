@@ -83,6 +83,14 @@ Copy the class structure; do not copy the `m_3_2_6` logic.
 
 ### T072 — Migration logic: detect and add activation entries
 
+**First, verify the config key**. Before implementing, read the actual `.kittify/config.yaml` from a real project and/or search the codebase for `mission_type_activations` to confirm this is the correct YAML key. Also read `src/specify_cli/upgrade/migrations/m_3_2_6_charter_bundle_v2.py` and `src/charter/pack_context.py` (WP06) to confirm the key expected by `PackContext.from_config()`.
+
+If the key name differs (e.g., `mission_types` or `activated_mission_types`), use the key that `PackContext.from_config()` actually reads — consistency between the migration writer and the runtime reader is critical.
+
+**Cross-check with WP03**: The built-in type IDs written by this migration must exactly match the IDs of the `MissionType` YAML files created by WP03 (`src/doctrine/missions/mission_types/`). Read those filenames to get the canonical list rather than hardcoding strings:
+- If WP03 is merged: read `src/doctrine/missions/mission_types/*.yaml` and collect `id:` values
+- If WP03 is not yet merged: use the known list `["software-dev", "documentation", "research", "plan"]` but add a test that verifies this list matches WP03's output once both are merged
+
 In `apply()`:
 
 ```python
@@ -95,6 +103,7 @@ def apply(self, project_path: Path, dry_run: bool = False) -> MigrationResult:
     config = ruamel_yaml.load(config_path.read_text())
 
     # Check if mission_type activation entries already exist
+    # NOTE: verify `mission_type_activations` is the actual key per PackContext.from_config()
     if "mission_type_activations" in config and config["mission_type_activations"]:
         return MigrationResult(applied=False, reason="Mission type activations already present")
 

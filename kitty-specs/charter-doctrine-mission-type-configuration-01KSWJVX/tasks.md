@@ -13,14 +13,14 @@
 | WP01 | Unify MissionStep model + migrate callers | Phase A | — | FR-011 |
 | WP02 | Create mission-steps/ directory structure + move command templates | Phase A | WP01 | FR-010, FR-011 |
 | WP03 | Create MissionType YAML definitions + MissionTypeRepository | Phase A | WP01, WP02 | FR-004, FR-005, FR-015 |
-| WP04 | MissionStepRepository — compound-key resolution | Phase A | WP01, WP02, WP03 | FR-012 |
-| WP05 | Charter API: existing_mission_types() + resolve_action_sequence() + open Literal→str | Phase B | WP03, WP04 | FR-007, FR-008, FR-009 |
-| WP06 | PackContext dataclass + charter wiring | Phase B | WP05 | FR-007 |
+| WP04 | MissionStepRepository — compound-key resolution | Phase A | WP01, WP02, WP03, WP06 | FR-012 |
+| WP05 | Charter API: existing_mission_types() + resolve_action_sequence() + open Literal→str | Phase B | WP03, WP04, WP06 | FR-007, FR-008, FR-009 |
+| WP06 | PackContext dataclass + charter wiring | Phase B | WP03 | FR-007 |
 | WP07 | Delete frozensets + wire all 4 call sites to charter | Phase C | WP05, WP06 | FR-007, FR-008 |
 | WP08 | Rewire template deployment pipeline; update CLAUDE.md | Phase C | WP02, WP07 | FR-010 |
 | WP09 | OrgCharterPolicy extends: field + chain resolver + error classes | Phase D | WP06 | FR-001, FR-002, FR-003 |
 | WP10 | PackContext wiring into OrgCharterPolicy loader | Phase D | WP09 | FR-001, FR-003 |
-| WP11 | Activation-filtered DRG traversal (FR-018) | Phase E | WP06, WP10 | FR-006, FR-018 |
+| WP11 | Activation-filtered DRG traversal (FR-018) | Phase E | WP03, WP06, WP10 | FR-006, FR-018 |
 | WP12 | FR-019 upgrade migration (m_3_2_7) | Phase E | WP11 | FR-019 |
 | WP13 | CLI — spec-kitty doctrine mission-type list | Phase F | WP03, WP04 | FR-013, FR-014 |
 | WP14 | CLI — charter mission-type list / mission-type list / mission-type show | Phase F | WP05, WP13 | FR-016, FR-017 |
@@ -37,7 +37,7 @@
 | T001 | Audit existing MissionStep models in doctrine/missions/models.py and doctrine/mission_step_contracts/models.py; document field differences |
 | T002 | Author unified MissionStep Pydantic model with step_type discriminant (agent/human_in_loop/integration) in doctrine/missions/models.py |
 | T003 | Add IDENTIFIER_PATTERN validation for MissionStep.id (C-003) and declare __all__ |
-| T004 | Migrate all callers in doctrine/ (artifact_kinds.py, service.py, drg/org_pack_loader.py) from mission_step_contracts to the unified model |
+| T004 | Migrate callers in doctrine/ (artifact_kinds.py, service.py) from mission_step_contracts to unified model; org_pack_loader.py migration deferred to WP11/T066b |
 | T005 | Migrate all callers in specify_cli/ (pack_assembler.py, pack_validator.py, snapshot.py) from mission_step_contracts to the unified model |
 | T006 | Migrate charter/ callers (schemas.py, mission_steps.py, activations.py, context.py, drg.py) to unified model |
 | T007 | Delete doctrine/mission_step_contracts/ subpackage; confirm specify_cli/mission_step_contracts/ is NOT deleted |
@@ -126,7 +126,7 @@
 
 | ID | Subtask |
 |---|---|
-| T053 | Add schema_version: int field to OrgCharterPolicy Pydantic model in src/specify_cli/doctrine/org_charter.py |
+| T053 | Add schema_version: int field to OrgCharterPolicy (with backward-compat str coercion validator if field already exists as str) |
 | T054 | Add extends: str | None optional field to OrgCharterPolicy |
 | T055 | Implement _resolve_chain(pack_name, pack_set) -> list[OrgCharterPolicy] with depth-first traversal |
 | T056 | Add cycle detection: OrgCharterCycleError raised with full cycle path when extends: creates a loop |
@@ -134,24 +134,25 @@
 | T058 | Implement merge logic: union required_directives and required_toolguides; per-key replace interview_defaults |
 | T059 | Implement schema_version mismatch error: structured error with both version values |
 | T060 | Write tests: simple extends chain; depth-2 chain; union semantics; cycle detection; missing base; version mismatch |
+| T061-sig | Update load_org_charter_policies() signature to accept optional PackContext parameter |
+| T062-chain | Wire _resolve_chain to use PackContext.pack_roots; add _build_pack_set() helper |
 
 ### WP10 — PackContext wiring into OrgCharterPolicy loader
 
 | ID | Subtask |
 |---|---|
-| T061 | Update load_org_charter_policies() signature to accept PackContext |
-| T062 | Wire chain resolver (_resolve_chain) to use PackContext.pack_roots for pack location lookup |
-| T063 | Ensure resolver never reads .kittify/config.yaml directly — all data flows through PackContext |
-| T064 | Update all callers of load_org_charter_policies() to pass PackContext |
+| T063 | Audit and confirm no config.yaml reads remain in resolver path when PackContext is provided |
+| T064 | Update charter callers (src/charter/drg.py, src/charter/context.py) to pass PackContext to load_org_charter_policies() |
 | T065 | Write integration tests: full chain resolution through PackContext; backward compat for packs without extends: |
 
 ### WP11 — Activation-filtered DRG traversal
 
 | ID | Subtask |
 |---|---|
+| T066b | Migrate org_pack_loader.py _ORG_DRG_CANONICAL_KINDS alias and imports (deferred from WP01/T004) |
 | T066 | Add activation filter logic to DRG traversal: only include artifacts with IDs present in PackContext.activated_mission_types |
 | T067 | Apply filter across all artifact kinds (directives, tactics, mission types, mission steps, agent profiles) |
-| T068 | Implement PackContext.activated_kinds filter for non-mission-type artifact kinds |
+| T068 | Verify PackContext.activated_kinds is populated correctly by WP06 (do NOT modify pack_context.py) |
 | T069 | Non-activated artifacts remain accessible via doctrine module API on explicit request (not through charter) |
 | T070 | Write tests: activation-filtered traversal includes only activated types; non-activated excluded from charter resolution; direct doctrine API still accessible |
 

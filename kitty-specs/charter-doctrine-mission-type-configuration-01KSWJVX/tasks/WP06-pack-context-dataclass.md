@@ -2,7 +2,7 @@
 work_package_id: WP06
 title: PackContext dataclass + charter wiring
 dependencies:
-- WP05
+- WP03
 requirement_refs:
 - FR-007
 tracker_refs: []
@@ -20,7 +20,7 @@ history:
 - at: '2026-05-30T17:21:57Z'
   event: created
   note: Initial task breakdown
-agent_profile: architect-alphonso
+agent_profile: python-pedro
 authoritative_surface: src/charter/pack_context.py
 execution_mode: code_change
 owned_files:
@@ -35,7 +35,7 @@ tags: []
 
 Before reading anything else, load your agent profile:
 
-/ad-hoc-profile-load architect-alphonso
+/ad-hoc-profile-load python-pedro
 
 This profile contains the coding standards, testing requirements, and
 architectural constraints you must follow throughout this work package.
@@ -122,10 +122,16 @@ def from_config(cls, repo_root: Path) -> "PackContext":
 Implementation:
 1. Read `.kittify/config.yaml` to get the list of configured org pack names and activated artifact kinds
 2. Resolve `pack_roots` in order: `[builtin_doctrine_root, ...org_pack_roots...]`
-3. Determine `activated_mission_types` from the charter's activation section (if present; default to all built-ins if absent — consistent with FR-019 intent)
-4. Construct and return the frozen dataclass
+3. Determine `activated_mission_types` from the charter's activation section (key `mission_type_activations`):
+   - If the key is present and non-empty: use its value as the `frozenset`
+   - If absent or empty (new project / pre-migration): default to all four built-ins (`software-dev`, `documentation`, `research`, `plan`) as a frozenset — consistent with FR-019 migration intent
+4. Determine `activated_kinds` from the charter's activation section (key `activated_kinds`):
+   - If absent: default to all built-in artifact kinds (backward-compatible default)
+5. Construct and return the frozen dataclass
 
-The built-in doctrine root is `Path(__file__).parent.parent.parent / "doctrine"` (relative to `src/charter/`).
+**Note**: WP11 depends on `activated_kinds` and `activated_mission_types` being correctly populated here. Ensure these fields are non-empty for a standard project with a typical `.kittify/config.yaml`.
+
+The built-in doctrine root is `Path(__file__).parent.parent / "doctrine"` (relative to `src/charter/pack_context.py`): `parent` → `src/charter/`, `parent.parent` → `src/`, then `/ "doctrine"` → `src/doctrine/`. Do NOT add an extra `.parent` — three levels would exit `src/` into the repository root.
 
 ### T039 — Wire PackContext into existing charter resolver calls
 

@@ -20,6 +20,8 @@ subtasks:
 - T058
 - T059
 - T060
+- T061-sig
+- T062-chain
 agent: claude
 history:
 - at: '2026-05-30T17:21:57Z'
@@ -71,13 +73,25 @@ Add `schema_version` and `extends` fields to `OrgCharterPolicy`. Implement `_res
 
 ### T053 — Add schema_version field
 
-In `src/specify_cli/doctrine/org_charter.py`, add to `OrgCharterPolicy`:
+**Before touching anything**, read the existing `OrgCharterPolicy` definition in `src/specify_cli/doctrine/org_charter.py`. The field may already exist as `schema_version: str = "1"` (a string, not an integer).
 
-```python
-schema_version: int = 1
-```
+If the field already exists as `str`:
+- Do NOT simply change the type to `int` — this would break existing YAML files that have `schema_version: "1"` stored as a string.
+- Add a Pydantic v2 `@field_validator('schema_version', mode='before')` that coerces string `"1"` (and other numeric strings) to `int` before validation:
+  ```python
+  @field_validator('schema_version', mode='before')
+  @classmethod
+  def _coerce_schema_version(cls, v: object) -> int:
+      if isinstance(v, str):
+          return int(v)
+      return v  # type: ignore[return-value]
+  ```
+- Update the field annotation to `schema_version: int = 1`
 
-This is the monotonically increasing integer baseline. The field is backward-compatible: existing `org-charter.yaml` files without `schema_version` default to `1`.
+If the field does not exist yet:
+- Add `schema_version: int = 1` (no validator needed for a new field)
+
+Either way, the result is `schema_version: int = 1` with backward-compatible YAML parsing.
 
 ### T054 — Add extends field
 
@@ -191,6 +205,35 @@ Test cases:
 - **Missing base**: A extends "nonexistent" → `OrgCharterExtensionError` with chain
 - **Schema version mismatch**: A has `schema_version: 1`, B extends A with `schema_version: 2` → structured error
 - **Backward compatibility**: Pack without `extends:` still merges as before; existing flat-union tests still pass
+
+### T061-sig — Update load_org_charter_policies() signature
+
+In `src/specify_cli/doctrine/org_charter.py`, update the `load_org_charter_policies()` function signature to accept an optional `PackContext`:
+
+Before:
+```python
+def load_org_charter_policies(repo_root: Path) -> list[OrgCharterPolicy]:
+```
+
+After:
+```python
+def load_org_charter_policies(
+    repo_root: Path,
+    pack_context: "PackContext | None" = None,
+) -> list[OrgCharterPolicy]:
+```
+
+Import `PackContext` from `charter.pack_context`. The import direction is valid per C-004: `specify_cli.doctrine.*` may import from `charter.*`.
+
+The `PackContext | None` default maintains backward compatibility: when `None`, fall back to reading `.kittify/config.yaml` directly (existing behaviour). Callers are migrated in WP10.
+
+### T062-chain — Wire _resolve_chain to use PackContext.pack_roots
+
+When `pack_context` is not `None`, use `pack_context.pack_roots` to locate org-pack `org-charter.yaml` files instead of reading pack paths from `.kittify/config.yaml` directly.
+
+Add a private helper `_build_pack_set(pack_context: PackContext) -> dict[str, OrgCharterPolicy]` that scans `pack_context.pack_roots` for `org-charter.yaml` files and loads them into a name-keyed dict. This replaces any existing direct `config.yaml` reads inside `_resolve_chain` when a `PackContext` is provided.
+
+The pack name key is the directory name of the pack root (e.g., if `pack_root` is `.../org-packs/corp-baseline`, the key is `corp-baseline`). Use `pack_root.name` for the key.
 
 ## Acceptance Criteria
 

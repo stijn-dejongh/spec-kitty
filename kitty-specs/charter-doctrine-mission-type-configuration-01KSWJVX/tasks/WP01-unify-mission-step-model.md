@@ -118,7 +118,8 @@ Add `__all__` declaration listing all public symbols (C-007).
 Migrate these files to import from `doctrine.missions.models.MissionStep` instead of `doctrine.mission_step_contracts.*`:
 - `src/doctrine/artifact_kinds.py` — update `mission_step_contracts` artifact kind reference
 - `src/doctrine/service.py` — update DRG loading call
-- `src/doctrine/drg/org_pack_loader.py` — update `_ORG_DRG_CANONICAL_KINDS`; keep `mission_step_contracts` as alias for one release (do NOT rename outright)
+
+**Note**: `src/doctrine/drg/org_pack_loader.py` (`_ORG_DRG_CANONICAL_KINDS`) is owned by WP11 (activation-filtered DRG). Leave that file untouched here; WP11 will handle both the kind-alias migration and the activation filter in the same pass. Verify via grep that `org_pack_loader.py` still builds without import errors after this WP (it should, since the module it imports from is not removed until T007).
 
 ### T005 — Migrate specify_cli/ callers
 
@@ -138,7 +139,10 @@ Migrate these charter-layer files to the unified model:
 - `src/charter/context.py`
 - `src/charter/drg.py`
 
-Respect C-004: `charter.*` may import from `doctrine.*`; confirm you are not adding `specify_cli.*` → `doctrine.*` imports.
+Respect C-004 boundary (kernel ← doctrine ← charter ← specify_cli):
+- `charter.*` MAY import from `doctrine.*` — this is correct and expected.
+- `specify_cli.*` must NOT import from `doctrine.*` directly — only through `charter.*`.
+- These charter-layer callers importing `doctrine.missions.models.MissionStep` is exactly the right direction. Confirm no new `specify_cli.*` → `doctrine.*` direct imports are introduced in this or any earlier subtask.
 
 ### T007 — Delete doctrine/mission_step_contracts/ subpackage
 

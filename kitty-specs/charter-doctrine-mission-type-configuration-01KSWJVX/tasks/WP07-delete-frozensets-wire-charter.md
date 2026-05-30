@@ -160,7 +160,7 @@ Test cases that must pass (NFR-002 regression gate):
 
 These tests must use the live `charter.resolve_action_sequence()` path (not mock the frozenset tables, which no longer exist).
 
-Also add a performance smoke test: `charter.resolve_action_sequence("software-dev", repo_root)` completes within 200ms on a warm filesystem (NFR-001 proxy).
+Also add a performance smoke test: `charter.resolve_action_sequence("software-dev", repo_root)` completes within 100ms on a warm filesystem (NFR-001: `spec-kitty next` cold-start overhead ≤100ms for built-in-only projects).
 
 ## Acceptance Criteria
 
