@@ -181,3 +181,4 @@ Use `tmp_path` fixtures (pytest) to create layer directories.
 - 2026-05-30T19:58:03Z – claude:opus:reviewer-renata:reviewer – shell_pid=3190380 – Started review via action command
 - 2026-05-30T20:01:36Z – claude:opus:reviewer-renata:reviewer – shell_pid=3190380 – Moved to planned
 - 2026-05-30T20:02:10Z – claude:sonnet:python-pedro:implementer – shell_pid=3201612 – Started implementation via action command
+- 2026-05-30T20:06:23Z – claude:sonnet:python-pedro:implementer – shell_pid=3201612 – Cycle 2 fix: corrected org-layer path from missions/mission-steps to mission-steps, skip built-in pack_root in org loop
