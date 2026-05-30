@@ -20,8 +20,8 @@ subtasks:
 - T090
 - T091
 - T092
-agent: claude
-shell_pid: '3447930'
+agent: "claude:sonnet:python-pedro:implementer"
+shell_pid: "3447930"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -188,3 +188,7 @@ Use `tmp_path` and write synthetic `status.events.jsonl` to simulate in-flight m
 - spec.md §"Scenario 2" — override with step removal
 - `specify_cli.status.store.read_events()` — event log access
 - `specify_cli.status.reducer.materialize()` — snapshot access
+
+## Activity Log
+
+- 2026-05-30T21:11:11Z – claude:sonnet:python-pedro:implementer – shell_pid=3447930 – Assigned agent via action command
