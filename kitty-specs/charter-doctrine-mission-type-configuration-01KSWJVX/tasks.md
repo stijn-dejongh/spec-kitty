@@ -191,9 +191,9 @@
 
 | ID | Subtask |
 |---|---|
-| T087 | Hook into spec-kitty charter activate execution path to inspect mission-type overrides being activated |
-| T088 | Compare incoming action_sequence against current activated action_sequence; identify removed step IDs |
-| T089 | For each removed step ID, query in-flight missions (status.events.jsonl) for any WPs in the corresponding lane |
-| T090 | Emit structured warning per affected mission (mission_slug, wp_id, removed_step) before completing activation |
-| T091 | Warning is non-blocking: activation completes after warning is emitted |
-| T092 | Write tests: warning emitted when removed step has in-flight WPs; no warning when no in-flight WPs; activation completes in both cases |
+| T087 | Hook into spec-kitty charter activate execution path to inspect mission-type overrides being activated | [D] |
+| T088 | Compare incoming action_sequence against current activated action_sequence; identify removed step IDs | [D] |
+| T089 | For each removed step ID, query in-flight missions (status.events.jsonl) for any WPs in the corresponding lane | [D] |
+| T090 | Emit structured warning per affected mission (mission_slug, wp_id, removed_step) before completing activation | [D] |
+| T091 | Warning is non-blocking: activation completes after warning is emitted | [D] |
+| T092 | Write tests: warning emitted when removed step has in-flight WPs; no warning when no in-flight WPs; activation completes in both cases | [D] |
