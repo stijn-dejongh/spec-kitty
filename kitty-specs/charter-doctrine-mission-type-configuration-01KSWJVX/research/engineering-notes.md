@@ -45,14 +45,13 @@ module API is the explicit escape hatch. Applied to FR-009, FR-018, and Domain L
 
 ---
 
-## M-7 — `DoctrineTemplate.id` matching key for shadowing
+## ~~M-7~~ — RESOLVED
 
-FR-014 says org/project layers shadow a built-in template "by providing a file with
-the same `id`." Template IDs are untyped strings — not URNs, not file paths.
-The resolution matching key is unspecified.
-
-**Decision needed**: Is shadowing keyed by filename stem (consistent with the
-filesystem-based DRG pattern) or by an explicit `id` field in template frontmatter?
+`MissionStep` identity is `(mission_type_id, step_id)` — steps are entities owned
+by `MissionType`, not independent aggregate roots. Two steps with the same `id`
+in different mission types are independent entities. Shadowing key for step overrides
+is the compound path `{mission_type_id}/{step_id}.yaml`. Applied to Key Entities,
+FR-012, and the MissionStep assumption.
 
 ---
 
