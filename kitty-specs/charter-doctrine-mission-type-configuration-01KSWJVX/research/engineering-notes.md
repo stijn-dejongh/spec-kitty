@@ -20,17 +20,13 @@ and M-1 through M-3 are resolved in the spec. The items below are paused for pla
 
 ---
 
-## M-4 — `step_type` behavioral contract undefined
+## ~~M-4~~ — RESOLVED
 
-`step_type: agent | human_in_loop | integration` has no specified runtime effect.
-What does `spec-kitty next` emit differently for each `Decision.kind`?
-
-**Decision needed**:
-- `agent` → `kind=step` (current behavior)?
-- `human_in_loop` → `kind=decision_required`? Block and prompt operator?
-- `integration` (reserved, no providers) → skip, error, or `kind=blocked`?
-
-The existing `Decision` envelope and its `kind` variants need to be referenced explicitly.
+`step_type` is the executor discriminant — who is responsible for execution:
+- `agent` → LLM system → `kind=step`
+- `human_in_loop` → human operator / HiC → `kind=decision_required`
+- `integration` → external system call → `kind=blocked` (no providers this release)
+Applied to FR-011.
 
 ---
 
