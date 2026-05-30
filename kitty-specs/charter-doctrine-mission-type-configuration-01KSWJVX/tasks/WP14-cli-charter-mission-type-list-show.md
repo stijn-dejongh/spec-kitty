@@ -20,8 +20,8 @@ subtasks:
 - T084
 - T085
 - T086
-agent: "claude:opus:reviewer-renata:reviewer"
-shell_pid: "3365794"
+agent: "claude:sonnet:python-pedro:implementer"
+shell_pid: "3401376"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -211,3 +211,4 @@ Use `typer.testing.CliRunner` and `tmp_path` for test isolation.
 - 2026-05-30T20:42:15Z – claude:sonnet:python-pedro:implementer – shell_pid=3325242 – Ready for review: charter mission-type list/show commands implemented. FR-016 (charter mission-type list + top-level alias) and FR-017 (mission-type show) complete. 25 tests pass.
 - 2026-05-30T20:42:42Z – claude:opus:reviewer-renata:reviewer – shell_pid=3365794 – Started review via action command
 - 2026-05-30T20:52:32Z – claude:opus:reviewer-renata:reviewer – shell_pid=3365794 – Moved to planned
+- 2026-05-30T20:54:20Z – claude:sonnet:python-pedro:implementer – shell_pid=3401376 – Started implementation via action command
