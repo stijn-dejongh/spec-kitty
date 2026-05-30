@@ -1,7 +1,7 @@
 {
-  "event_count": 104,
-  "last_event_id": "01KSXB8JP5KTV4EQMV8K30FHCF",
-  "materialized_at": "2026-05-30T21:04:56.517199+00:00",
+  "event_count": 105,
+  "last_event_id": "01KSXB9GV7865REZQSTG29JKBM",
+  "materialized_at": "2026-05-30T21:05:27.399377+00:00",
   "mission_number": "",
   "mission_slug": "charter-doctrine-mission-type-configuration-01KSWJVX",
   "mission_type": "software-dev",
@@ -11,9 +11,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 2,
+    "for_review": 1,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 1
   },
   "work_packages": {
@@ -109,11 +109,11 @@
       "last_transition_at": "2026-05-30T20:23:46.000960+00:00"
     },
     "WP14": {
-      "actor": "user",
+      "actor": "claude:opus:reviewer-renata:reviewer",
       "force_count": 2,
-      "lane": "for_review",
-      "last_event_id": "01KSXB8JP5KTV4EQMV8K30FHCF",
-      "last_transition_at": "2026-05-30T21:04:56.517199+00:00"
+      "lane": "in_review",
+      "last_event_id": "01KSXB9GV7865REZQSTG29JKBM",
+      "last_transition_at": "2026-05-30T21:05:27.399377+00:00"
     },
     "WP15": {
       "actor": "finalize-tasks",

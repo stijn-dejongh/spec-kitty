@@ -20,8 +20,8 @@ subtasks:
 - T084
 - T085
 - T086
-agent: "claude:sonnet:python-pedro:implementer"
-shell_pid: "3401376"
+agent: "claude:opus:reviewer-renata:reviewer"
+shell_pid: "3430842"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -214,3 +214,4 @@ Use `typer.testing.CliRunner` and `tmp_path` for test isolation.
 - 2026-05-30T20:52:32Z – claude:opus:reviewer-renata:reviewer – shell_pid=3365794 – Moved to planned
 - 2026-05-30T20:54:20Z – claude:sonnet:python-pedro:implementer – shell_pid=3401376 – Started implementation via action command
 - 2026-05-30T21:04:56Z – claude:sonnet:python-pedro:implementer – shell_pid=3401376 – Cycle 2: fixed docs parity and doctrine boundary test
+- 2026-05-30T21:05:27Z – claude:opus:reviewer-renata:reviewer – shell_pid=3430842 – Started review via action command
