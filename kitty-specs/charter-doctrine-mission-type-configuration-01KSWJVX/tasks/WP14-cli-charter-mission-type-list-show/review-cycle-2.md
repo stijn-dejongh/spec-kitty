@@ -7,6 +7,10 @@ reviewed_at: '2026-05-30T20:52:32Z'
 reviewer_agent: unknown
 verdict: rejected
 wp_id: WP14
+review_artifact_override_at: "2026-05-30T21:10:38Z"
+review_artifact_override_actor: "operator"
+review_artifact_override_wp_id: "WP14"
+review_artifact_override_reason: "Review passed (reviewer-renata, cycle 2): Both blocking issues resolved — docs/reference/cli-commands.md now contains all three missing entries (charter mission-type, doctrine mission-type, mission-type show); module-level doctrine.* import in doctrine.py moved to lazy inside _collect_built_in_mission_types(). All 3 architectural tests pass, all 25 CLI tests pass, 91 total related tests pass. FR-016 and FR-017 fully covered. No dead code, no --feature regressions, no frozen file violations, mypy clean on WP14 files, C-004 charter boundary respected."
 ---
 
 # Review Cycle 1 — WP14 CLI: charter mission-type list / mission-type show
