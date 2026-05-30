@@ -22,8 +22,8 @@ subtasks:
 - T026
 - T027
 - T028
-agent: "claude:sonnet:python-pedro:implementer"
-shell_pid: "3174588"
+agent: "claude:opus:reviewer-renata:reviewer"
+shell_pid: "3190380"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -178,3 +178,4 @@ Use `tmp_path` fixtures (pytest) to create layer directories.
 
 - 2026-05-30T19:52:15Z – claude:sonnet:python-pedro:implementer – shell_pid=3174588 – Assigned agent via action command
 - 2026-05-30T19:57:39Z – claude:sonnet:python-pedro:implementer – shell_pid=3174588 – Ready for review: MissionStepRepository with compound-key layered resolution (built-in → org → project). 28 tests passing, all layers covered, compound-key isolation verified.
+- 2026-05-30T19:58:03Z – claude:opus:reviewer-renata:reviewer – shell_pid=3190380 – Started review via action command
