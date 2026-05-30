@@ -1,0 +1,13 @@
+{
+  "coordination_branch": "kitty/mission-charter-doctrine-mission-type-configuration-01KSWJVX",
+  "created_at": "2026-05-30T13:58:35.430571+00:00",
+  "friendly_name": "Charter Doctrine Mission-Type Configuration",
+  "mission_id": "01KSWJVX564N81MXT8VJFRQ7AB",
+  "mission_number": null,
+  "mission_slug": "charter-doctrine-mission-type-configuration-01KSWJVX",
+  "mission_type": "software-dev",
+  "purpose_context": "Spec Kitty's doctrine layer is composable for directives, tactics, and agent profiles — but the mission workflow sequence and the step prompts that drive agents are still hardcoded in the CLI. This mission moves mission types and their step templates into the doctrine layer (shipped → org → project resolution), adds an extends: key to org-charter.yaml for additive multi-org merging, and makes composable workflow sequencing a property of mission-type profiles. Teams can then add, replace, or define mission types and their prompts without forking the shipped code.",
+  "purpose_tldr": "Make mission types, workflow sequences, and step prompts first-class configurable doctrine artifacts — extensible by org and project overrides, with no hardcoded defaults in the runtime.",
+  "slug": "charter-doctrine-mission-type-configuration-01KSWJVX",
+  "target_branch": "feat/pre-doctrine-stabilization-remediation"
+}
