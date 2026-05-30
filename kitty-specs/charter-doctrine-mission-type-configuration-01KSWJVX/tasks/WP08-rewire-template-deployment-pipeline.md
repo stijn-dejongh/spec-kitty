@@ -19,8 +19,8 @@ subtasks:
 - T050
 - T051
 - T052
-agent: "claude:sonnet:python-pedro:implementer"
-shell_pid: "3403375"
+agent: "claude:opus:reviewer-renata:reviewer"
+shell_pid: "3431372"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -152,3 +152,4 @@ Also test that all four mission types and all their steps can be rendered withou
 
 - 2026-05-30T20:55:04Z – claude:sonnet:python-pedro:implementer – shell_pid=3403375 – Assigned agent via action command
 - 2026-05-30T21:02:57Z – claude:sonnet:python-pedro:implementer – shell_pid=3403375 – Ready for review: rewired template deployment pipeline from src/specify_cli/missions/*/command-templates/ to src/doctrine/missions/mission-steps/{mission_type}/{step_id}/prompt.md; updated CLAUDE.md; added NFR-004 gate tests; all 249 skills tests pass
+- 2026-05-30T21:05:42Z – claude:opus:reviewer-renata:reviewer – shell_pid=3431372 – Started review via action command
