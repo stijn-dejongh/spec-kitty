@@ -24,8 +24,8 @@ subtasks:
 - T033
 - T034
 - T035
-agent: claude
-shell_pid: '3223825'
+agent: "claude:sonnet:python-pedro:implementer"
+shell_pid: "3223825"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -192,3 +192,7 @@ Extend `tests/charter/test_mission_type_profiles.py` with tests for `resolve_mis
 - data-model.md §"New Public APIs"
 - research.md §"Research Task 2" — Literal removal impact
 - contracts/action-sequence-dispatch-contract.md
+
+## Activity Log
+
+- 2026-05-30T20:09:13Z – claude:sonnet:python-pedro:implementer – shell_pid=3223825 – Assigned agent via action command
