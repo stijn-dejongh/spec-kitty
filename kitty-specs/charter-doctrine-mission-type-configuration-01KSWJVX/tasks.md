@@ -181,11 +181,11 @@
 
 | ID | Subtask |
 |---|---|
-| T082 | Add spec-kitty charter mission-type list command: activated-only types for current project; output includes action_sequence |
-| T083 | Add spec-kitty mission-type list as alias for charter mission-type list |
-| T084 | Implement spec-kitty mission-type show <id>: render fully resolved MissionType (merged across all layers) with action_sequence, governance_refs, template_set, source layer per field |
-| T085 | Wire mission-type show to resolve_action_sequence() and MissionTypeRepository for full resolution |
-| T086 | Write tests: charter list returns only activated types; show renders resolved definition; show raises UnknownMissionTypeError for unknown ID; alias behaves identically to charter list |
+| T082 | Add spec-kitty charter mission-type list command: activated-only types for current project; output includes action_sequence | [D] |
+| T083 | Add spec-kitty mission-type list as alias for charter mission-type list | [D] |
+| T084 | Implement spec-kitty mission-type show <id>: render fully resolved MissionType (merged across all layers) with action_sequence, governance_refs, template_set, source layer per field | [D] |
+| T085 | Wire mission-type show to resolve_action_sequence() and MissionTypeRepository for full resolution | [D] |
+| T086 | Write tests: charter list returns only activated types; show renders resolved definition; show raises UnknownMissionTypeError for unknown ID; alias behaves identically to charter list | [D] |
 
 ### WP15 — spec-kitty charter activate in-flight warning
 
