@@ -21,8 +21,8 @@ subtasks:
 - T014
 - T015
 - T016
-agent: "claude:sonnet:python-pedro:implementer"
-shell_pid: "3118626"
+agent: "claude:opus:reviewer-renata:reviewer"
+shell_pid: "3129655"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -185,3 +185,5 @@ Write `tests/doctrine/missions/test_mission_steps_layout.py` with tests that ver
 
 - 2026-05-30T19:25:44Z – claude:sonnet:python-pedro:implementer – shell_pid=3118626 – Assigned agent via action command
 - 2026-05-30T19:30:30Z – claude:sonnet:python-pedro:implementer – shell_pid=3118626 – Ready for review: mission-steps/ directory structure created, 12 software-dev command templates moved verbatim, step.yaml descriptors authored, old command-templates/ deleted, layout tests passing (124 tests)
+- 2026-05-30T19:30:47Z – claude:opus:reviewer-renata:reviewer – shell_pid=3129655 – Started review via action command
+- 2026-05-30T19:34:05Z – claude:opus:reviewer-renata:reviewer – shell_pid=3129655 – Review passed (reviewer-renata): mission-steps/software-dev/ tree complete with 12 step dirs (accept, analyze, charter, implement, plan, research, review, specify, tasks, tasks-finalize, tasks-outline, tasks-packages), each with valid step.yaml (id matches dirname, FR-011 fields present, step_type=agent, prompt_template=prompt.md) and verbatim prompt.md (md5 hashes match all 12 originals from base). Old src/specify_cli/missions/software-dev/command-templates/ deleted. Other mission types (documentation, research, plan) had no command-templates in the base (already removed in commit 1783c509b), so no mission-steps entries for them — documented in test header and consistent with data-model.md. 217 tests pass. Stale path refs in prompt.md (line 271, implement) and src/specify_cli/missions/software-dev/templates/plan-template.md are out of WP02 scope (acceptance criterion forbids touching content outside command-templates/) and owned by WP08 (CLAUDE.md/pipeline rewire).
