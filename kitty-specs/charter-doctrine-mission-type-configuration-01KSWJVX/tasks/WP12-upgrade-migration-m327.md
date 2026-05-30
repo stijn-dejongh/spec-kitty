@@ -19,8 +19,8 @@ subtasks:
 - T074
 - T075
 - T076
-agent: claude
-shell_pid: '3323919'
+agent: "claude:sonnet:python-pedro:implementer"
+shell_pid: "3323919"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -177,3 +177,7 @@ Test cases:
 - research.md §"Research Task 4" — migration version slot (m_3_2_7)
 - CLAUDE.md §"Agent Management Best Practices" — get_agent_dirs_for_project() pattern
 - `m_3_2_6_charter_bundle_v2.py` — reference implementation pattern
+
+## Activity Log
+
+- 2026-05-30T20:32:43Z – claude:sonnet:python-pedro:implementer – shell_pid=3323919 – Assigned agent via action command
