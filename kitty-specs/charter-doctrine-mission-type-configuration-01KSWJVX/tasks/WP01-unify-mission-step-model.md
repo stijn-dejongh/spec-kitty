@@ -21,8 +21,8 @@ subtasks:
 - T007
 - T008
 - T009
-agent: "claude:opus:reviewer-renata:reviewer"
-shell_pid: "3096277"
+agent: "claude:sonnet:python-pedro:implementer"
+shell_pid: "3102853"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -199,3 +199,5 @@ Write tests in `tests/doctrine/missions/test_models.py` covering:
 - 2026-05-30T19:12:15Z – claude:opus:python-pedro:reviewer – shell_pid=3083834 – Returning for second review pass with reviewer-renata; stale documentation paths (YAML comments + .md guidelines still referencing src/doctrine/mission_step_contracts/built-in/) are a blocking finding, not a nit
 - 2026-05-30T19:12:19Z – claude:opus:reviewer-renata:reviewer – shell_pid=3096277 – Started review via action command
 - 2026-05-30T19:15:19Z – claude:opus:reviewer-renata:reviewer – shell_pid=3096277 – Moved to planned
+- 2026-05-30T19:16:01Z – claude:sonnet:python-pedro:implementer – shell_pid=3102853 – Started implementation via action command
+- 2026-05-30T19:18:35Z – claude:sonnet:python-pedro:implementer – shell_pid=3102853 – Cycle 2 fix: updated 7 stale mission_step_contracts path references to built_in_step_contracts
