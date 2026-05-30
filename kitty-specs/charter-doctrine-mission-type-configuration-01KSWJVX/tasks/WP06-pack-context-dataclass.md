@@ -18,8 +18,8 @@ subtasks:
 - T038
 - T039
 - T040
-agent: claude
-shell_pid: '3157218'
+agent: "claude:sonnet:python-pedro:implementer"
+shell_pid: "3157218"
 history:
 - at: '2026-05-30T17:21:57Z'
   event: created
@@ -175,3 +175,8 @@ Test cases:
 - FR-007: Charter as source of truth for dispatch
 - C-005: PackContext isolation constraint
 - data-model.md §"PackContext"
+
+## Activity Log
+
+- 2026-05-30T19:44:24Z – claude:sonnet:python-pedro:implementer – shell_pid=3157218 – Assigned agent via action command
+- 2026-05-30T19:49:44Z – claude:sonnet:python-pedro:implementer – shell_pid=3157218 – Ready for review: PackContext frozen dataclass with from_config(), 16 unit tests, ruff clean, all 5 subtasks done
