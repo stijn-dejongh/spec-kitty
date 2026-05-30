@@ -5,25 +5,18 @@
 **Status**: Captured for planning — not yet resolved in spec
 
 These findings emerged from the interactive review session. Blockers (B-1 through B-6)
-and M-1, M-2 are resolved in the spec. The items below are paused for planning input.
+and M-1 through M-3 are resolved in the spec. The items below are paused for planning input.
 
 ---
 
-## M-3 — `action_sequence` validity invariants + step removal semantics
+## ~~M-3~~ — RESOLVED
 
-**Question pending answer**: Is step removal permitted in an `action_sequence` override?
-Scenario 2 removes the `review` step; FR-008 says "add or reorder" — contradiction.
-Additionally, removing a step with an active lane (`for_review → in_review → approved`)
-leaves in-flight missions in an inconsistent state.
-
-**Decision needed**:
-- Is removal explicitly permitted?
-- Should the compatibility guard ("overrides only affect missions started after the
-  override is deployed") be in scope for this mission?
-- What are the minimum validity rules for `action_sequence`?
-  - Non-empty?
-  - Unique step IDs?
-  - Required steps (e.g., must include `merge`)?
+- Step removal is permitted in overrides.
+- `action_sequence` must be non-empty, unique step IDs.
+- `action_sequence` resolves live at each `spec-kitty next` invocation.
+- `spec-kitty charter activate` warns when the activated override removes a step
+  for which in-flight missions are currently in the corresponding lane.
+- Applied to FR-008.
 
 ---
 
