@@ -160,12 +160,12 @@
 
 | ID | Subtask |
 |---|---|
-| T071 | Create src/specify_cli/upgrade/migrations/m_3_2_7_activate_builtin_mission_types.py following m_3_2_6 pattern |
-| T072 | Migration logic: detect .kittify/config.yaml; if no explicit mission-type activation entries, add full built-in set (software-dev, documentation, research, plan) |
-| T073 | Preserve any existing charter configuration; only add missing activation entries |
-| T074 | Use get_agent_dirs_for_project() from m_0_9_1_complete_lane_migration for config-aware agent directory handling |
-| T075 | Register migration in the upgrade migration registry |
-| T076 | Write tests: migration on project without mission-type entries adds all four built-ins; migration on project with existing entries is idempotent; dry-run mode |
+| T071 | Create src/specify_cli/upgrade/migrations/m_3_2_7_activate_builtin_mission_types.py following m_3_2_6 pattern | [D] |
+| T072 | Migration logic: detect .kittify/config.yaml; if no explicit mission-type activation entries, add full built-in set (software-dev, documentation, research, plan) | [D] |
+| T073 | Preserve any existing charter configuration; only add missing activation entries | [D] |
+| T074 | Use get_agent_dirs_for_project() from m_0_9_1_complete_lane_migration for config-aware agent directory handling | [D] |
+| T075 | Register migration in the upgrade migration registry | [D] |
+| T076 | Write tests: migration on project without mission-type entries adds all four built-ins; migration on project with existing entries is idempotent; dry-run mode | [D] |
 
 ### WP13 — CLI: spec-kitty doctrine mission-type list
 
