@@ -7,6 +7,10 @@ reviewed_at: '2026-05-30T19:15:19Z'
 reviewer_agent: unknown
 verdict: rejected
 wp_id: WP01
+review_artifact_override_at: "2026-05-30T19:25:00Z"
+review_artifact_override_actor: "operator"
+review_artifact_override_wp_id: "WP01"
+review_artifact_override_reason: "Cycle-2 review passed (reviewer-renata): the cycle-2 rejection artifact (review-cycle-2.md) flagged 7 stale doc path references; cycle-2 fix commit 9d4203798 corrects all 7 files. Verification: zero remaining stale refs in src/*.yaml or src/*.md (kitty-specs/CHANGELOG matches are immutable historical archives per Terminology Canon). Unified MissionStep model present at src/doctrine/missions/models.py; legacy subpackage src/doctrine/mission_step_contracts deleted; 16 step contracts relocated to src/doctrine/missions/built_in_step_contracts/; architectural guards (TestUnifiedMissionStepBoundary 3/3) pass; tests/doctrine/missions/+test_layer_rules.py 135/135 pass; full tests/doctrine/ 1721 pass; tests/architectural/ 256 pass with 1 PRE-EXISTING unrelated failure in test_no_dead_symbols (acceptance_support symbols, reproduced on base branch, unrelated to WP01, reported per charter Pre-existing Failure Reporting Rule)."
 ---
 
 # WP01 Review Cycle 1 — REJECTED
