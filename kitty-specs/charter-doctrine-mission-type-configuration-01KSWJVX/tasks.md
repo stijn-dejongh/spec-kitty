@@ -82,13 +82,13 @@
 
 | ID | Subtask |
 |---|---|
-| T029 | Open MissionTypeProfile.mission_type from Literal[...] to str in src/charter/mission_type_profiles.py |
-| T030 | Update UnknownMissionTypeError to include registered_ids list in message (FR-009) |
-| T031 | Implement charter.existing_mission_types(repo_root: Path) -> list[str]: returns activated mission type IDs sorted |
-| T032 | Implement charter.resolve_action_sequence(mission_type_id: str, repo_root: Path) -> list[str]: live DRG lookup |
-| T033 | Update resolve_mission_type_governance() to use charter.existing_mission_types() for validation instead of Literal |
-| T034 | Update ATDD test suite pinning the Literal constraint (test_wp_prompt_governance_contract.py) |
-| T035 | Write tests: existing_mission_types() returns sorted deduplicated IDs; resolve_action_sequence() for built-in types; UnknownMissionTypeError with registered_ids |
+| T029 | Open MissionTypeProfile.mission_type from Literal[...] to str in src/charter/mission_type_profiles.py | [D] |
+| T030 | Update UnknownMissionTypeError to include registered_ids list in message (FR-009) | [D] |
+| T031 | Implement charter.existing_mission_types(repo_root: Path) -> list[str]: returns activated mission type IDs sorted | [D] |
+| T032 | Implement charter.resolve_action_sequence(mission_type_id: str, repo_root: Path) -> list[str]: live DRG lookup | [D] |
+| T033 | Update resolve_mission_type_governance() to use charter.existing_mission_types() for validation instead of Literal | [D] |
+| T034 | Update ATDD test suite pinning the Literal constraint (test_wp_prompt_governance_contract.py) | [D] |
+| T035 | Write tests: existing_mission_types() returns sorted deduplicated IDs; resolve_action_sequence() for built-in types; UnknownMissionTypeError with registered_ids | [D] |
 
 ### WP06 — PackContext dataclass + charter wiring
 
