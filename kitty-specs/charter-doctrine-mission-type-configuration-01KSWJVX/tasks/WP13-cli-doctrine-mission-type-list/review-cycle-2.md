@@ -7,6 +7,10 @@ reviewed_at: '2026-05-30T20:18:50Z'
 reviewer_agent: unknown
 verdict: rejected
 wp_id: WP13
+review_artifact_override_at: "2026-05-30T20:23:45Z"
+review_artifact_override_actor: "operator"
+review_artifact_override_wp_id: "WP13"
+review_artifact_override_reason: "Arbiter approval (reviewer-renata, cycle 2 re-review after fix): commit 805a531e9 replaced try/except ImportError fallback with direct 'from doctrine.missions.mission_type_repository import MissionTypeRepository' (line 44); removed _DISPLAY_NAME_OVERRIDES and _derive_display_name; MissionTypeRepository.default().load_all() called cleanly; all 10 tests in tests/cli/test_doctrine_commands.py pass; doctrine group still registered with mission-type subgroup visible in --help; smoke test of 'doctrine mission-type list' produces expected table"
 ---
 
 # WP13 Review — Cycle 1 (Reviewer: reviewer-renata)
