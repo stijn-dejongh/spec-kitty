@@ -186,3 +186,4 @@ Also add a performance smoke test: `charter.resolve_action_sequence("software-de
 ## Activity Log
 
 - 2026-05-30T20:32:01Z – claude:sonnet:python-pedro:implementer – shell_pid=3321689 – Assigned agent via action command
+- 2026-05-30T20:46:32Z – claude:sonnet:python-pedro:implementer – shell_pid=3321689 – Ready for review: deleted _COMPOSED_ACTIONS_BY_MISSION and _COMPOSED_ACTIONS_FOR_PROMPT, wired all 4 call sites to charter.resolve_action_sequence, 203 tests pass
