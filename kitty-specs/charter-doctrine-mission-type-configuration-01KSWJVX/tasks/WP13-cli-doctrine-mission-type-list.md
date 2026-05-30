@@ -178,3 +178,4 @@ Use `typer.testing.CliRunner` for CLI tests.
 ## Activity Log
 
 - 2026-05-30T20:09:29Z – claude:sonnet:python-pedro:implementer – shell_pid=3225658 – Assigned agent via action command
+- 2026-05-30T20:15:43Z – claude:sonnet:python-pedro:implementer – shell_pid=3225658 – Ready for review: added doctrine mission-type list command with table/JSON output, 10 tests all passing, ruff+mypy clean
