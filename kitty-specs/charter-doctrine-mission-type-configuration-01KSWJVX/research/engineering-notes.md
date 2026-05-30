@@ -72,21 +72,15 @@ key). Rationale: `interview_defaults` are behavioural preferences, not governanc
 
 ---
 
-## M-10 — BDD behavioral contracts absent (active tactic mandate)
+## ~~M-10~~ — RESOLVED
 
-The architect-alphonso profile mandates Given/When/Then contracts before implementation.
-The spec has narrative scenarios and success criteria but no GWT contracts beyond
-those in `contracts/action-sequence-dispatch-contract.md` and
-`contracts/directive-scope-contract.md`.
+Five GWT contract files authored in `contracts/`:
 
-**Needed before planning**:
-- GWT for org-charter `extends:` union resolution (FR-001)
-- GWT for mission-type override extending built-in type (FR-008, Scenario 1)
-- GWT for custom mission type creation and `spec-kitty next` dispatch (FR-009)
-- GWT for `MissionStep` override shadowing (FR-012)
-- GWT for activation-filtered DRG traversal (FR-018)
-
-These can be authored as additional contract files or added to existing contracts.
+- `org-charter-extends-union-contract.md` — FR-001 (5 contracts: union, missing base, cycle, flat-union compat, schema mismatch)
+- `mission-type-override-contract.md` — FR-008 Scenario 1 (5 contracts: add step, remove step clean, remove step with in-flight warning, full replace, empty sequence error)
+- `custom-mission-type-dispatch-contract.md` — FR-009 + FR-007 (4 contracts: activated type accepted, unregistered raises error, next dispatches custom sequence, existing_mission_types filters)
+- `mission-step-shadowing-contract.md` — FR-012 (4 contracts: compound key scope, layer precedence, step identity independence, fallthrough)
+- `activation-filtered-drg-contract.md` — FR-018 (5 contracts: non-activated type invisible, non-activated directive excluded, activation makes visible, non-activated org pack excluded, post-upgrade migration)
 
 ---
 
