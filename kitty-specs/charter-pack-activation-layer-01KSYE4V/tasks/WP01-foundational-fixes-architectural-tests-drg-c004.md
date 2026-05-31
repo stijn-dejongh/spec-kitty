@@ -22,8 +22,8 @@ subtasks:
 - T004
 - T005
 - T006
-agent: "claude:sonnet-4-6:python-pedro:implementer"
-shell_pid: "4062575"
+agent: "claude:sonnet-4-6:reviewer-renata:reviewer"
+shell_pid: "4108021"
 history:
 - at: '2026-05-31T11:44:22Z'
   event: created
@@ -460,3 +460,5 @@ Reviewers must verify:
 
 - 2026-05-31T13:03:17Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4062575 – Assigned agent via action command
 - 2026-05-31T13:32:02Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4062575 – Ready for review: architectural tests green, C-004 violation fixed, dead-modules baselines updated. T004 note: test fixture deletions (kitty-specs/test-feature-*) included on lane branch intentionally per WP spec - these are stale test artifacts, not planning artifacts.
+- 2026-05-31T13:32:39Z – claude:sonnet-4-6:reviewer-renata:reviewer – shell_pid=4108021 – Started review via action command
+- 2026-05-31T13:41:11Z – claude:sonnet-4-6:reviewer-renata:reviewer – shell_pid=4108021 – Review passed: architectural suite green (264 passed, 0 failures). C-004 fixed via _PackContextLike protocol inline in mission_step_repository.py; charter import removed. Template governance path constants updated to src/doctrine/missions/mission-steps/. Test fixture dirs (kitty-specs/test-feature-*) removed (no-op: T004 confirmed they weren't tracked). Baseline 73 set. T003: m_3_2_0rc28_github_diff_attributes registered instead of m_3_2_8_default_charter_pack (latter does not exist yet; avoids stale entry; WP05 adds it on creation). test_no_dead_symbols.py modified outside owned_files but was necessary (proven: suite fails without it). T005 correctly deferred to WP08. All FR-020/021/022/023/025 addressed. Note: kitty-specs commits in lane history are status-tracking auto-commits; lane diff vs base is clean.
