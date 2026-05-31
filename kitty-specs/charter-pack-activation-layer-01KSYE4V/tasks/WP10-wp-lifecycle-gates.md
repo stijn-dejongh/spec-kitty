@@ -13,12 +13,16 @@ tracker_refs: []
 planning_base_branch: pr/charter-doctrine-mission-type-configuration
 merge_target_branch: pr/charter-doctrine-mission-type-configuration
 branch_strategy: Planning artifacts for this mission were generated on pr/charter-doctrine-mission-type-configuration. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into pr/charter-doctrine-mission-type-configuration unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-charter-pack-activation-layer-01KSYE4V
+base_commit: 43af0827cf1ceecfc5327594776a23bb3ba2844c
+created_at: '2026-05-31T14:19:49.322202+00:00'
 subtasks:
 - T044
 - T045
 - T046
 - T047
-agent: claude
+agent: "claude:sonnet-4-6:reviewer-renata:reviewer"
+shell_pid: "279946"
 history:
 - at: '2026-05-31T11:44:22Z'
   event: created
@@ -436,3 +440,15 @@ All five commands must complete without errors or failures.
 - `pytest tests/specify_cli/test_charter_lifecycle_gates.py -x` passes.
 - `pytest tests/ -m fast -x -q` passes (zero regressions in fast suite).
 - `ruff check` and `mypy --strict` pass on all modified files.
+
+## Activity Log
+
+- 2026-05-31T14:19:49Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=6774 – Assigned agent via action command
+- 2026-05-31T14:46:55Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=6774 – Ready for review: 7/7 tests pass, all acceptance criteria met. Fixed test isolation issue (is_saas_sync_enabled mock missing from _finalize_tasks_context).
+- 2026-05-31T14:47:33Z – claude:sonnet-4-6:reviewer-renata:reviewer – shell_pid=205952 – Started review via action command
+- 2026-05-31T14:58:16Z – claude:sonnet-4-6:reviewer-renata:reviewer – shell_pid=205952 – Moved to planned
+- 2026-05-31T14:59:06Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=254485 – Started implementation via action command
+- 2026-05-31T15:03:27Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=254485 – Cycle-2: CharterActivationError raised in gate paths, FR-019 satisfied
+- 2026-05-31T15:03:53Z – claude:sonnet-4-6:reviewer-renata:reviewer – shell_pid=279946 – Started review via action command
+- 2026-05-31T15:04:08Z – claude:sonnet-4-6:reviewer-renata:reviewer – shell_pid=279946 – Moved to for_review
+- 2026-05-31T15:05:25Z – claude:sonnet-4-6:reviewer-renata:reviewer – shell_pid=279946 – Arbiter override: cycle-2 rejection resolved. CharterActivationError is now raised in both workflow.py and mission.py gates, FR-019 satisfied, all 9 tests pass including 2 new TestCharterActivationErrorRaised tests that verify the exception is genuinely raised.
