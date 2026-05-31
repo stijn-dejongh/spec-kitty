@@ -27,8 +27,8 @@ subtasks:
 - T036
 - T037
 - T038
-agent: claude
-shell_pid: '4153132'
+agent: "claude:sonnet-4-6:python-pedro:implementer"
+shell_pid: "4153132"
 history:
 - at: '2026-05-31T11:44:22Z'
   event: created
@@ -396,3 +396,7 @@ do not forward the new parameter will cause `TypeError` at runtime.
 4. `grep -r "from doctrine" src/charter/ --include="*.py"` — must return zero new lines from this WP.
 5. Both graph-construction tests in `test_drg_filtering.py` — must have real assertions, not `pytest.skip`.
 6. `pytest tests/charter/ -x` — must exit 0.
+
+## Activity Log
+
+- 2026-05-31T13:58:30Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4153132 – Assigned agent via action command
