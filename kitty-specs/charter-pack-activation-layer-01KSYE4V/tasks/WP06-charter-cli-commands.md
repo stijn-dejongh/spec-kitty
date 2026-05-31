@@ -27,8 +27,8 @@ subtasks:
 - T027
 - T028
 - T029
-agent: claude
-shell_pid: '6774'
+agent: "claude:sonnet-4-6:python-pedro:implementer"
+shell_pid: "6774"
 history:
 - at: '2026-05-31T11:44:22Z'
   event: created
@@ -603,3 +603,7 @@ Before marking WP06 as `for_review`:
 - [ ] `ruff check src/specify_cli/cli/commands/charter/` — no lint errors.
 - [ ] `mypy src/specify_cli/cli/commands/charter/ --strict` — no type errors.
 - [ ] No files outside `owned_files` were modified.
+
+## Activity Log
+
+- 2026-05-31T14:19:36Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=6774 – Assigned agent via action command
