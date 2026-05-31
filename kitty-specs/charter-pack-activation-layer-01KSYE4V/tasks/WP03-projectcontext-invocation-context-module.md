@@ -19,8 +19,8 @@ subtasks:
 - T012
 - T013
 - T014
-agent: claude
-shell_pid: '4121132'
+agent: "claude:sonnet-4-6:python-pedro:implementer"
+shell_pid: "4121132"
 history:
 - at: '2026-05-31T11:44:22Z'
   event: created
@@ -601,3 +601,8 @@ grep -n "specify_cli" src/charter/invocation_context.py && echo "VIOLATION" || e
 # 7. specify_cli/context/ untouched
 git diff src/specify_cli/context/
 ```
+
+## Activity Log
+
+- 2026-05-31T13:41:50Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4121132 – Assigned agent via action command
+- 2026-05-31T13:47:42Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4121132 – Ready for review: ProjectContext.from_repo() + require_pack_context() implemented
