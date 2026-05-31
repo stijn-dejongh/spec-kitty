@@ -111,11 +111,13 @@ _CATEGORY_B_GRANDFATHERED_LEGACY: frozenset[str] = frozenset(
         # MissionTypeRepository but not imported directly by specify_cli
         # callers; grandfathered into the baseline until a follow-up
         # sweep wires or removes them (FR-303).
+        # MissionStep removed (charter-pack-activation-layer-01KSYE4V WP01):
+        # mission_step_repository.py imports MissionStep via relative import
+        # from .models, giving it a live src/ caller.
         "doctrine.missions.models::IDENTIFIER_PATTERN",
         "doctrine.missions.models::Mission",
         "doctrine.missions.models::MissionOrchestration",
         "doctrine.missions.models::MissionStateObject",
-        "doctrine.missions.models::MissionStep",
         "doctrine.missions.models::MissionTransition",
         "doctrine.procedures::ArtifactKind",
         "doctrine.shared::ConflictType",
@@ -467,6 +469,10 @@ _CATEGORY_C_WP_IN_FLIGHT_COORDINATION_BRANCH: frozenset[str] = frozenset(
 # Until those WPs land, the symbols are exposed in ``__all__`` so the
 # unified API is discoverable but carry only test callers. Follow-up
 # tracker: mission-internal WP03/WP04/WP05.
+# ``MissionStepRepository`` and ``StepKey`` (from
+# ``doctrine.missions.mission_step_repository``) landed in
+# charter-doctrine-mission-type-configuration-01KSWJVX ahead of the WP02
+# wiring target in charter-pack-activation-layer-01KSYE4V.
 _CATEGORY_C_WP_IN_FLIGHT_UNIFIED_MISSION_STEP: frozenset[str] = frozenset(
     {
         "doctrine.missions.models::IDENTIFIER_PATTERN",
@@ -475,6 +481,43 @@ _CATEGORY_C_WP_IN_FLIGHT_UNIFIED_MISSION_STEP: frozenset[str] = frozenset(
         "doctrine.missions.models::MissionStateObject",
         "doctrine.missions.models::MissionTransition",
         "doctrine.missions.step_contracts::DelegatesTo",
+        "doctrine.missions.mission_step_repository::MissionStepRepository",
+        "doctrine.missions.mission_step_repository::StepKey",
+    }
+)
+
+
+# ---------- C. WP-in-flight charter-pack activation layer (01KSYE4V) ----------
+# Mission ``charter-pack-activation-layer-01KSYE4V`` ships the charter-pack
+# activation subsystem ahead of full runtime wiring. The modules below
+# export public symbols that are exercised by tests but not yet imported by
+# any live src/ production path. Wiring is the responsibility of later WPs
+# in this mission (WP02 – WP11). Removal trigger: once each WP wires its
+# target symbol(s), remove the corresponding entry from this set.
+_CATEGORY_C_WP_IN_FLIGHT_CHARTER_PACK_ACTIVATION: frozenset[str] = frozenset(
+    {
+        # charter.drg: filter_graph_by_activation and PackContext are the
+        # activation-filter helpers for the DRG (Dependency Resolution Graph).
+        # WP03 wires filter_graph_by_activation into the activation path;
+        # PackContext is the type boundary for the activation context.
+        "charter.drg::PackContext",
+        "charter.drg::filter_graph_by_activation",
+        # specify_cli.charter_activate: core activation-layer API (scan,
+        # diff, warn). WP04/WP05 will wire these into the CLI activate command.
+        "specify_cli.charter_activate::AffectedMission",
+        "specify_cli.charter_activate::StepRemovalWarning",
+        "specify_cli.charter_activate::emit_step_removal_warnings",
+        "specify_cli.charter_activate::find_removed_steps",
+        "specify_cli.charter_activate::scan_inflight_missions",
+        # specify_cli.cli.commands.charter.activate: the CLI entry-point for
+        # the charter activate command. Wired into the charter CLI app by
+        # WP06 of this mission.
+        "specify_cli.cli.commands.charter.activate::activate_cmd",
+        # specify_cli.doctrine.org_charter: org-level charter extension and
+        # cycle-guard error types. WP07 wires them into the org-charter
+        # validation path.
+        "specify_cli.doctrine.org_charter::OrgCharterCycleError",
+        "specify_cli.doctrine.org_charter::OrgCharterExtensionError",
     }
 )
 
@@ -490,6 +533,7 @@ _SYMBOL_ALLOWLIST: frozenset[str] = (
     | _CATEGORY_C_CHARTER_SPLIT_LEGACY_PATCH_SURFACE
     | _CATEGORY_C_WP_IN_FLIGHT_COORDINATION_BRANCH
     | _CATEGORY_C_WP_IN_FLIGHT_UNIFIED_MISSION_STEP
+    | _CATEGORY_C_WP_IN_FLIGHT_CHARTER_PACK_ACTIVATION
 )
 
 

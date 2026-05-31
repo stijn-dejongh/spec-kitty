@@ -185,6 +185,8 @@ _CATEGORY_1_AUTO_DISCOVERED_MIGRATIONS: frozenset[str] = frozenset(
         "specify_cli.upgrade.migrations.m_3_2_4_repository_root_checkout_terminology",
         "specify_cli.upgrade.migrations.m_3_2_5_fix_prompt_file_workaround",
         "specify_cli.upgrade.migrations.m_3_2_6_charter_bundle_v2",
+        "specify_cli.upgrade.migrations.m_3_2_7_activate_builtin_mission_types",
+        "specify_cli.upgrade.migrations.m_3_2_0rc28_github_diff_attributes",
     }
 )
 
@@ -268,6 +270,14 @@ _CATEGORY_5_WP_IN_FLIGHT_ADAPTERS: frozenset[str] = frozenset(
         # Priivacy-ai/spec-kitty#1356; once landed, the module gains a
         # runtime caller and this entry can be removed.
         "specify_cli.coordination.outbound",
+        # doctrine.missions.mission_step_repository: landed in
+        # charter-doctrine-mission-type-configuration-01KSWJVX as the
+        # compound-key layered resolver for MissionStep definitions.
+        # WP02 of charter-pack-activation-layer-01KSYE4V is the wiring
+        # trigger (it integrates the resolver into the runtime activation
+        # path). Removal trigger: once WP02 merges and a live src/ caller
+        # exists, remove this entry.
+        "doctrine.missions.mission_step_repository",
     }
 )
 
