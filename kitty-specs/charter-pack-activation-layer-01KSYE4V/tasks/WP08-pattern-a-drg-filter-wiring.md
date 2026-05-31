@@ -18,13 +18,17 @@ tracker_refs: []
 planning_base_branch: pr/charter-doctrine-mission-type-configuration
 merge_target_branch: pr/charter-doctrine-mission-type-configuration
 branch_strategy: Planning artifacts for this mission were generated on pr/charter-doctrine-mission-type-configuration. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into pr/charter-doctrine-mission-type-configuration unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-charter-pack-activation-layer-01KSYE4V
+base_commit: 6ff58e632748fa6b321f3935ea5bffd80a28a116
+created_at: '2026-05-31T13:58:29.866028+00:00'
 subtasks:
 - T034
 - T035
 - T036
 - T037
 - T038
-agent: claude
+agent: "claude:sonnet-4-6:reviewer-renata:reviewer"
+shell_pid: "4188422"
 history:
 - at: '2026-05-31T11:44:22Z'
   event: created
@@ -392,3 +396,10 @@ do not forward the new parameter will cause `TypeError` at runtime.
 4. `grep -r "from doctrine" src/charter/ --include="*.py"` — must return zero new lines from this WP.
 5. Both graph-construction tests in `test_drg_filtering.py` — must have real assertions, not `pytest.skip`.
 6. `pytest tests/charter/ -x` — must exit 0.
+
+## Activity Log
+
+- 2026-05-31T13:58:30Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4153132 – Assigned agent via action command
+- 2026-05-31T14:13:04Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4153132 – Ready for review: filter_graph_by_activation wired in 4 call sites, plural map fixed (mission_step_contracts), PackContext re-export removed
+- 2026-05-31T14:13:29Z – claude:sonnet-4-6:reviewer-renata:reviewer – shell_pid=4188422 – Started review via action command
+- 2026-05-31T14:18:55Z – claude:sonnet-4-6:reviewer-renata:reviewer – shell_pid=4188422 – Review passed: filter_graph_by_activation wired in all 4 call sites (context.py, reference_resolver.py, compiler.py, executor.py), plural map fixed (mission_step_contracts), PackContext re-export removed from __all__, per-artifact-ID gate implemented with 8 kinds in _SINGULAR_TO_PER_KIND_FIELD, all 8 tests pass (6 gate tests + 2 graph tests), charter tests 1095/1095, ruff clean, no new mypy errors

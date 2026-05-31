@@ -11,12 +11,16 @@ tracker_refs: []
 planning_base_branch: pr/charter-doctrine-mission-type-configuration
 merge_target_branch: pr/charter-doctrine-mission-type-configuration
 branch_strategy: Planning artifacts for this mission were generated on pr/charter-doctrine-mission-type-configuration. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into pr/charter-doctrine-mission-type-configuration unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-charter-pack-activation-layer-01KSYE4V
+base_commit: 5e94179da1ce0cdd0c9db676d28a0aa6d6a4d429
+created_at: '2026-05-31T13:41:49.954119+00:00'
 subtasks:
 - T011
 - T012
 - T013
 - T014
-agent: claude
+agent: "claude:sonnet-4-6:reviewer-renata:reviewer"
+shell_pid: "4145326"
 history:
 - at: '2026-05-31T11:44:22Z'
   event: created
@@ -597,3 +601,14 @@ grep -n "specify_cli" src/charter/invocation_context.py && echo "VIOLATION" || e
 # 7. specify_cli/context/ untouched
 git diff src/specify_cli/context/
 ```
+
+## Activity Log
+
+- 2026-05-31T13:41:50Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4121132 – Assigned agent via action command
+- 2026-05-31T13:47:42Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4121132 – Ready for review: ProjectContext.from_repo() + require_pack_context() implemented
+- 2026-05-31T13:48:06Z – claude:sonnet-4-6:reviewer-renata:reviewer – shell_pid=4133611 – Started review via action command
+- 2026-05-31T13:52:05Z – claude:sonnet-4-6:reviewer-renata:reviewer – shell_pid=4133611 – Moved to planned
+- 2026-05-31T13:52:36Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4141209 – Started implementation via action command
+- 2026-05-31T13:54:16Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4141209 – Cycle-2 fix: dead-symbol gate extended with ProjectContext and ContextPreconditionError
+- 2026-05-31T13:54:31Z – claude:sonnet-4-6:reviewer-renata:reviewer – shell_pid=4145326 – Started review via action command
+- 2026-05-31T13:56:58Z – claude:sonnet-4-6:reviewer-renata:reviewer – shell_pid=4145326 – Cycle-2 review passed: dead-symbol gate fixed (ProjectContext + ContextPreconditionError added to _CATEGORY_C_WP_IN_FLIGHT_CHARTER_SCOPE, baseline updated to 6), all 27 tests pass, no new dead-symbol failures vs main branch

@@ -185,10 +185,10 @@ WP11 subtasks T048–T051 are fully independent and can be executed in any order
 **Subtasks**: T011–T014
 **Agent profile**: python-pedro
 
-- [ ] T011 Create `invocation_context.py` with `ProjectContext`, `OperationalContext`, `ContextPreconditionError` class bodies
-- [ ] T012 Implement `from_repo()` factory and `require_*()` guard methods on `ProjectContext`
-- [ ] T013 Add 4 `OperationalContext`-family symbols to `_CATEGORY_C_WP_IN_FLIGHT_CHARTER_SCOPE`; update `_baselines.yaml` (FR-024 / FR-040)
-- [ ] T014 Write `tests/charter/test_invocation_context.py` covering `from_repo()`, guards, and `ContextPreconditionError`
+- [x] T011 Create `invocation_context.py` with `ProjectContext`, `OperationalContext`, `ContextPreconditionError` class bodies
+- [x] T012 Implement `from_repo()` factory and `require_*()` guard methods on `ProjectContext`
+- [x] T013 Add 4 `OperationalContext`-family symbols to `_CATEGORY_C_WP_IN_FLIGHT_CHARTER_SCOPE`; update `_baselines.yaml` (FR-024 / FR-040)
+- [x] T014 Write `tests/charter/test_invocation_context.py` covering `from_repo()`, guards, and `ContextPreconditionError`
 
 **Implementation Notes**:
 - T011: `ProjectContext` is a dataclass holding `repo_root: Path`, `pack_context: PackContext`, and `charter_loaded: bool`. `OperationalContext` is a lightweight wrapper that adds the current WP state (claimed WP ID, agent profile). `ContextPreconditionError` is a `RuntimeError` subclass raised by guard methods when preconditions fail.
@@ -209,11 +209,11 @@ WP11 subtasks T048–T051 are fully independent and can be executed in any order
 **Subtasks**: T015–T019
 **Agent profile**: python-pedro
 
-- [ ] T015 Create `src/charter/packs/default.yaml` with all 9 activation kinds fully populated
-- [ ] T016 Create `src/charter/pack_manager.py` with `ActivationResult`, `MergeResult` value objects and `YAML_KEY_MAP`
-- [ ] T017 Implement `CharterPackManager.activate()` and `deactivate()` with cascade logic
-- [ ] T018 Implement `CharterPackManager.list_activated()`, `list_available()`, and `merge_defaults()`
-- [ ] T019 Write `tests/charter/test_pack_manager.py`
+- [x] T015 Create `src/charter/packs/default.yaml` with all 9 activation kinds fully populated
+- [x] T016 Create `src/charter/pack_manager.py` with `ActivationResult`, `MergeResult` value objects and `YAML_KEY_MAP`
+- [x] T017 Implement `CharterPackManager.activate()` and `deactivate()` with cascade logic
+- [x] T018 Implement `CharterPackManager.list_activated()`, `list_available()`, and `merge_defaults()`
+- [x] T019 Write `tests/charter/test_pack_manager.py`
 
 **Implementation Notes**:
 - T015: `default.yaml` must enumerate every built-in artifact ID for all 9 kinds. This is a static shipped file under `src/charter/packs/`; it is never written at runtime. IDs come from the doctrine package.
@@ -235,10 +235,10 @@ WP11 subtasks T048–T051 are fully independent and can be executed in any order
 **Subtasks**: T020–T023
 **Agent profile**: python-pedro
 
-- [ ] T020 Create `m_3_2_8_default_charter_pack.py` with `detect()`, `can_apply()`, `apply()`
-- [ ] T021 Implement backup-before-write pattern in `apply()` (C-008, NFR-002)
-- [ ] T022 Write tests for `detect()` and `apply()` called directly (not via upgrade pipeline)
-- [ ] T023 Register migration + verify baseline includes both m_3_2_7 and m_3_2_8
+- [x] T020 Create `m_3_2_8_default_charter_pack.py` with `detect()`, `can_apply()`, `apply()`
+- [x] T021 Implement backup-before-write pattern in `apply()` (C-008, NFR-002)
+- [x] T022 Write tests for `detect()` and `apply()` called directly (not via upgrade pipeline)
+- [x] T023 Register migration + verify baseline includes both m_3_2_7 and m_3_2_8
 
 **Implementation Notes**:
 - T020: `detect()` returns `True` if `.kittify/config.yaml` exists but lacks one or more `activated_*` keys (i.e., not yet migrated). `can_apply()` returns `True` if `.kittify/` directory exists. `apply()` calls `CharterPackManager.merge_defaults()` to populate missing keys.
@@ -259,12 +259,12 @@ WP11 subtasks T048–T051 are fully independent and can be executed in any order
 **Subtasks**: T024–T029
 **Agent profile**: python-pedro
 
-- [ ] T024 Refactor `activate.py` CLI to call `CharterPackManager.activate()` for all 9 kinds + `--cascade`
-- [ ] T025 Fix reader gap (FR-014): refactor `charter_activate.py` `activate_mission_type_override()` to write `mission_type_activations` to `config.yaml` instead of override files
-- [ ] T026 Create `deactivate.py` with all 9 kinds and shared-artifact cascade protection
-- [ ] T027 Create `list.py` with `charter list` and `--show-available` Rich table output (FR-009, FR-010)
-- [ ] T028 Create `pack.py` `charter pack consistency-check` subcommand; register all new commands in `_app.py`
-- [ ] T029 Update/write CLI tests for activate (all 9 kinds), deactivate, list, and pack consistency-check
+- [x] T024 Refactor `activate.py` CLI to call `CharterPackManager.activate()` for all 9 kinds + `--cascade`
+- [x] T025 Fix reader gap (FR-014): refactor `charter_activate.py` `activate_mission_type_override()` to write `mission_type_activations` to `config.yaml` instead of override files
+- [x] T026 Create `deactivate.py` with all 9 kinds and shared-artifact cascade protection
+- [x] T027 Create `list.py` with `charter list` and `--show-available` Rich table output (FR-009, FR-010)
+- [x] T028 Create `pack.py` `charter pack consistency-check` subcommand; register all new commands in `_app.py`
+- [x] T029 Update/write CLI tests for activate (all 9 kinds), deactivate, list, and pack consistency-check
 
 **Implementation Notes**:
 - T024: Replace current per-kind dispatch in `activate.py` with a unified `activate <kind> <artifact-id> [--cascade <scope>]` command backed by `CharterPackManager.activate()`. The `--cascade` flag accepts `all` or a comma-separated list of kind names.
@@ -287,10 +287,10 @@ WP11 subtasks T048–T051 are fully independent and can be executed in any order
 **Subtasks**: T030–T033
 **Agent profile**: python-pedro
 
-- [ ] T030 Create `consistency_check.py` with `ConsistencyReport` and unknown-reference algorithm
-- [ ] T031 Implement cross-kind DRG-edge reference validation in `consistency_check.py`
-- [ ] T032 Implement kind-level duplicate-detection and kind-violation checks
-- [ ] T033 Write `tests/charter/test_consistency_check.py` with at least one planted violation per check type
+- [x] T030 Create `consistency_check.py` with `ConsistencyReport` and unknown-reference algorithm
+- [x] T031 Implement cross-kind DRG-edge reference validation in `consistency_check.py`
+- [x] T032 Implement kind-level duplicate-detection and kind-violation checks
+- [x] T033 Write `tests/charter/test_consistency_check.py` with at least one planted violation per check type
 
 **Implementation Notes**:
 - T030: `ConsistencyReport` is a dataclass with `violations: list[ConsistencyViolation]`, `passed: bool`, and `summary: str`. Unknown-reference check: for each artifact ID in the charter pack, verify the ID exists in the loaded doctrine catalog for its kind.
@@ -311,11 +311,11 @@ WP11 subtasks T048–T051 are fully independent and can be executed in any order
 **Subtasks**: T034–T038
 **Agent profile**: python-pedro
 
-- [ ] T034 Extend `_node_is_activated` in `drg.py` with per-artifact-ID frozenset checks (FR-038)
-- [ ] T035 Wire `filter_graph_by_activation` in `context.py:_load_action_doctrine_bundle()`
-- [ ] T036 Wire in `reference_resolver.py:resolve_references_transitively()`
-- [ ] T037 Wire in `compiler.py:_resolve_transitive_reference_graph()`
-- [ ] T038 Wire in `executor.py` step contract execution path
+- [x] T034 Extend `_node_is_activated` in `drg.py` with per-artifact-ID frozenset checks (FR-038)
+- [x] T035 Wire `filter_graph_by_activation` in `context.py:_load_action_doctrine_bundle()`
+- [x] T036 Wire in `reference_resolver.py:resolve_references_transitively()`
+- [x] T037 Wire in `compiler.py:_resolve_transitive_reference_graph()`
+- [x] T038 Wire in `executor.py` step contract execution path
 
 **Implementation Notes**:
 - T034: Current `_node_is_activated` checks only kind-level activation (`activated_kinds`). Extend it to additionally check whether the specific artifact ID is in the per-kind frozenset (e.g., `activated_directives`). When the per-kind frozenset is `None`, all IDs pass. When empty, no IDs pass. When non-empty, only listed IDs pass.
@@ -338,11 +338,11 @@ WP11 subtasks T048–T051 are fully independent and can be executed in any order
 **Subtasks**: T039–T043
 **Agent profile**: python-pedro
 
-- [ ] T039 Wire Pattern B: `generate.py:47` — construct `DoctrineService` with `pack_context`
-- [ ] T040 Wire `org_charter.py:660, 710` callers of `load_org_charter_policies()` to pass `pack_context`
-- [ ] T041 Wire `doctor.py:2332` + `org_layer.py:218,236` to pass/accept `pack_context` (FR-037)
-- [ ] T042 Wire Pattern C: `DoctrineService.agent_profiles` via `charter/resolver.py` with activation filter
-- [ ] T043 Add `MissionStepRepository` to `charter/mission_steps.py` re-exports; wire to production call site (FR-016)
+- [x] T039 Wire Pattern B: `generate.py:47` — construct `DoctrineService` with `pack_context`
+- [x] T040 Wire `org_charter.py:660, 710` callers of `load_org_charter_policies()` to pass `pack_context`
+- [x] T041 Wire `doctor.py:2332` + `org_layer.py:218,236` to pass/accept `pack_context` (FR-037)
+- [x] T042 Wire Pattern C: `DoctrineService.agent_profiles` via `charter/resolver.py` with activation filter
+- [x] T043 Add `MissionStepRepository` to `charter/mission_steps.py` re-exports; wire to production call site (FR-016)
 
 **Implementation Notes**:
 - T039: `generate.py:47` constructs a `DoctrineService`. Extend the constructor to accept `pack_context: PackContext | None = None` and filter `.paradigms`/`.procedures` properties when non-None. Pass `pack_context` from the generate command's invocation context.
@@ -364,10 +364,10 @@ WP11 subtasks T048–T051 are fully independent and can be executed in any order
 **Subtasks**: T044–T047
 **Agent profile**: python-pedro
 
-- [ ] T044 Add charter profile gate to `spec-kitty agent mission finalize-tasks` (FR-017)
-- [ ] T045 Add charter profile precondition to `spec-kitty agent action implement` before worktree creation (FR-018)
-- [ ] T046 Wire hard-fail on non-activated artifact lookup in DRG/tactic resolution paths (FR-019)
-- [ ] T047 Write tests for lifecycle gates: finalize-tasks hard-fail + implement hard-fail scenarios
+- [x] T044 Add charter profile gate to `spec-kitty agent mission finalize-tasks` (FR-017)
+- [x] T045 Add charter profile precondition to `spec-kitty agent action implement` before worktree creation (FR-018)
+- [x] T046 Wire hard-fail on non-activated artifact lookup in DRG/tactic resolution paths (FR-019)
+- [x] T047 Write tests for lifecycle gates: finalize-tasks hard-fail + implement hard-fail scenarios
 
 **Implementation Notes**:
 - T044: In `finalize-tasks`, after loading the WP metadata, call `ProjectContext.from_repo()` and then `require_artifact_activated("agent-profile", wp_meta.agent_profile)` if the WP declares an `agent_profile`. Raise `ContextPreconditionError` with a message that names the missing profile and suggests running `charter activate agent-profile <id>`.
@@ -388,10 +388,10 @@ WP11 subtasks T048–T051 are fully independent and can be executed in any order
 **Subtasks**: T048–T051
 **Agent profile**: python-pedro
 
-- [ ] T048 Extend NFR-001 test to real filesystem I/O, multi-run p99 methodology (FR-026)
-- [ ] T049 Add FR-027 test: `mission_type_activations: [software-dev]` → documentation/research/plan excluded
-- [ ] T050 Fix FR-029: move subprocess call from fast-marked unit test to integration mark
-- [ ] T051 Fix FR-030: replace vacuous assertion in decision dispatch test with meaningful invariant
+- [x] T048 Extend NFR-001 test to real filesystem I/O, multi-run p99 methodology (FR-026)
+- [x] T049 Add FR-027 test: `mission_type_activations: [software-dev]` → documentation/research/plan excluded
+- [x] T050 Fix FR-029: move subprocess call from fast-marked unit test to integration mark
+- [x] T051 Fix FR-030: replace vacuous assertion in decision dispatch test with meaningful invariant
 
 **Implementation Notes**:
 - T048: The existing NFR-001 test uses an in-memory mock and measures a single wall-clock run. Replace with a temp-directory fixture that creates a real `.kittify/config.yaml` and measures 20 runs; compute p99 and assert ≤ 100ms. Use `pytest-benchmark` or `timeit` with explicit percentile logic.
