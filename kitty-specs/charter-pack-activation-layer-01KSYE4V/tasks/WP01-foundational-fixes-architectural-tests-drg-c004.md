@@ -294,56 +294,15 @@ removed).
 
 **Requirement**: FR-028
 
-**Purpose**: The DRG singular-to-plural map maps `"mission_step_contract"` to
-`"mission_steps"` (wrong). The correct plural used everywhere else in the codebase
-is `"mission_step_contracts"`. This mismatch causes DRG lookup to silently find the
-wrong activation set.
+**⚠️ RELOCATED**: This fix has been moved to **WP08 T034** (steps 4–5), which owns
+`src/charter/drg.py`. WP01 does not own `drg.py` — ownership is held by WP08 to
+avoid cross-WP conflicts.
 
-**Files**:
-- `src/charter/drg.py` (around line 592)
-- `tests/charter/test_activation_filtered_drg.py` (check for stale assertions)
+**This subtask is a no-op for WP01.** Proceed to T006.
 
-**Steps**:
-
-1. Open `src/charter/drg.py`. Find the `_SINGULAR_TO_PLURAL` dict (around line 592).
-   Locate the entry:
-   ```python
-   "mission_step_contract": "mission_steps",
-   ```
-   Change it to:
-   ```python
-   "mission_step_contract": "mission_step_contracts",
-   ```
-
-2. In the same file, find the reverse map (the dict that maps plural keys back to
-   singular — around lines 139–140). Check whether it contains an entry for both
-   `"mission_steps"` and `"mission_step_contracts"` mapping to
-   `"mission_step_contract"`. If `"mission_step_contracts": "mission_step_contract"`
-   is absent, add it. If `"mission_steps": "mission_step_contract"` exists and is
-   now orphaned (nothing writes `"mission_steps"` any more), leave it in place for
-   backward compatibility — do not remove it.
-
-3. Open `tests/charter/test_activation_filtered_drg.py`. Search for any assertion
-   that checks the string `"mission_steps"` as a plural output of the DRG lookup
-   for the `"mission_step_contract"` kind. If found, update it to
-   `"mission_step_contracts"`. This is required by the ATDD rule: tests must match
-   new behavior within the same WP.
-
-4. Verify no other test file asserts the old wrong plural by running:
-   ```bash
-   cd /home/stijn/Documents/_code/SDD/fork/spec-kitty
-   grep -rn '"mission_steps"' tests/charter/ | grep -v "\.pyc"
-   ```
-   Investigate any hits to determine whether they reference this DRG map entry.
-   Update only tests that are asserting the wrong plural mapping. Do not touch tests
-   that reference an unrelated `"mission_steps"` concept.
-
-**Validation**:
-```bash
-cd /home/stijn/Documents/_code/SDD/fork/spec-kitty
-pytest tests/charter/test_activation_filtered_drg.py -x -v
-```
-Expected: all tests in that file pass.
+If you are reviewing WP01 and notice this subtask, verify that WP08 T034 contains
+the `_SINGULAR_TO_PLURAL` fix (search for `FR-028` in WP08's body). Do not edit
+`src/charter/drg.py` from WP01's lane.
 
 ---
 
@@ -435,8 +394,7 @@ Expected:
 - [ ] `pytest tests/charter/test_activation_filtered_drg.py -x` passes (after MSC
       plural fix)
 - [ ] `grep -rn "from charter" src/doctrine/ | grep -v "\.pyc"` returns no output
-- [ ] `_SINGULAR_TO_PLURAL["mission_step_contract"]` in `drg.py` equals
-      `"mission_step_contracts"`
+- [ ] `_SINGULAR_TO_PLURAL["mission_step_contract"]` fix: handled by WP08 T034 (drg.py not owned by WP01)
 - [ ] The `_PackContextLike` Protocol is defined inline in
       `mission_step_repository.py` with at least `pack_roots` and `repo_root`
 - [ ] `TYPE_CHECKING` import of `PackContext` from `charter` is removed from
@@ -488,10 +446,7 @@ Reviewers must verify:
 
 4. **T004**: `git ls-files kitty-specs/ | grep test-feature` returns no output.
 
-5. **T005**: `grep "_SINGULAR_TO_PLURAL" src/charter/drg.py` shows
-   `"mission_step_contract": "mission_step_contracts"`. No test in
-   `tests/charter/test_activation_filtered_drg.py` asserts the old `"mission_steps"`
-   plural for this key.
+5. **T005**: Relocated to WP08 T034. Verify `"mission_step_contract": "mission_step_contracts"` appears in WP08's diff of `src/charter/drg.py`, not WP01's diff.
 
 6. **T006**: `grep -rn "from charter" src/doctrine/` returns no lines.
    `_PackContextLike` is defined in `mission_step_repository.py`. mypy strict passes
