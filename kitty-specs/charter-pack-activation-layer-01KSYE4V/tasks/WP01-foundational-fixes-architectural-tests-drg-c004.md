@@ -459,3 +459,4 @@ Reviewers must verify:
 ## Activity Log
 
 - 2026-05-31T13:03:17Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4062575 – Assigned agent via action command
+- 2026-05-31T13:32:02Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4062575 – Ready for review: architectural tests green, C-004 violation fixed, dead-modules baselines updated. T004 note: test fixture deletions (kitty-specs/test-feature-*) included on lane branch intentionally per WP spec - these are stale test artifacts, not planning artifacts.
