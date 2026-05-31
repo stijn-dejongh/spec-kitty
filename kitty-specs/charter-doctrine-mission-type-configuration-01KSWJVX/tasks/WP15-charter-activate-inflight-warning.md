@@ -195,3 +195,4 @@ Use `tmp_path` and write synthetic `status.events.jsonl` to simulate in-flight m
 - 2026-05-30T21:19:48Z – claude:sonnet:python-pedro:implementer – shell_pid=3447930 – Ready for review: charter activate in-flight warning fully implemented and tested (34 tests, 0 failures)
 - 2026-05-30T21:20:13Z – claude:opus:reviewer-renata:reviewer – shell_pid=3462566 – Started review via action command
 - 2026-05-31T04:31:06Z – claude:opus:reviewer-renata:reviewer – shell_pid=3462566 – Review approved cycle 3 — all acceptance criteria met per review-cycle-3.md artifact
+- 2026-05-31T04:34:43Z – claude:opus:reviewer-renata:reviewer – shell_pid=3462566 – Post-merge bookkeeping complete | Done override: Lane-o content squash-merged to feat/doctrine-mission-type-spec-01KSWJVX in commit 0ba8ff55c; squash does not preserve merge ancestry but all code changes are present
