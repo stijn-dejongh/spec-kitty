@@ -22,8 +22,8 @@ subtasks:
 - T004
 - T005
 - T006
-agent: claude
-shell_pid: '4062575'
+agent: "claude:sonnet-4-6:python-pedro:implementer"
+shell_pid: "4062575"
 history:
 - at: '2026-05-31T11:44:22Z'
   event: created
@@ -455,3 +455,7 @@ Reviewers must verify:
 6. **T006**: `grep -rn "from charter" src/doctrine/` returns no lines.
    `_PackContextLike` is defined in `mission_step_repository.py`. mypy strict passes
    on that file. The C-004 architectural layer test passes.
+
+## Activity Log
+
+- 2026-05-31T13:03:17Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4062575 – Assigned agent via action command
