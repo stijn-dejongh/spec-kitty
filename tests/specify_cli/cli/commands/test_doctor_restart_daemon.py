@@ -17,6 +17,9 @@ actual ``run_sync_daemon`` subprocess is spawned during the test run.
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -72,6 +75,31 @@ def _install_owner_record_fakes(
     monkeypatch.setattr(
         "specify_cli.sync.owner.read_owner_record",
         lambda: record,
+        raising=True,
+    )
+
+
+def _install_daemon_state_file_fake(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    exists: bool,
+    port: int | None = 9400,
+    pid: int | None = None,
+) -> None:
+    """Wire up a fake ``DAEMON_STATE_FILE.exists()`` response."""
+
+    class _FakePath:
+        def exists(self) -> bool:
+            return exists
+
+    monkeypatch.setattr(
+        "specify_cli.sync.daemon.DAEMON_STATE_FILE",
+        _FakePath(),
+        raising=True,
+    )
+    monkeypatch.setattr(
+        "specify_cli.sync.daemon._parse_daemon_file",
+        lambda _path: ("http://127.0.0.1:9400", port, "token", pid),
         raising=True,
     )
 
@@ -137,6 +165,32 @@ def test_restart_daemon_uses_cli_registration_fast_path() -> None:
     assert not _is_doctor_restart_daemon_fast_path(["spec-kitty", "doctor", "identity"])
 
 
+def test_import_does_not_execute_restart_daemon_fast_path(tmp_path: Path) -> None:
+    """Importing the package must not dispatch commands from inherited argv."""
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(Path.cwd() / "src")
+    env["HOME"] = str(tmp_path / "home")
+    env.pop("SPEC_KITTY_TEST_MODE", None)
+    code = (
+        "import sys; "
+        "sys.argv=['host','doctor','restart-daemon','--json']; "
+        "import specify_cli; "
+        "print('IMPORT_SURVIVED')"
+    )
+
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert result.stdout.strip() == "IMPORT_SURVIVED"
+    assert result.stderr.strip() == ""
+
+
 # ---------------------------------------------------------------------------
 # Exit-code matrix
 # ---------------------------------------------------------------------------
@@ -149,6 +203,7 @@ def test_happy_path_exits_zero_and_reports_new_pid(
     _install_owner_record_fakes(
         monkeypatch, record=_FakeRecord(pid=12345), path_exists=True
     )
+    _install_daemon_state_file_fake(monkeypatch, exists=True)
     stop_calls = _install_stop_fake(monkeypatch, result=(True, "Sync daemon stopped."))
     launch_calls = _install_launch_fake(
         monkeypatch,
@@ -160,6 +215,10 @@ def test_happy_path_exits_zero_and_reports_new_pid(
     assert result.exit_code == 0
     assert stop_calls == [1.0], "stop primitive must be called exactly once"
     assert len(launch_calls) == 1, "launch primitive must be called exactly once"
+    assert launch_calls[0]["kwargs"] == {
+        "intent": DaemonIntent.REMOTE_REQUIRED,
+        "health_wait_seconds": 3.0,
+    }
 
     payload = json.loads(result.stdout.strip())
     assert payload["status"] == "restarted"
@@ -174,6 +233,7 @@ def test_no_owner_exits_one_and_directs_to_sync_now(
 ) -> None:
     """Absent owner record → exit 1, message points operator at sync now."""
     _install_owner_record_fakes(monkeypatch, record=None, path_exists=False)
+    _install_daemon_state_file_fake(monkeypatch, exists=False)
     stop_calls = _install_stop_fake(monkeypatch, result=(False, "should-not-call"))
     launch_calls = _install_launch_fake(
         monkeypatch,
@@ -194,6 +254,141 @@ def test_no_owner_exits_one_and_directs_to_sync_now(
     assert "spec-kitty sync now" in payload["error"]
 
 
+def test_owner_grace_wait_allows_registered_daemon_to_restart(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A short owner-registration lag is tolerated when daemon metadata exists."""
+
+    class _SequencedPath:
+        def __init__(self, results: list[bool]) -> None:
+            self._results = results
+
+        def exists(self) -> bool:
+            if len(self._results) > 1:
+                return self._results.pop(0)
+            return self._results[0]
+
+    path = _SequencedPath([False, False, True])
+    monkeypatch.setattr(
+        "specify_cli.sync.owner.owner_record_path",
+        lambda: path,
+        raising=True,
+    )
+    monkeypatch.setattr(
+        "specify_cli.sync.owner.read_owner_record",
+        lambda: _FakeRecord(pid=12345),
+        raising=True,
+    )
+    _install_daemon_state_file_fake(monkeypatch, exists=True)
+
+    ticks = iter([0.0, 0.1, 0.2, 0.3])
+    sleeps: list[float] = []
+    monkeypatch.setattr("specify_cli.sync.restart.time.monotonic", lambda: next(ticks))
+    monkeypatch.setattr("specify_cli.sync.restart.time.sleep", lambda seconds: sleeps.append(seconds))
+
+    stop_calls = _install_stop_fake(monkeypatch, result=(True, "Sync daemon stopped."))
+    launch_calls = _install_launch_fake(
+        monkeypatch,
+        outcome=DaemonStartOutcome(started=True, skipped_reason=None, pid=67890),
+    )
+
+    result = _runner().invoke(doctor_module.app, ["restart-daemon", "--json"])
+
+    assert result.exit_code == 0
+    assert sleeps, "restart should poll briefly while owner record appears"
+    assert stop_calls == [1.0]
+    assert len(launch_calls) == 1
+
+
+def test_daemon_state_without_owner_is_restartable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Daemon state metadata is enough to stop and respawn when owner is absent."""
+
+    class _MissingPath:
+        def exists(self) -> bool:
+            return False
+
+    monkeypatch.setattr(
+        "specify_cli.sync.owner.owner_record_path",
+        lambda: _MissingPath(),
+        raising=True,
+    )
+    monkeypatch.setattr(
+        "specify_cli.sync.owner.read_owner_record",
+        lambda: None,
+        raising=True,
+    )
+    _install_daemon_state_file_fake(monkeypatch, exists=True, pid=12345)
+
+    ticks = iter([0.0, 0.1, 0.2, 0.3, 2.1])
+    sleeps: list[float] = []
+    monkeypatch.setattr("specify_cli.sync.restart.time.monotonic", lambda: next(ticks))
+    monkeypatch.setattr("specify_cli.sync.restart.time.sleep", lambda seconds: sleeps.append(seconds))
+
+    stop_calls = _install_stop_fake(monkeypatch, result=(True, "Sync daemon stopped."))
+    launch_calls = _install_launch_fake(
+        monkeypatch,
+        outcome=DaemonStartOutcome(started=True, skipped_reason=None, pid=67890),
+    )
+
+    result = _runner().invoke(doctor_module.app, ["restart-daemon", "--json"])
+
+    assert result.exit_code == 0
+    assert sleeps, "restart should wait briefly for owner before falling back to state"
+    assert stop_calls == [1.0]
+    assert len(launch_calls) == 1
+    payload = json.loads(result.stdout.strip())
+    assert payload["status"] == "restarted"
+    assert payload["previous_pid"] == 12345
+    assert payload["new_pid"] == 67890
+
+
+def test_invalid_daemon_state_without_owner_is_not_restartable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Corrupt state-only metadata stays on the no-owner boundary."""
+
+    class _MissingPath:
+        def exists(self) -> bool:
+            return False
+
+    monkeypatch.setattr(
+        "specify_cli.sync.owner.owner_record_path",
+        lambda: _MissingPath(),
+        raising=True,
+    )
+    monkeypatch.setattr(
+        "specify_cli.sync.owner.read_owner_record",
+        lambda: None,
+        raising=True,
+    )
+    _install_daemon_state_file_fake(monkeypatch, exists=True, port=None, pid=None)
+
+    ticks = iter([0.0, 0.1, 0.2, 0.3, 2.1])
+    sleeps: list[float] = []
+    monkeypatch.setattr("specify_cli.sync.restart.time.monotonic", lambda: next(ticks))
+    monkeypatch.setattr("specify_cli.sync.restart.time.sleep", lambda seconds: sleeps.append(seconds))
+
+    stop_calls = _install_stop_fake(monkeypatch, result=(False, "invalid metadata"))
+    launch_calls = _install_launch_fake(
+        monkeypatch,
+        outcome=DaemonStartOutcome(started=True, skipped_reason=None, pid=67890),
+    )
+
+    result = _runner().invoke(doctor_module.app, ["restart-daemon", "--json"])
+
+    assert result.exit_code == 1
+    assert sleeps, "restart should wait briefly for owner before checking state"
+    assert stop_calls == []
+    assert launch_calls == []
+    payload = json.loads(result.stdout.strip())
+    assert payload["status"] == "no_owner"
+    assert payload["previous_pid"] is None
+    assert payload["new_pid"] is None
+    assert "spec-kitty sync now" in (payload["error"] or "")
+
+
 def test_stop_failure_exits_three_and_skips_launch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -201,6 +396,7 @@ def test_stop_failure_exits_three_and_skips_launch(
     _install_owner_record_fakes(
         monkeypatch, record=_FakeRecord(pid=12345), path_exists=True
     )
+    _install_daemon_state_file_fake(monkeypatch, exists=True)
     stop_calls = _install_stop_fake(
         monkeypatch, result=RuntimeError("daemon unresponsive")
     )
@@ -228,6 +424,7 @@ def test_respawn_failure_exits_two(monkeypatch: pytest.MonkeyPatch) -> None:
     _install_owner_record_fakes(
         monkeypatch, record=_FakeRecord(pid=12345), path_exists=True
     )
+    _install_daemon_state_file_fake(monkeypatch, exists=True)
     _install_stop_fake(monkeypatch, result=(True, "Sync daemon stopped."))
     _install_launch_fake(monkeypatch, outcome=RuntimeError("port allocation failed"))
 
@@ -246,6 +443,7 @@ def test_respawn_skipped_exits_two(monkeypatch: pytest.MonkeyPatch) -> None:
     _install_owner_record_fakes(
         monkeypatch, record=_FakeRecord(pid=12345), path_exists=True
     )
+    _install_daemon_state_file_fake(monkeypatch, exists=True)
     _install_stop_fake(monkeypatch, result=(True, "Sync daemon stopped."))
     _install_launch_fake(
         monkeypatch,
@@ -282,6 +480,7 @@ def test_foreground_binding_uses_remote_required_intent(
     assert len(launch_calls) == 1
     intent = launch_calls[0]["kwargs"].get("intent")
     assert intent == DaemonIntent.REMOTE_REQUIRED
+    assert launch_calls[0]["kwargs"].get("health_wait_seconds") == 3.0
 
 
 # ---------------------------------------------------------------------------
@@ -363,6 +562,7 @@ def test_runs_outside_project_does_not_crash(
     a tmp dir so we know the entry point is robust."""
     monkeypatch.chdir(tmp_path)
     _install_owner_record_fakes(monkeypatch, record=None, path_exists=False)
+    _install_daemon_state_file_fake(monkeypatch, exists=False)
     _install_stop_fake(monkeypatch, result=(False, "noop"))
     _install_launch_fake(
         monkeypatch,

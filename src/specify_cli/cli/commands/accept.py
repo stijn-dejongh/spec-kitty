@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import typer
 from rich.table import Table
@@ -21,7 +22,13 @@ from specify_cli.cli import StepTracker
 from specify_cli.cli.selector_resolution import resolve_mission_handle
 from specify_cli.cli.helpers import console, show_banner
 from specify_cli.git.commit_helpers import assert_not_protected_branch
-from specify_cli.task_utils import LANES, TaskCliError, find_repo_root
+from specify_cli.task_utils import (
+    LANES,
+    TaskCliError,
+    find_repo_root,
+    git_status_lines,
+    run_git,
+)
 
 
 def _safe_emit_error_logged(message: str) -> None:
@@ -32,6 +39,73 @@ def _safe_emit_error_logged(message: str) -> None:
     except Exception:
         # Non-blocking: never fail the command on emission errors
         pass
+
+
+def _spec_artifact_dirty_paths(repo_root: Path, feature_slug: str) -> list[str]:
+    """Return tracked-but-uncommitted spec/meta artifacts under the mission dir.
+
+    The acceptance pipeline materializes derived artifacts (e.g.
+    ``acceptance-matrix.json`` and status views) while running readiness checks
+    *before* the acceptance commit is created. Those writes happen after the
+    git-cleanliness snapshot is taken, so the acceptance commit only captures
+    ``meta.json`` and leaves the materialized artifacts modified-unstaged. This
+    helper finds exactly those leftover tracked modifications so the command can
+    fold them into the acceptance state and leave a clean working tree.
+
+    Untracked files (``??``) are deliberately excluded so the cleanup commit
+    never sweeps in unrelated, unmanaged files the operator may have created.
+    """
+    prefix = f"kitty-specs/{feature_slug}/"
+    dirty: list[str] = []
+    for line in git_status_lines(repo_root):
+        # Porcelain format: two status chars, a space, then the path.
+        status_code = line[:2]
+        path = line[3:].strip()
+        # Rename entries look like "old -> new"; keep the destination path.
+        if " -> " in path:
+            path = path.split(" -> ", 1)[1].strip()
+        if status_code == "??":
+            continue
+        if path.startswith(prefix):
+            dirty.append(path)
+    return dirty
+
+
+def _commit_residual_acceptance_artifacts(repo_root: Path, feature_slug: str) -> bool:
+    """Stage and commit any leftover acceptance artifacts so the tree is clean.
+
+    Returns True when a follow-up commit was created. This preserves the
+    recorded ``accept_commit`` SHA (it still points at the real acceptance
+    commit) while guaranteeing a successful ``accept`` leaves no
+    staged-but-uncommitted or modified-unstaged spec/meta artifacts behind.
+    """
+    dirty = _spec_artifact_dirty_paths(repo_root, feature_slug)
+    if not dirty:
+        return False
+
+    for path in dirty:
+        run_git(["add", path], cwd=repo_root, check=True)
+
+    # Scope the staged-check and the commit to the mission's dirty artifacts
+    # only. A bare ``git commit`` would sweep in any files the operator had
+    # pre-staged outside the mission dir; the explicit ``-- <paths>`` pathspec
+    # commits exactly these spec/meta artifacts and leaves unrelated staged work
+    # untouched.
+    staged = run_git(
+        ["diff", "--cached", "--name-only", "--", *dirty],
+        cwd=repo_root,
+        check=True,
+    )
+    staged_files = [line.strip() for line in staged.stdout.splitlines() if line.strip()]
+    if not staged_files:
+        return False
+
+    run_git(
+        ["commit", "-m", f"Finalize acceptance artifacts for {feature_slug}", "--", *dirty],
+        cwd=repo_root,
+        check=True,
+    )
+    return True
 
 
 def _print_acceptance_summary(summary: AcceptanceSummary) -> None:
@@ -99,6 +173,31 @@ def _print_acceptance_result(result: AcceptanceResult) -> None:
             console.print(f"  - {note}")
 
 
+def _print_acceptance_diagnosis(summary: AcceptanceSummary) -> None:
+    failed_checks = summary.failed_checks()
+    if failed_checks:
+        console.print("\n[bold red]Failed checks[/bold red]")
+        for item in failed_checks:
+            console.print(f"[red]- {item.check}[/red]: {item.detail}")
+    else:
+        console.print("\n[green]No failed acceptance checks detected.[/green]")
+
+    if summary.skipped_checks:
+        console.print("\n[bold yellow]Skipped checks[/bold yellow]")
+        for item in summary.skipped_checks:
+            console.print(f"[yellow]- {item.check}[/yellow]: {item.detail}")
+
+    if summary.blocked_checks:
+        console.print("\n[bold yellow]Blocked checks[/bold yellow]")
+        for item in summary.blocked_checks:
+            console.print(f"[yellow]- {item.check}[/yellow]: {item.detail}")
+
+    if summary.recommended_fix_order:
+        console.print("\n[bold]Recommended fix order[/bold]")
+        for idx, item in enumerate(summary.recommended_fix_order, start=1):
+            console.print(f"  {idx}. {item}")
+
+
 def _summary_payload(summary: AcceptanceSummary) -> dict[str, object]:
     payload = summary.to_dict()
     payload.update(acceptance_lane_derivations(summary))
@@ -123,6 +222,7 @@ def accept(
     json_output: bool = typer.Option(False, "--json", help="Emit JSON instead of formatted text"),
     lenient: bool = typer.Option(False, "--lenient", help="Skip strict metadata validation"),
     no_commit: bool = typer.Option(False, "--no-commit", help="Report acceptance readiness without writing metadata or status changes"),
+    diagnose: bool = typer.Option(False, "--diagnose", help="Diagnose acceptance blockers without writing metadata or matrix artifacts"),
     allow_fail: bool = typer.Option(False, "--allow-fail", help="Return checklist even when issues remain"),
 ) -> None:
     """Validate mission readiness before merging to main."""
@@ -168,11 +268,11 @@ def accept(
 
     requested_mode = (mode or "auto").lower()
     actual_mode = choose_mode(requested_mode, repo_root)
-    commit_required = actual_mode != "checklist" and not no_commit
+    commit_required = actual_mode != "checklist" and not no_commit and not diagnose
     if commit_required and not json_output:
         tracker.add("commit", "Record acceptance metadata")
     if not json_output:
-        tracker.add("guide", "Share next steps")
+        tracker.add("guide", "Share next steps" if not diagnose else "Report diagnostics")
 
     if not json_output:
         tracker.start("verify")
@@ -181,6 +281,7 @@ def accept(
             repo_root,
             mission_slug,
             strict_metadata=not lenient,
+            mutate_matrix=not diagnose,
         )
     except AcceptanceError as exc:
         _safe_emit_error_logged(str(exc))
@@ -193,6 +294,18 @@ def accept(
         raise typer.Exit(1)
     if not json_output:
         tracker.complete("verify", "ready" if summary.ok else "issues found")
+
+    if diagnose:
+        if json_output:
+            payload = _summary_payload(summary)
+            payload["diagnose"] = True
+            print(json.dumps(payload, indent=2))
+        else:
+            tracker.start("guide")
+            tracker.complete("guide", "diagnostics ready")
+            console.print(tracker.render())
+            _print_acceptance_diagnosis(summary)
+        raise typer.Exit(0)
 
     if actual_mode == "checklist":
         if json_output:
@@ -253,6 +366,14 @@ def accept(
                 tests=acceptance_tests,
                 auto_commit=commit_required,
             )
+        if commit_required:
+            # The acceptance commit (inside perform_acceptance) only captures
+            # meta.json. Derived artifacts materialized during readiness checks
+            # (e.g. acceptance-matrix.json, status views) are written after the
+            # git-cleanliness snapshot and would otherwise be left dirty. Fold
+            # them into a follow-up commit so a successful accept leaves a clean
+            # working tree on every path (including accept_commit == None).
+            _commit_residual_acceptance_artifacts(repo_root, mission_slug)
         if commit_required and not json_output:
             detail = "commit created" if result.commit_created else "no changes"
             tracker.complete("commit", detail)

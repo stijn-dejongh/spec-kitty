@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import enum
 import json
 import logging
+import os
 from kernel._safe_re import re
 import subprocess
 import traceback
@@ -38,6 +39,7 @@ from specify_cli.core.paths import get_status_read_root
 from specify_cli.mission_metadata import resolve_mission_identity
 from specify_cli.mission import get_mission_type
 from specify_cli.git import safe_commit
+from specify_cli.git.commit_helpers import protected_branches
 from specify_cli.status.locking import feature_status_lock
 from specify_cli.core.agent_config import get_auto_commit_default
 from specify_cli.status.bootstrap import bootstrap_canonical_state
@@ -595,6 +597,20 @@ def _output_error(json_mode: bool, error_message: str, diagnostic: dict | None =
         console.print(f"[red]Error:[/red] {error_message}")
 
 
+def _protected_branch_status_commit_error(branch: str, repo_root: Path, command: str) -> str | None:
+    if os.environ.get("SPEC_KITTY_TEST_MODE", "").lower() in {"1", "true", "yes"}:
+        return None
+    if branch not in protected_branches(repo_root):
+        return None
+    return (
+        f"Refusing to run `{command}` with auto-commit on protected branch "
+        f"'{branch}' before mutating status files. Run ceremony write "
+        "operations from an allowed coordination/lane branch, or rerun with "
+        "--no-auto-commit when you intentionally want to handle the status "
+        "artifact commit manually."
+    )
+
+
 def _status_event_result_fields(event: object | None) -> dict[str, str | None]:
     """Return JSON-safe status event fields for command output."""
     if event is None:
@@ -723,12 +739,33 @@ def _check_unchecked_subtasks(repo_root: Path, mission_slug: str, wp_id: str, _f
 
     content = tasks_md.read_text(encoding="utf-8")
 
-    # Find subtasks for this WP (looking for - [ ] or - [x] checkboxes under WP section)
+    # Find canonical subtasks for this WP. Only unchecked rows of the form
+    # ``- [ ] T### <desc>`` count as blocking. Validation/procedure/checklist
+    # command rows (e.g. ``- [ ] swift test``, ``- [ ] git status --short``),
+    # prose, and anything inside fenced code blocks are intentionally ignored —
+    # they are not work-package subtasks and must not block a lane transition.
     lines = content.split("\n")
-    unchecked = []
+    unchecked: list[str] = []
     in_wp_section = False
+    in_code_fence = False
+
+    # Canonical subtask row: ``- [ ] T001 ...``. A ``T`` id of at least three
+    # digits is mandatory (``\d{3,}`` so ids past T999 still block).
+    canonical_unchecked = re.compile(r"^-\s*\[\s*\]\s*(T\d{3,})\b")
 
     for line in lines:
+        stripped = line.strip()
+
+        # Toggle fenced-code-block state on ``` or ~~~ markers. Task-like lines
+        # inside fenced code blocks (examples in implementation notes) must not
+        # be treated as real subtasks.
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            in_code_fence = not in_code_fence
+            continue
+
+        if in_code_fence:
+            continue
+
         # Check if we entered this WP's section
         if re.search(rf"^#{{2,4}}[^#].*{wp_id}\b", line):
             in_wp_section = True
@@ -738,13 +775,11 @@ def _check_unchecked_subtasks(repo_root: Path, mission_slug: str, wp_id: str, _f
         if in_wp_section and re.search(r"^#{2,4}[^#].*WP\d{2}\b", line):
             break  # Left this WP's section
 
-        # Look for unchecked tasks in this WP's section
+        # Look for unchecked canonical task rows in this WP's section
         if in_wp_section:
-            # Match patterns like: - [ ] T001 or - [ ] Task description
-            unchecked_match = re.match(r"-\s*\[\s*\]\s*(T\d{3}|.*)", line.strip())
+            unchecked_match = canonical_unchecked.match(stripped)
             if unchecked_match:
-                task_id = unchecked_match.group(1).split()[0] if unchecked_match.group(1) else line.strip()
-                unchecked.append(task_id)
+                unchecked.append(unchecked_match.group(1))
 
     return unchecked
 
@@ -1438,6 +1473,15 @@ def move_task(
 
         # Ensure we operate on the target branch for this feature
         main_repo_root, target_branch = _ensure_target_branch_checked_out(repo_root, mission_slug, json_output)
+        if auto_commit:
+            protected_error = _protected_branch_status_commit_error(
+                target_branch,
+                main_repo_root,
+                "spec-kitty agent tasks move-task",
+            )
+            if protected_error is not None:
+                _output_error(json_output, protected_error)
+                raise typer.Exit(1)
 
         # Informational: Let user know we're using planning repo's kitty-specs
         cwd = Path.cwd().resolve()
@@ -1585,13 +1629,14 @@ def move_task(
         if target_lane in (Lane.FOR_REVIEW, Lane.APPROVED, Lane.DONE) and not force:
             unchecked = _check_unchecked_subtasks(repo_root, mission_slug, task_id, force)
             if unchecked:
+                # ``unchecked`` only ever contains canonical T### ids, so the
+                # remediation commands below are always valid mark-status calls.
                 error_msg = f"Cannot move {task_id} to {target_lane} - unchecked subtasks:\n"
                 for task in unchecked:
                     error_msg += f"  - [ ] {task}\n"
                 error_msg += "\nMark these complete first:\n"
                 for task in unchecked[:3]:  # Show first 3 examples
-                    task_clean = task.split()[0] if " " in task else task
-                    error_msg += f"  spec-kitty agent tasks mark-status {task_clean} --status done\n"
+                    error_msg += f"  spec-kitty agent tasks mark-status {task} --status done\n"
                 error_msg += "\nOr use --force to override (not recommended)"
                 _output_error(json_output, error_msg)
                 raise typer.Exit(1)
@@ -2087,7 +2132,7 @@ def _update_pipe_table_status(line: str, status: str, header_map: dict[str, int]
 
 
 _INLINE_SUBTASKS_RE = re.compile(
-    r"Subtasks:\s*(?P<ids>(?:T|WP)\d+(?:\s*,\s*(?:T|WP)\d+)*)",
+    r"(?:Subtasks|\*\*Subtasks\*\*):\s*(?P<ids>(?:T|WP)\d+(?:\s*,\s*(?:T|WP)\d+)*)",
     re.IGNORECASE,
 )
 
@@ -2397,6 +2442,15 @@ def mark_status(
         mission_slug = _find_mission_slug(explicit_mission=mission, explicit_feature=feature, json_output=json_output, repo_root=repo_root)
         # Ensure we operate on the target branch for this feature
         main_repo_root, target_branch = _ensure_target_branch_checked_out(repo_root, mission_slug, json_output)
+        if auto_commit:
+            protected_error = _protected_branch_status_commit_error(
+                target_branch,
+                main_repo_root,
+                "spec-kitty agent tasks mark-status",
+            )
+            if protected_error is not None:
+                _output_error(json_output, protected_error)
+                raise typer.Exit(1)
         feature_dir = main_repo_root / "kitty-specs" / mission_slug
         tasks_md = feature_dir / TASKS_MD_FILENAME
 
@@ -3039,6 +3093,17 @@ def map_requirements(
 
         mission_slug = _find_mission_slug(explicit_mission=mission, explicit_feature=feature, json_output=json_output, repo_root=repo_root)
         main_repo_root, target_branch = _ensure_target_branch_checked_out(repo_root, mission_slug, json_output)
+        if auto_commit is None:
+            auto_commit = get_auto_commit_default(main_repo_root)
+        if auto_commit:
+            protected_error = _protected_branch_status_commit_error(
+                target_branch,
+                main_repo_root,
+                "spec-kitty agent tasks map-requirements",
+            )
+            if protected_error is not None:
+                _output_error(json_output, protected_error)
+                raise typer.Exit(1)
         feature_dir = main_repo_root / "kitty-specs" / mission_slug
 
         if not feature_dir.exists():
@@ -3225,9 +3290,6 @@ def map_requirements(
         coverage = compute_coverage(all_wp_refs, functional_ids)
 
         # Auto-commit written WP files (consistent with move-task / update-subtasks)
-        if auto_commit is None:
-            auto_commit = get_auto_commit_default(main_repo_root)
-
         committed = False
         if auto_commit:
             written_files: list[Path] = []
