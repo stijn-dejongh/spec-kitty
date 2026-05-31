@@ -19,8 +19,8 @@ subtasks:
 - T017
 - T018
 - T019
-agent: claude
-shell_pid: '4151579'
+agent: "claude:sonnet-4-6:python-pedro:implementer"
+shell_pid: "4151579"
 history:
 - at: '2026-05-31T11:44:22Z'
   event: created
@@ -1108,3 +1108,7 @@ assert YAML_KEY_MAP['mission-type'] == 'mission_type_activations'
 print('YAML_KEY_MAP OK')
 "
 ```
+
+## Activity Log
+
+- 2026-05-31T13:58:08Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4151579 – Assigned agent via action command
