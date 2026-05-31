@@ -400,3 +400,4 @@ do not forward the new parameter will cause `TypeError` at runtime.
 ## Activity Log
 
 - 2026-05-31T13:58:30Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4153132 – Assigned agent via action command
+- 2026-05-31T14:13:04Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4153132 – Ready for review: filter_graph_by_activation wired in 4 call sites, plural map fixed (mission_step_contracts), PackContext re-export removed
