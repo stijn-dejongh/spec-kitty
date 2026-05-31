@@ -9,12 +9,16 @@ tracker_refs: []
 planning_base_branch: pr/charter-doctrine-mission-type-configuration
 merge_target_branch: pr/charter-doctrine-mission-type-configuration
 branch_strategy: Planning artifacts for this mission were generated on pr/charter-doctrine-mission-type-configuration. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into pr/charter-doctrine-mission-type-configuration unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-charter-pack-activation-layer-01KSYE4V
+base_commit: e2ef44089ea3e9c01168e48345c12b21899113ff
+created_at: '2026-05-31T13:16:53.385303+00:00'
 subtasks:
 - T007
 - T008
 - T009
 - T010
-agent: claude
+agent: "claude:sonnet-4-6:reviewer-renata:reviewer"
+shell_pid: "4091832"
 history:
 - at: '2026-05-31T11:44:22Z'
   event: created
@@ -534,3 +538,10 @@ Reviewers must verify:
 
 7. **mypy strict passes** on `src/charter/pack_context.py` — check CI output or run
    locally.
+
+## Activity Log
+
+- 2026-05-31T13:16:53Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4073577 – Assigned agent via action command
+- 2026-05-31T13:24:12Z – claude:sonnet-4-6:python-pedro:implementer – shell_pid=4073577 – Ready for review: T007 8 new activated_* fields added to PackContext; T008 8 reader functions with three-state contract wired into from_config(); T009 FR-039 and-raw guards fixed, stale tests deleted; T010 three-state tests for activated_directives and activated_agent_profiles, structural test, FR-039 regression test. All 22 tests pass, ruff clean, mypy errors are pre-existing jsonschema stubs only.
+- 2026-05-31T13:24:29Z – claude:sonnet-4-6:reviewer-renata:reviewer – shell_pid=4091832 – Started review via action command
+- 2026-05-31T13:26:59Z – claude:sonnet-4-6:reviewer-renata:reviewer – shell_pid=4091832 – Review passed: three-state PackContext fields correct, FR-039 fix verified, tests updated. 10 activated_* fields present, 'and raw' guards removed, stale tests deleted, 22 new tests pass (ruff clean, mypy errors are pre-existing jsonschema stubs only).
