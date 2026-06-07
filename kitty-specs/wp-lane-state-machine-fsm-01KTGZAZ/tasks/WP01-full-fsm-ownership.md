@@ -27,8 +27,8 @@ subtasks:
 - T007
 phase: Phase 1 - Foundation
 assignee: ''
-agent: "claude"
-shell_pid: "1615917"
+agent: "renata"
+shell_pid: "1642874"
 history:
 - at: '2026-06-07T13:30:00Z'
   actor: system
@@ -131,3 +131,5 @@ as a gate.** Behavior is preserved for the nine pre-existing lanes.
 ## Activity Log
 - 2026-06-07 — system — Prompt created.
 - 2026-06-07T12:49:40Z – claude – shell_pid=1615917 – Assigned agent via action command
+- 2026-06-07T14:01:18Z – claude – shell_pid=1615917 – Full FSM ownership: edges+guards+force in WPState; validate_transition delegates; no production ALLOWED_TRANSITIONS gate; genesis from_lane-only; parity (2057-row golden, non-vacuous) + architectural tests green; ruff clean, mypy net-zero new errors.
+- 2026-06-07T14:02:55Z – renata – shell_pid=1642874 – Started review via action command
