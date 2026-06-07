@@ -27,7 +27,8 @@ subtasks:
 - T007
 phase: Phase 1 - Foundation
 assignee: ''
-agent: claude
+agent: "claude"
+shell_pid: "1615917"
 history:
 - at: '2026-06-07T13:30:00Z'
   actor: system
@@ -129,3 +130,4 @@ as a gate.** Behavior is preserved for the nine pre-existing lanes.
 
 ## Activity Log
 - 2026-06-07 — system — Prompt created.
+- 2026-06-07T12:49:40Z – claude – shell_pid=1615917 – Assigned agent via action command
