@@ -230,6 +230,45 @@ def _has_actor(ctx: TransitionInputs) -> bool:
 
 
 @dataclass(frozen=True)
+class GenesisState(WPState):
+    """Work package created but not yet seeded into the lane lifecycle.
+
+    Pre-finalize, non-display state.  ``finalize-tasks`` performs the explicit
+    ``genesis → planned`` bootstrap seed.  A genesis WP has no lane events and
+    so never materialises into a snapshot or appears on the kanban board.
+
+    This state exists to make the seed transition explicit (``genesis → planned``)
+    rather than a dropped ``planned → planned`` self-transition, and to ensure
+    readers can return a type-safe ``Lane.GENESIS`` sentinel for unseeded WPs
+    instead of silently defaulting them to ``Lane.PLANNED`` (Contract 3, FR-008).
+
+    Ownership note: introduced as part of WP02 (read/write parity) because the
+    lane enum now includes ``GENESIS`` and ``wp_state_for`` must be total over
+    ``Lane``.  Aligns with the genesis semantics established in ``validate.py``
+    (``GENESIS_LANE``).
+    """
+
+    @property
+    def lane(self) -> Lane:
+        return Lane.GENESIS
+
+    def allowed_targets(self) -> frozenset[Lane]:
+        """Genesis can only advance to ``planned`` (finalize) or be ``canceled``."""
+        return frozenset({Lane.PLANNED, Lane.CANCELED})
+
+    def guard_for(self, target: Lane, ctx: TransitionInputs) -> tuple[bool, str | None]:  # noqa: ARG002
+        # No guards on genesis seed — finalize-tasks drives it unconditionally.
+        return True, None
+
+    def progress_bucket(self) -> str:
+        # Non-display: excluded from board summaries and progress metrics.
+        return "not_started"
+
+    def display_category(self) -> str:
+        return "Genesis"
+
+
+@dataclass(frozen=True)
 class PlannedState(WPState):
     """Work package is planned but not yet started."""
 
@@ -559,6 +598,7 @@ def _has_review_result(ctx: TransitionInputs) -> bool:
 # ---------------------------------------------------------------------------
 
 _STATE_MAP: dict[str, type[WPState]] = {
+    "genesis": GenesisState,
     "planned": PlannedState,
     "claimed": ClaimedState,
     "in_progress": InProgressState,

@@ -58,8 +58,99 @@ def _event(
     )
 
 
+def _seed_planned(feature_dir: Path, wp_id: str = "WP01") -> None:
+    """Seed a WP with the genesis→planned bootstrap event (simulates finalize-tasks).
+
+    This is the happy-path precondition: a WP that has gone through
+    ``spec-kitty agent mission finalize-tasks`` has a ``genesis → planned``
+    event that makes it claimable.
+    """
+    append_event(
+        feature_dir,
+        StatusEvent(
+            event_id="01GENESIS000000000000000000",
+            mission_slug="099-lifecycle-test",
+            wp_id=wp_id,
+            from_lane=Lane.GENESIS,
+            to_lane=Lane.PLANNED,
+            at="2026-04-26T09:00:00+00:00",
+            actor="finalize-tasks",
+            force=False,
+            execution_mode="direct_repo",
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# T013 — genesis parity tests (WP02)
+# ---------------------------------------------------------------------------
+
+
+def test_genesis_unseeded_wp_is_rejected_with_actionable_message(tmp_path: Path) -> None:
+    """An unseeded WP (no events) is rejected with the finalize-tasks hint."""
+    feature_dir = _feature_dir(tmp_path)
+
+    with pytest.raises(WorkPackageStartRejected, match="not finalized") as exc_info:
+        start_implementation_status(
+            feature_dir=feature_dir,
+            mission_slug="099-lifecycle-test",
+            wp_id="WP01",
+            actor="claude",
+            workspace_context="worktree:/tmp/wp01",
+            execution_mode="worktree",
+            repo_root=tmp_path,
+        )
+
+    # Message must contain the recovery hint.
+    assert "finalize-tasks" in str(exc_info.value)
+
+
+def test_genesis_unseeded_wp_different_mission_also_rejected(tmp_path: Path) -> None:
+    """Same rejection fires even when the mission has events for OTHER WPs."""
+    feature_dir = _feature_dir(tmp_path)
+    # WP02 is seeded, but WP01 is not.
+    _seed_planned(feature_dir, wp_id="WP02")
+
+    with pytest.raises(WorkPackageStartRejected, match="not finalized"):
+        start_implementation_status(
+            feature_dir=feature_dir,
+            mission_slug="099-lifecycle-test",
+            wp_id="WP01",
+            actor="claude",
+            workspace_context="worktree:/tmp/wp01",
+            execution_mode="worktree",
+            repo_root=tmp_path,
+        )
+
+
+def test_seeded_wp_happy_path_unaffected_by_genesis_check(tmp_path: Path) -> None:
+    """After finalize-tasks seeds genesis→planned, the WP is claimable."""
+    feature_dir = _feature_dir(tmp_path)
+    _seed_planned(feature_dir)
+
+    result = start_implementation_status(
+        feature_dir=feature_dir,
+        mission_slug="099-lifecycle-test",
+        wp_id="WP01",
+        actor="claude",
+        workspace_context="worktree:/tmp/wp01",
+        execution_mode="worktree",
+        repo_root=tmp_path,
+    )
+
+    assert result.from_lane == Lane.PLANNED
+    assert result.to_lane == Lane.IN_PROGRESS
+    assert result.no_op is False
+
+
+# ---------------------------------------------------------------------------
+# Happy-path tests (seeded WPs — updated to use _seed_planned helper)
+# ---------------------------------------------------------------------------
+
+
 def test_start_implementation_batches_planned_to_in_progress(tmp_path: Path) -> None:
     feature_dir = _feature_dir(tmp_path)
+    _seed_planned(feature_dir)
 
     result = start_implementation_status(
         feature_dir=feature_dir,
@@ -76,7 +167,9 @@ def test_start_implementation_batches_planned_to_in_progress(tmp_path: Path) -> 
     assert result.no_op is False
 
     events = read_events(feature_dir)
+    # First event is the genesis→planned seed; then claim+progress.
     assert [(event.from_lane, event.to_lane) for event in events] == [
+        (Lane.GENESIS, Lane.PLANNED),
         (Lane.PLANNED, Lane.CLAIMED),
         (Lane.CLAIMED, Lane.IN_PROGRESS),
     ]
@@ -87,6 +180,7 @@ def test_start_implementation_batches_planned_to_in_progress(tmp_path: Path) -> 
 def test_backgrounded_implementation_start_does_not_strand_claimed(tmp_path: Path) -> None:
     """A normal start writes claim and progress evidence as one durable batch."""
     feature_dir = _feature_dir(tmp_path)
+    _seed_planned(feature_dir)
 
     result = start_implementation_status(
         feature_dir=feature_dir,
@@ -100,7 +194,8 @@ def test_backgrounded_implementation_start_does_not_strand_claimed(tmp_path: Pat
 
     assert result.to_lane == Lane.IN_PROGRESS
     events = read_events(feature_dir)
-    assert [event.to_lane for event in events] == [Lane.CLAIMED, Lane.IN_PROGRESS]
+    # genesis→planned seed + claim + progress.
+    assert [event.to_lane for event in events] == [Lane.PLANNED, Lane.CLAIMED, Lane.IN_PROGRESS]
     assert reduce(events).work_packages["WP01"]["lane"] == Lane.IN_PROGRESS
 
 
