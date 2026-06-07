@@ -20,7 +20,8 @@ subtasks:
 - T013
 phase: Phase 2 - Parity
 assignee: ''
-agent: claude
+agent: "claude"
+shell_pid: "1652414"
 history:
 - at: '2026-06-07T13:30:00Z'
   actor: system
@@ -100,3 +101,4 @@ Every lane reader reports an unseeded WP as `GENESIS` (matching the writer
 
 ## Activity Log
 - 2026-06-07 — system — Prompt created.
+- 2026-06-07T14:18:05Z – claude – shell_pid=1652414 – Assigned agent via action command
