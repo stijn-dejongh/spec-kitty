@@ -42,6 +42,10 @@ from .store import (
     read_events_raw,
 )
 from .transitions import (
+    # ALLOWED_TRANSITIONS is a NON-AUTHORITATIVE derived projection of the FSM
+    # edge graph, re-exported for tests/graph tooling only. Production edge and
+    # transition decisions go through WPState (wp_state_for / validate_transition);
+    # never gate on this constant (NFR-002, I1).
     ALLOWED_TRANSITIONS,
     CANONICAL_LANES,
     LANE_ALIASES,

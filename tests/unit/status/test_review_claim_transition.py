@@ -16,17 +16,34 @@ class TestReviewClaimTransitionMatrix:
     """The transition matrix must allow for_review -> in_review."""
 
     def test_for_review_to_in_review_is_allowed(self) -> None:
-        from specify_cli.status.transitions import ALLOWED_TRANSITIONS
+        from specify_cli.status.models import Lane
+        from specify_cli.status.wp_state import wp_state_for
 
-        assert ("for_review", "in_review") in ALLOWED_TRANSITIONS
+        # The FSM is the sole edge authority (WP01): query it directly.
+        assert wp_state_for(Lane.FOR_REVIEW).may_transition_to(Lane.IN_REVIEW)
 
     def test_for_review_to_in_review_is_guarded_by_actor_required(self) -> None:
         """The guard for the review-claim transition is actor identity +
-        conflict detection (no second reviewer can steal an active claim)."""
-        from specify_cli.status.transitions import _GUARDED_TRANSITIONS
+        conflict detection (no second reviewer can steal an active claim).
 
-        guard_name = _GUARDED_TRANSITIONS.get(("for_review", "in_review"))
-        assert guard_name == "actor_required_conflict_detection"
+        Guards now live in the WPState objects (WP01); assert the *behaviour*
+        through the canonical ``validate_transition`` surface rather than an
+        internal guard table.
+        """
+        from specify_cli.status.models import GuardContext
+        from specify_cli.status.transitions import validate_transition
+
+        # Actor identity required.
+        ok_no_actor, err_no_actor = validate_transition("for_review", "in_review", GuardContext())
+        assert ok_no_actor is False
+        assert err_no_actor and "actor" in err_no_actor.lower()
+
+        # Conflict detection: a second actor cannot steal an active claim.
+        ok_conflict, err_conflict = validate_transition(
+            "for_review", "in_review", GuardContext(actor="codex", current_actor="claude")
+        )
+        assert ok_conflict is False
+        assert err_conflict and "claude" in err_conflict and "codex" in err_conflict
 
 
 class TestReviewClaimGuardBehaviour:

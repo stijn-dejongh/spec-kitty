@@ -313,6 +313,46 @@ class TestValidateTransitionLegality:
         findings = validate_transition_legality(events)
         assert findings == []
 
+    def test_edge_legality_routes_through_fsm(self):
+        """Legality must come from the FSM, not a static ALLOWED_TRANSITIONS table.
+
+        A pair the FSM rejects (claimed -> for_review) is flagged; a pair the FSM
+        accepts (claimed -> in_progress) is not.
+        """
+        bad = [_make_event(from_lane="claimed", to_lane="for_review")]
+        assert any("illegal transition" in f for f in validate_transition_legality(bad))
+        good = [_make_event(from_lane="claimed", to_lane="in_progress")]
+        assert validate_transition_legality(good) == []
+
+
+class TestGenesisFromLaneOnly:
+    """FR-015 (T005): genesis is a valid from_lane seed source, never a to_lane."""
+
+    def test_genesis_to_planned_is_legal_seed(self):
+        events = [_make_event(from_lane="genesis", to_lane="planned")]
+        assert validate_transition_legality(events) == []
+
+    def test_genesis_to_canceled_is_legal_seed(self):
+        events = [_make_event(from_lane="genesis", to_lane="canceled")]
+        assert validate_transition_legality(events) == []
+
+    def test_genesis_to_in_progress_is_illegal(self):
+        events = [_make_event(from_lane="genesis", to_lane="in_progress")]
+        findings = validate_transition_legality(events)
+        assert any("illegal transition genesis -> in_progress" in f for f in findings)
+
+    def test_genesis_valid_as_from_lane_in_schema(self):
+        """Schema accepts genesis as from_lane (not flagged non-canonical)."""
+        event = _make_event(from_lane="genesis", to_lane="planned")
+        findings = validate_event_schema(event)
+        assert not any("from_lane is not canonical" in f for f in findings)
+
+    def test_genesis_rejected_as_to_lane_in_schema(self):
+        """Schema flags genesis as a to_lane (non-canonical / non-display)."""
+        event = _make_event(from_lane="planned", to_lane="genesis")
+        findings = validate_event_schema(event)
+        assert any("to_lane is not canonical: genesis" in f for f in findings)
+
 
 # ---------------------------------------------------------------------------
 # validate_done_evidence
