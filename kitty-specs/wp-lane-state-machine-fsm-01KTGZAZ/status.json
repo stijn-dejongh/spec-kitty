@@ -1,7 +1,7 @@
 {
-  "event_count": 5,
-  "last_event_id": "01KTH1M30YYDZEWBKBBYYTRRGH",
-  "materialized_at": "2026-06-07T12:41:16.574051+00:00",
+  "event_count": 6,
+  "last_event_id": "01KTH1M3CF6XE5XGHC01XDC0RJ",
+  "materialized_at": "2026-06-07T12:41:16.943951+00:00",
   "mission_number": "",
   "mission_slug": "wp-lane-state-machine-fsm-01KTGZAZ",
   "mission_type": "software-dev",
@@ -15,7 +15,7 @@
     "genesis": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 5
+    "planned": 6
   },
   "work_packages": {
     "WP01": {
@@ -52,6 +52,13 @@
       "lane": "planned",
       "last_event_id": "01KTH1M30YYDZEWBKBBYYTRRGH",
       "last_transition_at": "2026-06-07T12:41:16.574051+00:00"
+    },
+    "WP06": {
+      "actor": "finalize-tasks",
+      "force_count": 1,
+      "lane": "planned",
+      "last_event_id": "01KTH1M3CF6XE5XGHC01XDC0RJ",
+      "last_transition_at": "2026-06-07T12:41:16.943951+00:00"
     }
   }
 }
