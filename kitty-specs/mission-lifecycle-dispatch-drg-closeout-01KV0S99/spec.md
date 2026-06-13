@@ -32,8 +32,8 @@ The mission's success is defined as **#1863, #1802, and #1804 reaching honest cl
 | FR-001 | **#1802 post-merge follow-up surface:** a first-class command path to record follow-up work (commit/PR) against an already-merged mission, attributed to the original `mission_id` and surfaced in mission status/history. | draft |
 | FR-002 | **#1802 mission re-open:** an explicit, recorded, reversible path to return a merged/closed mission to an actionable lifecycle state, preserving `mission_id` and history; fail-closed when the mission's worktree/branch is unrecoverable. | draft |
 | FR-003 | **#1802 closure:** either #1802's full epic scope is delivered by FR-001/FR-002, or the residual (if any beyond the delivered surface) is split into a fresh scoped child ticket so #1802 closes honestly. | draft |
-| FR-004 | **#1810 unified `spec-kitty dispatch`:** a single command subsuming the governed-Op behavior of `do`/`ask`/`advise` (profile resolution, Op open/close, governed context, record). | draft |
-| FR-005 | **#1810 back-compat aliases (BINDING):** `spec-kitty do`, `ask`, and `advise` continue to work unchanged, delegating to `dispatch` and recording identical Op identity/lifecycle. No breaking change to existing governed workflows or scripts. | draft |
+| FR-004 | **#1810 single dispatch mechanism (desired end-state):** ONE governed-invocation mechanism (profile resolution, Op open/close, governed context, record) — `do`/`ask`/`advise` stop being three parallel implementations and become thin entry points over the single `dispatch` mechanism. The consolidation is at the *mechanism* layer, not just a CLI rename. | draft |
+| FR-005 | **#1810 CLI aliases retained as first-class UX (BINDING):** `spec-kitty do`, `ask`, and `advise` remain as sensible, supported CLI entry points (the verbs carry useful intent/UX signal) — they are NOT deprecated, they delegate to the one mechanism and record identical Op identity/lifecycle. `spec-kitty dispatch` is the canonical mechanism name; the three verbs are kept aliases by deliberate UX choice. No breaking change to existing governed workflows or scripts. | draft |
 | FR-006 | **#1810 propagation:** the `dispatch` command + alias surfaces propagate to all configured agents' command/skill copies via the canonical migration path (not hand-edited copies), keeping the 19-agent surfaces and the command-skills manifest consistent. | draft |
 | FR-007 | **#1804 closure:** with #1810 delivered (FR-004/005/006), epic #1804 closes; any remaining ops-layer children that are genuine refinements (not gaps) are noted as out-of-scope follow-ups. | draft |
 | FR-008 | **#1863 stale-ref + mechanical orphan repair:** fix the `java-conventions.styleguide.yaml` → `java-implementer` stale reference (repaint to a real profile or prune), and resolve every mechanically-clear orphan (typo/path/casing/retired-id) among the ~26. | draft |
@@ -65,7 +65,7 @@ The mission's success is defined as **#1863, #1802, and #1804 reaching honest cl
 
 ## Domain Language
 
-- **Dispatch** — the unified governed-invocation command (`spec-kitty dispatch`); `do`/`ask`/`advise` become aliases of it.
+- **Dispatch** — the single governed-invocation *mechanism* (`spec-kitty dispatch` is its canonical command). `do`/`ask`/`advise` are retained CLI aliases over that one mechanism — kept as first-class UX (the verbs carry intent), not deprecated.
 - **Post-mission follow-through** — first-class follow-up work (commit/PR) recorded against an already-merged mission, distinct from re-running the mission.
 - **Mission re-open** — returning a merged/closed mission to an actionable lifecycle state, preserving `mission_id` and history.
 - **DRG orphan** — a doctrine-graph node with no resolved inbound/outbound reference edge (a reference that does not wire into the graph).
