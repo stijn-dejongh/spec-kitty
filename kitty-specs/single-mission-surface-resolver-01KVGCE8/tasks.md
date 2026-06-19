@@ -20,7 +20,7 @@ gated on it green for the relevant input classes.
 | T006 | Differential test: every entry point → same dir OR same typed error | WP02 | |
 | T007 | Cover all input classes incl. coord-empty + ambiguous-mid8 + `<slug>-<mid8>` handle | WP02 | |
 | T008 | Mark the initially-RED cells (documents the divergences the fixes close) | WP02 | |
-| T009 | Unify the two divergent `primary_feature_dir_for_mission` → one mid8-composing def (FR-009/T1) | WP03 | |
+| T009 | Disambiguate the two same-named `primary_feature_dir_for_mission` → canonical raw-slug topology-blind; shim re-exports it (FR-009/T1; NOT a mid8 merge) | WP03 | |
 | T010 | Single composition grammar via `_compose_mission_dir` (T5) | WP03 | |
 | T011 | Extract the shared `resolve-dir-or-typed-error` delegator (T4) | WP03 | |
 | T012 | Per-caller-class regression tests (bare-slug / `<slug>-<mid8>` / backfilled) | WP03 | |
@@ -29,8 +29,8 @@ gated on it green for the relevant input classes.
 | T015 | `aggregate._resolve_read_dir` → thin adapter (drop the unmaterialized-coord re-gate, T3) | WP04 | |
 | T016 | Negative tests (ambiguous-mid8 → typed error; mutation-verified) | WP04 | |
 | T017 | Gates; aggregate's equivalence cells green | WP04 | |
-| T018 | Preserve STATUS_READ_PATH_NOT_FOUND / MISSION_AMBIGUOUS_SELECTOR through next/mission_runtime (FR-005) | WP05 | |
-| T019 | Reproduce #2010 bug #15 (red) then close (green) | WP05 | |
+| T018 | Translate the un-caught MISSION_AMBIGUOUS_SELECTOR through the resolution.py boundary (FR-005; corrected premise) | WP05 | |
+| T019 | LIVE ambiguous-handle repro red→green (no born-green) | WP05 | |
 | T020 | Gates | WP05 | |
 | T021 | Make `resolve_status_surface_with_anchor` the sole selection authority (FR-001/FR-007) | WP06 | |
 | T022 | Migrate `status_transition.py` coord predicates to the canonical resolver (#1900) | WP06 | |
@@ -60,7 +60,7 @@ gated on it green for the relevant input classes.
 - **Dependencies**: none. **Est.**: ~340 lines. **Prompt**: [tasks/WP02-differential-equivalence-test.md](./tasks/WP02-differential-equivalence-test.md)
 
 ### WP03 — Unify resolver primitives (tidy-BEFORE)
-- **Goal**: Collapse the two divergent `primary_feature_dir_for_mission` (FR-009/T1, mid8-composing wins) over one composition grammar (T5); extract the shared resolve-dir-or-typed-error delegator (T4). (IC-01)
+- **Goal**: Disambiguate the two same-named `primary_feature_dir_for_mission` (FR-009/T1) — keep the canonical **raw-slug topology-blind** form (01KTRC04 FR-003; do NOT merge onto mid8); the shim re-exports it. Single composition grammar (T5); extract the shared resolve-dir-or-typed-error delegator (T4). (IC-01)
 - **Priority**: P1. **Independent test**: one `primary_feature_dir_for_mission`; per-caller-class tests pass; equivalence mid8 cells green.
 - **Subtasks**: [ ] T009 [ ] T010 [ ] T011 [ ] T012 [ ] T013
 - **Dependencies**: WP02. **Est.**: ~400 lines. **Prompt**: [tasks/WP03-unify-resolver-primitives.md](./tasks/WP03-unify-resolver-primitives.md)
@@ -72,8 +72,8 @@ gated on it green for the relevant input classes.
 - **Dependencies**: WP02, WP03. **Est.**: ~320 lines. **Prompt**: [tasks/WP04-aggregate-consolidation.md](./tasks/WP04-aggregate-consolidation.md)
 
 ### WP05 — Typed-error pass-through (cheapest behavioral slice)
-- **Goal**: Preserve `STATUS_READ_PATH_NOT_FOUND` / `MISSION_AMBIGUOUS_SELECTOR` through next/mission_runtime (FR-005, #2010 bug #15). No resolver change. (IC-04)
-- **Priority**: P2 (independent). **Independent test**: bug #15 reproduced red then green.
+- **Goal**: Translate the **un-caught** `MISSION_AMBIGUOUS_SELECTOR` through the `resolution.py` boundary (FR-005, #2010 bug #15 family). The `STATUS_READ_PATH_NOT_FOUND`/`runtime_bridge` flatten is **already guarded** — corrected premise; no resolver change. (IC-04)
+- **Priority**: P2 (independent). **Independent test**: LIVE ambiguous-handle repro red on `main` then green.
 - **Subtasks**: [ ] T018 [ ] T019 [ ] T020
 - **Dependencies**: WP03. **Est.**: ~240 lines. **Prompt**: [tasks/WP05-typed-error-passthrough.md](./tasks/WP05-typed-error-passthrough.md)
 
@@ -93,17 +93,17 @@ gated on it green for the relevant input classes.
 - **Goal**: Clone the 01KVFTFV guard — raw-bypass joins fail CI; load-bearing (real-code mutation + non-empty coverage on the WP01 inventory). (IC-07; FR-004)
 - **Priority**: P2 (locks the collapse). **Independent test**: injected raw-bypass fails the guard; removing the guard makes the fixture pass.
 - **Subtasks**: [ ] T030 [ ] T031 [ ] T032
-- **Dependencies**: WP01, WP06. **Est.**: ~280 lines. **Prompt**: [tasks/WP08-load-bearing-guard.md](./tasks/WP08-load-bearing-guard.md)
+- **Dependencies**: WP01, WP06, WP07 (final post-shim tree). **Est.**: ~280 lines. **Prompt**: [tasks/WP08-load-bearing-guard.md](./tasks/WP08-load-bearing-guard.md)
 
 ## Dependency Graph
 
 ```
-WP01 (audit) ───────────────────────────────────────────────┐
-WP02 (equivalence gate) ──┬─▶ WP03 (primitives) ─┬─▶ WP04 ──┐ │
-                          │                       ├─▶ WP05 ──┤ │
-                          └──────────────(gate)───┴──────────▶ WP06 (collapse+hardfail) ─┬─▶ WP07 (shim retire)
-                                                                                          └─▶ WP08 (guard) ◀── WP01
+WP01 (audit) ─────────────────────────────────────────────────────────────┐
+WP02 (equivalence gate) ──┬─▶ WP03 (primitives) ─┬─▶ WP04 ──┐               │
+                          │                       ├─▶ WP05 ──┤               │
+                          └──────────────(gate)───┴──────────▶ WP06 (collapse+hardfail) ─▶ WP07 (shim retire) ─▶ WP08 (guard) ◀── WP01
 ```
+(WP08 depends on WP01 + WP06 + WP07 — the guard locks the FINAL post-shim surface set.)
 
 ## MVP / Sequencing
 

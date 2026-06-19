@@ -48,8 +48,8 @@ Consolidate all `status/aggregate.py` surface-resolution work: kill the silent-f
 - Route mid8 disambiguation through the one canonical handle resolver (`_canonicalize_handle`/`resolve_mission`); ambiguous → `MISSION_AMBIGUOUS_SELECTOR`, never silent-pick.
 ### T015 — Thin-adapter `_resolve_read_dir` (T3)
 - Re-point to the WP03 shared delegator; remove the duplicate unmaterialized-coord re-gate so aggregate no longer overrides the canonical resolver. (This deletes a duplicate → gated on WP02 equivalence-green for aggregate's input classes, C-004.)
-### T016 — Negative tests
-- Ambiguous-mid8 → `MISSION_AMBIGUOUS_SELECTOR` (mutation: restore the glob → test fails). Coord-fresh/coord-empty resolution matches the canonical resolver.
+### T016 — Negative tests (+ the create→first-write contract)
+- Ambiguous-mid8 → `MISSION_AMBIGUOUS_SELECTOR` (mutation: restore the glob → test fails). Coord-fresh/coord-empty resolution matches the canonical resolver. **CRITICAL distinct cell**: the **no-coord create→first-write** window (primary has the spec, no `coordination_branch`; `aggregate.py:327` preserves this on `FileNotFoundError`) MUST still resolve **PRIMARY** (not a hard-fail) after the re-gate is removed — mutation-verified. Do not conflate it with the coord-empty hard-fail (FR-006/WP06): coord-empty = materialized-but-empty coord → hard-fail; no-coord create-window = primary. Both must be asserted separately.
 ### T017 — Gates
 - `ruff` + `mypy --strict` clean; run `tests/status/`; the WP02 equivalence matrix's aggregate cells turn green.
 
@@ -59,6 +59,7 @@ Planning/base + merge target: `feat/single-mission-surface-resolver`. Worktree p
 ## Definition of Done
 - [ ] Silent glob removed; mid8 routed through the canonical handle resolver (ambiguous → typed error), mutation-verified.
 - [ ] `_resolve_read_dir` is a thin adapter over the WP03 delegator; the duplicate re-gate is gone.
+- [ ] no-coord create→first-write window still resolves PRIMARY (not hard-fail), asserted as a distinct cell from coord-empty, mutation-verified.
 - [ ] aggregate's equivalence cells green (WP02); no regression in `tests/status/`.
 - [ ] ruff + mypy --strict clean.
 

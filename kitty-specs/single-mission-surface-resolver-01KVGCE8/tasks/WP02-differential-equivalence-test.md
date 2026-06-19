@@ -48,24 +48,27 @@ Build the **differential equivalence test** that feeds the same `(slug, mid8, to
 ### T005 — Matrix fixtures
 - Build fixtures for the topology states (per data-model.md): `no-coord`, `coord-fresh`, `coord-behind`, `coord-empty` (materialized-but-empty), `coord-deleted`; × handle classes `bare-slug`, `<slug>-<mid8>`, `ambiguous-mid8`. Use realistic on-disk shapes (real worktree/registry layout — no toy slugs).
 
-### T006 — Differential assertion
-- For each (topology, handle) cell, call every entry point; assert all return the SAME resolved dir OR all raise the SAME typed error class. A disagreement is a recorded divergence (the gate).
+### T006 — Differential assertion (spelled-out shapes — NO truthiness)
+- For each (topology, handle) cell, call every entry point; assert agreement with these EXACT shapes (a too-lenient assertion voids the whole gate):
+  - dirs: `resolved_a.resolve() == resolved_b.resolve()` (path equality, NOT "both non-None").
+  - errors: `type(exc_a) is type(exc_b) and exc_a.error_code == exc_b.error_code` (same class AND same code, NOT "both raise something").
+- A disagreement is a recorded divergence (the gate). **Forbidden**: `assert a and b`, `is not None`-only checks, `pytest.skip(...)` anywhere in the module (a skip hides a divergence). Use `xfail` only.
 
 ### T007 — Cover all input classes
-- MUST include `coord-empty` (→ expected `STATUS_READ_PATH_NOT_FOUND` post-FR-006), `ambiguous-mid8` (→ `MISSION_AMBIGUOUS_SELECTOR` post-FR-008), and the `<slug>-<mid8>` handle class (the FR-009/T1 divergence class — a missing column here would hide T1's false-green).
+- MUST include `coord-empty` (→ expected `STATUS_READ_PATH_NOT_FOUND` post-FR-006), `coord-deleted` (→ `COORDINATION_BRANCH_DELETED`), `ambiguous-mid8` (→ `MISSION_AMBIGUOUS_SELECTOR` post-FR-008), the `<slug>-<mid8>` handle class (the FR-009/T1 divergence class — a missing column would hide T1's false-green), AND the **no-coord create→first-write** window (→ PRIMARY, NOT a hard-fail; distinct from coord-empty — this is the WP04 T016 contract).
 
-### T008 — Mark initially-RED cells
-- The cells that diverge today (e.g. ambiguous-mid8: aggregate silent-picks vs resolver raises; mid8-handle: the two `primary_feature_dir` differ) → mark with the closing FR/WP (e.g. `xfail(reason="closed by WP04/FR-008")`). As each fix lands, the corresponding WP removes the xfail. Document the expected-green-by-WP map in the test module docstring.
+### T008 — Mark initially-RED cells with `xfail(strict=True)`
+- Cells that diverge today (e.g. ambiguous-mid8: aggregate silent-picks vs resolver raises; mid8-handle divergence) → `@pytest.mark.xfail(strict=True, reason="closed by WP04/FR-008")`. `strict=True` is mandatory: an xfail cell that *unexpectedly passes* then FAILS the suite, catching a premature green / a delete-before-equivalence. As each fix lands, the closing WP removes its xfail. Document the expected-green-by-WP map in the test module docstring. (WP06's DoD asserts **zero `xfail` markers remain** before the collapse — that is the gate's CI teeth.)
 
 ## Branch Strategy
 Planning/base + merge target: `feat/single-mission-surface-resolver`. Worktree per lane.
 
 ## Definition of Done
-- [ ] Differential test covers the full (topology × handle) matrix incl. coord-empty, ambiguous-mid8, `<slug>-<mid8>`.
-- [ ] Assertions are dir-equality OR same-typed-error (not truthiness).
-- [ ] Initially-RED cells are xfail-with-WP-reason (no silent skips); the docstring maps cell→closing WP.
-- [ ] ruff + mypy clean; the test runs (green on the cells already equivalent, xfail on the rest).
+- [ ] Differential test covers the full (topology × handle) matrix incl. coord-empty, coord-deleted, ambiguous-mid8, `<slug>-<mid8>`, AND no-coord create→first-write (→ primary).
+- [ ] Assertions use the exact shapes: `dir.resolve() == dir.resolve()` / `type is type and error_code == error_code` (NOT truthiness). No `pytest.skip` in the module.
+- [ ] Initially-RED cells are `xfail(strict=True)`-with-WP-reason (no silent skips); the docstring maps cell→closing WP.
+- [ ] ruff + mypy clean; the test runs (green on the cells already equivalent, strict-xfail on the rest).
 
 ## Risks / Reviewer guidance
-- **Risk**: a too-lenient assertion (truthiness / "both non-None") that passes under divergence. The reviewer must confirm dir-equality / same-error-class.
-- **Reviewer**: confirm the matrix has the `<slug>-<mid8>` column (else FR-009 can false-green later); confirm coord-empty expects the hard-fail, not a fallback.
+- **Risk**: a too-lenient assertion (truthiness / "both non-None") or a `skip` that passes under divergence — the entire C-004 deletion gate is then worthless. The reviewer must confirm the exact assertion shapes and `strict=True`.
+- **Reviewer**: grep the module for `assert .* and `, `is not None`, `skip(`, and `xfail(` without `strict` — any hit blocks approval. Confirm the matrix has the `<slug>-<mid8>` column (else FR-009 can false-green later); confirm coord-empty expects the hard-fail while no-coord create→first-write expects primary.

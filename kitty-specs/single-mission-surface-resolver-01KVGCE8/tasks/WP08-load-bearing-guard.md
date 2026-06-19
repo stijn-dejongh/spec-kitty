@@ -4,6 +4,7 @@ title: Load-bearing architectural guard
 dependencies:
 - WP01
 - WP06
+- WP07
 requirement_refs:
 - FR-004
 tracker_refs: []
@@ -39,22 +40,22 @@ Clone the 01KVFTFV load-bearing guard for surface resolution: a `tests/architect
 
 ## Context
 - WP01 produced `tests/architectural/surface_resolution_audit/audited-surfaces.md` + `audit.py` — anchor on THAT inventory (not a blanket `Path /` matcher).
-- Runs on the collapsed tree (WP06 done), so it is green; the existing `tests/architectural/test_topology_resolution_boundary.py` is a sibling pattern.
+- Runs on the **final** collapsed tree: WP06 (collapse) **and WP07 (shim deleted)** both done, so `feature_dir_resolver.py` no longer exists and the audited surface set is final. The existing `tests/architectural/test_topology_resolution_boundary.py` is a sibling pattern.
 
 ## Subtasks
 ### T030 — Implement the guard
 - `tests/architectural/test_single_mission_surface_resolver.py`: import/reuse the WP01 `audit.py`; assert every audited surface routes the canonical resolver/delegator; zero `raw-bypass` rows remain. Anchor strictly on the inventory.
-### T031 — Load-bearing self-test (two mutations)
-- (a) Real-code mutation: inject a `repo_root / KITTY_SPECS_DIR / mission_slug` raw join into an actual audited source file → the guard FLAGS it; revert → clears. (b) Coverage assertion: the inspected surface set is non-empty AND equals the WP01 inventory. Record both mutation results in the WP history.
+### T031 — Load-bearing self-test (≥2 real-code mutations + independent floor)
+- (a) Real-code mutation at **two distinct sites** — inject a `repo_root / KITTY_SPECS_DIR / mission_slug` raw join into one resolver file AND one consumer file → the guard FLAGS both; revert → clears. (b) Coverage assertion: the inspected surface set is non-empty AND equals the WP01 inventory. (c) **Independent floor** (guards against a circular thin-inventory): assert the inventory's `raw-bypass`+`routed-through-resolver` row count ≥ the count of `rg -l 'KITTY_SPECS_DIR' src/` minus the named topology-blind set — so an under-tracing WP01 walker can't yield a small-but-self-consistent baseline the guard then rubber-stamps. Record all mutation results in the WP history.
 ### T032 — Gate placement + full run
 - Confirm the guard is collected by the architectural suite (CI core-misc); `PWHEADLESS=1 python -m pytest tests/architectural/ -p no:cacheprovider -q` green on the collapsed tree; ruff + mypy --strict clean.
 
 ## Branch Strategy
-Planning/base + merge target: `feat/single-mission-surface-resolver`. Worktree per lane. Depends **WP01** (inventory) + **WP06** (collapsed state).
+Planning/base + merge target: `feat/single-mission-surface-resolver`. Worktree per lane. Depends **WP01** (inventory) + **WP06** (collapsed state) + **WP07** (shim deleted — final surface set).
 
 ## Definition of Done
 - [ ] Guard anchored on WP01's inventory (not a blanket heuristic); zero raw-bypass on the collapsed tree.
-- [ ] Load-bearing proven: real-code raw-bypass mutation flags; coverage assertion non-empty == inventory.
+- [ ] Load-bearing proven: raw-bypass mutation at ≥2 distinct real files flags; coverage assertion non-empty == inventory; independent floor (KITTY_SPECS_DIR file count minus topology-blind) holds.
 - [ ] Green in the architectural suite; ruff + mypy --strict clean.
 
 ## Risks / Reviewer guidance

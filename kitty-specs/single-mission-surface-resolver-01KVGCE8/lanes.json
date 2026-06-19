@@ -83,8 +83,7 @@
         "tests/mission_runtime/test_resolution_typed_errors.py"
       ],
       "predicted_surfaces": [
-        "api",
-        "tracker-integration"
+        "api"
       ],
       "depends_on_lanes": [
         "lane-c"
@@ -145,12 +144,13 @@
       ],
       "depends_on_lanes": [
         "lane-a",
-        "lane-f"
+        "lane-f",
+        "lane-g"
       ],
-      "parallel_group": 4
+      "parallel_group": 5
     }
   ],
-  "computed_at": "2026-06-19T17:11:50.558068+00:00",
+  "computed_at": "2026-06-19T17:24:13.442849+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": []
 }

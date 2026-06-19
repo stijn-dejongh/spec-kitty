@@ -67,8 +67,8 @@ The core collapse: make `coordination/surface_resolver.resolve_status_surface_wi
 - Materialized-but-empty coord → raise `STATUS_READ_PATH_NOT_FOUND` whose message names collapse/flatten OR recreate/populate. NO silent primary fallback. Keep no-coord → primary (create→first-write window). Mutation-verified test.
 ### T025 — ADR (#1716)
 - Write `architecture/3.x/adr/2026-06-19-1-coord-empty-surface-fallback.md` recording the hard-fail decision + rationale, bound to the single resolver.
-### T026 — Gates
-- `ruff` + `mypy --strict` clean; the **full WP02 equivalence matrix is GREEN** (all cells, xfails removed); `tests/status tests/coordination tests/architectural` + a broad run pass (NFR-002 no regression).
+### T026 — Gates (mechanical gate teeth)
+- `ruff` + `mypy --strict` clean; the **full WP02 equivalence matrix is GREEN** with mechanical proof: `rg "xfail" tests/missions/test_surface_resolution_equivalence.py` → **0** (every divergence cell closed, none lingering as xfail — this is the CI enforcement of the C-004 gate, not a reviewer eyeball). `tests/status tests/coordination tests/architectural` + a broad run pass (NFR-002 no regression).
 
 ## Branch Strategy
 Planning/base + merge target: `feat/single-mission-surface-resolver`. Worktree per lane. **Depends WP02 (equivalence green — hard gate), WP03, WP04, WP05.**
@@ -78,7 +78,7 @@ Planning/base + merge target: `feat/single-mission-surface-resolver`. Worktree p
 - [ ] C-002 topology-ratchet allowlist entry for status_transition.py drained (SC-005).
 - [ ] Coord-empty hard-fails with the two-path message; no-coord still resolves primary; mutation-verified.
 - [ ] ADR committed (#1716 policy).
-- [ ] WP02 equivalence matrix fully green; ruff + mypy --strict clean; no regression.
+- [ ] WP02 equivalence matrix fully green, **mechanically proven** (`rg "xfail" tests/missions/test_surface_resolution_equivalence.py` → 0); ruff + mypy --strict clean; no regression.
 
 ## Risks / Reviewer guidance
 - **Risk**: deleting a duplicate before its equivalence cells are green (C-004 violation). The reviewer MUST confirm the WP02 matrix is fully green (no remaining xfails) before approving.
