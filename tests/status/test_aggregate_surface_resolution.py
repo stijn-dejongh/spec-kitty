@@ -37,8 +37,12 @@ import pytest
 from specify_cli.missions._read_path_resolver import (
     MISSION_AMBIGUOUS_SELECTOR_CODE,
     MissionSelectorAmbiguous,
+    primary_feature_dir_for_mission,
 )
-from specify_cli.status.aggregate import MissionStatus
+from specify_cli.status.aggregate import (
+    MissionMetadataUnavailable,
+    MissionStatus,
+)
 
 pytestmark = [pytest.mark.unit]
 
@@ -301,3 +305,76 @@ def test_aggregate_has_no_silent_first_match_glob() -> None:
         "route through candidate_feature_dir_for_mission (FR-008). Found "
         f"{len(glob_calls)} glob call(s)."
     )
+
+
+# ---------------------------------------------------------------------------
+# WP01 raw-bypass — save() diagnostic path routes through the blessed
+# path-constructor (no raw ``repo_root / KITTY_SPECS_DIR / <slug>`` even on
+# the identity-missing error path)
+# ---------------------------------------------------------------------------
+
+
+def test_save_without_identity_raises_via_blessed_path_constructor(
+    tmp_path: Path,
+) -> None:
+    """``save()`` on an identity-less aggregate raises through the resolver.
+
+    When a ``MissionStatus`` carries no ``mission_id`` (legacy/un-minted
+    mission), ``save()`` cannot persist via ``BookkeepingTransaction`` and must
+    raise :class:`MissionMetadataUnavailable`. WP01 routes the *diagnostic*
+    ``primary_candidate`` / ``meta_path`` through the blessed
+    ``primary_feature_dir_for_mission`` constructor rather than a raw
+    ``repo_root / KITTY_SPECS_DIR / <slug>`` self-composition — even on this
+    error path. This test executes that branch (the function-local import + the
+    ``diag_primary = primary_feature_dir_for_mission(...)`` call) and asserts the
+    payload is exactly what the constructor yields. Mutation: re-inlining a raw
+    path here (or dropping the guard) makes the payload diverge or the call not
+    raise → this test fails.
+    """
+    expected_primary = primary_feature_dir_for_mission(tmp_path, MISSION_SLUG)
+
+    aggregate = MissionStatus(
+        mission_slug=MISSION_SLUG,
+        mission_id=None,
+        mid8="",
+        topology="legacy",
+        read_dir=tmp_path / "kitty-specs" / MISSION_SLUG,
+        repo_root=tmp_path,
+    )
+
+    with pytest.raises(MissionMetadataUnavailable) as excinfo:
+        aggregate.save(operation="status transition")
+
+    err = excinfo.value
+    assert err.mission_slug == MISSION_SLUG
+    assert err.primary_candidate.resolve() == expected_primary.resolve()
+    assert err.meta_path.resolve() == (expected_primary / "meta.json").resolve()
+    assert "mission_id is required" in str(err)
+
+
+def test_save_with_blank_mid8_raises_via_blessed_path_constructor(
+    tmp_path: Path,
+) -> None:
+    """A present ``mission_id`` but blank ``mid8`` also hits the diagnostic path.
+
+    The guard is ``mission_id is None or not self.mid8`` — a (data-corruption)
+    aggregate with an identity but an empty ``mid8`` disambiguator likewise
+    cannot acquire a ``BookkeepingTransaction`` and must raise through the same
+    blessed-path diagnostic branch. Covering this second disjunct arm keeps the
+    guard from silently narrowing to ``mission_id is None`` alone.
+    """
+    expected_primary = primary_feature_dir_for_mission(tmp_path, MISSION_SLUG)
+
+    aggregate = MissionStatus(
+        mission_slug=MISSION_SLUG,
+        mission_id=MISSION_ID,
+        mid8="",  # corrupt: identity present but disambiguator missing
+        topology="legacy",
+        read_dir=tmp_path / "kitty-specs" / MISSION_SLUG,
+        repo_root=tmp_path,
+    )
+
+    with pytest.raises(MissionMetadataUnavailable) as excinfo:
+        aggregate.save(operation="status transition")
+
+    assert excinfo.value.primary_candidate.resolve() == expected_primary.resolve()
