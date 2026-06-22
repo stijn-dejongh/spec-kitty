@@ -172,9 +172,36 @@ adoption resolves through it.
   diagnostics workaround. **Gated**: only after the seam adoption makes the surface structurally
   singular (IC-04/IC-05) AND a live flattened repro is green (top risk).
 
+## Test-friction front-load (epic #2071 mission-impact, adjudicated 2026-06-22)
+
+A paula + alphonso adjudication of the test-suite friction audit (`docs/development/
+test-suite-friction-audit.md`, epic #2071) determined two items touch this mission:
+
+- **WP00 (NEW, test-only, lands BEFORE IC-01) — composite-key re-key of the gating ratchets**
+  (#2072 obligation A, pulled to the front). Convert the `file:line` allowlists in
+  `tests/architectural/test_no_write_side_rederivation.py` and
+  `tests/architectural/test_single_mission_surface_resolver.py` onto `_ratchet_keys.composite_key`
+  (content-addressed `(qualname, token_line)` — already exists, mechanical, no new infra); delete the
+  duplicated private `_code_tokens_by_line` copy. Rationale: composite keys survive line drift, so
+  the seam WPs (IC-02 edits `mission_creation.py:328`, IC-04 rewrites `_read_path_resolver.py:885`)
+  no longer false-red the architectural gate — a plain line re-key is NOT front-loadable (would
+  re-key to a line the seam then moves). Leave `surface_resolver.py:472/:477` + `cycle.py:185`
+  content as-is (untouched seam joins; their PERMANENT-vs-DEFERRED classification stays #2072).
+- **`status_transition.py:336` drain — live-evidence-gated subtask of the IC-05 write-authority WP**
+  (NOT WP00, NOT a certain drain). `:336` is the `_resolve_write_target` *fallback arm* reached only
+  in the pre-meta create window. The WP instruments the fallback and proves on a real
+  create→first-write repro whether FR-002/FR-003 (stored topology at create) make the
+  `_current_branch` arm unreachable for real missions. **Proven dead → drain** (delete line +
+  allowlist entry + flip `test_allow_listed_line_is_the_deferred_head_selector`). **Still reachable →
+  leave + re-key only.** Do not drain speculatively (regression) or re-pin a dead line (immortalized
+  exemption).
+- **CT4 (#2075) — reactive only**, folded into the IC-05/FR-009 WP: preserve `safe_commit`'s
+  signature; re-point only the *planning* assertion if the seam adoption changes its call shape.
+
 ## Lane mapping (for /spec-kitty.tasks)
 
-- **Linearized seam chain (sequential, lands FIRST)**: IC-01 (enum/kind) → IC-02 (store/backfill)
+- **WP00 (test-only, FIRST)**: composite-key re-key of the two gating architectural guards (above).
+- **Linearized seam chain (sequential, after WP00)**: IC-01 (enum/predicate) → IC-02 (store/backfill)
   → IC-03 (pure resolver/derivation retirement). Shared anchors `context.py` / `resolution.py`.
 - **Structural adoption (after the seam)**: IC-04 (read path, anchor `_read_path_resolver.py`) →
   IC-05 (write authority, anchor `mission.py`) → IC-06 (map/finalize, linearize after IC-05) →

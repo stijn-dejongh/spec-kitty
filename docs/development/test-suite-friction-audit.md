@@ -169,19 +169,48 @@ only if the epic owner wants it here; otherwise it belongs to the shared-package
 - `_baselines.yaml` **count**-keyed ratchets — semantically meaningful burn-down accounting; churn is
   inherent, not fixable friction.
 
-## Mission-impact flags (for mission `single-planning-surface-authority-01KVPR00`)
+## Mission-impact decisions (for mission `single-planning-surface-authority-01KVPR00`)
 
-Two findings touch surfaces this mission edits and could produce churn / false-red *during* the WP run:
+A paula-patterns + architect-alphonso adjudication (2026-06-22), grounded in the guard source,
+settled how (if at all) each flag is pulled into the mission. **Verdicts:**
 
-1. **CT1 — the surface-resolver / write-side ratchets** (`test_single_mission_surface_resolver.py`,
-   `test_no_write_side_rederivation.py`) are `file:line`-keyed and gate the very files this mission
-   edits (`_read_path_resolver.py`, `resolution.py`, `mission_creation.py`, `surface_resolver.py`,
-   `status_transition.py`). The mission's FR-004/FR-006/FR-007 edits **will** shift those lines →
-   forced re-keys mid-mission; and the `status_transition.py:336` entry is the #1716 ladder FR-007
-   *closes* (it should DRAIN, not re-key). **Strong candidate to pull to the FRONT of the mission.**
-2. **CT4 — the status/merge emit-wiring tests** wrap the emit/safe_commit seams FR-007/FR-009
-   rewrite; the source-as-text test (`test_command_module_has_no_direct_transactional_reference`)
-   could false-red on a behavior-preserving emit refactor.
+1. **CT1 re-key (obligation A) → PULL a thin test-only WP00 (front of the seam chain).** The
+   `file:line` allowlists in `test_no_write_side_rederivation.py` and
+   `test_single_mission_surface_resolver.py` gate files this mission edits
+   (`mission_creation.py:328` via IC-02, `_read_path_resolver.py:885` via IC-04, plus the write-side
+   `status_transition.py:336`). The drift-proof primitive `_ratchet_keys.composite_key`
+   (`(qualname, token_line)`, content-addressed) **already exists** and the guards' discovery already
+   yields `source+lineno`, so converting the allowlists onto it is **mechanical — no new infra**.
+   Because composite keys survive line drift, the re-key is *front-loadable* (a plain line re-key is
+   not — it would re-key to a line the seam edits then move again). WP00 converts both guards'
+   allowlists onto `composite_key` and deletes the duplicated private `_code_tokens_by_line` copy,
+   **before** the seam WPs edit those files — killing the line-drift false-red class for the whole IC
+   chain (and future missions). Leave `surface_resolver.py:472/:477` and `cycle.py:185` content
+   unchanged (they're untouched seam joins; their classification stays #2072 obligation B).
+2. **CT1 drain of `status_transition.py:336` → live-evidence-gated subtask of the FR-007/FR-009
+   write-authority WP (NOT the WP00 re-key, NOT a certain drain).** The earlier flag here was
+   **wrong**: `:336` is not "the ladder FR-007 closes." Per the guard's own docstring it is the
+   `_resolve_write_target` **fallback arm reached only when `resolve_placement_only` cannot resolve
+   the mission (pre-meta create window / ad-hoc fixture)** — `_resolve_write_target` already routes
+   the happy path through `resolve_placement_only`. FR-007 closes a *different* surface
+   (`safe-commit._resolve_commit_target`, #2063). alphonso argues FR-002/FR-003 (mint `topology` into
+   `meta.json` at create) eliminate the *pre-meta* window, making the `_current_branch` arm
+   unreachable for real missions → drainable; paula warns against deleting a load-bearing fallback.
+   **Resolution (live-evidence rule):** the write-authority WP instruments the fallback and proves,
+   on a real create→first-write repro, whether the `_current_branch` arm is reachable. **Proven dead
+   → drain** (delete the line + the allowlist entry + flip
+   `test_allow_listed_line_is_the_deferred_head_selector` to assert absence). **Still reachable →
+   leave it + re-key only.** Do NOT drain speculatively (regression risk) and do NOT re-pin a dead
+   line (immortalized exemption).
+3. **CT4 (#2075) → DON'T-PULL.** The source-as-text test
+   (`test_command_module_has_no_direct_transactional_reference`) guards `agent/status.py`, which the
+   mission does **not** edit (it edits `status/emit.py`); the emit-parity tests are gold-standard
+   true-red-only safety nets (and already thread `topology=`, de-risking FR-001/FR-002); the merge
+   tests sit behind `merge.py`, a boundary the mission doesn't cross. One reactive watch-item folds
+   into the FR-009 WP: preserve `safe_commit`'s signature; re-point only the *planning* assertion to
+   the observable contract if the seam adoption changes its call shape (NFR-002 generic-path tests
+   untouched).
 
-A paula + alphonso assessment determines whether CT1 (and/or CT4) is pulled into the mission's
-front so it reduces churn/reverts rather than fighting the implementation.
+**Net: pull a thin test-only WP00 (composite-key re-key of the two guards); fold the `:336`
+live-gated drain into the FR-007/FR-009 WP; CT4 is reactive-only.** This is the minimum front-load
+that breaks the gate-vs-fix deadlock without regressing behavior or adding needless churn.
