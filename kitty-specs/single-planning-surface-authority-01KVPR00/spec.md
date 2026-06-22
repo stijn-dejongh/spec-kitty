@@ -37,8 +37,10 @@ This mission lands the **#2069 design** as the structural fix:
 3. **One resolver, pure.** `resolve_context_for_mission(mission_id, topology) ->
    ExecutionContext` is a **pure projection** over the existing single construction door
    (`build_execution_context`); the imperative shell parses/persists `meta.json` and passes
-   `id + topology`. The per-call derivation heuristic is retired; `CommitTargetKind` becomes a
-   derived per-ref projection (deleted at the ≤8 touched sites).
+   `id + topology`. **Both** hand-rolled derivations are retired (`resolution.py:705-718` AND
+   the independent `runtime_bridge.py:144-211` disk-`stat` ladder); the 9 `.kind is COORDINATION`
+   decision sites adopt a `routes_through_coordination` predicate (the `CommitTargetKind` *type*
+   eradication is the behavior-neutral Mission B).
 4. **Adopt structurally.** The planning read/write commands resolve their surface through the
    seam, so a flattened mission resolves PRIMARY because its **stored** topology says so —
    *not* because a band-aid out-voted an on-disk husk. #2062/#2063/#2064 close at the root.
@@ -121,8 +123,8 @@ where the WP frontmatter lives.
 | FR-001 | **`MissionTopology` enum.** Add a mission-level enum `MissionTopology {SINGLE_BRANCH, LANES, COORD, LANES_WITH_COORD}` in `src/mission_runtime/context.py`, naming the orthogonal **coordination × lanes** 2×2 grid as one value. `FLATTENED` is NOT an enum member — it is a separate historical/metadata flag (provenance), never a shape value. The enum is the single place the lanes-vs-coord cross-product is named. | proposed |
 | FR-002 | **Store the topology in `meta.json`.** `topology` MUST be minted into `meta.json` at `mission create` (`src/specify_cli/core/mission_creation.py`) and READ thereafter — never re-inferred from disk/git at resolve time. The stored value is authoritative; a `flattened` provenance flag records history without changing the shape value. | proposed |
 | FR-003 | **Backfill legacy missions once.** Add `spec-kitty migrate backfill-topology` (mirroring the `backfill-identity` precedent) that computes each legacy mission's topology from the current signals and PERSISTS it to `meta.json`, plus a `spec-kitty doctor topology --json` audit. **Sequencing landmine (dogfooding):** THIS mission's own `meta.json` MUST be backfilled with its `topology` BEFORE any caller reads the stored field. Until a mission is backfilled, the shell computes-and-persists the topology exactly once via the legacy derivation, then reads the stored value. | proposed |
-| FR-004 | **Pure `resolve_context_for_mission` SSOT resolver.** Add `resolve_context_for_mission(mission_id: str, topology: MissionTopology) -> ExecutionContext` on the canonical `mission_runtime` seam as a **PURE** projection over the existing single construction door `build_execution_context` (functional core / imperative shell): it performs NO filesystem or git I/O; the shell parses/persists `meta.json` and passes `id + topology`. `topology` is an authoritative input (optional input-assertion: fail-closed on a supplied-vs-resolved mismatch). The per-call derivation heuristic `_resolve_coordination_branch`/`resolution.py:705-718` (`coordination_branch is None ⇒ FLATTENED`) MUST be retired in favor of the stored value. | proposed |
-| FR-005 | **Delete `CommitTargetKind` at the touched sites → derived projection.** `CommitTargetKind` MUST become a `MissionTopology`-derived per-ref projection (a `routes_through_coordination(...)` predicate). The ≤8 `.kind is COORDINATION` branch sites in the surfaces this mission touches MUST be re-expressed against the derived projection; the remaining codebase-wide `CommitTargetKind` references are CARVED to Mission B (C-007). No site may independently re-infer the per-ref kind. | proposed |
+| FR-004 | **Pure `resolve_context_for_mission` SSOT resolver + retire BOTH live derivations.** Add `resolve_context_for_mission(mission_id: str, topology: MissionTopology) -> ExecutionContext` on the canonical `mission_runtime` seam as a **PURE** projection over the existing single construction door `build_execution_context` (functional core / imperative shell): it performs NO filesystem or git I/O; the shell parses/persists `meta.json` and passes `id + topology`. `topology` is an authoritative input (optional input-assertion: fail-closed on a supplied-vs-resolved mismatch). Retirement MUST cover **BOTH** hand-rolled `coordination_branch is None ⇒ FLATTENED` derivations: (a) `_resolve_coordination_branch` / `resolution.py:705-718` (behind the door); AND (b) the **second, independent** ladder in `src/runtime/next/runtime_bridge.py:144-211` (`_mission_declares_coordination_branch` + the `_coord_path.exists() ⇒ COORDINATION` branch — keying on the disk-`stat` signal C-004 forbids). Leaving EITHER alive is the parallel-inference death-spiral; both route through the stored topology under the same NFR-001 live proof. | proposed |
+| FR-005 | **Introduce `routes_through_coordination` + route the 9 decision sites.** Add a `MissionTopology`-derived per-ref predicate `routes_through_coordination(target)` and re-express the **9** `.kind is COORDINATION` branch-decision sites (`coordination/commit_router.py:118,193`, `cli/commands/implement.py:604`, `cli/commands/agent/mission.py:776,858`, `cli/commands/agent/tasks.py:359`, `orchestrator_api/commands.py:1283`, `missions/_substantive.py:379`, `mission_runtime/artifacts.py:50`) against it — so no site re-infers the per-ref topology. The `CommitTargetKind` **TYPE itself is NOT deleted in this mission**: its ~143 value-literal references (≈63 constructions + ≈24 imports + ≈56 test refs, 41 files) are behavior-neutral and CARVED to Mission B (C-007). This mission stops *reading* `.kind` for decisions, leaving the constructor field vestigial until Mission B eradicates the type. | proposed |
 
 ### B. Structural surface-coherence adoption (closes #2062/#2063/#2064 at the root)
 
@@ -155,7 +157,7 @@ where the WP frontmatter lives.
 | C-004 | **Structural, not symptomatic (binding).** The #2062/#2063/#2064 fix MUST be structural: the read path consults the STORED topology, never re-inferring the shape from on-disk worktree existence. If storing the topology would re-open #2062, that proves a prior fix was a symptom patch — the resolution is to make the read path stop inferring from disk, NOT to re-add a band-aid. | active |
 | C-005 | **Linearize shared anchors.** `mission_runtime/context.py` (enum), `mission_runtime/resolution.py` (seam + derivation retirement), `missions/_read_path_resolver.py` (read leg), `core/mission_creation.py` (mint), and `cli/commands/agent/mission.py` (write path) are shared surfaces — land them on a linearized chain before the disjoint lanes; expected refactor overlap. | active |
 | C-006 | **Transient on-disk×git states are NOT subsumed by the enum.** The create-window (#1718, topology=COORD but worktree not yet materialized) and coord-deleted (#1848, declared branch gone) states are orthogonal to the 4 enum cells and MUST stay discriminated by the existing probe (`probe_coord_state` with the branch signal) — the stored topology does not replace them. Preserve `CoordAuthorityUnavailable` / typed errors / `CoordinationBranchDeleted` and the #2065 read-side contract intact. | active |
-| C-007 | **Scope split — Mission B carve.** Codebase-wide `CommitTargetKind` eradication (≈152 refs / 41 files beyond the ≤8 touched branch sites) and universal resolver adoption (≈29 `resolve_placement_only` + 28 `resolve_action_context` call sites beyond the touched planning commands) are a follow-on **Mission B** — too large for one mission. THIS mission lands the enum, the stored field + backfill, the pure resolver, the derivation retirement, the `CommitTargetKind` deletion at the ≤8 touched sites, and the structural surface-coherence fix. A Mission-B follow-up tracker ticket MUST be carved (deferred until this cut is final). | active |
+| C-007 | **Scope split — Mission B carve (confirmed, behavior-neutral, alphonso-sized).** Mission B = (a) `CommitTargetKind` TYPE eradication — the ~143 value-literal references (≈63 constructions + ≈24 imports + ≈56 test refs across 41 files); and (b) richer-API adoption of `resolve_context_for_mission` at the **14** real call sites of `resolve_placement_only`/`resolve_action_context`. Both are BEHAVIOR-NEUTRAL: the 14 call sites pass identity handles (NOT topology) and become correct UNCHANGED once THIS mission retires the two derivations (FR-004); migrating them to the topology-explicit API is incremental adoption over an already-correct door (the #2065 read-side strangler pattern), with zero correctness gain — a principled carve, not duct-tape. THIS mission closes the death spiral entirely (both live derivations + all 9 decision sites on stored topology); Mission B is pure cleanup + richer-API uptake. A Mission-B tracker ticket is created. | active |
 | C-008 | **Block-C carve.** The independent verb/guard/de-godding/doctrine/campsite-fold work (the real `worktree repair` verb #1890, the command-reference guard #2008, the #2059/#2056 de-godding extractions, the charter-prompt `safe-commit`→`spec-commit` migration, and folds #2066/#1891/#2037/#2048) is a SEPARATE follow-up mission. It is NOT in this mission's scope; a carve ticket is created when this mission's spec is final. | active |
 | C-009 | **No version prescription.** The PO assigns release/patch numbers at release time; frame work as focus/milestone, not a version. | active |
 
@@ -163,8 +165,9 @@ where the WP frontmatter lives.
 
 - **SC-001** `MissionTopology` exists as a stored `meta.json` value (minted at create,
   backfilled for legacy via `migrate backfill-topology`); no resolve-time path re-infers the
-  shape from `coordination_branch is None` or a worktree `stat` — the legacy derivation at
-  `resolution.py:705-718` is retired.
+  shape from `coordination_branch is None` or a worktree `stat` — **both** the `resolution.py:705-718`
+  derivation **and** the `runtime_bridge.py:144-211` ladder are retired (a `grep` for the
+  `coordination_branch is None` / `_coord_path.exists()` inference pattern finds zero live decision sites).
 - **SC-002** `resolve_context_for_mission(mission_id, topology)` returns a correct
   `ExecutionContext` for all four topology values in a **pure** unit test with **zero** FS/git
   fixtures (NFR-005), and is a projection over `build_execution_context` (no parallel resolver — C-003).
@@ -176,9 +179,11 @@ where the WP frontmatter lives.
   reads — no "spec.md not found" divergence (#2063, witnessed).
 - **SC-005** After `map-requirements` reports full coverage, `finalize-tasks --validate-only`
   reports **zero** `unmapped_functional_requirements` for the same mission (#2064, witnessed).
-- **SC-006** `CommitTargetKind` is a derived projection of `MissionTopology` at every touched
-  site (≤8 branch sites); the differential gate includes both the pure stored-topology cell and
-  the on-disk `flattened-stale-coord` row, with the type+error_code assertion unweakened.
+- **SC-006** All **9** `.kind is COORDINATION` decision sites route through the
+  `routes_through_coordination(target)` predicate (no site reads `.kind` to decide); the
+  `CommitTargetKind` type itself is left vestigial (eradication is Mission B). The differential
+  gate includes both the pure stored-topology cell and the on-disk `flattened-stale-coord` row,
+  with the type+error_code assertion unweakened.
 - **SC-007** `is_committed` is reduced to a single-surface check; the full test suite is green
   including the preserved #1718/#1848 guards (NFR-003); the Mission-B and block-C carve tickets exist.
 
@@ -189,8 +194,9 @@ where the WP frontmatter lives.
   provenance flag).
 - **`resolve_context_for_mission`** — the pure SSOT resolver projecting `build_execution_context`.
 - **ExecutionContext / ActionContext** — `context.py:177`; the returned op-composite VO.
-- **`CommitTargetKind`** — retired at the touched sites into a `MissionTopology`-derived per-ref
-  projection (`routes_through_coordination`).
+- **`routes_through_coordination(target)`** — the new `MissionTopology`-derived per-ref predicate
+  the 9 decision sites adopt; replaces `.kind is COORDINATION` reads. The `CommitTargetKind` type
+  itself survives (vestigial) until Mission B eradicates it.
 - **Differential equivalence gate** — `test_surface_resolution_equivalence.py`; extended with the
   pure stored-topology cell + the retained on-disk flattened-stale-coord row.
 
@@ -212,8 +218,9 @@ where the WP frontmatter lives.
 #2069 (design driver — MissionTopology seam, goes first), #1716 (single surface authority epic
 facet), #2062 (read-path leg — OPEN, no close without live repro; closed STRUCTURALLY here),
 #2063, #2064, #2007 (parent epic), #1619 (execution-context epic), #1970 (campsite directive —
-process reference). **Carved to Mission B (C-007):** codebase-wide `CommitTargetKind` eradication
-+ universal `resolve_context_for_mission` adoption (≈152 refs/41 files; 29+28 call sites).
+process reference). **Carved to Mission B (C-007):** `CommitTargetKind` TYPE eradication (~143 value-literal
+refs / 41 files) + richer-API `resolve_context_for_mission` adoption at the 14 real
+`resolve_placement_only`/`resolve_action_context` call sites (behavior-neutral; alphonso-sized).
 **Carved to the block-C follow-up mission (C-008):** #1890 (worktree-repair verb), #2008
 (command-reference guard), #2059 (doctor coord-recovery de-godding), #2056 (mission.py
 placement/commit de-godding), the charter-prompt `safe-commit`→`spec-commit` migration, and the
