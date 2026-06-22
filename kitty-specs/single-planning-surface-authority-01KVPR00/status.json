@@ -1,7 +1,7 @@
 {
-  "event_count": 3,
-  "last_event_id": "01KVPSX9Z9PHQRGCFD0TTMG3B0",
-  "materialized_at": "2026-06-22T04:37:38.409473+00:00",
+  "event_count": 4,
+  "last_event_id": "01KVPSXADH9FG4NMRM7EC0J9TS",
+  "materialized_at": "2026-06-22T04:37:38.865169+00:00",
   "mission_number": "",
   "mission_slug": "single-planning-surface-authority-01KVPR00",
   "mission_type": "software-dev",
@@ -14,7 +14,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 3
+    "planned": 4
   },
   "work_packages": {
     "WP01": {
@@ -37,6 +37,13 @@
       "lane": "planned",
       "last_event_id": "01KVPSX9Z9PHQRGCFD0TTMG3B0",
       "last_transition_at": "2026-06-22T04:37:38.409473+00:00"
+    },
+    "WP04": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01KVPSXADH9FG4NMRM7EC0J9TS",
+      "last_transition_at": "2026-06-22T04:37:38.865169+00:00"
     }
   }
 }
