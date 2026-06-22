@@ -45,9 +45,13 @@ Each topology (flattened, coord-fresh, legacy/no-mid8) hits a different leg toda
 convergence is proven would regress live missions mid-flight.
 
 ## Subtasks
-### T039 — Collapse to a single-surface check (FR-011)
-Reduce `is_committed` to check the single resolved placement ref; delete the 3-leg OR + the
-`diagnostics` sink (`:363-412`).
+### T039 — Collapse to a single-surface check (FR-011) — keep the caller compiling (squad F2)
+`is_committed` already takes `placement: CommitTarget | None` (`:324`); the 3-leg OR (`:371/390/397`)
+is the `placement is None` fallback. Reduce to checking the single resolved placement ref and remove
+the 3-leg OR + the `diagnostics` sink (`:366/385/392/404`). **The ONLY caller is `mission.py:2131`
+(owned by WP05, which lands BEFORE this WP) and it passes `diagnostics=`.** Keep the `diagnostics`
+parameter BACK-COMPATIBLE (optional, accepted-and-ignored or still populated) so WP05's call site is
+NOT stranded — do not change the signature in a way that breaks `mission.py:2131`.
 
 ### T040 — Prove against all topologies
 Test `is_committed` for coord-fresh, create-window (#1718), flattened, and legacy/no-mid8 missions —
@@ -63,11 +67,16 @@ Base/merge `feat/single-planning-surface-authority`; lane from `lanes.json`. LAS
 Remediate adjacent debt in-slice (bounded).
 
 ## Definition of Done
-- [ ] GATE satisfied (WP05 landed + WP02 live repro green) — recorded in WP history.
-- [ ] FR-011: `is_committed` is a single-surface check; 3-leg OR + diagnostics workaround removed.
+- [ ] **GATE (machine-checkable, squad B3):** paste the NAME of WP02's T008 live-repro test
+      (`tests/missions/test_surface_resolution_equivalence.py::<live-repro id>`) into WP history AND
+      run `pytest <that id> -q` FRESH in THIS WP's session, showing green — not a reference to WP02's
+      earlier run. If the named test does not exist or is not green, STOP (do not collapse).
+- [ ] FR-011: `is_committed` is a single-surface check; 3-leg OR + diagnostics sink removed.
+- [ ] F2: `diagnostics` param kept back-compatible — `mission.py:2131` (WP05) still compiles + tests pass.
 - [ ] All topologies (coord-fresh/create-window/flattened/legacy) report correctly.
 - [ ] `ruff`/`mypy` clean; complexity ≤15; campsite done; no out-of-map edits.
 
 ## Reviewer guidance
-Confirm the GATE was honored (do NOT approve if WP02's repro wasn't green first). Confirm no topology
-regressed (the 3-leg OR existed for a reason — the single check must cover every leg's case).
+**Re-run WP02's named live-repro test yourself — approval is BLOCKED if it does not exist or is not
+green at review time.** Confirm `mission.py:2131` still compiles (the `diagnostics` param stayed
+back-compatible). Confirm no topology regressed (the 3-leg OR existed for a reason).

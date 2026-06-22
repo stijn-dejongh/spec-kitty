@@ -30,6 +30,7 @@
       "write_scope": [
         "architecture/3.x/adr/2026-06-19-1-coord-empty-surface-fallback.md",
         "src/specify_cli/cli/commands/_coord_recovery.py",
+        "src/specify_cli/cli/commands/agent/__init__.py",
         "src/specify_cli/cli/commands/agent/worktree.py",
         "src/specify_cli/cli/commands/doctor.py",
         "src/specify_cli/coordination/surface_resolver.py",
@@ -40,6 +41,7 @@
       ],
       "predicted_surfaces": [
         "api",
+        "legacy-cleanup",
         "workspace"
       ],
       "depends_on_lanes": [],
@@ -148,7 +150,8 @@
         "tests/specify_cli/cli/commands/agent/test_mission_planning_entry.py"
       ],
       "predicted_surfaces": [
-        "api"
+        "api",
+        "legacy-cleanup"
       ],
       "depends_on_lanes": [
         "lane-c",
@@ -195,7 +198,7 @@
       "parallel_group": 5
     }
   ],
-  "computed_at": "2026-06-22T04:37:43.809023+00:00",
+  "computed_at": "2026-06-22T04:51:14.193623+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": []
 }

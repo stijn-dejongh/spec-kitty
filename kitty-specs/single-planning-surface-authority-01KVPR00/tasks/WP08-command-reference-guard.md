@@ -53,16 +53,20 @@ assert each path tuple is a registered Typer command (reuse `_build_live_app` + 
 walk from `test_docs_cli_reference_parity.py`). Restrict the literal scan to strings containing
 `spec-kitty ` + a path token (anti-false-positive). Allowlist entries require a rationale comment.
 
-### T036 — Planted-phantom self-test + dry-run (NFR-003)
-Add a self-test that PLANTS a bogus `spec-kitty agent nonesuch` in a Python literal and asserts the
-guard goes RED (mirrors `test_guard_rejects_planted_nonexistent_command`). Run the FULL
-`tests/architectural/` suite as the gate-unmask dry-run and confirm the guard is green on the clean
-tree (WP07 must have fixed all strings first — hence the WP07 dependency). NEVER ship a
-mission-diff-scoped assertion to main.
+### T036 — Planted-phantom self-test + dry-run (NFR-003) — non-tautological (squad S2)
+The planted phantom MUST be planted in the SAME literal shape the guard scans in production (a
+`src/specify_cli/**/*.py` string containing `spec-kitty agent <token>`), and the self-test MUST assert
+the guard reports THAT specific planted command as the offender (assert the offender string appears in
+the failure message) — NOT merely that the suite is non-green. **Narrowing the guard's scan scope to
+make the clean tree green is a REGRESSION — the scope must be the full FR-008 scope** (Python literals
++ ADRs). Run the FULL `tests/architectural/` suite as the gate-unmask dry-run; green on the clean tree
+only AFTER WP07 fixed every string. NEVER ship a mission-diff-scoped assertion to main.
 
-### T037 — Harden merge.py:1055 untrusted-path sink (FR-016 / #2037)
-Route the CLI-arg `--mission` join at `merge.py:~1055` through
-`assert_safe_path_segment`/`ensure_within_any` + a negative test.
+### T037 — Harden the merge.py untrusted-path sink (FR-016 / #2037) — corrected cite (squad F3/debbie)
+The earlier `:1055` cite was STALE (a resume predicate). The real unguarded `--mission` join is
+`merge.py:1126` (`target_meta_path = scan_specs / mission_slug / "meta.json"`). Route it through
+`assert_safe_path_segment`/`ensure_within_any` + a negative test. **Verify the real join, don't trust
+the line number.**
 
 ### T038 — Campsite #1970
 Remediate adjacent debt in the touched files. Bounded.
@@ -75,8 +79,9 @@ Remediate adjacent debt in-slice (bounded).
 
 ## Definition of Done
 - [ ] FR-008: guard scans Python literals + ADRs vs registered commands; green on clean tree.
-- [ ] NFR-003: planted-phantom self-test RED on a planted literal; full-suite dry-run run + recorded.
-- [ ] FR-016: `merge.py:1055` sink hardened + negative test.
+- [ ] NFR-003: planted-phantom self-test RED on a same-shape literal AND asserts the planted command
+      is named as the offender; guard scope is the FULL FR-008 scope (not narrowed); full-suite dry-run recorded.
+- [ ] FR-016: `merge.py:1126` sink hardened + negative test.
 - [ ] `ruff`/`mypy` clean; complexity ≤15; campsite done; no out-of-map edits.
 
 ## Reviewer guidance

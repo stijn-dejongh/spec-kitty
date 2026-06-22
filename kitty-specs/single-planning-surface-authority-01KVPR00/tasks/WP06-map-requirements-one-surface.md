@@ -68,10 +68,12 @@ operator sees actual vs expected.
 Route the CLI-arg `--mission` path join at `tasks.py:~1911` through
 `assert_safe_path_segment`/`ensure_within_any` + a negative test.
 
-### T027 — De-pin the split-brain tests (FR-010 / #1970)
+### T027 — De-pin the split-brain tests (FR-010 / #1970) — real two-command sequence (squad N2)
 `test_map_requirements_coord.py` and `test_map_requirements_spec_path.py` currently ASSERT the
-coord-vs-primary split as the desired state (mock-heavy). Re-point them to assert cross-command
-surface COHERENCE (map-requirements write is visible to finalize read) — not the split.
+coord-vs-primary split as the desired state (mock-heavy). Re-point them to assert cross-command surface
+COHERENCE using a **real two-command sequence on a real tmp mission** (`map-requirements` write →
+`finalize-tasks` read), NOT a mock asserting the same dir twice. The re-pointed test MUST FAIL if the
+two surfaces diverge.
 
 ### T028 — Campsite #1970
 Remediate adjacent debt in the map-requirements region. Keep touched functions ≤15. Bounded.

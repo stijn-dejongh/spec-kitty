@@ -42,14 +42,16 @@ callers pick the surface independently (no central authority). On a flattened/co
 that splits the event log across surfaces.
 
 ## Subtasks
-### T014 — Resolve the write surface from the authority (FR-006)
-Resolve the event-write `feature_dir` via the single write authority (or its projection) at the
-emission boundary, so all call sites converge. Preserve the public signature where external callers
+### T014 — Resolve the write surface from the authority (FR-006) — enumerate ALL call sites (squad S4)
+**Enumerate every in-repo emission call site (`grep -rn 'emit_status_transition(' src/`)** and confirm
+each either resolves its `feature_dir` via the single write authority or is internally resolved at the
+emission boundary — not a single happy-path caller. Preserve the public signature where external callers
 depend on it; resolve internally when the caller does not supply an authority-resolved dir.
 
-### T015 — Tests
-A status transition emitted for a mission resolves the SAME surface the reduced/aggregate read
-resolves — no split between `move-task` write and the dep-gate/kanban read.
+### T015 — Tests (the #2062 split must close)
+Assert that for a FLATTENED mission the dep-gate/kanban READ and the `move-task` WRITE resolve the
+IDENTICAL dir (not merely "a transition writes somewhere"). This is the #2062 status-read convergence —
+a tautological single-write test does not satisfy it.
 
 ### T016 — Campsite #1970
 Remediate adjacent debt in `status/emit.py`. NOTE: the 20-parameter hub (`# NOSONAR`) is a separate

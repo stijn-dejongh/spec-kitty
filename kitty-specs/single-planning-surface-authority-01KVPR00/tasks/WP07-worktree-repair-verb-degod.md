@@ -30,6 +30,7 @@ create_intent:
 execution_mode: code_change
 owned_files:
 - src/specify_cli/cli/commands/agent/worktree.py
+- src/specify_cli/cli/commands/agent/__init__.py
 - src/specify_cli/cli/commands/_coord_recovery.py
 - src/specify_cli/cli/commands/doctor.py
 - src/specify_cli/coordination/surface_resolver.py
@@ -58,22 +59,31 @@ The `agent worktree repair --mission …` recovery sentence is duplicated 5× in
 (`:3092,:3116,:3209,:3225,:3245`). Hoist to ≤2 named module constants (one per failure class:
 coord-recovery vs lane-sparse). Do this FIRST so the rename is a single edit point.
 
-### T030 — Extract the doctor coord-recovery cluster (FR-018 / #2059)
-Extract the cohesive worktree/coord-recovery helper cluster (`doctor.py:~3092-3225`, ~5 helpers)
-into a new sibling `src/specify_cli/cli/commands/_coord_recovery.py` (mirroring `_doctrine_health.py`)
-with a top-of-file `#2059` pointer. Bounded to that cluster — NOT a wider doctor.py split.
+### T030 — Extract the doctor coord-recovery cluster (FR-018 / #2059) — REMOVE the inline body (squad S3)
+Extract the cohesive worktree/coord-recovery helper cluster (`doctor.py:~3091-3245`, ~5 helpers) into
+a new sibling `src/specify_cli/cli/commands/_coord_recovery.py` (mirroring `_doctrine_health.py`) with
+a top-of-file `#2059` pointer. **The original inline body MUST be REMOVED and the call sites import +
+call the new module** — confirm `grep` shows ZERO remaining inline copies in `doctor.py`. Each extracted
+helper MUST have ≥1 focused unit test (Sonar new-code coverage). A pointer comment + thin module is NOT
+done. Bounded to that cluster — NOT a wider doctor.py split.
 
-### T031 — Register the real verb (FR-007 / #1890)
-Add `spec-kitty agent worktree repair --mission <slug>`: recreate a *missing* coord worktree via
-`CoordinationWorkspace.resolve()`; prune an *orphaned* coord worktree (flattened mission, dir on
-disk); benign no-op + clear message when there is no coordination topology. Register it in the
-`agent` Typer app.
+### T031 — Register the real verb (FR-007 / #1890) — REGISTRATION is part of the DoD (squad F1)
+Add `spec-kitty agent worktree repair --mission <slug>` in NEW `cli/commands/agent/worktree.py`:
+recreate a *missing* coord worktree via `CoordinationWorkspace.resolve()` (`workspace.py:182`); prune
+an *orphaned* coord worktree (flattened mission, dir on disk); benign no-op + clear message when there
+is no coordination topology. **REGISTER it: add the import + `add_typer(worktree.app, name="worktree")`
+to `src/specify_cli/cli/commands/agent/__init__.py` (owned by this WP).** DoD is `spec-kitty agent
+worktree repair --help` actually working — not just the module existing.
 
-### T032 — Repoint recovery hints + ADR (per failure class)
+### T032 — Repoint EVERY recovery hint + ADR (per failure class) — ENUMERATED (squad S1)
 Repoint each hint to the command that ACTUALLY fixes its class: husk → `doctor workspaces --fix`;
-coord-missing/empty/orphaned → `agent worktree repair`. Update the `surface_resolver.py`
-`_COORD_EMPTY_FALLBACK_WARNING` + `CoordinationBranchDeleted.next_step`, and amend ADR
-`2026-06-19-1`. Reconcile to the canonical `SKILL.md` answer.
+coord-missing/empty/orphaned → `agent worktree repair`. Enumerate and fix EVERY
+`spec-kitty … worktree repair` literal: `doctor.py:{3091,3114,3208,3225,3244}` (±1-2),
+`surface_resolver.py` `_COORD_EMPTY_FALLBACK_WARNING` (`:90`) + `CoordinationBranchDeleted.next_step`
+(`:179`) + the prose comments (`:87`,`:636`), ADR `2026-06-19-1:{32,132}`. After T032, `grep -rn
+'agent worktree repair' src/ architecture/` MUST return ONLY registered-command references.
+**DO NOT rewrite the distinct `git worktree repair`** (a real git subcommand, e.g. `doctor.py:203`,
+`doctor_husks`). Reconcile to the canonical `SKILL.md` answer.
 
 ### T033 — De-pin the phantom-string tests (FR-010)
 Re-point the tests that assert the nonexistent string (`test_surface_resolver_coord_empty_warning.py:127`,
@@ -91,9 +101,12 @@ Remediate adjacent debt in the touched files in-slice. The cluster extraction (T
 
 ## Definition of Done
 - [ ] FR-009: recovery hint hoisted to ≤2 constants (no ≥3× duplication).
-- [ ] FR-018: doctor coord-recovery cluster extracted → `_coord_recovery.py` (#2059 pointer).
-- [ ] FR-007: `agent worktree repair --mission` registered; recreate/prune/no-op tested (R4).
-- [ ] Every recovery hint + the ADR names a REGISTERED command.
+- [ ] FR-018: cluster extracted → `_coord_recovery.py` (#2059 pointer); **inline body REMOVED (grep zero
+      copies); each extracted helper has ≥1 unit test.**
+- [ ] FR-007: `agent worktree repair --mission` **registered in `agent/__init__.py` — `--help` works**;
+      recreate/prune/no-op tested (R4).
+- [ ] `grep -rn 'agent worktree repair' src/ architecture/` returns ONLY registered-command references;
+      the real `git worktree repair` left intact.
 - [ ] FR-010: phantom-string tests assert the real command.
 - [ ] `ruff`/`mypy` clean; complexity ≤15; campsite done; no out-of-map edits.
 

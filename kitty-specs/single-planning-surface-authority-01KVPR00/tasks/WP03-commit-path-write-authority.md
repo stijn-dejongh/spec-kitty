@@ -53,8 +53,9 @@ overload one function — separate the two responsibilities cleanly.
 Confirm `spec_commit_cmd.py` routes planning commits through the same authority; consolidate any
 duplicate placement-resolution logic shared with safe-commit into the single seam (don't fork it).
 
-### T012 — Tests (FR-001/NFR-002)
-- A mission-artifact commit lands on the placement-authority surface (coord or flat per topology).
+### T012 — Tests (FR-001/NFR-002) — bind to a coherence check (squad N1)
+- Quickstart R2 coherence: a mission `spec.md` committed via the mission-aware path is then VISIBLE to
+  the immediately-following finalize read (not just "a file landed somewhere") — the #2063 close.
 - The generic operator-file `safe-commit` path is preserved (regression test — it must NOT become
   mission-aware or break).
 

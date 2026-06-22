@@ -60,8 +60,9 @@ Add a witnessed end-to-end repro test driving the real topology through all thre
 `quickstart.md` R1) — this is the live-evidence proof #2062 requires (C-002: no close on static).
 
 ### T009 — Campsite #1970
-De-stale the module docstring if it narrates the old topology set; remove any dead `_XFAIL_*`
-narration. Bounded to this file.
+De-stale the module docstring if it narrates the old topology set. **DO NOT delete or downgrade the
+documented `_XFAIL_*_OUT_OF_SCOPE` strict-xfails** — they are deliberately out-of-scope (the module
+docstring says "NOT a blanket `rg xfail → 0` drain"). Bounded to this file.
 
 ## Branch Strategy
 Base/merge `feat/single-planning-surface-authority`; lane allocated from `lanes.json`.
@@ -70,8 +71,11 @@ Base/merge `feat/single-planning-surface-authority`; lane allocated from `lanes.
 Remediate adjacent debt in this test surface in-slice.
 
 ## Definition of Done
-- [ ] FR-005: `flattened-stale-coord` topology + all-handle rows added; gate green (N passed / 0 xfailed).
-- [ ] Assertion NOT weakened (type-identity + error_code).
+- [ ] FR-005: the new `flattened-stale-coord` rows are STRICT (no xfail) and PASS.
+- [ ] The pre-existing documented `_XFAIL_*_OUT_OF_SCOPE` strict-xfails are LEFT UNTOUCHED — do NOT
+      drain them to hit a count. **Confirm via `git diff` on the `_XFAIL_*` constants: ZERO removals
+      or downgrades.** (The gate is NOT "0 xfailed" — the documented out-of-scope xfails legitimately remain.)
+- [ ] Assertion NOT weakened (`type(a) is type(b)` AND `error_code`).
 - [ ] NFR-001: live flattened-mid-flight repro witnessed (depends on WP01's gate landed).
 - [ ] `ruff`/`mypy` clean; campsite done; no out-of-map edits.
 

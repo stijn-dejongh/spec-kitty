@@ -56,17 +56,24 @@ Route the `setup_plan` planning-commit destination through the write authority (
 The finalize read MUST resolve the same surface `map-requirements` writes (WP06 owns the map half).
 Honor finalize's documented invariant (planning INPUT on PRIMARY, staged to coord at commit-time).
 
-### T019 — Extract touched placement/commit helpers → commit_router.py (FR-019 / #2056)
-Move ONLY the placement/commit helpers this WP edits into `coordination/commit_router.py` (the
-strangler target), with a top-of-file `#2056` pointer. Local de-godding of touched seams only.
+### T019 — Fold touched placement/commit helpers into commit_router.py (FR-019 / #2056) — squad F4/S3
+`coordination/commit_router.py` ALREADY EXISTS (374 lines; `commit_for_mission` was extracted from
+mission.py by a prior mission). **FOLD the remaining touched placement/commit helpers into that
+existing seam — do NOT recreate it.** Move ONLY the helpers this WP edits, with a `#2056` pointer.
+**The original inline body in `mission.py` MUST be REMOVED and call sites import + call the seam**
+(grep zero remaining inline copies). Each moved helper gets ≥1 focused unit test. Bounded to touched seams.
 
 ### T020 — Clean `--json` document (FR-015 / #1891 preamble leg)
 `setup-plan` and `finalize-tasks` `--json` MUST emit a single clean JSON document — no human preamble
 before the JSON on stdout. (The map-requirements serialization leg is already fixed — not here.)
 
-### T021 — Harden mission.py:312 untrusted-path sink (FR-016 / #2037)
-Route the CLI-arg `--mission` path join at `mission.py:~312` through
-`assert_safe_path_segment`/`ensure_within_any`; add a negative test.
+### T021 — Harden the mission.py untrusted-path sink (FR-016 / #2037) — corrected cite (squad F3/debbie)
+The earlier `:312` cite was STALE (that line is a `console.print`). The real raw-`mission_slug` join is
+`mission.py:320` (`feature_dir / ".kittify" / "dossiers" / mission_slug / "snapshot-latest.json"`);
+also audit `:1240`. Find the actual unguarded join by the #2037 sink description (a raw `mission_slug`
+path-join NOT already routed through `primary_feature_dir_for_mission`/`candidate_feature_dir_for_mission`),
+route it through `assert_safe_path_segment`/`ensure_within_any`, and add a negative test. **Anchors are
+approximate — verify the real join, do not trust a line number.**
 
 ### T022 — Campsite #1970 + complexity
 Keep every touched function ≤15 complexity (extract small helpers). Remediate adjacent debt
@@ -82,7 +89,8 @@ REQUIRED, not optional — but bounded to the touched seam.
 ## Definition of Done
 - [ ] FR-001: setup_plan writes via `resolve_placement_only`.
 - [ ] FR-003 (finalize half): finalize reads the single WP-frontmatter surface.
-- [ ] FR-019: touched placement/commit helpers extracted → `commit_router.py` with #2056 pointer.
+- [ ] FR-019: touched helpers FOLDED into existing `commit_router.py` (#2056 pointer); inline body REMOVED
+      (grep zero copies in `mission.py`); each moved helper has ≥1 unit test.
 - [ ] FR-015: clean single `--json` doc on setup-plan/finalize-tasks.
 - [ ] FR-016: `mission.py:312` sink hardened + negative test.
 - [ ] All touched functions ≤15 complexity; `ruff`/`mypy` clean; campsite done; no out-of-map edits.
