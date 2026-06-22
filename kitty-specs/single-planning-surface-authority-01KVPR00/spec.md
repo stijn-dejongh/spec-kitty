@@ -157,7 +157,7 @@ where the WP frontmatter lives.
 | C-004 | **Structural, not symptomatic (binding).** The #2062/#2063/#2064 fix MUST be structural: the read path consults the STORED topology, never re-inferring the shape from on-disk worktree existence. If storing the topology would re-open #2062, that proves a prior fix was a symptom patch — the resolution is to make the read path stop inferring from disk, NOT to re-add a band-aid. | active |
 | C-005 | **Linearize shared anchors.** `mission_runtime/context.py` (enum), `mission_runtime/resolution.py` (seam + derivation retirement), `missions/_read_path_resolver.py` (read leg), `core/mission_creation.py` (mint), and `cli/commands/agent/mission.py` (write path) are shared surfaces — land them on a linearized chain before the disjoint lanes; expected refactor overlap. | active |
 | C-006 | **Transient on-disk×git states are NOT subsumed by the enum.** The create-window (#1718, topology=COORD but worktree not yet materialized) and coord-deleted (#1848, declared branch gone) states are orthogonal to the 4 enum cells and MUST stay discriminated by the existing probe (`probe_coord_state` with the branch signal) — the stored topology does not replace them. Preserve `CoordAuthorityUnavailable` / typed errors / `CoordinationBranchDeleted` and the #2065 read-side contract intact. | active |
-| C-007 | **Scope split — Mission B carve (confirmed, behavior-neutral, alphonso-sized).** Mission B = (a) `CommitTargetKind` TYPE eradication — the ~143 value-literal references (≈63 constructions + ≈24 imports + ≈56 test refs across 41 files); and (b) richer-API adoption of `resolve_context_for_mission` at the **14** real call sites of `resolve_placement_only`/`resolve_action_context`. Both are BEHAVIOR-NEUTRAL: the 14 call sites pass identity handles (NOT topology) and become correct UNCHANGED once THIS mission retires the two derivations (FR-004); migrating them to the topology-explicit API is incremental adoption over an already-correct door (the #2065 read-side strangler pattern), with zero correctness gain — a principled carve, not duct-tape. THIS mission closes the death spiral entirely (both live derivations + all 9 decision sites on stored topology); Mission B is pure cleanup + richer-API uptake. A Mission-B tracker ticket is created. | active |
+| C-007 | **Scope split — Mission B carve (confirmed, behavior-neutral, alphonso-sized).** Mission B = (a) `CommitTargetKind` TYPE eradication — the ~143 value-literal references (≈63 constructions + ≈24 imports + ≈56 test refs across 41 files); and (b) richer-API adoption of `resolve_context_for_mission` at the **14** real call sites of `resolve_placement_only`/`resolve_action_context`. Both are BEHAVIOR-NEUTRAL: the 14 call sites pass identity handles (NOT topology) and become correct UNCHANGED once THIS mission retires the two derivations (FR-004); migrating them to the topology-explicit API is incremental adoption over an already-correct door (the #2065 read-side strangler pattern), with zero correctness gain — a principled carve, not duct-tape. THIS mission closes the death spiral entirely (both live derivations + all 9 decision sites on stored topology); Mission B is pure cleanup + richer-API uptake. **Mission B = tracker #2070** (created 2026-06-22, behavior-neutral, blocked-by this mission's landing). | active |
 | C-008 | **Block-C carve.** The independent verb/guard/de-godding/doctrine/campsite-fold work (the real `worktree repair` verb #1890, the command-reference guard #2008, the #2059/#2056 de-godding extractions, the charter-prompt `safe-commit`→`spec-commit` migration, and folds #2066/#1891/#2037/#2048) is a SEPARATE follow-up mission. It is NOT in this mission's scope; a carve ticket is created when this mission's spec is final. | active |
 | C-009 | **No version prescription.** The PO assigns release/patch numbers at release time; frame work as focus/milestone, not a version. | active |
 
@@ -185,7 +185,8 @@ where the WP frontmatter lives.
   gate includes both the pure stored-topology cell and the on-disk `flattened-stale-coord` row,
   with the type+error_code assertion unweakened.
 - **SC-007** `is_committed` is reduced to a single-surface check; the full test suite is green
-  including the preserved #1718/#1848 guards (NFR-003); the Mission-B and block-C carve tickets exist.
+  including the preserved #1718/#1848 guards (NFR-003); the Mission-B carve ticket (#2070) exists
+  (the block-C carve ticket is created when its scope is sliced).
 
 ## Key Entities
 
@@ -218,9 +219,9 @@ where the WP frontmatter lives.
 #2069 (design driver — MissionTopology seam, goes first), #1716 (single surface authority epic
 facet), #2062 (read-path leg — OPEN, no close without live repro; closed STRUCTURALLY here),
 #2063, #2064, #2007 (parent epic), #1619 (execution-context epic), #1970 (campsite directive —
-process reference). **Carved to Mission B (C-007):** `CommitTargetKind` TYPE eradication (~143 value-literal
-refs / 41 files) + richer-API `resolve_context_for_mission` adoption at the 14 real
-`resolve_placement_only`/`resolve_action_context` call sites (behavior-neutral; alphonso-sized).
+process reference). **Carved to Mission B — tracker #2070 (C-007):** `CommitTargetKind` TYPE eradication (~143
+value-literal refs / 41 files) + richer-API `resolve_context_for_mission` adoption at the 14
+real `resolve_placement_only`/`resolve_action_context` call sites (behavior-neutral; alphonso-sized).
 **Carved to the block-C follow-up mission (C-008):** #1890 (worktree-repair verb), #2008
 (command-reference guard), #2059 (doctor coord-recovery de-godding), #2056 (mission.py
 placement/commit de-godding), the charter-prompt `safe-commit`→`spec-commit` migration, and the
