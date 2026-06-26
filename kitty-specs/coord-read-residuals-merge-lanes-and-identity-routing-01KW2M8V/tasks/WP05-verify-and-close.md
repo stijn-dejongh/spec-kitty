@@ -11,6 +11,9 @@ requirement_refs:
 - NFR-001
 - NFR-003
 tracker_refs: []
+planning_base_branch: mission/coord-read-residuals-2185-2186
+merge_target_branch: mission/coord-read-residuals-2185-2186
+branch_strategy: Planning artifacts for this mission were generated on mission/coord-read-residuals-2185-2186. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into mission/coord-read-residuals-2185-2186 unless the human explicitly redirects the landing branch.
 subtasks:
 - T026
 - T027
@@ -23,7 +26,9 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: python-pedro
+authoritative_surface: tests/architectural/
 create_intent: []
+execution_mode: code_change
 model: ''
 owned_files: []
 role: implementer
