@@ -1,7 +1,7 @@
 {
-  "event_count": 4,
-  "last_event_id": "01KW2QAJ6VXS3E6SKBTG6E4WM1",
-  "materialized_at": "2026-06-26T19:43:20.283826+00:00",
+  "event_count": 5,
+  "last_event_id": "01KW2QAJBJY4RWM0GRF7F6MCJ0",
+  "materialized_at": "2026-06-26T19:43:20.434877+00:00",
   "mission_number": "",
   "mission_slug": "coord-read-residuals-merge-lanes-and-identity-routing-01KW2M8V",
   "mission_type": "software-dev",
@@ -14,7 +14,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 4
+    "planned": 5
   },
   "work_packages": {
     "WP01": {
@@ -44,6 +44,13 @@
       "lane": "planned",
       "last_event_id": "01KW2QAJ6VXS3E6SKBTG6E4WM1",
       "last_transition_at": "2026-06-26T19:43:20.283826+00:00"
+    },
+    "WP05": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01KW2QAJBJY4RWM0GRF7F6MCJ0",
+      "last_transition_at": "2026-06-26T19:43:20.434877+00:00"
     }
   }
 }
