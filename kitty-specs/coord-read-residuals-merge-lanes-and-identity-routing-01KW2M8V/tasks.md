@@ -52,6 +52,7 @@ Lane B is **self-contained** (its identity arm is net-new, not inherited) and is
 | T020 | Route `core/worktree_topology.py:138` (single swap co-resolves 3 PRIMARY legs) | WP03 | |
 | T021 | Remove the lanes/core #2185 pins (same commit) | WP03 | |
 | T022 | RED-first per-site tests (both legs) on the divergent coord fixture | WP03 | |
+| T029 | Route `agent_utils/status.py:120/126` (`show_kanban_status`, #2187) — per-leg split: `tasks/` glob → `resolve_planning_read_dir(kind=WORK_PACKAGE_TASK)`; keep the `read_events` STATUS leg coord-aware; drain its #2185-class pin; RED-first coord-fixture test asserting a non-empty kanban (unit stub handing in a primary dir does NOT satisfy) | WP03 | |
 | T023 | Extend `build_coord`: sentinel husk `meta.json` (≠ PRIMARY) + PRIMARY-only `lanes.json`/`tasks/` seeded post-worktree-add; assert husk lacks them | WP04 | |
 | T024 | Coord-topology merge/recovery/topology integration test; reverting any routed read to coord-aware FAILS | WP04 | |
 | T025 | Flat-topology parity assertions (NFR-003) | WP04 | [P] |
@@ -99,13 +100,13 @@ Lane B is **self-contained** (its identity arm is net-new, not inherited) and is
 
 ## Work Package WP03: Lane A — Lanes/core cluster routing (Priority: P1)
 
-**Goal**: Route the `lanes/` + `core/worktree_topology` PRIMARY reads; extract helpers out of the over-complex `scan_recovery_state`; drain the lanes/core #2185 pins.
-**Independent Test**: Recovery scan + topology materialization read lanes/tasks/meta off PRIMARY on a divergent coord fixture; the events leg stays coord-aware.
+**Goal**: Route the `lanes/` + `core/worktree_topology` + `agent_utils/status.py` (`show_kanban_status`, #2187) PRIMARY reads; extract helpers out of the over-complex `scan_recovery_state`; drain the lanes/core + #2187 #2185-class pins.
+**Independent Test**: Recovery scan + topology materialization + `show_kanban_status` read lanes/tasks/meta off PRIMARY on a divergent coord fixture; the events/status legs stay coord-aware.
 **Prompt**: `/tasks/WP03-lane-a-lanes-core-cluster.md`
-**Requirement Refs**: FR-001, FR-002, FR-008, NFR-001
+**Requirement Refs**: FR-001, FR-002, FR-008, NFR-001 | **Tracker Refs**: #2187
 
 ### Included Subtasks
-- [ ] T017, T018, T019, T020, T021, T022
+- [ ] T017, T018, T019, T020, T021, T022, T029
 
 ### Dependencies
 - Depends on WP02 (sequential gate-file chain).
@@ -206,6 +207,7 @@ Lane B is **self-contained** (its identity arm is net-new, not inherited) and is
 | T020 | Route worktree_topology | WP03 | P1 | No |
 | T021 | Drain lanes/core pins | WP03 | P1 | No |
 | T022 | RED-first lanes/core tests | WP03 | P1 | No |
+| T029 | Route agent_utils/status.py show_kanban_status (#2187) + drain pin + RED-first | WP03 | P1 | No |
 | T023 | Divergent build_coord | WP04 | P1 | No |
 | T024 | Coord integration test | WP04 | P1 | No |
 | T025 | Flat-topology parity | WP04 | P1 | Yes |

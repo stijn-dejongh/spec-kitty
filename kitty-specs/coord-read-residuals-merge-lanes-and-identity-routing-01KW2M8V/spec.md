@@ -11,7 +11,7 @@
 
 Multiple read sites still resolve those PRIMARY-kind artifacts through **coord-aware** resolvers (`candidate_feature_dir_for_mission`, `resolve_feature_dir_for_mission`), which land on the husk. On a coord-topology mission those reads silently return empty/stale data, raise resolver errors, or fall back to defaults. This Mission routes the two residual classes the implement-loop Mission is forbidden from touching:
 
-- **Lane A (#2185)** — the **merge / finalize / recovery / lanes / topology** path reads of `lanes.json`, `tasks/`, and `meta.json`.
+- **Lane A (#2185, #2187)** — the **merge / finalize / recovery / lanes / topology / status-display** path reads of `lanes.json`, `tasks/`, and `meta.json` (incl. the `show_kanban_status` `tasks/` read, #2187).
 - **Lane B (#2186)** — **identity / telemetry / lifecycle** reads of `meta.json` in the command layer (the `next_cmd` telemetry-drop class and the post-#2115 fallback-dependent identity probes).
 
 The canonical fix already exists and is in production use (introduced by the #2106 gate-read work): route PRIMARY-partition reads through `resolve_planning_read_dir(repo_root, slug, kind=...)` (which folds the handle and resolves PRIMARY topology-blind via `primary_feature_dir_for_mission`), or anchor directly on `primary_feature_dir_for_mission(repo_root, _canonicalize_primary_read_handle(repo_root, slug))`. STATUS-partition reads **must stay coord-aware**.
@@ -71,7 +71,7 @@ As a maintainer, I want the architectural dir-read gate to *see* the identity-re
 
 ### Surface Inventory *(authoritative — kinds restated from the real partition)*
 
-**Lane A — #2185 (merge/lanes/core; this Mission owns these files):**
+**Lane A — #2185 + #2187 (merge/lanes/core/status-display; this Mission owns these files):**
 
 | Site | Real kind(s) | Shape | Route |
 |------|--------------|-------|-------|
@@ -85,6 +85,7 @@ As a maintainer, I want the architectural dir-read gate to *see* the identity-re
 | `lanes/recovery.py:611` | LANE_STATE (issue mislabels WORK_PACKAGE_TASK) | pure PRIMARY | `kind=LANE_STATE` |
 | `lanes/worktree_allocator.py:360` | PRIMARY_METADATA (issue mislabels LANE_STATE) | pure PRIMARY | `kind=PRIMARY_METADATA` |
 | `core/worktree_topology.py:138,140,141` | PRIMARY_METADATA + LANE_STATE + WORK_PACKAGE_TASK | pure PRIMARY | single swap of `:138` co-resolves all three |
+| `agent_utils/status.py:120,126` (`show_kanban_status`) — **#2187** | WORK_PACKAGE_TASK + STATUS | **mixed** | per-leg split: `tasks/` glob (`:126`) → `resolve_planning_read_dir(kind=WORK_PACKAGE_TASK)`; the `read_events(feature_dir)` STATUS leg (`:151`) stays coord-aware (C-001). `resolve_mission_identity` leg is out of #2187 scope (identity class) |
 
 **Lane B — #2186 (identity/telemetry; this Mission owns the command-layer identity class):**
 
@@ -157,7 +158,7 @@ As a maintainer, I want the architectural dir-read gate to *see* the identity-re
 
 - **Epic (parent, reference-only — never claim/close):** #2160
 - **Originating issue:** #2115 (claimed by the implement-loop Mission; closes when it lands)
-- **This Mission addresses:** **#2185** (Lane A) + **#2186** (Lane B)
+- **This Mission addresses:** **#2185** (Lane A) + **#2186** (Lane B) + **#2187** (Lane A — `show_kanban_status` `tasks/` residual, same class as #2185)
 - **Sibling in-loop Mission (boundary partner):** `implement-loop-coord-authority-completion-01KW2E7A` — C-009 forbids it from these surfaces; this Mission is its inverse
 - **Cause:** #2106 (merged) — kind-aware write-surface placement
 - **Explicitly excluded:** #2167 (repo-root `scripts/tasks/` legacy reader — pin-and-cite only); removal of the `implement.py:1018` fallback (separate follow-on)
