@@ -1607,6 +1607,12 @@ exceptions:
 - path: docs/plans/degod-unshim-roadmap.md
   action: rename
   reason: "FR-010 \u2014 closeout strike in WP09."
+- path: src/runtime/next/_internal_runtime/schema.py
+  action: rename
+  reason: "FR-010/WP09 — :22 layer-boundary comment repointed so it no longer names the deleted specify_cli.next shim as alive; rule meaning preserved. Comment-only edit."
+- path: src/specify_cli/cli/commands/charter/__init__.py
+  action: rename
+  reason: "FR-010/WP09 — :118 stale comment named the deleted specify_cli.charter_preflight shim; scrubbed to charter_runtime.preflight (functional import at :122 was already canonical). Comment-only edit; no command NAME changes."
 - path: tests/runtime/next/test_import_paths.py
   action: rename
   reason: "CENSUS GAP found by WP04's T010 pre-check (2026-07-03): test_legacy_next_package_import_warns_and_aliases_submodules dynamically imports specify_cli.next.runtime_bridge via importlib.import_module(:27) — a shim-BEHAVIOR test (analogous to tests/glossary/test_legacy_import_shim.py) invisible to the AST patch-string census. Disposition: legacy sub-test DELETED with the shim in WP04's atomic commit (moot post-deletion; the canonical test_runtime_next_is_canonical_decision_home stays). File added to WP04 owned_files."

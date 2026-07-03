@@ -24,7 +24,8 @@ subtasks:
 - T027
 phase: Phase 1 - Sequential DAG
 assignee: ''
-agent: ''
+agent: "claude:opus:python-pedro:implementer"
+shell_pid: "2946915"
 history:
 - at: '2026-07-03T17:18:34Z'
   actor: system
@@ -104,3 +105,5 @@ PWHEADLESS=1 pytest tests/architectural/test_no_legacy_terminology.py -q
 > Append at the END, chronological. Format: `- YYYY-MM-DDTHH:MM:SSZ – agent_id – <action>`
 
 - 2026-07-03T17:18:34Z – system – Prompt created.
+- 2026-07-03T19:06:53Z – claude:opus:python-pedro:implementer – shell_pid=2946915 – Assigned agent via action command
+- 2026-07-03T19:28:22Z – claude:opus:python-pedro:implementer – shell_pid=2946915 – WP09 closeout done. Doc scrubs: 05_ownership_manifest.yaml + 05_ownership_map.md (specify_cli.next & glossary shim rows -> shims:[], removed 3.3.0/keep-registered claims), degod-unshim-roadmap.md (Wave 2 row + WS1 seam marked EXECUTED), schema.py & charter/__init__.py & engine.py stale-module comments repointed to canonical. CHANGELOG: 'Breaking Changes' removal entry added to canonical docs/changelog/CHANGELOG.md, root regenerated via sync_changelog.py (sync test green); NO version bump (__init__.py untouched, verified). NFR-002 pinned grep EMPTY (exit 1). 5 deleted modules -> ModuleNotFoundError; next/charter-lint --help exit 0. Arch sweep 640p/4s. Terminology guard 3p. ruff 0, mypy Success (1053 files). FULL suite: 28422 passed, 86 skipped, 19 xfailed, 8 failed + 1 error — ALL judged not-my-diff: 4 pre-existing base failures (upgrade dry-run json, sphinx gen, neutrality-lint 'pytest' in TERMINOLOGY_GUARD.md, gitignore directive-demo.yaml — fail with my changes stashed) + 5 parallel-isolation flakes (sync exit0, 2x mission-switch, 2x e2e — all PASS in isolation both with and without my diff). Tracker comments: #1797 https://github.com/Priivacy-ai/spec-kitty/issues/1797#issuecomment-4878911446 ; #2293 https://github.com/Priivacy-ai/spec-kitty/issues/2293#issuecomment-4878911511 ; #2327 https://github.com/Priivacy-ai/spec-kitty/issues/2327#issuecomment-4878911580
