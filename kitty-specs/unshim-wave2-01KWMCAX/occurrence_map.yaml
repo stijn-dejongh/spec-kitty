@@ -41,6 +41,7 @@ categories:
         new_target: runtime.next.runtime_bridge
         note: "sys.modules.get('specify_cli.next.runtime_bridge') or importlib.import_module('runtime.next.runtime_bridge') \u2014 seam key MUST\
           \ move with the 2 injector patch.dict sites (test_selector_resolution.py:502,548) or injection silently no-ops post-deletion (FR-001)"
+        interception_proof: 'WP01 DONE (e2ad484ef): seam re-keyed together with both injectors; red-first flip verified by implementer AND reviewer; dead legacy branch simplified; seam still probes sys.modules before canonical import.'
       - file: src/specify_cli/cli/commands/next_cmd.py
         line: 557
         kind: comment
@@ -1391,13 +1392,13 @@ categories:
       target_string: specify_cli.next.runtime_bridge
       construct: patch_dict_multiline
       new_target: runtime.next.runtime_bridge
-      interception_proof: ''
+      interception_proof: 'WP01 red-first flip (implementer + reviewer independently): bogus key -> seam falls through to real bridge, captured empty, MISSION_NOT_FOUND, test_next_step_canonical_selector_passes_mission_slug FAILS; restore -> green. Consumption via captured[mission_slug] side-effect. ModuleType name string (:497) re-keyed same commit; fake completed with real MissionNotFoundError (DIR-041 fixture-completeness).'
     - file: tests/specify_cli/cli/commands/test_selector_resolution.py
       line: 548
       target_string: specify_cli.next.runtime_bridge
       construct: patch_dict_multiline
       new_target: runtime.next.runtime_bridge
-      interception_proof: ''
+      interception_proof: 'WP01: alias injector re-keyed with its ModuleType name string (:547); test_next_step_alias_selector_warns_and_passes_mission_slug green via captured[mission_slug] side-effect assertion (29 passed in file).'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 997
       target_string: specify_cli.next.runtime_bridge._advance_run_state_after_composition
