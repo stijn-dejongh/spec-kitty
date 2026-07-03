@@ -66,9 +66,9 @@
 
 - **Goal**: IC-03/FR-003+FR-004 — delete both shims; registry rows + schema-test presence-asserts in one atomic commit (C-005).
 - **Priority**: P1 · **Requirements**: FR-003, FR-004 · **Dependencies**: WP02, WP03 · **Prompt**: [tasks/WP04-ab-delete-registry.md](tasks/WP04-ab-delete-registry.md)
-- [ ] T010 Deletions after empty-grep pre-check (WP04)
-- [ ] T011 Spine drain same commit (WP04)
-- [ ] T012 Gates + smoke (WP04)
+- [x] T010 Deletions after empty-grep pre-check (WP04)
+- [x] T011 Spine drain same commit (WP04)
+- [x] T012 Gates + smoke (WP04)
 
 ### WP05 — C-repoint: charter callers + tests
 
