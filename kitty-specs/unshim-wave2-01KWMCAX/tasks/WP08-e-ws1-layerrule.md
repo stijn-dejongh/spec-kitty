@@ -19,7 +19,8 @@ subtasks:
 - T024
 phase: Phase 1 - Sequential DAG
 assignee: ''
-agent: ''
+agent: "claude:opus:python-pedro:implementer"
+shell_pid: "2755799"
 history:
 - at: '2026-07-03T17:18:34Z'
   actor: system
@@ -92,3 +93,5 @@ PWHEADLESS=1 pytest tests/architectural/test_layer_rules.py tests/architectural/
 > Append at the END, chronological. Format: `- YYYY-MM-DDTHH:MM:SSZ – agent_id – <action>`
 
 - 2026-07-03T17:18:34Z – system – Prompt created.
+- 2026-07-03T17:41:17Z – claude:opus:python-pedro:implementer – shell_pid=2755799 – Assigned agent via action command
+- 2026-07-03T18:00:48Z – claude:opus:python-pedro:implementer – shell_pid=2755799 – Bound mission_runtime->specify_cli outbound LayerRule as a named allowed-exception ledger (9 live subpackages) + 3 committed CI-selected (marker=architectural) tests incl. negative non-vacuity test. Non-vacuity flip: allow-everything matcher REDS test_rule_rejects_out_of_ledger_import, reverted->green. Gates: test_layer_rules.py 16 passed; full tests/architectural/ 644 passed/4 skipped exit0; ruff diff-scoped exit0; mypy src/ Success. --force per known bug #2324: rejection cited T025-T027 which belong to WP09 (closeout), not WP08; WP08's own subtasks T022-T024 are all done.

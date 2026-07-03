@@ -42,9 +42,9 @@
 
 - **Goal**: IC-01/FR-001 — the 3 src callers re-pointed; the monkeypatch seam + its 2 injector tests move together with a consumption proof.
 - **Priority**: P1 · **Requirements**: FR-001 · **Prompt**: [tasks/WP01-a-seam.md](tasks/WP01-a-seam.md)
-- [ ] T001 Re-point 2 plain src imports (WP01)
-- [ ] T002 Re-key seam + injectors + consumption proof (WP01)
-- [ ] T003 Gates (WP01)
+- [x] T001 Re-point 2 plain src imports (WP01)
+- [x] T002 Re-key seam + injectors + consumption proof (WP01)
+- [x] T003 Gates (WP01)
 
 ### WP02 — A-repoint cluster 1: tests/next/ (depends: WP01)
 
@@ -74,9 +74,9 @@
 
 - **Goal**: IC-04/FR-005+FR-006p1 — 4-5 src caller lines (incl. the runner.py defect) + 20 test files + 32 charter patch-proofs; CI-only shards run locally.
 - **Priority**: P2 · **Requirements**: FR-005, FR-006 · **Prompt**: [tasks/WP05-c-repoint.md](tasks/WP05-c-repoint.md)
-- [ ] T013 Src callers + defect fix (WP05)
-- [ ] T014 Test re-points + proofs (WP05)
-- [ ] T015 CI-only shards + gates (WP05)
+- [x] T013 Src callers + defect fix (WP05)
+- [x] T014 Test re-points + proofs (WP05)
+- [x] T015 CI-only shards + gates (WP05)
 
 ### WP06 — C-delete + lock-gate retirement (depends: WP05)
 
@@ -98,9 +98,9 @@
 
 - **Goal**: IC-07/FR-009 (#2327) — the missing mission_runtime outbound rule with named allowed-exception set + committed CI-selected negative test.
 - **Priority**: P3 · **Requirements**: FR-009 · **Prompt**: [tasks/WP08-e-ws1-layerrule.md](tasks/WP08-e-ws1-layerrule.md)
-- [ ] T022 Allowed set + decision record (WP08)
-- [ ] T023 Rule + negative test (WP08)
-- [ ] T024 Gates + #2327 progress (WP08)
+- [x] T022 Allowed set + decision record (WP08)
+- [x] T023 Rule + negative test (WP08)
+- [x] T024 Gates + #2327 progress (WP08)
 
 ### WP09 — Closeout (depends: WP04, WP06, WP07, WP08)
 
