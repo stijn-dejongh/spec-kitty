@@ -20,8 +20,8 @@ subtasks:
 - T006
 phase: Phase 1 - Sequential DAG
 assignee: ''
-agent: "claude:opus:python-pedro:implementer"
-shell_pid: "2800175"
+agent: "claude:opus:reviewer-renata:reviewer"
+shell_pid: "2859363"
 history:
 - at: '2026-07-03T17:18:34Z'
   actor: system
@@ -100,3 +100,5 @@ grep -rn "specify_cli.next" tests/next/ || echo CLEAN
 
 - 2026-07-03T17:18:34Z – system – Prompt created.
 - 2026-07-03T18:04:37Z – claude:opus:python-pedro:implementer – shell_pid=2800175 – Assigned agent via action command
+- 2026-07-03T18:24:10Z – claude:opus:python-pedro:implementer – shell_pid=2800175 – FR-002 tests/next re-point: 18 files, 373 refs specify_cli.next->runtime.next. 125 patch-string proof rows in /tmp/wave2-proofs-WP02.yaml. Interception: 26/26 target classes RED-flip proven (bogus-attr on canonical runtime.next path -> named test FAIL, suffix restored -> green); 99 sites cite enclosing-test consumption assertions. KEY: specify_cli.next.runtime_bridge IS the same module object as runtime.next.runtime_bridge (sys.modules alias) so old-path flip is a no-op -> bogus-attr flip is the only valid proof form (matches ledger Risks note). Gates: tests/next 497 passed; arch shim gates (shim_registry_schema+unregistered_shim_scanner) 44 passed; residual specify_cli.next CLEAN (multi-line/AST-checked); diff-scoped ruff exit 0; mypy src Success 1058 files.
+- 2026-07-03T18:24:48Z – claude:opus:reviewer-renata:reviewer – shell_pid=2859363 – Started review via action command

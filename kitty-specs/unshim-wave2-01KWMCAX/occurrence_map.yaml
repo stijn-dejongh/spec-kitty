@@ -372,79 +372,79 @@ categories:
       target_string: specify_cli.next.runtime_bridge.build_operational_context_for_claim
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.build_operational_context_for_claim
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_lanes_json_read_from_coord_dir_not_primary() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/agent/test_workflow_charter_context.py
       line: 207
       target_string: specify_cli.next.prompt_builder.build_charter_context
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.build_charter_context
-      interception_proof: ''
+      interception_proof: 'WP03: red-first flip: line207 patch target ->build_charter_context_ZZZBOGUS -> AttributeError on live runtime.next.prompt_builder -> test_exception_falls_back_to_legacy_governance FAILED; restored -> green'
     - file: tests/agent/test_workflow_charter_context.py
       line: 220
       target_string: specify_cli.next.prompt_builder.build_with_scope
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.build_with_scope
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_scope_not_found_is_not_swallowed() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/agent/test_workflow_charter_context.py
       line: 245
       target_string: specify_cli.next.prompt_builder.build_charter_context
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.build_charter_context
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_governance_context_forwards_profile_kwarg_to_charter_context() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/agent/test_workflow_charter_context.py
       line: 263
       target_string: specify_cli.next.prompt_builder.build_charter_context
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.build_charter_context
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_governance_context_default_profile_is_none() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/agent/test_workflow_charter_context.py
       line: 336
       target_string: specify_cli.next.prompt_builder._governance_context
       construct: single_line_patch
       new_target: runtime.next.prompt_builder._governance_context
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_implement_forwards_agent_profile_from_wp_frontmatter() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/agent/test_workflow_charter_context.py
       line: 363
       target_string: specify_cli.next.prompt_builder._governance_context
       construct: single_line_patch
       new_target: runtime.next.prompt_builder._governance_context
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_implement_passes_none_when_frontmatter_lacks_agent_profile() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/contract/test_next_no_implicit_success.py
       line: 85
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP03: red-first flip: line85 patch target ->query_current_state_ZZZBOGUS -> AttributeError on live runtime.next.runtime_bridge -> test_bare_next_calls_query_not_decide FAILED; restored -> green'
     - file: tests/contract/test_next_no_implicit_success.py
       line: 116
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_bare_next_does_not_emit_mission_next_invoked() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/contract/test_next_no_implicit_success.py
       line: 140
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_query_mode_returns_decision_kind_query() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/contract/test_next_no_implicit_success.py
       line: 191
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_explicit_success_uses_decide_next() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/integration/test_custom_mission_runtime_walk.py
       line: 454
       target_string: specify_cli.next.runtime_bridge._advance_run_state_after_composition
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._advance_run_state_after_composition
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_software_dev_specify_dispatch_unchanged() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/integration/test_custom_mission_runtime_walk.py
       line: 593
       target_string: specify_cli.next.runtime_bridge._advance_run_state_after_composition
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._advance_run_state_after_composition
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_next_dispatch_synthesizes_contract_after_registry_clear() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/integration/test_quickstart_end_to_end.py
       line: 151
       target_string: specify_cli.charter_preflight.cli.find_repo_root
@@ -1404,152 +1404,152 @@ categories:
       target_string: specify_cli.next.runtime_bridge._advance_run_state_after_composition
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._advance_run_state_after_composition
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_composition_success_skips_legacy_dispatch() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 1001
       target_string: specify_cli.next.runtime_bridge.runtime_next_step
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.runtime_next_step
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_composition_success_skips_legacy_dispatch() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 1121
       target_string: specify_cli.next._internal_runtime.planner.plan_next
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.planner.plan_next
-      interception_proof: ''
+      interception_proof: 'WP03: red-first flip: line1121 patch target ->plan_next_ZZZBOGUS -> AttributeError on live runtime.next._internal_runtime.planner -> test_advancement_helper_persists_decision_required_branch FAILED; restored -> green'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 1176
       target_string: specify_cli.next._internal_runtime.planner.plan_next
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.planner.plan_next
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_advancement_helper_runs_default_post_completion_retrospective() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 1184
       target_string: specify_cli.next.runtime_bridge._run_retrospective_learning_capture
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._run_retrospective_learning_capture
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_advancement_helper_runs_default_post_completion_retrospective() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 1241
       target_string: specify_cli.next._internal_runtime.planner.plan_next
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.planner.plan_next
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_advancement_helper_runs_strict_retrospective_before_completion() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 1249
       target_string: specify_cli.next.runtime_bridge._resolve_retrospective_policy_for_runtime
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._resolve_retrospective_policy_for_runtime
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_advancement_helper_runs_strict_retrospective_before_completion() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 1253
       target_string: specify_cli.next.runtime_bridge._run_retrospective_learning_capture
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._run_retrospective_learning_capture
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_advancement_helper_runs_strict_retrospective_before_completion() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 1306
       target_string: specify_cli.next._internal_runtime.planner.plan_next
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.planner.plan_next
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_advancement_helper_raises_policy_error_for_strict_retrospective() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 1314
       target_string: specify_cli.next.runtime_bridge._resolve_retrospective_policy_for_runtime
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._resolve_retrospective_policy_for_runtime
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_advancement_helper_raises_policy_error_for_strict_retrospective() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 1415
       target_string: specify_cli.next.runtime_bridge._advance_run_state_after_composition
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._advance_run_state_after_composition
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_non_composed_action_uses_legacy_runtime_next_step() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 1417
       target_string: specify_cli.next.runtime_bridge.runtime_next_step
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.runtime_next_step
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_non_composed_action_uses_legacy_runtime_next_step() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 1454
       target_string: specify_cli.next.runtime_bridge._advance_run_state_after_composition
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._advance_run_state_after_composition
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_advancement_helper_failure_propagates_no_legacy_fallback() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 1458
       target_string: specify_cli.next.runtime_bridge.runtime_next_step
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.runtime_next_step
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_advancement_helper_failure_propagates_no_legacy_fallback() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 1558
       target_string: specify_cli.next.runtime_bridge._advance_run_state_after_composition
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._advance_run_state_after_composition
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_builtin_software_dev_ignores_template_agent_profile() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 1615
       target_string: specify_cli.next.runtime_bridge._advance_run_state_after_composition
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._advance_run_state_after_composition
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_builtin_software_dev_dispatches_with_none_profile_hint() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_runtime_bridge_composition.py
       line: 1711
       target_string: specify_cli.next.runtime_bridge._advance_run_state_after_composition
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._advance_run_state_after_composition
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_custom_mission_dispatch_resolves_via_registry() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_wp_prompt_governance_contract.py
       line: 259
       target_string: specify_cli.next.prompt_builder._governance_context
       construct: single_line_patch
       new_target: runtime.next.prompt_builder._governance_context
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_build_wp_prompt_for_implement_calls_governance_context() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_wp_prompt_governance_contract.py
       line: 285
       target_string: specify_cli.next.prompt_builder._governance_context
       construct: single_line_patch
       new_target: runtime.next.prompt_builder._governance_context
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_build_wp_prompt_for_review_calls_governance_context() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_wp_prompt_governance_contract.py
       line: 306
       target_string: specify_cli.next.prompt_builder._governance_context
       construct: single_line_patch
       new_target: runtime.next.prompt_builder._governance_context
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_governance_context_output_is_present_in_wp_prompt_text() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_wp_prompt_governance_contract.py
       line: 1034
       target_string: specify_cli.next.prompt_builder.build_with_scope
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.build_with_scope
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_governance_context_uses_build_with_scope_not_direct_call() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_wp_prompt_governance_contract.py
       line: 1079
       target_string: specify_cli.next.prompt_builder._governance_context
       construct: single_line_patch
       new_target: runtime.next.prompt_builder._governance_context
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_build_wp_prompt_passes_feature_dir_to_governance_context() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/specify_cli/next/test_wp_prompt_governance_contract.py
       line: 1107
       target_string: specify_cli.next.prompt_builder.build_with_scope
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.build_with_scope
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by test_governance_context_does_not_mask_scope_routing_failures() (green in WP03 owned-file suite; bogus target would AttributeError at patch-time)'
     - file: tests/contract/test_next_no_implicit_success.py
       line: 46
       target_string: specify_cli.charter_preflight.hook.run_preflight_or_abort
       construct: monkeypatch_setattr_multiline
       new_target: specify_cli.charter_runtime.preflight.hook.run_preflight_or_abort
-      interception_proof: ''
+      interception_proof: 'WP03: red-first flip: line46 setattr ->run_preflight_or_abort_ZZZBOGUS -> AttributeError on live specify_cli.charter_runtime.preflight.hook -> test ERROR; restored -> green'
       note: 'post-tasks renata HIGH: setattr excluded by the original AST census; continuation-line target invisible to gates; WP03 owns'
     - file: tests/contract/test_next_no_implicit_success.py
       line: 49
       target_string: specify_cli.charter_preflight.hook.run_preflight_for_dashboard
       construct: monkeypatch_setattr_multiline
       new_target: specify_cli.charter_runtime.preflight.hook.run_preflight_for_dashboard
-      interception_proof: ''
+      interception_proof: 'WP03: consumption assertion: patched symbol consumed by _stub_charter_preflight() (green in WP03 owned-file suite; bogus target would AttributeError at setattr-time)'
       note: 'post-tasks renata HIGH: setattr excluded by the original AST census; continuation-line target invisible to gates; WP03 owns'
   logs_telemetry:
     action: do_not_change

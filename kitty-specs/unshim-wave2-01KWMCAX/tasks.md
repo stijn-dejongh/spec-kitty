@@ -50,17 +50,17 @@
 
 - **Goal**: IC-02 — 18 files / 243 refs / **125 patch-proofs** (the proof-heavy block).
 - **Priority**: P1 · **Requirements**: FR-002 · **Dependencies**: WP01 · **Prompt**: [tasks/WP02-a-repoint-tests-next.md](tasks/WP02-a-repoint-tests-next.md)
-- [ ] T004 Plain re-points (WP02)
-- [ ] T005 125 patch-proofs + ledger (WP02)
-- [ ] T006 Gates (WP02)
+- [x] T004 Plain re-points (WP02)
+- [x] T005 125 patch-proofs + ledger (WP02)
+- [x] T006 Gates (WP02)
 
 ### WP03 — A-repoint cluster 2: remaining next surface (depends: WP01)
 
 - **Goal**: IC-02 — the other 53 files / 173 refs / 36 ledgered proofs + 3 unledgered charter refs across 8 directories; owns the dual-namespace special case (`test_next_no_implicit_success.py`; its setattr strings are invisible to every gate — the in-file grep is the only check).
 - **Priority**: P1 · **Requirements**: FR-002 · **Dependencies**: WP01 · **Prompt**: [tasks/WP03-a-repoint-remaining.md](tasks/WP03-a-repoint-remaining.md)
-- [ ] T007 Plain re-points (WP03)
-- [ ] T008 Patch-proofs + ledger + cross-stream site (WP03)
-- [ ] T009 Gates (WP03)
+- [x] T007 Plain re-points (WP03)
+- [x] T008 Patch-proofs + ledger + cross-stream site (WP03)
+- [x] T009 Gates (WP03)
 
 ### WP04 — A+B delete + registry drain (depends: WP02, WP03)
 
@@ -82,9 +82,9 @@
 
 - **Goal**: IC-05/FR-006p2+FR-007 — 3 packages deleted; 6-row per-test disposition table; charter_activate documented-canonical; :517-518 rows NO-TOUCH.
 - **Priority**: P2 · **Requirements**: FR-006, FR-007 · **Dependencies**: WP05 · **Prompt**: [tasks/WP06-c-delete-lockgate.md](tasks/WP06-c-delete-lockgate.md)
-- [ ] T016 Deletions after pre-check (WP06)
-- [ ] T017 Disposition table + retirement (WP06)
-- [ ] T018 charter_activate record + gates (WP06)
+- [x] T016 Deletions after pre-check (WP06)
+- [x] T017 Disposition table + retirement (WP06)
+- [x] T018 charter_activate record + gates (WP06)
 
 ### WP07 — D: #2326 wrapper prune + honest baseline (depends: WP06)
 

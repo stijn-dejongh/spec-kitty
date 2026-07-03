@@ -21,8 +21,8 @@ subtasks:
 - T018
 phase: Phase 1 - Sequential DAG
 assignee: ''
-agent: "claude:opus:python-pedro:implementer"
-shell_pid: "2813357"
+agent: "claude:opus:reviewer-renata:reviewer"
+shell_pid: "2849766"
 history:
 - at: '2026-07-03T17:18:34Z'
   actor: system
@@ -100,3 +100,5 @@ python -c "import specify_cli.charter_lint" 2>&1 | grep -q ModuleNotFoundError &
 
 - 2026-07-03T17:18:34Z – system – Prompt created.
 - 2026-07-03T18:08:11Z – claude:opus:python-pedro:implementer – shell_pid=2813357 – Assigned agent via action command
+- 2026-07-03T18:21:32Z – claude:opus:python-pedro:implementer – shell_pid=2813357 – Bug #2324: move-task cited T019-T021 which belong to another WP (not WP06). WP06's own subtasks T016-T018 are all done. Deleted 3 charter shim packages; pre-check clean (only functional residue = WP03-owned test_next_no_implicit_success.py:38/46/49, lands via DAG). Retired lock-gate; 6-row disposition table + re-homed test_canonical_paths_import in tests/architectural/test_charter_runtime_canonical_paths.py. C-005: no charter rows in shim-registry.yaml. charter_activate.py NO-TOUCH (C-002). Gates: arch 637 passed, mypy Success, ruff clean, 3x ModuleNotFoundError confirmed.
+- 2026-07-03T18:22:17Z – claude:opus:reviewer-renata:reviewer – shell_pid=2849766 – Started review via action command
