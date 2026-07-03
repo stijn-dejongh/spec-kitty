@@ -16,5 +16,5 @@
 | #391 | debt epic (parent of #612/#613) | deferred-with-followup | Referenced lineage only — remainder of the extraction-debt epic continues under #391; nothing in Wave 2 closes it. |
 | #2072 | Obligation B boundary | deferred-with-followup | Obligation B (~10 resolver sites) is NOT in any Wave 2 surface (verified); stays open under #2072; operator note on #2293's prerequisite semantics posted at closeout (FR-010). |
 | #2293 | boundary: category_b burn-down (later wave) | deferred-with-followup | Stays OPEN as the follow-up wave; needs #2072 formal closure or operator prerequisite confirmation; Wave 2 hands it honest baselines (WP07). |
-| #2034 | CI marker-gate hole | deferred-with-followup | Stays OPEN upstream; honored in-mission as the NFR-005 obligation (new/relocated tests carry CI-selected markers — proven for WP08's three new tests). |
+| #2034 | CI marker-gate hole | deferred-with-followup | Follow-up: #2034 stays OPEN upstream; honored in-mission as the NFR-005 obligation (new/relocated tests carry CI-selected markers — proven for WP08's three new tests). |
 | #2159 | reference: uv_receipt trap (closed) | verified-already-fixed | Lesson encoded as C-001 (re-point before delete); no structural constraint. |
