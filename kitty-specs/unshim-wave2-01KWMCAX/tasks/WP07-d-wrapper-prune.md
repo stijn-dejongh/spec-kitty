@@ -20,7 +20,8 @@ subtasks:
 - T021
 phase: Phase 1 - Sequential DAG
 assignee: ''
-agent: ''
+agent: "claude:opus:python-pedro:implementer"
+shell_pid: "2890962"
 history:
 - at: '2026-07-03T17:18:34Z'
   actor: system
@@ -97,3 +98,4 @@ grep -rn "update_field\b" src/ | grep -v update_fields || echo CLEAN
 > Append at the END, chronological. Format: `- YYYY-MM-DDTHH:MM:SSZ – agent_id – <action>`
 
 - 2026-07-03T17:18:34Z – system – Prompt created.
+- 2026-07-03T18:37:01Z – claude:opus:python-pedro:implementer – shell_pid=2890962 – Assigned agent via action command

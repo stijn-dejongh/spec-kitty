@@ -1607,6 +1607,9 @@ exceptions:
 - path: docs/plans/degod-unshim-roadmap.md
   action: rename
   reason: "FR-010 \u2014 closeout strike in WP09."
+- path: tests/runtime/next/test_import_paths.py
+  action: rename
+  reason: "CENSUS GAP found by WP04's T010 pre-check (2026-07-03): test_legacy_next_package_import_warns_and_aliases_submodules dynamically imports specify_cli.next.runtime_bridge via importlib.import_module(:27) — a shim-BEHAVIOR test (analogous to tests/glossary/test_legacy_import_shim.py) invisible to the AST patch-string census. Disposition: legacy sub-test DELETED with the shim in WP04's atomic commit (moot post-deletion; the canonical test_runtime_next_is_canonical_decision_home stays). File added to WP04 owned_files."
 - path: kitty-specs/**
   action: do_not_change
   reason: Archived mission artifacts are immutable snapshots (C-004); legacy paths retained as history.

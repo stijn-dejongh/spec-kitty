@@ -37,6 +37,7 @@ owned_files:
 - src/specify_cli/next/
 - src/specify_cli/glossary/
 - tests/glossary/test_legacy_import_shim.py
+- tests/runtime/next/test_import_paths.py
 - docs/migrations/shim-registry.yaml
 - tests/architectural/test_shim_registry_schema.py
 role: implementer
@@ -103,3 +104,4 @@ PWHEADLESS=1 pytest tests/next/ tests/glossary/ -q
 
 - 2026-07-03T17:18:34Z – system – Prompt created.
 - 2026-07-03T18:35:02Z – claude:opus:python-pedro:implementer – shell_pid=2885747 – Assigned agent via action command
+- 2026-07-03T18:38:39Z – claude:opus:python-pedro:implementer – shell_pid=2885747 – T010 pre-check BLOCKED (STOP per protocol): resolving-residue found outside allowed sites. tests/runtime/next/test_import_paths.py:27 (test_legacy_next_package_import_warns_and_aliases_submodules) dynamically imports 'specify_cli.next.runtime_bridge' via importlib.import_module and asserts DeprecationWarning + aliasing to runtime.next.runtime_bridge. This is a shim-BEHAVIOR test (analogous to the glossary shim test in my owned_files) that will red with ModuleNotFoundError once src/specify_cli/next/ is deleted. It is NOT in WP04 owned_files and NOT owned by any WP (WP02 owns tests/next/, not tests/runtime/next/; WP03 list excludes it) — a spec/plan ownership gap. Did NOT delete anything. Needs: either the legacy sub-test removed/re-pointed (WP02/WP03 territory) or test_import_paths.py added to WP04 owned_files. All other next/glossary refs are non-breaking guards/comments (session_presence guards, test_layer_rules forbidden_prefixes, _baselines/test_no_dead_symbols comments, schema.py:22 WP09 comment).
