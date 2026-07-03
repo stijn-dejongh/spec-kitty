@@ -90,9 +90,9 @@
 
 - **Goal**: IC-06/FR-008 — the 3 dead update_field pieces deleted; :235 row drained; category_b re-derived honest (≈215).
 - **Priority**: P3 · **Requirements**: FR-008 · **Dependencies**: WP06 · **Prompt**: [tasks/WP07-d-wrapper-prune.md](tasks/WP07-d-wrapper-prune.md)
-- [ ] T019 Verify + delete (WP07)
-- [ ] T020 Drain + honest re-derive (WP07)
-- [ ] T021 Gates (WP07)
+- [x] T019 Verify + delete (WP07)
+- [x] T020 Drain + honest re-derive (WP07)
+- [x] T021 Gates (WP07)
 
 ### WP08 — E: WS1 LayerRule bind (independent)
 
