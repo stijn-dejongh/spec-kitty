@@ -6,7 +6,7 @@
 | Issue | Title | Verdict | Evidence ref |
 |---|---|---|---|
 | #2291 | closes: execute registered removals (specify_cli.next + glossary) | in-mission | FR-001..FR-004: re-point 3 src callers + seam + 77-file test surface (squad census supersedes the body's 49), delete both shims, drain registry rows + schema-test assertions. |
-| #2290 | closes: charter deprecation-cycle closure | in-mission | FR-005..FR-007 as FULL DELETE (adjudicated decision 1 — registering would recreate the rescinded version-boundary deferral): 4 src callers incl. the runner.py:36 canonical→legacy defect, ~20 test files, lock-gate retired with surviving-coverage proof, charter_activate disposition. |
+| #2290 | closes: charter deprecation-cycle closure | in-mission | FR-005..FR-007 as FULL DELETE (adjudicated decision 1 — registering would recreate the rescinded version-boundary deferral): 4 src callers incl. the runner.py:36 canonical→legacy defect, ~20 test files, lock-gate (6 tests) retired with per-test disposition table, charter_activate settled CANONICAL (documented-excluded, no deletion). |
 | #2326 | closes: dead frontmatter::update_field wrapper | in-mission | FR-008: wrapper + __all__ + orphaned instance method deleted; category_b row drained; baseline 216→215. |
 | #1868 | partial: WS1 mission_runtime layer-rule bind | in-mission | FR-009: dedicated sub-issue filed at spec time (parent #1868); non-vacuous LayerRule + theater; WS2–WS6 remain open. |
 | #1797 | parent epic | reference | Progress comment at merge: registry drained to zero legacy rows, 5+ shim surfaces deleted, honest baseline counts for Wave 3/4 planning. |
