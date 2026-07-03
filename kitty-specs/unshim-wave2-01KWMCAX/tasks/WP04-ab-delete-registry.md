@@ -74,7 +74,7 @@ itself — record as intentionally-removed in the log, judge-the-test framework)
 ## Subtasks & Detailed Guidance
 
 ### Subtask T010 – Deletions
-- Pre-check (C-001): `grep -rnE "(from|import)\s+specify_cli\.(next|glossary)\b" src/ tests/` MUST be empty before any `git rm` — paste the empty output FIRST. Then `git rm -r src/specify_cli/next src/specify_cli/glossary` + `git rm tests/glossary/test_legacy_import_shim.py`.
+- Pre-check (C-001): `grep -rnE "(from|import)\s+specify_cli\.(next|glossary)\b|patch(\.dict)?\(\s*[\"']?(sys\.modules[\"',\s{]*[\"'])?specify_cli\.(next|glossary)|setattr\(|ModuleType\(" src/ tests/ | grep "specify_cli\.\(next\|glossary\)"` MUST be empty before any `git rm` — paste the empty output FIRST (imports AND patch/setattr/ModuleType string residue; a plain import-only grep passes while a straggler patch-string still resolves through the shim). Then `git rm -r src/specify_cli/next src/specify_cli/glossary` + `git rm tests/glossary/test_legacy_import_shim.py`.
 
 ### Subtask T011 – Spine drain (same commit)
 - Remove both rows from `shim-registry.yaml`; convert `test_shim_registry_schema.py:44-45` per the refactor-stable doctrine — the presence-asserts become absence/registry-empty assertions or the test re-shapes to schema-only (justify per the convert-or-delete framework; do NOT simply delete the schema test).

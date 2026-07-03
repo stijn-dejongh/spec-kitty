@@ -82,6 +82,7 @@ tracker, and run the mission-level closing sweep. gh commands: `unset GITHUB_TOK
 - Issue-matrix: terminal verdicts (edits happen on the planning branch — coordinate with the orchestrator per the lane guard).
 
 ### Subtask T027 – Closing sweep + NFR-002
+- Also update the prose comment at `src/runtime/next/_internal_runtime/schema.py:22` naming `specify_cli.next` (unowned residue; no gate catches it).
 - Pinned NFR-002 grep (quickstart.md) → paste empty output; `PWHEADLESS=1 pytest tests/architectural/ -q` + full parallel suite + terminology guard; whole-tree mypy 0; ruff. Record tallies. Commit.
 
 ## Test Strategy

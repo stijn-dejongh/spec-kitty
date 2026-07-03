@@ -110,24 +110,29 @@ Check the `review_ref` field in the event log before starting; address all feedb
 ## Objectives & Success Criteria
 
 Spec FR-002 (IC-02, cluster 2): re-point the remaining **53 files / 173 plain refs /
-38 patch-string sites** (tests/integration, tests/specify_cli, tests/unit, tests/contract,
+36 next patch-string sites** (the 2 `test_selector_resolution.py` injectors are WP01's — do not touch that file) **+ 3 unledgered charter refs in the special-case file** (tests/integration, tests/specify_cli, tests/unit, tests/contract,
 tests/agent, tests/perf, tests/fixtures, tests/retrospective) from `specify_cli.next*`
 to `runtime.next*`. Your owned_files list IS the authoritative file set (derived from the
 occurrence-map). Success = zero legacy next refs in your files, all 38 ledger rows proven,
 suites green.
 
-SPECIAL CASE: `tests/contract/test_next_no_implicit_success.py` carries BOTH namespaces —
-its `charter_preflight.hook` patch-string re-points to `specify_cli.charter_runtime.preflight.hook`
-HERE (WP05 excludes this file; note the cross-stream edit rationale in the log). It is
-also one of the 5 CI-only shards — run it locally.
+SPECIAL CASE: `tests/contract/test_next_no_implicit_success.py` carries BOTH namespaces.
+Its charter refs are **monkeypatch.setattr string targets NOT in the ledger** (the AST
+census excluded setattr): re-point ALL THREE — the plain import `:38` and both setattr
+strings `:46`/`:49` (`specify_cli.charter_preflight.hook.*` →
+`specify_cli.charter_runtime.preflight.hook.*`) — then
+`grep -n "specify_cli.charter_" tests/contract/test_next_no_implicit_success.py` must
+return zero (paste it: the WP06 delete pre-check and the NFR-002 sweep CANNOT see
+continuation-line setattr strings; this grep is the only gate). WP05 excludes this file;
+log the cross-stream rationale. It is also a CI-only shard — run it locally.
 
 ## Subtasks & Detailed Guidance
 
 ### Subtask T007 – Plain-import re-points (173 refs across your files)
 - Mechanical; run each file after editing. `tests/fixtures/` content may be fixture data — re-point only actual import statements per the ledger.
 
-### Subtask T008 – 38 patch-string sites + proofs (+1 charter site in the special-case file)
-- Same protocol as WP02. **Ledger protocol (FR-002)**: every patch-string site you rewrite gets its proof recorded TWICE: (a) a row in this WP file's Activity Log table `file:line → new target → proof form (assertion file::test | red-first flip) → outcome`, and (b) the orchestrator syncs your table into `occurrence_map.yaml`'s `interception_proof` fields on the planning branch at approval (the lane guard blocks kitty-specs edits on lanes — do NOT edit the map yourself from the lane). A site without a proof row is a review reject; bulk sed is a review reject.
+### Subtask T008 – 36 next patch-site proofs + the 3 unledgered charter refs
+- Same protocol as WP02 for the 36 ledgered next sites. The 2 setattr re-points in the special-case file get proofs too (red-first flip works: bogus setattr target → the test's preflight stub stops intercepting → red) and are logged as EXTRA ledger rows (the orchestrator adds them to the map). **Ledger protocol (FR-002)**: every patch-string site you rewrite gets its proof recorded TWICE: (a) a row in this WP file's Activity Log table `file:line → new target → proof form (assertion file::test | red-first flip) → outcome`, and (b) the orchestrator syncs your table into `occurrence_map.yaml`'s `interception_proof` fields on the planning branch at approval (the lane guard blocks kitty-specs edits on lanes — do NOT edit the map yourself from the lane). A site without a proof row is a review reject; bulk sed is a review reject.
 
 ### Subtask T009 – Gates
 - Run every touched file's tests (the CI-only ones too: `tests/integration/…`, `tests/contract/test_next_no_implicit_success.py`); `grep -rn "specify_cli\.next" <your files>` empty (paste); ruff; commit.

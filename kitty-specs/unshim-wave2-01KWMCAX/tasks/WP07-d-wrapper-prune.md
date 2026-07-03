@@ -64,7 +64,9 @@ Spec FR-008 (IC-06): delete the dead `update_field` surface in `frontmatter.py`
 verify each is truly caller-less first, Wave 1 protocol), drain the
 `test_no_dead_symbols.py:235` allowlist row, and set `_baselines.yaml
 category_b_grandfathered_legacy` to the HONEST live count (expected 215; re-derive by
-counting the live frozenset — Wave 1's honest-216 precedent; NFR-004).
+counting the live frozenset — Wave 1's honest-216 precedent; NFR-004). Do NOT assume
+215: count AFTER WP04/WP06 landed — 215 is only correct if update_field is the sole
+newly-dead row; pin whatever the live count IS and document the arithmetic.
 
 ## Subtasks & Detailed Guidance
 
@@ -72,7 +74,7 @@ counting the live frozenset — Wave 1's honest-216 precedent; NFR-004).
 - Paste the caller-greps for `update_field` (module fn, `__all__`, instance method — the plural `update_fields` twin is LIVE, do not confuse) BEFORE deleting. Delete all three dead pieces.
 
 ### Subtask T020 – Atomic drain (C-005)
-- Remove the `:235` row; re-derive category_b live count via AST/len and pin it (expect 215; if other Wave-2 deletions made more rows dead, pin the true number and document the arithmetic). Do NOT touch the `:517-518` charter_activate rows.
+- Remove the `:235` row; re-derive category_b live count via AST/len and pin the TRUE number (215 only if update_field is the sole newly-dead row — document the arithmetic either way). Do NOT touch the `:517-518` charter_activate rows.
 
 ### Subtask T021 – Gates
 - `PWHEADLESS=1 pytest tests/architectural/test_no_dead_symbols.py tests/architectural/test_ratchet_baselines.py tests/specify_cli/test_frontmatter*.py -q` (locate the frontmatter tests by grep) green; mypy 0; ruff; commit atomically.

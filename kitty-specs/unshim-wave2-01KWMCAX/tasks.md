@@ -15,7 +15,7 @@
 | T005 | tests/next 125 patch-site proofs + ledger | WP02 | [P] |
 | T006 | WP02 gates | WP02 | [P] |
 | T007 | Remaining 53-file plain re-points (173 refs) | WP03 | [P] with WP02 |
-| T008 | 38 patch-site proofs + ledger (+1 charter cross-stream site) | WP03 | [P] |
+| T008 | 36 next patch-proofs + 3 unledgered charter setattr/import refs (special-case file) | WP03 | [P] |
 | T009 | WP03 gates | WP03 | [P] |
 | T010 | Delete next + glossary + shim self-test (pre-check first) | WP04 | — |
 | T011 | Registry rows + schema-test asserts, same commit | WP04 | — |
@@ -56,7 +56,7 @@
 
 ### WP03 — A-repoint cluster 2: remaining next surface (depends: WP01)
 
-- **Goal**: IC-02 — the other 53 files / 173 refs / 38 proofs across 8 directories; owns the dual-namespace special case (`test_next_no_implicit_success.py`).
+- **Goal**: IC-02 — the other 53 files / 173 refs / 36 ledgered proofs + 3 unledgered charter refs across 8 directories; owns the dual-namespace special case (`test_next_no_implicit_success.py`; its setattr strings are invisible to every gate — the in-file grep is the only check).
 - **Priority**: P1 · **Requirements**: FR-002 · **Dependencies**: WP01 · **Prompt**: [tasks/WP03-a-repoint-remaining.md](tasks/WP03-a-repoint-remaining.md)
 - [ ] T007 Plain re-points (WP03)
 - [ ] T008 Patch-proofs + ledger + cross-stream site (WP03)

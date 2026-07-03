@@ -74,7 +74,7 @@ Read FIRST: spec.md rev 2 Stream A census + research.md D2 + occurrence_map.yaml
 
 ### Subtask T002 – Re-key the injection seam + both injectors, atomically
 - `next_cmd.py:52-58` `_runtime_bridge_module()`: drop the legacy `sys.modules.get("specify_cli.next.runtime_bridge")` probe → probe/import `runtime.next.runtime_bridge` (keep the seam — it is a deliberate test seam; simplify the dead branch, do not delete the function). Also update the `:557` comment.
-- `tests/specify_cli/cli/commands/test_selector_resolution.py:502,548`: re-key both `patch.dict(sys.modules, ...)` injections to `runtime.next.runtime_bridge`.
+- `tests/specify_cli/cli/commands/test_selector_resolution.py:502,548`: re-key both `patch.dict(sys.modules, ...)` injections to `runtime.next.runtime_bridge`; ALSO update the `ModuleType("specify_cli.next.runtime_bridge")` name args at `:496` and `:542` to the canonical string (no gate catches these — by hand).
 - **Consumption proof (AC-1.3)**: run the injector tests and confirm the fake is consumed via its observable side-effect (the `captured` dict / `_fake_query` sentinel, ~:484-497) — paste evidence in the Activity Log. A green exit code alone does NOT satisfy this. Record both sites as ledger rows (these are 2 of the 195).
 
 ### Subtask T003 – Gates
