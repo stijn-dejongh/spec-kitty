@@ -20,7 +20,8 @@ subtasks:
 - T006
 phase: Phase 1 - Sequential DAG
 assignee: ''
-agent: ''
+agent: "claude:opus:python-pedro:implementer"
+shell_pid: "2800175"
 history:
 - at: '2026-07-03T17:18:34Z'
   actor: system
@@ -98,3 +99,4 @@ grep -rn "specify_cli.next" tests/next/ || echo CLEAN
 > Append at the END, chronological. Format: `- YYYY-MM-DDTHH:MM:SSZ – agent_id – <action>`
 
 - 2026-07-03T17:18:34Z – system – Prompt created.
+- 2026-07-03T18:04:37Z – claude:opus:python-pedro:implementer – shell_pid=2800175 – Assigned agent via action command

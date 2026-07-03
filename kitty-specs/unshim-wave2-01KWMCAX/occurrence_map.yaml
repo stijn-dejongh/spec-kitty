@@ -450,7 +450,7 @@ categories:
       target_string: specify_cli.charter_preflight.cli.find_repo_root
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.preflight.cli.find_repo_root
-      interception_proof: ''
+      interception_proof: 'WP05: red-first flip #151 -> test_step2_preflight_json_blocks_with_reason FAILED (AttributeError charter_BOGUS_XYZ); restored -> green'
     - file: tests/next/test_composition_gate_widening.py
       line: 105
       target_string: specify_cli.next.runtime_bridge._resolve_step_agent_profile
@@ -1206,187 +1206,187 @@ categories:
       target_string: specify_cli.charter_lint._drg._load_built_in_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint._drg._load_built_in_drg
-      interception_proof: ''
+      interception_proof: 'WP05: red-first flip #54 -> test_returns_missing_when_no_graph_anywhere FAILED (patch AttributeError); restored -> green'
     - file: tests/specify_cli/charter_lint/test_drg_fallback.py
       line: 71
       target_string: specify_cli.charter_lint._drg._load_built_in_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint._drg._load_built_in_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: asserts fallback GraphState from mocked _load_built_in_drg; class red-first proven (:54); green'
     - file: tests/specify_cli/charter_lint/test_drg_fallback.py
       line: 91
       target_string: specify_cli.charter_lint._drg._load_project_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint._drg._load_project_drg
-      interception_proof: ''
+      interception_proof: 'WP05: red-first flip #91 -> test_returns_merged_when_project_resolves FAILED (patch AttributeError); restored -> green'
     - file: tests/specify_cli/charter_lint/test_drg_fallback.py
       line: 95
       target_string: specify_cli.charter_lint._drg._load_built_in_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint._drg._load_built_in_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: asserts merged-when-project-resolves GraphState from mocked loaders; class red-first proven (:91); green'
     - file: tests/specify_cli/charter_lint/test_drg_fallback.py
       line: 122
       target_string: specify_cli.charter_lint._drg._load_built_in_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint._drg._load_built_in_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: asserts fallback GraphState from mocked _load_built_in_drg; class red-first proven; green'
     - file: tests/specify_cli/charter_lint/test_drg_fallback.py
       line: 135
       target_string: specify_cli.charter_lint._drg._load_built_in_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint._drg._load_built_in_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: asserts fallback GraphState from mocked _load_built_in_drg; class red-first proven; green'
     - file: tests/specify_cli/charter_lint/test_engine.py
       line: 104
       target_string: specify_cli.charter_lint.engine.load_merged_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.load_merged_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: LintEngine.run() asserts findings/graph_state from mocked DRG; class red-first proven (:369); green post-repoint'
     - file: tests/specify_cli/charter_lint/test_engine.py
       line: 122
       target_string: specify_cli.charter_lint.engine.load_merged_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.load_merged_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: asserts report contents from mocked DRG; class red-first proven; green'
     - file: tests/specify_cli/charter_lint/test_engine.py
       line: 131
       target_string: specify_cli.charter_lint.engine.load_merged_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.load_merged_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: asserts report contents from mocked DRG; class red-first proven; green'
     - file: tests/specify_cli/charter_lint/test_engine.py
       line: 144
       target_string: specify_cli.charter_lint.engine.load_merged_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.load_merged_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: asserts report contents from mocked DRG; class red-first proven; green'
     - file: tests/specify_cli/charter_lint/test_engine.py
       line: 158
       target_string: specify_cli.charter_lint.engine.load_merged_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.load_merged_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: asserts report contents from mocked DRG; class red-first proven; green'
     - file: tests/specify_cli/charter_lint/test_engine.py
       line: 175
       target_string: specify_cli.charter_lint.engine.load_merged_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.load_merged_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: asserts report contents from mocked DRG; class red-first proven; green'
     - file: tests/specify_cli/charter_lint/test_engine.py
       line: 194
       target_string: specify_cli.charter_lint.engine.load_merged_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.load_merged_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: asserts report contents from mocked DRG; class red-first proven; green'
     - file: tests/specify_cli/charter_lint/test_engine.py
       line: 210
       target_string: specify_cli.charter_lint.engine.load_merged_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.load_merged_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: asserts report contents from mocked DRG; class red-first proven; green'
     - file: tests/specify_cli/charter_lint/test_engine.py
       line: 221
       target_string: specify_cli.charter_lint.engine.load_merged_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.load_merged_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: asserts report contents from mocked DRG; class red-first proven; green'
     - file: tests/specify_cli/charter_lint/test_engine.py
       line: 241
       target_string: specify_cli.charter_lint.engine.load_merged_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.load_merged_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: asserts report contents from mocked DRG; class red-first proven; green'
     - file: tests/specify_cli/charter_lint/test_engine.py
       line: 256
       target_string: specify_cli.charter_lint.engine.load_merged_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.load_merged_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: asserts report contents from mocked DRG; class red-first proven; green'
     - file: tests/specify_cli/charter_lint/test_engine.py
       line: 272
       target_string: specify_cli.charter_lint.engine.load_merged_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.load_merged_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: asserts report contents from mocked DRG; class red-first proven; green'
     - file: tests/specify_cli/charter_lint/test_engine.py
       line: 286
       target_string: specify_cli.charter_lint.engine.load_merged_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.load_merged_drg
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: asserts report contents from mocked DRG; class red-first proven; green'
     - file: tests/specify_cli/charter_lint/test_engine.py
       line: 369
       target_string: specify_cli.charter_lint.engine.load_merged_drg
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.load_merged_drg
-      interception_proof: ''
+      interception_proof: 'WP05: red-first flip #369 -> test_large_drg_completes_in_time FAILED (drg_node_count==500 from mock lost); restored -> green'
     - file: tests/specify_cli/cli/commands/charter/test_status_json_safe.py
       line: 116
       target_string: specify_cli.charter_freshness.compute_freshness
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.freshness.compute_freshness
-      interception_proof: ''
+      interception_proof: 'WP05: red-first flip #116 -> test_status_json_emits_string_last_sync + round_trip FAILED (2); restored -> green'
     - file: tests/specify_cli/cli/commands/test_charter_lint.py
       line: 87
       target_string: specify_cli.charter_lint.engine.LintEngine.run
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.LintEngine.run
-      interception_proof: ''
+      interception_proof: 'WP05: red-first flip #87 -> test_json_output_valid FAILED (finding_count from mock lost); restored -> green'
     - file: tests/specify_cli/cli/commands/test_charter_lint.py
       line: 106
       target_string: specify_cli.charter_lint.engine.LintEngine.run
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.LintEngine.run
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: test_json_output_no_extra_text parses mock report; class red-first proven (:87,:162); green post-repoint'
     - file: tests/specify_cli/cli/commands/test_charter_lint.py
       line: 139
       target_string: specify_cli.charter_lint.engine.LintEngine.run
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.LintEngine.run
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: test_severity_high asserts only-high findings from mock high_only report; class red-first proven; green'
     - file: tests/specify_cli/cli/commands/test_charter_lint.py
       line: 162
       target_string: specify_cli.charter_lint.engine.LintEngine.run
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.LintEngine.run
-      interception_proof: ''
+      interception_proof: 'WP05: red-first flip #162 -> test_mission_flag_passed_to_engine FAILED (mock_run.call_args feature_scope); restored -> green'
     - file: tests/specify_cli/cli/commands/test_charter_lint.py
       line: 178
       target_string: specify_cli.charter_lint.engine.LintEngine.run
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.LintEngine.run
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: test_mission_scoped_run_succeeds asserts finding_count==0 from mock; class red-first proven; green'
     - file: tests/specify_cli/cli/commands/test_charter_lint.py
       line: 196
       target_string: specify_cli.charter_lint.engine.LintEngine.run
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.LintEngine.run
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: test_orphans_flag asserts mock_run.call_args checks=={''orphans''}; class red-first proven; green'
     - file: tests/specify_cli/cli/commands/test_charter_lint.py
       line: 214
       target_string: specify_cli.charter_lint.engine.LintEngine.run
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.LintEngine.run
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: test_human_readable_orphans asserts ''orphan'' in output from mock report; class red-first proven; green'
     - file: tests/specify_cli/cli/commands/test_charter_lint.py
       line: 231
       target_string: specify_cli.charter_lint.engine.LintEngine.run
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.LintEngine.run
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: test_no_drg_exits_zero drives mocked empty_report; class red-first proven; green'
     - file: tests/specify_cli/cli/commands/test_charter_lint.py
       line: 243
       target_string: specify_cli.charter_lint.engine.LintEngine.run
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.LintEngine.run
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: test_no_drg_no_decay_message asserts ''No decay detected'' from mock; class red-first proven; green'
     - file: tests/specify_cli/cli/commands/test_charter_lint.py
       line: 256
       target_string: specify_cli.charter_lint.engine.LintEngine.run
       construct: single_line_patch
       new_target: specify_cli.charter_runtime.lint.engine.LintEngine.run
-      interception_proof: ''
+      interception_proof: 'WP05: consumption: test_no_drg_json_empty_findings asserts empty findings from mock; class red-first proven; green'
     - file: tests/specify_cli/cli/commands/test_selector_resolution.py
       line: 502
       target_string: specify_cli.next.runtime_bridge
