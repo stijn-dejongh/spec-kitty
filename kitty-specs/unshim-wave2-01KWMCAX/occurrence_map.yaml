@@ -1555,6 +1555,57 @@ categories:
     note: 'No logger name / metric / telemetry label embeds a legacy module path. Verified: getLogger("specify_cli.(next|glossary|charter_lint|charter_freshness|charter_preflight)")
       returns zero hits across src/ and tests/.'
 exceptions:
+- path: kitty-specs/unshim-wave2-01KWMCAX/**
+  action: rename
+  reason: "LIVE mission coordination surface \u2014 status ledger (status.json/status.events.jsonl), WP frontmatter, and planning artifacts are written by the workflow machinery during this mission. The C-004 immutability rule protects OTHER (archived) missions' dossiers, not the active one."
+- path: src/specify_cli/cli/commands/implement.py
+  action: rename
+  reason: "FR-001 in-scope src caller \u2014 plain import re-point :1285 to runtime.next.runtime_bridge. File classifies as cli_commands by location, but no command NAME changes."
+- path: src/specify_cli/cli/commands/agent/workflow.py
+  action: rename
+  reason: "FR-001 in-scope src caller \u2014 plain import re-point :1518 to runtime.next.runtime_bridge. No command NAME changes."
+- path: src/specify_cli/cli/commands/next_cmd.py
+  action: rename
+  reason: "FR-001 in-scope src caller \u2014 the monkeypatch injection seam :52-58 re-keys to the canonical runtime.next.runtime_bridge sys.modules key. No command NAME changes."
+- path: src/specify_cli/cli/commands/charter/lint.py
+  action: rename
+  reason: "FR-005 in-scope src caller \u2014 import re-points :45,:93 to charter_runtime.lint. No command NAME changes."
+- path: src/specify_cli/cli/commands/charter/status.py
+  action: rename
+  reason: "FR-005 in-scope src caller \u2014 import re-point :55 to charter_runtime.freshness. No command NAME changes."
+- path: src/specify_cli/charter_runtime/**
+  action: rename
+  reason: "FR-005/FR-006 canonical package \u2014 defect fix at preflight/runner.py:36 (canonical imported its own legacy shim) + docstring cross-reference accuracy updates sanctioned by the user_facing_strings note."
+- path: src/specify_cli/next/**
+  action: rename
+  reason: "FR-003 \u2014 shim tree DELETED in WP04 (moves section); deletion diff is in scope."
+- path: src/specify_cli/glossary/**
+  action: rename
+  reason: "FR-004 \u2014 husk tree DELETED in WP04 (moves section); deletion diff is in scope."
+- path: src/specify_cli/charter_lint/**
+  action: rename
+  reason: "FR-006 \u2014 shim package DELETED in WP06 (moves section); deletion diff is in scope."
+- path: src/specify_cli/charter_freshness/**
+  action: rename
+  reason: "FR-006 \u2014 shim package DELETED in WP06 (moves section); deletion diff is in scope."
+- path: src/specify_cli/charter_preflight/**
+  action: rename
+  reason: "FR-006 \u2014 shim package DELETED in WP06 (moves section); deletion diff is in scope."
+- path: src/specify_cli/frontmatter.py
+  action: rename
+  reason: "FR-008 (#2326) \u2014 dead update_field wrapper :318-320 + __all__ entry :373 + orphaned instance method :142 pruned in WP07."
+- path: docs/migrations/shim-registry.yaml
+  action: rename
+  reason: "FR-003/FR-004 \u2014 two registry ROWS drained atomically with the deletions (C-005); surgical row removal, serialized_keys sites enumerated."
+- path: tests/architectural/_baselines.yaml
+  action: rename
+  reason: "FR-008/NFR-004 \u2014 category_b honest-live re-derive in WP07 (shrink-only)."
+- path: CHANGELOG.md
+  action: rename
+  reason: "FR-011 \u2014 breaking-removal entry in WP09 (no version bump; specify_cli/__init__.py untouched)."
+- path: docs/plans/degod-unshim-roadmap.md
+  action: rename
+  reason: "FR-010 \u2014 closeout strike in WP09."
 - path: kitty-specs/**
   action: do_not_change
   reason: Archived mission artifacts are immutable snapshots (C-004); legacy paths retained as history.
@@ -1562,8 +1613,8 @@ exceptions:
   action: do_not_change
   reason: ADRs are immutable historical records; legacy-path references stay.
 - path: tests/glossary/test_legacy_import_shim.py
-  action: do_not_change
-  reason: "Shim self-test \u2014 DELETED with the shim (FR-004), not re-pointed. No in-place rename."
+  action: rename
+  reason: "Shim self-test \u2014 DELETED with the shim in WP04 (FR-004), not re-pointed; the deletion diff is in scope."
 - path: docs/architecture/05_ownership_manifest.yaml
   action: rename
   reason: "FR-011 live-governance-doc scrub \u2014 remove deleted-shim entries + executed 3.3.0-removal claims."
