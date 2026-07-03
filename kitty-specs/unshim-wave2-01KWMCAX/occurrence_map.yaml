@@ -456,751 +456,751 @@ categories:
       target_string: specify_cli.next.runtime_bridge._resolve_step_agent_profile
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._resolve_step_agent_profile
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_builtin_software_dev_short_circuits_without_run_dir -> RED (1 failed in 22.74s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_decision_unit.py
       line: 734
       target_string: specify_cli.next.decision.resolve_workspace_for_wp
       construct: single_line_patch
       new_target: runtime.next.decision.resolve_workspace_for_wp
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_implement_prefers_for_review_over_in_review -> RED (no tests ran in 0.29s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_decision_unit.py
       line: 757
       target_string: specify_cli.next.decision.resolve_workspace_for_wp
       construct: single_line_patch
       new_target: runtime.next.decision.resolve_workspace_for_wp
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.decision.resolve_workspace_for_wp'' proven load-bearing by RED flip at test_decision_unit.py:734; test ''test_review_picks_for_review_not_in_review'' asserts via assert-on-behavior'
     - file: tests/next/test_mission_run_back_reference.py
       line: 304
       target_string: specify_cli.next.runtime_bridge._resolve_retrospective_policy_for_runtime
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._resolve_retrospective_policy_for_runtime
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_advance_run_state_preserves_identity_through_autocomplete_reconstruction -> RED (1 failed in 22.23s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_mission_run_back_reference.py
       line: 308
       target_string: specify_cli.next.runtime_bridge._map_runtime_decision
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._map_runtime_decision
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_advance_run_state_preserves_identity_through_autocomplete_reconstruction -> RED (1 failed in 22.53s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_mission_run_back_reference.py
       line: 394
       target_string: specify_cli.next.runtime_bridge._resolve_retrospective_policy_for_runtime
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._resolve_retrospective_policy_for_runtime
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._resolve_retrospective_policy_for_runtime'' proven load-bearing by RED flip at test_mission_run_back_reference.py:304; test ''test_advance_run_state_preserves_identity_through_final_persist_reconstruction'' asserts via assert-on-behavior'
     - file: tests/next/test_mission_run_back_reference.py
       line: 398
       target_string: specify_cli.next.runtime_bridge._map_runtime_decision
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._map_runtime_decision
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._map_runtime_decision'' proven load-bearing by RED flip at test_mission_run_back_reference.py:308; test ''test_advance_run_state_preserves_identity_through_final_persist_reconstruction'' asserts via assert-on-behavior'
     - file: tests/next/test_next_command_integration.py
       line: 535
       target_string: specify_cli.next.runtime_bridge.get_or_start_run
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.get_or_start_run
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_missing_canonical_status_during_wp_iteration_returns_structured_decision -> RED (no tests ran in 1.07s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_next_command_integration.py
       line: 536
       target_string: specify_cli.next.runtime_bridge._compute_wp_progress
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._compute_wp_progress
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_missing_canonical_status_during_wp_iteration_returns_structured_decision -> RED (no tests ran in 1.08s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_next_command_integration.py
       line: 537
       target_string: specify_cli.next._internal_runtime.engine._read_snapshot
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.engine._read_snapshot
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_missing_canonical_status_during_wp_iteration_returns_structured_decision -> RED (no tests ran in 1.05s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_next_command_integration.py
       line: 539
       target_string: specify_cli.next.runtime_bridge._should_advance_wp_step
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._should_advance_wp_step
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_missing_canonical_status_during_wp_iteration_returns_structured_decision -> RED (no tests ran in 1.05s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_prompt_builder_unit.py
       line: 405
       target_string: specify_cli.next.prompt_builder.resolve_command
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.resolve_command
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_template_prompt_has_header -> RED (no tests ran in 0.91s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_prompt_builder_unit.py
       line: 406
       target_string: specify_cli.next.prompt_builder.resolve_project_governance
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.resolve_project_governance
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_template_prompt_has_header -> RED (no tests ran in 0.95s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_prompt_builder_unit.py
       line: 440
       target_string: specify_cli.next.prompt_builder.resolve_command
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.resolve_command
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.prompt_builder.resolve_command'' proven load-bearing by RED flip at test_prompt_builder_unit.py:405; test ''test_template_prompt_bootstrap_context_first_load'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_builder_unit.py
       line: 529
       target_string: specify_cli.next.prompt_builder.resolve_project_governance
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.resolve_project_governance
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.prompt_builder.resolve_project_governance'' proven load-bearing by RED flip at test_prompt_builder_unit.py:406; test ''test_governance_context_renders_resolution'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_builder_unit.py
       line: 544
       target_string: specify_cli.next.prompt_builder.resolve_project_governance
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.resolve_project_governance
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.prompt_builder.resolve_project_governance'' proven load-bearing by RED flip at test_prompt_builder_unit.py:406; test ''test_governance_context_handles_failures'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_builder_unit.py
       line: 556
       target_string: specify_cli.next.prompt_builder.build_with_scope
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.build_with_scope
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_scope_not_found_is_not_swallowed -> RED (no tests ran in 0.94s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_prompt_file_invariant.py
       line: 50
       target_string: specify_cli.next.prompt_builder.build_prompt
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.build_prompt
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_returns_path_when_prompt_exists -> RED (no tests ran in 0.28s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_prompt_file_invariant.py
       line: 77
       target_string: specify_cli.next.prompt_builder.build_prompt
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.build_prompt
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.prompt_builder.build_prompt'' proven load-bearing by RED flip at test_prompt_file_invariant.py:50; test ''test_non_wp_step_gets_composition_marker_when_no_template'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_file_invariant.py
       line: 98
       target_string: specify_cli.next.prompt_builder.build_prompt
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.build_prompt
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.prompt_builder.build_prompt'' proven load-bearing by RED flip at test_prompt_file_invariant.py:50; test ''test_wp_step_returns_error_when_build_raises'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_file_invariant.py
       line: 119
       target_string: specify_cli.next.prompt_builder.build_prompt
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.build_prompt
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.prompt_builder.build_prompt'' proven load-bearing by RED flip at test_prompt_file_invariant.py:50; test ''test_returns_error_when_path_missing_on_disk'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_file_invariant.py
       line: 149
       target_string: specify_cli.next.prompt_builder.build_prompt
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.build_prompt
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.prompt_builder.build_prompt'' proven load-bearing by RED flip at test_prompt_file_invariant.py:50; test ''test_returns_error_when_path_stat_raises_oserror'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_file_invariant.py
       line: 227
       target_string: specify_cli.next.runtime_bridge._state_to_action
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._state_to_action
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_issued_step_always_has_resolvable_prompt -> RED (8 failed in 22.38s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_prompt_file_invariant.py
       line: 231
       target_string: specify_cli.next.runtime_bridge._is_wp_iteration_step
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._is_wp_iteration_step
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_issued_step_always_has_resolvable_prompt -> RED (8 failed in 22.60s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_prompt_file_invariant.py
       line: 235
       target_string: specify_cli.next.runtime_bridge._build_prompt_or_error
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._build_prompt_or_error
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_issued_step_always_has_resolvable_prompt -> RED (8 failed in 22.94s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_prompt_file_invariant.py
       line: 269
       target_string: specify_cli.next.runtime_bridge._state_to_action
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._state_to_action
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._state_to_action'' proven load-bearing by RED flip at test_prompt_file_invariant.py:227; test ''test_unresolvable_prompt_yields_structured_blocked'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_file_invariant.py
       line: 273
       target_string: specify_cli.next.runtime_bridge._is_wp_iteration_step
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._is_wp_iteration_step
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._is_wp_iteration_step'' proven load-bearing by RED flip at test_prompt_file_invariant.py:231; test ''test_unresolvable_prompt_yields_structured_blocked'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_file_invariant.py
       line: 277
       target_string: specify_cli.next.runtime_bridge._build_prompt_or_error
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._build_prompt_or_error
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._build_prompt_or_error'' proven load-bearing by RED flip at test_prompt_file_invariant.py:235; test ''test_unresolvable_prompt_yields_structured_blocked'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_file_invariant.py
       line: 311
       target_string: specify_cli.next.runtime_bridge._state_to_action
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._state_to_action
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._state_to_action'' proven load-bearing by RED flip at test_prompt_file_invariant.py:227; test ''test_wp_iteration_step_invariant_holds'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_file_invariant.py
       line: 315
       target_string: specify_cli.next.runtime_bridge._is_wp_iteration_step
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._is_wp_iteration_step
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._is_wp_iteration_step'' proven load-bearing by RED flip at test_prompt_file_invariant.py:231; test ''test_wp_iteration_step_invariant_holds'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_file_invariant.py
       line: 319
       target_string: specify_cli.next.runtime_bridge._build_prompt_or_error
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._build_prompt_or_error
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._build_prompt_or_error'' proven load-bearing by RED flip at test_prompt_file_invariant.py:235; test ''test_wp_iteration_step_invariant_holds'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_file_invariant.py
       line: 347
       target_string: specify_cli.next.runtime_bridge._state_to_action
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._state_to_action
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._state_to_action'' proven load-bearing by RED flip at test_prompt_file_invariant.py:227; test ''test_wp_iteration_step_blocked_when_prompt_unresolvable'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_file_invariant.py
       line: 351
       target_string: specify_cli.next.runtime_bridge._is_wp_iteration_step
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._is_wp_iteration_step
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._is_wp_iteration_step'' proven load-bearing by RED flip at test_prompt_file_invariant.py:231; test ''test_wp_iteration_step_blocked_when_prompt_unresolvable'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_file_invariant.py
       line: 355
       target_string: specify_cli.next.runtime_bridge._build_prompt_or_error
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._build_prompt_or_error
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._build_prompt_or_error'' proven load-bearing by RED flip at test_prompt_file_invariant.py:235; test ''test_wp_iteration_step_blocked_when_prompt_unresolvable'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_file_invariant.py
       line: 392
       target_string: specify_cli.next.runtime_bridge._state_to_action
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._state_to_action
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._state_to_action'' proven load-bearing by RED flip at test_prompt_file_invariant.py:227; test ''test_third_state_does_not_exist'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_file_invariant.py
       line: 396
       target_string: specify_cli.next.runtime_bridge._is_wp_iteration_step
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._is_wp_iteration_step
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._is_wp_iteration_step'' proven load-bearing by RED flip at test_prompt_file_invariant.py:231; test ''test_third_state_does_not_exist'' asserts via assert-on-behavior'
     - file: tests/next/test_prompt_file_invariant.py
       line: 400
       target_string: specify_cli.next.runtime_bridge._build_prompt_or_error
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._build_prompt_or_error
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._build_prompt_or_error'' proven load-bearing by RED flip at test_prompt_file_invariant.py:235; test ''test_third_state_does_not_exist'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 79
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_bare_call_invokes_query_not_decide -> RED (no tests ran in 1.03s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_query_mode_unit.py
       line: 96
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.query_current_state'' proven load-bearing by RED flip at test_query_mode_unit.py:79; test ''test_query_mode_allows_missing_agent'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 176
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.query_current_state'' proven load-bearing by RED flip at test_query_mode_unit.py:79; test ''test_answer_without_result_does_not_invoke_query_or_answer_handling'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 196
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.query_current_state'' proven load-bearing by RED flip at test_query_mode_unit.py:79; test ''test_answer_without_result_human_output_is_error_not_query'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 215
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.query_current_state'' proven load-bearing by RED flip at test_query_mode_unit.py:79; test ''test_human_output_begins_with_query_label'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 245
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.query_current_state'' proven load-bearing by RED flip at test_query_mode_unit.py:79; test ''test_hosted_readiness_does_not_prepend_query_output'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 263
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.query_current_state'' proven load-bearing by RED flip at test_query_mode_unit.py:79; test ''test_json_output_includes_is_query_true'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 295
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.query_current_state'' proven load-bearing by RED flip at test_query_mode_unit.py:79; test ''test_json_stdout_is_single_json_value_when_preflight_emits_human_text'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 315
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.query_current_state'' proven load-bearing by RED flip at test_query_mode_unit.py:79; test ''test_human_output_shows_not_started_preview_step'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 337
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.query_current_state'' proven load-bearing by RED flip at test_query_mode_unit.py:79; test ''test_human_output_shows_pending_decision_details'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 355
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.query_current_state'' proven load-bearing by RED flip at test_query_mode_unit.py:79; test ''test_json_kind_is_query'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 378
       target_string: specify_cli.next.prompt_builder.build_prompt
       construct: single_line_patch
       new_target: runtime.next.prompt_builder.build_prompt
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.prompt_builder.build_prompt'' proven load-bearing by RED flip at test_prompt_file_invariant.py:50; test ''test_build_prompt_safe_suppresses_stdout_noise'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 456
       target_string: specify_cli.next.runtime_bridge._existing_run_ref
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._existing_run_ref
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_ephemeral_query_run_exception_raises_validation_error -> RED (no tests ran in 1.08s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_query_mode_unit.py
       line: 457
       target_string: specify_cli.next.runtime_bridge._start_ephemeral_query_run
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._start_ephemeral_query_run
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_ephemeral_query_run_exception_raises_validation_error -> RED (no tests ran in 1.03s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_query_mode_unit.py
       line: 458
       target_string: specify_cli.next.runtime_bridge.get_mission_type
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.get_mission_type
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_ephemeral_query_run_exception_raises_validation_error -> RED (no tests ran in 1.09s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_query_mode_unit.py
       line: 459
       target_string: specify_cli.next.runtime_bridge._compute_wp_progress
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._compute_wp_progress
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._compute_wp_progress'' proven load-bearing by RED flip at test_next_command_integration.py:536; test ''test_ephemeral_query_run_exception_raises_validation_error'' (green post-repoint)'
     - file: tests/next/test_query_mode_unit.py
       line: 476
       target_string: specify_cli.next.runtime_bridge.get_or_start_run
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.get_or_start_run
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.get_or_start_run'' proven load-bearing by RED flip at test_next_command_integration.py:535; test ''test_read_snapshot_exception_raises_validation_error'' (green post-repoint)'
     - file: tests/next/test_query_mode_unit.py
       line: 477
       target_string: specify_cli.next.runtime_bridge.get_mission_type
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.get_mission_type
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.get_mission_type'' proven load-bearing by RED flip at test_query_mode_unit.py:458; test ''test_read_snapshot_exception_raises_validation_error'' (green post-repoint)'
     - file: tests/next/test_query_mode_unit.py
       line: 478
       target_string: specify_cli.next.runtime_bridge._compute_wp_progress
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._compute_wp_progress
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._compute_wp_progress'' proven load-bearing by RED flip at test_next_command_integration.py:536; test ''test_read_snapshot_exception_raises_validation_error'' (green post-repoint)'
     - file: tests/next/test_query_mode_unit.py
       line: 479
       target_string: specify_cli.next._internal_runtime.engine._read_snapshot
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.engine._read_snapshot
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.engine._read_snapshot'' proven load-bearing by RED flip at test_next_command_integration.py:537; test ''test_read_snapshot_exception_raises_validation_error'' (green post-repoint)'
     - file: tests/next/test_query_mode_unit.py
       line: 507
       target_string: specify_cli.next.runtime_bridge._existing_run_ref
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._existing_run_ref
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._existing_run_ref'' proven load-bearing by RED flip at test_query_mode_unit.py:456; test ''test_invalid_first_step_raises_clear_validation_error'' (green post-repoint)'
     - file: tests/next/test_query_mode_unit.py
       line: 508
       target_string: specify_cli.next.runtime_bridge.get_mission_type
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.get_mission_type
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.get_mission_type'' proven load-bearing by RED flip at test_query_mode_unit.py:458; test ''test_invalid_first_step_raises_clear_validation_error'' (green post-repoint)'
     - file: tests/next/test_query_mode_unit.py
       line: 509
       target_string: specify_cli.next.runtime_bridge._compute_wp_progress
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._compute_wp_progress
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._compute_wp_progress'' proven load-bearing by RED flip at test_next_command_integration.py:536; test ''test_invalid_first_step_raises_clear_validation_error'' (green post-repoint)'
     - file: tests/next/test_query_mode_unit.py
       line: 510
       target_string: specify_cli.next._internal_runtime.engine._read_snapshot
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.engine._read_snapshot
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.engine._read_snapshot'' proven load-bearing by RED flip at test_next_command_integration.py:537; test ''test_invalid_first_step_raises_clear_validation_error'' (green post-repoint)'
     - file: tests/next/test_query_mode_unit.py
       line: 511
       target_string: specify_cli.next.runtime_bridge.load_mission_template_file
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.load_mission_template_file
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_invalid_first_step_raises_clear_validation_error -> RED (no tests ran in 1.05s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_query_mode_unit.py
       line: 512
       target_string: specify_cli.next._internal_runtime.planner.plan_next
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.planner.plan_next
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_invalid_first_step_raises_clear_validation_error -> RED (no tests ran in 1.09s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_query_mode_unit.py
       line: 544
       target_string: specify_cli.next.runtime_bridge._existing_run_ref
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._existing_run_ref
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._existing_run_ref'' proven load-bearing by RED flip at test_query_mode_unit.py:456; test ''test_pending_decision_metadata_is_preserved_in_query_mode'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 545
       target_string: specify_cli.next.runtime_bridge.get_mission_type
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.get_mission_type
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.get_mission_type'' proven load-bearing by RED flip at test_query_mode_unit.py:458; test ''test_pending_decision_metadata_is_preserved_in_query_mode'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 546
       target_string: specify_cli.next.runtime_bridge._compute_wp_progress
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._compute_wp_progress
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._compute_wp_progress'' proven load-bearing by RED flip at test_next_command_integration.py:536; test ''test_pending_decision_metadata_is_preserved_in_query_mode'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 547
       target_string: specify_cli.next._internal_runtime.engine._read_snapshot
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.engine._read_snapshot
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.engine._read_snapshot'' proven load-bearing by RED flip at test_next_command_integration.py:537; test ''test_pending_decision_metadata_is_preserved_in_query_mode'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 548
       target_string: specify_cli.next.runtime_bridge.load_mission_template_file
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.load_mission_template_file
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.load_mission_template_file'' proven load-bearing by RED flip at test_query_mode_unit.py:511; test ''test_pending_decision_metadata_is_preserved_in_query_mode'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 549
       target_string: specify_cli.next._internal_runtime.planner.plan_next
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.planner.plan_next
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.planner.plan_next'' proven load-bearing by RED flip at test_query_mode_unit.py:512; test ''test_pending_decision_metadata_is_preserved_in_query_mode'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 591
       target_string: specify_cli.next.runtime_bridge._existing_run_ref
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._existing_run_ref
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._existing_run_ref'' proven load-bearing by RED flip at test_query_mode_unit.py:456; test ''test_fresh_run_query_omits_ephemeral_run_id'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 593
       target_string: specify_cli.next.runtime_bridge._start_ephemeral_query_run
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._start_ephemeral_query_run
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._start_ephemeral_query_run'' proven load-bearing by RED flip at test_query_mode_unit.py:457; test ''test_fresh_run_query_omits_ephemeral_run_id'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 596
       target_string: specify_cli.next.runtime_bridge.get_mission_type
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.get_mission_type
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.get_mission_type'' proven load-bearing by RED flip at test_query_mode_unit.py:458; test ''test_fresh_run_query_omits_ephemeral_run_id'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 597
       target_string: specify_cli.next.runtime_bridge._compute_wp_progress
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._compute_wp_progress
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._compute_wp_progress'' proven load-bearing by RED flip at test_next_command_integration.py:536; test ''test_fresh_run_query_omits_ephemeral_run_id'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 598
       target_string: specify_cli.next._internal_runtime.engine._read_snapshot
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.engine._read_snapshot
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.engine._read_snapshot'' proven load-bearing by RED flip at test_next_command_integration.py:537; test ''test_fresh_run_query_omits_ephemeral_run_id'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 599
       target_string: specify_cli.next.runtime_bridge.load_mission_template_file
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.load_mission_template_file
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.load_mission_template_file'' proven load-bearing by RED flip at test_query_mode_unit.py:511; test ''test_fresh_run_query_omits_ephemeral_run_id'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 600
       target_string: specify_cli.next._internal_runtime.planner.plan_next
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.planner.plan_next
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.planner.plan_next'' proven load-bearing by RED flip at test_query_mode_unit.py:512; test ''test_fresh_run_query_omits_ephemeral_run_id'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 637
       target_string: specify_cli.next.runtime_bridge._existing_run_ref
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._existing_run_ref
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._existing_run_ref'' proven load-bearing by RED flip at test_query_mode_unit.py:456; test ''test_persisted_run_query_keeps_run_id'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 638
       target_string: specify_cli.next.runtime_bridge.get_mission_type
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.get_mission_type
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.get_mission_type'' proven load-bearing by RED flip at test_query_mode_unit.py:458; test ''test_persisted_run_query_keeps_run_id'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 639
       target_string: specify_cli.next.runtime_bridge._compute_wp_progress
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._compute_wp_progress
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._compute_wp_progress'' proven load-bearing by RED flip at test_next_command_integration.py:536; test ''test_persisted_run_query_keeps_run_id'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 640
       target_string: specify_cli.next._internal_runtime.engine._read_snapshot
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.engine._read_snapshot
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.engine._read_snapshot'' proven load-bearing by RED flip at test_next_command_integration.py:537; test ''test_persisted_run_query_keeps_run_id'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 641
       target_string: specify_cli.next.runtime_bridge.load_mission_template_file
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.load_mission_template_file
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.load_mission_template_file'' proven load-bearing by RED flip at test_query_mode_unit.py:511; test ''test_persisted_run_query_keeps_run_id'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 642
       target_string: specify_cli.next._internal_runtime.planner.plan_next
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.planner.plan_next
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.planner.plan_next'' proven load-bearing by RED flip at test_query_mode_unit.py:512; test ''test_persisted_run_query_keeps_run_id'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 671
       target_string: specify_cli.next.runtime_bridge._existing_run_ref
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._existing_run_ref
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._existing_run_ref'' proven load-bearing by RED flip at test_query_mode_unit.py:456; test ''test_inner_query_validation_error_propagates_unwrapped'' (green post-repoint)'
     - file: tests/next/test_query_mode_unit.py
       line: 672
       target_string: specify_cli.next.runtime_bridge.get_mission_type
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.get_mission_type
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.get_mission_type'' proven load-bearing by RED flip at test_query_mode_unit.py:458; test ''test_inner_query_validation_error_propagates_unwrapped'' (green post-repoint)'
     - file: tests/next/test_query_mode_unit.py
       line: 673
       target_string: specify_cli.next.runtime_bridge._compute_wp_progress
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._compute_wp_progress
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._compute_wp_progress'' proven load-bearing by RED flip at test_next_command_integration.py:536; test ''test_inner_query_validation_error_propagates_unwrapped'' (green post-repoint)'
     - file: tests/next/test_query_mode_unit.py
       line: 674
       target_string: specify_cli.next._internal_runtime.engine._read_snapshot
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.engine._read_snapshot
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.engine._read_snapshot'' proven load-bearing by RED flip at test_next_command_integration.py:537; test ''test_inner_query_validation_error_propagates_unwrapped'' (green post-repoint)'
     - file: tests/next/test_query_mode_unit.py
       line: 675
       target_string: specify_cli.next.runtime_bridge.load_mission_template_file
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.load_mission_template_file
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.load_mission_template_file'' proven load-bearing by RED flip at test_query_mode_unit.py:511; test ''test_inner_query_validation_error_propagates_unwrapped'' (green post-repoint)'
     - file: tests/next/test_query_mode_unit.py
       line: 677
       target_string: specify_cli.next._internal_runtime.planner.plan_next
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.planner.plan_next
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.planner.plan_next'' proven load-bearing by RED flip at test_query_mode_unit.py:512; test ''test_inner_query_validation_error_propagates_unwrapped'' (green post-repoint)'
     - file: tests/next/test_query_mode_unit.py
       line: 707
       target_string: specify_cli.next.runtime_bridge._existing_run_ref
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._existing_run_ref
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._existing_run_ref'' proven load-bearing by RED flip at test_query_mode_unit.py:456; test ''test_terminal_runtime_decision_renders_done_mission_state'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 708
       target_string: specify_cli.next.runtime_bridge.get_mission_type
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.get_mission_type
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.get_mission_type'' proven load-bearing by RED flip at test_query_mode_unit.py:458; test ''test_terminal_runtime_decision_renders_done_mission_state'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 709
       target_string: specify_cli.next.runtime_bridge._compute_wp_progress
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._compute_wp_progress
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._compute_wp_progress'' proven load-bearing by RED flip at test_next_command_integration.py:536; test ''test_terminal_runtime_decision_renders_done_mission_state'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 710
       target_string: specify_cli.next._internal_runtime.engine._read_snapshot
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.engine._read_snapshot
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.engine._read_snapshot'' proven load-bearing by RED flip at test_next_command_integration.py:537; test ''test_terminal_runtime_decision_renders_done_mission_state'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 711
       target_string: specify_cli.next.runtime_bridge.load_mission_template_file
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.load_mission_template_file
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.load_mission_template_file'' proven load-bearing by RED flip at test_query_mode_unit.py:511; test ''test_terminal_runtime_decision_renders_done_mission_state'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 712
       target_string: specify_cli.next._internal_runtime.planner.plan_next
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.planner.plan_next
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.planner.plan_next'' proven load-bearing by RED flip at test_query_mode_unit.py:512; test ''test_terminal_runtime_decision_renders_done_mission_state'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 733
       target_string: specify_cli.next.runtime_bridge._load_feature_runs
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._load_feature_runs
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_existing_run_ref_returns_none_when_state_json_missing -> RED (no tests ran in 1.06s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_query_mode_unit.py
       line: 749
       target_string: specify_cli.next.runtime_bridge.tempfile.mkdtemp
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.tempfile.mkdtemp
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_start_ephemeral_query_run_cleans_up_on_bootstrap_failure -> RED (no tests ran in 1.05s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_query_mode_unit.py
       line: 750
       target_string: specify_cli.next.runtime_bridge._runtime_template_key
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._runtime_template_key
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_start_ephemeral_query_run_cleans_up_on_bootstrap_failure -> RED (no tests ran in 1.05s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_query_mode_unit.py
       line: 751
       target_string: specify_cli.next.runtime_bridge._build_discovery_context
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._build_discovery_context
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_start_ephemeral_query_run_cleans_up_on_bootstrap_failure -> RED (no tests ran in 1.09s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_query_mode_unit.py
       line: 752
       target_string: specify_cli.next.runtime_bridge.start_mission_run
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.start_mission_run
-      interception_proof: ''
+      interception_proof: 'WP02: red-first bogus-attr flip: test_start_ephemeral_query_run_cleans_up_on_bootstrap_failure -> RED (no tests ran in 1.06s); suffix restored -> green (full suite 497 passed)'
     - file: tests/next/test_query_mode_unit.py
       line: 787
       target_string: specify_cli.next.runtime_bridge._existing_run_ref
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._existing_run_ref
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._existing_run_ref'' proven load-bearing by RED flip at test_query_mode_unit.py:456; test ''test_blocked_query_keeps_step_id_and_reason_separate'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 788
       target_string: specify_cli.next.runtime_bridge.get_mission_type
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.get_mission_type
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.get_mission_type'' proven load-bearing by RED flip at test_query_mode_unit.py:458; test ''test_blocked_query_keeps_step_id_and_reason_separate'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 789
       target_string: specify_cli.next.runtime_bridge._compute_wp_progress
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._compute_wp_progress
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._compute_wp_progress'' proven load-bearing by RED flip at test_next_command_integration.py:536; test ''test_blocked_query_keeps_step_id_and_reason_separate'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 790
       target_string: specify_cli.next._internal_runtime.engine._read_snapshot
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.engine._read_snapshot
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.engine._read_snapshot'' proven load-bearing by RED flip at test_next_command_integration.py:537; test ''test_blocked_query_keeps_step_id_and_reason_separate'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 791
       target_string: specify_cli.next.runtime_bridge.load_mission_template_file
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.load_mission_template_file
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.load_mission_template_file'' proven load-bearing by RED flip at test_query_mode_unit.py:511; test ''test_blocked_query_keeps_step_id_and_reason_separate'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 792
       target_string: specify_cli.next._internal_runtime.planner.plan_next
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.planner.plan_next
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.planner.plan_next'' proven load-bearing by RED flip at test_query_mode_unit.py:512; test ''test_blocked_query_keeps_step_id_and_reason_separate'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 809
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.query_current_state'' proven load-bearing by RED flip at test_query_mode_unit.py:79; test ''test_json_query_validation_failure_returns_error_document'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 863
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.query_current_state'' proven load-bearing by RED flip at test_query_mode_unit.py:79; test ''test_result_success_calls_decide_not_query'' asserts via assert_called'
     - file: tests/next/test_query_mode_unit.py
       line: 901
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.query_current_state'' proven load-bearing by RED flip at test_query_mode_unit.py:79; test ''test_query_mode_json_payload_surfaces_next_step'' asserts via assert-on-behavior'
     - file: tests/next/test_query_mode_unit.py
       line: 925
       target_string: specify_cli.next.runtime_bridge.query_current_state
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge.query_current_state
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge.query_current_state'' proven load-bearing by RED flip at test_query_mode_unit.py:79; test ''test_query_mode_human_prints_next_line'' asserts via assert-on-behavior'
     - file: tests/next/test_runtime_bridge_blocked_paths.py
       line: 79
       target_string: specify_cli.next.runtime_bridge._state_to_action
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._state_to_action
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._state_to_action'' proven load-bearing by RED flip at test_prompt_file_invariant.py:227; test ''test_wp_iteration_blocked_when_prompt_unresolvable_with_guard_failures'' asserts via assert-on-behavior'
     - file: tests/next/test_runtime_bridge_blocked_paths.py
       line: 83
       target_string: specify_cli.next.runtime_bridge._build_prompt_or_error
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._build_prompt_or_error
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._build_prompt_or_error'' proven load-bearing by RED flip at test_prompt_file_invariant.py:235; test ''test_wp_iteration_blocked_when_prompt_unresolvable_with_guard_failures'' asserts via assert-on-behavior'
     - file: tests/next/test_runtime_bridge_blocked_paths.py
       line: 132
       target_string: specify_cli.next.runtime_bridge._state_to_action
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._state_to_action
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._state_to_action'' proven load-bearing by RED flip at test_prompt_file_invariant.py:227; test ''test_map_runtime_decision_emits_blocked_when_no_action_and_no_step_id'' asserts via assert-on-behavior'
     - file: tests/next/test_runtime_bridge_blocked_paths.py
       line: 136
       target_string: specify_cli.next.runtime_bridge._is_wp_iteration_step
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._is_wp_iteration_step
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._is_wp_iteration_step'' proven load-bearing by RED flip at test_prompt_file_invariant.py:231; test ''test_map_runtime_decision_emits_blocked_when_no_action_and_no_step_id'' asserts via assert-on-behavior'
     - file: tests/next/test_runtime_bridge_blocked_paths.py
       line: 217
       target_string: specify_cli.next._internal_runtime.engine._read_snapshot
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.engine._read_snapshot
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.engine._read_snapshot'' proven load-bearing by RED flip at test_next_command_integration.py:537; test ''test_guard_failure_on_non_wp_step_yields_blocked_with_prompt_error'' asserts via assert-on-behavior'
     - file: tests/next/test_runtime_bridge_blocked_paths.py
       line: 272
       target_string: specify_cli.next._internal_runtime.engine._read_snapshot
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.engine._read_snapshot
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.engine._read_snapshot'' proven load-bearing by RED flip at test_next_command_integration.py:537; test ''test_guard_failure_on_non_wp_step_with_resolvable_prompt'' asserts via assert-on-behavior'
     - file: tests/next/test_runtime_bridge_blocked_paths.py
       line: 324
       target_string: specify_cli.next._internal_runtime.engine._read_snapshot
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.engine._read_snapshot
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.engine._read_snapshot'' proven load-bearing by RED flip at test_next_command_integration.py:537; test ''test_guard_failure_blocks_if_resolved_prompt_disappears'' asserts via assert-on-behavior'
     - file: tests/next/test_runtime_bridge_blocked_paths.py
       line: 369
       target_string: specify_cli.next._internal_runtime.engine._read_snapshot
       construct: single_line_patch
       new_target: runtime.next._internal_runtime.engine._read_snapshot
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next._internal_runtime.engine._read_snapshot'' proven load-bearing by RED flip at test_next_command_integration.py:537; test ''test_guard_failure_on_non_wp_step_no_action_mapped'' asserts via assert-on-behavior'
     - file: tests/next/test_runtime_bridge_blocked_paths.py
       line: 404
       target_string: specify_cli.next.runtime_bridge._state_to_action
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._state_to_action
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._state_to_action'' proven load-bearing by RED flip at test_prompt_file_invariant.py:227; test ''test_wp_iteration_blocks_if_resolved_prompt_disappears'' asserts via assert-on-behavior'
     - file: tests/next/test_runtime_bridge_blocked_paths.py
       line: 408
       target_string: specify_cli.next.runtime_bridge._build_prompt_or_error
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._build_prompt_or_error
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._build_prompt_or_error'' proven load-bearing by RED flip at test_prompt_file_invariant.py:235; test ''test_wp_iteration_blocks_if_resolved_prompt_disappears'' asserts via assert-on-behavior'
     - file: tests/next/test_runtime_bridge_blocked_paths.py
       line: 440
       target_string: specify_cli.next.runtime_bridge._state_to_action
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._state_to_action
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._state_to_action'' proven load-bearing by RED flip at test_prompt_file_invariant.py:227; test ''test_map_wp_step_blocks_if_resolved_prompt_disappears'' asserts via assert-on-behavior'
     - file: tests/next/test_runtime_bridge_blocked_paths.py
       line: 444
       target_string: specify_cli.next.runtime_bridge._is_wp_iteration_step
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._is_wp_iteration_step
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._is_wp_iteration_step'' proven load-bearing by RED flip at test_prompt_file_invariant.py:231; test ''test_map_wp_step_blocks_if_resolved_prompt_disappears'' asserts via assert-on-behavior'
     - file: tests/next/test_runtime_bridge_blocked_paths.py
       line: 448
       target_string: specify_cli.next.runtime_bridge._build_prompt_or_error
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._build_prompt_or_error
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._build_prompt_or_error'' proven load-bearing by RED flip at test_prompt_file_invariant.py:235; test ''test_map_wp_step_blocks_if_resolved_prompt_disappears'' asserts via assert-on-behavior'
     - file: tests/next/test_runtime_bridge_blocked_paths.py
       line: 479
       target_string: specify_cli.next.runtime_bridge._state_to_action
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._state_to_action
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._state_to_action'' proven load-bearing by RED flip at test_prompt_file_invariant.py:227; test ''test_map_non_wp_step_blocks_if_resolved_prompt_disappears'' asserts via assert-on-behavior'
     - file: tests/next/test_runtime_bridge_blocked_paths.py
       line: 483
       target_string: specify_cli.next.runtime_bridge._is_wp_iteration_step
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._is_wp_iteration_step
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._is_wp_iteration_step'' proven load-bearing by RED flip at test_prompt_file_invariant.py:231; test ''test_map_non_wp_step_blocks_if_resolved_prompt_disappears'' asserts via assert-on-behavior'
     - file: tests/next/test_runtime_bridge_blocked_paths.py
       line: 487
       target_string: specify_cli.next.runtime_bridge._build_prompt_or_error
       construct: single_line_patch
       new_target: runtime.next.runtime_bridge._build_prompt_or_error
-      interception_proof: ''
+      interception_proof: 'WP02: class ''runtime.next.runtime_bridge._build_prompt_or_error'' proven load-bearing by RED flip at test_prompt_file_invariant.py:235; test ''test_map_non_wp_step_blocks_if_resolved_prompt_disappears'' asserts via assert-on-behavior'
     - file: tests/specify_cli/charter_lint/test_drg_fallback.py
       line: 54
       target_string: specify_cli.charter_lint._drg._load_built_in_drg
