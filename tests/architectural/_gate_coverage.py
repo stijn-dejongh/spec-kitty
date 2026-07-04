@@ -39,6 +39,8 @@ Run directly to refresh the baseline or check drift::
 
 from __future__ import annotations
 
+import ast
+import configparser
 import json
 import os
 import re
@@ -50,6 +52,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
 
+import yaml
 from pytest import ExitCode
 
 # pytest's own marker-expression evaluator — guarantees identical semantics to a
@@ -231,8 +234,6 @@ def _parse_pytest_invocation(
 
 def parse_workflow(path: Path) -> list[Gate]:
     """Parse one workflow file into the gates it defines."""
-    import yaml
-
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     gates: list[Gate] = []
     for job_name, job, step in _iter_run_steps(data):
@@ -264,6 +265,264 @@ def load_gates() -> list[Gate]:
     for name in WORKFLOW_FILES:
         gates.extend(parse_workflow(WORKFLOWS_DIR / name))
     return gates
+
+
+# ---------------------------------------------------------------------------
+# Workflow relation model (mission ci-suite-map-bind WP01 — additive substrate
+# for the FR-001/FR-003/FR-005/FR-008/FR-010..FR-013 invariant suites).
+# Pure parsing only: the invariants over these relations live in the consumer
+# test modules, never here.
+# ---------------------------------------------------------------------------
+
+_PYTEST_INI_PATH = REPO_ROOT / "pytest.ini"
+_DORNY_FILTER_ACTION = "dorny/paths-filter"
+
+# ``needs.<job>.result`` reads inside run scripts (FR-003a / FR-003d).
+_NEEDS_RESULT_RE = re.compile(r"needs\.([A-Za-z0-9_-]+)\.result")
+# ``needs.<job>.outputs.<group>`` references inside job-level ``if:`` gates
+# (FR-003b / FR-010 / FR-011 job→group gating map).
+_FILTER_OUTPUT_RE = re.compile(r"needs\.[A-Za-z0-9_-]+\.outputs\.([A-Za-z0-9_]+)")
+# ``--cov=<target>`` emitters inside run scripts (FR-005).
+_COV_TARGET_RE = re.compile(r"--cov=([^\s\\'\"]+)")
+# The diff-coverage job's ``critical_paths=( ... )`` shell array (FR-005).
+_CRITICAL_PATHS_RE = re.compile(r"critical_paths=\((.*?)\)", re.DOTALL)
+_SHELL_QUOTED_RE = re.compile(r"'([^']*)'|\"([^\"]*)\"")
+# Leading identifier of one ``markers =`` registry line in pytest.ini.
+_MARKER_NAME_RE = re.compile(r"[A-Za-z_]\w*")
+
+
+def positive_marker_tokens(marker_expr: str | None) -> frozenset[str]:
+    """Marker names *positively* referenced by a ``-m`` expression (FR-001 (i)).
+
+    Negation-aware: ``not windows_ci`` does NOT reference ``windows_ci``
+    positively (the spec's pinned edge case — every Linux gate negates it),
+    while ``not not fast`` does reference ``fast``. A name is positive iff it
+    occurs under an even number of ``not`` operators.
+
+    The expression is first compiled with pytest's own
+    :class:`~_pytest.mark.expression.Expression` (identical grammar/semantics
+    to a real ``-m`` selection — an invalid expression fails loudly there,
+    and a breaking move of the private API fails at import time, see the
+    module-top import note). The sign walk itself uses the stdlib ``ast``
+    parse of the same text: for the identifier-and-boolean-operator
+    expressions the workflows use, pytest's expression grammar is a strict
+    subset of Python's.
+    """
+    if not marker_expr:
+        return frozenset()
+    Expression.compile(marker_expr)  # loud fail on an invalid expression
+    try:
+        tree = ast.parse(marker_expr, mode="eval")
+    except SyntaxError as exc:  # pragma: no cover — Expression accepts a superset
+        raise RuntimeError(
+            f"marker expression {marker_expr!r} compiles under pytest's grammar "
+            "but not under stdlib ast — a gate started using a marker name that "
+            "is not a Python identifier; extend positive_marker_tokens' walker."
+        ) from exc
+    positive: set[str] = set()
+    _walk_marker_ast(tree.body, negated=False, positive=positive)
+    return frozenset(positive)
+
+
+def _walk_marker_ast(node: ast.expr, *, negated: bool, positive: set[str]) -> None:
+    """Recursive sign-tracking walk backing :func:`positive_marker_tokens`."""
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+        _walk_marker_ast(node.operand, negated=not negated, positive=positive)
+    elif isinstance(node, ast.BoolOp):
+        for value in node.values:
+            _walk_marker_ast(value, negated=negated, positive=positive)
+    elif isinstance(node, ast.Name):
+        if not negated:
+            positive.add(node.id)
+    else:
+        raise RuntimeError(
+            f"unsupported marker-expression node {ast.dump(node)} — a gate "
+            "started using pytest kwarg selection (mark(arg=...)); extend "
+            "positive_marker_tokens before trusting its output."
+        )
+
+
+def routed_marker_names(gates: Sequence[Gate]) -> frozenset[str]:
+    """Union of positively-referenced marker names across ``gates`` (FR-001 (i)).
+
+    This is the live ROUTED-BY-MARKER set the marker-completeness invariant
+    classifies against.
+    """
+    routed: set[str] = set()
+    for gate in gates:
+        routed |= positive_marker_tokens(gate.marker_expr)
+    return frozenset(routed)
+
+
+@dataclass(frozen=True)
+class WorkflowModel:
+    """Parsed relation surfaces of one workflow file (WP01 substrate).
+
+    Every field is a *parsed source relation* (Adjudicated Decision 8: the
+    dorny filter block and the job ``if:`` gates are the only two path-topology
+    authorities; consumers assert against these, never against hand-maintained
+    copies).
+
+    - ``job_needs``: job → declared ``needs:`` list (FR-003a/d).
+    - ``needs_result_reads``: job → job names read via ``needs.<job>.result``
+      in that job's run scripts (FR-003a). The quality-gate aggregator's
+      result-loop membership (FR-003d) is ``needs_result_reads["quality-gate"]``.
+    - ``job_gating_groups``: job → dorny filter outputs referenced in the
+      job-level ``if:`` expression (FR-003b; FR-011's job→group gating map).
+    - ``filter_groups``: dorny filter group → glob list (FR-003c / FR-010).
+    - ``cov_targets``: job → ``--cov=`` targets emitted in run scripts (FR-005).
+    - ``diff_cover_critical_paths``: the diff-coverage job's shell
+      ``critical_paths`` array entries, in declaration order (FR-005).
+    - ``pull_request_types`` / ``pull_request_paths`` / ``push_paths``: outer
+      ``on:`` trigger types and paths lists (FR-013 / FR-012 two-layer reads).
+    """
+
+    path: Path
+    job_needs: dict[str, tuple[str, ...]]
+    needs_result_reads: dict[str, frozenset[str]]
+    job_gating_groups: dict[str, frozenset[str]]
+    filter_groups: dict[str, tuple[str, ...]]
+    cov_targets: dict[str, frozenset[str]]
+    diff_cover_critical_paths: tuple[str, ...]
+    pull_request_types: tuple[str, ...]
+    pull_request_paths: tuple[str, ...]
+    push_paths: tuple[str, ...]
+
+
+def _job_needs_tuple(job: dict[str, Any]) -> tuple[str, ...]:
+    """A job's declared ``needs:`` as a tuple (GitHub allows str or list)."""
+    needs = job.get("needs")
+    if needs is None:
+        return ()
+    if isinstance(needs, str):
+        return (needs,)
+    return tuple(str(entry) for entry in needs)
+
+
+def _job_run_text(job: dict[str, Any]) -> str:
+    """All raw ``run:`` script text of a job (un-substituted: ``${{ }}`` kept,
+    because the relation reads live inside those expressions)."""
+    return "\n".join(
+        str(step["run"])
+        for step in job.get("steps") or []
+        if isinstance(step, dict) and "run" in step
+    )
+
+
+def _parse_filter_groups(jobs: dict[str, Any]) -> dict[str, tuple[str, ...]]:
+    """Dorny paths-filter group → glob tuple, from any ``dorny/paths-filter``
+    step's inline ``filters:`` YAML (FR-003c / FR-010 source authority)."""
+    groups: dict[str, tuple[str, ...]] = {}
+    for job in jobs.values():
+        for step in job.get("steps") or []:
+            if not isinstance(step, dict):
+                continue
+            if not str(step.get("uses", "")).startswith(_DORNY_FILTER_ACTION):
+                continue
+            filters_raw = (step.get("with") or {}).get("filters")
+            if not isinstance(filters_raw, str):
+                continue
+            parsed = yaml.safe_load(filters_raw) or {}
+            for name, globs in parsed.items():
+                groups[str(name)] = tuple(str(g) for g in globs or [])
+    return groups
+
+
+def _diff_cover_critical_paths(run_text: str) -> tuple[str, ...]:
+    """Quoted entries of every ``critical_paths=( ... )`` shell array, in
+    order, de-duplicated (FR-005)."""
+    entries: list[str] = []
+    for block in _CRITICAL_PATHS_RE.findall(run_text):
+        for single, double in _SHELL_QUOTED_RE.findall(block):
+            entry = single or double
+            if entry and entry not in entries:
+                entries.append(entry)
+    return tuple(entries)
+
+
+def _on_section(data: dict[Any, Any]) -> dict[str, Any]:
+    """The workflow's ``on:`` mapping; ``{}`` for shorthand forms like
+    ``on: push``.
+
+    Typed ``dict[Any, Any]`` because the key is genuinely non-str in the
+    common case: YAML 1.1 parses the bare ``on`` key as boolean ``True``.
+    """
+    section = data.get("on", data.get(True))
+    return section if isinstance(section, dict) else {}
+
+
+def _trigger_tuple(on_section: dict[str, Any], event: str, key: str) -> tuple[str, ...]:
+    """``on.<event>.<key>`` as a string tuple; ``()`` when absent."""
+    event_section = on_section.get(event)
+    if not isinstance(event_section, dict):
+        return ()
+    return tuple(str(value) for value in event_section.get(key) or [])
+
+
+def load_workflow_model(path: Path) -> WorkflowModel:
+    """Parse one workflow file into its :class:`WorkflowModel` relations."""
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    jobs: dict[str, Any] = data.get("jobs") or {}
+    run_texts = {name: _job_run_text(job) for name, job in jobs.items()}
+    on_section = _on_section(data)
+    return WorkflowModel(
+        path=path,
+        job_needs={name: _job_needs_tuple(job) for name, job in jobs.items()},
+        needs_result_reads={
+            name: frozenset(_NEEDS_RESULT_RE.findall(text))
+            for name, text in run_texts.items()
+        },
+        job_gating_groups={
+            name: frozenset(_FILTER_OUTPUT_RE.findall(str(job.get("if") or "")))
+            for name, job in jobs.items()
+        },
+        filter_groups=_parse_filter_groups(jobs),
+        cov_targets={
+            name: frozenset(_COV_TARGET_RE.findall(text))
+            for name, text in run_texts.items()
+        },
+        diff_cover_critical_paths=_diff_cover_critical_paths(
+            "\n".join(run_texts.values())
+        ),
+        pull_request_types=_trigger_tuple(on_section, "pull_request", "types"),
+        pull_request_paths=_trigger_tuple(on_section, "pull_request", "paths"),
+        push_paths=_trigger_tuple(on_section, "push", "paths"),
+    )
+
+
+def discover_pytest_workflows(workflows_dir: Path | None = None) -> frozenset[str]:
+    """Workflow file names under ``workflows_dir`` that invoke pytest (FR-008).
+
+    Content probe with the *same* detection semantics as the gate model
+    (:func:`parse_workflow`), so the probe and :data:`WORKFLOW_FILES` cannot
+    diverge in what "runs the suite" means. The consumer invariant asserts
+    this set equals the allowlist, failing closed when a fifth suite-running
+    workflow appears without entering the model.
+    """
+    directory = workflows_dir or WORKFLOWS_DIR
+    candidates = sorted(directory.glob("*.yml")) + sorted(directory.glob("*.yaml"))
+    return frozenset(path.name for path in candidates if parse_workflow(path))
+
+
+def registered_markers(pytest_ini: Path | None = None) -> tuple[str, ...]:
+    """Marker names registered in pytest.ini's ``markers =`` block.
+
+    ``pytest.ini`` is the single marker-registry authority (C-006, guarded by
+    ``test_marker_registry_single_source.py``) — this READS it, adding no
+    second surface. pytest's own ini handling is line-based (each non-empty
+    block line registers one marker, its name the leading identifier before
+    the ``:`` description), mirrored here without importing pytest's config
+    machinery.
+    """
+    path = pytest_ini or _PYTEST_INI_PATH
+    parser = configparser.ConfigParser(interpolation=None)
+    parser.read_string(path.read_text(encoding="utf-8"))
+    names: list[str] = []
+    for line in parser.get("pytest", "markers", fallback="").splitlines():
+        match = _MARKER_NAME_RE.match(line.strip())
+        if match:
+            names.append(match.group())
+    return tuple(names)
 
 
 # ---------------------------------------------------------------------------

@@ -51,10 +51,12 @@ def test_positive_marker_tokens_is_negation_aware() -> None:
 
 
 def test_positive_marker_tokens_fails_loudly_on_invalid_expression() -> None:
-    """An expression pytest's own evaluator rejects must raise, not return junk."""
-    from _pytest.mark.expression import ParseError
+    """An expression pytest's own evaluator rejects must raise, not return junk.
 
-    with pytest.raises(ParseError):
+    pytest 9's ``Expression.compile`` raises a plain ``SyntaxError`` subclass
+    for an unparsable expression (ParseError was folded into it).
+    """
+    with pytest.raises(SyntaxError):
         gc.positive_marker_tokens("and and")
 
 
