@@ -294,3 +294,5 @@ def glossary_enabled(
         return wrapper
 
     return decorator
+
+# CI probe (mission ci-suite-map-bind WP03, T010): temporary no-op touch; branch is deleted after evidence capture.
