@@ -9,6 +9,9 @@ tracker_refs: []
 planning_base_branch: tidy/ci-suite-map-2034
 merge_target_branch: tidy/ci-suite-map-2034
 branch_strategy: Planning artifacts for this mission were generated on tidy/ci-suite-map-2034. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into tidy/ci-suite-map-2034 unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-ci-suite-map-bind-01KWNPMP
+base_commit: f58bcec37663fae6a642815b229307ba2cab1791
+created_at: '2026-07-04T08:52:53.610639+00:00'
 subtasks:
 - T001
 - T002
@@ -16,6 +19,7 @@ subtasks:
 phase: Phase 1 - Substrate
 assignee: ''
 agent: ''
+shell_pid: '3796249'
 history:
 - at: '2026-07-04T05:27:33Z'
   actor: system
