@@ -277,9 +277,15 @@ def test_workflow_model_live_ci_quality_relations() -> None:
     added to).
     """
     model = gc.load_workflow_model(gc.WORKFLOWS_DIR / "ci-quality.yml")
-    # needs + result-loop reads (FR-003a/d substrate).
+    # needs + result-loop reads (FR-003a/d substrate). Post-FR-011 (WP03
+    # surgery) the quality-gate verdict consumes the FULL needs context via
+    # ``toJSON(needs)`` — there is no literal ``needs.<job>.result`` loop left
+    # to read, so the parsed read-set is EMPTY by construction: a phantom
+    # result-read (the FR-003a failure class) can no longer be written for the
+    # aggregator. A non-empty set reappearing here means someone reintroduced
+    # a hand-enumerated result list — the exact drift the rewrite removed.
     assert "e2e-cross-cutting" in model.job_needs["quality-gate"]
-    assert "e2e-cross-cutting" in model.needs_result_reads["quality-gate"]
+    assert model.needs_result_reads["quality-gate"] == frozenset()
     # dorny groups + job gating (FR-003b / FR-011 substrate).
     assert ".github/workflows/ci-quality.yml" in model.filter_groups["core_misc"]
     assert "lanes" in model.job_gating_groups["fast-tests-lanes"]

@@ -389,20 +389,22 @@ def test_no_new_orphan_surfaces(coverage_report: gc.CoverageReport) -> None:
     """
     baseline_files = set(gc.load_baseline().get("orphan_files", []))
     current = set(coverage_report.orphan_files)
-    # Real-universe floor: the analyzer must still be DETECTING the recorded
-    # backlog — not silently returning an empty orphan set, which would also make
-    # ``new_files`` empty and fake a pass (renata HIGH; the synthetic
-    # ``test_analyze_detects_orphan_and_covered_records`` pins this deterministically
-    # too). Current orphans must be a non-empty subset of the frozen baseline:
-    # growth is caught below, legitimate shrinkage is warned (not failed) by
-    # ``test_orphan_backlog_does_not_grow``, so a strict ``==`` would contradict
-    # that intentional shrink-warns design.
-    assert current, (
-        "analyze() reported ZERO orphan files against the real suite — the checker "
-        "has STOPPED detecting coverage holes (expected a non-empty subset of the "
-        f"{len(baseline_files)}-file baseline). This is the checker silently going "
-        "blind, the one regression it must not allow."
-    )
+    # Real-universe floor: while the frozen backlog is non-empty the analyzer
+    # must still be DETECTING it — not silently returning an empty orphan set,
+    # which would also make ``new_files`` empty and fake a pass (renata HIGH).
+    # Since the #2296 drain (mission ci-suite-map-bind FR-006) the committed
+    # baseline is EMPTY by design: zero live orphans at a zero-file baseline is
+    # the invariant HOLDING, not the checker going blind. Checker-blindness
+    # stays pinned deterministically by the synthetic
+    # ``test_analyze_detects_orphan_and_covered_records`` (a known-orphan
+    # record must be reported), which does not depend on live orphans existing.
+    if baseline_files:
+        assert current, (
+            "analyze() reported ZERO orphan files against the real suite — the "
+            "checker has STOPPED detecting coverage holes (expected a non-empty "
+            f"subset of the {len(baseline_files)}-file baseline). This is the "
+            "checker silently going blind, the one regression it must not allow."
+        )
     new_files = sorted(current - baseline_files)
     assert not new_files, (
         f"{len(new_files)} test file(s) are selected by ZERO CI gates and are not "

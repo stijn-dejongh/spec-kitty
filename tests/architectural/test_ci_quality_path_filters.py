@@ -330,9 +330,22 @@ def test_e2e_cross_cutting_runs_independently_of_fast_fanout() -> None:
 
 
 def test_e2e_cross_cutting_failures_are_quality_gated() -> None:
-    """The owner job for e2e/cross-cutting coverage must block merges on failure."""
+    """The owner job for e2e/cross-cutting coverage must block merges on failure.
+
+    Post-FR-011 (mission ci-suite-map-bind WP03) the quality-gate verdict is
+    computed by ``scripts/ci/quality_gate_decision.py`` over the FULL needs
+    context (``toJSON(needs)``): membership in ``needs:`` IS the blocking
+    relation (a failed/cancelled needs job always fails the gate), so the old
+    literal per-job ``needs.<job>.result`` read this test used to pin cannot
+    silently omit a job anymore.
+    """
     quality_gate = _job("quality-gate")
     assert "e2e-cross-cutting" in quality_gate["needs"]
 
-    run_script = _job_run_script("quality-gate", "Check all required jobs")
-    assert "needs.e2e-cross-cutting.result" in run_script
+    decision_step = next(
+        step
+        for step in quality_gate["steps"]
+        if step.get("name") == "Evaluate quality-gate decision"
+    )
+    assert decision_step["env"]["NEEDS_JSON"] == "${{ toJSON(needs) }}"
+    assert "scripts/ci/quality_gate_decision.py" in decision_step["run"]
