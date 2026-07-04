@@ -105,3 +105,5 @@ See `test_ratchet_baselines.py` for the meta-test enforcing burn-down.
 `_fixtures/` contains shared test fixtures (org packs, example charters, DRG
 fragments) used by tests in this directory and in `tests/integration/`. Do not
 modify fixtures without updating the tests that depend on them.
+
+# CI probe (mission ci-suite-map-bind WP03, T010): draft->ready flip probe; branch is deleted after evidence capture.
