@@ -20,4 +20,6 @@
 | #2329 | accept hardcoded src/+tests/ paths (Go) | deferred-with-followup | OUT — different "src": the software-dev mission's accept-path convention in consumer repos, not this repo's CI dorny globs; stays under #2329/#2330. |
 | #2330 | Go-friction umbrella | deferred-with-followup | OUT — same reasoning as #2329; cross-referenced only; stays under #2330. |
 | #2109 | 4 red orphan tests | verified-already-fixed | CLOSED on tracker; priti verified all 4 pass on main post-#2294/#2299. Reference only. |
+| #2294 | orphan-file binding PR (365/369 bound) | verified-already-fixed | MERGED prior PR, cited in census prose (spec.md:11, research.md:11) as the source of the 17-test/4-file orphan floor. Reference only. |
+| #2319 | snapshot-drift fix PR | verified-already-fixed | MERGED prior PR, cited in census prose (spec.md:11) as fixing the snapshot cases among #2034's 9 named failures. Reference only. |
 | #2047 | marker-registry dedup (PR) | verified-already-fixed | MERGED; pytest.ini single source + guard test. This mission depends on it (C-006). |

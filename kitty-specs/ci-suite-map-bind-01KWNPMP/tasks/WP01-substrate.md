@@ -18,7 +18,7 @@ subtasks:
 - T003
 phase: Phase 1 - Substrate
 assignee: ''
-agent: ''
+agent: "claude-orchestrator"
 shell_pid: '3796249'
 history:
 - at: '2026-07-04T05:27:33Z'
@@ -104,3 +104,33 @@ Sonar: zero open issues in the target files (verified). Local ruff --select ALL 
 > Append at the END, chronological. Format: `- YYYY-MM-DDTHH:MM:SSZ – agent_id – <action>`
 
 - 2026-07-04T05:27:33Z – system – Prompt created.
+- 2026-07-04T09:05:00Z – wp01-implementer – Loaded python-pedro profile (directives 010/024/025/030/034/041/043/044/045; tactic test-scaffolding-as-design-smell). Read WP prompt, spec.md (Adjudicated Decisions), plan.md, `_gate_coverage.py` end-to-end, the three consumer test files, and the live workflow structures.
+- 2026-07-04T09:15:00Z – wp01-implementer – T001 C-004 preflight PROBE PUSH SUCCEEDED. `origin` = `git@github.com:stijn-dejongh/spec-kitty.git` (SSH). Sequence: `git checkout -b probe/workflow-scope`; appended trailing newline to `.github/workflows/ci-quality.yml`; committed (`f431825b6`); `unset GITHUB_TOKEN && git push origin probe/workflow-scope`. Verbatim push output:
+  ```
+  remote:
+  remote: Create a pull request for 'probe/workflow-scope' on GitHub by visiting:
+  remote:      https://github.com/stijn-dejongh/spec-kitty/pull/new/probe/workflow-scope
+  remote:
+  To github.com:stijn-dejongh/spec-kitty.git
+   * [new branch]          probe/workflow-scope -> probe/workflow-scope
+  ```
+  Cleanup: `git push origin --delete probe/workflow-scope` → `- [deleted] probe/workflow-scope`; local probe branch deleted; back on lane branch. The `.github/workflows/` push path is OPEN — mission unblocked.
+- 2026-07-04T09:35:00Z – wp01-implementer – ATDD RED commit `aac970ac7`: `tests/architectural/test_gate_coverage_parse_model.py` (13 tests pinning every new parse surface; `architectural`-marked → CI-selected per NFR-005). Red run on planning base: `uv run pytest tests/architectural/test_gate_coverage_parse_model.py -q` → **13 failed** (`AttributeError: module 'tests.architectural._gate_coverage' has no attribute 'positive_marker_tokens' / 'load_workflow_model' / 'discover_pytest_workflows' / 'registered_markers' / 'routed_marker_names'`). One initially-vacuous raises-test tightened (pytest.raises(Exception) would have swallowed the AttributeError) before committing the red state.
+- 2026-07-04T10:00:00Z – wp01-implementer – T002 implementation commit `c11f3177f` (additive; zero edits to existing functions except hoisting `import yaml` to top-level): `positive_marker_tokens` (Expression.compile validation + stdlib-ast sign walk, loud RuntimeError on unsupported nodes), `routed_marker_names`, `WorkflowModel` + `load_workflow_model` (job_needs, needs_result_reads incl. quality-gate result-loop membership, job_gating_groups from job-level `if:`, dorny filter_groups, cov_targets, diff_cover_critical_paths, pull_request_types/paths, push_paths), `discover_pytest_workflows` (parse_workflow's own semantics), `registered_markers` (pytest.ini line-based, C-006 read-only). Red→green: 13/13 pass. NOTE for WP04: pytest 9.0.3's `Expression.compile` raises plain `SyntaxError` (ParseError type is gone).
+- 2026-07-04T10:05:00Z – wp01-implementer – T003 gate (consumers untouched, BEFORE campsite): `PWHEADLESS=1 uv run pytest tests/architectural/test_gate_coverage.py tests/architectural/test_ci_quality_path_filters.py tests/architectural/test_marker_registry_single_source.py -q` → **32 passed, 1 warning in 132.20s** with `git diff --stat` showing only `_gate_coverage.py` + the new test file. `ruff check` clean; `mypy` on the touched files → Success (one real finding it raised — `dict.get(True)` typing on the YAML `on:` key — fixed via honest `dict[Any, Any]` signature). NOTE: `uv run mypy src/` in this lane venv shows 6 pre-existing `types-toml` stub errors (venv provisioning skew, zero src/ files touched by this WP); the primary checkout's `uv run mypy src/` → `Success: no issues found in 1053 source files`.
+- 2026-07-04T10:20:00Z – wp01-implementer – LIVE SELF-CHECK (NFR-004 re-derivations — WP03/WP04 GROUND TRUTH):
+  - gates parsed: **56**
+  - routed-by-marker set (**8**, exactly as spec expected): `['architectural', 'fast', 'git_repo', 'integration', 'quarantine', 'slow', 'timing', 'windows_ci']`
+  - ci-quality.yml: **49 jobs** (needs-map size); **20 filter groups** `[agent, charter, cli, core_misc, dashboard, doctrine, e2e, execution_context, kernel, lanes, merge, missions, next, orchestrator_api, post_merge, release, review, status, sync, upgrade]`; **38 jobs gated by group outputs**; **37 cov-emitting jobs / 23 distinct --cov targets**; **11 diff-cover critical paths** (incl. `src/mission_runtime/*`); `pull_request` types **()** (FR-013 will add them); 16 outer pull_request paths / 16 push paths
+  - quality-gate: needs-list **42** == result-loop reads **42**, sets IDENTICAL (incl. `integration-tests-charter` declared AND read) → FR-004's charter phantom-read candidate is **verified-already-fixed** at this parse level; `mission-loader-coverage` absent from both (the known FR-004 reachability gap, confirmed live)
+  - ci-windows.yml: 2 jobs, 1 filter group `windows_critical`, pull_request paths ()
+  - drift-detector.yml: 1 job; release.yml: 4 jobs; no filters/cov/critical-paths in either
+  - `discover_pytest_workflows()` == `frozenset(WORKFLOW_FILES)` → **True** (exactly the 4)
+  - registered markers: **37**, duplicate-free; unrouted-by-marker registered markers: **29** (incl. `unit`, `contract` — the #2034 gap, live)
+- 2026-07-04T10:45:00Z – wp01-implementer – Campsite commit `f5b934849` per the WP list: _gate_coverage.py I001/TC003/PT013/PLC0415/FURB110(tuple-form for mypy)/PLR2004/PLW1510/COM812; five helpers made public (`parse_pytest_invocation`, `path_matches`, `substitute_matrix`, `join_continuations`, `strip_to_command`) clearing 9 SLF001 sites; test_gate_coverage.py D103×2, D205×4, narrow `# noqa: PLC0415` with rationale ×2, FURB171, COM812. Adjudicated-OUT left: PERF401, TRY003, T201, test-PLR2004. Post-campsite verification: 45/45 tests green across the four files (incl. full orphan ratchet re-run: 18 passed in 69s), `ruff check tests/architectural/` clean, `mypy` on the three files → Success.
+- 2026-07-04T09:27:45Z – claude-orchestrator – shell_pid=3796249 – Moved to for_review
+- 2026-07-04T09:41:25Z – claude-orchestrator – shell_pid=3796249 – reviewer-renata REJECT (1 MAJOR, scoped): campsite rename sed mangled 4 test function names in test_gate_coverage.py:309,319,330,339 (test_ prefix lost underscore: testpath_matches_/testsubstitute_matrix_/testjoin_continuations_/teststrip_to_command_) — restore test_ prefix, re-run file (expect 18 passed). Everything else PASSED with live evidence; re-review scoped to this fix.
+- 2026-07-04T09:44:01Z – claude-orchestrator – shell_pid=3796249 – review fix c399bbfdd: 4 test names restored, 18 passed, ruff clean
+- 2026-07-04T09:46:38Z – claude-orchestrator – shell_pid=3796249 – Moved to in_review
+- 2026-07-04T09:46:40Z – claude-orchestrator – shell_pid=3796249 – reviewer-renata APPROVE at c399bbfdd (scoped re-review after 1-MAJOR rejection cycle): fix commit exactly the 4 test_ prefix restorations, 18 passed + ruff clean live, 3 reviewed commits untouched. Prior full review stands: red->green 13/13, surfaces additive, NFR-004 floors exact (8 routed/42==42/20 groups/37 markers), arch sweep 653 passed, kitty-specs net-zero on lane.
+- 2026-07-04T11:30:00Z – wp01-implementer – Review fix (REJECT->fixed): restored test_ prefix on 4 test names mangled by the campsite helper-rename sed (test_gate_coverage.py:309/319/330/339 — testpath_matches_/testsubstitute_matrix_/testjoin_continuations_/teststrip_to_command_ -> test_*). Name hygiene only (pytest's test* pattern had kept collecting them: 18 collected before and after). Commit c399bbfdd; evidence: ruff clean, 18 passed in 70.61s. (Ported from lane by orchestrator.)

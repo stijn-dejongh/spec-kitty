@@ -31,17 +31,17 @@
 
 - **Goal**: IC-01 + IC-02 — prove the `.github/workflows/` push path (C-004), then extend `_gate_coverage.py` additively with every relation the invariants consume. Read-only after this WP.
 - **Priority**: P1 · **Requirements**: FR-003, FR-008 · **Prompt**: [tasks/WP01-substrate.md](tasks/WP01-substrate.md)
-- [ ] T001 Workflow-scope preflight probe (WP01)
-- [ ] T002 Parse-model extensions (WP01)
-- [ ] T003 Gates (WP01)
+- [x] T001 Workflow-scope preflight probe (WP01)
+- [x] T002 Parse-model extensions (WP01)
+- [x] T003 Gates (WP01)
 
 ### WP02 — Aggregator decision script
 
 - **Goal**: FR-011's decision logic as a standalone, fixture-tested script (paula's table) — the yml wiring in WP03 stays a thin call.
 - **Priority**: P1 · **Requirements**: FR-011 · **Prompt**: [tasks/WP02-aggregator-script.md](tasks/WP02-aggregator-script.md)
-- [ ] T004 Decision script (WP02)
-- [ ] T005 Fixture tests (WP02)
-- [ ] T006 Gates (WP02)
+- [x] T004 Decision script (WP02)
+- [x] T005 Fixture tests (WP02)
+- [x] T006 Gates (WP02)
 
 ### WP03 — Workflow surgery (depends: WP01, WP02)
 
