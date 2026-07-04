@@ -47,13 +47,15 @@ import re
 import subprocess
 import sys
 import tempfile
-from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
+import pytest
 import yaml
-from pytest import ExitCode
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 # pytest's own marker-expression evaluator — guarantees identical semantics to a
 # real ``-m`` selection. This is a *private* pytest API and ``pytest`` is floored
@@ -89,8 +91,11 @@ _TESTS_ROOT = "tests"
 # tests — exactly the new tests the ratchet must scrutinize — so any other exit
 # code must fail loudly (Issue #2034 Codex review: P2).
 _COLLECT_OK_CODES: frozenset[int] = frozenset(
-    {int(ExitCode.OK), int(ExitCode.NO_TESTS_COLLECTED)}
+    {int(pytest.ExitCode.OK), int(pytest.ExitCode.NO_TESTS_COLLECTED)},
 )
+
+# Reported (not enforced) selection-overlap threshold: >=2 gates = duplicate.
+_DUPLICATE_GATE_THRESHOLD = 2
 
 # Quoted ``-m 'a and b'`` OR unquoted single-token ``-m windows_ci``.
 _MARKER_Q_RE = re.compile(r"-m\s+(?P<q>['\"])(?P<expr>.*?)(?P=q)")
@@ -155,7 +160,7 @@ def _matrix_includes(job: dict[str, Any]) -> list[dict[str, Any]] | None:
     return include if isinstance(include, list) else None
 
 
-def _substitute_matrix(text: str, mvars: dict[str, Any]) -> str:
+def substitute_matrix(text: str, mvars: dict[str, Any]) -> str:
     """Expand ``${{ matrix.X }}`` (blanking other ``${{ ... }}`` expressions)."""
 
     def repl(match: re.Match[str]) -> str:
@@ -167,7 +172,7 @@ def _substitute_matrix(text: str, mvars: dict[str, Any]) -> str:
     return _GHA_EXPR_RE.sub(repl, text)
 
 
-def _join_continuations(script: str) -> list[str]:
+def join_continuations(script: str) -> list[str]:
     """Join backslash-continued shell lines into single logical lines."""
     out: list[str] = []
     buf = ""
@@ -183,7 +188,7 @@ def _join_continuations(script: str) -> list[str]:
     return out
 
 
-def _strip_to_command(segment: str) -> str:
+def strip_to_command(segment: str) -> str:
     """Strip env-assignments and runner prefixes; stop at the ``pytest`` token."""
     s = segment.strip()
     while True:
@@ -217,14 +222,14 @@ def _extract_paths(tail: str) -> list[str]:
     return paths
 
 
-def _parse_pytest_invocation(
+def parse_pytest_invocation(
     logical_line: str,
 ) -> tuple[list[str], list[str], str | None] | None:
     """Return ``(paths, ignores, marker)`` for a real pytest command, else None."""
     if logical_line.lstrip().startswith("#"):
         return None
     for segment in _SEGMENT_SPLIT_RE.split(logical_line):
-        command = _strip_to_command(segment)
+        command = strip_to_command(segment)
         if not command.startswith("pytest"):
             continue
         tail = command[len("pytest") :]
@@ -238,11 +243,11 @@ def parse_workflow(path: Path) -> list[Gate]:
     gates: list[Gate] = []
     for job_name, job, step in _iter_run_steps(data):
         includes = _matrix_includes(job)
-        variants: Sequence[dict[str, Any] | None] = includes if includes else [None]
+        variants: Sequence[dict[str, Any] | None] = includes or (None,)
         for mvars in variants:
-            script = _substitute_matrix(step["run"], mvars or {})
-            for logical in _join_continuations(script):
-                parsed = _parse_pytest_invocation(logical)
+            script = substitute_matrix(step["run"], mvars or {})
+            for logical in join_continuations(script):
+                parsed = parse_pytest_invocation(logical)
                 if parsed is None:
                     continue
                 paths, ignores, marker = parsed
@@ -254,7 +259,7 @@ def parse_workflow(path: Path) -> list[Gate]:
                         paths=paths,
                         ignores=ignores,
                         marker_expr=marker,
-                    )
+                    ),
                 )
     return gates
 
@@ -317,7 +322,7 @@ def positive_marker_tokens(marker_expr: str | None) -> frozenset[str]:
         raise RuntimeError(
             f"marker expression {marker_expr!r} compiles under pytest's grammar "
             "but not under stdlib ast — a gate started using a marker name that "
-            "is not a Python identifier; extend positive_marker_tokens' walker."
+            "is not a Python identifier; extend positive_marker_tokens' walker.",
         ) from exc
     positive: set[str] = set()
     _walk_marker_ast(tree.body, negated=False, positive=positive)
@@ -338,7 +343,7 @@ def _walk_marker_ast(node: ast.expr, *, negated: bool, positive: set[str]) -> No
         raise RuntimeError(
             f"unsupported marker-expression node {ast.dump(node)} — a gate "
             "started using pytest kwarg selection (mark(arg=...)); extend "
-            "positive_marker_tokens before trusting its output."
+            "positive_marker_tokens before trusting its output.",
         )
 
 
@@ -400,8 +405,11 @@ def _job_needs_tuple(job: dict[str, Any]) -> tuple[str, ...]:
 
 
 def _job_run_text(job: dict[str, Any]) -> str:
-    """All raw ``run:`` script text of a job (un-substituted: ``${{ }}`` kept,
-    because the relation reads live inside those expressions)."""
+    """All raw ``run:`` script text of a job.
+
+    Un-substituted: ``${{ }}`` expressions are kept, because the relation
+    reads (``needs.<job>.result``, ...) live inside them.
+    """
     return "\n".join(
         str(step["run"])
         for step in job.get("steps") or []
@@ -410,8 +418,11 @@ def _job_run_text(job: dict[str, Any]) -> str:
 
 
 def _parse_filter_groups(jobs: dict[str, Any]) -> dict[str, tuple[str, ...]]:
-    """Dorny paths-filter group → glob tuple, from any ``dorny/paths-filter``
-    step's inline ``filters:`` YAML (FR-003c / FR-010 source authority)."""
+    """Dorny paths-filter group → glob tuple.
+
+    Read from any ``dorny/paths-filter`` step's inline ``filters:`` YAML
+    (FR-003c / FR-010 source authority).
+    """
     groups: dict[str, tuple[str, ...]] = {}
     for job in jobs.values():
         for step in job.get("steps") or []:
@@ -429,8 +440,10 @@ def _parse_filter_groups(jobs: dict[str, Any]) -> dict[str, tuple[str, ...]]:
 
 
 def _diff_cover_critical_paths(run_text: str) -> tuple[str, ...]:
-    """Quoted entries of every ``critical_paths=( ... )`` shell array, in
-    order, de-duplicated (FR-005)."""
+    """Quoted entries of every ``critical_paths=( ... )`` shell array.
+
+    Declaration order preserved, de-duplicated (FR-005).
+    """
     entries: list[str] = []
     for block in _CRITICAL_PATHS_RE.findall(run_text):
         for single, double in _SHELL_QUOTED_RE.findall(block):
@@ -441,8 +454,7 @@ def _diff_cover_critical_paths(run_text: str) -> tuple[str, ...]:
 
 
 def _on_section(data: dict[Any, Any]) -> dict[str, Any]:
-    """The workflow's ``on:`` mapping; ``{}`` for shorthand forms like
-    ``on: push``.
+    """The workflow's ``on:`` mapping (``{}`` for shorthand ``on: push``).
 
     Typed ``dict[Any, Any]`` because the key is genuinely non-str in the
     common case: YAML 1.1 parses the bare ``on`` key as boolean ``True``.
@@ -482,7 +494,7 @@ def load_workflow_model(path: Path) -> WorkflowModel:
             for name, text in run_texts.items()
         },
         diff_cover_critical_paths=_diff_cover_critical_paths(
-            "\n".join(run_texts.values())
+            "\n".join(run_texts.values()),
         ),
         pull_request_types=_trigger_tuple(on_section, "pull_request", "types"),
         pull_request_paths=_trigger_tuple(on_section, "pull_request", "paths"),
@@ -534,7 +546,7 @@ def _is_file_entry(entry: str) -> bool:
     return entry.endswith(".py") or ".py::" in entry
 
 
-def _path_matches(relpath: str, nodeid: str, entry: str) -> bool:
+def path_matches(relpath: str, nodeid: str, entry: str) -> bool:
     entry = entry.replace("\\", "/")
     if "::" in entry:
         return nodeid == entry or nodeid.startswith(entry)
@@ -560,9 +572,9 @@ class CompiledGate:
         self.expr = Expression.compile(gate.marker_expr) if gate.marker_expr else None
 
     def selects(self, relpath: str, nodeid: str, markers: set[str]) -> bool:
-        if not any(_path_matches(relpath, nodeid, p) for p in self.paths):
+        if not any(path_matches(relpath, nodeid, p) for p in self.paths):
             return False
-        if any(_path_matches(relpath, nodeid, ig) for ig in self.gate.ignores):
+        if any(path_matches(relpath, nodeid, ig) for ig in self.gate.ignores):
             return False
         if self.expr is None:
             return True
@@ -597,7 +609,7 @@ def analyze(gates: list[Gate], universe: list[TestRecord]) -> CoverageReport:
         if hits == 0:
             orphan_nodeids.append(nodeid)
             orphan_files.add(relpath)
-        elif hits >= 2:
+        elif hits >= _DUPLICATE_GATE_THRESHOLD:
             duplicate_nodeids.append(nodeid)
     return CoverageReport(
         total=len(universe),
@@ -648,6 +660,7 @@ def collect_universe(repo_root: Path | None = None) -> list[TestRecord]:
             capture_output=True,
             text=True,
             timeout=900,
+            check=False,
         )
         if result.returncode not in _COLLECT_OK_CODES or not dump.exists():
             raise RuntimeError(
@@ -659,7 +672,7 @@ def collect_universe(repo_root: Path | None = None) -> list[TestRecord]:
                 f"(expected one of {sorted(_COLLECT_OK_CODES)}); "
                 f"dump_present={dump.exists()}\n"
                 f"--- stdout (tail) ---\n{result.stdout[-2000:]}\n"
-                f"--- stderr (tail) ---\n{result.stderr[-2000:]}"
+                f"--- stderr (tail) ---\n{result.stderr[-2000:]}",
             )
         universe: list[TestRecord] = json.loads(dump.read_text(encoding="utf-8"))
         return universe
@@ -694,7 +707,7 @@ def _baseline_payload(report: CoverageReport) -> dict[str, Any]:
 def update_baseline() -> CoverageReport:
     report = analyze(load_gates(), collect_universe())
     BASELINE_PATH.write_text(
-        json.dumps(_baseline_payload(report), indent=2) + "\n", encoding="utf-8"
+        json.dumps(_baseline_payload(report), indent=2) + "\n", encoding="utf-8",
     )
     return report
 
