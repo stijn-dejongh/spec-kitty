@@ -306,7 +306,7 @@ def test_selection_respects_ignore() -> None:
     )
 
 
-def testpath_matches_nodeid_prefix_branch() -> None:
+def test_path_matches_nodeid_prefix_branch() -> None:
     """A ``::``-bearing entry matches by nodeid equality or prefix, not relpath."""
     nodeid = "tests/a/test_x.py::TestK::test_m"
     assert gc.path_matches("tests/a/test_x.py", nodeid, "tests/a/test_x.py::TestK")
@@ -316,7 +316,7 @@ def testpath_matches_nodeid_prefix_branch() -> None:
     )
 
 
-def testsubstitute_matrix_expands_and_blanks() -> None:
+def test_substitute_matrix_expands_and_blanks() -> None:
     """``${{ matrix.X }}`` expands to the variant value; other ``${{ ... }}`` blank."""
     out = gc.substitute_matrix(
         "pytest ${{ matrix.shard }} -m '${{ matrix.markers }}' ${{ github.sha }}",
@@ -327,7 +327,7 @@ def testsubstitute_matrix_expands_and_blanks() -> None:
     assert "${{" not in out  # non-matrix expressions are blanked, not left literal
 
 
-def testjoin_continuations_merges_backslash_lines() -> None:
+def test_join_continuations_merges_backslash_lines() -> None:
     """Backslash-continued shell lines join into one logical line; others stand alone."""
     joined = gc.join_continuations(
         "pytest tests/a \\\n  -m fast \\\n  --maxfail=1\necho done",
@@ -336,7 +336,7 @@ def testjoin_continuations_merges_backslash_lines() -> None:
     assert "echo done" in joined
 
 
-def teststrip_to_command_strips_env_and_runner_prefixes() -> None:
+def test_strip_to_command_strips_env_and_runner_prefixes() -> None:
     """Env-assignments and runner prefixes reduce down to the ``pytest`` token."""
     assert gc.strip_to_command(
         "FOO=1 BAR='x y' uv run pytest tests -m fast",
