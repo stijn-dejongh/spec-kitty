@@ -47,6 +47,9 @@ def _load_script_module() -> ModuleType:
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot build an import spec for {_SCRIPT_PATH}")
     module = importlib.util.module_from_spec(spec)
+    # Register before exec: dataclass field resolution on Python 3.11 looks the
+    # module up in sys.modules while the class body is being executed.
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
