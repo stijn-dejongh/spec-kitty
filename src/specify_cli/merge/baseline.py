@@ -233,3 +233,5 @@ __all__ = [
     "record_baseline_merge_commit",
     "assert_baseline_merge_commit_on_target",
 ]
+
+# CI probe (mission ci-suite-map-bind WP03, T010): temporary no-op touch; branch is deleted after evidence capture.
