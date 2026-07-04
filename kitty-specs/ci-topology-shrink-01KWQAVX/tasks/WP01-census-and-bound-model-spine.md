@@ -10,9 +10,9 @@ requirement_refs:
 - NFR-006
 - C-001
 tracker_refs: []
-planning_base_branch: tidy/ci-topology-shrink
-merge_target_branch: tidy/ci-topology-shrink
-branch_strategy: Planning artifacts for this mission were generated on tidy/ci-topology-shrink. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into tidy/ci-topology-shrink unless the human explicitly redirects the landing branch.
+planning_base_branch: main
+merge_target_branch: main
+branch_strategy: Planning artifacts for this mission were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 base_branch: kitty/mission-ci-topology-shrink-01KWQAVX
 base_commit: aa998ede7e31927286e78e7819757e03c2f2c604
 created_at: '2026-07-04T21:00:00+00:00'
@@ -23,19 +23,19 @@ subtasks:
 phase: Phase 1 - Spine
 assignee: ''
 agent: ''
-shell_pid: ''
 history:
 - at: '2026-07-04T21:00:00Z'
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: python-pedro
 authoritative_surface: tests/architectural/_gate_coverage.py
-create_intent: []
+create_intent:
+- tests/architectural/ci_topology_census.json
 execution_mode: code_change
 model: ''
 owned_files:
 - tests/architectural/_gate_coverage.py
-- kitty-specs/ci-topology-shrink-01KWQAVX/ci-topology-census.json
+- tests/architectural/ci_topology_census.json
 role: implementer
 tags: []
 task_type: implement
@@ -75,7 +75,7 @@ for d in src/specify_cli/*/; do
   echo "$n $d"
 done | sort -rn
 ```
-Write `kitty-specs/ci-topology-shrink-01KWQAVX/ci-topology-census.json` per data-model.md:
+Write `tests/architectural/ci_topology_census.json` per data-model.md:
 - `t_loc` (int, committed constant — recommended 500; the plan-time floor, NEVER a literal in the WP02 test).
 - `rule` (str): `D ∈ worklist ⟺` direct child of `src/specify_cli/` ∧ `sum(LOC *.py under D) ≥ t_loc` ∧ no src-backed dorny group globs `src/specify_cli/<D>/**`.
 - `worklist[]`: each `{ dir, loc, cone_roots[], target_group, target_shard }`.

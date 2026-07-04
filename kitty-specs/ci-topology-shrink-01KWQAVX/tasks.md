@@ -36,7 +36,7 @@
 
 #### Included Subtasks
 
-- [ ] T001 Author `kitty-specs/ci-topology-shrink-01KWQAVX/ci-topology-census.json`: committed `t_loc`, `rule`, `worklist[]`, `mapped_dirs[]`, `arch_blind_groups[]`, `timings_baseline` (29.4-min, `source_run_id`) — re-derived live, NOT hand-copied — with a **freshness-guard** (re-derive-from-live == frozen, or the guard reds).
+- [ ] T001 Author `tests/architectural/ci_topology_census.json`: committed `t_loc`, `rule`, `worklist[]`, `mapped_dirs[]`, `arch_blind_groups[]`, `timings_baseline` (29.4-min, `source_run_id`) — re-derived live, NOT hand-copied — with a **freshness-guard** (re-derive-from-live == frozen, or the guard reds).
 - [ ] T002 Extend `tests/architectural/_gate_coverage.py` additively: the differential-matrix relation `{dir → arch_selected}` (NFR-002), the same-tier uniqueness relation `{test → fast_shard_count, integration_shard_count}` (NFR-003), and always-on-arch-job recognition (a group-less `if: always()` suite job) — pure parsing, no assertions.
 - [ ] T003 Gates: existing consumers green with zero edits; live self-check counts (worklist size, arch-blind count, 8-marker set, needs-map sizes) recorded as WP02/WP03 ground truth.
 
@@ -154,7 +154,7 @@
 #### Included Subtasks
 
 - [ ] T013 [P] Author `tests/release/test_coverage_topology_ownership.py`: each shard's `coverage-*.xml` name is glob-consumed by the aggregator download (FR-006 emit⇒consume by construction); no emitter's XML is silently dropped.
-- [ ] T014 Record `kitty-specs/ci-topology-shrink-01KWQAVX/ci-topology-timings-postshrink.json`: measured post-shrink core-misc critical path vs the WP01 baseline, `source_run_id`, verdict ≤55% AND ≤ next-longest lane (NFR-001). State the C-006 nightly decision: thin nightly-schedule option ONLY if measured PR critical path still >~15 min; else record that the shrink satisfies #1933's intent with escape hatches + nightly `run_all` over-cover intact.
+- [ ] T014 Record `tests/release/ci_topology_timings_postshrink.json`: measured post-shrink core-misc critical path vs the WP01 baseline, `source_run_id`, verdict ≤55% AND ≤ next-longest lane (NFR-001). State the C-006 nightly decision: thin nightly-schedule option ONLY if measured PR critical path still >~15 min; else record that the shrink satisfies #1933's intent with escape hatches + nightly `run_all` over-cover intact.
 
 #### Implementation Notes
 

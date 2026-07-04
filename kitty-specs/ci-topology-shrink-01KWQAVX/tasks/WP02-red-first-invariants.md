@@ -11,9 +11,9 @@ requirement_refs:
 - NFR-005
 - C-005
 tracker_refs: []
-planning_base_branch: tidy/ci-topology-shrink
-merge_target_branch: tidy/ci-topology-shrink
-branch_strategy: Planning artifacts for this mission were generated on tidy/ci-topology-shrink. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into tidy/ci-topology-shrink unless the human explicitly redirects the landing branch.
+planning_base_branch: main
+merge_target_branch: main
+branch_strategy: Planning artifacts for this mission were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 base_branch: kitty/mission-ci-topology-shrink-01KWQAVX
 base_commit: aa998ede7e31927286e78e7819757e03c2f2c604
 created_at: '2026-07-04T21:00:00+00:00'
@@ -24,7 +24,6 @@ subtasks:
 phase: Phase 2 - Red-first invariants
 assignee: ''
 agent: ''
-shell_pid: ''
 history:
 - at: '2026-07-04T21:00:00Z'
   actor: system

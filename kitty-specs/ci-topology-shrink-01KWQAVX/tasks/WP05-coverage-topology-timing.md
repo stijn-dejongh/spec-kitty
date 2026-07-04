@@ -8,9 +8,9 @@ requirement_refs:
 - NFR-001
 - C-006
 tracker_refs: []
-planning_base_branch: tidy/ci-topology-shrink
-merge_target_branch: tidy/ci-topology-shrink
-branch_strategy: Planning artifacts for this mission were generated on tidy/ci-topology-shrink. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into tidy/ci-topology-shrink unless the human explicitly redirects the landing branch.
+planning_base_branch: main
+merge_target_branch: main
+branch_strategy: Planning artifacts for this mission were generated on main. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into main unless the human explicitly redirects the landing branch.
 base_branch: kitty/mission-ci-topology-shrink-01KWQAVX
 base_commit: aa998ede7e31927286e78e7819757e03c2f2c604
 created_at: '2026-07-04T21:00:00+00:00'
@@ -20,7 +20,6 @@ subtasks:
 phase: Phase 5 - Verification
 assignee: ''
 agent: ''
-shell_pid: ''
 history:
 - at: '2026-07-04T21:00:00Z'
   actor: system
@@ -29,12 +28,12 @@ agent_profile: python-pedro
 authoritative_surface: tests/release/
 create_intent:
 - tests/release/test_coverage_topology_ownership.py
-- kitty-specs/ci-topology-shrink-01KWQAVX/ci-topology-timings-postshrink.json
+- tests/release/ci_topology_timings_postshrink.json
 execution_mode: code_change
 model: ''
 owned_files:
 - tests/release/test_coverage_topology_ownership.py
-- kitty-specs/ci-topology-shrink-01KWQAVX/ci-topology-timings-postshrink.json
+- tests/release/ci_topology_timings_postshrink.json
 role: implementer
 tags: []
 task_type: implement
@@ -69,7 +68,7 @@ Two verification deliverables (both non-fakeable):
 Author `tests/release/test_coverage_topology_ownership.py`: parse `ci-quality.yml` (reuse `_gate_coverage`'s model — do NOT re-parse by hand), assert every job emitting a `coverage-*.xml` has a name matched by the aggregator's wildcard download pattern (emit⇒consume by construction). RED-negative: prove the test would red if a shard emitted `coverage-orphan-<D>.xml` outside the glob. This runs in parallel with WP04 (disjoint files).
 
 ### Subtask T014 – Post-shrink timings artifact + C-006 decision (NFR-001)
-- Trigger a full `run_all` CI run on the mission branch (or read a representative post-WP03 run). Record `kitty-specs/ci-topology-shrink-01KWQAVX/ci-topology-timings-postshrink.json`:
+- Trigger a full `run_all` CI run on the mission branch (or read a representative post-WP03 run). Record `tests/release/ci_topology_timings_postshrink.json`:
   - measured `fast_core_misc_lane_min` (matrix, parallel), `arch_adversarial_min` (de-serialized), `core_misc_critical_path_min`, `next_longest_lane_min`, `source_run_id`.
   - `verdict`: critical path ≤ 55% × 29.4 (≤16.2) AND ≤ next-longest lane (≈13.6) ⇒ effective ceiling ≈13.6 min (NFR-001).
 - **C-006 nightly decision**: if the measured PR critical path is still >~15 min, evaluate a THIN nightly-schedule option in-mission; else record that the shrink satisfies #1933's INTENT (fast, targeted PR CI) with escape hatches (`ci:full`/`ready-for-ci`/`workflow_dispatch`) + nightly `run_all` over-cover intact (FR-009 no new blind spot).
