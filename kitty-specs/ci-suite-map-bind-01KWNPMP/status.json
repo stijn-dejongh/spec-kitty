@@ -1,7 +1,7 @@
 {
-  "event_count": 9,
-  "last_event_id": "01KWP5A4YVMBA2EZGSQKDSXXJD",
-  "materialized_at": "2026-07-04T08:53:20.977617+00:00",
+  "event_count": 10,
+  "last_event_id": "01KWP63WS9XDT4MFNVPKY2W17E",
+  "materialized_at": "2026-07-04T09:07:24.585906+00:00",
   "mission_number": "",
   "mission_slug": "ci-suite-map-bind-01KWNPMP",
   "mission_type": "software-dev",
@@ -11,8 +11,8 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 0,
-    "in_progress": 2,
+    "for_review": 1,
+    "in_progress": 1,
     "in_review": 0,
     "planned": 3
   },
@@ -25,11 +25,11 @@
       "last_transition_at": "2026-07-04T08:52:53.718842+00:00"
     },
     "WP02": {
-      "actor": "implement-command",
-      "force_count": 0,
-      "lane": "in_progress",
-      "last_event_id": "01KWP5A4YVMBA2EZGSQKDSXXJD",
-      "last_transition_at": "2026-07-04T08:53:20.977617+00:00"
+      "actor": "claude-orchestrator",
+      "force_count": 1,
+      "lane": "for_review",
+      "last_event_id": "01KWP63WS9XDT4MFNVPKY2W17E",
+      "last_transition_at": "2026-07-04T09:07:24.585906+00:00"
     },
     "WP03": {
       "actor": "finalize-tasks",
