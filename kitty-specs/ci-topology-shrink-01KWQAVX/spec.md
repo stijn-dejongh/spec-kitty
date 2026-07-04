@@ -4,7 +4,7 @@
 **Created**: 2026-07-04
 **Status**: Draft (post-spec squad revision 1)
 **Input**: User description: "spec a remediation mission for Slice C — CI-topology shrink (#2378 shard-side + #1933 group-side, sequenced as siblings). it is hurting us, hard."
-**Closes**: #2378 (shard-side split) · #1933 (group-side shrink) · a new arch-un-blind issue (to be filed, P1) — all under epic #1931.
+**Closes**: #2378 (shard-side split) · #1933 (group-side shrink) · #2383 (arch un-blind, P1) — all under epic #1931.
 **Out of scope**: #2283 factors (b)/(c) · #2077 CT7 · #2071 audit · the marker→job model itself (#2034/#2368 substrate — consumed, not rebuilt).
 
 ## Context & Problem (why "hurting us, hard")
