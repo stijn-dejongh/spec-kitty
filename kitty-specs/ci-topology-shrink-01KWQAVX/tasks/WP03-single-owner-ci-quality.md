@@ -72,7 +72,7 @@ Check the `review_ref` field in the event log before starting; address all feedb
 
 ## Objectives & Success Criteria
 
-You are the **SOLE owner** of `.github/workflows/ci-quality.yml` (C-003 — a `lanes` allocator rejects overlapping `owned_files`; per-slice WPs cannot co-own this file, so ALL topology edits land here). Turn WP02's six RED invariants GREEN while keeping the 8 #2368 WP04 invariants green throughout (NFR-007). This is the fat WP — inherent to C-003.
+You are the **SOLE owner** of `.github/workflows/ci-quality.yml` (C-003 — a `lanes` allocator rejects overlapping `owned_files`; per-slice WPs cannot co-own this file, so ALL topology edits land here). Turn WP02's eight RED invariants GREEN while keeping the 8 #2368 WP04 invariants green throughout (NFR-007). This is the fat WP — inherent to C-003.
 
 The load-bearing insight (all 3 post-spec lenses): **un-blind (US2) and wallclock (US3) are the SAME arch-pole move (FR-013)** — de-serializing the arch shard from `fast-tests-core-misc` moves its tail 29.4→12.3 min AND runs it on 100% of PRs. Realize it as an **always-on arch job that adds NO filter group** (Option A) so the FR-010 parsed relations stay untouched (C-001 additive).
 
@@ -106,7 +106,7 @@ Keep FR-010c enumeration (`test_unmatched_refs_equal_parsed_filter_groups_live`)
 - Every derived surface stays asserted-against-parsed-source (C-002 / Decision 8) — no hand-added surface beside the model.
 
 ### Subtask T011 – Gates + probe evidence
-- WP02's six invariants flip RED→GREEN: `test_ci_topology_worklist`, `test_arch_unblind_matrix`, `test_same_tier_uniqueness`, `test_coverage_consumer_needs`, `test_serial_port_preservation`, `test_job_count_ceiling`.
+- WP02's eight invariants flip RED→GREEN: `test_ci_topology_worklist`, `test_arch_unblind_matrix`, `test_same_tier_uniqueness`, `test_coverage_consumer_needs`, `test_serial_port_preservation`, `test_job_count_ceiling`, `test_arch_pole_deserialized` (FR-013 — the parsed arch/adversarial `needs` set drops `fast-tests-core-misc`), `test_shard_universe_bounded` (SC-003a — no single shard collects the full universe post-split).
 - The 8 #2368 invariants stay green: `PWHEADLESS=1 uv run pytest tests/architectural/test_src_filter_coverage.py tests/architectural/test_workflow_coherence.py tests/architectural/test_marker_job_completeness.py tests/architectural/test_gate_coverage.py -q`.
 - `_gate_coverage` orphan count stays 0, total `run_all` selected count unchanged (SC-004).
 - A probe PR per representative slice (e.g. touch only `src/specify_cli/auth/**`) demonstrates focused routing + always-on gates and NO full-matrix run (SC-006). Paste probe evidence in the Activity Log.
@@ -117,7 +117,9 @@ Keep FR-010c enumeration (`test_unmatched_refs_equal_parsed_filter_groups_live`)
 
 ## Definition of Done (non-fakeable — every anchor is a green test)
 
-- **WP02's six invariants GREEN** (recorded run output).
+- **WP02's eight invariants GREEN** (recorded run output).
+- **The arch/adversarial job's parsed `needs` contains NO fast-lane job** (FR-013 de-serialized — `always()` alone does NOT parallelize; the `needs: fast-tests-core-misc` edge is dropped) — `test_arch_pole_deserialized` green.
+- **No single shard collects the full catch-all universe** (SC-003a — the monolith is genuinely split, not merely same-tier-unique) — `test_shard_universe_bounded` green.
 - **8 #2368 invariants GREEN** (recorded run output); orphan count 0, total selected unchanged.
 - Each composite group's 5 surfaces landed atomically (FR-002) — no partial registration (a partial reds FR-010c/FR-011).
 - The `arch-adversarial` job is always-on, group-less, de-serialized, and coverage-wired (NFR-002 asserts it selects 100% of dirs).

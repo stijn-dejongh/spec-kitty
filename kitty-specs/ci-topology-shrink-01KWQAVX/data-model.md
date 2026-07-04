@@ -12,7 +12,7 @@ architectural invariants assert over — modeled here for traceability to the sp
 
 ## Entities
 
-### Worklist census artifact — `ci-topology-census.(json|md)`
+### Worklist census artifact — `tests/architectural/ci_topology_census.json`
 
 The construction-derived authority SC-001 iterates (NFR-006).
 

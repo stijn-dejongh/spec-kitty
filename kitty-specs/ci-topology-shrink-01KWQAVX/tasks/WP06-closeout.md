@@ -1,6 +1,6 @@
 ---
 work_package_id: WP06
-title: 'Closeout: ratchet baseline refresh (totals unchanged) + issue-matrix terminal verdicts + #1931 rollup + closeout comments'
+title: 'Closeout: ratchet baseline refresh (orphan=0, no test disappears) + issue-matrix terminal verdicts + #1931 rollup + closeout comments'
 dependencies:
 - WP04
 - WP05
@@ -59,14 +59,14 @@ Check the `review_ref` field in the event log before starting; address all feedb
 
 ## Objectives & Success Criteria
 
-Close the mission: refresh the ratchet baseline (totals MUST stay unchanged), set every issue-matrix verdict to a terminal value, post closeout comments, and the #1931 rollup. Run the full NFR-007 invariant sweep on the merged tree to confirm all 8 #2368 invariants + the new relations are green.
+Close the mission: refresh the ratchet baseline (`orphan_test_count` stays 0 and no previously-collected test disappears — `total_tests` legitimately RISES by the newly-added gated tests), set every issue-matrix verdict to a terminal value, post closeout comments, and the #1931 rollup. Run the full NFR-007 invariant sweep on the merged tree to confirm all 8 #2368 invariants + the new relations are green.
 
 ## Subtasks & Detailed Guidance
 
 ### Subtask T015 – Baseline refresh + issue-matrix + closeout comments
-- **Baseline refresh**: `uv run python -m tests.architectural._gate_coverage --update-baseline`. `total_tests` and `orphan_test_count` MUST stay **28573 / 0** — the carve + same-tier uniqueness add NO orphan and drop NO test. If a total changed, that is a REAL orphan/duplication regression (investigate before committing), NOT a rekey. `duplicate_test_count` may shift with the same-tier consolidation — record the delta.
+- **Baseline refresh**: `uv run python -m tests.architectural._gate_coverage --update-baseline`. The correct anchor is **`orphan_test_count` stays 0** (every new test is gated) AND **no previously-collected test disappears** — NOT total-equality. This mission ADDS test files (WP02's 8 new invariants + WP05's 1 coverage-ownership test), so `total_tests` legitimately RISES by exactly the count of newly-added gated test cases (across those 8 WP02 files + the 1 WP05 file). The machine ratchet (`test_gate_coverage.py`) fails on new **orphan files**, not on total inequality. A **DROP** in `total_tests` (a previously-collected test vanished) or any new **orphan** IS the regression — investigate before committing. `duplicate_test_count` may shift with the same-tier consolidation — record the delta.
 - **Coordinate-note**: #2072 also re-keys `_gate_coverage_baseline.json`. Flag this shared-file coordinate in the closeout comment so a later agent does not clobber our refresh.
-- **Issue-matrix terminal verdicts** (`issue-matrix.md`): set #2378 → `fixed` (shard-side split landed), #1933 → `fixed` (group-side shrink; cite the #1933-intent statement from WP05's C-006 decision), #2383 → `fixed` (arch un-blind landed), #1931 → `fixed` (rollup, terminal at closeout). The context/substrate rows (#2368/#2370/#2379) and out-of-scope rows (#2283/#2077/#2071) already carry terminal verdicts from planning — confirm they are unchanged. Zero `unknown`/`in-mission` rows may remain.
+- **Issue-matrix terminal verdicts** (`issue-matrix.md`): **NOTE — this file lives under `kitty-specs/` and is therefore NOT an `owned_files` entry** (the finalize/lanes guard rejects `kitty-specs/*` paths as owned code files). The verdict-flip is a **planning-artifact / coordination-branch edit**, not an owned-code-file change — editing it is expected and causes no ownership violation. Set #2378 → `fixed` (shard-side split landed), #1933 → `fixed` (group-side shrink; cite the #1933-intent statement from WP05's C-006 decision), #2383 → `fixed` (arch un-blind landed), #1931 → `fixed` (rollup, terminal at closeout). The context/substrate rows (#2368/#2370/#2379) and out-of-scope rows (#2283/#2077/#2071) already carry terminal verdicts from planning — confirm they are unchanged. Zero `unknown`/`in-mission` rows may remain.
 - **Closeout comments**: post on #2378 (shard-side split, PR link), #1933 (group-side shrink + the intent statement + intact escape hatches/nightly over-cover), #2383 (arch un-blind), and the #1931 rollup. Use `unset GITHUB_TOKEN` if `gh` hits a scope error (keyring token).
 - **CHANGELOG**: append the mission entry to `docs/changelog/CHANGELOG.md` (root `CHANGELOG.md` is a symlink → this file — edit the target).
 
@@ -76,7 +76,7 @@ Data + docs files — keep JSON schema-consistent and the CHANGELOG entry in the
 
 ## Definition of Done (non-fakeable — every anchor is a green test or a terminal record)
 
-- **`_gate_coverage_baseline.json` refreshed with `total_tests`=28573 and `orphan_test_count`=0 UNCHANGED**, asserted by the orphan ratchet (`test_gate_coverage.py`) staying green on the merged tree — recorded run output.
+- **`_gate_coverage_baseline.json` refreshed with `orphan_test_count`=0 (all new tests gated) and NO previously-collected test dropped**, asserted by the orphan ratchet (`test_gate_coverage.py`) staying green on the merged tree — recorded run output. `total_tests` RISES by exactly the count of newly-added gated test cases (8 new WP02 files + 1 new WP05 file) — a rise is expected and correct; a DROP or a new orphan is the regression.
 - **NFR-007 sweep GREEN**: all 8 #2368 invariants + NFR-002/003/005 + C-005 green on the merged tree (`PWHEADLESS=1 uv run pytest tests/architectural/ -q`) — recorded output.
 - **`issue-matrix.md` has zero non-terminal rows** — every verdict is `fixed`/`verified-already-fixed`/`deferred-with-followup`.
 - Closeout comments posted (links recorded); #1931 rollup terminal; #2072 shared-baseline coordinate flagged.
@@ -84,7 +84,7 @@ Data + docs files — keep JSON schema-consistent and the CHANGELOG entry in the
 
 ## Risks / Reviewer Guidance
 
-- A baseline rekey that changes totals masks a real orphan → assert totals unchanged as the DoD anchor.
+- A baseline rekey that introduces a new orphan file, or that DROPS a previously-collected test, masks a real regression → assert `orphan_test_count`=0 and no-test-disappears as the DoD anchor (a `total_tests` RISE from the newly-added gated tests is expected, NOT a regression).
 - #2072 concurrently rekeys the same baseline → the closeout comment must flag the coordinate.
 - Reviewer confirms no non-terminal issue-matrix row remains (mission cannot reach `done` otherwise).
 

@@ -62,7 +62,7 @@ Check the `review_ref` field in the event log before starting; address all feedb
 
 Two enablers everything downstream stacks on (C-001 additive — consume the bound `_gate_coverage` model, never rebuild the marker→job substrate):
 
-1. **NFR-006 census (the critical deliverable)**: commit `ci-topology-census.json` as the construction-derived worklist authority WP02's SC-001 test iterates — with a **freshness-guard** so a stale hand-edit reds. The metric must measure coverage, NOT the implementer's constant.
+1. **NFR-006 census (the critical deliverable)**: commit `tests/architectural/ci_topology_census.json` as the construction-derived worklist authority WP02's SC-001 test iterates — with a **freshness-guard** so a stale hand-edit reds. The metric must measure coverage, NOT the implementer's constant.
 2. **IC-04 parse extension**: extend `tests/architectural/_gate_coverage.py` ADDITIVELY with every parsed relation WP02 consumes (differential-matrix per dir; same-tier per test; always-on arch-job recognition). This file is a single-owner spine: after this WP it is **READ-ONLY** for the rest of the mission (Wave-2 spine lesson).
 
 ## Subtasks & Detailed Guidance
@@ -82,7 +82,7 @@ Write `tests/architectural/ci_topology_census.json` per data-model.md:
 - `mapped_dirs[]`: the already-mapped dirs (the negative-assertion oracle, research §1.2).
 - `arch_blind_groups[]`: the 13 Mode-B groups (un-blind targets, research §1.4B).
 - `timings_baseline`: `{ fast_core_misc_min, arch_shard_min, critical_path_min, next_lane_min, source_run_id }` (NFR-001 — the 29.4-min baseline; cite the live run id).
-- **Freshness-guard**: implement the guard so WP02 (or a self-check in `_gate_coverage.py`) can re-derive the worklist from the LIVE tree and assert `frozen_worklist == live_derived_worklist`. A stale census MUST red. (Either a `--verify-census` mode on the module CLI, or a documented pure function the WP02 test calls — pick the seam that keeps the assertion in WP02's test file, not this module.)
+- **Freshness-guard**: expose a **pure re-derivation function** `live_derived_worklist()` (importable from `_gate_coverage.py`, no side effects) that re-derives the worklist from the LIVE tree, so WP02's `test_ci_topology_worklist.py` asserts `census.worklist == live_derived_worklist()` as a pytest-collected `architectural` assertion. A stale/hand-trimmed census MUST then red in CI. The assertion lives in WP02's test file, not this module (this module stays pure/assertion-free); a `--verify-census` CLI mode may wrap the same function but the mechanized guarantee is the WP02 assertion.
 
 ### Subtask T002 – Additive `_gate_coverage.py` parse extensions (additive only)
 Read `_gate_coverage.py` end-to-end first (the #2368 mission already extended it with `WorkflowModel`, `filter_groups`, `job_needs`, `job_gating_groups`, `cov_targets`, `diff_cover_critical_paths`). Extend ADDITIVELY (new functions / dataclass fields; do NOT change existing behavior — every existing consumer test must pass untouched):
@@ -96,13 +96,18 @@ Keep it PURE parsing — NO assertions in this module (the invariants live in WP
 - A self-check script exercising each new parse surface against the LIVE workflows; paste the outputs (worklist size, arch-blind group count, the 8-marker routed set, needs-map sizes, the differential-matrix arch-blind count on TODAY's topology — expected 13) into the Activity Log. **These recorded counts are WP02/WP03's ground truth.**
 - Diff-scoped `ruff check` exit 0; `uv run mypy` on the touched file stays Success.
 
+## Implementation Notes
+
+- **Sonar S3776 (complexity ≤15)**: the differential-matrix (dir → arch_selected, tests × gates) and same-tier uniqueness relations are the two complexity risks in this extension. Extract deterministic helpers (stable inputs/outputs — e.g. a pure `arch_selected_for_dir(dir, model)` and a pure `shard_counts_for_test(test, gates)`) so each new function stays ≤15 cyclomatic complexity, and add focused tests exercising those helper branches directly (Sonar new-code coverage).
+- **Sonar S1192 (repeated literals)**: hoist any repeated census-path literal (`tests/architectural/ci_topology_census.json`) to a single named module constant rather than duplicating the string ≥3 times across the module/CLI/self-check.
+
 ## Campsite cleaning (standing rule; ride the WP's normal review)
 
 Sonar: verify zero open issues in `_gate_coverage.py` before landing. Run a local `ruff --select ALL` census on the touched surface and clear auto-fixables in one `ruff check --fix` pass (SAFE only — no behavior change). Adjudicate anything load-bearing OUT with an inline rationale. Do NOT expand scope beyond the two owned files.
 
 ## Definition of Done (non-fakeable — every anchor is a green test or parsed assertion)
 
-- **Census freshness-guard green**: a live re-derivation equals the committed `worklist[]` (a stale census reds). Recorded live self-check output pasted in the Activity Log.
+- **Census freshness-guard mechanized in WP02**: expose the freshness check as a **pure re-derivation function** (`live_derived_worklist()` — importable from `_gate_coverage.py`, no side effects, re-derives the worklist from the LIVE tree) so WP02's `test_ci_topology_worklist.py` can assert `census.worklist == live_derived_worklist()` as a pytest-collected `architectural` assertion. The DoD anchor is **the WP02 `census.worklist == live_derived_worklist()` assertion is green** — NOT a pasted live self-check output in the Activity Log (a stale/hand-trimmed census must red in CI, not merely in a manual log paste). WP01's own `git diff --stat` self-check counts still get recorded for WP02/WP03 ground truth per T003, but the freshness *guarantee* is the mechanized WP02 assertion.
 - **Additive relations exist and parse**: differential-matrix returns 13 arch-blind on today's topology (the pre-WP03 red baseline); same-tier relation returns per-test shard counts; always-on-arch recognition returns the current group-less always-on jobs. All exercised by the self-check, counts recorded.
 - **Existing consumers untouched-green**: the four listed consumer suites pass with zero edits to them (`git diff --stat` proves only `_gate_coverage.py` + census changed).
 - `ruff` + `mypy` clean on the diff.

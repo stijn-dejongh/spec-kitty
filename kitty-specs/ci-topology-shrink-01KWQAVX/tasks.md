@@ -10,12 +10,14 @@
 
 | ID | Description | WP | Parallel |
 |----|-------------|----|----------|
-| T001 | Construction-derived census artifact (`ci-topology-census.json`) + freshness-guard | WP01 | — |
+| T001 | Construction-derived census artifact (`tests/architectural/ci_topology_census.json`) + freshness-guard | WP01 | — |
 | T002 | Additive `_gate_coverage.py` parse extensions (differential-matrix + same-tier + arch-job relations) | WP01 | — |
 | T003 | WP01 gates (existing consumers green untouched; live self-check counts recorded) | WP01 | — |
 | T004 | RED: `test_ci_topology_worklist.py` (SC-001) + `test_arch_unblind_matrix.py` (NFR-002) | WP02 | [P] |
 | T005 | RED: `test_same_tier_uniqueness.py` (NFR-003) + `test_coverage_consumer_needs.py` (C-005) | WP02 | [P] |
 | T006 | RED: `test_serial_port_preservation.py` (FR-011) + `test_job_count_ceiling.py` (NFR-005) | WP02 | [P] |
+| T016 | RED: `test_arch_pole_deserialized.py` (FR-013 — arch `needs` drops the fast-lane job) | WP02 | [P] |
+| T017 | RED: `test_shard_universe_bounded.py` (SC-003a — no single shard collects the full universe) | WP02 | [P] |
 | T007 | Composite filter groups + `changes.outputs` rows + `unmatched` loop (FR-001/002/010) | WP03 | — |
 | T008 | `fast-tests-core-misc` matrix split + `--ignore` mirror + integration `ignore_args` (FR-003/004/012) | WP03 | — |
 | T009 | Always-on de-serialized `arch-adversarial` job + coverage `coverage-*.xml` emit (FR-005/006/013) | WP03 | — |
@@ -31,7 +33,7 @@
 ### WP01 — Census + bound-model spine (Priority: P1)
 
 - **Goal**: IC-03 + IC-04 substrate — deliver the NFR-006 **construction-derived** worklist as a committed, test-consumed census artifact with a **freshness-guard**, and extend `_gate_coverage.py` ADDITIVELY with every parsed relation WP02's invariants consume (differential-matrix per dir, same-tier per test, always-on arch-job recognition). Single-owner spine: READ-ONLY after this WP.
-- **Independent Test**: `python -m tests.architectural._gate_coverage` self-check prints the live re-derived worklist == the committed census `worklist[]` (freshness-guard green); every existing gate-coverage / path-filter / marker-registry consumer test passes UNTOUCHED.
+- **Independent Test**: WP01 exposes a pure `live_derived_worklist()` function so WP02's `test_ci_topology_worklist.py` asserts `census.worklist == live_derived_worklist()` (the mechanized freshness-guard — a stale census reds in CI, replacing any pasted self-check log); every existing gate-coverage / path-filter / marker-registry consumer test passes UNTOUCHED.
 - **Priority**: P1 · **Requirement Refs**: FR-001, NFR-001, NFR-002, NFR-003, NFR-006, C-001 · **Prompt**: `/tasks/WP01-census-and-bound-model-spine.md`
 
 #### Included Subtasks
@@ -59,14 +61,16 @@
 ### WP02 — Red-first invariants (Priority: P1)
 
 - **Goal**: IC-06 + the squad-demanded mechanized gates — author the NEW architectural invariants FAILING against today's topology, so WP03 has a red-to-green target that cannot be faked. NEW test files ONLY; the existing suite is untouched.
-- **Independent Test**: Each new test file is `architectural`-marked (CI-selected) and runs RED on the planning base (recorded failure output); zero edits to any pre-existing test file (`git diff --stat` shows only new files).
-- **Priority**: P1 · **Requirement Refs**: FR-001, FR-011, NFR-002, NFR-003, NFR-005, C-005 · **Prompt**: `/tasks/WP02-red-first-invariants.md`
+- **Independent Test**: Each of the eight new test files is `architectural`-marked (CI-selected) and, with reds captured on **WP01's tip** (census + `_gate_coverage` relations present, WP03 absent) so they are genuine topology-reds not missing-substrate errors, runs RED (recorded failure output); the `census.worklist == live_derived_worklist()` freshness assertion is green; zero edits to any pre-existing test file (`git diff --stat` shows only the eight new files).
+- **Priority**: P1 · **Requirement Refs**: FR-001, FR-011, FR-013, NFR-002, NFR-003, NFR-005, NFR-006, C-005 · **Prompt**: `/tasks/WP02-red-first-invariants.md`
 
 #### Included Subtasks
 
-- [ ] T004 [P] `test_ci_topology_worklist.py` (SC-001): iterate the committed census `worklist[]`, assert each dir maps to a named src-backed group AND a focused shard, `unmatched`/`run_all` NOT set. `test_arch_unblind_matrix.py` (NFR-002): differential-matrix asserts arch selects 100% of `src/specify_cli/*` dirs (0 blind).
+- [ ] T004 [P] `test_ci_topology_worklist.py` (SC-001): iterate the committed census `worklist[]`, assert each dir maps to a named src-backed group AND a focused shard, `unmatched`/`run_all` NOT set. **Plus the NFR-006 freshness-guard assertion** `census.worklist == live_derived_worklist()` (calls WP01's pure re-derivation function; GREEN — a stale census reds). `test_arch_unblind_matrix.py` (NFR-002): differential-matrix asserts arch selects 100% of `src/specify_cli/*` dirs (0 blind).
 - [ ] T005 [P] `test_same_tier_uniqueness.py` (NFR-003): no test selected by >1 fast shard nor >1 integration shard — distinct from the report-only cross-tier duplicate warning. `test_coverage_consumer_needs.py` (C-005): coverage-emitters ⊆ `sonarcloud.needs`; critical-path emitters ⊆ `diff-coverage.needs`; explicitly does NOT intersect `slow-tests.needs`.
 - [ ] T006 [P] `test_serial_port_preservation.py` (FR-011): every shard touching daemon/real-port tests preserves a `-n0` serial pass and `--dist loadfile`. `test_job_count_ceiling.py` (NFR-005): `len(quality-gate.needs) ≤ ceiling` (ceiling pinned from the composite design).
+- [ ] T016 [P] `test_arch_pole_deserialized.py` (FR-013 structural gate): parse the arch/adversarial job's `needs` set and assert it contains NO fast-lane job (`fast-tests-core-misc`) — `if: always()` ≠ parallel, so only dropping the edge de-serializes. NATURAL RED today (edge present); green when WP03 drops it.
+- [ ] T017 [P] `test_shard_universe_bounded.py` (SC-003a): over the parsed shard-command set, assert no single shard collects the full catch-all universe (max single-shard selected-count `< total`, OR shard count `≥ N` from the composite design). Same-tier uniqueness alone does NOT imply the monolith was split. NATURAL RED today (one monolith); green post-split.
 
 #### Implementation Notes
 
@@ -91,7 +95,7 @@
 ### WP03 — Single-owner `ci-quality.yml` surgery (Priority: P1)
 
 - **Goal**: IC-01 + IC-02 + IC-04 + IC-05 — the SOLE owner of `.github/workflows/ci-quality.yml`. ALL topology edits land here: composite group additions (dedicated + composite per FR-010), `fast-tests-core-misc` matrix subdivision (FR-003), FR-013 arch-pole de-serialization + always-on arch job (Option A, NO filter group), the 5-edit atomic registration per group (FR-002), the `--ignore` mirror + integration `ignore_args` (FR-004/012), `JOB_GROUPS` heredoc, and every consuming needs-list (FR-007). Turns WP02 green.
-- **Independent Test**: All six WP02 invariants flip RED→GREEN; the 8 #2368 WP04 invariants stay green (`test_src_filter_coverage.py` + `test_workflow_coherence.py` + `test_marker_job_completeness.py`); `_gate_coverage` orphan count stays 0 and total selected unchanged.
+- **Independent Test**: All eight WP02 invariants flip RED→GREEN (including `test_arch_pole_deserialized` — the arch `needs` drops the fast-lane job, FR-013; and `test_shard_universe_bounded` — no single shard owns the full universe, SC-003a); the 8 #2368 WP04 invariants stay green (`test_src_filter_coverage.py` + `test_workflow_coherence.py` + `test_marker_job_completeness.py`); `_gate_coverage` orphan count stays 0 and total selected unchanged.
 - **Priority**: P1 · **Requirement Refs**: FR-002, FR-003, FR-004, FR-005, FR-006, FR-007, FR-009, FR-010, FR-011, FR-012, FR-013, NFR-004, C-002, C-003 · **Prompt**: `/tasks/WP03-single-owner-ci-quality.md`
 
 #### Included Subtasks
@@ -100,7 +104,7 @@
 - [ ] T008 Subdivide `fast-tests-core-misc` into a focused matrix mirroring the integration shards (FR-003); update the `--ignore` mirror in lockstep (FR-012 invariant) and the integration-matrix `ignore_args` for nested `tests/specify_cli/<D>` roots (orchestrator_api, bulk_edit) (FR-004); consolidate the `migration` double-root preserving `and not slow` (FR-012).
 - [ ] T009 Extract the `architectural` shard into a standalone always-on `arch-adversarial` job: `if: always()` with NO dorny filter output (Option A — leaves `src_backed_groups`/`unmatched` untouched), drop `needs: fast-tests-core-misc` (FR-013 de-serialize), emit `coverage-*.xml` under the glob-consumed name (FR-006); preserve `-n0` serial + `--dist loadfile` + HOME isolation on new shards (FR-011); preserve fail-safe catch-all (FR-009).
 - [ ] T010 Wire the `JOB_GROUPS` heredoc rows (5-edit surfaces 4-5, FR-002) and register every new job into `quality-gate.needs`, `sonarcloud.needs`, `diff-coverage.needs`, `mutation-testing.needs` (C-005/FR-007) — NEVER `slow-tests.needs`; keep every derived surface asserted-against-parsed-source (C-002).
-- [ ] T011 Gates: WP02's six reds → green; the 8 #2368 invariants green; orphan count 0, total selected unchanged; a probe PR per representative slice demonstrates focused routing (SC-006).
+- [ ] T011 Gates: WP02's eight reds → green (incl. `test_arch_pole_deserialized` FR-013 + `test_shard_universe_bounded` SC-003a); the 8 #2368 invariants green; orphan count 0, total selected unchanged; a probe PR per representative slice demonstrates focused routing (SC-006).
 
 #### Implementation Notes
 
@@ -178,17 +182,17 @@
 
 ### WP06 — Closeout (Priority: P2)
 
-- **Goal**: Refresh the ratchet baseline (totals unchanged), set every issue-matrix verdict to a terminal value, post closeout comments, and the #1931 rollup. Coordinate-note: #2072 also re-keys `_gate_coverage_baseline.json` — flag the shared file.
-- **Independent Test**: `_gate_coverage_baseline.json` refreshed with `total_tests` and `orphan_test_count` UNCHANGED (28573 / 0), asserted by the orphan ratchet (`test_gate_coverage.py`) staying green; `issue-matrix.md` has zero `unknown`/`in-mission` rows remaining (all terminal); all 8 #2368 invariants + the new relations green on the merged tree (NFR-007 sweep).
+- **Goal**: Refresh the ratchet baseline (`orphan_test_count`=0 and no previously-collected test disappears — `total_tests` RISES by the newly-added gated tests), set every issue-matrix verdict to a terminal value, post closeout comments, and the #1931 rollup. Coordinate-note: #2072 also re-keys `_gate_coverage_baseline.json` — flag the shared file.
+- **Independent Test**: `_gate_coverage_baseline.json` refreshed with `orphan_test_count`=0 and no dropped test (`total_tests` rises by the 8 new WP02 + 1 new WP05 gated files — a DROP or new orphan is the regression), asserted by the orphan ratchet (`test_gate_coverage.py`) staying green; `issue-matrix.md` has zero `unknown`/`in-mission` rows remaining (all terminal); all 8 #2368 invariants + the new relations green on the merged tree (NFR-007 sweep).
 - **Priority**: P2 · **Requirement Refs**: NFR-007, C-006 · **Prompt**: `/tasks/WP06-closeout.md`
 
 #### Included Subtasks
 
-- [ ] T015 Refresh `tests/architectural/_gate_coverage_baseline.json` (`--update-baseline`; total/orphan MUST stay 28573/0 — same-tier uniqueness and carve add no orphan). Set `issue-matrix.md` terminal verdicts. Post closeout comments on #2378 (shard-side), #1933 (group-side, shrink-intent statement), #2383 (arch un-blind); #1931 rollup (terminal at closeout). Append the CHANGELOG entry (root `CHANGELOG.md` is a symlink → `docs/changelog/CHANGELOG.md`). Flag the #2072 shared-baseline coordinate.
+- [ ] T015 Refresh `tests/architectural/_gate_coverage_baseline.json` (`--update-baseline`; `orphan_test_count` MUST stay 0 and NO previously-collected test may disappear — `total_tests` legitimately RISES by the newly-added gated tests: the 8 new WP02 files + the 1 new WP05 file; a DROP or new orphan is the regression, not a rekey). Set `issue-matrix.md` terminal verdicts (**note: `issue-matrix.md` is under `kitty-specs/` — a planning-artifact/coord edit, NOT an `owned_files` entry, so no ownership violation**). Post closeout comments on #2378 (shard-side), #1933 (group-side, shrink-intent statement), #2383 (arch un-blind); #1931 rollup (terminal at closeout). Append the CHANGELOG entry (root `CHANGELOG.md` is a symlink → `docs/changelog/CHANGELOG.md`). Flag the #2072 shared-baseline coordinate.
 
 #### Implementation Notes
 
-- The baseline refresh must NOT change totals — if it does, that is a real orphan/duplication regression, not a rekey; investigate before committing.
+- The baseline refresh must keep `orphan_test_count`=0 and drop no previously-collected test — `total_tests` RISING by the newly-added gated tests is expected and correct; a DROP or a new orphan is the real regression, not a rekey; investigate before committing.
 - CHANGELOG edits go through the symlink target `docs/changelog/CHANGELOG.md`.
 
 #### Dependencies
@@ -197,7 +201,7 @@
 
 #### Risks & Mitigations
 
-- Baseline rekey masks a real orphan → assert totals unchanged as the DoD anchor.
+- Baseline rekey introduces a new orphan or DROPS a previously-collected test → assert `orphan_test_count`=0 and no-test-disappears as the DoD anchor (a `total_tests` rise from the new gated tests is expected, not a regression).
 - #2072 concurrently rekeys the same baseline → flag the coordinate in the closeout comment so a later agent does not clobber.
 
 ---
@@ -205,7 +209,7 @@
 ## Dependency & Execution Summary
 
 - **Sequence**: WP01 → WP02 → WP03 → {WP04 ∥ WP05} → WP06. Near-linear per C-003 (single-owner `ci-quality.yml`).
-- **Parallelization**: WP04 and WP05 run concurrently (disjoint files, both depend only on WP03). Within WP02, the six invariant files are independently authorable.
+- **Parallelization**: WP04 and WP05 run concurrently (disjoint files, both depend only on WP03). Within WP02, the eight invariant files are independently authorable.
 - **MVP Scope**: WP01→WP02→WP03 delivers the correctness + wallclock core (Mode-A close + Mode-B un-blind + de-serialization). WP04/WP05/WP06 are propagation, verification, and closeout.
 
 ## Dependency notes
@@ -230,7 +234,7 @@
 | FR-010 | WP03 |
 | FR-011 | WP02 (invariant), WP03 (deliver) |
 | FR-012 | WP03 |
-| FR-013 | WP03 |
+| FR-013 | WP02 (structural gate — arch `needs` drops the fast-lane job), WP03 (deliver) |
 | NFR-001 | WP01 (baseline artifact), WP05 (acceptance observation) |
 | NFR-002 | WP01 (relation), WP02 (test), WP03 (satisfy) |
 | NFR-003 | WP01 (relation), WP02 (test), WP03 (satisfy) |
@@ -257,6 +261,8 @@
 | T004 | RED worklist + arch-unblind matrix | WP02 | P1 | Yes |
 | T005 | RED same-tier + coverage-consumer | WP02 | P1 | Yes |
 | T006 | RED serial-port + job-count ceiling | WP02 | P1 | Yes |
+| T016 | RED arch-pole de-serialized (FR-013 structural gate) | WP02 | P1 | Yes |
+| T017 | RED shard-universe bounded (SC-003a) | WP02 | P1 | Yes |
 | T007 | Composite groups + 5-edit surfaces 1-3 | WP03 | P1 | No |
 | T008 | Fast matrix split + ignore mirror | WP03 | P1 | No |
 | T009 | Always-on de-serialized arch job | WP03 | P1 | No |

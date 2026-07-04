@@ -95,11 +95,10 @@ tests/architectural/
 ├── test_arch_unblind_matrix.py     # NEW — SC-002/NFR-002: arch selects 100% of src dirs
 ├── test_same_tier_uniqueness.py    # NEW — NFR-003: no test in >1 fast shard nor >1 integration shard
 ├── test_coverage_consumer_needs.py # NEW — C-005: cov emitters ⊆ sonarcloud/diff-coverage needs
-└── test_job_count_ceiling.py       # NEW — NFR-005: len(quality-gate.needs) ≤ ceiling
-
-kitty-specs/ci-topology-shrink-01KWQAVX/
-└── ci-topology-census.(json|md)    # COMMITTED artifact: worklist (T_LOC + dirs) + 29.4-min timings
-                                     #   baseline; SC-001/NFR-001/NFR-006 authority the tests iterate
+├── test_job_count_ceiling.py       # NEW — NFR-005: len(quality-gate.needs) ≤ ceiling
+└── ci_topology_census.json         # COMMITTED artifact (json only, underscore): worklist (T_LOC + dirs)
+                                     #   + 29.4-min timings baseline; SC-001/NFR-001/NFR-006 authority the
+                                     #   tests iterate. Lives under tests/architectural/, NOT kitty-specs/.
 ```
 
 **Structure Decision**: single-project CI-infra. The load-bearing constraint is C-003: `ci-quality.yml`
@@ -123,7 +122,7 @@ realistic count is ~7-8). WP shape = **spine → red-first invariants → single
 
 ### Honest WP-shape sketch (authoritative decomposition is /spec-kitty.tasks)
 
-- **WP-spine** — census artifact (`ci-topology-census.*`: `T_LOC`, worklist, 29.4-min timings baseline) +
+- **WP-spine** — census artifact (`tests/architectural/ci_topology_census.json`: `T_LOC`, worklist, 29.4-min timings baseline) +
   routing table + additive `_gate_coverage` parse extension (differential-matrix + same-tier relations) +
   ONE reference slice (dossier — it also fixes the latent integration-shard gap) establishing the recipe.
 - **WP-red** — red-first invariants: `test_ci_topology_worklist` (SC-001), `test_arch_unblind_matrix`
@@ -177,7 +176,7 @@ realistic count is ~7-8). WP shape = **spine → red-first invariants → single
 - **Purpose**: the FR-001 worklist is computed (`T_LOC` floor + no-src-backed-group predicate), committed
   as an artifact the SC-001 test iterates — so the metric measures coverage, not the implementer's constant.
 - **Relevant requirements**: NFR-006, FR-001, SC-001.
-- **Affected surfaces**: `kitty-specs/.../ci-topology-census.(json|md)`; `test_ci_topology_worklist.py`.
+- **Affected surfaces**: `tests/architectural/ci_topology_census.json` (json only, underscore — NOT under `kitty-specs/`); `test_ci_topology_worklist.py`.
 - **Sequencing/depends-on**: feeds IC-01 (which groups to add).
 - **Risks**: `T_LOC` is a committed constant — pin it in the artifact, not the test; the sub-`T_LOC` tail
   is catch-all-safe (FR-009), not a coverage regression.
