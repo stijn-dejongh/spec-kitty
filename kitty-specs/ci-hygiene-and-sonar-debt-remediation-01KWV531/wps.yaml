@@ -1,0 +1,133 @@
+work_packages:
+  - id: WP01
+    title: "Census-gate LOC-ratchet migration"
+    dependencies: []
+    owned_files:
+      - "tests/architectural/test_ci_topology_worklist.py"
+      - "tests/architectural/ci_topology_census.json"
+      - "tests/architectural/_baselines.yaml"
+      - "tests/architectural/_gate_coverage.py"
+    requirement_refs:
+      - FR-001
+      - FR-002
+      - NFR-001
+    plan_concern_refs:
+      - IC-01
+    subtasks:
+      - T001
+      - T002
+      - T003
+      - T004
+      - T005
+    prompt_file: null
+
+  - id: WP02
+    title: "Contract-conformance path resolution + masked description fix"
+    dependencies: []
+    owned_files:
+      - "tests/specify_cli/cli/commands/test_upgrade_command.py"
+      - "tests/specify_cli/compat/test_messages.py"
+      - "tests/specify_cli/conftest.py"
+      - "src/specify_cli/upgrade/migrations/m_3_2_0rc35_unified_bundle.py"
+    requirement_refs:
+      - FR-003
+      - FR-004
+      - FR-005
+      - NFR-002
+    plan_concern_refs:
+      - IC-02
+      - IC-03
+    subtasks:
+      - T006
+      - T007
+      - T008
+      - T009
+      - T010
+      - T011
+    prompt_file: null
+
+  - id: WP03
+    title: "Sonar structural fixes: version tracking + coverage-scope reconciliation"
+    dependencies: []
+    owned_files:
+      - ".github/workflows/ci-quality.yml"
+      - "sonar-project.properties"
+      - "docs/ci/sonar-coverage-scope.md"
+    requirement_refs:
+      - FR-006
+      - FR-007
+      - NFR-003
+    plan_concern_refs:
+      - IC-04
+      - IC-05
+    subtasks:
+      - T012
+      - T013
+      - T014
+      - T015
+    prompt_file: null
+
+  - id: WP04
+    title: "Promote SonarCloud review script into a tracked, tested tool"
+    dependencies: []
+    owned_files:
+      - "scripts/ci/sonarcloud_branch_review.sh"
+      - "tests/scripts/test_sonarcloud_branch_review.py"
+      - "work/snippets/sonarcloud_branch_review.sh"
+    requirement_refs:
+      - FR-012
+    plan_concern_refs:
+      - IC-06
+    subtasks:
+      - T016
+      - T017
+      - T018
+      - T019
+    prompt_file: null
+
+  - id: WP05
+    title: "Slice the live Sonar backlog into tracked, parented tickets"
+    dependencies:
+      - WP04
+    owned_files:
+      - "scripts/ci/file_backlog_slices.py"
+      - "scripts/ci/backlog_slice_manifest.json"
+    requirement_refs:
+      - FR-008
+      - FR-009
+      - C-003
+      - C-004
+      - NFR-004
+    plan_concern_refs:
+      - IC-07
+    subtasks:
+      - T020
+      - T021
+      - T022
+      - T023
+      - T024
+      - T025
+    prompt_file: null
+
+  - id: WP06
+    title: "Fix the roadmap-aligned Sonar slice"
+    dependencies:
+      - WP05
+    owned_files:
+      - "src/specify_cli/cli/commands/agent/workflow.py"
+      - "src/specify_cli/cli/commands/implement.py"
+      - "src/specify_cli/acceptance/__init__.py"
+    requirement_refs:
+      - FR-010
+      - FR-011
+      - C-001
+      - C-002
+    plan_concern_refs:
+      - IC-08
+    subtasks:
+      - T026
+      - T027
+      - T028
+      - T029
+      - T030
+    prompt_file: null
