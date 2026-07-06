@@ -1,0 +1,15 @@
+{
+  "coordination_branch": "kitty/mission-ci-hygiene-and-sonar-debt-remediation-01KWV531",
+  "created_at": "2026-07-06T07:25:40.175853+00:00",
+  "flattened": false,
+  "friendly_name": "CI Hygiene & Sonar Debt Remediation",
+  "mission_id": "01KWV531EFGBMAAM6Q88RWKJW0",
+  "mission_number": null,
+  "mission_slug": "ci-hygiene-and-sonar-debt-remediation-01KWV531",
+  "mission_type": "software-dev",
+  "purpose_context": "Today's PR-landing pass surfaced recurring CI-infra friction (a brittle exact-LOC-equality census gate, a contract-conformance test that has been silently dead in CI, a masked contract violation it hid) and confirmed that SonarCloud's quality gate has been structurally unable to measure real progress (no version tracking, a coverage metric that measures a different scope than the internal gate). This mission fixes the structural bugs, then slices the live ~900-issue Sonar backlog into tracked, ticketed work by module/effort/impact, and fixes the slice that intersects the project's current active roadmap surface (the Wave 2 degod trio) rather than leaving debt to compound silently.",
+  "purpose_tldr": "Fix the CI-topology census/contract test bugs found during today's PR landings, then structurally fix and selectively remediate SonarCloud quality-gate debt.",
+  "slug": "ci-hygiene-and-sonar-debt-remediation-01KWV531",
+  "target_branch": "design/pr-landing-followups-and-sonar-remediation",
+  "topology": "coord"
+}
