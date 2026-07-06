@@ -42,3 +42,24 @@
 - C-001 explicitly excludes the Wave 2 degod trio's own body-thinning
   refactor from this mission's scope, to prevent scope creep into a
   separately-tracked future mission.
+- **Post-spec validation squad (2026-07-06)**: 4-lens bounded squad
+  (architect-alphonso, planner-priti, paula-patterns, debugger-debbie), all
+  read-only/tracker-side, dispatched per the charter's standing adversarial-
+  squad-cadence + campsite-cleaning practice. Verdict: LAND with folds
+  applied. Findings folded into this revision: (1) widened User Story
+  2/FR-003/FR-004/FR-005/NFR-002/SC-002 to cover a second, independently
+  broken contract-conformance instance in `tests/specify_cli/compat/test_messages.py`
+  (alphonso's finding — a genuine squad disagreement with paula's initial
+  "no recurrence" read was adjudicated by direct execution: the operator/agent
+  confirmed `_CONTRACT_PATH.exists()` is `False` unconditionally in that file);
+  (2) added FR-008/User-Story-6 parenting under epic #1928 and cross-referenced
+  #1931 (priti's finding, independently confirmed live); (3) added FR-012/SC-008
+  promoting `work/snippets/sonarcloud_branch_review.sh` (paula's finding,
+  confirmed); (4) added the census-gate ratchet-pattern-reuse note to FR-001
+  and Edge Cases (paula's finding, confirmed against the live `_baselines.yaml`
+  convention); (5) added the C-001/FR-010 triage-exception edge case and
+  updated C-001/FR-010/SC-006 accordingly (alphonso's finding); (6) corrected
+  #2420's cited priority from P2 to P3 (priti's finding). Debbie's live
+  re-verification pass found zero drift and confirmed every factual claim
+  holds, including independently re-pulling live SonarCloud numbers (903 open
+  issues) via the unauthenticated public API.
