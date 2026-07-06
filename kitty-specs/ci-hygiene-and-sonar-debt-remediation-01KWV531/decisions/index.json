@@ -1,0 +1,98 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-07-06T08:06:55.501210Z",
+      "decision_id": "01KWV7EJRDAG6MHJ8CK5513KY8",
+      "final_answer": "pyproject.toml current version",
+      "input_key": "project_version_source",
+      "mission_id": "01KWV531EFGBMAAM6Q88RWKJW0",
+      "mission_slug": "ci-hygiene-and-sonar-debt-remediation-01KWV531",
+      "opened_by": "cli",
+      "options": [
+        "pyproject.toml current version",
+        "most recent git tag",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "sonar.projectVersion should derive from pyproject.toml's current version (updates every dev-cycle-open, mid-cycle reads the next unreleased version) or the most recent git tag (only updates at actual release)?",
+      "rationale": null,
+      "resolved_at": "2026-07-06T08:10:56.726556Z",
+      "resolved_by": null,
+      "slot_key": "plan.sonar.project-version-source",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-07-06T08:06:56.590063Z",
+      "decision_id": "01KWV7EKTEP05FJQC2W65GWJ3H",
+      "final_answer": "(a) split into _baselines.yaml ratchet",
+      "input_key": "census_gate_fix_mechanism",
+      "mission_id": "01KWV531EFGBMAAM6Q88RWKJW0",
+      "mission_slug": "ci-hygiene-and-sonar-debt-remediation-01KWV531",
+      "opened_by": "cli",
+      "options": [
+        "(a) split into _baselines.yaml ratchet",
+        "(b) inline floor+ratchet on census itself",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "FR-001's census-gate fix: (a) move the LOC field out of the exact-equality census entirely into the existing _baselines.yaml growth-only-ratchet system, treating routing-structure and LOC-ratchet as independent concerns, or (b) keep census as one file but change its own assertion from equality to a floor+ratchet check inline?",
+      "rationale": null,
+      "resolved_at": "2026-07-06T08:10:57.804312Z",
+      "resolved_by": null,
+      "slot_key": "plan.census-gate.fix-mechanism",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-07-06T08:06:57.671957Z",
+      "decision_id": "01KWV7EMW7V24156HB72M39Z87",
+      "final_answer": "re-runnable idempotent tool",
+      "input_key": "sonar_script_reusability",
+      "mission_id": "01KWV531EFGBMAAM6Q88RWKJW0",
+      "mission_slug": "ci-hygiene-and-sonar-debt-remediation-01KWV531",
+      "opened_by": "cli",
+      "options": [
+        "One-shot for this mission",
+        "Re-runnable idempotent tool",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "The promoted sonarcloud_branch_review.sh (FR-012) + backlog-slicing tooling (FR-008): build as a one-shot script run once for this mission's slicing pass, or a re-runnable idempotent tool (skip-if-already-filed per rule+file) usable by future missions too?",
+      "rationale": null,
+      "resolved_at": "2026-07-06T08:10:58.803165Z",
+      "resolved_by": null,
+      "slot_key": "plan.sonar-script.reusability",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-07-06T08:11:15.739276Z",
+      "decision_id": "01KWV7PGWVP0ZQK5FBQND45WXW",
+      "final_answer": null,
+      "input_key": "noop",
+      "mission_id": "01KWV531EFGBMAAM6Q88RWKJW0",
+      "mission_slug": "ci-hygiene-and-sonar-debt-remediation-01KWV531",
+      "opened_by": "cli",
+      "options": [],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "noop",
+      "rationale": "Accidental noop test call while verifying decision-resolve status; not a real planning question",
+      "resolved_at": "2026-07-06T08:11:45.921964Z",
+      "resolved_by": null,
+      "slot_key": "noop",
+      "status": "canceled",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01KWV531EFGBMAAM6Q88RWKJW0",
+  "version": 1
+}
