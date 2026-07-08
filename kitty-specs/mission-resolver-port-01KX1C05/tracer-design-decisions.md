@@ -65,5 +65,15 @@ Seeded at planning from the 3-lens pre-spec squad (architect-alphonso, paula-pat
 - **Census expansions**: Clock 12→14 (2 cross-package triaged); #2139 4→≥9 (route or triage KeyError reads);
   AST-gate allowlist seeds ~16 walkers day-one.
 
+## D-10 — DDD rename ExecutionContext → MissionExecutionContext (operator, 2026-07-08, IC-00)
+Code follows ubiquitous language: `MissionExecutionContext` is already the name in the class docstring
+(context.py:11), the parity test (test_execution_context_parity.py:1545), and the #1619 epic title. Plus it
+**collides** with `core/context_validation.py:41 class ExecutionContext(StrEnum)` — renaming the
+`mission_runtime.context` composite disambiguates. Scope: class + ActionContext alias + ~12 importers (20
+files) + ADR prose. HARD EXCLUSION: the StrEnum (different type). Land FIRST (IC-00). Bulk-edit-shaped →
+scoped occurrence classification at /tasks; NOT wholesale change_mode:bulk_edit. Verify with full arch
+suite + test_mission_runtime_surface + test_execution_context_parity (collision = whack-a-symbol trap).
+See [[feedback_brownfield_logical_duplication_consolidation]] discipline; ADJACENT: the StrEnum's own name smell.
+
 ## Decisions made during implement
 _(append here)_

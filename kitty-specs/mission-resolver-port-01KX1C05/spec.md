@@ -107,7 +107,7 @@ mid8 / canonicalizer work (Phase-1 `#2164`, and the legacy-drop `#2463`); decisi
 | **FsMissionResolver** | The real adapter performing the single filesystem walk. |
 | **FakeMissionResolver** | The in-memory stub (a list of `ResolvedMission`) enabling FS-free builder tests. |
 | **The shell** | The imperative I/O boundary `_assemble_core_fragments` in `mission_runtime/resolution.py`, where the port is injected. |
-| **The frozen context** | `MissionExecutionContext` — a `@dataclass(frozen=True)` pure value snapshot. **Never** carries an adapter. |
+| **The frozen context** | `MissionExecutionContext` — a `@dataclass(frozen=True)` pure value snapshot (renamed from `ExecutionContext` per FR-012, DDD ubiquitous language). **Never** carries an adapter. |
 | **Cold-miss** | A handle that resolves to no mission → fail-closed-loud, pointing to `spec-kitty migrate backfill-identity`; never a silent slug fallback. |
 | **Blind-primitive non-fold rule** | Prior-mission rule (ADR `2026-06-26-1`, "FR-011"): canonicalization must NOT be folded into `primary_feature_dir_for_mission`; the resolver sits at the shell *in front of* the primitive, never inside it. |
 
@@ -149,6 +149,7 @@ Actors here are the **CLI runtime**, the **agent/developer writing tests**, and 
 | FR-009 | (Clock) Collapse the 12 byte-identical isoformat `_now_utc` copies into one canonical `now_utc_iso() -> str`. Keep a **format-preserving** stamp helper for the 2 `%Y-%m-%dT%H:%M:%SZ` callers (`task_utils/support.py:101`, `cli/commands/agent/mission_parsing.py:257`) and a `now_utc() -> datetime` helper for the 2 `decisions/*` callers. Inject a Clock port only at determinism-tested sites. | Draft |
 | FR-010 | (InstalledVersion) Route the un-routed migration version read (`upgrade/migrations/m_2_1_4_enforce_command_file_state.py:55`) through the existing `_CliStatusLike` Protocol; no new port introduced. | Draft |
 | FR-011 | (`#2447`) Repoint or remove the phantom `core/mission_detection.py::_detect_from_branch()` row in the shipped `src/doctrine/skills/spec-kitty-git-workflow/references/git-operations-matrix.md`, and add a guard that every `src/…` path referenced in that matrix resolves on disk. | Draft |
+| FR-012 | (DDD rename) Rename the frozen composite `mission_runtime.context.ExecutionContext` → `MissionExecutionContext` (code follows the ubiquitous language already used in its docstring, the #1619 epic, and the parity test), updating all ~12 import sites + usages + the `ActionContext` alias + ADR prose. The unrelated `core/context_validation.py::ExecutionContext(StrEnum)` is **explicitly excluded** (different type). | Draft |
 
 ## Non-Functional Requirements
 

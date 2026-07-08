@@ -132,6 +132,22 @@ findings in the `tracer-*.md` files. This file records the decisions the plan re
 - **Rationale**: without a structural gate the "one walk" invariant is reviewer-vigilance and walker #7
   reappears. Allowlist keyed on tokens/symbols, never line numbers (they drift on merge — F5).
 
+## D-10 — DDD rename `ExecutionContext → MissionExecutionContext` (operator-directed, IC-00)
+
+- **Decision**: rename the frozen composite `mission_runtime.context.ExecutionContext` →
+  `MissionExecutionContext`; land as the FIRST WP so downstream resolver work uses the corrected name.
+- **Rationale (it fits)**: `MissionExecutionContext` is already the ubiquitous term — the class docstring
+  (`context.py:11`), a parity-test assertion (`test_execution_context_parity.py:1545`), and the **#1619
+  epic title** all use it; the class name is the only laggard (DDD: code follows the ubiquitous language).
+  Decisive extra reason: it **collides** with `core/context_validation.py:41 class ExecutionContext(StrEnum)`
+  — an unrelated type. Renaming disambiguates.
+- **Scope**: class def + `ActionContext` alias (`:349`) + ~12 import sites + usages (20 files) + ADR prose
+  (`2026-06-22-1`, `2026-06-03-1`). **Hard exclusion**: the `ExecutionContext(StrEnum)` — a different type,
+  untouched (its own rename is ADJACENT, out of scope unless the operator asks).
+- **Discipline**: bulk-edit-shaped though the mission is not wholesale `change_mode: bulk_edit` — apply a
+  scoped occurrence classification at `/tasks` and verify with the full arch suite + `test_mission_runtime_surface.py`
+  / `test_execution_context_parity.py` after (the collision is the whack-a-symbol trap).
+
 ## Adopt-don't-duplicate (reuse, verified)
 
 - `PlacementSeam` (`mission_runtime/resolution.py:1266`) — yield dirs through its grammar, never compose paths.

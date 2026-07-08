@@ -124,8 +124,13 @@ stays green with zero new ledger edge** — if implementation finds this infeasi
 `"context"` to the ledger with a rationale comment) requires an explicit operator note, since it grows a
 ledger #2173 exists to drain.
 
-**Naming note:** the frozen context class is `ExecutionContext` (`mission_runtime/context.py:262`);
-`MissionExecutionContext` is its domain name. FR-004's test targets the real class.
+**DDD rename (IC-00, operator-directed):** the frozen context class is `ExecutionContext`
+(`mission_runtime/context.py:262`) but the ubiquitous term is `MissionExecutionContext` — it is already
+the name in the class docstring (`context.py:11`), a parity-test assertion (`test_execution_context_parity.py:1545`),
+and the **#1619 epic title**. It also **collides** with an unrelated `class ExecutionContext(StrEnum)`
+(`core/context_validation.py:41`). This mission renames `mission_runtime.context.ExecutionContext →
+MissionExecutionContext` (code follows ubiquitous language, DDD). The colliding **StrEnum is NOT renamed**
+here (different type; flagged ADJACENT). FR-004's test targets the renamed class.
 
 ## Complexity Tracking
 
@@ -135,6 +140,14 @@ the injection is complexity-safe; extraction belongs to the #2173 decomposition 
 ## Implementation Concern Map
 
 > Concerns are NOT work packages. `/spec-kitty.tasks` translates these into WPs.
+
+### IC-00 — DDD rename `ExecutionContext → MissionExecutionContext` (first; unblocks clean downstream naming)
+
+- **Purpose**: Align the frozen composite's code name with the ubiquitous language (#1619 "mission execution context") and remove the collision with `core/context_validation.py::ExecutionContext(StrEnum)`.
+- **Requirements**: FR-012.
+- **Surfaces**: `mission_runtime/context.py:262` (class), the `ActionContext` alias (`:349`), the ~12 `from mission_runtime.context import ExecutionContext` sites + their usages (20 files total), and ADR prose (`2026-06-22-1`, `2026-06-03-1`). **Scoped occurrence classification** (do at `/tasks`): code_symbols = the composite class only; import_paths = the 12 import sites; tests_fixtures = test refs; user_facing_strings/docs = docstrings + ADR prose. **Exclusion (hard):** `core/context_validation.py::ExecutionContext(StrEnum)` — a different type, untouched.
+- **Sequencing/depends-on**: FIRST — so IC-01/IC-02 use the corrected name. Land as its own WP.
+- **Risks**: the StrEnum collision is the whack-a-symbol trap — rename must target only the `mission_runtime.context` composite; verify with the full `tests/architectural/` + arch surface gate (`test_mission_runtime_surface.py`, `test_execution_context_parity.py`) after. Bulk-edit-shaped: apply the occurrence-classification discipline even though the mission is not wholesale `change_mode: bulk_edit`.
 
 ### IC-01 — Resolver port + walk trunk (Protocol, adapters, free-fn delegate)
 

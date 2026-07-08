@@ -13,9 +13,11 @@ DI seam over existing reads. The "entities" here are the port interface and the 
 | `feature_dir` | `Path` | absolute mission directory |
 | `mid8` | `str` | first 8 chars of `mission_id` |
 
-### `MissionExecutionContext` (`mission_runtime/context.py:11`, frozen)
-The pure composite the builder mints. **Invariant: never carries an adapter** (C-006). Unchanged by this
-mission except that its builder becomes injectable at the shell.
+### `MissionExecutionContext` (`mission_runtime/context.py:262`, frozen) — renamed from `ExecutionContext` (FR-012)
+The pure composite the builder mints. **Invariant: never carries an adapter** (C-006). This mission
+renames the class from `ExecutionContext` to `MissionExecutionContext` (DDD ubiquitous language; also
+disambiguates from `core/context_validation.py::ExecutionContext(StrEnum)`, which is NOT renamed) and
+makes its builder injectable at the shell.
 
 ## New port interface
 
