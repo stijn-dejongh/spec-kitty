@@ -16,12 +16,12 @@ resolver core (WP02) → trunk threading (WP03) → gate (WP04) form the spine; 
 | T003 | Mechanical rename across the ~12 importers + usages (out-of-map, documented) | WP01 | | [D] |
 | T004 | Update ADR prose (`2026-06-22-1`, `2026-06-03-1`) | WP01 | | [D] |
 | T005 | Verify: full `tests/architectural/` + parity + surface gates green; StrEnum untouched | WP01 | | [D] |
-| T006 | Define `MissionResolver` Protocol in `mission_runtime/mission_resolver_port.py` | WP02 | |
-| T007 | `FsMissionResolver` adapter (wrap `_build_index`) in `context/mission_resolver.py` | WP02 | |
-| T008 | `FakeMissionResolver` in-memory adapter | WP02 | |
-| T009 | Free `resolve_mission` gains optional `resolver=None` param (single-site injection) | WP02 | |
-| T010 | Fail-closed cold-miss/ambiguity + `backfill-identity` message (FR-005) | WP02 | |
-| T011 | Resolver unit tests (CT-1…CT-7, FS-free Fake) | WP02 | |
+| T006 | Define `MissionResolver` Protocol in `mission_runtime/mission_resolver_port.py` | WP02 | | [D] |
+| T007 | `FsMissionResolver` adapter (wrap `_build_index`) in `context/mission_resolver.py` | WP02 | | [D] |
+| T008 | `FakeMissionResolver` in-memory adapter | WP02 | | [D] |
+| T009 | Free `resolve_mission` gains optional `resolver=None` param (single-site injection) | WP02 | | [D] |
+| T010 | Fail-closed cold-miss/ambiguity + `backfill-identity` message (FR-005) | WP02 | | [D] |
+| T011 | Resolver unit tests (CT-1…CT-7, FS-free Fake) | WP02 | | [D] |
 | T012 | Thread `resolver` through the canonicalizer chain (`_read_path_resolver.py:503`) | WP03 | |
 | T013 | Thread `resolver` through the shell callers (`resolve_action_context`, `mission_context_for`, `resolve_placement_only`) | WP03 | |
 | T014 | Legacy-`<slug>` bootstrap sentinel carve-out + regression test (D-07) | WP03 | |
@@ -31,15 +31,15 @@ resolver core (WP02) → trunk threading (WP03) → gate (WP04) form the spine; 
 | T018 | Write the ADR (trunk, ledger-dodge, no-cache, fail-closed) | WP04 | |
 | T019 | New AST gate `test_mission_resolver_walker_gate.py` seeded with full ~16-walker allowlist | WP04 | |
 | T020 | Verify gate green on introduction + discriminate enumeration vs single-dir access | WP04 | |
-| T021 | Route the ≥9 `target_branch` readers onto `read_target_branch_from_meta` | WP05 | [P] |
-| T022 | Delete divergent `"main"`/`""`/`None` defaults; triage `KeyError` dataclass reads OUT | WP05 | [P] |
-| T023 | `target_branch` reconcile characterization test | WP05 | [P] |
-| T024 | Consolidate the 12 isoformat `_now_utc` copies → one canonical helper | WP06 | [P] |
-| T025 | Triage the 2 cross-package copies; preserve 2 stamp + 2 datetime helpers | WP06 | [P] |
-| T026 | SAFE campsite: `mission_parsing.py:259` literal → shared constant; NFR-004 byte-identical test | WP06 | [P] |
-| T027 | Route the `m_2_1_4` migration version read through `_CliStatusLike` | WP07 | [P] |
-| T028 | `#2447`: repoint/remove the phantom doctrine row + terminology guard | WP07 | [P] |
-| T029 | Add the "every `src/…` path in `git-operations-matrix.md` resolves" guard test | WP07 | [P] |
+| T021 | Route the ≥9 `target_branch` readers onto `read_target_branch_from_meta` | WP05 | [D] |
+| T022 | Delete divergent `"main"`/`""`/`None` defaults; triage `KeyError` dataclass reads OUT | WP05 | [D] |
+| T023 | `target_branch` reconcile characterization test | WP05 | [D] |
+| T024 | Consolidate the 12 isoformat `_now_utc` copies → one canonical helper | WP06 | [D] |
+| T025 | Triage the 2 cross-package copies; preserve 2 stamp + 2 datetime helpers | WP06 | [D] |
+| T026 | SAFE campsite: `mission_parsing.py:259` literal → shared constant; NFR-004 byte-identical test | WP06 | [D] |
+| T027 | Route the `m_2_1_4` migration version read through `_CliStatusLike` | WP07 | [D] |
+| T028 | `#2447`: repoint/remove the phantom doctrine row + terminology guard | WP07 | [D] |
+| T029 | Add the "every `src/…` path in `git-operations-matrix.md` resolves" guard test | WP07 | [D] |
 
 ---
 

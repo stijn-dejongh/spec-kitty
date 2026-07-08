@@ -14,6 +14,8 @@ subtasks:
 - T024
 - T025
 - T026
+agent: "claude:sonnet:randy-reducer:implementer"
+shell_pid: "4187596"
 history:
 - at: '2026-07-08T18:06:06+00:00'
   actor: planner
@@ -112,3 +114,8 @@ Planning branch and merge target: `feat/mission-resolver-port-2173`. Lane worktr
 - **NFR-004**: reviewer confirms no serialized timestamp format changed (diff the test's expected strings).
 - Confirm the monkeypatch-based determinism tests that patched a folded `_now_utc` still control time
   (update them to patch the canonical helper).
+
+## Activity Log
+
+- 2026-07-08T19:10:22Z – claude:sonnet:randy-reducer:implementer – shell_pid=4187596 – Assigned agent via action command
+- 2026-07-08T19:45:43Z – claude:sonnet:randy-reducer:implementer – shell_pid=4187596 – 12 owned isoformat copies -> one canonical now_utc_iso() in src/specify_cli/core/time_utils.py (new). status/reducer.py copy was dead code (no callers), deleted outright rather than replaced. Stamp family (2 callers, %Y-%m-%dT%H:%M:%SZ) and datetime-returning family (2 callers, decisions/*, not owned) preserved untouched -- NFR-004 byte-identical. T026 SAFE fold: mission_parsing.py routes its stamp literal through task_utils.support.TIMESTAMP_FORMAT. Updated test_parity.py/test_reducer.py monkeypatches from the deleted reducer._now_utc to core.time_utils.now_utc_iso. New tests/specify_cli/test_clock_consolidation.py (9 tests, pytest.mark.fast) pins single-definition + byte-identical stamp output. FOLLOW-UP NEEDED (not done here, out of owned_files): ~18 more isoformat copies in non-owned files (sync/*, review/*, skills/command_installer.py, merge/state.py, analysis_report.py...) still need routing -- do not claim full consolidation without a tracker follow-up. T025 cross-package triage (read-only, no edits): retrospective_terminus.py is import-direction-SAFE for a future WP; glossary/events.py and charter/evidence/code_reader.py are OUT (would be new reverse package edges). ruff clean, mypy clean on all touched files (10 pre-existing no-any-return findings confirmed via git blame as predating this WP, untouched by this diff). tests/status, tests/event_journal, tests/sync/test_migrate_journal.py, tests/retrospective, tests/delivery, tests/dossier, tests/specify_cli/cli/commands/agent/test_mission_parsing.py, tests/architectural all green (827 passed/4 skipped in architectural suite).

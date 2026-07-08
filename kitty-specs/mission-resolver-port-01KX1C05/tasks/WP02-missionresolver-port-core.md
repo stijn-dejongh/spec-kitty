@@ -17,6 +17,8 @@ subtasks:
 - T009
 - T010
 - T011
+agent: "claude:opus:reviewer-renata:reviewer"
+shell_pid: "132450"
 history:
 - at: '2026-07-08T18:06:06+00:00'
   actor: planner
@@ -114,3 +116,10 @@ Planning branch and merge target: `feat/mission-resolver-port-2173`. Lane worktr
 - Reviewer confirms **no new `mission_runtime → specify_cli.context` import** (run `test_layer_rules.py`).
 - Confirm the Fake test truly runs with the specs dir absent (delete/point elsewhere in the fixture).
 - Sonar census on the touched module; fold SAFE trivia.
+
+## Activity Log
+
+- 2026-07-08T19:10:06Z – claude:sonnet:python-pedro:implementer – shell_pid=4187596 – Assigned agent via action command
+- 2026-07-08T19:41:53Z – claude:sonnet:python-pedro:implementer – shell_pid=4187596 – Ready for review: MissionResolver Protocol in mission_runtime/mission_resolver_port.py (structural ResolvedMissionLike via read-only @property, no new mission_runtime->specify_cli.context ledger edge); FsMissionResolver/FakeMissionResolver in context/mission_resolver.py; free resolve_mission(resolver=None) delegates. MissionNotFoundError message now names 'spec-kitty migrate backfill-identity' (FR-005/CT-3 gap fix). No cache (C-005), no is-None/or-slug fallback (D-05). ruff/mypy exit 0 on diff-scoped files. Full tests/architectural/ suite: 827 passed, 4 skipped, 0 failed (incl. test_layer_rules.py, test_mission_runtime_surface.py, test_no_dead_symbols.py). New tests/specify_cli/context/test_mission_resolver_port.py: 26 passed (CT-1..CT-7 incl. FS-free Fake).
+- 2026-07-08T19:42:39Z – claude:opus:reviewer-renata:reviewer – shell_pid=132450 – Started review via action command
+- 2026-07-08T19:46:38Z – user – shell_pid=132450 – Review passed: layer-rules green (no new mission_runtime->specify_cli.context edge; structural ResolvedMissionLike mirror sound, mypy clean); FR-005 fail-closed verified (MissionNotFoundError names 'spec-kitty migrate backfill-identity', no is-None/or-slug fallback, structural guard test); no cache (C-005 struct+live-mutation test); CT-5 Fake FS-free proven; 153 context tests pass (no regression from message change); Fs/Fake adapters + free resolve_mission(resolver=None) delegate; surface-pin re-export sanctioned; ruff+mypy exit 0; 49 arch/port tests green.
