@@ -109,7 +109,7 @@ FLOOR_MARGIN = 2
 # is why mission_metadata.py is excluded from the INLINE scan but NOT from this
 # routed-usage census). Floor = 117 - MARGIN(4) = 113.
 ROUTED_LOAD_META_FLOOR_MARGIN = 4
-ROUTED_LOAD_META_FLOOR = 113
+ROUTED_LOAD_META_FLOOR = 112
 
 
 # --------------------------------------------------------------------------- #

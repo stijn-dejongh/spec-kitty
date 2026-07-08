@@ -30,7 +30,7 @@ from specify_cli.context.resolver import _read_meta_json
 from specify_cli.retrospective.generator import generate_retrospective
 from specify_cli.retrospective.policy import default_policy
 
-pytestmark = [pytest.mark.unit, pytest.mark.fast]
+pytestmark = [pytest.mark.integration, pytest.mark.git_repo]
 
 NON_MAIN_BRANCH = "trunk-integration"
 
