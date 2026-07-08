@@ -38,9 +38,15 @@ Seeded at planning from the 3-lens pre-spec squad (architect-alphonso, paula-pat
   sanctioned walker) together, copying the `test_protection_resolver_call_sites.py` precedent — otherwise
   the invariant is reviewer-vigilance, not structural, and walker #7 reappears.
 
-## Open questions to resolve at /plan
-- Q1: `context/mission_resolver.py::resolve_mission` vs the path-variant `runtime/resolver.py::resolve_mission` — pick the single authority (D2 assumes the former).
-- Q2: does `FsMissionResolver` land in `mission_runtime` (import-forbidden externally, MR-1/2/3) or `context`? Affects consumer import paths.
+## Open questions — RESOLVED at /plan (2026-07-08, by code analysis)
+- **Q1 → context/mission_resolver.py::resolve_mission.** `runtime/resolver.py` has NO `resolve_mission`
+  — it resolves template/config *paths* (`resolve_command_template_path`, …), a different concern; not a
+  rival. The canonicalizer already delegates to the context resolver (`_read_path_resolver.py:503`),
+  confirming it is the single identity walk. See research.md D-Q1.
+- **Q2 → co-locate the port in `src/specify_cli/context/mission_resolver.py`** (not `mission_runtime`).
+  The walk + `ResolvedMission` + errors already live there; `mission_runtime` submodules are
+  external-import-forbidden (MR gate) but tests/CLI must import the Fake; and `mission_runtime → specify_cli`
+  is already an established direction (`resolution.py:327/344/394…`). See research.md D-Q2.
 
 ## Decisions made during implement
 _(append here)_
