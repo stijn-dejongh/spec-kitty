@@ -12,5 +12,7 @@
   "purpose_tldr": "One canonical MissionResolver port so the mission execution-context builder is FS-free-testable — the enabler that unblocks the #1619 runtime-context root and de-risks the later #2160 degod.",
   "slug": "mission-resolver-port-01KX1C05",
   "target_branch": "feat/mission-resolver-port-2173",
-  "topology": "coord"
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-07-08T18:34:59.473618+00:00"
 }
