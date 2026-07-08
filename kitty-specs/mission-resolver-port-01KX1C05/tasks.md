@@ -28,9 +28,9 @@ resolver core (WP02) → trunk threading (WP03) → gate (WP04) form the spine; 
 | T015 | Adopt the 2 resolve-by-identity consumers (`apply.py`, `vcs/detection.py`) | WP03 | | [D] |
 | T016 | Free-function caller audit (verify 8 now trunk; edit only if injection needed) | WP03 | | [D] |
 | T017 | FS-free builder identity test (NFR-001, scoped) + layer/purity/no-cache verify | WP03 | | [D] |
-| T018 | Write the ADR (trunk, ledger-dodge, no-cache, fail-closed) | WP04 | | [D] |
-| T019 | New AST gate `test_mission_resolver_walker_gate.py` seeded with full ~16-walker allowlist | WP04 | | [D] |
-| T020 | Verify gate green on introduction + discriminate enumeration vs single-dir access | WP04 | | [D] |
+| T018 | Write the ADR (trunk, ledger-dodge, no-cache, fail-closed) | WP04 | |
+| T019 | New AST gate `test_mission_resolver_walker_gate.py` seeded with full ~16-walker allowlist | WP04 | |
+| T020 | Verify gate green on introduction + discriminate enumeration vs single-dir access | WP04 | |
 | T021 | Route the ≥9 `target_branch` readers onto `read_target_branch_from_meta` | WP05 | [D] |
 | T022 | Delete divergent `"main"`/`""`/`None` defaults; triage `KeyError` dataclass reads OUT | WP05 | [D] |
 | T023 | `target_branch` reconcile characterization test | WP05 | [D] |

@@ -1,24 +1,10 @@
 {
-  "accept_commit": "52d3a5ad4b8b75f2171b4723e2eabb2fc4a54d3f",
-  "acceptance_history": [
-    {
-      "accept_commit": "52d3a5ad4b8b75f2171b4723e2eabb2fc4a54d3f",
-      "acceptance_mode": "pr",
-      "accepted_at": "2026-07-08T22:07:25.593055+00:00",
-      "accepted_by": "stijn",
-      "accepted_from_commit": "4ccaa4c25e5d3aab936c58eda99b5c51e33b21f4"
-    }
-  ],
-  "acceptance_mode": "pr",
-  "accepted_at": "2026-07-08T22:07:25.593055+00:00",
-  "accepted_by": "stijn",
-  "accepted_from_commit": "4ccaa4c25e5d3aab936c58eda99b5c51e33b21f4",
   "coordination_branch": "kitty/mission-mission-resolver-port-01KX1C05",
   "created_at": "2026-07-08T17:21:52.190148+00:00",
   "flattened": false,
   "friendly_name": "MissionResolver Port (2173 Phase 2)",
   "mission_id": "01KX1C051X4JT9VZE6NA3HEPXT",
-  "mission_number": null,
+  "mission_number": 170,
   "mission_slug": "mission-resolver-port-01KX1C05",
   "mission_type": "software-dev",
   "pr_bound": true,
@@ -26,7 +12,5 @@
   "purpose_tldr": "One canonical MissionResolver port so the mission execution-context builder is FS-free-testable — the enabler that unblocks the #1619 runtime-context root and de-risks the later #2160 degod.",
   "slug": "mission-resolver-port-01KX1C05",
   "target_branch": "feat/mission-resolver-port-2173",
-  "topology": "coord",
-  "vcs": "git",
-  "vcs_locked_at": "2026-07-08T18:34:59.473618+00:00"
+  "topology": "coord"
 }

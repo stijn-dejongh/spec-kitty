@@ -2,24 +2,128 @@
   "mission_slug": "mission-resolver-port-01KX1C05",
   "mission_number": "",
   "mission_type": "software-dev",
-  "overall_verdict": "pass",
+  "overall_verdict": "pending",
   "criteria": [
-    {"criterion_id": "FR-001", "description": "Single MissionResolver Protocol + FsMissionResolver + FakeMissionResolver over the one kitty-specs walk", "proof_type": "automated_test", "evidence": "WP02 approved; resolver unit tests CT-1..CT-7 green (26 tests); Protocol in mission_runtime, adapters in context", "pass_fail": "pass", "verified_by": "reviewer-renata (WP02)", "verified_at": "2026-07-08T22:06:34Z", "notes": "Structural ResolvedMissionLike mirror avoids new layer-ledger edge."},
-    {"criterion_id": "FR-002", "description": "Port is the single walk trunk: resolver threaded shell->canonicalizer->free resolve_mission", "proof_type": "automated_test", "evidence": "WP03 approved; split-brain grep clean; _read_path_resolver threads resolver=; 8 free-fn callers inherit default", "pass_fail": "pass", "verified_by": "reviewer-renata (WP03)", "verified_at": "2026-07-08T22:06:34Z", "notes": "Injection at callers, not the assembler."},
-    {"criterion_id": "FR-003", "description": "Adopt resolve-by-identity consumers + audit 8 free-fn callers", "proof_type": "automated_test", "evidence": "WP03 approved; apply.py/vcs/detection.py adopted via all_missions(); caller audit documented", "pass_fail": "pass", "verified_by": "reviewer-renata (WP03)", "verified_at": "2026-07-08T22:06:34Z", "notes": "apply.py::apply_proposals kept C901<=15."},
-    {"criterion_id": "FR-004", "description": "Execution-context builder identity leg is FS-free-testable via FakeMissionResolver (#1619 unblock)", "proof_type": "automated_test", "evidence": "WP03 approved; test_builder_fs_free_identity.py 5 passed with no kitty-specs tree; would fail without threading", "pass_fail": "pass", "verified_by": "reviewer-renata (WP03)", "verified_at": "2026-07-08T22:06:34Z", "notes": "Genuine identity-leg unblock (D-09 scoping)."},
-    {"criterion_id": "FR-005", "description": "Fail-closed cold-miss/ambiguity; no is-None/or-slug legacy branch; backfill-identity message", "proof_type": "automated_test", "evidence": "WP02/WP03 approved; MissionNotFoundError names backfill-identity; source-guard test pins absence of fallback", "pass_fail": "pass", "verified_by": "reviewer-renata (WP02/WP03)", "verified_at": "2026-07-08T22:06:34Z", "notes": "legacy-<slug> bootstrap sentinel is a documented carve-out (D-07), not a fallback."},
-    {"criterion_id": "FR-006", "description": "ADR recording the trunk decision + corollaries", "proof_type": "documentation", "evidence": "WP04 approved; docs/adr/3.x/2026-07-08-1-mission-resolver-port.md; docs freshness green", "pass_fail": "pass", "verified_by": "reviewer-renata (WP04)", "verified_at": "2026-07-08T22:06:34Z", "notes": "Records ledger-dodge, no shared DI, no port on frozen context, C-007."},
-    {"criterion_id": "FR-007", "description": "New AST call-site gate: FsMissionResolver is sole sanctioned kitty-specs walker", "proof_type": "automated_test", "evidence": "WP04 approved; test_mission_resolver_walker_gate.py token-keyed, allowlist matches live census (31 files, 0 uncovered), anti-mutant proven (planted walker reds)", "pass_fail": "pass", "verified_by": "reviewer-renata (WP04)", "verified_at": "2026-07-08T22:06:34Z", "notes": "Scan-root discrimination; gate bites."},
-    {"criterion_id": "FR-008", "description": "#2139 target_branch reconcile onto read_target_branch_from_meta; delete divergent defaults", "proof_type": "automated_test", "evidence": "WP05 approved; 6 readers routed, 4 triaged OUT with rationale (verified sound); characterization test proves fail-closed", "pass_fail": "pass", "verified_by": "reviewer-renata (WP05)", "verified_at": "2026-07-08T22:06:34Z", "notes": "Sibling reconcile, not a resolver method."},
-    {"criterion_id": "FR-009", "description": "Clock: 12 isoformat copies -> one canonical helper; preserve stamp/datetime families", "proof_type": "automated_test", "evidence": "WP06 approved; core/time_utils.now_utc_iso(); dead reducer copy deleted (zero-caller verified); 727 tests green", "pass_fail": "pass", "verified_by": "reviewer-renata (WP06)", "verified_at": "2026-07-08T22:06:34Z", "notes": "~18 non-owned copies deferred to follow-up (documented)."},
-    {"criterion_id": "FR-010", "description": "InstalledVersion routing through existing _CliStatusLike Protocol", "proof_type": "automated_test", "evidence": "WP07 approved (cycle 2); m_2_1_4 routes via _CliStatusLike; injection-branch test proven (fails if branch deleted)", "pass_fail": "pass", "verified_by": "reviewer-renata (WP07)", "verified_at": "2026-07-08T22:06:34Z", "notes": "No new port; migration replay byte-identical."},
-    {"criterion_id": "FR-011", "description": "#2447 doctrine phantom repointed + path-resolution guard", "proof_type": "automated_test", "evidence": "WP07 approved; git-operations-matrix.md phantom repointed to real surfaces; test_git_matrix_paths_resolve.py bites on planted phantom", "pass_fail": "pass", "verified_by": "reviewer-renata (WP07)", "verified_at": "2026-07-08T22:06:34Z", "notes": "Terminology guard green."},
-    {"criterion_id": "FR-012", "description": "DDD rename ExecutionContext -> MissionExecutionContext (composite only; StrEnum excluded)", "proof_type": "automated_test", "evidence": "WP01 approved; class + __init__ re-export + _PUBLIC_SURFACE updated; grep confirms 1 remaining ExecutionContext (the StrEnum)", "pass_fail": "pass", "verified_by": "reviewer-renata (WP01)", "verified_at": "2026-07-08T22:06:34Z", "notes": "Removes name collision with context_validation.ExecutionContext(StrEnum)."},
-    {"criterion_id": "NFR-001", "description": "Identity-leg FS-free-testability", "proof_type": "automated_test", "evidence": "WP03; FS-free identity test green with specs dir absent", "pass_fail": "pass", "verified_by": "reviewer-renata (WP03)", "verified_at": "2026-07-08T22:06:34Z", "notes": "Scoped to identity leg; other FS legs later-phase (D-09)."},
-    {"criterion_id": "NFR-002", "description": "Architectural ratchet integrity; floors shrink-only", "proof_type": "automated_test", "evidence": "Full tests/architectural/ green (832 passed, 0 failed); surface-resolution audit census regenerated canonically", "pass_fail": "pass", "verified_by": "closeout + reviewer-renata (all WPs)", "verified_at": "2026-07-08T22:06:34Z", "notes": "New walker gate added; census honest."},
-    {"criterion_id": "NFR-003", "description": "ruff + mypy zero new issues; complexity <=15", "proof_type": "automated_test", "evidence": "All WPs: diff-scoped ruff+mypy exit 0; apply.py apply_proposals kept <=15", "pass_fail": "pass", "verified_by": "reviewer-renata (all WPs)", "verified_at": "2026-07-08T22:06:34Z", "notes": "Pre-existing findings unchanged."},
-    {"criterion_id": "NFR-004", "description": "Timestamp serialization byte-identical", "proof_type": "automated_test", "evidence": "WP06; stamp callers emit identical %Y-%m-%dT%H:%M:%SZ; characterization test on frozen clock", "pass_fail": "pass", "verified_by": "reviewer-renata (WP06)", "verified_at": "2026-07-08T22:06:34Z", "notes": "On-disk timestamps unchanged."},
-    {"criterion_id": "NFR-005", "description": "Structured failure, no silent fallback", "proof_type": "automated_test", "evidence": "WP02; typed cold-miss/ambiguity errors + source-guard test", "pass_fail": "pass", "verified_by": "reviewer-renata (WP02)", "verified_at": "2026-07-08T22:06:34Z", "notes": "ADR 2026-07-01-1 forbidden-branch honored."}
-  ]
+    {
+      "criterion_id": "FR-001",
+      "description": "Verify FR-001 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": null,
+      "pass_fail": "pending",
+      "verified_by": null,
+      "verified_at": null,
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-002",
+      "description": "Verify FR-002 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": null,
+      "pass_fail": "pending",
+      "verified_by": null,
+      "verified_at": null,
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-003",
+      "description": "Verify FR-003 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": null,
+      "pass_fail": "pending",
+      "verified_by": null,
+      "verified_at": null,
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-004",
+      "description": "Verify FR-004 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": null,
+      "pass_fail": "pending",
+      "verified_by": null,
+      "verified_at": null,
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-005",
+      "description": "Verify FR-005 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": null,
+      "pass_fail": "pending",
+      "verified_by": null,
+      "verified_at": null,
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-006",
+      "description": "Verify FR-006 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": null,
+      "pass_fail": "pending",
+      "verified_by": null,
+      "verified_at": null,
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-007",
+      "description": "Verify FR-007 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": null,
+      "pass_fail": "pending",
+      "verified_by": null,
+      "verified_at": null,
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-008",
+      "description": "Verify FR-008 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": null,
+      "pass_fail": "pending",
+      "verified_by": null,
+      "verified_at": null,
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-009",
+      "description": "Verify FR-009 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": null,
+      "pass_fail": "pending",
+      "verified_by": null,
+      "verified_at": null,
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-010",
+      "description": "Verify FR-010 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": null,
+      "pass_fail": "pending",
+      "verified_by": null,
+      "verified_at": null,
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-011",
+      "description": "Verify FR-011 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": null,
+      "pass_fail": "pending",
+      "verified_by": null,
+      "verified_at": null,
+      "notes": "TODO: replace with a real acceptance criterion"
+    },
+    {
+      "criterion_id": "FR-012",
+      "description": "Verify FR-012 is satisfied",
+      "proof_type": "automated_test",
+      "evidence": null,
+      "pass_fail": "pending",
+      "verified_by": null,
+      "verified_at": null,
+      "notes": "TODO: replace with a real acceptance criterion"
+    }
+  ],
+  "negative_invariants": []
 }
