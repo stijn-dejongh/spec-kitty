@@ -67,19 +67,26 @@ Collapse the **12 byte-identical** isoformat `_now_utc` copies into **one** cano
 ## Subtasks
 
 ### T024 — One canonical isoformat helper + migrate the 12 copies
-- Add `now_utc_iso() -> str` to a shared home (`src/specify_cli/core/time_utils.py` if none exists; or the
-  existing canonical util — check first, do not duplicate). Body: `datetime.now(UTC).isoformat()`.
-- Replace the 12 byte-identical copies (owned files list) with imports of the one helper. Delete the local
+- Add `now_utc_iso() -> str` to a shared home. **Naming caution (squad):** `task_utils/support.py:101`
+  already defines a `now_utc()` returning a **stamp** string (via `TIMESTAMP_FORMAT`) — do NOT create a
+  confusingly-named sibling. Host `now_utc_iso()` in `task_utils/support.py` (already a time-helper home)
+  with a clear distinct name, or a new `src/specify_cli/core/time_utils.py` (confirmed not to exist yet).
+  Body: `datetime.now(UTC).isoformat()`.
+- Replace the 12 byte-identical copies (owned files) with imports of the one helper. Delete the local
   `_now_utc`/`_utc_now_iso`/`_now_iso`/`_iso_utc_now` defs.
-- The near-identical `skills/command_installer.py:361` (`datetime.now(tz=UTC).isoformat()`) folds into the
-  same helper **if** owned; it is NOT in this WP's owned files — note it for a follow-up rather than reaching out.
+- **Completeness follow-up (squad — whack-a-field guard):** ~18 more byte-identical isoformat copies live in
+  **NON-owned** files (`sync/*`, `review/*`, `skills/command_installer.py:363`, `merge/state.py`,
+  `analysis_report.py`, …). This WP routes only the owned copies — so "one canonical helper" is only
+  half-delivered. **File a Priti follow-up** to route the rest and say so in the review; do NOT claim full
+  consolidation.
 
-### T025 — Triage the 2 cross-package copies
-- `src/glossary/events.py:215` and `src/runtime/next/_internal_runtime/retrospective_terminus.py:63` are
-  byte-identical isoformat copies **across package boundaries**. Do NOT silently stop at 12: either point
-  them at the shared helper (if import direction allows) or record them **OUT with a one-line rationale**
-  (import-direction). They are not in this WP's owned files — document the decision in the review; do not
-  reach out to edit them here.
+### T025 — Triage the cross-package copies
+- Byte-identical isoformat copies exist **across package boundaries**: `src/glossary/events.py:217`,
+  `src/runtime/next/_internal_runtime/retrospective_terminus.py:65`, and
+  **`src/charter/evidence/code_reader.py:108`** (squad-found; was missing from the plan). Do NOT silently
+  stop at 12: for each, either point it at the shared helper (if import direction allows) or record it
+  **OUT with a one-line rationale** (import-direction). Not in this WP's owned files — document the decision
+  in the review; do not reach out to edit them here.
 
 ### T026 — SAFE Sonar campsite + NFR-004 test
 - **SAFE fold**: `cli/commands/agent/mission_parsing.py:259` hard-codes `"%Y-%m-%dT%H:%M:%SZ"` — replace

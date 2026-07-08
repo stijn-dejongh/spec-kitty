@@ -67,10 +67,15 @@ gate naming `FsMissionResolver` as the single sanctioned `kitty-specs/` walker. 
     the anti-fold set (`status/identity_audit.py`, `merge/ordering.py`, `core/paths.py:816/835`), the
     advisory/enumeration walkers (`charter_activate.py`, `doctrine/template_catalog.py`,
     `retrospective/summary.py`, `cli/commands/materialize.py`, `cli/commands/retrospect.py`,
-    `_coordination_doctor.py`, `_identity_audit.py`, `agent/mission_feature_resolution.py`,
-    `git/sparse_checkout.py`, `release/changelog.py`, `_read_path_resolver.py:1409`,
-    `charter/neutrality/lint.py`) and migration-only walkers. **Discriminate** enumeration-of-all-missions
-    from single-mission-dir access.
+    `_coordination_doctor.py`, `_identity_audit.py` (note: `cli/commands/_identity_audit.py` is a distinct
+    file from `status/identity_audit.py` — both are walkers), `agent/mission_feature_resolution.py`,
+    `git/sparse_checkout.py`, `release/changelog.py`, `_read_path_resolver.py:1409`) and migration-only
+    walkers. **Discriminate** enumeration-of-all-missions from single-mission-dir access.
+  - **Scan-root discrimination (squad):** key the gate on walks of the **`kitty-specs/`** tree
+    specifically. `doctrine/template_catalog.py:138` walks the **doctrine missions tree** and
+    `charter/neutrality/lint.py` walks a charter tree — NOT `kitty-specs/`. Do NOT list them (category
+    mismatch that inflates the census); a scan-root-keyed gate never matches them anyway. Verify the live
+    walker set with a census grep before finalizing the count.
   - Add a free-function-caller note (or a companion assertion) so new `resolve_mission` call sites can't
     silently multiply without notice.
 

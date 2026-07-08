@@ -13,6 +13,7 @@
       "write_scope": [
         "docs/adr/3.x/2026-06-03-1-execution-state-domain-model.md",
         "docs/adr/3.x/2026-06-22-1-mission-topology-ssot.md",
+        "src/mission_runtime/__init__.py",
         "src/mission_runtime/context.py"
       ],
       "predicted_surfaces": [
@@ -90,7 +91,8 @@
       ],
       "predicted_surfaces": [
         "api",
-        "legacy-cleanup"
+        "legacy-cleanup",
+        "tracker-integration"
       ],
       "depends_on_lanes": [
         "lane-a"
@@ -156,7 +158,7 @@
       "parallel_group": 3
     }
   ],
-  "computed_at": "2026-07-08T18:13:09.415108+00:00",
+  "computed_at": "2026-07-08T18:31:02.776603+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": []
 }

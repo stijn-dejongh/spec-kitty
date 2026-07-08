@@ -24,6 +24,7 @@ create_intent: []
 execution_mode: code_change
 owned_files:
 - src/mission_runtime/context.py
+- src/mission_runtime/__init__.py
 - docs/adr/3.x/2026-06-22-1-mission-topology-ssot.md
 - docs/adr/3.x/2026-06-03-1-execution-state-domain-model.md
 role: implementer
@@ -70,29 +71,51 @@ Verify by import origin, not by bare token match.
 - Keep the frozen/`@dataclass(frozen=True)` semantics unchanged.
 
 ### T002 — Update the `ActionContext` alias
-- `context.py:349` `ActionContext = ExecutionContext` → `ActionContext = MissionExecutionContext` (keep the transitional alias pointing at the new name; do not delete it — its own retirement is a separate track).
+- `context.py:351` (line drifted from :349) `ActionContext = ExecutionContext` → `ActionContext = MissionExecutionContext` (keep the transitional alias pointing at the new name; do not delete it — its own retirement is a separate track).
 
-### T003 — Mechanical rename across importers + usages (documented out-of-map)
-- Update every `from mission_runtime.context import ExecutionContext` and usage that resolves to the
-  composite. Known sites (~12 imports across 20 files): `mission_runtime/resolution.py`,
-  `runtime/next/runtime_bridge.py`, and the tests listed by
-  `grep -rEn "\bExecutionContext\b" src tests | grep -v StrEnum`.
-- **These files are owned by other WPs; this is an out-of-map mechanical rename** — record the one-line
-  rationale ("WP01 codebase-wide rename FR-012") in the review notes. Because WP01 lands first and all
-  other WPs depend on it (directly or via WP02), there is no parallel collision.
-- Method: resolve each hit's import origin; rename only composite-typed references; leave the StrEnum.
+### T003 — Update the public re-export + composite importers (documented out-of-map)
+**MUST-FIX (squad):** `src/mission_runtime/__init__.py` re-exports the class (`:32` import, `:67` in
+`__all__`) and the package docstring says consumers import ONLY from the root — so if you rename the class
+in `context.py` and NOT here, `import mission_runtime` raises `ImportError` and the WHOLE suite fails at
+collection. **`__init__.py` is in this WP's owned_files** — update its import and `__all__` entry
+(`ExecutionContext` → `MissionExecutionContext`).
+- Then update every composite-typed reference. The real composite-origin src consumers are exactly three
+  files: `context.py` (def), `mission_runtime/__init__.py` (re-export), `mission_runtime/resolution.py`
+  (consumer) — plus ~7 test files (`test_context_factory_invariant`, `test_context_fragments`,
+  `test_resolve_context_for_mission_pure`, `test_execution_context_parity`, `test_mission_runtime_surface`,
+  `test_surface_resolution_equivalence`, `test_mid8_direct_routing`).
+- **Do NOT touch `runtime_bridge.py`** — its only `ExecutionContext` token is the unrelated
+  `StepContractExecutionContext` (a phantom rename site; the original task list was wrong).
+- **Method — import-origin, NOT bare grep.** The naive `grep -v StrEnum` / `grep -v context_validation`
+  recipe does NOT exclude StrEnum *consumers* (e.g. `tests/agent/test_context_validation_unit.py` has 24
+  refs, `tests/conftest.py` uses `ExecutionContext.MAIN_REPO`). Discriminate by import origin: a reference
+  is a rename target ONLY if it resolves to `mission_runtime.context.ExecutionContext`, NOT to
+  `core.context_validation.ExecutionContext(StrEnum)`. Record the one-line rationale ("WP01 rename FR-012")
+  for the out-of-map file touches (resolution.py etc. are owned by later WPs but land after WP01, so no
+  collision).
 
 ### T004 — Update ADR prose
 - `docs/adr/3.x/2026-06-22-1-mission-topology-ssot.md` and `docs/adr/3.x/2026-06-03-1-execution-state-domain-model.md`
   reference `ExecutionContext` as a canonical seam — update to `MissionExecutionContext` where they mean
   the composite (leave any reference that means the StrEnum / a different `ExecutionContext`).
 
-### T005 — Verify (the collision is the risk)
+### T005 — Verify (the collision + the surface pin)
+- **Flip the surface-test pin (MUST-FIX, sanctioned out-of-map):** `tests/architectural/test_mission_runtime_surface.py:53`
+  `_PUBLIC_SURFACE` contains the literal `"ExecutionContext"`, and `:111` asserts
+  `mission_runtime.__all__ == _PUBLIC_SURFACE`. Update that literal to `"MissionExecutionContext"` (the
+  test file already carries a precedent comment endorsing this surface-pin edit). Without this, the surface
+  test reds even after `__init__.py` is fixed.
 - `grep -rn "class ExecutionContext" src` → exactly one hit remains: `core/context_validation.py` (StrEnum).
-- `grep -rEn "\bExecutionContext\b" src tests | grep -v context_validation | grep -v "StrEnum"` → only the
-  StrEnum's own local uses remain; no composite reference survives.
-- Run the FULL `tests/architectural/` suite + `tests/architectural/test_execution_context_parity.py` +
-  `tests/architectural/test_mission_runtime_surface.py` and confirm green. Run `ruff` + `mypy` clean.
+- Confirm no composite reference survives by **import-origin**, not a bare grep (StrEnum consumers like
+  `test_context_validation_unit.py` are legitimate `ExecutionContext` refs and must remain).
+- Run the FULL `tests/architectural/` suite + `test_execution_context_parity.py` +
+  `test_mission_runtime_surface.py`; confirm green. Run `ruff` + `mypy` clean.
+
+### Note — Contextive glossary term (decide, don't silently skip)
+`.contextive/execution.yml:20` defines the domain term `"ExecutionContext"` and `workflow.py:1113`
+mentions it in prose. If the ubiquitous term is now `MissionExecutionContext`, make a deliberate keep-or-
+rename call on the Contextive term and record it (low severity; terminology-canon surface). Not a code
+rename — a glossary decision.
 
 ## Branch Strategy
 

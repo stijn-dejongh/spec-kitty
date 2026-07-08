@@ -53,10 +53,16 @@ Reconcile the `legacy-<slug>` bootstrap sentinel as a documented carve-out. Deli
 **identity-leg** test — the concrete `#1619` unblock. **This is the trunk WP; without it the port is a
 7th parallel path.**
 
+> **Heaviest WP in the mission (post-tasks squad).** 6 concerns over a 1465-LOC god-module. Follow the
+> subtask order T012→T013→T014→T015→T016→T017 strictly. T015 (the 2 enumeration adopters, disjoint files)
+> is liftable into its own sibling WP if you prefer — do so only if you also update `owned_files`; otherwise
+> keep the internal order. Do NOT treat "6 subtasks" as small.
+
 ## Critical design rulings (squad)
 - **Inject at the CALLERS, not inside the assembler**: `_resolve_mission_slug` (`resolution.py:303`) runs
   *before* `_assemble_core_fragments` (`:1036`) and feeds it. Thread `resolver` through
-  `resolve_action_context` (`:1384`), `mission_context_for`, `resolve_placement_only` (~:866).
+  `resolve_action_context` (`:1354`), `mission_context_for` (`:827`), `resolve_placement_only` (`:1143`).
+  (Line numbers verified against live code; if drifted, grep by name.)
 - **Preserve the canonicalizer + topology-aware read**: `_resolve_mission_id`/`_resolve_mission_slug` route
   through `_read_path_resolver` (`resolve_handle_to_read_path`, `primary_feature_dir_for_mission`,
   `_canonicalize_primary_read_handle`) — do NOT bypass them; thread the resolver *into* that chain at the
@@ -81,7 +87,7 @@ Reconcile the `legacy-<slug>` bootstrap sentinel as a documented carve-out. Deli
   `mission_runtime` (would red the ledger) — rely on the free-fn default in `specify_cli.context`.
 
 ### T014 — Legacy-`<slug>` bootstrap sentinel carve-out (D-07)
-- `_resolve_mission_id` (`resolution.py:944`) degrades to `legacy-<slug>` for pre-identity/bootstrap
+- `_resolve_mission_id` (`resolution.py:948`, def at `:913`) degrades to `legacy-<slug>` for pre-identity/bootstrap
   missions. Keep this as an **explicit, documented pre-identity branch** that does NOT call the
   fail-closed `resolve()`. Add a regression test proving bootstrap/scaffold still mints the sentinel (not
   a raised `MissionNotFoundError`).
@@ -90,6 +96,9 @@ Reconcile the `legacy-<slug>` bootstrap sentinel as a documented carve-out. Deli
 - `doctrine_synthesizer/apply.py:602/788` and `core/vcs/detection.py:169` each walk `kitty-specs/` to find
   a dir matching a `mission_id`/slug. Route them through `all_missions()`/`resolve()` on the resolver
   (surfacing the `vcs` field detection needs). Preserve their exact success/miss behavior.
+- **Complexity landmine (Paula):** `apply.py:412 apply_proposals` is already **C901=14** (ceiling 15).
+  **Extract a small helper BEFORE adding the resolver-adoption branch**, or your own diff reds `ruff`. Keep
+  the touched function ≤15.
 
 ### T016 — Free-function caller audit (verify the trunk)
 - Confirm each of the 8 free-`resolve_mission` callers now benefits from the trunk (they call the same
