@@ -14,8 +14,8 @@ subtasks:
 - T024
 - T025
 - T026
-agent: "claude:sonnet:randy-reducer:implementer"
-shell_pid: "4187596"
+agent: "claude:opus:reviewer-renata:reviewer"
+shell_pid: "206504"
 history:
 - at: '2026-07-08T18:06:06+00:00'
   actor: planner
@@ -119,3 +119,5 @@ Planning branch and merge target: `feat/mission-resolver-port-2173`. Lane worktr
 
 - 2026-07-08T19:10:22Z – claude:sonnet:randy-reducer:implementer – shell_pid=4187596 – Assigned agent via action command
 - 2026-07-08T19:45:43Z – claude:sonnet:randy-reducer:implementer – shell_pid=4187596 – 12 owned isoformat copies -> one canonical now_utc_iso() in src/specify_cli/core/time_utils.py (new). status/reducer.py copy was dead code (no callers), deleted outright rather than replaced. Stamp family (2 callers, %Y-%m-%dT%H:%M:%SZ) and datetime-returning family (2 callers, decisions/*, not owned) preserved untouched -- NFR-004 byte-identical. T026 SAFE fold: mission_parsing.py routes its stamp literal through task_utils.support.TIMESTAMP_FORMAT. Updated test_parity.py/test_reducer.py monkeypatches from the deleted reducer._now_utc to core.time_utils.now_utc_iso. New tests/specify_cli/test_clock_consolidation.py (9 tests, pytest.mark.fast) pins single-definition + byte-identical stamp output. FOLLOW-UP NEEDED (not done here, out of owned_files): ~18 more isoformat copies in non-owned files (sync/*, review/*, skills/command_installer.py, merge/state.py, analysis_report.py...) still need routing -- do not claim full consolidation without a tracker follow-up. T025 cross-package triage (read-only, no edits): retrospective_terminus.py is import-direction-SAFE for a future WP; glossary/events.py and charter/evidence/code_reader.py are OUT (would be new reverse package edges). ruff clean, mypy clean on all touched files (10 pre-existing no-any-return findings confirmed via git blame as predating this WP, untouched by this diff). tests/status, tests/event_journal, tests/sync/test_migrate_journal.py, tests/retrospective, tests/delivery, tests/dossier, tests/specify_cli/cli/commands/agent/test_mission_parsing.py, tests/architectural all green (827 passed/4 skipped in architectural suite).
+- 2026-07-08T19:48:50Z – claude:opus:reviewer-renata:reviewer – shell_pid=206504 – Started review via action command
+- 2026-07-08T19:55:16Z – user – shell_pid=206504 – Review passed. NFR-004 byte-identical VERIFIED: both stamp callers (task_utils/support.now_utc untouched; mission_parsing._utc_now_iso now routes hardcoded literal through TIMESTAMP_FORMAT='%Y-%m-%dT%H:%M:%SZ' constant, byte-identical) proved by characterization tests asserting frozen '2026-07-08T12:34:56Z'; decisions/* datetime family untouched. reducer._now_utc DELETION VERIFIED zero-caller: base-tree reducer.py defined _now_utc but never called it (materialized_at derives from sorted_events[-1].at); no cross-module import of reducer._now_utc in production. One canonical core/time_utils.now_utc_iso(); 11 owned copies import it + reducer dead-copy deleted = 12. Monkeypatches in test_parity/test_reducer retargeted to core.time_utils.now_utc_iso; 727 passed. Diff-scoped ruff exit 0; mypy 10 no-any-return all PRE-EXISTING (confirmed identical on base tree, line-shifted by the deleted def). No over-reach into ~18 non-owned copies (follow-up flagged). No --feature regression.

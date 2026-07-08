@@ -20,6 +20,8 @@ subtasks:
 - T015
 - T016
 - T017
+agent: "claude:sonnet:python-pedro:implementer"
+shell_pid: "203850"
 history:
 - at: '2026-07-08T18:06:06+00:00'
   actor: planner
@@ -132,3 +134,7 @@ Planning branch and merge target: `feat/mission-resolver-port-2173`. Lane worktr
 - **Sentinel**: confirm bootstrap still works (the load-bearing carve-out).
 - **Topology preserved**: confirm coord-vs-primary reads are unchanged (don't regress the placement fixes).
 - Run the full arch suite from the **primary checkout**, not a worktree (marker gates vacuous under `.worktrees/`).
+
+## Activity Log
+
+- 2026-07-08T19:48:26Z – claude:sonnet:python-pedro:implementer – shell_pid=203850 – Assigned agent via action command
