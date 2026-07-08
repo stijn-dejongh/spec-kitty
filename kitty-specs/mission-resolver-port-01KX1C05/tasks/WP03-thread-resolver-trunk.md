@@ -21,7 +21,7 @@ subtasks:
 - T016
 - T017
 agent: "claude:opus:reviewer-renata:reviewer"
-shell_pid: "297780"
+shell_pid: "920129"
 history:
 - at: '2026-07-08T18:06:06+00:00'
   actor: planner
@@ -141,3 +141,7 @@ Planning branch and merge target: `feat/mission-resolver-port-2173`. Lane worktr
 - 2026-07-08T20:21:23Z – claude:sonnet:python-pedro:implementer – shell_pid=203850 – Trunk threaded: resolver flows shell→canonicalizer(_read_path_resolver:520)→resolve_mission; sentinel preserved; FS-free test 5 passed; layer-rules 23 passed; ruff+mypy clean
 - 2026-07-08T20:21:38Z – claude:opus:reviewer-renata:reviewer – shell_pid=297780 – Started review via action command
 - 2026-07-08T20:45:18Z – user – shell_pid=297780 – Moved to planned
+- 2026-07-08T20:46:21Z – claude:sonnet:python-pedro:implementer – shell_pid=874844 – Started implementation via action command
+- 2026-07-08T21:05:34Z – claude:sonnet:python-pedro:implementer – shell_pid=874844 – Cycle 2: synced surface-resolution-audit census (regenerated inventory.md via canonical rekey_inventory.py — 5 added resolver=resolver candidate callsites + 5 ghost rows repointed) + allowlist line pointer 1239->1282 for primary_feature_dir_for_mission; FULL tests/architectural/ green (827 passed, 4 skipped, 0 failed); trunk logic in resolution.py/_read_path_resolver.py UNCHANGED
+- 2026-07-08T21:07:34Z – claude:opus:reviewer-renata:reviewer – shell_pid=920129 – Started review via action command
+- 2026-07-08T21:14:32Z – user – shell_pid=920129 – Cycle 2 review passed (resolves cycle-1 census-desync rejection): census synced via canonical rekey_inventory.py (--check reports fresh, exit 0), allowlist pointer 1282 matches live primitive def, trunk byte-identical to approved cycle-1 (git diff a2e10385b HEAD on resolution.py + _read_path_resolver.py EMPTY), 3 previously-red arch tests green (19 passed), full tests/architectural/ suite 827 passed/4 skipped/0 failed
