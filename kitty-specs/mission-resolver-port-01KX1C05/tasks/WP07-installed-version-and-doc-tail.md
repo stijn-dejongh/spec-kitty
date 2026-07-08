@@ -15,7 +15,7 @@ subtasks:
 - T028
 - T029
 agent: "claude:opus:reviewer-renata:reviewer"
-shell_pid: "194257"
+shell_pid: "266642"
 history:
 - at: '2026-07-08T18:06:06+00:00'
   actor: planner
@@ -85,3 +85,7 @@ Planning branch and merge target: `feat/mission-resolver-port-2173`. Lane worktr
 - 2026-07-08T19:43:57Z – claude:sonnet:python-pedro:implementer – shell_pid=4187596 – T027 (FR-010): _get_cli_version()/_expected_version_marker() in m_2_1_4_enforce_command_file_state.py now accept optional _CliStatusLike injection (readiness/upgrade_ux.py), default path byte-identical; no new port. T028 (FR-011): repointed git-operations-matrix.md phantom core/mission_detection.py::_detect_from_branch() row to core/git_ops.py::get_current_branch() + lanes/branch_naming.py::parse_mission_slug_from_branch() (real defining home per #2443 sibling repoint). T029: new tests/architectural/test_git_matrix_paths_resolve.py guards every Source File cell resolves on disk, red-first proven against a planted phantom; registered in _arch_shard_map.py shard 2. Verified: migration marker tests green (6 passed), full tests/architectural/ green (829 passed/4 skipped), terminology guard green, ruff clean, mypy --strict on touched file shows same 7 pre-existing findings as baseline (0 new).
 - 2026-07-08T19:47:14Z – claude:opus:reviewer-renata:reviewer – shell_pid=194257 – Started review via action command
 - 2026-07-08T19:56:10Z – user – shell_pid=194257 – Moved to planned
+- 2026-07-08T19:56:55Z – claude:sonnet:python-pedro:implementer – shell_pid=237402 – Started implementation via action command
+- 2026-07-08T20:05:40Z – claude:sonnet:python-pedro:implementer – shell_pid=237402 – Cycle 2: added FR-010 injection-branch test (fake _CliStatusLike -> version flows); migration replay unchanged; ruff/mypy exit 0
+- 2026-07-08T20:06:22Z – claude:opus:reviewer-renata:reviewer – shell_pid=266642 – Started review via action command
+- 2026-07-08T20:11:31Z – user – shell_pid=266642 – Cycle 2 review passed: FR-010 injection branch now covered (test fails if branch deleted, falls back to real 3.2.5 vs injected 9.9.9-test; other 6 stay green); test-only cycle-2 diff, no src/ or doctrine change.

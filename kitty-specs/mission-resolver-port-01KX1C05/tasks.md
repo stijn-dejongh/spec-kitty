@@ -22,12 +22,12 @@ resolver core (WP02) → trunk threading (WP03) → gate (WP04) form the spine; 
 | T009 | Free `resolve_mission` gains optional `resolver=None` param (single-site injection) | WP02 | | [D] |
 | T010 | Fail-closed cold-miss/ambiguity + `backfill-identity` message (FR-005) | WP02 | | [D] |
 | T011 | Resolver unit tests (CT-1…CT-7, FS-free Fake) | WP02 | | [D] |
-| T012 | Thread `resolver` through the canonicalizer chain (`_read_path_resolver.py:503`) | WP03 | |
-| T013 | Thread `resolver` through the shell callers (`resolve_action_context`, `mission_context_for`, `resolve_placement_only`) | WP03 | |
-| T014 | Legacy-`<slug>` bootstrap sentinel carve-out + regression test (D-07) | WP03 | |
-| T015 | Adopt the 2 resolve-by-identity consumers (`apply.py`, `vcs/detection.py`) | WP03 | |
-| T016 | Free-function caller audit (verify 8 now trunk; edit only if injection needed) | WP03 | |
-| T017 | FS-free builder identity test (NFR-001, scoped) + layer/purity/no-cache verify | WP03 | |
+| T012 | Thread `resolver` through the canonicalizer chain (`_read_path_resolver.py:503`) | WP03 | | [D] |
+| T013 | Thread `resolver` through the shell callers (`resolve_action_context`, `mission_context_for`, `resolve_placement_only`) | WP03 | | [D] |
+| T014 | Legacy-`<slug>` bootstrap sentinel carve-out + regression test (D-07) | WP03 | | [D] |
+| T015 | Adopt the 2 resolve-by-identity consumers (`apply.py`, `vcs/detection.py`) | WP03 | | [D] |
+| T016 | Free-function caller audit (verify 8 now trunk; edit only if injection needed) | WP03 | | [D] |
+| T017 | FS-free builder identity test (NFR-001, scoped) + layer/purity/no-cache verify | WP03 | | [D] |
 | T018 | Write the ADR (trunk, ledger-dodge, no-cache, fail-closed) | WP04 | |
 | T019 | New AST gate `test_mission_resolver_walker_gate.py` seeded with full ~16-walker allowlist | WP04 | |
 | T020 | Verify gate green on introduction + discriminate enumeration vs single-dir access | WP04 | |

@@ -20,8 +20,8 @@ subtasks:
 - T015
 - T016
 - T017
-agent: "claude:sonnet:python-pedro:implementer"
-shell_pid: "203850"
+agent: "claude:opus:reviewer-renata:reviewer"
+shell_pid: "297780"
 history:
 - at: '2026-07-08T18:06:06+00:00'
   actor: planner
@@ -138,3 +138,6 @@ Planning branch and merge target: `feat/mission-resolver-port-2173`. Lane worktr
 ## Activity Log
 
 - 2026-07-08T19:48:26Z – claude:sonnet:python-pedro:implementer – shell_pid=203850 – Assigned agent via action command
+- 2026-07-08T20:21:23Z – claude:sonnet:python-pedro:implementer – shell_pid=203850 – Trunk threaded: resolver flows shell→canonicalizer(_read_path_resolver:520)→resolve_mission; sentinel preserved; FS-free test 5 passed; layer-rules 23 passed; ruff+mypy clean
+- 2026-07-08T20:21:38Z – claude:opus:reviewer-renata:reviewer – shell_pid=297780 – Started review via action command
+- 2026-07-08T20:45:18Z – user – shell_pid=297780 – Moved to planned
