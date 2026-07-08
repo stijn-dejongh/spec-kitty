@@ -15,6 +15,8 @@ subtasks:
 - T018
 - T019
 - T020
+agent: "claude:opus:reviewer-renata:reviewer"
+shell_pid: "994733"
 history:
 - at: '2026-07-08T18:06:06+00:00'
   actor: planner
@@ -95,3 +97,10 @@ Planning branch and merge target: `feat/mission-resolver-port-2173`. Lane worktr
 - Allowlist must be **token-keyed** (F5) and derive scope from `src/` (F1 blind-spot avoidance).
 - Reviewer plants a raw walker to confirm the gate bites, and confirms the census count matches the live
   walker set (run the census grep).
+
+## Activity Log
+
+- 2026-07-08T21:15:16Z – claude:sonnet:architect-alphonso:implementer – shell_pid=931732 – Assigned agent via action command
+- 2026-07-08T21:53:35Z – claude:sonnet:architect-alphonso:implementer – shell_pid=931732 – ADR + AST walker gate (5 tests incl anti-mutant); allowlist from live census; FULL arch green (exit 0); ruff clean
+- 2026-07-08T21:53:51Z – claude:opus:reviewer-renata:reviewer – shell_pid=994733 – Started review via action command
+- 2026-07-08T22:05:06Z – user – shell_pid=994733 – Review passed: gate token-keyed + matches live census (31 flagged files, 0 uncovered, 0 dead allowlist entries; template_catalog/neutrality correctly excluded) + anti-mutant bites (planted real src walker RED'd main gate, green after removal); ADR complete/template-conformant; full arch suite 832 passed 0 failed; ruff+mypy clean; docs freshness errors=0
