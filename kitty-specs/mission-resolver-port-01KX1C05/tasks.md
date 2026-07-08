@@ -11,11 +11,11 @@ resolver core (WP02) → trunk threading (WP03) → gate (WP04) form the spine; 
 
 | ID | Description | WP | Parallel |
 |----|-------------|----|----------|
-| T001 | Rename `ExecutionContext` class + docstring → `MissionExecutionContext` in `context.py` | WP01 | |
-| T002 | Update the `ActionContext` alias + module docstring to the new name | WP01 | |
-| T003 | Mechanical rename across the ~12 importers + usages (out-of-map, documented) | WP01 | |
-| T004 | Update ADR prose (`2026-06-22-1`, `2026-06-03-1`) | WP01 | |
-| T005 | Verify: full `tests/architectural/` + parity + surface gates green; StrEnum untouched | WP01 | |
+| T001 | Rename `ExecutionContext` class + docstring → `MissionExecutionContext` in `context.py` | WP01 | | [D] | [D] |
+| T002 | Update the `ActionContext` alias + module docstring to the new name | WP01 | | [D] |
+| T003 | Mechanical rename across the ~12 importers + usages (out-of-map, documented) | WP01 | | [D] |
+| T004 | Update ADR prose (`2026-06-22-1`, `2026-06-03-1`) | WP01 | | [D] |
+| T005 | Verify: full `tests/architectural/` + parity + surface gates green; StrEnum untouched | WP01 | | [D] |
 | T006 | Define `MissionResolver` Protocol in `mission_runtime/mission_resolver_port.py` | WP02 | |
 | T007 | `FsMissionResolver` adapter (wrap `_build_index`) in `context/mission_resolver.py` | WP02 | |
 | T008 | `FakeMissionResolver` in-memory adapter | WP02 | |

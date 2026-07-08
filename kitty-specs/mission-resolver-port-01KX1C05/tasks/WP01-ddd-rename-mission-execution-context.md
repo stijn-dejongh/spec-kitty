@@ -14,6 +14,8 @@ subtasks:
 - T003
 - T004
 - T005
+agent: "claude:opus:reviewer-renata:reviewer"
+shell_pid: "4171263"
 history:
 - at: '2026-07-08T18:06:06+00:00'
   actor: planner
@@ -135,3 +137,10 @@ push to `origin`.
 - **Out-of-map touches**: expected and documented (FR-012 codebase rename); confirm they are pure symbol
   renames, no behavior change.
 - Sonar campsite (operator standing instruction): census the touched files; fold SAFE trivia, note ADJACENT.
+
+## Activity Log
+
+- 2026-07-08T18:35:02Z – claude:sonnet:python-pedro:implementer – shell_pid=4120284 – Assigned agent via action command
+- 2026-07-08T18:59:40Z – claude:sonnet:python-pedro:implementer – shell_pid=4120284 – Ready for review: renamed composite ExecutionContext->MissionExecutionContext (FR-012); StrEnum untouched (1 class ExecutionContext remains, the StrEnum); full tests/architectural/ green 827 passed/4 skipped; parity+surface gates green; diff-scoped ruff+mypy exit 0.
+- 2026-07-08T19:00:49Z – claude:opus:reviewer-renata:reviewer – shell_pid=4171263 – Started review via action command
+- 2026-07-08T19:07:25Z – user – shell_pid=4171263 – Review passed (reviewer-renata): composite ExecutionContext->MissionExecutionContext renamed (class+docstrings+ActionContext alias); grep 'class ExecutionContext' src=EXACTLY 1 (context_validation StrEnum untouched, all consumers intact); __init__ re-export+__all__ + surface _PUBLIC_SURFACE flipped, import mission_runtime + MissionExecutionContext OK; runtime_bridge/StepContractExecutionContext NOT touched; 2 boy-scout mypy typing fixes in-diff/minimal; parity+surface gates 29 passed, diff-scoped ruff clean. Contextive term + workflow.py prose deliberately kept (WP-sanctioned low-sev glossary). Issue-matrix #1619/#2173 set in-mission (epics span the 7-WP mission).
