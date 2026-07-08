@@ -19,7 +19,10 @@ mission except that its builder becomes injectable at the shell.
 
 ## New port interface
 
-### `MissionResolver` (Protocol) — handle→mission resolution only
+### `MissionResolver` (Protocol) — **defined in `mission_runtime`** (shell owns its port)
+Lives in `mission_runtime/mission_resolver_port.py` so the shell references a local type and **no new
+`mission_runtime → specify_cli.context` layer-ledger edge** is created (D-Q2 revised). Adapters import it
+downward via `specify_cli → mission_runtime` (package root).
 ```python
 class MissionResolver(Protocol):
     def resolve(self, handle: str) -> ResolvedMission: ...
@@ -43,15 +46,26 @@ class MissionResolver(Protocol):
 - Zero filesystem access → enables the FS-free builder test (NFR-001).
 - Same fail-closed contract: unknown handle → `MissionNotFoundError`; ambiguous → `AmbiguousHandleError`.
 
-## Injection seam
+## Injection seam (REVISED — thread from callers, not inside the assembler)
 
+The seam is at the **callers** of `_resolve_mission_slug` (it runs before `_assemble_core_fragments` and
+feeds it), threaded through the canonicalizer chain to the single walk. The free `resolve_mission` gains
+an optional `resolver` param so no path bypasses it. Default constructed at the CLI/`specify_cli` boundary.
 ```python
-# mission_runtime/resolution.py  (the imperative shell)
-def _assemble_core_fragments(repo_root, *, resolver: MissionResolver | None = None, ...):
-    resolver = resolver or FsMissionResolver(repo_root)
-    # ... identity/dir reads (_resolve_mission_id :913, _resolve_mission_slug :303) consume `resolver`
+# specify_cli/context/mission_resolver.py — the ONE walk, now injectable
+def resolve_mission(handle: str, repo_root: Path, *, resolver: MissionResolver | None = None) -> ResolvedMission:
+    return (resolver or FsMissionResolver(repo_root)).resolve(handle)
+
+# mission_runtime/resolution.py — shell threads a Protocol-typed resolver down (no context import)
+def resolve_action_context(..., *, resolver: MissionResolver | None = None):
+    slug = _resolve_mission_slug(..., resolver=resolver)   # → canonicalizer → resolve_mission(resolver=...)
+    return _assemble_core_fragments(..., resolver=resolver)
+# _resolve_mission_id keeps its legacy-<slug> bootstrap carve-out (D-07), NOT routed through resolve().
 # build_execution_context(...) stays FS-free and takes NO resolver.
 ```
+**NFR-001 scope**: the FS-free test drives the *identity-resolution leg* via the Fake; the assembler's
+other FS legs (`get_main_repo_root`, `_resolve_coordination_branch`, `_resolve_status_surface_dir`,
+topology) are separate ports deferred to later #2173 phases (D-09).
 
 ## Out-of-model (anti-fold — NOT routed through the port)
 - `status/identity_audit.py` — needs to *see* `mission_id`-less missions the resolver skips (C-001).

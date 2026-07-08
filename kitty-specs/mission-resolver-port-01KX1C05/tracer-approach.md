@@ -3,26 +3,20 @@
 Mission: `mission-resolver-port-01KX1C05` · #2173 Phase-2 MissionResolver port.
 Seeded at planning. **Append as the approach is refined/validated during implement; assess at close.**
 
-## Intended WP shape (pre-plan sketch — /plan and /tasks own the final slicing)
+## Intended WP shape — see plan.md Implementation Concern Map (IC-01..IC-06, revised full-trunk)
 
-- **WP-A — Resolver seam + builder unblock (core).** Define `MissionResolver` Protocol +
-  `FsMissionResolver` (real, owns the `_build_index` walk) + `FakeMissionResolver` (in-memory). Thread
-  `resolver=None` into `_assemble_core_fragments`. Adopt `doctrine_synthesizer/apply.py:602/788` and
-  `vcs/detection.py:169`. Deliver NFR-001: an FS-free builder unit test via the Fake. Fail-closed-loud
-  cold-miss/ambiguity (FR-005/NFR-005).
-- **WP-B — ADR + AST call-site gate (bind-by-construction).** Write the ADR (D1/D4/D6/D7). Add the new
-  gate naming `FsMissionResolver` as sole sanctioned walker (token-keyed allowlist), copying
-  `test_protection_resolver_call_sites.py`.
-- **WP-C — #2139 target_branch reconcile (sibling).** Route the 4 stragglers onto
-  `read_target_branch_from_meta`; delete `"main"`/`""`/`KeyError` defaults; characterization test on the
-  unified missing-value behavior.
-- **WP-D — Clock consolidation.** 12 isoformat copies → one; preserve the 2 stamp + 2 datetime helpers
-  (NFR-004 byte-identical test). Inject Clock port only at determinism-tested sites.
-- **WP-E — InstalledVersion routing + #2447 doc tail.** Route the migration reader through
-  `_CliStatusLike`; repoint/remove the phantom doctrine row + add the path-resolution guard.
+Superseded by the post-squad plan revision. Canonical IC map is in `plan.md`:
+- **IC-01** resolver port + walk trunk (Protocol in `mission_runtime`; adapters in `context`; free
+  `resolve_mission` gains `resolver` param).
+- **IC-02** thread the seam through the canonicalizer chain + shell callers + the 8 free-fn callers (the
+  trunk); NFR-001 identity-leg FS-free test.
+- **IC-03** legacy-`<slug>` sentinel reconciliation (D-07).
+- **IC-04** ADR + AST gate (seed ~16-walker allowlist) + free-fn-caller audit.
+- **IC-05** #2139 reconcile — all ≥9 readers (or triage).
+- **IC-06** Clock (12+2 triaged; preserve stamp/datetime; SAFE literal fold) + InstalledVersion + #2447.
 
-Dependency hint: WP-A precedes WP-B (gate needs the blessed owner to exist). WP-C/D/E are independent
-sibling slices and can parallelize. Final ordering/lanes are decided at finalize-tasks.
+Dependency hint: IC-01 → IC-02 → IC-03; IC-04 follows IC-01/02; IC-05/IC-06 independent siblings. Final
+lanes decided at finalize-tasks.
 
 ## Adopt-don't-duplicate SSOTs (must reuse, verified in scout)
 - `PlacementSeam` (`mission_runtime/resolution.py:1266`) — the resolver yields dirs *through* this seam's grammar; do not compose paths (the `test_no_raw_mission_spec_paths.py` gate bites otherwise).

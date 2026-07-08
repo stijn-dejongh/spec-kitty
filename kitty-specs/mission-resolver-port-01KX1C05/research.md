@@ -17,31 +17,81 @@ findings in the `tracer-*.md` files. This file records the decisions the plan re
 - **Alternatives considered**: unifying with the runtime path resolver — rejected: different return type
   and concern (path vs identity); merging would create the exact god-resolver the synthesis warns against.
 
-## D-Q2 — Where does the port live?
+## D-Q2 — Where does the port live? (REVISED post-squad — ledger blocker)
 
-- **Decision**: co-locate `MissionResolver` (Protocol), `FsMissionResolver`, and `FakeMissionResolver` in
-  `src/specify_cli/context/mission_resolver.py`, alongside the existing `resolve_mission`,
-  `ResolvedMission`, `_build_index`, and error taxonomy.
-- **Rationale**: (1) the walk, its value object, and its errors already live there — splitting the
-  Protocol into `mission_runtime` fragments the seam; (2) `mission_runtime` submodules are
-  external-import-forbidden (the MR-1/2/3 surface gate), but tests and CLI code must import the Fake
-  freely; (3) the `mission_runtime → specify_cli` dependency direction is already established
-  (`resolution.py:327/344/394…`), so the shell importing the port from `specify_cli.context` is
-  consistent, not a new coupling.
-- **Alternatives considered**: define the Protocol in `mission_runtime` (strict hexagonal port ownership)
-  and re-export from the package root — rejected as over-engineering here: `mission_runtime` already
-  depends on `specify_cli`, so the pure-hexagon benefit is absent, and the re-export dance complicates
-  the Fake's test imports for no gain.
+- **Decision**: **Protocol `MissionResolver` in `mission_runtime`** (a new small module
+  `mission_runtime/mission_resolver_port.py`); **`FsMissionResolver` + `FakeMissionResolver` adapters in
+  `src/specify_cli/context/mission_resolver.py`** beside the walk they wrap.
+- **Why revised**: the original "everything in `specify_cli.context`" plan reds `test_layer_rules.py`
+  (`TestMissionRuntimeBoundary`): `_MISSION_RUNTIME_ALLOWED_SPECIFY_CLI` (`:76-95`) does **not** list
+  `"context"`, and `mission_runtime` currently imports **zero** `specify_cli.context`. The planned shell
+  import (even lazy/in-function — the gate does a full `ast.walk`) would create a **new ledger edge** —
+  which is doubly wrong because #2173's charter is to *drain* that ledger. The scout conflated *direction*
+  with *subpackage*: the established edges are `core`/`missions`/`coordination`, not `context`.
+- **How the revision dodges it**: the shell references only the local Protocol (no `specify_cli.context`
+  import). Adapters import the Protocol via the allowed downward `specify_cli → mission_runtime`
+  (package-root) direction. The default `FsMissionResolver` is constructed at the CLI/`specify_cli` entry
+  boundary and threaded down; `mission_runtime` shell functions accept a Protocol-typed `resolver` and
+  pass it into the already-ledgered `specify_cli.missions` canonicalizer.
+- **Acceptance criterion**: `test_layer_rules.py` green with **zero new ledger edge**. Fallback (add
+  `"context"` to the ledger with rationale) requires an explicit operator note.
 
-## D-01 — Seam location (from squad, binding)
+## D-08 — Full trunk, not a 7th parallel path (operator ruling post-squad)
 
-- **Decision**: inject `resolver: MissionResolver | None = None → resolver or FsMissionResolver()` at the
-  imperative shell `_assemble_core_fragments` (and the `_resolve_mission_id` :913 / `_resolve_mission_slug`
-  :303 reads it feeds). **Never** on `build_execution_context` (the pure, FS-free projection door) and
-  **never** on the frozen `MissionExecutionContext`.
-- **Rationale**: a frozen value object carrying a mutable I/O collaborator breaks its immutability
-  invariant — ADR `2026-06-26-1` records the "context is a proto-DI container" framing as a category
-  error. `build_execution_context` must stay FS-free (that is what the Fake exploits for NFR-001).
+- **Decision**: the port is the **single walk trunk**. The free `resolve_mission` gains an optional
+  `resolver` param and is threaded end-to-end; **all 8 free-function callers** (`audit/engine.py:87`,
+  `selector_resolution.py:218`, `retrospect.py:124`, `agent_retrospect.py:72`, `mission_type.py:1051`,
+  `runtime/show_origin.py:231`, `acceptance/__init__.py:910`, `_read_path_resolver.py:503`) + the
+  canonicalizer route through it or are explicitly documented.
+- **Rationale**: the squad showed the dominant read path reaches the walk via the free `resolve_mission`
+  inside the canonicalizer, bypassing an assembler-injected port. A scoped port would be a 7th path and
+  leave the split-brain open — contradicting "unification, not parity." The AST gate bans raw `iterdir`
+  but NOT free-fn calls, so the trunk needs the caller audit too.
+
+## D-01 — Seam location (REVISED post-squad — inject at callers, thread down)
+
+- **Decision**: thread `resolver: MissionResolver | None` from the shell **callers** of
+  `_resolve_mission_slug` (`resolve_action_context` :1384, `mission_context_for`, `resolve_placement_only`
+  ~:866) through the canonicalizer chain (`_read_path_resolver`) down to the free `resolve_mission`.
+  **Never** on `build_execution_context` (pure door) and **never** on the frozen context.
+- **Why revised**: the squad showed `_resolve_mission_slug` runs *before* `_assemble_core_fragments` and
+  its output is an *input* to the assembler — so injecting *inside* the assembler is structurally
+  incoherent. The seam belongs at the callers. Threading preserves the canonicalizer + topology-aware
+  (coord/primary) read that `_resolve_mission_id`/`_resolve_mission_slug` carry today.
+- **Rationale (unchanged)**: a frozen value object carrying a mutable I/O collaborator breaks immutability
+  (ADR `2026-06-26-1`, "context is a proto-DI container" = category error).
+
+## D-07 — Legacy-<slug> bootstrap sentinel is a carve-out, not a fallback (post-squad)
+
+- **Decision**: `_resolve_mission_id` (`resolution.py:944`) deliberately degrades to a `legacy-<slug>`
+  sentinel for pre-identity/bootstrap/scaffold missions. This path is an **explicit, documented pre-identity
+  carve-out** that does NOT flow through the fail-closed `resolve()`; a regression test pins it.
+- **Rationale**: the port's `resolve()` is fail-closed-loud (raises). Silently routing the bootstrap
+  branch through it would break mission-create/scaffold. This is NOT the forbidden `is None` fallback
+  (D-05) — it is a distinct operation (mint an id for a mission with none yet), not resolution of an
+  existing mission.
+
+## D-09 — NFR-001 scoped precisely (post-squad — overclaim fix)
+
+- **Decision**: NFR-001 proves the **identity-resolution leg** of the builder is FS-free via
+  `FakeMissionResolver` — NOT that the whole assembler is FS-free.
+- **Rationale**: the squad noted `_assemble_core_fragments` has 4+ other FS/git legs
+  (`get_main_repo_root`, `_resolve_coordination_branch`, `_resolve_status_surface_dir`, topology) and that
+  `build_execution_context` is *already* FS-free. Those remaining legs are separate ports deferred to
+  later #2173 phases; the spec/test wording says so.
+
+## Census expansions (post-squad — the counts undershot)
+
+- **Clock**: 12 byte-identical isoformat copies in `specify_cli` + **2 cross-package** copies
+  (`glossary/events.py:215`, `runtime/next/_internal_runtime/retrospective_terminus.py:63`) that must be
+  triaged (shared home or OUT-with-rationale — never a silent stop at 12). Preserve the 2 stamp + 2
+  datetime helpers. ADJACENT S1192: the literal `"%Y-%m-%dT%H:%M:%SZ"` recurs 18× with 4 redundant
+  constant defs — a separate stamp-consolidation cleanup; only the SAFE `mission_parsing.py:259`
+  hardcoded literal folds here.
+- **#2139**: ≥9 non-migration readers (not 4). Route all onto `read_target_branch_from_meta` or explicitly
+  triage the dataclass-hydration `KeyError` reads (`context/models.py:83`, `lanes/models.py:200`) as OUT.
+- **AST-gate allowlist**: ~16 live non-migration `kitty-specs/` walkers exist — seed the full census
+  day-one or the gate reds on introduction. (This many walkers *validates* the bind-by-construction thesis.)
 
 ## D-02 — No cache in Phase-2 (from squad, binding)
 

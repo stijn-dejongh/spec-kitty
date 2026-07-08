@@ -48,5 +48,22 @@ Seeded at planning from the 3-lens pre-spec squad (architect-alphonso, paula-pat
   external-import-forbidden (MR gate) but tests/CLI must import the Fake; and `mission_runtime → specify_cli`
   is already an established direction (`resolution.py:327/344/394…`). See research.md D-Q2.
 
+## Post-plan squad revisions (2026-07-08, operator ruling: FULL TRUNK)
+- **D-08 — full trunk, not a 7th path.** Route all 8 free-fn `resolve_mission` callers + the canonicalizer
+  through the port; free `resolve_mission` gains optional `resolver` param. (Split-brain flag: the dominant
+  read path reached the walk via the free fn, bypassing an assembler-injected port.)
+- **D-Q2 REVISED — Protocol in `mission_runtime`, adapters in `specify_cli.context`.** Original co-location
+  reds `test_layer_rules.py` (`_MISSION_RUNTIME_ALLOWED_SPECIFY_CLI` omits `context`). Dodge the ledger
+  (which #2173 exists to DRAIN) by keeping the shell referencing a local Protocol; adapters import it
+  downward. Acceptance: zero new ledger edge.
+- **D-01 REVISED — seam at the callers of `_resolve_mission_slug`, threaded through the canonicalizer** —
+  not inside `_assemble_core_fragments` (which runs after, and consumes the slug as input).
+- **D-07 — `legacy-<slug>` bootstrap sentinel is a documented carve-out**, not routed through fail-closed
+  `resolve()` (else mission-create/scaffold breaks). Distinct from the forbidden `is None` fallback.
+- **D-09 — NFR-001 scoped to the identity leg** (the assembler has 4+ other FS legs; `build_execution_context`
+  is already FS-free). Remaining legs = later #2173 phases.
+- **Census expansions**: Clock 12→14 (2 cross-package triaged); #2139 4→≥9 (route or triage KeyError reads);
+  AST-gate allowlist seeds ~16 walkers day-one.
+
 ## Decisions made during implement
 _(append here)_

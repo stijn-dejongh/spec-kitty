@@ -27,5 +27,24 @@ friction hit during implement; assess at close and file the durable ones to #201
   `integration-tests-core-misc` job. Run `tests/architectural/` locally before pushing doctrine/prose
   (the #2447 doc tail touches shipped doctrine).
 
+## Post-plan squad additions (2026-07-08)
+- **F8 — layer-ledger is subpackage-keyed, not direction-keyed.** `mission_runtime → specify_cli.context`
+  reds `test_layer_rules.py` even though `mission_runtime → specify_cli.{core,missions,coordination}` is
+  fine. Any new cross-package import must be checked against `_MISSION_RUNTIME_ALLOWED_SPECIFY_CLI`
+  (`test_layer_rules.py:76-95`); the gate does a full `ast.walk` so lazy in-function imports don't escape.
+- **F9 — plan censuses undershot 4/12/handful → ≥9/14/~16.** Treat plan counts as floors, not exhaustive;
+  re-grep before sizing a WP (whack-a-field trap).
+
+## Sonar / campsite watch (operator instruction 2026-07-08 — clean while here)
+Run a per-touched-file Sonar census at `/tasks` and per-WP at implement. Known attack-vectors already found:
+- **SAFE (fold)**: `cli/commands/agent/mission_parsing.py:259` hardcodes `"%Y-%m-%dT%H:%M:%SZ"` → use the shared constant (IC-06).
+- **ADJACENT (note, separate cleanup)**: S1192 — the stamp literal recurs 18× with 4 redundant constant
+  defs (`review/cycle.py:23`, `cli/commands/agent/tasks.py:355`, `tasks_materialization.py:43`,
+  `task_utils/support.py:22`).
+- **OUT (tracked/other track)**: `resolution.py` 1465-LOC god-module extraction → #2173 decomposition;
+  `frontmatter.py:191` naive `datetime.now().isoformat()` (no UTC) — latent, separate.
+- Per-WP rule: census Sonar issues in each touched file; SAFE→fold, ADJACENT→note, OUT→tracked home
+  (memory: sonar-attack-vector-campsite).
+
 ## Friction encountered during implement
 _(append dated entries here)_
