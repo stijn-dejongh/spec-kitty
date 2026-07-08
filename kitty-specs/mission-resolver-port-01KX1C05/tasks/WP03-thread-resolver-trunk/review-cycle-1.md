@@ -1,9 +1,16 @@
 ---
+affected_files:
+- path: src/mission_runtime/resolution.py
+  line_range: 1-1465
+- path: tests/architectural/surface_resolution_audit/inventory.md
+  line_range: 1-120
+cycle_number: 1
+mission_slug: mission-resolver-port-01KX1C05
+reproduction_command: PWHEADLESS=1 python -m pytest tests/architectural/ -q -p no:cacheprovider
+reviewed_at: '2026-07-08T21:00:00.000000+00:00'
+reviewer_agent: claude:opus:reviewer-renata:reviewer
 verdict: rejected
-reviewer: reviewer-renata
-wp: WP03
-mission: mission-resolver-port-01KX1C05
-cycle: 1
+wp_id: WP03
 review_artifact_override_at: "2026-07-08T21:14:31Z"
 review_artifact_override_actor: "operator"
 review_artifact_override_wp_id: "WP03"
