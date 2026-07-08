@@ -4,7 +4,7 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: mission-resolver-port-01KX1C05
 mission_id: 01KX1C051X4JT9VZE6NA3HEPXT
-generated_at: '2026-07-08T19:56:52.687891+00:00'
+generated_at: '2026-07-08T20:46:18.956118+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
@@ -15,16 +15,16 @@ input_artifacts:
     sha256: 920be63859f95a8f700e61d643a05f5abb617611b70ba9fdd10a38a4e61465af
   tasks.md:
     path: /home/stijn/Documents/_code/SDD/fork/spec-kitty/kitty-specs/mission-resolver-port-01KX1C05/tasks.md
-    sha256: 8fc3ca693b18cc54183127799ea8d93c424bab8d9338c27be97254f268b91e70
+    sha256: 129092b330163f905311df07a7fecdbd028d2630a94988b0dcecd8c2163c6d88
   charter:
     path: /home/stijn/Documents/_code/SDD/fork/spec-kitty/.kittify/charter/charter.md
     sha256: 51f06517e4e252a18f5b511400c857cd25e7809bd9be951fcc4276bbb93731a0
 verdict: ready
 issue_counts:
-  medium: 1
-  high: 0
-  critical: 0
   low: 2
+  high: 0
+  medium: 1
+  critical: 0
   info: 0
 findings:
 - id: M1
