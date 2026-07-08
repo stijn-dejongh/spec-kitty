@@ -4,7 +4,7 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: mission-resolver-port-01KX1C05
 mission_id: 01KX1C051X4JT9VZE6NA3HEPXT
-generated_at: '2026-07-08T19:48:19.567915+00:00'
+generated_at: '2026-07-08T19:56:52.687891+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
@@ -21,10 +21,10 @@ input_artifacts:
     sha256: 51f06517e4e252a18f5b511400c857cd25e7809bd9be951fcc4276bbb93731a0
 verdict: ready
 issue_counts:
-  low: 2
   medium: 1
-  critical: 0
   high: 0
+  critical: 0
+  low: 2
   info: 0
 findings:
 - id: M1
