@@ -46,5 +46,26 @@ Run a per-touched-file Sonar census at `/tasks` and per-WP at implement. Known a
 - Per-WP rule: census Sonar issues in each touched file; SAFE→fold, ADJACENT→note, OUT→tracked home
   (memory: sonar-attack-vector-campsite).
 
+## Post-tasks squad findings + remediations (2026-07-08, alphonso/robbie/paula)
+Remediated in WP prompts before implement:
+- **MUST-FIX (WP01)**: rename omitted `mission_runtime/__init__.py` (re-exports the class + `__all__`) and
+  the surface pin `test_mission_runtime_surface.py:53 _PUBLIC_SURFACE` → would break `import mission_runtime`
+  suite-wide. Added `__init__.py` to owned_files + T003/T005 steps.
+- **WP01 phantom site**: `runtime_bridge.py` was a WRONG rename site (only `StepContractExecutionContext`);
+  removed. The `grep -v StrEnum` recipe didn't exclude StrEnum *consumers* (test_context_validation_unit.py
+  24 refs) → replaced with import-origin discrimination.
+- **WP03 landmine (Paula)**: `apply.py:412 apply_proposals` is C901=14 — extract-first before adding a
+  branch or the diff reds ruff. Flagged WP03 as heaviest WP; T015 liftable.
+- **WP06 completeness**: ~18 isoformat copies in NON-owned files (sync/review/skills/merge/state) → Priti
+  follow-up so "one canonical helper" isn't half-true; added `charter/evidence/code_reader.py:108` to the
+  cross-package triage; naming caution (`task_utils.now_utc()` is a stamp, not iso).
+- **WP04**: `template_catalog.py`/`neutrality/lint.py` walk NON-kitty-specs trees → gate keys on scan-root,
+  don't list them (census over-inclusion).
+- **Line drifts corrected**: resolve_placement_only 866→1143, resolve_action_context 1384→1354, sentinel
+  944→948, ActionContext alias 349→351, glossary/events 215→217, retrospective_terminus 63→65.
+- **CONFIRM-OK**: parallel-group collision safe (siblings have zero ExecutionContext refs); acceptance
+  WP03/WP05 boundary safe; dependency spine correct; codebase already clean at C901 ceiling (only SAFE
+  campsite = mission_parsing.py:259, already T026).
+
 ## Friction encountered during implement
 _(append dated entries here)_
