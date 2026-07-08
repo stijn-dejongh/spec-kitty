@@ -1,0 +1,96 @@
+---
+work_package_id: WP05
+title: '#2139 target_branch reconcile (all readers)'
+dependencies:
+- WP01
+requirement_refs:
+- FR-008
+tracker_refs: []
+planning_base_branch: feat/mission-resolver-port-2173
+merge_target_branch: feat/mission-resolver-port-2173
+branch_strategy: Planning artifacts for this mission were generated on feat/mission-resolver-port-2173. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/mission-resolver-port-2173 unless the human explicitly redirects the landing branch.
+subtasks:
+- T021
+- T022
+- T023
+history:
+- at: '2026-07-08T18:06:06+00:00'
+  actor: planner
+  action: created
+agent_profile: python-pedro
+authoritative_surface: src/specify_cli/
+create_intent:
+- tests/specify_cli/test_target_branch_reconcile.py
+execution_mode: code_change
+owned_files:
+- src/specify_cli/context/resolver.py
+- src/specify_cli/retrospective/generator.py
+- src/specify_cli/cli/commands/agent/mission_branch_context.py
+- src/specify_cli/missions/_resolve_planning_branch.py
+- src/specify_cli/retrospective/reader.py
+- src/specify_cli/retrospective/writer.py
+- src/specify_cli/acceptance/__init__.py
+- src/specify_cli/cli/commands/agent/tasks_parsing_validation.py
+- tests/specify_cli/test_target_branch_reconcile.py
+role: implementer
+tags: []
+---
+
+## ⚡ Do This First: Load Agent Profile
+
+Load your agent profile via `/ad-hoc-profile-load` for `python-pedro` (implementer). Then read
+`kitty-specs/mission-resolver-port-01KX1C05/spec.md` (FR-008), `plan.md` (IC-05), and `research.md`
+(D-03 + census expansion).
+
+## Objective
+
+Finish the `#2139` strangler: route **all ≥9 non-migration** `target_branch` readers onto the existing
+single authority `read_target_branch_from_meta` (`core/paths.py:655`), and delete the divergent
+`"main"`/`""`/`None` silent defaults so every reader shares one fail-closed behavior. This is a **sibling
+reconcile, not a resolver method** — do not add `target_branch` to the `MissionResolver`.
+
+## Whack-a-field warning
+The plan's original "4 readers" undercounts. Route **all** non-migration readers or **explicitly triage**
+the ones you leave. Three divergent absent-value contracts coexist (`"main"`, `""`, hard `KeyError`) —
+reconcile them onto the authority's contract, don't leave a partial fix.
+
+## Subtasks
+
+### T021 — Route the readers onto `read_target_branch_from_meta`
+Route these to the authority (which already fail-closes on corruption):
+- `context/resolver.py:82` (`get("target_branch", "main")`)
+- `retrospective/generator.py:1263` (`or "main"`)
+- `cli/commands/agent/mission_branch_context.py:63` (`get("target_branch", "")`)
+- `missions/_resolve_planning_branch.py:80`
+- `retrospective/reader.py:303`, `retrospective/writer.py:398` (`get("target_branch", "")`)
+- `acceptance/__init__.py:1075`, `:1696` (`get("target_branch")` → `None`)
+- `cli/commands/agent/tasks_parsing_validation.py:751`
+Each should call the authority and stop re-embedding a local default.
+
+### T022 — Delete divergent defaults; triage the KeyError reads
+- Remove the `"main"`/`""`/`None` fallbacks at the sites above.
+- **Triage** the hard-`KeyError` dataclass-hydration reads (`context/resolver.py:236/269`,
+  `context/models.py:83`, `lanes/models.py:200`): these are a *different contract by design*
+  (construction-time, must-be-present). Leave them **OUT** with a one-line rationale comment — do NOT
+  route them through the optional-read authority. (`context/models.py`/`lanes/models.py` are NOT in this
+  WP's owned_files — only annotate the two `context/resolver.py` reads you own; note the model reads as
+  OUT in the review.)
+
+### T023 — Characterization test
+- New `tests/specify_cli/test_target_branch_reconcile.py`: for a `meta.json` missing `target_branch`, every
+  routed reader now exhibits the authority's single behavior (fail-closed / documented default), and none
+  silently returns `"main"`/`""`. Assert against realistic meta fixtures.
+
+## Branch Strategy
+Planning branch and merge target: `feat/mission-resolver-port-2173`. Lane worktree per `lanes.json`.
+
+## Definition of Done
+- All owned readers route through `read_target_branch_from_meta`; no `get("target_branch", "main"/"")` in
+  owned files.
+- KeyError model reads triaged OUT with rationale.
+- Characterization test green; `ruff`/`mypy` clean.
+
+## Risks / reviewer guidance
+- Reviewer greps owned files for residual silent defaults.
+- Confirm no behavior change where a default was legitimately load-bearing (assert via the test).
+- Sonar census on touched files; fold SAFE trivia.
