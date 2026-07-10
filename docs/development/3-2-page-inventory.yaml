@@ -2,24 +2,6 @@
 # Regenerated from in-file frontmatter by scripts/docs/inventory_lockfile.py
 # (ADR 2026-06-27-1 decision D1). Sorted alphabetically by `path` for a
 # deterministic diff. The retired `citation_refs` field is not emitted.
-- path: docs/01KSMG8Y-closeout/baseline.md
-  tag: current
-  divio_type: none
-  owning_workstream: none
-  current_target: true
-  notes: null
-- path: docs/01KSMG8Y-closeout/index.md
-  tag: current
-  divio_type: none
-  owning_workstream: none
-  current_target: true
-  notes: null
-- path: docs/01KSMG8Y-closeout/retro.md
-  tag: current
-  divio_type: none
-  owning_workstream: none
-  current_target: true
-  notes: null
 - path: docs/adr/1.x/2026-01-23-1-record-architecture-decisions.md
   tag: current
   divio_type: none
