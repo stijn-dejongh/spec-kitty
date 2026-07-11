@@ -24,7 +24,7 @@
 | T013 | Arch guard: no core reaches engine internals; add the #2531 decomposition pointer (FR-007) | WP03 | — | [D] |
 | T014 | Guarded re-export of moved patched symbols; oracle + compat guard stay green | WP03 | — | [D] |
 | T015 | Create `runtime_bridge_retrospective.py`; move the self-contained learning-capture cluster | WP04 | — |
-| T016 | Seam unit tests; re-export patched symbols; oracle + compat green | WP04 | — |
+| T016 | Seam unit tests; re-export patched symbols; oracle + compat green | WP04 | — | [D] |
 | T017 | Create `runtime_bridge_io.py`; move feature-runs index / template discovery / run lifecycle / OC builder | WP05 | — |
 | T018 | `gather_artifact_presence` fact-port (feeds FR-009) | WP05 | — |
 | T019 | Lift the pure `resolve_commit_target` out of `_wrap_with_decision_git_log:226–261` | WP05 | — |
@@ -69,7 +69,7 @@
 ### WP04 — Retrospective seam
 - **owned_files**: `src/runtime/next/runtime_bridge_retrospective.py`, `src/runtime/next/runtime_bridge.py`, `tests/runtime/test_bridge_retrospective.py` · **dependencies**: WP01, WP02
 - **requirement_refs**: FR-001, FR-006 · **acceptance**: seam extracted; oracle + compat green (incl. captured retrospective side-effect)
-- [ ] T015 · [ ] T016
+- [x] T015 · [ ] T016
 
 ### WP05 — Clean I/O ports
 - **owned_files**: `src/runtime/next/runtime_bridge_io.py`, `src/runtime/next/runtime_bridge.py`, `tests/runtime/test_bridge_io.py` · **dependencies**: WP01, WP02

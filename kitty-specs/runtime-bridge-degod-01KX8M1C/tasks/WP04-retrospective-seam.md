@@ -14,6 +14,7 @@ subtasks:
 - T015
 - T016
 phase: Extraction spine
+shell_pid: '1985551'
 history:
 - at: '2026-07-11T00:00:00Z'
   actor: system
@@ -103,3 +104,8 @@ incl. the **captured retrospective side-effect**) and the WP02 compat guard
 - `contracts/compat-surface.md` (re-export + lazy-accessor discipline)
 - `src/runtime/next/runtime_bridge.py` (retrospective cluster — grep to bound)
 - `contracts/parity-oracle.md`, `tests/runtime/test_bridge_compat_surface.py` (re-run as acceptance gate)
+
+## Activity Log
+
+- 2026-07-11T19:21:50Z – user – shell_pid=1985551 – Moved to for_review
+- 2026-07-11T19:26:36Z – user – shell_pid=1985551 – Moved to approved
