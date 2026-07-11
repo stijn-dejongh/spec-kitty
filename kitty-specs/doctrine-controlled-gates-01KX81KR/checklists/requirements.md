@@ -35,12 +35,21 @@
 
 ## Notes
 
-- All four operator decisions (RD-001..RD-004) plus the full-scope choice
-  (RD-005) are resolved — no deferred clarifications.
-- Success criteria SC-001/SC-002 are the measurable closure proofs for #2534 and
-  #2330 respectively.
-- Some named code seams appear in Constraints/Key Entities (e.g.
-  `filter_graph_by_activation`, `evaluate_with_scope`) as *anchors for the
-  strangler migration*, not as prescribed implementation — they mark existing
-  surfaces the mission must reuse rather than reinvent.
+- All five operator decisions (RD-001..RD-005) are resolved — no deferred clarifications.
+- **Revised after the post-spec adversarial squad (Op 01KX8271).** Applied blockers
+  B1 (restored Path-A handler / Path-B asset split — RD-005 ≠ "everything is B"),
+  B3 (real containment in the trust envelope, FR-015), B4 (canonical
+  verdict→operator-outcome table, FR-014), B5 (only a valid emitted
+  `regression(blocking)` may block), plus majors M1–M7 (observability SC-008,
+  C-006 migration FR-016/SC-009, single shared resolver seam FR-002, honest
+  #2330-partial SC-002, existing-config interaction FR-017, malformed-verdict in
+  fail-open, split provenance/opt-in refusal NFR-004a/b).
+- SC-001 fully proves #2534 closure; SC-002 proves #2330 closure for the
+  *selection* path (the built-in pytest runner internals are explicitly not
+  claimed closed).
+- Named code seams (`filter_graph_by_activation`, `evaluate_with_scope`) are
+  *reuse anchors*, not prescribed implementation.
+- CaaCS/campsite findings (Tidy-First hook-extraction WP; `runtime_bridge` F(48)
+  guard; migration-first charter spine; extend `untrusted_path_audit`) are
+  carried into `/spec-kitty.plan` as WP-decomposition guidance.
 - Ready for `/spec-kitty.plan`.
