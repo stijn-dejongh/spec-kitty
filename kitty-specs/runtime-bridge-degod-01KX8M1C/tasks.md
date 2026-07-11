@@ -10,15 +10,15 @@
 | ID | Description | WP | Parallel |
 |----|-------------|----|----------|
 | T001 | `canonical(decision, repo_root)` masking (MASK timestamp/ULIDs; PATH-NORMALIZE workspace_path/prompt_file/reason/origin.mission_path to per-run repo_root) | WP01 | ∥ WP02 |
-| T002 | 3-entry harness: drive `decide_next`/`query_current_state`/`answer_decision` against a fresh `copytree` snapshot; run-advance real (ULID masked) | WP01 | — |
-| T003 | CAPTURE-and-assert side effects (sync emit, coord commit, retrospective, answer-path emit `:3410`/commit `:3427`, engine `_append_event`/`_write_snapshot`) | WP01 | — |
-| T004 | Per-entry fixture sub-ledgers: 29 Decision sites + both guards × 3 mission families (incl. both fail-closed defaults + `tasks` legacy-union); **coverage floor as a checkable count assertion** | WP01 | — |
-| T005 | `reason`-normalizer meta-test (collapses path noise, NOT a semantic delta) | WP01 | — |
-| T006 | Seed NFR-006 timing harness; prove the oracle GREEN on unmodified source at full floor | WP01 | — |
+| T002 | 3-entry harness: drive `decide_next`/`query_current_state`/`answer_decision` against a fresh `copytree` snapshot; run-advance real (ULID masked) | WP01 | — | [D] |
+| T003 | CAPTURE-and-assert side effects (sync emit, coord commit, retrospective, answer-path emit `:3410`/commit `:3427`, engine `_append_event`/`_write_snapshot`) | WP01 | — | [D] |
+| T004 | Per-entry fixture sub-ledgers: 29 Decision sites + both guards × 3 mission families (incl. both fail-closed defaults + `tasks` legacy-union); **coverage floor as a checkable count assertion** | WP01 | — | [D] |
+| T005 | `reason`-normalizer meta-test (collapses path noise, NOT a semantic delta) | WP01 | — | [D] |
+| T006 | Seed NFR-006 timing harness; prove the oracle GREEN on unmodified source at full floor | WP01 | — | [D] |
 | T007 | Inventory the ~50 patched private symbols (4 idioms) mapped to their reaching entry point | WP02 | ∥ WP01 |
-| T008 | Guard (A) behavioral sentinel per symbol, **driven through its reaching entry** (query/answer-only symbols driven there) | WP02 | — |
-| T009 | Guard (B) static AST: identity re-export check + **forbid function-scope re-imports of compat names** | WP02 | — |
-| T010 | Prove the compat guard GREEN on unmodified source | WP02 | — |
+| T008 | Guard (A) behavioral sentinel per symbol, **driven through its reaching entry** (query/answer-only symbols driven there) | WP02 | — | [D] |
+| T009 | Guard (B) static AST: identity re-export check + **forbid function-scope re-imports of compat names** | WP02 | — | [D] |
+| T010 | Prove the compat guard GREEN on unmodified source | WP02 | — | [D] |
 | T011 | Create `runtime_bridge_engine.py`; move the **grep-complete** `_internal_runtime` privates (`_read_snapshot`/`_load_frozen_template`@`:1322`/`:1375`/`_append_event`/`_write_snapshot`/`plan_next`) | WP03 | — |
 | T012 | `_advance_run_state_after_composition` body → adapter (≤15); thin residual compat delegate for its 8-patch/9-attr surface | WP03 | — |
 | T013 | Arch guard: no core reaches engine internals; add the #2531 decomposition pointer (FR-007) | WP03 | — |
@@ -52,13 +52,13 @@
 - **owned_files**: `tests/runtime/test_bridge_parity.py`, `tests/runtime/_bridge_oracle.py`, `tests/runtime/fixtures/bridge/README.md` · **dependencies**: none
 - **requirement_refs**: FR-002, NFR-001, NFR-006, C-004 · **acceptance**: oracle green on unmodified source at the full coverage floor (checkable count)
 - **safeguards**: this is the mission's safety net — a hollow oracle is also green; the coverage floor MUST be asserted. Drive ALL 3 entries. Never stub `next_step`.
-- [ ] T001 · [ ] T002 · [ ] T003 · [ ] T004 · [ ] T005 · [ ] T006
+- [x] T001 · [ ] T002 · [ ] T003 · [ ] T004 · [ ] T005 · [ ] T006
 
 ### WP02 — Compat-surface guard (WP-0b, BLOCKING safety net)
 - **owned_files**: `tests/runtime/test_bridge_compat_surface.py` · **dependencies**: none
 - **requirement_refs**: FR-012, C-004 · **acceptance**: guard green on unmodified source; every symbol's sentinel proven to fire (no false-green)
 - **safeguards**: a sentinel driven through the wrong entry silently never fires — map each symbol to its reaching entry.
-- [ ] T007 · [ ] T008 · [ ] T009 · [ ] T010
+- [x] T007 · [ ] T008 · [ ] T009 · [ ] T010
 
 ### WP03 — Engine-adapter (FR-013)
 - **owned_files**: `src/runtime/next/runtime_bridge_engine.py`, `src/runtime/next/runtime_bridge.py`, `tests/runtime/test_bridge_engine.py` · **dependencies**: WP01, WP02

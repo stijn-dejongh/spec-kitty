@@ -203,3 +203,7 @@ frozen snapshot represents, per-entry sub-ledger membership, how to rebuild).
 - `src/runtime/next/runtime_bridge.py:3555` `_map_runtime_decision` (10 sites `:3582–3798`, CC33)
 - `src/runtime/next/runtime_bridge.py:1057` `_check_cli_guards`, `:1515` `_check_composed_action_guard` (both guards, all branches)
 - `src/runtime/next/decision.py:82-166` `Decision.to_dict()` (masking surface); `:129` `__post_init__` (`Path(prompt).is_file()`)
+
+## Activity Log
+
+- 2026-07-11T16:42:20Z – user – shell_pid=1263853 – Moved to for_review

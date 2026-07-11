@@ -10,12 +10,16 @@ tracker_refs:
 planning_base_branch: design/runtime-bridge-degod
 merge_target_branch: design/runtime-bridge-degod
 branch_strategy: Planning artifacts for this mission were generated on design/runtime-bridge-degod. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into design/runtime-bridge-degod unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-runtime-bridge-degod-01KX8M1C
+base_commit: cdbcf0783e582c9c4f0089708c13dcc7523b7fde
+created_at: '2026-07-11T14:30:55.110327+00:00'
 subtasks:
 - T007
 - T008
 - T009
 - T010
 phase: Extraction spine
+shell_pid: '1268842'
 history:
 - at: '2026-07-11T00:00:00Z'
   actor: system
@@ -146,3 +150,7 @@ without re-deriving the mapping.
 - `src/runtime/next/runtime_bridge.py:78` `_primary_runtime_feature_dir`, `:134` `_resolve_mission_ulid` (grounded high-risk intra-seam pair)
 - `src/runtime/next/runtime_bridge.py:187` `_wrap_with_decision_git_log` (KEEP-IN-PLACE anchor)
 - `tests/runtime/test_runtime_bridge_identity.py` (existing patch sites for `_primary_runtime_feature_dir`)
+
+## Activity Log
+
+- 2026-07-11T16:51:32Z – user – shell_pid=1268842 – Moved to for_review
