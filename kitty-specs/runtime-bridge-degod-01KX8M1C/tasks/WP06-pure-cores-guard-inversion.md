@@ -18,6 +18,7 @@ subtasks:
 - T023
 - T024
 phase: Extraction spine
+shell_pid: '2442747'
 history:
 - at: '2026-07-11T00:00:00Z'
   actor: system
@@ -191,3 +192,8 @@ without churn.
 - `kitty-specs/runtime-bridge-degod-01KX8M1C/contracts/parity-oracle.md` — the acceptance-gate oracle.
 - `kitty-specs/runtime-bridge-degod-01KX8M1C/contracts/compat-surface.md` — the compat guard + re-export rules.
 - `kitty-specs/runtime-bridge-degod-01KX8M1C/spec.md` — FR-009, FR-003, FR-004, NFR-003, SC-007.
+
+## Activity Log
+
+- 2026-07-11T21:46:42Z – user – shell_pid=2442747 – Moved to for_review
+- 2026-07-11T21:54:19Z – user – shell_pid=2442747 – Moved to approved

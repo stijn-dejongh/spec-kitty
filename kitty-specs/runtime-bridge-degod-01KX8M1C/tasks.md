@@ -30,9 +30,9 @@
 | T019 | Lift the pure `resolve_commit_target` out of `_wrap_with_decision_git_log:226–261` | WP05 | — | [D] |
 | T020 | Port unit tests (stubbed I/O); re-export; oracle + compat green | WP05 | — | [D] |
 | T021 | Create `runtime_bridge_cores.py`; move tasks.md parse (`:343–473`, zero-dep) + `_extract_wp_heading` | WP06 | — |
-| T022 | `ArtifactPresenceSnapshot` + pure `evaluate_guards(snapshot)` collapsing both guards; **preserve the fail-closed default** (guard_failures identical incl. order — SC-007) | WP06 | — |
-| T023 | Reduce `_check_requirement_mapping_ready` (CC≈22) ≤15 | WP06 | — |
-| T024 | Pure unit tests (in-memory, no I/O); re-export; oracle + compat green | WP06 | — |
+| T022 | `ArtifactPresenceSnapshot` + pure `evaluate_guards(snapshot)` collapsing both guards; **preserve the fail-closed default** (guard_failures identical incl. order — SC-007) | WP06 | — | [D] |
+| T023 | Reduce `_check_requirement_mapping_ready` (CC≈22) ≤15 | WP06 | — | [D] |
+| T024 | Pure unit tests (in-memory, no I/O); re-export; oracle + compat green | WP06 | — | [D] |
 | T025 | `DecisionEnvelope` + `step_or_blocked` (blocked/query/terminal pure; **step branch port-injected** via `prompt_exists` predicate); collapse the 29 Decision sites + 4× triad | WP07 | — |
 | T026 | Own the query/answer materialize: reduce `_map_runtime_decision` (CC≈33) + `query_current_state` (CC≈16) + the 4 `_build_*_query_decision` builders ≤15 | WP07 | — |
 | T027 | Pure unit tests; re-export; oracle + compat green (esp. the 14 query/answer sites) | WP07 | — |
@@ -80,7 +80,7 @@
 - **owned_files**: `src/runtime/next/runtime_bridge_cores.py`, `src/runtime/next/runtime_bridge.py`, `tests/runtime/test_bridge_cores.py` · **dependencies**: WP01, WP02, WP05
 - **requirement_refs**: FR-009, FR-003, FR-004, NFR-003 · **acceptance**: `evaluate_guards` pure; fail-closed default + guard_failures order preserved (SC-007); pure unit tests no-I/O; oracle + compat green
 - **safeguards**: the two fail-closed defaults + `tasks` legacy-union are the highest-risk relocation fixtures.
-- [ ] T021 · [ ] T022 · [ ] T023 · [ ] T024
+- [x] T021 · [ ] T022 · [ ] T023 · [ ] T024
 
 ### WP07 — Decision-builder + query/answer materialize (FR-011)
 - **owned_files**: `src/runtime/next/runtime_bridge_cores.py`, `src/runtime/next/runtime_bridge.py`, `tests/runtime/test_bridge_decision_builder.py` · **dependencies**: WP01, WP02, WP06
