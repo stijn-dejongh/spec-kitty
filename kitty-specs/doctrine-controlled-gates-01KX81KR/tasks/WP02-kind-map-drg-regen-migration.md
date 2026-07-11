@@ -30,6 +30,7 @@ owned_files:
 - src/doctrine/missions/built_in_step_contracts/implement.step-contract.yaml
 - src/doctrine/graph.yaml
 - src/specify_cli/upgrade/migrations/
+- .kittify/charter/references.yaml
 create_intent: []
 role: implementer
 tags: []

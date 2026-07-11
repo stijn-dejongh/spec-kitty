@@ -13,6 +13,7 @@ requirement_refs:
 tracker_refs:
 - '2535'
 - '2534'
+- "2330"
 planning_base_branch: design/doctrine-controlled-gates
 merge_target_branch: design/doctrine-controlled-gates
 branch_strategy: Planning artifacts for this mission were generated on design/doctrine-controlled-gates. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into design/doctrine-controlled-gates unless the human explicitly redirects the landing branch.
@@ -35,8 +36,8 @@ owned_files:
 - src/specify_cli/cli/commands/agent/pre_review_hook.py
 - tests/integration/gates/
 create_intent:
-- src/specify_cli/cli/commands/agent/pre_review_hook.py
 - tests/integration/gates/
+- src/specify_cli/cli/commands/agent/pre_review_hook.py
 role: implementer
 tags: []
 task_type: implement

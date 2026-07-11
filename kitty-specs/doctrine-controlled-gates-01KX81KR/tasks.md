@@ -53,7 +53,7 @@ Cross-lane deps: WP01→{WP03,WP09,WP02}; WP03→{WP04,WP05,WP07,WP10,WP13,WP14}
 | T032 | Test: non-pytest fixture with no declared ScopeSource → the built-in is not force-applied (FR-009) | WP07 | — |
 | T033 | New `review/gates/handlers/pre_review.py`: Path-A handler implementing the dispatch Protocol (no opt-in, no doctrine code) | WP08 | — |
 | T034 | Reuse `evaluate_with_scope` (`pre_review_gate.py:451-511`) unchanged; preserve `review.fail_on_pre_review_regression`/`review.test_command` semantics (FR-017) | WP08 | — |
-| T035 | Bind the handler in the built-in step contract (`transition: for_review`); **remove** the hardcoded spec-kitty-shaped decision path (C-004, no fallback tail) | WP08 | — |
+| T035 | Register the Path-A handler under the binding's `gate_ref` in the handler registry (the `transition: for_review` binding yaml is authored by WP02·T007 — no yaml edit here); **remove** the hardcoded spec-kitty-shaped decision path (C-004, no fallback tail) | WP08 | — |
 | T036 | Red-first parity: migrated handler == prior hardcoded verdict on the same change set (NFR-001/SC-003) | WP08 | — |
 | T037 | ruff/mypy clean; no `# noqa`/`# type: ignore` added | WP08 | — |
 | T038 | Extend `AssetManifest` (`assets/models.py`) with the executable gate-asset shape (`entrypoint`, `interpreter`, `verdict_channel`) + `TrustEnvelope` protocol | WP09 | — |
@@ -128,7 +128,7 @@ Cross-lane deps: WP01→{WP03,WP09,WP02}; WP03→{WP04,WP05,WP07,WP10,WP13,WP14}
 - [ ] T029 · [ ] T030 · [ ] T031 · [ ] T032
 
 ### WP08 — Pre-review Path-A handler (exemplar migration) *(Lane C)*
-- **owned_files**: `src/specify_cli/review/gates/handlers/pre_review.py`, the pre-review built-in step contract, `src/specify_cli/review/pre_review_gate.py`
+- **owned_files**: `src/specify_cli/review/gates/handlers/pre_review.py`, `src/specify_cli/review/pre_review_gate.py` *(the `transition: for_review` binding yaml is owned by WP02·T007 — WP08 is code-only)*
 - **dependencies**: WP03, WP02, WP07 · **requirement_refs**: FR-011, FR-017 · **acceptance**: NFR-001, SC-003
 - **safeguards**: no opt-in / no doctrine code (Path A); **remove** the hardcoded decision path (C-004 — no legacy fallback); reuse `evaluate_with_scope` unchanged.
 - [ ] T033 · [ ] T034 · [ ] T035 · [ ] T036 · [ ] T037

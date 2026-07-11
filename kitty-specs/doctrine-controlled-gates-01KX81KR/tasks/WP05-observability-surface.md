@@ -25,6 +25,7 @@ execution_mode: code_change
 owned_files:
 - src/specify_cli/review/gates/observe.py
 - src/specify_cli/cli/commands/agent/gates_status.py
+- src/specify_cli/cli/commands/agent/__init__.py
 create_intent:
 - src/specify_cli/review/gates/observe.py
 - src/specify_cli/cli/commands/agent/gates_status.py

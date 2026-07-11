@@ -11,6 +11,7 @@ requirement_refs:
 - FR-013
 tracker_refs:
 - '2535'
+- "2330"
 planning_base_branch: design/doctrine-controlled-gates
 merge_target_branch: design/doctrine-controlled-gates
 branch_strategy: Planning artifacts for this mission were generated on design/doctrine-controlled-gates. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into design/doctrine-controlled-gates unless the human explicitly redirects the landing branch.

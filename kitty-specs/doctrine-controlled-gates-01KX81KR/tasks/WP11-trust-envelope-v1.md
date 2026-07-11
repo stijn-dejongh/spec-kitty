@@ -33,8 +33,8 @@ owned_files:
 - tests/doctrine/assets/test_trust_envelope.py
 create_intent:
 - src/doctrine/assets/trust.py
-- src/doctrine/assets/runner.py
 - tests/doctrine/assets/test_trust_envelope.py
+- src/doctrine/assets/runner.py
 role: implementer
 tags: []
 task_type: implement

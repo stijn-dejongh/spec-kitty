@@ -30,8 +30,10 @@ authoritative_surface: src/specify_cli/review/gates/
 execution_mode: code_change
 owned_files:
 - src/specify_cli/review/gates/outcomes.py
+- src/specify_cli/review/gates/__init__.py
 create_intent:
 - src/specify_cli/review/gates/outcomes.py
+- src/specify_cli/review/gates/__init__.py
 role: implementer
 tags: []
 task_type: implement
