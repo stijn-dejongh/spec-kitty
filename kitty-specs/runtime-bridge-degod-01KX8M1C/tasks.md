@@ -26,9 +26,9 @@
 | T015 | Create `runtime_bridge_retrospective.py`; move the self-contained learning-capture cluster | WP04 | — |
 | T016 | Seam unit tests; re-export patched symbols; oracle + compat green | WP04 | — | [D] |
 | T017 | Create `runtime_bridge_io.py`; move feature-runs index / template discovery / run lifecycle / OC builder | WP05 | — |
-| T018 | `gather_artifact_presence` fact-port (feeds FR-009) | WP05 | — |
-| T019 | Lift the pure `resolve_commit_target` out of `_wrap_with_decision_git_log:226–261` | WP05 | — |
-| T020 | Port unit tests (stubbed I/O); re-export; oracle + compat green | WP05 | — |
+| T018 | `gather_artifact_presence` fact-port (feeds FR-009) | WP05 | — | [D] |
+| T019 | Lift the pure `resolve_commit_target` out of `_wrap_with_decision_git_log:226–261` | WP05 | — | [D] |
+| T020 | Port unit tests (stubbed I/O); re-export; oracle + compat green | WP05 | — | [D] |
 | T021 | Create `runtime_bridge_cores.py`; move tasks.md parse (`:343–473`, zero-dep) + `_extract_wp_heading` | WP06 | — |
 | T022 | `ArtifactPresenceSnapshot` + pure `evaluate_guards(snapshot)` collapsing both guards; **preserve the fail-closed default** (guard_failures identical incl. order — SC-007) | WP06 | — |
 | T023 | Reduce `_check_requirement_mapping_ready` (CC≈22) ≤15 | WP06 | — |
@@ -74,7 +74,7 @@
 ### WP05 — Clean I/O ports
 - **owned_files**: `src/runtime/next/runtime_bridge_io.py`, `src/runtime/next/runtime_bridge.py`, `tests/runtime/test_bridge_io.py` · **dependencies**: WP01, WP02
 - **requirement_refs**: FR-001, FR-003, FR-006 · **acceptance**: ports extracted; `gather_artifact_presence` + `resolve_commit_target` present; oracle + compat green
-- [ ] T017 · [ ] T018 · [ ] T019 · [ ] T020
+- [x] T017 · [ ] T018 · [ ] T019 · [ ] T020
 
 ### WP06 — Pure cores + guard inversion (FR-009)
 - **owned_files**: `src/runtime/next/runtime_bridge_cores.py`, `src/runtime/next/runtime_bridge.py`, `tests/runtime/test_bridge_cores.py` · **dependencies**: WP01, WP02, WP05

@@ -17,6 +17,7 @@ subtasks:
 - T019
 - T020
 phase: Extraction spine
+shell_pid: '2190657'
 history:
 - at: '2026-07-11T00:00:00Z'
   actor: system
@@ -134,3 +135,8 @@ identity). Both MUST be green.
 - `src/runtime/next/runtime_bridge.py:187` `_wrap_with_decision_git_log` (KEEP-IN-PLACE; pure selection at `:226–261`)
 - `contracts/parity-oracle.md:28-33` (coord-commit captured at `:2563`/`:3427`)
 - `contracts/parity-oracle.md`, `tests/runtime/test_bridge_compat_surface.py` (re-run as acceptance gate)
+
+## Activity Log
+
+- 2026-07-11T20:39:07Z – user – shell_pid=2190657 – Moved to for_review
+- 2026-07-11T20:46:44Z – user – shell_pid=2190657 – Moved to approved
