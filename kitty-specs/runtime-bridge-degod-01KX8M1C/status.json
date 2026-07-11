@@ -1,7 +1,7 @@
 {
-  "event_count": 10,
-  "last_event_id": "01KX8RPVE38A42PT1TMVRF1H1R",
-  "materialized_at": "2026-07-11T14:18:39.939245+00:00",
+  "event_count": 12,
+  "last_event_id": "01KX8SB6BM90MSFGMTVKK272Q0",
+  "materialized_at": "2026-07-11T14:29:46.484424+00:00",
   "mission_number": "",
   "mission_slug": "runtime-bridge-degod-01KX8M1C",
   "mission_type": "software-dev",
@@ -12,17 +12,17 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 10
+    "planned": 9
   },
   "work_packages": {
     "WP01": {
-      "actor": "finalize-tasks",
+      "actor": "implement-command",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01KX8RN5M2VMVH0D0CMYVNW7CV",
-      "last_transition_at": "2026-07-11T14:17:44.834646+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01KX8SB6BM90MSFGMTVKK272Q0",
+      "last_transition_at": "2026-07-11T14:29:46.484424+00:00"
     },
     "WP02": {
       "actor": "finalize-tasks",
