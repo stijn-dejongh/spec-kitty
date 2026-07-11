@@ -207,3 +207,4 @@ frozen snapshot represents, per-entry sub-ledger membership, how to rebuild).
 ## Activity Log
 
 - 2026-07-11T16:42:20Z – user – shell_pid=1263853 – Moved to for_review
+- 2026-07-11T17:10:22Z – user – shell_pid=1263853 – Moved to approved
