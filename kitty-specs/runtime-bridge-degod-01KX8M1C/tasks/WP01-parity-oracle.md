@@ -64,7 +64,7 @@ sites are **partitioned across three public entry points**, not concentrated in
 | Public entry | Site | Owns (Decision sites) | Own side effects |
 |--------------|------|-----------------------|------------------|
 | `decide_next_via_runtime` | `runtime_bridge.py:2524` | ~15 sites (11 constructed directly `:2545–3015` + the WP-iteration path) | sync emit `:2556`, coord commit `:2563` |
-| `query_current_state` | `runtime_bridge.py:3199` | the **4** `_build_*_query_decision` sites (`:3095`/`:3121`/`:3147`/`:3184`), reached **exclusively** here | none (read-only) |
+| `query_current_state` | `runtime_bridge.py:3199` | the **4** `_build_*_query_decision` sites (`:3059`/`:3111`/`:3136`/`:3166`), reached **exclusively** here | none (read-only) |
 | `answer_decision_via_runtime` | `runtime_bridge.py:3355` | remaining sites incl. the **10** `_map_runtime_decision` sites (`:3582–3798`, CC33) + `_build_wp_iteration_decision` (`:3468–3536`) | own sync emit `:3410`, snapshot seed via `_read_snapshot` `:3418`, coord commit `:3427` |
 
 An oracle that drives `decide_next_via_runtime` alone leaves ~14 sites (including
@@ -194,7 +194,7 @@ frozen snapshot represents, per-entry sub-ledger membership, how to rebuild).
 - `research.md:41-57` §Parity (derivation, fixture matrix, coverage floor)
 - `data-model.md:15-18` (Decision-builder shape, non-deterministic fields)
 - `src/runtime/next/runtime_bridge.py:2524` `decide_next_via_runtime` (entry 1; sync emit `:2556`, coord commit `:2563`, timestamp `:2542`, origin.mission_path `:2575`)
-- `src/runtime/next/runtime_bridge.py:3199` `query_current_state` (entry 2; owns the 4 query builders `:3095`/`:3121`/`:3147`/`:3184`)
+- `src/runtime/next/runtime_bridge.py:3199` `query_current_state` (entry 2; owns the 4 query builders `:3059`/`:3111`/`:3136`/`:3166`)
 - `src/runtime/next/runtime_bridge.py:3355` `answer_decision_via_runtime` (entry 3; emit `:3410`, snapshot seed `:3418`, coord commit `:3427`)
 - `src/runtime/next/runtime_bridge.py:3555` `_map_runtime_decision` (10 sites `:3582–3798`, CC33)
 - `src/runtime/next/runtime_bridge.py:1057` `_check_cli_guards`, `:1515` `_check_composed_action_guard` (both guards, all branches)

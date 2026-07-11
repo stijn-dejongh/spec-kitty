@@ -101,11 +101,21 @@ through the shim — re-export alone is false-green for these:
 1. Create `tests/runtime/test_bridge_identity.py`:
    - Unit-test coord-branch naming / mission-ULID / primary-feature-dir against stubs (FR-006),
      including the malformed-coord path.
-   - **Zero `# noqa: C901` repo-wide in the module family** — assert no `# noqa: C901` remains
-     in `runtime_bridge.py` or any `runtime_bridge_*.py` sibling (drive `ruff --select C901`
-     over the family and assert zero offenders — NFR-002/SC-002). This is the mission-closing
-     complexity assertion.
-   - **NFR-005 residual-LOC** — assert `runtime_bridge.py` dropped to the research-confirmed thin
+   - **Zero `# noqa: C901` repo-wide in the module family** — the authoritative check is a
+     **`ruff --select C901` offender-count == 0** over `runtime_bridge.py` and every
+     `runtime_bridge_*.py` sibling (NFR-002/SC-002). Do **NOT** use a raw text grep for the
+     literal `# noqa: C901`: `runtime_bridge.py:2465` contains a docstring that *mentions* the
+     marker as prose (```# noqa: C901```), which a grep false-positives on. Assert the ruff
+     offender count is zero (no function is over the complexity ceiling and therefore no
+     suppression is needed) — this is the mission-closing complexity assertion.
+   - **C-007 no-new-import-cycle** (whole-family closure) — add a concrete regression assertion
+     that the decomposed `runtime_bridge*` family introduced **no new top-level import cycle**.
+     Specifically: assert the `decision.py:428` → orchestrator edge stays **lazy** (no top-level
+     `decision → runtime_bridge*` import), and that no seam module (`_engine`/`_io`/`_cores`/
+     `_composition`/`_retrospective`/`_identity`) creates a top-level cycle back into
+     `runtime_bridge` or into `cores` (the import DAG in research.md §Import DAG must stay
+     acyclic). Drive this with an AST/import-graph walk over the family (e.g. build the top-level
+     import edges and assert no cycle), not a runtime `import` smoke test alone.
      target (~35–40% of the original 3,813 LOC, per the #2464 precedent — guidance, not a frozen
      constant; FR-005).
    - **NFR-006 timing parity** — re-run the WP01 before/after timing harness on the full

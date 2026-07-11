@@ -7,7 +7,7 @@ The refactor touches three public entries, and the 29 `Decision(...)` sites are 
 | Public entry | Site | Owns (Decision sites) | Own side effects |
 |--------------|------|-----------------------|------------------|
 | `decide_next_via_runtime` | `:2524` | ~15 sites reachable here (11 constructed directly `:2545–3015` + the WP-iteration path) | sync emit `:2556`, coord commit `:2563` |
-| `query_current_state` | `:3199` | the **4 `_build_*_query_decision`** sites — `_build_finalized_override_query_decision:3095`, `_build_initial_query_decision:3121`, `_build_decision_required_query:3147`, `_build_runtime_query_decision:3184` — reached **exclusively** from here | none (read-only query) |
+| `query_current_state` | `:3199` | the **4 `_build_*_query_decision`** sites — `_build_finalized_override_query_decision:3059`, `_build_initial_query_decision:3111`, `_build_decision_required_query:3136`, `_build_runtime_query_decision:3166` — reached **exclusively** from here | none (read-only query) |
 | `answer_decision_via_runtime` | `:3355` | the remaining sites incl. the **10 `_map_runtime_decision` sites** (`:3582–3798`, CC33) + `_build_wp_iteration_decision` (`:3468–3536`) | its **OWN** sync emitter (`:3410`), snapshot seed via `_read_snapshot` (`:3418`), coord-branch commit via `_wrap_with_decision_git_log`/`DecisionGitLog` (`:3427`) |
 
 The oracle carries **per-entry fixture sub-ledgers**. Coverage floor is scoped per owning entry: every Decision site reached ≥1× **from its owning entry**, every guard branch reached ≥1×. Driving `decide_next` alone can never reach the query/answer-only sites.

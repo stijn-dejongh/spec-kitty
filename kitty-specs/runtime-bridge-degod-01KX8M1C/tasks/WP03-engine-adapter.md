@@ -97,7 +97,12 @@ module other than `runtime_bridge_engine.py` imports/accesses
 `_internal_runtime.engine` / `.planner` privates — FR-013 requires ALL
 engine-private access concentrated in the adapter. Add the **FR-007 top-of-file
 decomposition pointer** referencing **#2531** to `runtime_bridge.py`, matching the
-sibling convention (#2056/#2057/#2059/#2464).
+sibling convention (#2056/#2057/#2059/#2464). Also introduce **`__all__` for the 8
+public names** on `runtime_bridge.py` (sibling `merge.py` parity, research.md
+§Engine-adapter). Nuance to preserve: `__all__` governs **only** `import *` — it does
+**NOT** preserve the ~50 private symbols, which remain owned by the explicit guarded
+compat re-export block (do not conflate the two — see `contracts/compat-surface.md`
+§`__all__`).
 
 ### T014 — Guarded re-export; oracle + compat guard stay green
 Re-import every moved patched symbol back into `runtime_bridge` in the **guarded
@@ -114,6 +119,8 @@ focused unit tests for the adapter (contract-tested against engine stubs, FR-006
 - `_advance_run_state_after_composition` logic in the adapter at **CC ≤15**; thin
   residual delegate preserves the 8-patch/9-attr compat surface.
 - FR-007 #2531 decomposition pointer present at top of `runtime_bridge.py`.
+- `__all__` introduced for the 8 public names on `runtime_bridge.py` (governs `import *`
+  only — the ~50 private symbols remain in the guarded compat re-export block).
 - **WP01 oracle green** (all 3 entries, full floor) and **WP02 compat guard green**
   (all sentinels fire) — the acceptance gate.
 - Adapter seam has focused unit tests against engine stubs (FR-006).

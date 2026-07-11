@@ -100,6 +100,13 @@ driving `decide_next` alone never reaches (contracts/parity-oracle.md §Scope).
    materializer is what drives this ≤15. Extract any remaining branching into helpers.
 4. Remove any `# noqa: C901` touched — do not relocate (FR-004/NFR-002). `ruff --select C901`
    reports zero offenders on the touched functions; radon confirms.
+   - **Sub-sequence fallback (documented):** this is the fattest single WP (29-site collapse +
+     `_map_runtime_decision` CC≈33 + `query_current_state` CC≈16 + the 4 query builders). If the
+     collapse and offender reductions cannot all land ≤15 in one pass, fall back to a
+     phase-by-phase landing (e.g. the builder + the answer path first, then the query builders) —
+     but **every** touched function still lands ≤15 and **no `# noqa: C901` is re-added** (mirrors
+     WP09's escape hatch; the mission's whole point is zero suppressions). Record the fallback in
+     the PR body if used.
 5. Guarded re-export: every relocated-but-patched symbol stays reachable at
    `runtime_bridge.<name>` (FR-012). `_state_to_action`, `_build_prompt_or_error` are
    SPLIT-flag symbols (patchable via the residual path, dead via the render-seam path —
