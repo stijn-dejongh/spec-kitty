@@ -18,6 +18,7 @@ subtasks:
 - T013
 - T014
 phase: Extraction spine
+shell_pid: '1742369'
 history:
 - at: '2026-07-11T00:00:00Z'
   actor: system
@@ -147,3 +148,8 @@ focused unit tests for the adapter (contract-tested against engine stubs, FR-006
 - `src/runtime/next/runtime_bridge.py:1322`, `:1375` `_load_frozen_template` (the classic missed engine sites)
 - `contracts/parity-oracle.md` (re-run as acceptance gate)
 - `tests/runtime/test_bridge_compat_surface.py` (re-run as acceptance gate)
+
+## Activity Log
+
+- 2026-07-11T18:21:03Z – user – shell_pid=1742369 – Moved to for_review
+- 2026-07-11T18:30:07Z – user – shell_pid=1742369 – Moved to approved

@@ -20,9 +20,9 @@
 | T009 | Guard (B) static AST: identity re-export check + **forbid function-scope re-imports of compat names** | WP02 | — | [D] |
 | T010 | Prove the compat guard GREEN on unmodified source | WP02 | — | [D] |
 | T011 | Create `runtime_bridge_engine.py`; move the **grep-complete** `_internal_runtime` privates (`_read_snapshot`/`_load_frozen_template`@`:1322`/`:1375`/`_append_event`/`_write_snapshot`/`plan_next`) | WP03 | — |
-| T012 | `_advance_run_state_after_composition` body → adapter (≤15); thin residual compat delegate for its 8-patch/9-attr surface | WP03 | — |
-| T013 | Arch guard: no core reaches engine internals; add the #2531 decomposition pointer (FR-007) | WP03 | — |
-| T014 | Guarded re-export of moved patched symbols; oracle + compat guard stay green | WP03 | — |
+| T012 | `_advance_run_state_after_composition` body → adapter (≤15); thin residual compat delegate for its 8-patch/9-attr surface | WP03 | — | [D] |
+| T013 | Arch guard: no core reaches engine internals; add the #2531 decomposition pointer (FR-007) | WP03 | — | [D] |
+| T014 | Guarded re-export of moved patched symbols; oracle + compat guard stay green | WP03 | — | [D] |
 | T015 | Create `runtime_bridge_retrospective.py`; move the self-contained learning-capture cluster | WP04 | — |
 | T016 | Seam unit tests; re-export patched symbols; oracle + compat green | WP04 | — |
 | T017 | Create `runtime_bridge_io.py`; move feature-runs index / template discovery / run lifecycle / OC builder | WP05 | — |
@@ -64,7 +64,7 @@
 - **owned_files**: `src/runtime/next/runtime_bridge_engine.py`, `src/runtime/next/runtime_bridge.py`, `tests/runtime/test_bridge_engine.py` · **dependencies**: WP01, WP02
 - **requirement_refs**: FR-013, FR-007, FR-001, FR-006 · **acceptance**: all engine-privates concentrated (grep-complete); `_advance_run_state` ≤15; oracle + compat green
 - **safeguards**: grep-complete site list (incl. `:1322`/`:1375`); the residual keeps only the compat delegate, logic is adapter-owned.
-- [ ] T011 · [ ] T012 · [ ] T013 · [ ] T014
+- [x] T011 · [ ] T012 · [ ] T013 · [ ] T014
 
 ### WP04 — Retrospective seam
 - **owned_files**: `src/runtime/next/runtime_bridge_retrospective.py`, `src/runtime/next/runtime_bridge.py`, `tests/runtime/test_bridge_retrospective.py` · **dependencies**: WP01, WP02
