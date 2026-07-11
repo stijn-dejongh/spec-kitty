@@ -1,6 +1,13 @@
 # Contract: Gate Verdict → Operator Outcome (FR-014)
 
-The single canonical mapping the whole system obeys. The reducer that implements
+**Scope: test/verdict gates only.** This mapping governs gates that emit a
+`GateVerdict` (Path-A handlers, Path-B assets). The artifact-presence composed-action
+guard (`_check_composed_action_guard`) is NOT governed by this mapping — it keeps its
+own **fail-closed** reduction (hard-blocks on missing spec/plan/tasks); routing it
+through this "only regression blocks" reducer would silently downgrade its blocks to
+warns. See FR-002 / gate-resolution-seam.md (shared *selection*, per-class reduction).
+
+The canonical mapping all test/verdict gates obey. The reducer that implements
 it (`review/gates/outcomes.py`) is the fail-open boundary owned by the resolution seam.
 
 ## Inputs

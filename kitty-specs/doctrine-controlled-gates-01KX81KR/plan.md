@@ -11,22 +11,25 @@ Move the *selection and supply* of task-transition gates out of hardcoded
 (RD-005): **Path-A handlers** (spec-kitty-shipped, no opt-in) and **Path-B
 executable gate assets** (doctrine-supplied, opt-in + real containment). A
 mission **step contract** declares `transition → gate` bindings; the **charter**
-subsystem's activation selects which are active. Both runtime consumers resolve
-through **one SSOT gate-resolution seam** (see research §0) that also owns
-fail-open reduction. The pre-review regression gate is migrated as the Path-A
-exemplar, closing #2534 fully and #2330 for the selection path.
+subsystem's activation selects which are active. Both runtime consumers obtain
+their gate set through **one SSOT *selection* seam** (`resolve_gates` + a
+lane↔action adapter; research §0) — **reduction stays per gate-class**:
+test/verdict gates use the FR-014 fail-open reducer (folded into the seam, IC-02);
+the artifact-presence composed-action guard keeps its existing **fail-closed**
+reduction and shares *selection* only. The pre-review regression **test-gate** is
+migrated as the Path-A exemplar, closing #2534 fully and #2330 for the selection path.
 
 ## Technical Context
 
 **Language/Version**: Python 3.11+
-**Primary Dependencies**: pydantic (frozen models, `extra="forbid"`), ruamel.yaml (doctrine YAML), the existing charter/DRG subsystem (`src/charter/`, `filter_graph_by_activation`), `review/baseline.py` + `review/pre_review_gate.evaluate_with_scope` (reused verdict tail), `subprocess` + host OS isolation primitives (Path-B runner)
+**Primary Dependencies**: pydantic (frozen models, `extra="forbid"`), ruamel.yaml (doctrine YAML), the existing charter/DRG subsystem (`src/charter/`, `filter_graph_by_activation`), `review/baseline.py` + `review/pre_review_gate.evaluate_with_scope` (reused verdict tail), `subprocess` + stdlib primitives only for the Path-B runner (`os.setsid`/process-group kill, `resource.setrlimit`, path-resolved fs confinement, env allowlist) — **no new sandbox dependency** (RD-006)
 **Storage**: doctrine YAML (`*.step-contract.yaml`, `*.asset.yaml`), generated DRG (`graph.yaml`/`references.yaml`), `.kittify/config.yaml` (opt-in flag), gate assets on disk (resolved via URN→path)
 **Testing**: pytest — characterization/golden tests (behavior-preserving extractions), contract tests (the SSOT seam), fault-injection tests (fail-open), trust/containment tests, and an extension of `tests/architectural/untrusted_path_audit/`
-**Target Platform**: Linux/macOS CLI (cross-platform; containment primitives are host-dependent → refuse-if-unconfinable, never run unconfined)
+**Target Platform**: Linux/macOS CLI (cross-platform; refuse-unconfinable v1 — a capability probe refuses where fs/network can't be confined, never run unconfined)
 **Project Type**: single (CLI + library)
 **Performance Goals**: gate execution bounded by an enforced timeout (default mirrors the baseline ~300 s); resolution seam is O(active bindings) — negligible
 **Constraints**: fail-open invariant (only a valid emitted `regression(blocking)` may block); cognitive-complexity ceiling 15 (S3776/C901); no new public CLI surface beyond the observability query + the opt-in flag; `extra="forbid"` models → versioned schema evolution + migration; no doctrine code executes on Path A
-**Scale/Scope**: ~8–10 WPs; surfaces: `src/specify_cli/review/`, `src/specify_cli/cli/commands/agent/tasks_move_task.py`, `src/runtime/next/runtime_bridge.py`, `src/charter/`, `src/doctrine/assets/`, `src/doctrine/missions/`
+**Scale/Scope**: ~12–14 WPs (see the lane sketch under the IC map); surfaces: `src/specify_cli/review/`, `src/specify_cli/cli/commands/agent/tasks_move_task.py`, `src/runtime/next/runtime_bridge.py`, `src/charter/` (`drg.py` kind-map), `src/doctrine/missions/step_contracts.py`, `src/doctrine/assets/models.py`, `src/specify_cli/doctrine/pack_validator.py`, DRG `graph.yaml`/`references.yaml` regeneration
 
 ## Charter Check
 
@@ -36,8 +39,9 @@ exemplar, closing #2534 fully and #2330 for the selection path.
 - **Architectural alignment** ✅ — reuse `filter_graph_by_activation` + `evaluate_with_scope`; the binding + seam is the only new decision surface (C-005). No legacy fallback (C-004, unification-not-parity).
 - **DDD + tiered rigour** ✅ — core (resolution seam, runner, trust envelope, fault reducer) = high rigour + contract tests; glue (observability query, doc/yaml wiring) = standard rigour.
 - **ATDD-first** ✅ — contract tests for the seam + fault-injection acceptance tests precede implementation; characterization tests precede every extraction.
-- **Campsite-first** ✅ — IC-01 tidy-first hook extraction opens the surface before the functional change; broader god-module debt stays tracked (#2116).
-- **Trust/safety** ✅ — executing doctrine code (Path B) is gated by a real containment envelope + default-off opt-in + derived provenance; the untrusted-input audit harness is extended (C-007).
+- **Campsite-first** ✅ — IC-01 tidy-first hook extraction opens the surface before the functional change; broader `runtime_bridge` degod stays tracked at **#2531** (#2116 is closed) — **coordinate** the F(48) inversion with it.
+- **Trust/safety** ✅ — executing doctrine code (Path B) is gated by the refuse-unconfinable v1 containment envelope + default-off opt-in + derived provenance; the untrusted-input audit harness is extended (C-007).
+- **Anti-fallback (C-004)** ✅ — the strangler **removes** the hardcoded spec-kitty-shaped `pre_review_gate` decision path; there is **no** "doctrine-inactive → run the old gate" compatibility tail. Inactive/undeclared → CALM-NOTICE, not a legacy fallback.
 
 No violations → Complexity Tracking empty.
 
@@ -65,20 +69,22 @@ src/
 ├── specify_cli/
 │   ├── review/
 │   │   ├── pre_review_gate.py          # split: verdict tail (reuse) vs spec-kitty ScopeSource (move) vs decision path (remove)
-│   │   └── gates/                       # NEW: SSOT resolution seam, verdict→outcome reducer, handler registry
-│   │       ├── resolver.py              # the single GatePorts entry point
-│   │       ├── outcomes.py              # FR-014 reducer (fail-open boundary)
+│   │   └── gates/                       # NEW: SSOT *selection* seam + per-class reduction, handler registry
+│   │       ├── resolver.py              # resolve_gates (selection) + lane↔action adapter; run_gate (test-gate reduction) folds outcomes
+│   │       ├── outcomes.py              # FR-014 reducer (test-gate fail-open boundary; owned by resolver — IC-08 folded into IC-02)
 │   │       ├── handlers/                # Path-A handlers (pre-review exemplar)
 │   │       └── scope_source.py          # ScopeSource protocol + built-in spec-kitty impl
+│   ├── doctrine/pack_validator.py       # EXTEND _validate_asset_manifests: gate-asset-shape detection (keys code-exec)
 │   └── cli/commands/agent/
 │       ├── tasks_move_task.py           # invert the pre-review hook onto the seam
 │       └── pre_review_hook.py           # NEW (IC-01): extracted hook block, behavior-preserving
-├── runtime/next/runtime_bridge.py       # invert _check_composed_action_guard onto the SAME seam
-├── charter/
-│   └── step_contracts.py                # + versioned gate-binding field (migration)
+├── runtime/next/runtime_bridge.py       # share SELECTION only for _check_composed_action_guard; keep its fail-closed reduction (coord #2531)
+├── charter/drg.py                       # EXTEND _SINGULAR_TO_PLURAL so step-contract-based gate activation isn't a no-op
 └── doctrine/
-    ├── assets/                          # NEW Path-B substrate: repository.py, resolver.py, runner.py, entrypoint.py
-    └── missions/models.py               # + gate-binding on unified MissionStep (migration)
+    ├── missions/step_contracts.py       # + versioned gate-binding field on MissionStepContractStep:65 (migration)
+    ├── assets/models.py                 # EXTEND AssetManifest (extra="forbid") with executable gate-asset shape (Path-B substrate: repository/resolver/runner/entrypoint alongside)
+    ├── missions/models.py               # + gate-binding on unified MissionStep (migration)
+    └── graph.yaml / references.yaml     # REGENERATE (generated + freshness/parity-gated) after the schema/kind-map change
 
 tests/
 ├── contract/            # seam I/O + verdict→outcome contract tests
@@ -109,12 +115,12 @@ the seam, never re-implementing selection.
 - **Sequencing/depends-on**: none (first).
 - **Risks**: must preserve fail-open scaffolding (`_mt_empty_scope_verdict:859`, broad `except:1035`) **verbatim** — it IS the FR-010 contract. Golden-guard with existing move-task characterization tests before moving.
 
-### IC-02 — SSOT gate-resolution seam (the keystone)
-- **Purpose**: One injected entry point mapping `(mission, transition, activation)` → ordered `ResolvedGate` list; the ONLY place that reads bindings + applies charter activation; owns the fail-open reduction boundary. Both consumers depend on it.
-- **Relevant requirements**: FR-002, FR-003, FR-006; C-001, C-005.
-- **Affected surfaces**: new `review/gates/resolver.py`; `runtime_bridge._check_composed_action_guard` (F48) and the extracted pre-review hook both inverted onto it.
-- **Sequencing/depends-on**: IC-01.
-- **Risks**: highest-regression edit (F48 god-module). **Extract-then-inject**: characterization tests on the current `(mission, action)` matrix FIRST; never edit-in-place. If both consumers don't route through it, NFR-005 is unprovable.
+### IC-02 — SSOT gate-*selection* seam + test-gate reducer (the keystone; IC-08 folded in)
+- **Purpose**: One injected `resolve_gates(mission, transition, activation)` → ordered `ResolvedGate` list (with a **lane↔action adapter** — the move-task side keys on lane `for_review`, `get_by_action` keys on action; `get_by_action(mission,"for_review")`→None today); the ONLY place that reads bindings + applies charter activation. **Selection only** — both consumers share it. **Reduction is per gate-class**: the seam's `run_gate` folds test/verdict-gate faults via the FR-014 reducer (the former IC-08 — folded in here because `run_gate` cannot meet its fault-containment/only-regression invariants without it); the artifact-presence guard keeps its own **fail-closed** reduction (shares selection only, NOT routed through `run_gate` — else SC-010 hard-blocks downgrade to warns).
+- **Relevant requirements**: FR-002, FR-003, FR-006, FR-010, FR-014; C-001, C-002, C-005; SC-010.
+- **Affected surfaces**: new `review/gates/resolver.py` + `review/gates/outcomes.py`; `runtime_bridge._check_composed_action_guard` (F48, selection only) and the extracted pre-review hook both inverted onto it.
+- **Sequencing/depends-on**: IC-01. (IC-08 no longer standalone — folded here.)
+- **Risks**: highest-regression edit (F48 god-module). **Extract-then-inject**: characterization tests on the current `(mission, action)` matrix FIRST; never edit-in-place. Isolate the F(48) inversion in its **own** WP and **coordinate with #2531** (concurrent decomposition of the same file). If both consumers don't route selection through it, NFR-005 is unprovable.
 
 ### IC-03 — Gate-binding schema + migration (charter spine)
 - **Purpose**: Add the declarative `transition → gate` binding to `MissionStepContractStep` and unified `MissionStep`; migrate built-in step contracts.

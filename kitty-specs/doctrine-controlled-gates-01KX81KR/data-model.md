@@ -39,13 +39,15 @@ Carried on `MissionStepContractStep` and unified `MissionStep`.
 | `config_keys` | list[str] | e.g. `review.fail_on_pre_review_regression`, `review.test_command` (FR-017) |
 
 ## GateAsset **(new schema — executable ASSET, Path B)**
-Extends `AssetManifest` with an executable shape (keyed so non-gate assets stay inert — C-003).
+Extends the **existing** `AssetManifest` (`src/doctrine/assets/models.py`, `extra="forbid"`)
+with an executable shape, keyed so non-gate assets stay inert (C-003). IC-06 **extends**
+that model + `pack_validator._validate_asset_manifests` — it is NOT greenfield.
 | Field | Type | Notes |
 |-------|------|-------|
 | `id`, `mime`, `path` | (existing) | inherited from AssetManifest |
 | `entrypoint` | str | module:function or script path within the asset |
 | `interpreter` | enum (allowlisted) | e.g. `python`; no shell |
-| `verdict_protocol` | const | must emit a GateVerdict on stdout/structured channel |
+| `verdict_channel` | const | GateVerdict emitted on a **dedicated, size-capped, schema-validated** channel — NOT shared stdout; stray stdout can't forge a verdict (FR-019) |
 
 ## ScopeSource (doctrine-declared strategy)
 | Field | Type | Notes |
@@ -53,17 +55,18 @@ Extends `AssetManifest` with an executable shape (keyed so non-gate assets stay 
 | `derive(changed_files) -> Scope` | callable | portable; spec-kitty's filter-group/census model is one built-in impl (FR-009) |
 | built-in id | str | active only when spec-kitty's own doctrine is active (FR-012) |
 
-## TrustEnvelope (Path-B gating; FR-007/FR-015)
+## TrustEnvelope (Path-B gating; FR-007/FR-015; refuse-unconfinable v1, RD-006)
 | Field | Type | Notes |
 |-------|------|-------|
-| `provenance` | enum `built_in\|org_pack\|third_party` | **derived** from pack-load metadata, never self-declared |
+| `provenance` | enum `built_in\|org_pack\|third_party` | **derived** from pack-load metadata, never self-declared; **loader must stop overwriting `source_kind`** (`org_pack_loader.py:403`) so `third_party` is producible/refusable — else NFR-004a/SC-012 untestable (C-008) |
 | `allow_flag` | bool | `review.allow_executable_gate_assets`, default off |
-| `interpreter_allowlist` | set[str] | no shell interpolation |
+| `interpreter_allowlist` | set[str] | no shell interpolation; argv-vector |
+| `env_allowlist` | set[str] | explicitly constructed child env — **never `dict(os.environ)`** inheritance (C-008) |
 | `timeout_s` | int | default mirrors baseline (~300) |
-| `fs_confinement` | policy | scratch/working-tree writes only |
-| `network` | policy | no egress |
-| `resource_limits` | policy | memory/CPU/output-size |
-| `refuse_if_unconfinable` | bool=true | never run unconfined → TRUST_REFUSAL |
+| `process_group_kill` | bool=true | timeout kills the whole process group (grandchildren), not just the direct child |
+| `rlimits` | policy | `setrlimit` CPU/memory/output-size caps applied before exec |
+| `fs_confinement` | policy | **path-resolved (symlink-safe)** scratch/working-tree writes only |
+| `capability_probe` | policy | probes fs/network confinability; if unconfinable → REFUSE (never run unconfined → TRUST_REFUSAL). Deeper OS sandbox (namespaces/landlock/seccomp) deferred — no new dep (RD-006) |
 
 ## Relationships
 `StepContract` 1—* `GateBinding` —selected-by→ `CharterActivation` → `ResolvedGate`
