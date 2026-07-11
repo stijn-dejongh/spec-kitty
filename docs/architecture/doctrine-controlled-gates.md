@@ -55,8 +55,10 @@ The target design binds a gate to a transition **in the step contract**, selects
 it through **existing activation**, and dispatches it through a **shipped handler
 registry** — so doctrine *selects and parameterizes* the gate rather than
 *supplying its code* (Path A). Executable **ASSET-kind** gate helpers, where
-doctrine can ship the gate script itself, are a deliberately later, opt-in tier
-(Path B) governed by a mandatory trust model.
+doctrine ships the gate script itself, are **also in scope this mission** (Path B,
+per RD-005), delivered behind a default-off opt-in and a real containment envelope
+— not a deferred tier. Both paths land on one coherent schema authored to carry
+Path B's execution/trust fields from day one.
 
 ## Target data flow
 
@@ -67,8 +69,8 @@ move-task --to for_review
   └─ read the step's gate bindings → [gate:pre-review-regression, …]
   └─ for each declared gate:
        ├─ GateRegistry.get(id) → shipped handler          (Path A: no doctrine code runs)
-       │     └─ (Path B, opt-in) asset-backed handler:
-       │          resolve asset:<id> → blob path → sandboxed run
+       │     └─ (Path B, default-off opt-in) asset-backed handler:
+       │          resolve asset:<id> → blob path → contained run (fs-confined, no egress, resource-limited)
        ├─ handler.resolve_scope(changed_files, ScopeSource)   (portable; no _gate_coverage import)
        ├─ handler.run(scope) → structured verdict
        └─ GateVerdict
@@ -93,20 +95,30 @@ whole") make the gate meaningful in non-Python repos without assuming pytest.
 
 ## The trust model (executable ASSET helpers)
 
-Path B lets doctrine ship gate code, which is an RCE-equivalent surface. The ADR
-makes the trust model a first-class, mandatory pillar rather than an afterthought:
+Path B lets doctrine ship gate code, which is an RCE-equivalent surface. Because
+Path B is in scope this mission, the ADR makes the trust model a **real
+containment envelope**, not merely an interpreter allowlist (an allowlisted
+interpreter can still read your SSH keys or exfiltrate the tree):
 
-- **Provenance allowlist** — only built-in and governed org-pack assets may be
-  executable; never a project-local or mission-authored asset by default.
+- **Derived provenance allowlist** — only built-in and governed org-pack assets
+  may be executable; never a project-local or mission-authored asset. Provenance
+  is derived from pack-load metadata, never self-declared by the asset.
 - **Interpreter allowlist / no shell** — a named interpreter and an argv vector;
   never `shell=True` or a raw command string.
 - **Explicit opt-in** — `review.allow_executable_gate_assets`, off by default.
-- **Bounded execution** — timeout + environment scrub.
-- **Fail-open** — a malformed verdict or any resolution/execution failure
-  degrades to a warn; a doctrine misconfiguration must never harden into a block.
+- **Filesystem confinement + no network egress** — read the mission tree, write
+  only to a scratch dir, no outbound network.
+- **Resource limits** — bounded wall-clock timeout, memory, CPU, and output size.
+- **Refuse rather than run unconfined** — if a containment primitive is
+  unavailable on the host, the asset gate is skipped with a warn, never executed
+  unconfined.
+- **Fail-open** — a malformed verdict, a resolution/execution failure, or a limit
+  kill degrades to a warn; a doctrine misconfiguration must never harden into a
+  block.
 
 Follow-up **#2536** adds an activation-time warning when an org pack ships
-executable gate assets — the seed of a future trust-tier / accredited-pack
+executable gate assets, and carries cryptographic/signature provenance (deferred
+from this mission) — the seed of a future trust-tier / accredited-pack
 distribution model.
 
 ## Status

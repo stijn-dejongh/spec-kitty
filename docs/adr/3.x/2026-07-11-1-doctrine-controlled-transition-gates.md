@@ -1,5 +1,5 @@
 ---
-title: 'ADR: Doctrine-Controlled Transition Gates — Declarative Bindings Now, Executable ASSET Helpers as an Opt-In Later Tier'
+title: 'ADR: Doctrine-Controlled Transition Gates — Declarative Bindings and Executable ASSET Helpers, Both In Scope This Mission'
 status: Proposed
 date: '2026-07-11'
 ---
@@ -7,13 +7,17 @@ date: '2026-07-11'
 ## Context and Problem Statement
 
 Every check that fires on a mission task-lifecycle transition is **hardcoded in
-`specify_cli` Python**, keyed on the `Lane.*` enum by literal `if target_lane ==
-Lane.X` branches. There are roughly **35 such transition checks** across the
-command layer (`tasks_move_task.py`, `implement.py`, `accept.py`,
-`policy/merge_gates.py`) and **no data-driven registry anywhere maps a transition
-→ the set of checks that should run on it**. Adding a check today means editing
-`specify_cli` and wiring a new `if target_lane == …` branch; a consumer repo
-inherits spec-kitty's exact gate set whether or not it fits.
+`specify_cli` Python**. There are roughly **35 such command-layer transition
+checks** across the command layer (`tasks_move_task.py`, `implement.py`,
+`accept.py`, `policy/merge_gates.py`), and **no data-driven registry anywhere maps
+a transition → the set of checks that should run on it**. The applicability
+mechanism is not uniform: only about a dozen sites are literal `if target_lane ==
+Lane.X` compares (the pre-review hook's early return being the clearest); the rest
+decide through `if policy.require_X` merge-gate flags and composed-action
+`(mission, action)` guard dispatch. Whatever the spelling, the binding is
+imperative and inline — adding a check today means editing `specify_cli` and
+wiring a new conditional, and a consumer repo inherits spec-kitty's exact gate set
+whether or not it fits.
 
 Two tiers exist. The **FSM entry-guards** (`status/wp_state.py`) are structural,
 per-lane, and repo-agnostic — clean invariants worth keeping. The **command-layer
@@ -70,13 +74,14 @@ Two facts make this tractable rather than a rewrite:
    command is `move-task --to for_review`). But `StepContractExecutor` is *"a
    composer, not a command runner"* (`executor.py:2-4`) — declared commands are
    rendered as LLM text with an explicit *"declared only; the host/operator owns
-   execution"* disclaimer (`:369-370`) and **never executed**. The real gates are
-   a separate hardcoded system that never reads the contract. Likewise the
-   post-action guard `_check_composed_action_guard` (`runtime_bridge.py:1515`) is
-   a hardcoded `if/elif` chain on `(mission, action)`, not contract-driven.
+   execution"* disclaimer (`executor.py:372`) and **never executed**. The real
+   gates are a separate hardcoded system that never reads the contract. Likewise
+   the post-action guard `_check_composed_action_guard` (`runtime_bridge.py:1515`)
+   is a hardcoded `if/elif` chain on `(mission, action)`, not contract-driven.
    Meanwhile the activation machinery that already gates mission-type → step-
-   contract selection (`filter_graph_by_activation`, `charter/drg.py:293-334`) is
-   a ready-made "active doctrine selects which artifact applies" mechanism.
+   contract selection (`filter_graph_by_activation`, `src/charter/drg.py:319`,
+   predicate `:293-316`) is a ready-made "active doctrine selects which artifact
+   applies" mechanism.
 
 The ASSET kind is *named* as if it could carry executable helpers, but is **inert
 by construction**: an asset is a validated sidecar reference
@@ -125,8 +130,9 @@ doctrine declares — spec-kitty's census gate simply is not in its active set, 
 
 ## Considered Options
 
-1. **Keep everything hardcoded** (status quo) — extend the `if target_lane == …`
-   cascades in `specify_cli` for each new gate.
+1. **Keep everything hardcoded** (status quo) — extend the inline `if target_lane
+   == …` / `if policy.require_X` / `(mission, action)` guard cascades in
+   `specify_cli` for each new gate.
 2. **Tactical message fix** (the cancelled option) — make the pre-review gate's
    "gate authorities unavailable" path clearer / gate the `_gate_coverage`
    import so it does not appear to run in consumers, without changing where the
@@ -135,16 +141,37 @@ doctrine declares — spec-kitty's census gate simply is not in its active set, 
    executable-asset tier, ever.
 4. **Path B only — ASSET-as-executable** from the start: doctrine ships the gate
    script, runtime resolves + runs it.
-5. **Phased hybrid — Path A now, Path B as an explicit opt-in later tier, with a
-   mandatory trust model authored up front** — **chosen**.
+5. **Phased hybrid — Path A now, Path B as an explicit opt-in *later* tier, with a
+   mandatory trust model authored up front.** This was the ADR's *initial*
+   recommendation; it was **superseded by RD-005** (see Decision Outcome) and is
+   retained here as the rejected-in-favour-of-full-scope alternative.
+6. **Full A+B in this mission — both mechanisms in scope now**: Path-A handlers
+   (spec-kitty-shipped, no opt-in) *and* Path-B executable gate assets
+   (doctrine-supplied, default-off opt-in behind a real containment envelope),
+   on one coherent schema authored to carry both — **chosen (RD-005)**.
 
 ## Decision Outcome
 
-**Chosen option:** "Phased hybrid (A now, B as an opt-in later tier)" (Option 5).
+**Chosen option:** "Full A+B in this mission" (Option 6).
+
+> **RD-005 (operator, 2026-07-11).** The ADR's initial draft recommended the
+> phased hybrid (Option 5): Path A now, Path B as a later opt-in tier. The
+> operator superseded that with **full A+B in this mission** — both mechanisms are
+> in scope now. Rationale: (a) **safety-first for a new product gap** — the
+> executable-gate-asset trust model is easier to get right when designed and
+> shipped *with* its consumers than retrofitted onto a Path-A-only base whose
+> schema and handler registry have already frozen around the no-code-execution
+> assumption; (b) **a single coherent schema** — authoring the binding + handler
+> contract once, with Path B's execution/trust fields present from day one, avoids
+> a second schema-version bump and migration when the executable tier lands. Path
+> B remains gated by its trust envelope (default-off opt-in + containment); "in
+> scope now" changes *when*, not *whether*, that envelope is mandatory.
 
 Make transition pre-gate checks **doctrine-controlled and configured** instead of
-hardcoded in `specify_cli`, in two paths delivered in sequence, behind one
-schema authored to support both.
+hardcoded in `specify_cli`, delivering **both** the declarative-binding spine
+(Path A) and the executable-ASSET-helper tier (Path B) in this mission, on one
+schema authored to support both. Path B ships behind a default-off opt-in and the
+containment envelope recorded below; it is not a deferred increment.
 
 ### Decisions recorded
 
@@ -165,34 +192,54 @@ schema authored to support both.
   strategy becomes one pluggable option that spec-kitty ships for *itself*, never
   a default others inherit.
 
-- **B — Executable ASSET-kind helpers (greenfield, delivered as an opt-in later
-  tier).** A gate helper *is* an ASSET blob (a script) referenced from an
-  activatable step contract. This requires a **new subsystem**: an asset
-  repository + a URN→path resolver (today the manifest `path` is validated then
-  discarded), a code-asset **entrypoint contract** (argv/stdin = changed-files +
-  baseline; stdout = schema-validated verdict JSON; declared interpreter +
-  timeout), a **sandboxed runner**, and asset **activation** (assets are
-  non-activatable today). B is designed as an *additive `GateHandler` kind*
-  (`asset-backed`), so the Path-A registry and the binding schema accommodate it
-  without re-opening either.
+- **B — Executable ASSET-kind helpers (greenfield, in scope this mission behind
+  the containment envelope).** A gate helper *is* an ASSET blob (a script)
+  referenced from an activatable step contract. This requires a **new subsystem**:
+  an asset repository + a URN→path resolver (today the manifest `path` is
+  validated then discarded), a code-asset **entrypoint contract** (argv/stdin =
+  changed-files + baseline; stdout = schema-validated verdict JSON; declared
+  interpreter + resource limits), a **contained runner** (see the trust model
+  below — interpreter-allowlist alone is not a sandbox), and asset **activation**
+  (assets are non-activatable today). B is an *additive `GateHandler` kind*
+  (`asset-backed`) on the same schema and registry as Path A, so both are authored
+  once. Per RD-005 it ships in this mission, gated by the default-off opt-in and
+  the containment envelope — not as a deferred increment.
 
-- **Mandatory trust model (a first-class pillar because doctrine-supplied code now
-  executes).** Every executable-asset gate is subject to, at minimum:
-  - **Provenance allowlist** — only *built-in* and *governed org-pack* assets may
-    be executable; **never** a project-local or mission-authored asset by
-    default.
+- **Mandatory trust model — real containment, not just an interpreter allowlist
+  (a first-class pillar because doctrine-supplied code now executes).**
+  Interpreter-allowlist + no-shell + timeout is an *input-shaping* discipline, not
+  a sandbox: a script invoked with an allowlisted interpreter can still read the
+  developer's SSH keys, exfiltrate the tree over the network, or fork-bomb the
+  host. Every executable-asset gate is therefore subject to, at minimum:
+  - **Derived provenance allowlist** — only *built-in* and *governed org-pack*
+    assets may be executable; **never** a project-local or mission-authored asset.
+    Provenance is **derived from pack-load metadata** (which layer/pack the asset
+    was loaded from), **never self-declared** by the asset or its manifest — a
+    project-tier asset cannot claim built-in provenance to earn execution.
   - **Interpreter allowlist / no shell** — the execution contract names an
     interpreter from an allowlist and passes an **argv vector**; never
     `shell=True`, never a raw command string.
   - **Explicit opt-in flag** — `review.allow_executable_gate_assets: true` in
     config, **off by default**. A repo that never opts in can never be made to
     run a doctrine script.
-  - **Bounded execution** — timeout + env scrub, mirroring the existing
-    subprocess-timeout discipline in `run_scoped_tests_at_head`.
+  - **Filesystem confinement** — the runner may **read** the mission tree +
+    declared inputs but must **not write outside a dedicated scratch dir**; no
+    writes to the repo tree, `$HOME`, or system paths.
+  - **No network egress** — the contained process has no outbound network access;
+    a gate needing the network is out of contract.
+  - **Resource limits** — bounded **wall-clock timeout, memory, CPU, and
+    output size**; an over-limit process is killed and its gate degrades to warn
+    (fail-open, below).
+  - **Refuse rather than run unconfined** — if a required containment primitive is
+    unavailable on the host (no way to enforce fs/network/resource limits), the
+    asset gate is **refused** (skipped with a warn), **never executed
+    unconfined**. Containment is a precondition of execution, not best-effort.
   - **Fail-OPEN, structured-verdict-or-warn** — a malformed verdict, a resolution
-    failure, or a missing runner degrades to a `NO_COVERAGE` warn and the
-    transition proceeds; a doctrine/asset misconfiguration must **never** harden
-    into a block.
+    failure, a missing/refused runner, or a limit kill degrades to a `NO_COVERAGE`
+    warn and the transition proceeds; a doctrine/asset misconfiguration must
+    **never** harden into a block.
+  - **Cryptographic/signature provenance is deferred** to #2536 (the trust-tier /
+    accredited-pack model); v1 provenance is layer-derived, not signature-verified.
 
 - **Consequence by construction:** consumer repos receive **only the gates their
   active doctrine declares**. Spec-kitty's census gate is a spec-kitty-repo-only
@@ -242,10 +289,23 @@ each step is independently shippable and green-testable:
    registry, keep the warn/block/`--force`/`policy_metadata` tail verbatim.
    **At this point #2534 is closed:** a consumer without the census binding in
    its active doctrine fires no census gate.
-5. **(Opt-in, later) Add the Tier-1 `asset-backed` handler** + the trust
-   contract, behind `review.allow_executable_gate_assets`. Requires the asset-
-   resolution + (referenced-not-activated) selection work. This is Path B as a
-   named later increment.
+5. **Add the `asset-backed` handler + the containment envelope (in scope this
+   mission, RD-005)**, behind the default-off `review.allow_executable_gate_assets`
+   opt-in. Requires the asset-resolution + (referenced-not-activated) selection
+   work and the contained runner (fs confinement, no egress, resource limits,
+   refuse-if-unconfinable). Sequenced last so it lands on the frozen Path-A
+   registry + schema, but delivered in **this** mission, not deferred.
+
+### Resolved decisions
+
+- **Execution-trust boundary — RESOLVED in scope (RD-005).** Path B (executable
+  ASSET gate helpers) is **in scope this mission**, not deferred and not out. The
+  binding terms are the containment envelope in the trust-model bullet above:
+  derived-provenance allowlist (built-in/org-pack only), default-off opt-in
+  (`review.allow_executable_gate_assets`), interpreter-allowlist/no-shell,
+  filesystem confinement, no network egress, memory/CPU/output-size limits,
+  refuse-rather-than-run-unconfined, and fail-open. Signature-based provenance is
+  deferred to #2536. (This was open-decision #5 in the initial draft.)
 
 ### Open decisions the spec must make
 
@@ -255,7 +315,9 @@ mission spec must resolve:
 1. **Binding-schema location** — a new `gates` field on `MissionStep`, vs. reuse
    `MissionOrchestration.guards`/`required_artifacts` (opaque string lists) with
    a `gate:<id>` URN convention, vs. a field on the legacy
-   `MissionStepContractStep`. Flag the versioned-migration cost either way.
+   `MissionStepContractStep`. The single-schema-for-both mandate (RD-005) raises
+   the bar: the chosen location must carry Path B's execution/trust fields from
+   day one. Flag the versioned-migration cost either way.
 2. **New kind or not** — is a gate a new activatable `ArtifactKind.GATE`, or is it
    bound through the already-activatable `mission_step_contract`/mission-type, or
    is it just a handler-id string? *Recommendation:* bind through step contracts
@@ -268,13 +330,13 @@ mission spec must resolve:
 4. **Baseline coupling** — the block is inert without a captured baseline
    (`review.test_command`). Decide whether activating a *blocking* gate without a
    baseline becomes a hard config error rather than silent inertness.
-5. **Execution-trust boundary** — in-scope (Path B) or explicitly out (Path A
-   only) for this mission. If in: provenance allowlist, opt-in flag, interpreter
-   allowlist/no-shell, timeout, structured-verdict-or-warn, fail-open — as
-   recorded above.
-6. **Fail-open invariant preserved for all handler kinds** — confirm every
+5. **Fail-open invariant preserved for all handler kinds** — confirm every
    handler, including `asset-backed`, degrades to warn on resolution/execution
    failure.
+6. **Containment mechanism per host** — which OS/runtime primitive enforces the
+   fs/network/resource envelope (and thus what "unconfinable → refuse" concretely
+   detects) on each supported platform. RD-005 fixes the *requirement*; the
+   spec must choose the *mechanism*.
 
 ## Consequences
 
@@ -284,28 +346,35 @@ mission spec must resolve:
   runs only the gates its active doctrine declares, and the census gate is a
   spec-kitty-only strategy that is never in a consumer's active set.
 - **One canonical authority** for "which checks fire on which transition" (the
-  activation-filtered step contract), replacing ~35 smeared `if target_lane ==`
-  branches — D-044 satisfied.
+  activation-filtered step contract), replacing ~35 smeared command-layer
+  conditionals (a mix of literal `target_lane ==` compares, `policy.require_X`
+  flags, and `(mission, action)` guard dispatch) — D-044 satisfied.
 - **Reuses existing machinery** (activation, `get_by_action`, the extracted
   verdict tail) for a small, centralized change surface; steps 1–2 are pure
   refactors, step 4 is the semantic pivot.
 - **Aligns with #2173**: the gate becomes an injected port and move-task stays a
   thin orchestrator.
-- **Opens a real doctrine-extensibility path** (Path B): an org can ship a
+- **Delivers doctrine-extensibility now** (Path B, RD-005): an org can ship a
   bespoke gate without a spec-kitty release — the 3.3.x pack-ecosystem vision —
-  without forcing the trust problem into the first increment.
+  in this mission, gated by the containment envelope rather than deferred behind a
+  second schema bump.
 
 ### Negative
 
-- **Under Path A, a new gate needs a spec-kitty release** (handlers are shipped
-  code); orgs cannot ship a bespoke gate without upstreaming a handler until
-  Path B lands.
+- **Built-in (Path-A) handlers still need a spec-kitty release** — a *first-party*
+  gate ships as handler code. But per RD-005 orgs are **not** blocked on that:
+  Path B lets a governed org pack ship a bespoke executable gate this mission,
+  behind the opt-in + containment envelope.
 - **A versioned strict-schema evolution** (`extra="forbid"`) is required to add
-  the binding field — a deliberate bump with generator + migration cost.
-- **Path B opens an RCE-equivalent trust surface.** Executing doctrine-supplied
-  code is a hard, security-sensitive problem; the trust model is mandatory
-  precisely because the failure mode is severe. This is why B is gated behind an
-  off-by-default opt-in and a provenance allowlist.
+  the binding field. RD-005's single-schema-for-both mandate makes this a *larger*
+  one-time design (Path B's execution/trust fields present from day one) in
+  exchange for avoiding a second bump + migration later.
+- **Path B opens an RCE-equivalent trust surface, delivered now.** Executing
+  doctrine-supplied code is a hard, security-sensitive problem; bringing it into
+  this mission is why the trust model is a *real containment envelope*
+  (fs confinement, no egress, resource limits, derived provenance, refuse-if-
+  unconfinable), not merely an interpreter allowlist. Getting containment wrong is
+  the dominant risk this mission carries.
 - **Portability of the *script itself* (Path B) is unsolved by execution alone**:
   a doctrine script that assumes pytest is as brittle as today's `_gate_coverage`,
   only relocated. The `ScopeSource` abstraction (Path A) is what actually makes a
@@ -344,8 +413,9 @@ existing structural gates.
 **Pros:** zero new infrastructure.
 
 **Cons:** leaves #2534/#2330 open; every new gate requires editing `specify_cli`
-and a new `if target_lane == …` branch; consumers keep inheriting spec-kitty's
-gate set. Structurally incomplete under D-043.
+and wiring a new inline conditional (a `target_lane ==` compare, a
+`policy.require_X` flag, or a `(mission, action)` guard); consumers keep
+inheriting spec-kitty's gate set. Structurally incomplete under D-043.
 
 ### Option 2 — Tactical message fix (cancelled)
 
@@ -363,8 +433,8 @@ surface.
 
 **Cons:** forecloses the doctrine-extensibility vision (3.3.x pack ecosystem):
 orgs can never ship a bespoke gate without upstreaming a handler and cutting a
-spec-kitty release. Rejected in favor of designing the schema to *accommodate* B
-even though A ships first.
+spec-kitty release. Rejected in favour of full A+B this mission (Option 6): the
+executable tier is a product gap worth closing now, on one coherent schema.
 
 ### Option 4 — Path B only (ASSET-as-executable from the start)
 
@@ -376,17 +446,34 @@ sandboxed runner + activation) and it opens the code-execution trust surface *in
 the same mission that must also close #2534/#2330*. Highest blast radius, highest
 risk, and it does not deliver the structural fix any sooner. Rejected as v1.
 
-### Option 5 — Phased hybrid (CHOSEN)
+### Option 5 — Phased hybrid (initial recommendation, SUPERSEDED by RD-005)
 
 **Pros:** delivers the structural win (doctrine-controlled, configured gates that
-fix #2534/#2330 by construction) on the existing activation substrate, trust-safe,
-with a small centralized change surface — while keeping the executable-asset
-vision as a named, schema-compatible Phase 2 behind an off-by-default opt-in and a
-mandatory trust model.
+fix #2534/#2330 by construction) on the existing activation substrate first,
+trust-safe in its first increment, with a small centralized change surface — while
+keeping the executable-asset tier as a named, schema-compatible later phase behind
+an off-by-default opt-in and a mandatory trust model.
 
-**Cons:** a new gate needs a spec-kitty release until Path B lands; requires a
-versioned schema evolution; Path B, when it lands, still carries the trust burden
-(mitigated, not eliminated, by the allowlist + opt-in + fail-open contract).
+**Cons:** defers the executable-gate product gap; and freezing the Path-A schema +
+handler registry around the no-code-execution assumption risks a **second** schema
+bump + migration when Path B is retrofitted, and a trust envelope designed after
+the fact rather than with its consumers. **Superseded** by the operator's RD-005
+decision to take full A+B in one mission for exactly these reasons.
+
+### Option 6 — Full A+B in this mission (CHOSEN, RD-005)
+
+**Pros:** delivers the structural fix (#2534/#2330 closed by construction) *and*
+the executable-gate product gap in one mission, on a single coherent schema whose
+execution/trust fields exist from day one — no second bump, no retrofitted trust
+model. The containment envelope is designed together with the handler registry it
+guards.
+
+**Cons:** the largest single design (Path-A binding + registry + Path-B asset
+resolution + activation + a real containment runner) in one mission; and it takes
+on the code-execution trust surface now rather than later — the containment
+envelope (fs confinement, no egress, resource limits, derived provenance,
+refuse-if-unconfinable, fail-open) must be right on first delivery. Mitigated by
+sequencing Path B last in the strangler so it lands on the frozen Path-A spine.
 
 ## More Information
 
@@ -397,10 +484,10 @@ versioned schema evolution; Path B, when it lands, still carries the trust burde
 - Narrative (living explanation): [`docs/architecture/doctrine-controlled-gates.md`](../../architecture/doctrine-controlled-gates.md).
 - Load-bearing citations — #2534/#2330 locus: `src/specify_cli/review/pre_review_gate.py:85,98,100,131-159,358-423,451-511`;
   hook + policy tail: `src/specify_cli/cli/commands/agent/tasks_move_task.py:905-909,996,1012`;
-  composer-only executor: `src/specify_cli/mission_step_contracts/executor.py:2-4,369-370`;
+  composer-only executor: `src/specify_cli/mission_step_contracts/executor.py:2-4,372`;
   contract lookup: `src/doctrine/missions/step_contracts.py:159-170`;
   hardcoded post-action guard: `src/runtime/next/runtime_bridge.py:1515`;
-  activation selector: `src/specify_cli/charter/drg.py:293-334`;
+  activation selector: `src/charter/drg.py:319` (`filter_graph_by_activation`, predicate `:293-316`);
   inert ASSET kind: `src/doctrine/assets/models.py:27-53`, `src/doctrine/artifact_kinds.py:178-190`;
   census authority: `tests/architectural/_gate_coverage.py:72-89,792-860`.
 - Cross-references: epic [#2535](https://github.com/Priivacy-ai/spec-kitty/issues/2535) (this design),
