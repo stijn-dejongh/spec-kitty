@@ -15,6 +15,7 @@ subtasks:
 - T026
 - T027
 phase: Extraction spine
+shell_pid: '2661655'
 history:
 - at: '2026-07-11T00:00:00Z'
   actor: system
@@ -164,3 +165,8 @@ driving `decide_next` alone never reaches (contracts/parity-oracle.md §Scope).
 - `kitty-specs/runtime-bridge-degod-01KX8M1C/contracts/parity-oracle.md` §Scope — the query/answer sub-ledgers.
 - `kitty-specs/runtime-bridge-degod-01KX8M1C/contracts/compat-surface.md` — per-entry reach mapping.
 - `kitty-specs/runtime-bridge-degod-01KX8M1C/spec.md` — FR-011, FR-004, NFR-001, SC-006.
+
+## Activity Log
+
+- 2026-07-11T22:41:04Z – user – shell_pid=2661655 – Moved to for_review
+- 2026-07-11T22:49:43Z – user – shell_pid=2661655 – Moved to approved

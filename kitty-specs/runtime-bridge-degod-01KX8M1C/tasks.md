@@ -34,8 +34,8 @@
 | T023 | Reduce `_check_requirement_mapping_ready` (CC≈22) ≤15 | WP06 | — | [D] |
 | T024 | Pure unit tests (in-memory, no I/O); re-export; oracle + compat green | WP06 | — | [D] |
 | T025 | `DecisionEnvelope` + `step_or_blocked` (blocked/query/terminal pure; **step branch port-injected** via `prompt_exists` predicate); collapse the 29 Decision sites + 4× triad | WP07 | — |
-| T026 | Own the query/answer materialize: reduce `_map_runtime_decision` (CC≈33) + `query_current_state` (CC≈16) + the 4 `_build_*_query_decision` builders ≤15 | WP07 | — |
-| T027 | Pure unit tests; re-export; oracle + compat green (esp. the 14 query/answer sites) | WP07 | — |
+| T026 | Own the query/answer materialize: reduce `_map_runtime_decision` (CC≈33) + `query_current_state` (CC≈16) + the 4 `_build_*_query_decision` builders ≤15 | WP07 | — | [D] |
+| T027 | Pure unit tests; re-export; oracle + compat green (esp. the 14 query/answer sites) | WP07 | — | [D] |
 | T028 | Create `runtime_bridge_composition.py`; move dispatch + run-state advance | WP08 | — |
 | T029 | Isolate the `_should_dispatch_via_composition` **selection** seam (FR-008 — clean for gates #2535 WP14; import no gates code); both-branch fixture | WP08 | — |
 | T030 | re-export; oracle + compat green | WP08 | — |
@@ -86,7 +86,7 @@
 - **owned_files**: `src/runtime/next/runtime_bridge_cores.py`, `src/runtime/next/runtime_bridge.py`, `tests/runtime/test_bridge_decision_builder.py` · **dependencies**: WP01, WP02, WP06
 - **requirement_refs**: FR-011, FR-004 · **acceptance**: 29 Decision sites collapsed; `_map_runtime_decision`/`query_current_state`/query builders ≤15; step-branch port-injected; oracle green on the 14 query/answer sites
 - **safeguards**: shares `runtime_bridge_cores.py` with WP06 (serial — depends WP06). `step_or_blocked` step branch is port-injected (Path.is_file in `Decision.__post_init__`).
-- [ ] T025 · [ ] T026 · [ ] T027
+- [x] T025 · [ ] T026 · [ ] T027
 
 ### WP08 — Composition dispatch + FR-008 selection seam
 - **owned_files**: `src/runtime/next/runtime_bridge_composition.py`, `src/runtime/next/runtime_bridge.py`, `tests/runtime/test_bridge_composition.py` · **dependencies**: WP03, WP07
