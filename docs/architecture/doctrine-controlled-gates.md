@@ -70,7 +70,7 @@ move-task --to for_review
   └─ for each declared gate:
        ├─ GateRegistry.get(id) → shipped handler          (Path A: no doctrine code runs)
        │     └─ (Path B, default-off opt-in) asset-backed handler:
-       │          resolve asset:<id> → blob path → contained run (fs-confined, no egress, resource-limited)
+       │          resolve asset:<id> → blob path → contained run (fs-confined, resource-limited, refuse-if-unconfinable)
        ├─ handler.resolve_scope(changed_files, ScopeSource)   (portable; no _gate_coverage import)
        ├─ handler.run(scope) → structured verdict
        └─ GateVerdict
@@ -106,12 +106,17 @@ interpreter can still read your SSH keys or exfiltrate the tree):
 - **Interpreter allowlist / no shell** — a named interpreter and an argv vector;
   never `shell=True` or a raw command string.
 - **Explicit opt-in** — `review.allow_executable_gate_assets`, off by default.
-- **Filesystem confinement + no network egress** — read the mission tree, write
-  only to a scratch dir, no outbound network.
-- **Resource limits** — bounded wall-clock timeout, memory, CPU, and output size.
-- **Refuse rather than run unconfined** — if a containment primitive is
-  unavailable on the host, the asset gate is skipped with a warn, never executed
-  unconfined.
+- **Filesystem confinement** — read the mission tree, write only to a scratch dir
+  (path-resolved so symlinks can't escape).
+- **Resource limits** — bounded wall-clock timeout, memory, CPU, and output size
+  (`setrlimit` + process-group kill).
+- **Dedicated verdict channel** — the verdict is read from a size-capped,
+  schema-validated channel, **never stdout**, so stray script output can't forge a
+  verdict.
+- **Refuse-unconfinable v1 (RD-006)** — v1 does **not** actively block network
+  egress; instead a capability probe **refuses to run** the asset where fs/resource
+  confinement can't be established (skipped with a warn, never run unconfined).
+  Active OS-level egress isolation (namespaces / Landlock / seccomp) is deferred.
 - **Fail-open** — a malformed verdict, a resolution/execution failure, or a limit
   kill degrades to a warn; a doctrine misconfiguration must never harden into a
   block.

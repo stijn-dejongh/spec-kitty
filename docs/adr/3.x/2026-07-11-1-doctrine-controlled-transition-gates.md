@@ -167,6 +167,24 @@ doctrine declares — spec-kitty's census gate simply is not in its active set, 
 > B remains gated by its trust envelope (default-off opt-in + containment); "in
 > scope now" changes *when*, not *whether*, that envelope is mandatory.
 
+> **RD-006 (operator, 2026-07-11) — containment primitives, refuse-unconfinable
+> v1.** The v1 containment envelope for `asset-backed` gates is built from
+> **in-process, dependency-free primitives — no new sandbox dependency**:
+> (a) an **environment allowlist** passed to the child — an explicit minimal env,
+> **never `dict(os.environ)`** (which would leak tokens/keys);
+> (b) **process-group kill + `setrlimit`** for the wall-clock/memory/CPU/output
+> limits; (c) **path-resolved filesystem confinement** (writes only to a dedicated
+> scratch dir, checked after symlink resolution);
+> (d) a **dedicated, size-capped, schema-validated verdict channel** distinct from
+> stdout, so stray script output cannot forge a verdict (SC-011);
+> (e) **derived provenance** — the loader **must stop overwriting `source_kind`**
+> so a `third_party` provenance is actually *producible* (and therefore
+> *refusable*); provenance is read from load metadata, never self-declared;
+> (f) a **capability probe that refuses** to run where these cannot be
+> established, rather than degrading to an unconfined run. Active network-egress
+> blocking and OS-level isolation (namespaces / Landlock / seccomp) are
+> **deferred** — v1 safety comes from *refusing*, not from *sandboxing*.
+
 Make transition pre-gate checks **doctrine-controlled and configured** instead of
 hardcoded in `specify_cli`, delivering **both** the declarative-binding spine
 (Path A) and the executable-ASSET-helper tier (Path B) in this mission, on one
@@ -178,32 +196,44 @@ containment envelope recorded below; it is not a deferred increment.
 - **A — Declarative bindings (the spine, delivered first).** Mission **step
   contracts** declare which gate(s) fire on which transition; the repo's **active
   doctrine** (charter activation via `filter_graph_by_activation`) selects the
-  gate set. The load-bearing change is **rewiring the consumers**: the move-task
-  pre-review hook (`tasks_move_task.py:996`) and the post-action guard
-  (`_check_composed_action_guard`, `runtime_bridge.py:1515`) stop deciding by
-  `if target_lane == X` / `if (mission, action) == …` and instead consult
-  `MissionStepContractRepository.get_by_action(mission, action)` for the declared
-  gate bindings. Gate logic **ships in spec-kitty as named handlers behind a
-  `GateHandler` port + registry**; doctrine *selects and parameterizes*, it does
-  not *supply code*. The existing `evaluate_pre_review_gate` becomes the first
-  registered handler. Scope stops importing `tests.architectural._gate_coverage`
-  and is chosen through a `ScopeSource` strategy (explicit-list / changed-dir-
-  glob / "run the configured `review.test_command` whole"); the census/dorny
-  strategy becomes one pluggable option that spec-kitty ships for *itself*, never
-  a default others inherit.
+  gate set. The load-bearing change is **rewiring the consumers' *selection*
+  only** — this is the seam both consumers share, and *only* selection is shared.
+  The move-task pre-review hook (`tasks_move_task.py:996`) and the post-action
+  guard (`_check_composed_action_guard`, `runtime_bridge.py:1515`) stop hardcoding
+  *which* gate fires (`if target_lane == X` / `if (mission, action) == …`) and
+  instead resolve their declared gate bindings through one **selection** surface
+  (`resolve_gates`, backed by `MissionStepContractRepository.get_by_action` with a
+  small lane↔action adapter so the lane-keyed hook and the action-keyed guard
+  share the same lookup). **Reduction stays per gate-class — it is NOT unified.**
+  The artifact-presence guard keeps its own **fail-closed** reduction (missing
+  `spec.md`/`plan.md`/`tasks.md` is a hard block) and is **never** routed through
+  the regression gate's "only a new failure blocks, everything else warns"
+  reducer; doing so would silently downgrade its hard-blocks (SC-010). The two
+  consumers converge on *selection*; each keeps its own verdict semantics. Gate
+  logic **ships in spec-kitty as named handlers behind a `GateHandler` port +
+  registry**; doctrine *selects and parameterizes*, it does not *supply code*. The
+  existing `evaluate_pre_review_gate` becomes the first registered handler. Scope
+  stops importing `tests.architectural._gate_coverage` and is chosen through a
+  `ScopeSource` strategy (explicit-list / changed-dir-glob / "run the configured
+  `review.test_command` whole"); the census/dorny strategy becomes one pluggable
+  option that spec-kitty ships for *itself*, never a default others inherit.
 
-- **B — Executable ASSET-kind helpers (greenfield, in scope this mission behind
-  the containment envelope).** A gate helper *is* an ASSET blob (a script)
-  referenced from an activatable step contract. This requires a **new subsystem**:
-  an asset repository + a URN→path resolver (today the manifest `path` is
-  validated then discarded), a code-asset **entrypoint contract** (argv/stdin =
-  changed-files + baseline; stdout = schema-validated verdict JSON; declared
-  interpreter + resource limits), a **contained runner** (see the trust model
-  below — interpreter-allowlist alone is not a sandbox), and asset **activation**
-  (assets are non-activatable today). B is an *additive `GateHandler` kind*
-  (`asset-backed`) on the same schema and registry as Path A, so both are authored
-  once. Per RD-005 it ships in this mission, gated by the default-off opt-in and
-  the containment envelope — not as a deferred increment.
+- **B — Executable ASSET-kind helpers (extends the existing ASSET substrate, in
+  scope this mission behind the containment envelope).** A gate helper *is* an
+  ASSET blob (a script) referenced from an activatable step contract. This is a
+  **new execution subsystem built by extending the existing ASSET kind, not a
+  greenfield one**: the manifest model (`assets/models.py`) and `pack_validator`
+  already exist — the mission adds an asset repository + a URN→path resolver (today
+  the manifest `path` is validated then discarded), a code-asset **entrypoint
+  contract** (argv/stdin = changed-files + baseline; the verdict is returned on a
+  **dedicated, size-capped, schema-validated channel — never stdout** (see FR-019
+  / SC-011: stray stdout must not be able to forge a verdict); declared interpreter
+  + resource limits), a **contained runner** (see the trust model below —
+  interpreter-allowlist alone is not a sandbox), and asset **activation** (assets
+  are non-activatable today). B is an *additive `GateHandler` kind* (`asset-backed`)
+  on the same schema and registry as Path A, so both are authored once. Per RD-005
+  it ships in this mission, gated by the default-off opt-in and the containment
+  envelope — not as a deferred increment.
 
 - **Mandatory trust model — real containment, not just an interpreter allowlist
   (a first-class pillar because doctrine-supplied code now executes).**
@@ -223,17 +253,24 @@ containment envelope recorded below; it is not a deferred increment.
     config, **off by default**. A repo that never opts in can never be made to
     run a doctrine script.
   - **Filesystem confinement** — the runner may **read** the mission tree +
-    declared inputs but must **not write outside a dedicated scratch dir**; no
-    writes to the repo tree, `$HOME`, or system paths.
-  - **No network egress** — the contained process has no outbound network access;
-    a gate needing the network is out of contract.
+    declared inputs but must **not write outside a dedicated scratch dir**;
+    enforced by path-resolved confinement (no writes to the repo tree, `$HOME`, or
+    system paths).
+  - **Refuse-unconfinable v1, no active no-egress guarantee (RD-006).** v1 does
+    **not** actively block outbound network with an OS sandbox. Instead a
+    **capability probe refuses to run** the asset where filesystem (and network)
+    confinement cannot be established on the host — the gate is skipped with a
+    warn rather than executed unconfined. Deeper OS isolation (Linux namespaces /
+    Landlock / seccomp for a hard no-egress boundary) is **deferred**; v1 buys
+    safety by refusing, not by sandboxing.
   - **Resource limits** — bounded **wall-clock timeout, memory, CPU, and
-    output size**; an over-limit process is killed and its gate degrades to warn
-    (fail-open, below).
+    output size** via process-group kill + `setrlimit`; an over-limit process is
+    killed and its gate degrades to warn (fail-open, below).
   - **Refuse rather than run unconfined** — if a required containment primitive is
-    unavailable on the host (no way to enforce fs/network/resource limits), the
-    asset gate is **refused** (skipped with a warn), **never executed
-    unconfined**. Containment is a precondition of execution, not best-effort.
+    unavailable on the host (the capability probe cannot establish fs/resource
+    confinement), the asset gate is **refused** (skipped with a warn), **never
+    executed unconfined**. Containment is a precondition of execution, not
+    best-effort.
   - **Fail-OPEN, structured-verdict-or-warn** — a malformed verdict, a resolution
     failure, a missing/refused runner, or a limit kill degrades to a `NO_COVERAGE`
     warn and the transition proceeds; a doctrine/asset misconfiguration must
@@ -292,20 +329,25 @@ each step is independently shippable and green-testable:
 5. **Add the `asset-backed` handler + the containment envelope (in scope this
    mission, RD-005)**, behind the default-off `review.allow_executable_gate_assets`
    opt-in. Requires the asset-resolution + (referenced-not-activated) selection
-   work and the contained runner (fs confinement, no egress, resource limits,
-   refuse-if-unconfinable). Sequenced last so it lands on the frozen Path-A
+   work and the contained runner (path-resolved fs confinement, `setrlimit` +
+   process-group resource limits, dedicated verdict channel, capability-probe
+   refuse-if-unconfinable — no active no-egress guarantee in v1, RD-006).
+   Sequenced last so it lands on the frozen Path-A
    registry + schema, but delivered in **this** mission, not deferred.
 
 ### Resolved decisions
 
 - **Execution-trust boundary — RESOLVED in scope (RD-005).** Path B (executable
   ASSET gate helpers) is **in scope this mission**, not deferred and not out. The
-  binding terms are the containment envelope in the trust-model bullet above:
-  derived-provenance allowlist (built-in/org-pack only), default-off opt-in
-  (`review.allow_executable_gate_assets`), interpreter-allowlist/no-shell,
-  filesystem confinement, no network egress, memory/CPU/output-size limits,
-  refuse-rather-than-run-unconfined, and fail-open. Signature-based provenance is
-  deferred to #2536. (This was open-decision #5 in the initial draft.)
+  binding terms are the containment envelope in the trust-model bullet above and
+  the RD-006 primitives: derived-provenance allowlist (built-in/org-pack only),
+  default-off opt-in (`review.allow_executable_gate_assets`),
+  interpreter-allowlist/no-shell, path-resolved filesystem confinement,
+  `setrlimit`/process-group memory/CPU/output-size limits, a dedicated verdict
+  channel, and a **capability-probe that refuses to run when confinement can't be
+  established (no active no-egress guarantee in v1)** — all fail-open.
+  Signature-based provenance and active OS-level egress isolation are deferred to
+  #2536. (This was open-decision #5 in the initial draft.)
 
 ### Open decisions the spec must make
 
@@ -333,10 +375,12 @@ mission spec must resolve:
 5. **Fail-open invariant preserved for all handler kinds** — confirm every
    handler, including `asset-backed`, degrades to warn on resolution/execution
    failure.
-6. **Containment mechanism per host** — which OS/runtime primitive enforces the
-   fs/network/resource envelope (and thus what "unconfinable → refuse" concretely
-   detects) on each supported platform. RD-005 fixes the *requirement*; the
-   spec must choose the *mechanism*.
+6. **Containment mechanism per host** — RD-006 fixes the v1 primitives (env
+   allowlist, `setrlimit` + process-group kill, path-resolved fs confinement,
+   dedicated verdict channel, capability-probe→refuse). The spec must still pin
+   **what the capability probe concretely detects** per supported platform, and
+   **when** the deferred active-egress/OS-isolation tier (namespaces / Landlock /
+   seccomp) is scheduled.
 
 ## Consequences
 
@@ -372,9 +416,12 @@ mission spec must resolve:
 - **Path B opens an RCE-equivalent trust surface, delivered now.** Executing
   doctrine-supplied code is a hard, security-sensitive problem; bringing it into
   this mission is why the trust model is a *real containment envelope*
-  (fs confinement, no egress, resource limits, derived provenance, refuse-if-
-  unconfinable), not merely an interpreter allowlist. Getting containment wrong is
-  the dominant risk this mission carries.
+  (path-resolved fs confinement, `setrlimit`/process-group resource limits,
+  dedicated verdict channel, derived provenance, capability-probe refuse-if-
+  unconfinable), not merely an interpreter allowlist. v1 buys safety by
+  *refusing* where it can't confine rather than by actively sandboxing egress
+  (RD-006) — active OS isolation is deferred. Getting the confinement + refuse
+  logic right is the dominant risk this mission carries.
 - **Portability of the *script itself* (Path B) is unsolved by execution alone**:
   a doctrine script that assumes pytest is as brittle as today's `_gate_coverage`,
   only relocated. The `ScopeSource` abstraction (Path A) is what actually makes a
@@ -441,10 +488,11 @@ executable tier is a product gap worth closing now, on one coherent schema.
 **Pros:** maximal extensibility; directly realizes the "ASSET-kind helper"
 vision; org/project-authored gates without a release.
 
-**Cons:** largest greenfield (asset repo + resolver + entrypoint contract +
-sandboxed runner + activation) and it opens the code-execution trust surface *in
-the same mission that must also close #2534/#2330*. Highest blast radius, highest
-risk, and it does not deliver the structural fix any sooner. Rejected as v1.
+**Cons:** largest build (asset repo + resolver + entrypoint contract + contained
+runner + activation — extending the existing ASSET kind, not greenfield) and it
+opens the code-execution trust surface *in the same mission that must also close
+#2534/#2330*. Highest blast radius, highest risk, and it does not deliver the
+structural fix any sooner. Rejected as v1.
 
 ### Option 5 — Phased hybrid (initial recommendation, SUPERSEDED by RD-005)
 
@@ -471,9 +519,11 @@ guards.
 **Cons:** the largest single design (Path-A binding + registry + Path-B asset
 resolution + activation + a real containment runner) in one mission; and it takes
 on the code-execution trust surface now rather than later — the containment
-envelope (fs confinement, no egress, resource limits, derived provenance,
-refuse-if-unconfinable, fail-open) must be right on first delivery. Mitigated by
-sequencing Path B last in the strangler so it lands on the frozen Path-A spine.
+envelope (path-resolved fs confinement, `setrlimit`/process-group resource limits,
+dedicated verdict channel, derived provenance, capability-probe refuse-if-
+unconfinable, fail-open; active egress isolation deferred, RD-006) must be right on
+first delivery. Mitigated by sequencing Path B last in the strangler so it lands
+on the frozen Path-A spine.
 
 ## More Information
 
