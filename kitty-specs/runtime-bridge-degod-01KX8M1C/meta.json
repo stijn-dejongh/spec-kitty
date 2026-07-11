@@ -12,5 +12,7 @@
   "purpose_tldr": "Decompose the 3,813-LOC runtime_bridge.py god-module into narrow ports + pure, unit-testable cores, leaving a thin orchestration surface — with no change to the spec-kitty next / decide_next() CLI contract.",
   "slug": "runtime-bridge-degod-01KX8M1C",
   "target_branch": "design/runtime-bridge-degod",
-  "topology": "coord"
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-07-11T14:29:40.995381+00:00"
 }
