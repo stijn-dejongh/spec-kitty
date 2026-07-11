@@ -27,6 +27,7 @@ here when you want the mental model behind a feature rather than step-by-step in
 - [Git workflow](git-workflow.md) — what git operations the runtime owns versus the agent.
 - [Multi-agent orchestration](multi-agent-orchestration.md) — coordinating work across agents.
 - [Kanban workflow](kanban-workflow.md) and [runtime loop](runtime-loop.md) — the mission control loop.
+- [Doctrine-controlled transition gates](doctrine-controlled-gates.md) — moving transition pre-gate checks from hardcoded branches to doctrine-declared, activation-selected bindings.
 - [AI agent architecture](ai-agent-architecture.md) — how supported agents integrate.
 
 ## See also

@@ -545,6 +545,7 @@ Work paused due to external dependency, then resumed.
 - [Spec-Driven Development](spec-driven-development.md) - The methodology that creates work packages
 - [Execution Lanes](execution-lanes.md) - How parallel development works
 - [AI Agent Architecture](ai-agent-architecture.md) - How agents claim and process work
+- [Doctrine-Controlled Transition Gates](doctrine-controlled-gates.md) - How the checks that fire on lane transitions (e.g. the pre-review gate on `for_review`) are moving from hardcoded branches to doctrine-declared, activation-selected bindings ([ADR 2026-07-11-1](../adr/3.x/2026-07-11-1-doctrine-controlled-transition-gates.md))
 
 ---
 

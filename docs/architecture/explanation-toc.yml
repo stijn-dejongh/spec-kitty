@@ -12,6 +12,8 @@
   href: mission-system.md
 - name: Kanban Workflow
   href: kanban-workflow.md
+- name: Doctrine-Controlled Transition Gates
+  href: doctrine-controlled-gates.md
 - name: AI Agent Architecture
   href: ai-agent-architecture.md
 - name: Documentation Mission

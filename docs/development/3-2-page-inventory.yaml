@@ -764,6 +764,12 @@
   owning_workstream: none
   current_target: true
   notes: null
+- path: docs/adr/3.x/2026-07-11-1-doctrine-controlled-transition-gates.md
+  tag: current
+  divio_type: none
+  owning_workstream: none
+  current_target: true
+  notes: null
 - path: docs/adr/3.x/README.md
   tag: current
   divio_type: none
@@ -1143,6 +1149,12 @@
   current_target: true
   notes: null
 - path: docs/architecture/divio-documentation.md
+  tag: current
+  divio_type: none
+  owning_workstream: none
+  current_target: true
+  notes: null
+- path: docs/architecture/doctrine-controlled-gates.md
   tag: current
   divio_type: none
   owning_workstream: none

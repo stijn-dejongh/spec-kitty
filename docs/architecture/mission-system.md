@@ -330,6 +330,8 @@ Action: Run /spec-kitty.specify to create the specification document.
 
 Guards vary by mission. The software-dev mission has guards on most transitions. The plan mission has none -- you advance manually. The research mission uses source-count guards to ensure evidence quality. The documentation mission checks quality during acceptance rather than between steps.
 
+Today these transition gates are hardcoded in `specify_cli`. Spec Kitty is moving them onto the doctrine substrate — the checks that fire on a transition are becoming **declared in the mission's step contract and selected by the repo's active doctrine** (via DRG activation), rather than decided by a hardcoded `if target_lane == …` branch. See [Doctrine-Controlled Transition Gates](doctrine-controlled-gates.md) and [ADR 2026-07-11-1](../adr/3.x/2026-07-11-1-doctrine-controlled-transition-gates.md) for the target design.
+
 ## Mission Templates Per Slash Command
 
 Each mission customizes the slash commands with domain-appropriate prompts:
@@ -414,6 +416,7 @@ These instructions guide AI agents to behave appropriately for the domain.
 - [Spec-Driven Development](spec-driven-development.md) - The methodology missions implement
 - [Divio Documentation](divio-documentation.md) - The documentation system used by Documentation Kitty
 - [Kanban Workflow](kanban-workflow.md) - How work moves through lanes (applies to all missions)
+- [Doctrine-Controlled Transition Gates](doctrine-controlled-gates.md) - How transition gates are moving from hardcoded branches to doctrine-declared, activation-selected bindings
 
 ---
 
