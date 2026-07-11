@@ -37,8 +37,8 @@
 | T026 | Own the query/answer materialize: reduce `_map_runtime_decision` (CC≈33) + `query_current_state` (CC≈16) + the 4 `_build_*_query_decision` builders ≤15 | WP07 | — | [D] |
 | T027 | Pure unit tests; re-export; oracle + compat green (esp. the 14 query/answer sites) | WP07 | — | [D] |
 | T028 | Create `runtime_bridge_composition.py`; move dispatch + run-state advance | WP08 | — |
-| T029 | Isolate the `_should_dispatch_via_composition` **selection** seam (FR-008 — clean for gates #2535 WP14; import no gates code); both-branch fixture | WP08 | — |
-| T030 | re-export; oracle + compat green | WP08 | — |
+| T029 | Isolate the `_should_dispatch_via_composition` **selection** seam (FR-008 — clean for gates #2535 WP14; import no gates code); both-branch fixture | WP08 | — | [D] |
+| T030 | re-export; oracle + compat green | WP08 | — | [D] |
 | T031 | `DecideNextContext` frozen dataclass (~14 fields) | WP09 | — |
 | T032 | Rewrite `decide_next_via_runtime` as bootstrap/dependency-gate/composition-dispatch/decision-materialize early-return chain ≤15 (sub-sequence fallback if a single WP can't reach ≤15) | WP09 | — |
 | T033 | Assert residual ≤15; oracle + compat green | WP09 | — |
@@ -92,7 +92,7 @@
 - **owned_files**: `src/runtime/next/runtime_bridge_composition.py`, `src/runtime/next/runtime_bridge.py`, `tests/runtime/test_bridge_composition.py` · **dependencies**: WP03, WP07
 - **requirement_refs**: FR-008, FR-004, FR-001 · **acceptance**: dispatch extracted; `_should_dispatch_via_composition` isolated + both-branch fixture; oracle + compat green
 - **safeguards**: FR-008 — leave the selection a clean seam for gates #2535 WP14; import NO gates code.
-- [ ] T028 · [ ] T029 · [ ] T030
+- [x] T028 · [ ] T029 · [ ] T030
 
 ### WP09 — decide_next phase-split (FR-010)
 - **owned_files**: `src/runtime/next/runtime_bridge.py`, `tests/runtime/test_bridge_decide_next.py` · **dependencies**: WP06, WP07, WP08

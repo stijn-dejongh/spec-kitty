@@ -16,6 +16,7 @@ subtasks:
 - T029
 - T030
 phase: Extraction spine
+shell_pid: '2850453'
 history:
 - at: '2026-07-11T00:00:00Z'
   actor: system
@@ -126,3 +127,8 @@ this mission coupling to it**. Concretely (C-005):
 - `kitty-specs/runtime-bridge-degod-01KX8M1C/research.md` §Seams / §Import DAG — composition cluster boundary.
 - `kitty-specs/runtime-bridge-degod-01KX8M1C/plan.md` IC-07 + Notes §6 — dispatch, selection seam, both-branch fixture.
 - `kitty-specs/runtime-bridge-degod-01KX8M1C/spec.md` — FR-008, FR-004, FR-001, C-005.
+
+## Activity Log
+
+- 2026-07-11T23:23:44Z – user – shell_pid=2850453 – Moved to for_review
+- 2026-07-11T23:31:28Z – user – shell_pid=2850453 – Moved to approved
