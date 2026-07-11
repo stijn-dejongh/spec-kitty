@@ -116,18 +116,18 @@ the seam, never re-implementing selection.
 - **Risks**: must preserve fail-open scaffolding (`_mt_empty_scope_verdict:859`, broad `except:1035`) **verbatim** — it IS the FR-010 contract. Golden-guard with existing move-task characterization tests before moving.
 
 ### IC-02 — SSOT gate-*selection* seam + test-gate reducer (the keystone; IC-08 folded in)
-- **Purpose**: One injected `resolve_gates(mission, transition, activation)` → ordered `ResolvedGate` list (with a **lane↔action adapter** — the move-task side keys on lane `for_review`, `get_by_action` keys on action; `get_by_action(mission,"for_review")`→None today); the ONLY place that reads bindings + applies charter activation. **Selection only** — both consumers share it. **Reduction is per gate-class**: the seam's `run_gate` folds test/verdict-gate faults via the FR-014 reducer (the former IC-08 — folded in here because `run_gate` cannot meet its fault-containment/only-regression invariants without it); the artifact-presence guard keeps its own **fail-closed** reduction (shares selection only, NOT routed through `run_gate` — else SC-010 hard-blocks downgrade to warns).
+- **Purpose**: One injected `resolve_gates(mission, transition, activation)` → ordered `ResolvedGate` list (with a **lane↔action adapter**: `resolve_gates` selects bindings whose declared `binding.transition` equals the requested key — it does NOT call `get_by_action("for_review")` (a lane is not an action → None). Lane keys (`for_review`) and action keys (`implement`…) share one `transition` namespace on the binding; the pre-review exemplar's built-in binding declares `transition: for_review`. Adapter table in `contracts/gate-resolution-seam.md`); the ONLY place that reads bindings + applies charter activation. **Selection only** — both consumers share it. **Reduction is per gate-class**: the seam's `run_gate` folds test/verdict-gate faults via the FR-014 reducer (the former IC-08 — folded in here because `run_gate` cannot meet its fault-containment/only-regression invariants without it); the artifact-presence guard keeps its own **fail-closed** reduction (shares selection only, NOT routed through `run_gate` — else SC-010 hard-blocks downgrade to warns).
 - **Relevant requirements**: FR-002, FR-003, FR-006, FR-010, FR-014; C-001, C-002, C-005; SC-010.
 - **Affected surfaces**: new `review/gates/resolver.py` + `review/gates/outcomes.py`; `runtime_bridge._check_composed_action_guard` (F48, selection only) and the extracted pre-review hook both inverted onto it.
-- **Sequencing/depends-on**: IC-01. (IC-08 no longer standalone — folded here.)
+- **Sequencing/depends-on**: IC-01 **and IC-03's `GateBinding` model** — the resolver imports `GateBinding` from `src/doctrine` (arch-gated: `src/doctrine` must not import `specify_cli`), so lanes A/B are **not** independent. Carve `GateBinding` as a foundational sub-WP that charter-spine lane A ships first; IC-02 depends on it. (IC-08 no longer standalone — folded here.)
 - **Risks**: highest-regression edit (F48 god-module). **Extract-then-inject**: characterization tests on the current `(mission, action)` matrix FIRST; never edit-in-place. Isolate the F(48) inversion in its **own** WP and **coordinate with #2531** (concurrent decomposition of the same file). If both consumers don't route selection through it, NFR-005 is unprovable.
 
-### IC-03 — Gate-binding schema + migration (charter spine)
-- **Purpose**: Add the declarative `transition → gate` binding to `MissionStepContractStep` and unified `MissionStep`; migrate built-in step contracts.
+### IC-03 — Gate-binding schema + kind-map + DRG regen + migration (charter spine)
+- **Purpose**: Add the declarative `transition → gate` binding to `MissionStepContractStep` and unified `MissionStep`; **extend `_SINGULAR_TO_PLURAL`** (`src/charter/drg.py:187`) so step-contract-based gate activation is not a silent no-op (the owning step-contract node is the activatable unit); **regenerate the DRG** (`graph.yaml`/`references.yaml` are generated + freshness/parity-gated); migrate the gate-declaring built-in step contracts.
 - **Relevant requirements**: FR-001, FR-006, FR-016; C-006.
-- **Affected surfaces**: `charter/step_contracts.py:65`, `doctrine/missions/models.py:87`, built-in `*.step-contract.yaml`, a migration.
-- **Sequencing/depends-on**: none for schema; **migration-first within the charter-spine lane** (step_contracts→executor→drg→pack_validator→merge co-change tightly — one lane, no parallel).
-- **Risks**: `extra="forbid"` → old contracts must still load (FR-016/SC-009). Coupled spine ripple.
+- **Affected surfaces**: `src/doctrine/missions/step_contracts.py:65` (NOT `src/charter/step_contracts.py` — corrected), `src/doctrine/missions/models.py:87`, `src/charter/drg.py:187` (kind-map), the DRG regeneration (`graph.yaml`/`references.yaml`; freshness gate `consistency_check.py`, `test_activation_parity_guard`), and **only the gate-declaring built-in `*.step-contract.yaml`** (not all 17), a migration.
+- **Sequencing/depends-on**: none for schema; **migration-first within the charter-spine lane** (step_contracts→executor→drg→pack_validator→merge co-change tightly — one lane, no parallel). DRG regen runs after the schema + kind-map change lands, before the freshness gate.
+- **Risks**: `extra="forbid"` → old contracts must still load (FR-016/SC-009). Coupled spine ripple. A skipped DRG regen fails the freshness/parity gate.
 
 ### IC-04 — ScopeSource abstraction + built-in spec-kitty ScopeSource
 - **Purpose**: Make scope derivation a doctrine-declared strategy; move `_SRC_PACKAGE_PREFIX` / `_gate_coverage` census into a built-in ScopeSource used only when spec-kitty's own doctrine is active.
@@ -137,36 +137,56 @@ the seam, never re-implementing selection.
 - **Risks**: `derive_test_scope` at the C(15) ceiling — extraction must not exceed it.
 
 ### IC-05 — Pre-review handler (Path-A exemplar migration)
-- **Purpose**: Re-express the pre-review gate as a built-in **handler** bound via a built-in step contract; invert the hardcoded invocation through the IC-02 seam; reuse `evaluate_with_scope`; preserve existing config semantics.
-- **Relevant requirements**: FR-011, FR-017; NFR-001; SC-003.
-- **Affected surfaces**: `review/gates/handlers/`, a built-in step contract, `pre_review_gate.py` (decision path removed).
+- **Purpose**: Re-express the pre-review **test-gate** as a built-in **handler** bound via a built-in step contract; invert the hardcoded invocation through the IC-02 seam; reuse `evaluate_with_scope`; preserve existing config semantics. This is the **only** gate migrated (FR-013); the composed-action artifact guard shares *selection* only and keeps its fail-closed reduction (not migrated here).
+- **Relevant requirements**: FR-011, FR-013, FR-017; NFR-001; SC-003.
+- **Affected surfaces**: `review/gates/handlers/`, a built-in step contract, `pre_review_gate.py` (decision path **removed** — no compat fallback, C-004).
 - **Sequencing/depends-on**: IC-02, IC-03, IC-04.
-- **Risks**: verdict parity on spec-kitty's own repo (no opt-in).
+- **Risks**: verdict parity on spec-kitty's own repo (no opt-in). C-004: remove the hardcoded decision path, do not grow a "doctrine-inactive → old gate" tail.
 
-### IC-06 — Executable ASSET substrate (Path-B)
-- **Purpose**: Greenfield asset repository + URN→path resolver + code-asset entrypoint contract + runner returning a structured verdict; code-exec keyed on the gate-asset shape (non-gate assets stay inert).
-- **Relevant requirements**: FR-004, FR-005; C-003.
-- **Affected surfaces**: new `doctrine/assets/{repository,resolver,runner,entrypoint}.py`.
+### IC-06 — Executable ASSET substrate (Path-B) — EXTEND existing, not greenfield
+- **Purpose**: **Extend** the existing `AssetManifest` (`src/doctrine/assets/models.py`, `extra="forbid"`) with the executable gate-asset shape and **extend** `pack_validator._validate_asset_manifests` (`:604`) with **gate-asset-shape detection that keys code-exec** (non-gate assets stay inert — C-003); add the URN→path resolver + code-asset entrypoint contract + runner returning a structured verdict on a dedicated capped channel (FR-019). Fix the **`source_kind` provenance derivation** (loader stops overwriting it, `org_pack_loader.py:403`) so a `third_party` tier is producible/refusable (C-008) — else NFR-004a/SC-012 are untestable.
+- **Relevant requirements**: FR-004, FR-005, FR-019; C-003, C-008.
+- **Affected surfaces**: EXTEND `src/doctrine/assets/models.py` + `src/specify_cli/doctrine/pack_validator.py:604`; new `doctrine/assets/{repository,resolver,runner,entrypoint}.py`; loader `source_kind` fix.
 - **Sequencing/depends-on**: IC-02 (verdict interface), IC-03 (binding names asset).
-- **Risks**: new subsystem; must not generalize asset loading into code-exec.
+- **Risks**: schema evolution on an `extra="forbid"` model (old assets must still load, mirror FR-016/SC-009 for assets); must not generalize asset loading into code-exec.
 
-### IC-07 — Trust envelope + containment
-- **Purpose**: Confine Path-B execution: derived provenance allowlist, `review.allow_executable_gate_assets` opt-in (default off), interpreter allowlist/no-shell, timeout, filesystem confinement, no network egress, resource limits, refuse-if-unconfinable.
-- **Relevant requirements**: FR-007, FR-015; NFR-004a/b, NFR-006; C-007.
-- **Affected surfaces**: the IC-06 runner, config, `tests/architectural/untrusted_path_audit/` (extended).
+### IC-07 — Trust envelope + containment (refuse-unconfinable v1, RD-006)
+- **Purpose**: Confine Path-B execution with **stdlib-only, cheap-real** primitives and **refuse where it cannot confine** — **no new sandbox dependency**: derived provenance allowlist (needs the IC-06 `source_kind` fix), `review.allow_executable_gate_assets` opt-in (default off), interpreter allowlist/no-shell/argv, **environment allowlist (never `dict(os.environ)`)**, **process-group kill on timeout** (grandchildren), **`setrlimit` CPU/mem/output caps**, **path-resolved (symlink-safe) fs write confinement**, a **capability probe → refuse (TRUST_REFUSAL)** where fs/network can't be confined, and a **dedicated size-capped schema-validated verdict channel** (FR-019, not stdout). Deeper OS sandbox (namespaces/landlock/seccomp) explicitly **deferred**.
+- **Relevant requirements**: FR-007, FR-015, FR-019; NFR-004a/b, NFR-006; C-007, C-008; RD-006; SC-007/011/012.
+- **Affected surfaces**: the IC-06 runner, config (`review.allow_executable_gate_assets`), `tests/architectural/untrusted_path_audit/` (extended).
 - **Sequencing/depends-on**: IC-06.
-- **Risks**: RCE-adjacent — extend the audit harness or it goes stale-green; reuse the `run_scoped_tests_at_head` argv/no-shell/timeout/env-scrub precedent.
+- **Risks**: RCE-adjacent — extend the audit harness (static) or it goes stale-green. **Do NOT reuse the `run_scoped_tests_at_head` env behavior** — it does `env = dict(os.environ)` (`pre_review_gate.py:374`, full inheritance); reuse only its argv/no-shell/timeout shape and construct an env allowlist instead.
 
-### IC-08 — Fault→outcome reducer + fail-open enforcement
-- **Purpose**: Implement the FR-014 canonical mapping; only a valid emitted `regression(blocking)` blocks; every fault → FAULT-WARN / TRUST-REFUSAL / CALM-NOTICE.
-- **Relevant requirements**: FR-010, FR-014; NFR-003; C-002; SC-005.
-- **Affected surfaces**: `review/gates/outcomes.py` (the reduction boundary owned by IC-02's seam).
-- **Sequencing/depends-on**: IC-02.
-- **Risks**: the load-bearing invariant; a crashed/timed-out/malformed gate must never read as regression.
+### IC-08 — Fault→outcome reducer + fail-open enforcement (FOLDED INTO IC-02)
+- **Folded into IC-02.** The FR-014 test-gate reducer (`review/gates/outcomes.py`) is the reduction boundary the seam's `run_gate` owns and cannot satisfy its fault-containment / only-regression invariants without — so it is delivered *with* IC-02, not as a separable downstream concern. Kept as a numbered concern for FR traceability (FR-010, FR-014; NFR-003; C-002; SC-005) only.
+- **Scope reminder**: this reducer governs **test/verdict gates only**; the artifact-presence composed-action guard keeps its own fail-closed reduction (SC-010).
 
 ### IC-09 — Observability + operator surface
 - **Purpose**: Answer "which gates are active for this transition, from which doctrine, and why did/didn't each run".
 - **Relevant requirements**: FR-018; SC-008.
-- **Affected surfaces**: a read-only query over the IC-02 seam (CLI subcommand or `agent tasks status` extension).
+- **Affected surfaces**: a read-only query over the IC-02 selection seam (CLI subcommand or `agent tasks status` extension).
 - **Sequencing/depends-on**: IC-02.
 - **Risks**: keep loopback/read-only; no new heavy CLI surface.
+
+## WP sizing + lane sketch (~12–14 WPs)
+
+Undersized ~8–10 → **~12–14 WPs**. IC-07≈2–3 (env-allowlist+process-group/rlimit; path-resolved fs + capability-probe/refuse; verdict channel), IC-06≈2 (schema+validator+shape-detection; resolver+runner+`source_kind` fix), IC-03≈2 (schema+kind-map; DRG regen+migration), consumer-inversions≈2 (move-task hook; **F(48) guard alone, coord #2531**).
+
+Lanes (dependency-ordered):
+- **A — charter spine** (IC-03, serial, **migration-first**, single lane: step_contracts→models→drg kind-map→DRG regen→pack_validator→merge).
+- **B — selection seam + test-gate reducer** (IC-02 with folded IC-08; + IC-09 read-only tail).
+- **C — Path-A** (serial IC-01 → IC-04 → IC-05), depends B (+A for the binding).
+- **D — Path-B** (IC-06 → IC-07), depends B (+A for the binding).
+- **E — consumer inversions**: move-task pre-review hook onto the seam; the **F(48) `_check_composed_action_guard` selection inversion in its OWN WP, coordinated with #2531** (owned-file collision).
+
+## Notes for /tasks (pre-tasks squad, Op 01KX8DTJ)
+
+The WP graph must encode these (not plan defects — decomposition constraints):
+
+1. **Foundational `GateBinding` sub-WP first.** `GateBinding` lives in `src/doctrine` (IC-03) and IC-02's resolver imports it → lanes A and B are NOT independent; ship the binding model as the first sub-WP of lane A, and make IC-02 depend on it.
+2. **IC-02 ships a dispatch `Protocol` only; IC-07 implements the Path-B arm (forward-only).** `run_gate`'s Path-B branch back-depends on the IC-06/IC-07 runner+envelope, which don't exist at IC-02 time — else `run_gate`'s DoD is circular. IC-02 defines the handler/asset dispatch Protocol; Path-A handler (IC-05) and Path-B runner (IC-07) implement it.
+3. **NFR-005 / SC-004 proof lives in the FINAL consumer-inversion WP**, not IC-02 — it is provable only after BOTH consumers (move-task hook AND the F(48) guard) route selection through the seam.
+4. **Own the consumer-shaped fixture.** SC-001/SC-002/NFR-002 need a non-pytest, no-`_gate_coverage.py` fixture repo — assign it to exactly one WP (it is currently unowned).
+5. **`pre_review_hook.py` inversion has exactly ONE owner** — do not let both the Path-A lane (IC-05) and the consumer-inversion lane (E) claim it.
+6. **Artifact-guard watch-item:** the composed-action guard shares *selection* only; `resolve_gates` returns `[]` for its `(mission, action)` keys today (this mission binds only the pre-review gate, FR-013), so its selection-inversion WP is anti-drift insurance, NOT a replacement of its hardcoded missing-artifact check — SC-010 (fail-closed hard-blocks preserved) is its acceptance criterion.
+7. **`ScopeSource` `derive` output type is `Scope`** (see data-model `TransitionContext.scope`) — thread one `Scope`/`ScopeResult` type through handler + asset, don't fork it.

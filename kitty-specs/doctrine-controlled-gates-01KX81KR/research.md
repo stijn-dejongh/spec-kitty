@@ -6,7 +6,18 @@ Full lens reports in scratchpad: `research-{SYNTHESIS,A,B,C,D}-*.md`, `postspec-
 
 ---
 
-## 0. The keystone: the SSOT gate-resolution seam (single entry point)
+## 0. The keystone: the SSOT gate-*selection* seam (single selection entry point)
+
+> **Post-plan correction (RD-006 pass).** The seam is **selection-only**, NOT unified
+> reduction. The two consumers are semantically different gate-classes — the pre-review
+> hook is a fail-**open** test-regression `GateVerdict` keyed on lane `for_review`; the
+> composed-action guard is a fail-**closed** artifact-presence check keyed on action
+> (returns `list[str]`, hard-blocks on missing spec/plan/tasks). They share **one
+> selection authority** (`resolve_gates` + a lane↔action adapter — `get_by_action(mission,
+> "for_review")`→None today); each keeps its **own reduction**. Routing the artifact guard
+> through the test-gate "only regression blocks" reducer would silently downgrade its
+> hard-blocks (SC-010). The anti-drift argument below is about one *selection* authority,
+> not unified reduction.
 
 **This is the most important design constraint in the mission — the contract must be built around it.**
 
@@ -25,26 +36,34 @@ in history and have **independent test harnesses**. If the mission rewires them
 separately to consult step-contract bindings, the two resolvers *will* drift —
 one gets migrated, the other left hardcoded, or they diverge in fault handling.
 **NFR-005 ("adding a gate is a doctrine-only edit") is unprovable** unless both
-consumers resolve through the *same* code path.
+consumers resolve their gate *selection* through the *same* code path.
 
-**Design mandate → a single SSOT resolver seam (one injected port).** Introduce
-**one** binding-resolution entry point — a `GatePorts`-style port — that:
+**Design mandate → a single SSOT *selection* seam (one injected port).** Introduce
+**one** binding-*selection* entry point — a `GatePorts`-style port — that:
 - takes `(mission, transition/action, active-doctrine)` and returns the ordered
-  set of active gate bindings for that transition (handler or asset targets);
+  set of active gate bindings for that transition (handler or asset targets),
+  via a **lane↔action adapter** (the move-task side keys on lane, `get_by_action`
+  on action);
 - is the **only** place that reads step-contract bindings + applies charter
-  activation (`filter_graph_by_activation`, `src/charter/drg.py:319`,
-  predicate `:293-316`);
-- both consumers above depend on it by injection — neither re-implements
-  selection.
+  activation — evaluated on the **owning step-contract node** (the activatable
+  unit; `asset`/`gate-handler` URNs are absent from the DRG kind maps
+  `_SINGULAR_TO_PLURAL`, `src/charter/drg.py:187`, so they default-allow and
+  cannot be gated directly);
+- both consumers above depend on it for *selection* by injection — neither
+  re-implements selection. **Reduction stays per gate-class** (see below).
 
 **Contract-design implications (for `contracts/` at plan):**
 - The seam's **input contract** is `(mission_id, transition, activation_state)`;
   its **output contract** is a deterministic, ordered `list[ResolvedGate]` where
-  each carries `{binding, mechanism: handler|asset, on_unrunnable_policy}`.
-- The seam owns the **fail-open reduction boundary**: faults never escape as
-  exceptions to the consumers; they are folded to the FR-014 outcome inside the
-  seam (or a thin verdict-reducer it delegates to), so both consumers get
-  identical fault semantics for free.
+  each carries the canonical `ResolvedGate` shape (data-model.md): `{binding,
+  declaring_doctrine, dispatch: handler|asset, activation_state}` — `mechanism`
+  / `on_unrunnable` live inside `binding`; `declaring_doctrine` + `activation_state`
+  are exactly what FR-018/SC-008 observability reads.
+- The seam owns the **test-gate** fail-open reduction boundary: for test/verdict
+  gates, faults never escape as exceptions; they are folded to the FR-014 outcome
+  inside the seam's `run_gate` (the reducer). This is **per gate-class**: the
+  artifact-presence guard is NOT routed through `run_gate` — it keeps its own
+  fail-closed reduction and shares *selection* only.
 - The seam is **extract-then-inject**, never edit-in-place: extract the current
   selection logic behind the port with **characterization tests on the current
   `(mission, action)` matrix first**, then invert both consumers onto it. This
@@ -53,9 +72,10 @@ consumers resolve through the *same* code path.
   inversion — it is the contract both halves (Path-A handler dispatch, Path-B
   asset dispatch) plug into.
 
-This single-entry-point seam is what makes the whole "doctrine-controlled"
-claim *true and testable* rather than aspirational: one place selects, one place
-reduces faults, one place both consumers trust.
+This single-entry-point *selection* seam is what makes the whole "doctrine-controlled"
+claim *true and testable* rather than aspirational: **one place selects** (both consumers
+trust it), while **reduction stays per gate-class** (test-gate fail-open vs artifact-guard
+fail-closed).
 
 ---
 
@@ -83,7 +103,7 @@ reduces faults, one place both consumers trust.
 ## 2. Step-contract consultation model (grounding lens B — verified)
 
 - Contracts **are** machine-loaded + DRG-resolved:
-  `MissionStepContractRepository.get_by_action` (`charter/step_contracts.py:159-170`);
+  `MissionStepContractRepository.get_by_action` (`src/doctrine/missions/step_contracts.py:159-170`);
   the transition literally lives in `implement.step-contract.yaml:56-58`
   (`status_transition → move-task --to for_review`).
 - BUT `StepContractExecutor` is **a composer, not a runner** — declared commands
@@ -103,12 +123,15 @@ reduces faults, one place both consumers trust.
   `src/doctrine/assets/models.py:27-53`); no loader, no resolver, no runner.
   Non-activatable by construction (`artifact_kinds.py:178-180`,
   `_NON_AUGMENTATION_ELIGIBLE_KINDS = {TEMPLATE, ASSET}`).
-- Path B is therefore **greenfield**: asset repository + URN→path resolver +
-  code-asset entrypoint contract + contained runner. Keep code execution keyed on
-  the **gate-asset shape** so non-gate assets stay inert (C-003).
-- **Reuse, don't reinvent, the safety precedents**: `run_scoped_tests_at_head`
-  already does argv-vector / no-shell / timeout / env-scrub
-  (`pre_review_gate.py:358`); `pack_validator._check_asset_path_containment` /
+- Path B is therefore **mostly new but NOT greenfield**: the runner, URN→path
+  resolver, code-asset entrypoint contract, and repository are new, but the schema
+  and validation are **extensions** of the existing `AssetManifest`
+  (`assets/models.py`, `extra="forbid"`) + `pack_validator._validate_asset_manifests`
+  (add gate-asset-shape detection that keys code-exec so non-gate assets stay inert — C-003).
+- **Reuse, don't reinvent — but the env precedent is WRONG**: `run_scoped_tests_at_head`
+  gives argv-vector / no-shell / timeout (`pre_review_gate.py:358`) — reuse those; but
+  it does **`env = dict(os.environ)` (`:374`, full inheritance), NOT env-scrub** — Path-B
+  MUST use an **env allowlist** instead (C-008). Also `pack_validator._check_asset_path_containment` /
   `_check_asset_mime` (`:604-733`) + the `path_escape_pack` / `bad_mime_pack`
   fixtures; and the `tests/architectural/untrusted_path_audit/` harness —
   **which MUST be extended to cover the new code-exec sink or it goes stale-green**
@@ -137,13 +160,18 @@ reduces faults, one place both consumers trust.
 
 Risk-ranked target surfaces and the couplings that constrain order:
 1. **`runtime_bridge.py`** (3813 LOC, 30 bug-fixes) — `_check_composed_action_guard`
-   F(48): highest regression risk → extract-then-inject via the §0 seam,
-   characterization tests first.
+   F(48): highest regression risk → extract-then-inject **selection** via the §0 seam
+   (the guard keeps its fail-closed reduction), characterization tests first, in its
+   **own** WP. **Coordinate with #2531** (concurrent `runtime_bridge` decomposition —
+   owned-file collision on this exact F(48) function).
 2. **Charter spine** (step_contracts→executor→drg→pack_validator→merge) — C-006
    schema bump ripples across all five → migration-first, single lane.
 3. **`executor.py`** defect-magnet → new runner, don't mutate the composer.
-4. **ASSET runner + trust envelope** — greenfield + RCE-adjacent → extend
-   `untrusted_path_audit`; reuse the argv/no-shell/timeout/env-scrub precedent.
+4. **ASSET runner + trust envelope** — **extend** existing `assets/models.py` +
+   `pack_validator._validate_asset_manifests` (NOT greenfield) + RCE-adjacent → extend
+   `untrusted_path_audit`. Reuse the argv/no-shell/timeout precedent ONLY — NOT its env
+   handling (`run_scoped_tests_at_head` does `env = dict(os.environ)`, `pre_review_gate.py:374`,
+   full inheritance); Path-B uses an **env allowlist** (C-008). Refuse-unconfinable v1, no new dep (RD-006).
 5. **`pre_review_gate.py`** `derive_test_scope` at C(15) — ScopeSource extraction
    must not exceed the ceiling; well-covered for NFR-001 parity.
 
@@ -153,6 +181,6 @@ block (`tasks_move_task.py:690-1051` — `_PRE_REVIEW_*` constants + ~15
 `tasks.py:427-448` re-export shim) into a dedicated sibling module as a
 behavior-preserving move, preserving the fail-open scaffolding verbatim. This
 gives the §0 seam + handler/asset dispatch a clean isolated surface. Domain-
-matched to #2116 (`WP-move_task-relocate`); golden-guarded by existing move-task
+matched to the `tasks_move_task` relocate work; golden-guarded by existing move-task
 characterization tests. Broader `tasks_move_task` / `runtime_bridge` degod stays
-OUT → #2116.
+OUT → **#2531** (#2116 is closed — superseded; coordinate the F(48) inversion with #2531).

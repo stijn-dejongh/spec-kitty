@@ -14,7 +14,12 @@ resolve_gates(mission_id: str, transition: str, activation: ActivationState) -> 
 ```
 - **Deterministic + ordered.** Same inputs → same ordered list (stable across processes).
 - Reads step-contract bindings (`MissionStepContractRepository.get_by_action`) and applies charter activation. Activation is evaluated on the **owning step-contract node** (the activatable unit) — NOT the asset/handler URN, which is absent from the DRG singular↔plural kind maps (`asset`/`gate-handler` not in `_SINGULAR_TO_PLURAL`, `src/charter/drg.py:187`) and would therefore default-allow. This is the **only** gate-selection call site.
-- **Lane↔action adapter.** The move-task side keys on a lane (`for_review`); `get_by_action` keys on a mission action (`specify`/`plan`/`tasks`/…) — `get_by_action(mission, "for_review")` is `None` today. The seam owns a small adapter that maps the consumer's key (lane or action) to the contract's action key, so both consumers resolve through one path.
+- **Lane↔action adapter (resolution rule).** A binding declares its trigger in a single `transition` field (a lane like `for_review` OR an action like `implement`). `resolve_gates(mission, key, …)` selects bindings whose `binding.transition == key` across the mission's active step contracts. It does **NOT** call `get_by_action(mission, "for_review")` — a lane is not an action, so that returns `None`; `get_by_action` is used only to enumerate a mission's step-contract steps, then bindings are matched by their declared `transition`. Both consumers therefore resolve through the one rule:
+
+  | Consumer | key passed to `resolve_gates` | resolves to |
+  |----------|-------------------------------|-------------|
+  | move-task pre-review hook | lane `for_review` | bindings with `transition: for_review` (the pre-review exemplar's built-in binding) |
+  | composed-action guard | action (`specify`/`plan`/`tasks`/…) | bindings with `transition: <that action>` (none bound this mission — FR-013; returns `[]` = anti-drift insurance) |
 - Returns `[]` when nothing is declared/active → the caller renders `CALM_NOTICE` (FR-008). `[]` is NEVER "verified clean".
 
 ### Reduction (per gate-class — NOT unified)

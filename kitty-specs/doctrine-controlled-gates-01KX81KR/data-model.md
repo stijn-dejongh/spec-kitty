@@ -20,6 +20,16 @@ Carried on `MissionStepContractStep` and unified `MissionStep`.
 | `dispatch` | HandlerRef \| AssetRef | resolved target |
 | `activation_state` | enum `active\|inactive\|refused` | why it will/won't run |
 
+## TransitionContext (runtime input to a gate)
+The shared input shape passed to a handler's `run(ctx)` and to a Path-B asset's entrypoint. One definition, both dispatch paths.
+| Field | Type | Notes |
+|-------|------|-------|
+| `mission_id` | str | the mission crossing the transition |
+| `transition` | str | lane/action key (e.g. `for_review`) |
+| `changed_files` | list[str] | the WP's changed set (input to `ScopeSource`) |
+| `scope` | Scope \| None | derived scope (may be None → `no_coverage`) |
+For Path-B it is passed via a controlled channel (argv/stdin/**allowlisted env** — never shell-interpolated); never the ambient process env.
+
 ## GateVerdict (emitted by a handler/asset)
 | Field | Type | Notes |
 |-------|------|-------|
