@@ -1,0 +1,262 @@
+{
+  "version": 1,
+  "mission_slug": "doctrine-controlled-gates-01KX81KR",
+  "mission_id": "01KX81KRNPFF7X30P37FJ7TS2B",
+  "mission_branch": "kitty/mission-doctrine-controlled-gates-01KX81KR",
+  "target_branch": "design/doctrine-controlled-gates",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "src/doctrine/missions/models.py",
+        "src/doctrine/missions/step_contracts.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "src/charter/drg.py",
+        "src/doctrine/graph.yaml",
+        "src/doctrine/missions/built_in_step_contracts/implement.step-contract.yaml",
+        "src/specify_cli/upgrade/migrations/"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "tracker-integration"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "src/specify_cli/review/gates/__init__.py",
+        "src/specify_cli/review/gates/resolver.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-h",
+      "wp_ids": [
+        "WP09"
+      ],
+      "write_scope": [
+        "src/doctrine/assets/models.py",
+        "src/specify_cli/doctrine/pack_validator.py",
+        "tests/doctrine/assets/test_gate_asset_schema.py"
+      ],
+      "predicted_surfaces": [
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "src/specify_cli/review/gates/outcomes.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-c"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "src/specify_cli/cli/commands/agent/gates_status.py",
+        "src/specify_cli/review/gates/observe.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-c"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07",
+        "WP08"
+      ],
+      "write_scope": [
+        "src/specify_cli/review/gates/handlers/pre_review.py",
+        "src/specify_cli/review/gates/scope_source.py",
+        "src/specify_cli/review/pre_review_gate.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-b",
+        "lane-c"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-i",
+      "wp_ids": [
+        "WP10",
+        "WP11"
+      ],
+      "write_scope": [
+        ".kittify/config.yaml",
+        "src/doctrine/assets/entrypoint.py",
+        "src/doctrine/assets/repository.py",
+        "src/doctrine/assets/resolver.py",
+        "src/doctrine/assets/runner.py",
+        "src/doctrine/assets/trust.py",
+        "src/doctrine/drg/org_pack_loader.py",
+        "tests/doctrine/assets/test_asset_resolver.py",
+        "tests/doctrine/assets/test_asset_runner.py",
+        "tests/doctrine/assets/test_source_kind_provenance.py",
+        "tests/doctrine/assets/test_trust_envelope.py"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-c",
+        "lane-h"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06",
+        "WP13"
+      ],
+      "write_scope": [
+        "src/specify_cli/cli/commands/agent/pre_review_hook.py",
+        "src/specify_cli/cli/commands/agent/tasks.py",
+        "src/specify_cli/cli/commands/agent/tasks_move_task.py",
+        "tests/integration/gates/"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "app-shell",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tests",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-c",
+        "lane-d",
+        "lane-g"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-j",
+      "wp_ids": [
+        "WP12"
+      ],
+      "write_scope": [
+        "tests/architectural/untrusted_path_audit/audit.py",
+        "tests/architectural/untrusted_path_audit/audited-surfaces.md",
+        "tests/architectural/untrusted_path_audit/inventory.md",
+        "tests/doctrine/assets/test_containment.py",
+        "tests/doctrine/assets/test_verdict_channel.py"
+      ],
+      "predicted_surfaces": [],
+      "depends_on_lanes": [
+        "lane-i"
+      ],
+      "parallel_group": 3
+    },
+    {
+      "lane_id": "lane-k",
+      "wp_ids": [
+        "WP14"
+      ],
+      "write_scope": [
+        "src/runtime/next/runtime_bridge.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [
+        "lane-c",
+        "lane-d"
+      ],
+      "parallel_group": 3
+    }
+  ],
+  "computed_at": "2026-07-11T11:38:52.614448+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "collapse_report": {
+    "events": [
+      {
+        "wp_a": "WP06",
+        "wp_b": "WP13",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'src/specify_cli/cli/commands/agent/pre_review_hook.py' vs 'src/specify_cli/cli/commands/agent/pre_review_hook.py'; WP13 depends on WP06"
+      },
+      {
+        "wp_a": "WP07",
+        "wp_b": "WP08",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'src/specify_cli/review/pre_review_gate.py' vs 'src/specify_cli/review/pre_review_gate.py'; WP08 depends on WP07"
+      },
+      {
+        "wp_a": "WP10",
+        "wp_b": "WP11",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'src/doctrine/assets/runner.py' vs 'src/doctrine/assets/runner.py'; WP11 depends on WP10"
+      }
+    ],
+    "total_merges": 3,
+    "independent_wps_collapsed": 0,
+    "by_rule": {
+      "write_scope_overlap": 3
+    }
+  }
+}
