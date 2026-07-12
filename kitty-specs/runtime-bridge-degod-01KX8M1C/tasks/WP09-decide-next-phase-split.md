@@ -16,6 +16,7 @@ subtasks:
 - T032
 - T033
 phase: Extraction spine
+shell_pid: '2956749'
 history:
 - at: '2026-07-11T00:00:00Z'
   actor: system
@@ -140,3 +141,8 @@ Each phase returns `Decision | None`; the first non-None short-circuits.
 - `kitty-specs/runtime-bridge-degod-01KX8M1C/plan.md` IC-08 + Notes — phase-split, sub-sequence fallback.
 - `kitty-specs/runtime-bridge-degod-01KX8M1C/contracts/parity-oracle.md` — the acceptance-gate oracle + `decide_next` side effects.
 - `kitty-specs/runtime-bridge-degod-01KX8M1C/spec.md` — FR-010, FR-005, FR-004, SC-002.
+
+## Activity Log
+
+- 2026-07-12T00:26:05Z – user – shell_pid=2956749 – Moved to for_review
+- 2026-07-12T00:51:43Z – user – shell_pid=2956749 – Moved to approved

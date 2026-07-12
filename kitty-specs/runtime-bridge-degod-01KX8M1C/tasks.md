@@ -40,8 +40,8 @@
 | T029 | Isolate the `_should_dispatch_via_composition` **selection** seam (FR-008 — clean for gates #2535 WP14; import no gates code); both-branch fixture | WP08 | — | [D] |
 | T030 | re-export; oracle + compat green | WP08 | — | [D] |
 | T031 | `DecideNextContext` frozen dataclass (~14 fields) | WP09 | — |
-| T032 | Rewrite `decide_next_via_runtime` as bootstrap/dependency-gate/composition-dispatch/decision-materialize early-return chain ≤15 (sub-sequence fallback if a single WP can't reach ≤15) | WP09 | — |
-| T033 | Assert residual ≤15; oracle + compat green | WP09 | — |
+| T032 | Rewrite `decide_next_via_runtime` as bootstrap/dependency-gate/composition-dispatch/decision-materialize early-return chain ≤15 (sub-sequence fallback if a single WP can't reach ≤15) | WP09 | — | [D] |
+| T033 | Assert residual ≤15; oracle + compat green | WP09 | — | [D] |
 | T034 | Create `runtime_bridge_identity.py`; move coord-branch naming / mission-ULID / primary-feature-dir (hottest fracture, fattest coverage) | WP10 | — |
 | T035 | KEEP-IN-PLACE `_wrap_with_decision_git_log`; lazy-accessor for sibling-called identity symbols | WP10 | — |
 | T036 | Assert NFR-005 residual-LOC target + NFR-006 timing parity; **zero `# noqa: C901` remain**; final oracle + compat green | WP10 | — |
@@ -98,7 +98,7 @@
 - **owned_files**: `src/runtime/next/runtime_bridge.py`, `tests/runtime/test_bridge_decide_next.py` · **dependencies**: WP06, WP07, WP08
 - **requirement_refs**: FR-010, FR-005, FR-004 · **acceptance**: 4-phase early-return chain; residual `decide_next_via_runtime` ≤15; oracle + compat green
 - **safeguards**: if a single WP can't reach ≤15, use the noted sub-sequence fallback (don't re-add `# noqa`).
-- [ ] T031 · [ ] T032 · [ ] T033
+- [x] T031 · [ ] T032 · [ ] T033
 
 ### WP10 — Identity/coord port (LAST)
 - **owned_files**: `src/runtime/next/runtime_bridge_identity.py`, `src/runtime/next/runtime_bridge.py`, `tests/runtime/test_bridge_identity.py` · **dependencies**: WP03, WP04, WP05, WP06, WP07, WP08, WP09
