@@ -19,6 +19,7 @@ subtasks:
 - T035
 - T036
 phase: Extraction spine
+shell_pid: '3162709'
 history:
 - at: '2026-07-11T00:00:00Z'
   actor: system
@@ -157,3 +158,8 @@ through the shim — re-export alone is false-green for these:
 - `kitty-specs/runtime-bridge-degod-01KX8M1C/research.md` §Compat / §Import DAG — KEEP-IN-PLACE / lazy-accessor mandate.
 - `kitty-specs/runtime-bridge-degod-01KX8M1C/plan.md` IC-09 — identity port cut LAST, NFR-006 asserted here.
 - `kitty-specs/runtime-bridge-degod-01KX8M1C/spec.md` — FR-001, FR-003, FR-004, FR-005, NFR-002, NFR-005, NFR-006, SC-002.
+
+## Activity Log
+
+- 2026-07-12T01:30:19Z – user – shell_pid=3162709 – Moved to for_review
+- 2026-07-12T01:38:04Z – user – shell_pid=3162709 – Moved to approved
