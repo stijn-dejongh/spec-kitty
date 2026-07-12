@@ -29,7 +29,6 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: python-pedro
-agent: "claude:opus:python-pedro:implementer"
 authoritative_surface: tests/runtime/
 create_intent:
 - tests/runtime/test_bridge_parity.py

@@ -43,8 +43,8 @@
 | T032 | Rewrite `decide_next_via_runtime` as bootstrap/dependency-gate/composition-dispatch/decision-materialize early-return chain ≤15 (sub-sequence fallback if a single WP can't reach ≤15) | WP09 | — | [D] |
 | T033 | Assert residual ≤15; oracle + compat green | WP09 | — | [D] |
 | T034 | Create `runtime_bridge_identity.py`; move coord-branch naming / mission-ULID / primary-feature-dir (hottest fracture, fattest coverage) | WP10 | — |
-| T035 | KEEP-IN-PLACE `_wrap_with_decision_git_log`; lazy-accessor for sibling-called identity symbols | WP10 | — | [D] |
-| T036 | Assert NFR-005 residual-LOC target + NFR-006 timing parity; **zero `# noqa: C901` remain**; final oracle + compat green | WP10 | — | [D] |
+| T035 | KEEP-IN-PLACE `_wrap_with_decision_git_log`; lazy-accessor for sibling-called identity symbols | WP10 | — |
+| T036 | Assert NFR-005 residual-LOC target + NFR-006 timing parity; **zero `# noqa: C901` remain**; final oracle + compat green | WP10 | — |
 
 ## Work Packages
 
@@ -104,4 +104,4 @@
 - **owned_files**: `src/runtime/next/runtime_bridge_identity.py`, `src/runtime/next/runtime_bridge.py`, `tests/runtime/test_bridge_identity.py` · **dependencies**: WP03, WP04, WP05, WP06, WP07, WP08, WP09
 - **requirement_refs**: FR-001, FR-003, FR-004, FR-005, NFR-005, NFR-006 · **acceptance**: identity extracted; **zero `# noqa: C901` remain repo-wide in the module family**; NFR-005 residual-LOC + NFR-006 timing asserted; final oracle + compat green
 - **safeguards**: hottest fracture (scars #2091/#1978/#1918/#1814/#2069; malformed coord → `git worktree` exit-128). KEEP-IN-PLACE `_wrap_with_decision_git_log`; lazy-accessor for sibling-called identity symbols.
-- [x] T034 · [ ] T035 · [ ] T036
+- [ ] T034 · [ ] T035 · [ ] T036
