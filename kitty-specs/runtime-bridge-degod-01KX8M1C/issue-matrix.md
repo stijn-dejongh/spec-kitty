@@ -4,7 +4,7 @@ Per FR-037 of the spec-kitty-mission-review skill Gate-4. One row per issue refe
 
 | Issue | Title | Verdict | Evidence ref |
 |-------|-------|---------|--------------|
-| #2531 | Decompose `runtime_bridge.py` god-module into ports+cores (behavior-preserving) | in-mission | design/runtime-bridge-degod — WP01 parity oracle (3d83732cc) + WP02 compat guard (72f5d5785) landed as the C-004 blocking safety nets; decomposition lands across WP03–WP10. Terminal `fixed` at mission `done`. |
+| #2531 | Decompose `runtime_bridge.py` god-module into ports+cores (behavior-preserving) | fixed | design/runtime-bridge-degod — ALL 10 WPs approved. runtime_bridge.py 3813→2674 LOC decomposed into ports+cores (engine/io/cores/composition/retrospective/identity seams); zero # noqa: C901 across the family (NFR-002); WP01 parity oracle + WP02 compat guard green on the aggregate. NFR-005 residual (70.1%) short of the ~35-40% guidance — flagged for retro (orchestration core extraction is a follow-up). |
 | #1619 | Epic: runtime/state overhaul | deferred-with-followup | Follow-up: #1619 (parent epic remains open). This mission is a scoped slice (`runtime_bridge.py` only); the broader overhaul is explicitly out of scope (spec Non-Goals). |
 | #2173 | Epic: infra-logic separation (inject infra as ports, keep core pure) | deferred-with-followup | Follow-up: #2173 (parent epic remains open). This mission applies the ports+cores treatment (C-002) to one module; the epic tracks the other god-modules. |
 | #2056 | Sibling god-module: `agent/mission.py` | deferred-with-followup | Follow-up: #2056 (own mission). Sibling (different file, same shape); not a deliverable here, referenced only as a convention template (C-003). |
