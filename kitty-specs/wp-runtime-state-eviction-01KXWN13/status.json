@@ -1,7 +1,7 @@
 {
-  "event_count": 9,
-  "last_event_id": "01KXWS6AA77M1YV1TZXZN089B1",
-  "materialized_at": "2026-07-19T08:51:55.335870+00:00",
+  "event_count": 10,
+  "last_event_id": "01KXWS6AJ1VA7QF05T5AJDJASZ",
+  "materialized_at": "2026-07-19T08:51:55.585795+00:00",
   "mission_number": "",
   "mission_slug": "wp-runtime-state-eviction-01KXWN13",
   "mission_type": "software-dev",
@@ -14,7 +14,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 9
+    "planned": 10
   },
   "work_packages": {
     "WP01": {
@@ -79,6 +79,13 @@
       "lane": "planned",
       "last_event_id": "01KXWS6AA77M1YV1TZXZN089B1",
       "last_transition_at": "2026-07-19T08:51:55.335870+00:00"
+    },
+    "WP10": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01KXWS6AJ1VA7QF05T5AJDJASZ",
+      "last_transition_at": "2026-07-19T08:51:55.585795+00:00"
     }
   }
 }
