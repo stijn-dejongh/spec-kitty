@@ -29,6 +29,9 @@ Typed optional fields — **not** a free `dict[str, Any]` (C-002).
 | `subtasks` | `Mapping[str, Status]?` | **replace** per-subtask-id |
 | `note` | `str?` | **append** to the snapshot `notes` list |
 | `tracker_refs` | `list[str]?` | **union** |
+| `agent` | `str?` | **replace** (reassignment; the claim `agent` rides the transition `policy_metadata`, see below) |
+| `assignee` | `str?` | **replace** |
+| `review` | `ReviewOverride?` | **replace** (`review_artifact_override_*` pair — the review-cycle slot) |
 
 Only present fields are applied; absent fields leave the corresponding snapshot slot untouched.
 
@@ -38,11 +41,15 @@ Only present fields are applied; absent fields leave the corresponding snapshot 
 `{lane, actor, last_transition_at, last_event_id, force_count}`:
 
 `shell_pid`, `shell_pid_created_at`, `subtasks: Mapping[str, Status]`, `notes: list[str]`,
-`tracker_refs: list[str]`.
+`tracker_refs: list[str]`, `agent`, `assignee`, `review`.
 
-**Reducer contract**: a lane transition updates `lane`/`actor`/… and **preserves** these runtime slots
-(per-field independence); an `InnerStateChanged` updates only the delta's present slots and leaves
-`lane` untouched. Fold order is an event-kind partition: all transitions, then all annotations.
+**Reducer contract**: a lane transition updates `lane`/`actor`/… and **preserves** the runtime slots it
+does not set (per-field independence). The **`planned→claimed` transition additionally sets**
+`shell_pid`/`shell_pid_created_at`/`agent` into their snapshot slots from its `policy_metadata` sidecar
+(FR-004 claim path) — this is the only case where a transition writes a runtime slot; every other
+runtime slot is written by an `InnerStateChanged`, which updates only the delta's present slots and
+leaves `lane` untouched. Fold order is an event-kind partition: all transitions, then all annotations
+(last-writer-wins per field; `force_count` never bumped by an annotation).
 
 ## Field-authority table (post-mission)
 

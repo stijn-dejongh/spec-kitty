@@ -22,7 +22,10 @@
 
 1. Read events; partition into `transition` and `annotation` kinds.
 2. Fold all transitions in `(at, event_id)` order — each transition **preserves** the per-WP runtime
-   slots it does not set (do NOT rebuild the dict dropping `shell_pid`/`subtasks`/`notes`/`tracker_refs`).
+   slots it does not set (do NOT rebuild the dict dropping the runtime slots). The **`planned→claimed`
+   transition additionally extracts** `shell_pid`/`shell_pid_created_at`/`agent` from its
+   `policy_metadata` sidecar into the snapshot slots (FR-004 claim path — the only transition that
+   writes a runtime slot).
 3. Fold all annotations after transitions, applying `WPInnerStateDelta` per-field merge
    (replace / per-subtask replace / append / union). **Never** increment `force_count`.
 4. Complexity: O(events), single pass per partition, no additional full re-reduction (NFR-005).

@@ -12,7 +12,10 @@ if not force and _is_backward_transition(old, target):
     emit_force = not legal_force_free      # only promote when the FSM genuinely requires it
 ```
 
-## The five evidence-gated exempt edges (empirically confirmed force-free)
+## The five evidence-gated exempt edges (confirmatory/illustrative — NOT the implementation surface)
+
+> The mechanism is the FSM query above; this table documents the *expected* result and MUST NOT be
+> encoded as a hard-coded edge list (it would rot if the matrix changes — FR-015 / close-by-construction).
 
 | Edge | Required evidence |
 |---|---|
