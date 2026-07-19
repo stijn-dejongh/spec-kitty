@@ -48,8 +48,9 @@ enters the append-only log is the decision everything else rests on.**
 - **Reusability** — prefer one extensible mechanism over per-field special cases.
 - **No split-brain regression** — a generic sidecar must stay *typed*, or it re-creates the very
   ambiguity being removed.
-- **Co-sequencing** — the `implement.py:1730` shell_pid writer is also restructured by #2160 (hard
-  edge); every new emit site must resolve its write target from stored topology, never `Path.cwd()`,
+- **Writer ownership** — this mission **owns** the `implement.py:1730` shell_pid-writer restructuring
+  (the former #2160 co-sequence is resolved: #2160's writer work is `pr:deferred` and yields to this
+  mission). Every new emit site must resolve its write target from stored topology, never `Path.cwd()`,
   or it reopens #2647.
 - **Migration safety** — readers keep a frontmatter fallback until backfill is verified (the "B3
   clobber window").
@@ -86,7 +87,9 @@ The seven cluster decisions (HiC, 2026-07-19) that this ADR ratifies:
 5. **Review-cycle → evict all in this mission**: delete the dead verdict-field read fallbacks
    (`workflow_cores.py:340-341`, `done_bookkeeping.py:104-105`) **and** evict the actively-written
    `review_artifact_override_*`. **#2684 is the authoritative owner of the WP-metadata surface;**
-   deferred PR #2641 yields to the mission (its file-collision risk is moot).
+   deferred PRs (#2641, #2766, #2612, and #2160's writer work) yield to the mission and rebase onto
+   it — their file-collision risk is moot. Consequently this mission **owns** the `implement.py:1730`
+   shell_pid-writer restructuring outright (no external co-sequence gate).
 6. **Static-model election → deferred** to a follow-up (blocker B4: `WPMetadata` cannot become a
    clean static-only projection until its runtime half is stripped; coordinates with #1619).
 7. **`progress` field → retired explicitly** (removed from `MUTABLE_FIELDS`/schema; backfill no-op).

@@ -2,12 +2,13 @@
 
 **Feature Branch**: `mission-prep/2684-wp-runtime-state-eviction`
 **Created**: 2026-07-19
-**Status**: Draft (spec + ADR authored; execution deferred until 3 in-flight missions land and this branch rebases)
+**Status**: Draft (spec + ADR authored; no cluster-touching work pending — the adjacent PRs are `pr:deferred` and yield to this mission)
 **Input**: #2684 (P0) — "Evict runtime-mutable WP state (shell_pid, history, subtask-checkbox, review-cycle, activity-log) from tasks/WP##.md into the event log", the execution vehicle for the #2093 authority ruling.
 **Grounding**: `docs/plans/investigations/2684-task-move-cluster-scoping.md` (§0 = the seven resolved decisions). **Design of record**: `docs/adr/3.x/2026-07-19-1-wp-runtime-state-event-log-eviction-via-innerstatechanged.md`.
 
-> This spec encodes decisions already ratified by HiC (brief §0 / the ADR). It is ready to seed
-> `/spec-kitty.specify` after the branch rebases onto the landed #2160-adjacent work.
+> This spec encodes decisions already ratified by HiC (brief §0 / the ADR), including that **this
+> mission owns the `implement.py:1730` shell_pid-writer restructuring** (the #2160 co-sequence is
+> resolved — see FR-014). No cluster-touching work is pending; the adjacent PRs are `pr:deferred`.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -147,6 +148,11 @@ pre-migration state by count+value and that re-running seeds nothing new.
   branch, **never `Path.cwd()`** (do not reopen #2647).
 - **FR-013**: A refactor-stable architectural test asserts no consumer reads a dynamic frontmatter
   field as authority (the #2093 invariant).
+- **FR-014**: This mission **owns** the restructuring of the `implement.py:1730` shell_pid claim
+  writer required by the eviction. The prior "co-sequence with #2160" constraint is retired: #2160's
+  writer work is `pr:deferred` and yields to this mission, so the writer cutover proceeds within this
+  mission without an external `blocks/blocked_by` gate. The #2647 invariant (FR-012) still binds every
+  emit site touched by that restructuring.
 
 ### Key Entities
 
@@ -157,10 +163,11 @@ pre-migration state by count+value and that re-running seeds nothing new.
 
 ## Assumptions
 
-- **#2160 co-sequence** — the `implement.py:1730` shell_pid-writer restructuring lands with/before the
-  writer cutover (hard `blocks/blocked_by` on the writer-cutover WP). This branch rebases onto that
-  (and two other in-flight missions) **before** execution begins.
-- **#2684 is authoritative** over the WP-metadata surface; deferred PR #2641 yields to the mission.
+- **This mission owns the `implement.py:1730` restructuring** (FR-014). The former #2160 hard
+  co-sequence is resolved: #2160's writer work is `pr:deferred` and yields to this mission, so the
+  writer cutover is **not** gated on external #2160 work and this branch does **not** wait on it.
+- **#2684 is authoritative** over the WP-metadata surface; deferred PRs (#2641, #2766, #2612, and
+  #2160's writer work) yield to the mission and rebase onto it, not the reverse.
 - The seven design decisions (brief §0 / ADR 2026-07-19-1) are settled and not re-litigated here.
 
 ## Success Criteria *(mandatory)*

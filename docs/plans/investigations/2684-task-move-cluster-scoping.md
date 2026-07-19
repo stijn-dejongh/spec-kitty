@@ -42,8 +42,10 @@ The seven open decisions from §14 are now **closed**. These are binding inputs 
    `review_artifact_override_*` into `InnerStateChanged`. **Governing principle:** #2684 is the
    *authoritative owner* of the WP-metadata surface — deferred PR **#2641** yields to the mission
    (its file-collision risk is moot; it was deferred precisely for treading on this active-design
-   turf). AC-1 is fully complete within this mission. (The #2160 co-sequence for the
-   `implement.py:1730` shell_pid writer still stands — a live epic, not a deferred PR.)
+   turf). AC-1 is fully complete within this mission. **Update 2026-07-19:** the same principle
+   resolves the #2160 dependency — #2160's writer work is `pr:deferred` and yields to this mission, so
+   **this mission owns the `implement.py:1730` shell_pid-writer restructuring** outright (the former
+   "hard co-sequence" in §10/§13 is retired — no external `blocks/blocked_by` gate; see spec FR-014).
 6. **Static-model election → DEFER to a follow-up.** Land + verify the eviction first (blocker B4:
    `WPMetadata` can't become a clean static-only projection until its runtime half is stripped);
    the election coordinates with #1619 and opens against a clean surface next.
