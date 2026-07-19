@@ -18,6 +18,7 @@ subtasks:
 - T005
 - T006
 agent: claude
+model: claude-opus-4-8
 history: []
 agent_profile: python-pedro
 authoritative_surface: src/specify_cli/status/
@@ -113,17 +114,26 @@ frozen dataclasses that sit beside `StatusEvent` (`models.py:231-261`) but carry
    typed **optional** fields (C-002 — never `dict[str, Any]`): `shell_pid: int | None = None`,
    `shell_pid_created_at: str | None = None`, `subtasks: Mapping[str, str] | None = None`
    (subtask-id → `Status`; reuse the existing lane/status enum vocabulary rather than a new string
-   type), `note: str | None = None`, `tracker_refs: list[str] | None = None`, `agent: str | None =
-   None`, `assignee: str | None = None`, `review: ReviewOverride | None = None`. Define a small frozen
-   `ReviewOverride` (or reuse the review-result shape already present near `wp_state.py:612-629`) with
-   the `review_artifact_override_*` fields — WP09 consumes this slot, so define it, do not stub it.
-2. Add `@dataclass(frozen=True) class InnerStateChanged` with fields matching the contract:
+   type), `note: str | None = None`, `tracker_refs: list[str] | None = None`,
+   `tracker_refs_replace: list[str] | None = None`, `agent: str | None = None`,
+   `assignee: str | None = None`, `review: ReviewOverride | None = None`. **WP01 defines
+   `tracker_refs_replace` here** — it is the delta-level *replace* channel (distinct from the additive
+   `tracker_refs` union) that WP08's `--replace` needs so a replace does not resurrect stale refs; the
+   reduced snapshot union slot stays named `tracker_refs` (the replace field is a delta input only, never
+   a separate snapshot slot). Its reducer semantics are pinned in T003.
+2. Define a small frozen `ReviewOverride` with **exactly** these fields — `at: str`, `actor: str`,
+   `wp_id: str`, `reason: str` — plus a `complete` predicate defined as **all four fields non-empty**
+   (`bool(at and actor and wp_id and reason)`). Do **not** reuse the review-result shape near
+   `wp_state.py:612-629`, and do not invent `review_artifact_override_*` fields — WP03/WP09 reference the
+   `{at, actor, wp_id, reason}` fields and the `complete` predicate **verbatim**, so this shape is
+   pinned, not a suggestion. WP09 consumes this slot, so define it, do not stub it.
+3. Add `@dataclass(frozen=True) class InnerStateChanged` with fields matching the contract:
    `event_id: str`, `kind: str = "annotation"`, `wp_id: str`, `at: str`, `actor: str`,
    `delta: WPInnerStateDelta`. Follow `StatusEvent`'s frozen/immutable conventions (`models.py:231`).
-3. Give it a `to_dict()` mirroring `StatusEvent.to_dict` (`models.py:263-283`) but emitting `kind`,
+4. Give it a `to_dict()` mirroring `StatusEvent.to_dict` (`models.py:263-283`) but emitting `kind`,
    `wp_id`, `at`, `actor`, and a nested `delta` with **only present** fields (absent fields omitted so
    the reducer's "absent leaves slot untouched" rule is unambiguous on the wire).
-4. Add a **distinct** decoder `InnerStateChanged.from_dict(obj)` that does **not** reuse
+5. Add a **distinct** decoder `InnerStateChanged.from_dict(obj)` that does **not** reuse
    `StatusEvent.from_dict` (which subscripts `data["from_lane"]`/`data["to_lane"]` at
    `models.py:302-303` and would `KeyError`). Validate `event_id` against `ULID_PATTERN`
    (`models.py:93`, currently defined-but-unused — put it to work here), require `kind ==
@@ -134,6 +144,10 @@ frozen dataclasses that sit beside `StatusEvent` (`models.py:231-261`) but carry
 
 **Validation checklist**:
 - [ ] `WPInnerStateDelta` has zero `Any`-typed fields (`mypy --strict` on the module is clean).
+- [ ] `WPInnerStateDelta` carries both `tracker_refs` (union) and `tracker_refs_replace` (replace) as
+      distinct optional fields.
+- [ ] `ReviewOverride` has **exactly** `{at, actor, wp_id, reason}` and a `complete` predicate that is
+      `True` only when all four are non-empty.
 - [ ] `InnerStateChanged` has no `from_lane`/`to_lane` attribute and no `force`/`force_count`.
 - [ ] Round-trip `InnerStateChanged.from_dict(e.to_dict()) == e` for a delta touching each field.
 - [ ] A `to_dict()` of a delta with only `note` set emits **just** `{"note": ...}` under `delta`.
@@ -203,8 +217,12 @@ and add the typed snapshot slots.
    preserved), producing lane + carried runtime slots; **then** run a second pass folding all
    annotations, applying `WPInnerStateDelta` per-field merge: **replace** for `shell_pid`/
    `shell_pid_created_at`/`agent`/`assignee`/`review`, **per-subtask replace** for `subtasks`,
-   **append** for `note` → the `notes` list, **union** for `tracker_refs`. Only present delta fields
-   are applied; absent fields leave the slot untouched. Annotations **never** increment `force_count`.
+   **append** for `note` → the `notes` list, and for tracker refs a **two-channel** rule into the single
+   `tracker_refs` snapshot slot: `tracker_refs` (additive) **unions** into the slot, while
+   `tracker_refs_replace` (present) **wholesale-replaces** the slot with that exact list (dedup-preserving
+   order) and takes precedence when both are present in one delta. The replace channel is what lets WP08's
+   `--replace` drop stale refs — a union alone would resurrect them. Only present delta fields are
+   applied; absent fields leave the slot untouched. Annotations **never** increment `force_count`.
 4. Ensure the annotation pass is **O(annotations)** with no second `reduce()` over transitions
    (NFR-005) — a single linear pass keyed by `wp_id`. Do not re-scan the transition list per field.
 
@@ -216,6 +234,8 @@ and add the typed snapshot slots.
 - [ ] `planned→claimed` with `policy_metadata={"shell_pid":123,...}` sets the `shell_pid` slot.
 - [ ] Two `note` annotations append in order → `notes == [n1, n2]`.
 - [ ] `tracker_refs` union dedups; per-subtask `subtasks` replace merges by id.
+- [ ] `tracker_refs_replace` wholesale-replaces the `tracker_refs` slot (stale refs dropped, not
+      resurrected) and wins over a same-delta `tracker_refs` union.
 - [ ] `force_count` is unchanged by any annotation.
 
 **Edge cases**: same-`at` transition + seed annotation → annotation wins its slot (partition order, not
@@ -262,13 +282,30 @@ existing event timestamps; a `wp_id` not matching `_WP_ID_PATTERN` (`store.py:43
    durability-verified path; see `store.py:382-395`). **Resolve the write target via
    `canonicalize_feature_dir(feature_dir)`** (`emit.py:522,676,687`) — never `Path.cwd()` (FR-012 /
    C-003 / #2647). There is no `Path.cwd()` in `status/` today; keep it that way.
-2. Re-source `_infer_subtasks_complete` (`emit.py:279-302`). Today it reads `tasks.md` **text**
-   (`emit.py:298`) and delegates to `count_wp_section_subtask_rows` (`emit.py:299`). Change it to read
-   the reduced-snapshot `subtasks` slot (materialise the snapshot for the WP and count done-vs-total
-   from the slot). Keep it **fail-closed**: an absent/empty snapshot returns `False` (do not fail
-   open), matching the current absent-file behaviour (`emit.py:296-297`). Preserve the call-site guards
-   at `emit.py:541-545` and `emit.py:699-703` (only fires on `in_progress → for_review`).
+2. Re-source `_infer_subtasks_complete` (`emit.py:279-302`), **gated behind the dual-write flag**. Today
+   it reads `tasks.md` **text** (`emit.py:298`) and delegates to `count_wp_section_subtask_rows`
+   (`emit.py:299`). Add the snapshot re-source path — materialise the snapshot for the WP and count
+   done-vs-total from the reduced `subtasks` slot — **but guard it behind
+   `_phase1_dual_write_enabled(feature_dir)`** (the flag already exists at `emit.py:310`; import the
+   exact symbol, do not re-derive it). When the flag is **off**, keep reading the legacy `tasks.md` text;
+   only when it is **on** read the snapshot slot. This gate is mandatory because WP01 lands **before**
+   WP03 flips/verifies the flag: an ungated cut would read an empty snapshot and return `False` for
+   **every** WP the moment WP01 merges, silently breaking the done-inference gate before any writer has
+   populated the slot. Keep it **fail-closed** on both paths: an absent/empty snapshot (flag on) or an
+   absent file (flag off) returns `False` (do not fail open), matching the current absent-file behaviour
+   (`emit.py:296-297`). Preserve the call-site guards at `emit.py:541-545` and `emit.py:699-703` (only
+   fires on `in_progress → for_review`).
 3. Keep the claim `policy_metadata` fold *reducer-side* (T003) — do not add a second read path here.
+4. **WP01 owns the two shared symbols every reader/writer WP imports.** (a) The dual-write flag
+   `status/emit.py::_phase1_dual_write_enabled(feature_dir)` — it **already exists at `emit.py:310`**;
+   WP01 owns its *semantics* (the canonical gate for phase-1 snapshot reads/writes) and every downstream
+   WP imports this exact symbol rather than re-deriving a local flag. WP01 does **NOT** delete the flag:
+   teardown is per-owning-lane (each lane removes its own gate once cut over), and **WP10 only verifies**
+   the flag is gone — it does not own removal here. (b) The shared claim builder
+   `status/emit.py::build_claim_policy_metadata(shell_pid, shell_pid_created_at, agent) -> dict`, which
+   returns the `planned→claimed` `policy_metadata` sidecar with exactly the pinned keys `shell_pid`,
+   `shell_pid_created_at`, `agent` — the same keys T003's reducer fold extracts. Define it here so the
+   claim writer WP and the reducer agree on one shape; downstream WPs import this exact symbol.
 
 **Files**: `src/specify_cli/status/emit.py`.
 
@@ -276,8 +313,10 @@ existing event timestamps; a `wp_id` not matching `_WP_ID_PATTERN` (`store.py:43
 - [ ] `emit_inner_state_changed` writes exactly one annotation line, readable back by T002's path.
 - [ ] An emit run from a cwd different from the mission root lands at the canonicalised feature dir
       (mini SC-008 smoke; the full cross-package test is WP08).
-- [ ] `_infer_subtasks_complete` returns `True` only when the snapshot `subtasks` slot shows all done;
-      returns `False` on an empty snapshot (fail-closed).
+- [ ] With `_phase1_dual_write_enabled` **on**, `_infer_subtasks_complete` returns `True` only when the
+      snapshot `subtasks` slot shows all done; returns `False` on an empty snapshot (fail-closed).
+- [ ] With `_phase1_dual_write_enabled` **off**, `_infer_subtasks_complete` still reads legacy `tasks.md`
+      (the pre-WP03 default — an ungated snapshot cut would return `False` for every WP).
 
 **Edge cases**: emitting an empty delta is refused; a WP with zero subtasks in the snapshot →
 `_infer_subtasks_complete` returns `True` (matches the `total == 0` branch at `emit.py:300-301`).
@@ -290,8 +329,12 @@ existing event timestamps; a `wp_id` not matching `_WP_ID_PATTERN` (`store.py:43
 1. Create `tests/unit/status/test_innerstatechanged_reducer_fold.py` covering: slot preservation
    across a transition; the `planned→claimed` `policy_metadata`→slot extraction; per-field merge
    (replace / per-subtask replace / append / union); `force_count` never bumped by an annotation;
-   same-`at` partition ordering (annotation folds after transition); O(events) — assert no second
-   `reduce()` pass (e.g. spy on the transition fold, assert it runs once).
+   same-`at` partition ordering (annotation folds after transition); O(events) — assert **structurally**
+   that the annotation fold does **not re-scan the transition list** (no per-field re-scan): it is not
+   enough to assert `reduce()` runs once. Drive a stream with N transitions and M annotations and assert
+   the transition list is visited exactly once total (e.g. instrument/spy the transition iterable and
+   assert its access count is independent of M — folding annotations must not re-walk transitions
+   per-field or per-annotation), so an accidental O(transitions × annotation-fields) fold fails the test.
 2. Create `tests/architectural/test_innerstatechanged_invariants.py` asserting: an `InnerStateChanged`
    can **never** be reduced as a lane transition (feed one through `reduce()`, assert `lane` is
    untouched and `force_count` unchanged); `is_non_lane_event` surfaces it; `StatusEvent.from_dict` is
@@ -323,20 +366,32 @@ stream (no transitions) materialises a runtime-only WP entry per the T003 decisi
 
 - [ ] `InnerStateChanged` + `WPInnerStateDelta` (+ `ReviewOverride`) are typed frozen dataclasses with
       no `Any` fields (C-002) and round-trip cleanly (T001).
+- [ ] `WPInnerStateDelta` defines the `tracker_refs_replace: list[str] | None` delta field alongside the
+      additive `tracker_refs` (WP08's `--replace` channel; T001).
+- [ ] `ReviewOverride` has exactly the pinned fields `{at, actor, wp_id, reason}` and a `complete`
+      predicate (all four non-empty) — no `review_artifact_override_*` shape (T001).
 - [ ] Annotations are surfaced to `reduce()` via a distinct read path and never routed through
       `StatusEvent.from_dict` (FR-001, T002).
 - [ ] The reducer branches on kind, preserves untouched runtime slots across transitions, folds
       annotations in an event-kind-partition post-pass with correct per-field merge, and never bumps
       `force_count` on an annotation (FR-002, T003).
+- [ ] The tracker-refs fold is two-channel: `tracker_refs` unions into the slot, `tracker_refs_replace`
+      wholesale-replaces it (stale refs dropped) and wins when both are present (T003).
 - [ ] `planned→claimed` extracts `shell_pid`/`shell_pid_created_at`/`agent` from `policy_metadata` into
       the snapshot slots (FR-004 fold half, T003).
 - [ ] The snapshot exposes all eight typed runtime slots (`data-model.md`).
 - [ ] `annotate()` bypasses `validate_transition`; the FSM matrix is byte-unchanged (C-004, T004).
 - [ ] `emit_inner_state_changed` persists via the verified store seam and resolves its target from
       stored topology, never `Path.cwd()` (FR-012, T005).
-- [ ] `_infer_subtasks_complete` reads the snapshot `subtasks` slot, fail-closed (FR-003 source half,
-      T005).
-- [ ] The fold is O(events) with no extra re-reduction pass, asserted structurally (NFR-005, T006).
+- [ ] WP01 owns the shared symbols `_phase1_dual_write_enabled(feature_dir)` (already at `emit.py:310`,
+      not deleted here — WP10 only verifies) and `build_claim_policy_metadata(shell_pid,
+      shell_pid_created_at, agent) -> dict` (pinned keys); downstream WPs import these exact symbols
+      (T005).
+- [ ] `_infer_subtasks_complete` reads the snapshot `subtasks` slot **only when
+      `_phase1_dual_write_enabled` is on**, falls back to legacy `tasks.md` when off (WP01 lands before
+      WP03 verify), and is fail-closed on both paths (FR-003 source half, T005).
+- [ ] The fold is O(events) with no extra re-reduction pass, and the annotation fold does **not re-scan
+      the transition list** (no per-field/per-annotation re-walk), asserted structurally (NFR-005, T006).
 - [ ] The architectural invariant test passes and is non-vacuous (T006).
 - [ ] `pytest tests/unit/status tests/architectural/test_innerstatechanged_invariants.py`, `ruff check
       src/specify_cli/status/`, and `mypy src/specify_cli/status/` are all green.

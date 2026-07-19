@@ -21,15 +21,18 @@ subtasks:
 - T036
 - T037
 - T038
+- T038a
 - T039
 - T040
 agent: claude
+model: claude-opus-4-8
 history: []
 agent_profile: reviewer-renata
 authoritative_surface: tests/architectural/test_2093_authority_invariant.py
 create_intent:
 - tests/architectural/test_2093_authority_invariant.py
 - tests/integration/test_ac5_hash_guard.py
+- tests/integration/test_render_parity_golden.py
 execution_mode: code_change
 owned_files:
 - src/specify_cli/cli/commands/agent/workflow_cores.py
@@ -37,6 +40,7 @@ owned_files:
 - tests/architectural/test_no_dead_symbols.py
 - tests/architectural/test_2093_authority_invariant.py
 - tests/integration/test_ac5_hash_guard.py
+- tests/integration/test_render_parity_golden.py
 role: implementer
 tags: []
 ---
@@ -59,18 +63,22 @@ declaration is emitted.
 
 ## Objective
 
-Land the closeout for the WP-runtime-state eviction: delete the FR-005 frontmatter-fallback flag and
-any C-001 dual-write shim (T036); delete the two legacy verdict-field read fallbacks in
-`workflow_cores.py:340-348` and `done_bookkeeping.py:104-105` — **only after** the WP03 backfill has
-seeded legacy approvals as events (T037); land the AC-5 stable-hash guard as a proof-of-drive full
-lifecycle test (T038); land the #2093 refactor-stable architectural test — no consumer reads a dynamic
-frontmatter field as authority, and no field appears in both the static authored schema and the
-event-sourced slot set — and reconcile the `test_no_dead_symbols.py` allowlist (T039); confirm the
-re-pointed force tests (from WP02) and the full suite are green (T040).
+Land the closeout for the WP-runtime-state eviction: **VERIFY** (do not delete) that no FR-005
+frontmatter-fallback flag or C-001 dual-write shim survives (T036) — each owning lane tears down its own
+dual-write, and WP10 proves it gone via the FR-013 arch test; delete the two legacy verdict-field read
+fallbacks in `workflow_cores.py:340-348` and `done_bookkeeping.py:104-105` — **only after** the WP03
+backfill has seeded legacy approvals as events (T037); land the AC-5 stable-hash guard as the **sole**
+proof-of-drive full-lifecycle acceptance (T038); land the SC-004 render-parity golden test (T038a); land
+the #2093 refactor-stable architectural test — no consumer reads a dynamic frontmatter field as
+authority, and no field appears in both the static authored schema and the event-sourced slot set — and
+reconcile the `test_no_dead_symbols.py` allowlist (T039); confirm the re-pointed force tests (from WP02)
+and the full suite are green (T040).
 
 This is the terminal WP on the dependency graph: it depends on **every** field vertical (WP04–WP09)
-having landed its reader re-point, writer cut, and created-orphan deletes. Nothing here may run before
-those are merged — the fallbacks and shims this WP deletes are still load-bearing until then.
+having landed its reader re-point, writer cut, created-orphan deletes, **and its own dual-write
+teardown**. Nothing here may run before those are merged — the fallbacks this WP deletes (T037) are
+still load-bearing until then, and the dual-write shims are torn down by their owning lanes (WP01/WP05/
+WP07), not here.
 
 ## Context
 
@@ -112,47 +120,57 @@ backfill.
   `{shell_pid, shell_pid_created_at, subtasks, notes, tracker_refs, agent, assignee, review}`.
 - `quickstart.md` — SC-001/SC-005 proof-of-drive and the FR-013 architectural-invariant list.
 
-**Owned-file boundary (read before you start)**: WP10 owns exactly the five files in the frontmatter
+**Owned-file boundary (read before you start)**: WP10 owns exactly the files in the frontmatter
 `owned_files`. The FR-005 fallback flag and the phase-1 dual-write shim have definitions that live in
-files owned by earlier verticals (`core/stale_detection.py` FR-005 baseline gate — WP05;
-`status/emit.py::_phase1_dual_write_enabled`/`_mirror_phase1_frontmatter_lane` shim — WP01). WP10 does
-**not** edit non-owned files. Where a residual shim survives outside the owned surface, T036's job is to
-**detect and escalate**, and the FR-013 arch test (T039) is the enforcing net. See Reviewer guidance.
+files owned by earlier verticals (`core/stale_detection.py` FR-005 baseline gate — **WP05 tears it down
+itself**; `status/emit.py::_phase1_dual_write_enabled`/`_mirror_phase1_frontmatter_lane` shim — **WP01
+tears it down itself**; the claim-writer dual-write in `frontmatter.py`/`implement.py`/
+`workflow_executor.py` — **WP07 tears it down itself**). WP10 does **not** edit these non-owned files and
+does **not** delete any flag/shim. **T036 is VERIFY-only**: it proves, via the FR-013 arch test (T039),
+that no dual-write / second-authority path remains after the owning lanes have torn down their own. A
+survivor is a **T039 red test attributable to the owning lane**, not a WP10 owned-file edit or an
+escalation ticket. See Reviewer guidance.
 
 ---
 
-### Subtask T036 — Delete FR-005 fallback flag + any dual-write shim
+### Subtask T036 — VERIFY no FR-005 fallback flag / dual-write shim survives (teardown is owned by each lane)
 
 **Purpose**: Now that all field verticals (WP04–WP09) have switched their reader authority to the
-reduced snapshot atomically-per-field (C-001), the transitional scaffolding is inert and must be torn
-down so no second authority path survives the mission. FR-005 retained the frontmatter fallback "behind
-a flag until backfill is verified, then removed"; C-001 permitted a bounded dual-write shim "only where
-a field cannot switch atomically … explicitly bounded and torn down in IC-07". This is that teardown.
+reduced snapshot atomically-per-field (C-001), the transitional scaffolding is inert. **Each owning lane
+tears down its own dual-write** as part of completing its atomic per-field switch — WP10 does **not**
+own or perform that teardown. WP10's job here is to **VERIFY** that no second-authority path survives,
+mechanically, via the FR-013 arch test.
+
+**Ownership of the teardown (not WP10)**:
+- The FR-005 baseline/flag gate in `core/stale_detection.py:230-235,395-403` (`shell_pid_baseline`
+  presence-gated fallback) — **WP05 tears it down** once its reader cutover verifies.
+- The phase-1 dual-write shim in `status/emit.py:310` (`_phase1_dual_write_enabled`) and `:345`
+  (`_mirror_phase1_frontmatter_lane`) — **WP01 tears it down**.
+- The claim-writer dual-write in `frontmatter.py`/`implement.py`/`workflow_executor.py` — **WP07 tears
+  it down** at its atomic switch.
 
 **Steps**:
-1. Audit the codebase for the FR-005 fallback flag and any C-001 dual-write shim that is now inert:
-   - The FR-005 baseline/flag gate lives in `core/stale_detection.py:230-235,395-403`
-     (`shell_pid_baseline` presence-gated fallback to the timestamp heuristic) — **WP05-owned**.
-   - The phase-1 dual-write shim lives in `status/emit.py:310` (`_phase1_dual_write_enabled`) and
-     `:345` (`_mirror_phase1_frontmatter_lane`) — **WP01-owned**.
-2. Within WP10's **owned files**, delete any inert flag/shim that appears there. (After the WP04–WP09
-   cuts land, confirm none does — the flag/shim definitions are in non-owned modules.)
-3. For a residual flag/shim in a non-owned file: do **not** edit it. Record it as a closeout finding
-   and escalate to the owning vertical (WP05 / WP01) so the teardown lands in the correct lane, or
-   confirm the owning WP already removed it as part of its atomic per-field switch. The FR-013 arch
-   test (T039) is the mechanical proof that no dual-home / inert authority path survives — treat a
-   surviving shim as a T039 failure, not a WP10 owned-file edit.
+1. Do **not** delete any flag/shim. Do **not** edit non-owned files. WP10 does not "detect and escalate"
+   a residual as a closeout finding — the enforcing mechanism is the T039 arch test.
+2. Run the FR-013 arch test (T039) and confirm it is green: no `_phase1_dual_write_enabled` /
+   `_mirror_phase1_frontmatter_lane` / `shell_pid_baseline` fallback / any dual-write path remains as a
+   live second authority.
+3. If a survivor is found, it is a **T039 red test attributable to the owning lane** (WP01 / WP05 /
+   WP07), which must fix its own teardown — WP10 records the red result against that lane and does not
+   patch it in a WP10-owned file.
 
-**Files**: (owned) `src/specify_cli/cli/commands/agent/workflow_cores.py`,
-`src/specify_cli/merge/done_bookkeeping.py` — only if an inert flag/shim is found in them.
+**Files**: none edited by T036 (verification subtask). The owned source files
+(`workflow_cores.py`, `done_bookkeeping.py`) are edited by T037, not here.
 
 **Validation**: `rg -n "phase1_dual_write|status_phase|_mirror_phase1|shell_pid_baseline.*fallback"`
-over `src/` returns no *inert* survivor; the FR-013 arch test (T039) passes with no dual-home finding.
+over `src/` returns no *inert* survivor; the FR-013 arch test (T039) passes with no dual-home / dual-write
+finding. A survivor turns T039 red — the fix belongs to the owning lane, not a WP10 edit.
 
-**Edge cases**: Deleting a shim before its paired reader/writer switched atomically reopens the C-001
-symmetric split-brain (a fresh runtime write becomes invisible to a snapshot-first reader) — this is why
-T036 runs only after WP04–WP09. A flag left inert but undeleted is a latent second authority path (the
-#2093 violation the mission exists to close); it must fail T039, not pass silently.
+**Edge cases**: A lane tearing down its shim before its paired reader/writer switched atomically reopens
+the C-001 symmetric split-brain (a fresh runtime write becomes invisible to a snapshot-first reader) —
+this is why every lane gates its own teardown on its atomic switch, and why WP10 only runs after
+WP04–WP09. A flag left inert but undeleted is a latent second authority path (the #2093 violation the
+mission exists to close); it must fail T039, attributed to its owning lane.
 
 ---
 
@@ -197,11 +215,17 @@ lean on WP09's both-halves override migration and the merge-gate override-recogn
 
 ---
 
-### Subtask T038 — Land AC-5 stable-hash guard (proof-of-drive lifecycle)
+### Subtask T038 — Land AC-5 stable-hash guard (proof-of-drive lifecycle) — SOLE SC-001/SC-005 acceptance
 
 **Purpose**: Prove NFR-001 / SC-005 by construction: across a full **driven** WP lifecycle, the raw-byte
 content hash of `tasks/WP##.md` and the WP's `tasks.md` section changes 0 times, and a persisted event
 exists for each driven action so "unchanged" can never mean "untouched".
+
+**This is the SOLE full-lifecycle hash-stability acceptance for SC-001 / SC-005.** It can only land here
+because WP10 depends on **WP04–WP09 = every writer cut over** — only after all writers are evicted is a
+full claim→…→done drive actually byte-stable end-to-end. The WP06/T025 hash check is **only a scoped
+slice** (the move-task/god-write writer cut, not the whole lifecycle); it does not and cannot stand in
+for this mission-level acceptance. Do not treat WP06/T025 as the SC-001/SC-005 gate — T038 is.
 
 **Steps**:
 1. Create `tests/integration/test_ac5_hash_guard.py` (new). Mark it `integration` and `git_repo` per
@@ -230,6 +254,40 @@ force-free path so the drive matches production behavior.
 
 ---
 
+### Subtask T038a — Land SC-004 render-parity golden test
+
+**Purpose**: Prove SC-004 ("renders from events with no content loss") at the mission level with a
+**golden** comparison: the event-sourced render of the WP's `## Activity Log` / `## History` and the
+review-cycle render classes reproduce, byte-for-byte on the meaningful content, what a legacy
+frontmatter/body-sourced render produced. WP05 re-points the render source (its T019); this test is the
+mission-level parity guard that the re-point lost nothing.
+
+**Steps**:
+1. Create `tests/integration/test_render_parity_golden.py` (new; added to `owned_files` +
+   `create_intent`). Mark it `integration` (and `git_repo` if a repo fixture is needed) per the marker
+   registry.
+2. Capture a **legacy-sourced golden**: a fixture WP whose Activity-Log / History / review-cycle content
+   is rendered from the pre-eviction frontmatter/body path (the golden baseline snapshot). Store it as
+   the golden.
+3. Drive the same content through the event log (emit the notes/history/review deltas via the canonical
+   entry points), then render via the event-sourced path (WP05's re-pointed render + WP09's review
+   render). Assert the rendered output matches the golden for **all three render classes**:
+   **activity** (`## Activity Log` notes), **history** (`## History`), and **review** (review-cycle
+   verdict/ref/result). No content loss, no reordering that drops entries.
+4. Two-sided: deliberately drop one note/history/review entry from the event stream and confirm the
+   golden comparison goes red — the parity guard must bite on real content loss.
+
+**Files**: `tests/integration/test_render_parity_golden.py` (create).
+
+**Validation**: `pytest tests/integration/test_render_parity_golden.py -q` green; the render of each
+class equals the legacy-sourced golden; the dropped-entry mutation turns it red.
+
+**Edge cases**: timestamp/ordering normalization — the golden must key on meaningful content and stable
+ordering (e.g. `(at, event_id)`), not on volatile fields, so it does not rot on a legal re-render. A WP
+with legacy body content not yet backfilled must still render via the tolerated fallback with no loss.
+
+---
+
 ### Subtask T039 — #2093 refactor-stable arch test + reconcile `test_no_dead_symbols`
 
 **Purpose**: Land the enforcing FR-013 invariant so the single-authority guarantee cannot silently rot
@@ -253,10 +311,11 @@ orphaned writers.
    later relocation does not produce a false green or a brittle red.
 3. Reconcile `tests/architectural/test_no_dead_symbols.py`: the `add_history_entry` allowlist
    `SymbolKey` entry (around **line 282**, commented `specify_cli.frontmatter::add_history_entry`) was
-   tolerated while the symbol was live-but-uncalled. WP03/IC-06 deleted `add_history_entry` and its
-   `__all__` export, so the allowlist entry is now stale — **remove it** (leaving it masks the next
-   dead symbol). Verify no other WP10-adjacent deletion (the FR-009 fallbacks) leaves a symbol that now
-   needs an allowlist entry; prefer deleting the symbol over allowlisting it.
+   tolerated while the symbol was live-but-uncalled. **WP07/T028** deleted `add_history_entry` (module
+   fn + manager method) and its `__all__` export, so the allowlist entry is now stale — **remove it**
+   (leaving it masks the next dead symbol). Verify no other WP10-adjacent deletion (the FR-009
+   fallbacks) leaves a symbol that now needs an allowlist entry; prefer deleting the symbol over
+   allowlisting it.
 
 **Files**: `tests/architectural/test_2093_authority_invariant.py` (create),
 `tests/architectural/test_no_dead_symbols.py` (remove the stale `add_history_entry` allowlist entry).
@@ -269,7 +328,7 @@ read (or re-listing `tracker_refs` in `WP_FIELD_ORDER`) turns `test_2093_authori
 misclassifying either produces a false green (an undetected dual-home) or a false red (a legitimate
 render-only read). Ground the classifier on the field-authority table in `data-model.md`. Removing the
 allowlist entry while the symbol is somehow still live would break `test_no_dead_symbols.py` — confirm
-the WP03/IC-06 deletion of `add_history_entry` has merged first.
+the **WP07/T028** deletion of `add_history_entry` has merged first.
 
 ---
 
@@ -319,20 +378,29 @@ attribute it correctly. Do **not** delete or weaken an assertion to reach green 
 
 ## Definition of Done
 
-- [ ] T036: no inert FR-005 fallback flag or C-001 dual-write shim survives; any residual in a
-      non-owned file is escalated to its owning lane and proven gone by the T039 arch test.
+- [ ] T036 (**VERIFY-only**): WP10 deletes no flag/shim and edits no non-owned file; the FR-013 arch
+      test (T039) proves no FR-005 fallback flag or C-001 dual-write shim survives. Each lane tore down
+      its own dual-write (WP01 `emit.py`, WP05 `stale_detection.py`, WP07 its files); a survivor is a
+      T039 red attributable to the owning lane, not a WP10 edit or an escalation ticket.
 - [ ] T037: `workflow_cores.py:340-348` and `done_bookkeeping.py:104-105` legacy verdict-field
       fallbacks deleted; done-evidence and review-feedback resolve from events only; verified
       post-backfill (WP03 merged, fail-closed verify passed).
-- [ ] T038: `tests/integration/test_ac5_hash_guard.py` created and green — 0 hash changes across the
-      driven lifecycle **with** a persisted event per action (proof-of-drive).
+- [ ] T038 (**SOLE SC-001/SC-005 full-lifecycle acceptance**): `tests/integration/test_ac5_hash_guard.py`
+      created and green — 0 hash changes across the driven lifecycle **with** a persisted event per
+      action (proof-of-drive). WP06/T025 is only a scoped writer-cut slice and does NOT stand in for this
+      mission-level acceptance.
+- [ ] T038a (**SC-004 render parity**): `tests/integration/test_render_parity_golden.py` created and
+      green — the event-sourced render of the activity / history / review classes matches a legacy-sourced
+      golden with no content loss; a dropped-entry mutation turns it red.
 - [ ] T039: `tests/architectural/test_2093_authority_invariant.py` created and green (no
       dynamic-authority frontmatter read; no field dual-homed static+dynamic); `test_no_dead_symbols.py`
-      `add_history_entry` allowlist entry removed and the gate still green.
+      `add_history_entry` allowlist entry removed and the gate still green (the deletion is **WP07/T028**,
+      not WP03/IC-06).
 - [ ] T040: full `pytest` suite green, including the WP02 re-pointed force tests (SC-007) and the
       flipped `test_issue_2684_subtask_completion_event_sourced.py`.
 - [ ] `ruff` and `mypy` clean on all owned files; no owned-file edit exceeds the `owned_files` list.
-- [ ] Reviewer initialization declaration emitted; findings for any non-owned residual recorded.
+- [ ] Reviewer initialization declaration emitted; any residual dual-write is captured as a T039 red
+      attributed to its owning lane (WP01/WP05/WP07) — WP10 does not patch it out of scope.
 
 ## Risks
 
@@ -340,11 +408,14 @@ attribute it correctly. Do **not** delete or weaken an assertion to reach green 
   synthesize done-evidence for un-migrated on-disk WPs. Removing them ahead of the WP03 backfill strands
   legacy corpora. **Mitigation**: gate T037 on confirmed WP03 merge + passed fail-closed verify.
 - **Surviving inert flag/shim = latent second authority path** (#2093): an undeleted flag is exactly the
-  split-brain the mission closes. **Mitigation**: T039 arch test fails on any dual-home; treat a survivor
-  as a red test, not a tolerated leftover.
-- **Owned-file boundary tension**: the FR-005 flag (`stale_detection.py`, WP05) and phase-1 dual-write
-  shim (`emit.py`, WP01) live outside WP10's owned surface. **Mitigation**: WP10 detects and escalates;
-  it does not edit non-owned files; the arch test is the enforcing net.
+  split-brain the mission closes. **Mitigation**: T039 arch test fails on any dual-home/dual-write; treat
+  a survivor as a red test **attributable to its owning lane** (WP01/WP05/WP07), not a tolerated leftover
+  and not a WP10 edit.
+- **Owned-file boundary tension**: the FR-005 flag (`stale_detection.py`, WP05), the phase-1 dual-write
+  shim (`emit.py`, WP01), and the claim-writer dual-write (`frontmatter.py`/`implement.py`/
+  `workflow_executor.py`, WP07) live outside WP10's owned surface and are torn down by those lanes
+  themselves. **Mitigation**: WP10 does not edit non-owned files and does not delete flags/shims; T036 is
+  verify-only and the FR-013 arch test (T039) is the enforcing net.
 - **False-green hash guard**: an emit site writing via `Path.cwd()` (#2647) can leave the fixture hash
   falsely stable. **Mitigation**: drive from a non-mission-root cwd where practical; rely on WP08's
   SC-008 test for the dedicated invariant.
@@ -359,9 +430,10 @@ attribute it correctly. Do **not** delete or weaken an assertion to reach green 
 This WP is authored for `reviewer-renata`; apply the profile end to end.
 
 - **Anti-laziness / proof-of-drive**: every "unchanged"/"green" claim must carry a positive control. The
-  AC-5 guard (T038) asserts a persisted event per action; the arch test (T039) must bite when a
-  frontmatter authority read or a `WP_FIELD_ORDER` dual-home is re-introduced. Reject any test that
-  passes vacuously.
+  AC-5 guard (T038, the SOLE SC-001/SC-005 full-lifecycle acceptance — WP06/T025 is only a scoped slice)
+  asserts a persisted event per action; the render-parity golden (T038a) must bite when a note/history/
+  review entry is dropped from the event stream; the arch test (T039) must bite when a frontmatter
+  authority read or a `WP_FIELD_ORDER` dual-home is re-introduced. Reject any test that passes vacuously.
 - **Single canonical authority (charter)**: the closeout's whole purpose is one-authority-per-field.
   After WP10, runtime state has exactly one authority (the event log) and static intent one authority
   (frontmatter). Verify the field-authority table in `data-model.md` holds with no field in both
@@ -369,10 +441,11 @@ This WP is authored for `reviewer-renata`; apply the profile end to end.
 - **Ordering discipline**: confirm the migration order (`backfill → verify → reader → writer → delete
   fallbacks → hash guard`) was honored — T037 deletions are post-backfill, T036 teardown is
   post-writer-cut. A reordering is a correctness defect even if the suite is green on a fresh corpus.
-- **Scope discipline**: WP10 edits only its five owned files. Record every residual shim/flag/dead
-  symbol found in a non-owned file as a closeout finding and route it to the owning lane (WP01/WP05/WP09)
-  rather than editing out of scope. Escalate cross-lane test failures; never weaken an assertion to
-  reach green.
+- **Scope discipline**: WP10 edits only its owned files (the two source files + the four owned tests,
+  including the net-new `test_render_parity_golden.py`). It does **not** delete the FR-005 flag / dual-write
+  shims — those are torn down by their owning lanes (WP01/WP05/WP07) and proven gone by the T039 arch
+  test. A residual dual-write is a T039 red attributable to the owning lane, not a WP10 closeout edit.
+  Escalate cross-lane test failures; never weaken an assertion to reach green.
 - **Deferred (not this WP)**: IC-08 post-cutover reduction (inert `wp_metadata` fields,
   `WP_FIELD_ORDER` cosmetic slots) is a separate bounded reduction after this mission merges — do not
   pull it forward into the clobber window.

@@ -17,14 +17,17 @@ subtasks:
 - T031
 - T032
 agent: claude
+model: claude-sonnet-5
 history: []
 agent_profile: python-pedro
 authoritative_surface: src/specify_cli/orchestrator_api/commands.py
-create_intent: []
+create_intent:
+- tests/integration/test_sc008_topology_resolution.py
 execution_mode: code_change
 owned_files:
 - src/specify_cli/cli/commands/agent/tasks_map_requirements.py
 - src/specify_cli/orchestrator_api/commands.py
+- tests/integration/test_sc008_topology_resolution.py
 role: implementer
 tags: []
 ---
@@ -46,14 +49,17 @@ Evict two remaining runtime writers into the event log:
 
 1. **T030** — `map-requirements` (`tasks_map_requirements.py`) stops writing `tracker_refs` into WP
    frontmatter and instead emits an `InnerStateChanged` `tracker_refs` **union** delta (FR-006). The
-   union/replace semantics currently computed inline must move onto the emit (the reducer applies
-   `union`; `--replace` is the explicit set-replace case).
+   union/replace semantics currently computed inline must move onto the emit: the reducer applies
+   `union` to the `tracker_refs` field on the default path, and `--replace` uses **WP01's dedicated
+   `tracker_refs_replace` delta field** (set-replace) — it must NOT degrade to union.
 2. **T031** — The **external** Activity-Log writer in `orchestrator_api/commands.py:1563` (a
    cross-package writer behind the ACL boundary) stops writing a `## Activity Log` line into the WP
    file and emits an `InnerStateChanged` `note` **append** delta instead (FR-007).
-3. **T032** — Land the **SC-008** cross-package topology-resolution test: an off-axis emit run from a
-   cwd **different from the mission root** lands its write at the stored-topology target branch, **never**
-   a `Path.cwd()`-derived location (the #2647 invariant, FR-012 / C-003).
+3. **T032** — Land the **SC-008** cross-package topology-resolution test as a **net-new owned test**
+   `tests/integration/test_sc008_topology_resolution.py` (added to `owned_files` + `create_intent`; it was
+   homeless in the original slice): an off-axis emit run from a cwd **different from the mission root**
+   lands its write at the stored-topology target branch, **never** a `Path.cwd()`-derived location (the
+   #2647 invariant, FR-012 / C-003).
 
 ## Context
 
@@ -107,11 +113,12 @@ after WP07 strikes it from `WP_FIELD_ORDER`).
    target WP matches (`wp_id == st.wp.upper()`, `:422`), emit an `InnerStateChanged` `tracker_refs`
    delta via WP01's `emit_inner_state_changed`.
 2. Move the merge semantics onto the emit correctly: the reducer applies **union**, so on the default
-   (non-`--replace`) path emit the **new** `st.tracker_ref_values` (the reducer unions them with the
-   snapshot's existing set — do NOT pre-union from a frontmatter read). On `--replace`, the semantics
-   are set-**replace**, which the union reducer does not express — emit an explicit replace (either a
-   dedicated replace delta if WP01 exposes one, or clear-then-union; confirm the WP01 contract and use
-   the sanctioned mechanism — do NOT invent a second reducer rule).
+   (non-`--replace`) path emit the **new** `st.tracker_ref_values` on the `tracker_refs` field (the
+   reducer unions them with the snapshot's existing set — do NOT pre-union from a frontmatter read). On
+   `--replace`, use **WP01's dedicated `tracker_refs_replace` delta field** to carry the full replacement
+   set — the reducer's `tracker_refs_replace` rule performs the set-**replace**. Do NOT degrade `--replace`
+   to a union emit, and do NOT emulate it with clear-then-union or a second invented reducer rule; the
+   sanctioned mechanism is the `tracker_refs_replace` field WP01 exposes.
 3. Keep `requirement_refs` handling (`:418-419`) as-is — that field is NOT evicted by this mission; only
    `tracker_refs` moves. If `update_kwargs` ends up empty after removing `tracker_refs`, skip the
    frontmatter write for that WP (do not write an unchanged file — SC-001 hash stability).
@@ -126,7 +133,8 @@ byte-unchanged (no `tracker_refs:` frontmatter line written). Assert the reduced
 `tracker_refs` slot equals the union of prior + new (and the replacement set on `--replace`).
 
 **Edge cases**: `--replace` semantics must NOT silently degrade to union (that would resurrect stale
-refs). The `_mr_stale_gate` post-write hard-fail (`:433+`) currently runs after the frontmatter write
+refs) — it MUST route through WP01's `tracker_refs_replace` delta field. The `_mr_stale_gate` post-write
+hard-fail (`:433+`) currently runs after the frontmatter write
 and reads refs across ALL WPs — confirm it re-sources from the snapshot (or the tolerated fallback)
 after the write becomes an emit, so a pre-existing stale ref on an untouched WP still refuses. The
 move-task `tracker_refs` emit (`tasks_move_task.py:1721`, FR-006) is WP06's — do not touch it here; the
@@ -180,12 +188,10 @@ different from the mission root lands at the stored-topology target, never a `Pa
    (a `Path.cwd()`-derived resolution would fail this — proof-of-drive, not proof-of-absence).
 3. Mark it `integration` (and `git_repo` if it needs a repo fixture) per the marker registry.
 
-**Files**: The SC-008 test needs a home. `owned_files` for this WP is limited to the two source modules
-(no test file is granted by `tasks.md`). Place the test assertions in the **existing** orchestrator-api
-/ integration test module that already covers `orchestrator_api/commands.py` behavior rather than
-creating a new owned test file, OR flag to the reviewer that `owned_files` should be extended for a net
--new `tests/integration/` SC-008 module. Do NOT silently widen ownership — surface the gap (see Reviewer
-guidance).
+**Files**: `tests/integration/test_sc008_topology_resolution.py` (**create** — now an owned test file,
+added to both `owned_files` and `create_intent`). This SC-008 test was homeless in the original slice;
+it is now a **net-new owned test** that is this WP's dedicated SC-008 acceptance evidence. Author the
+assertions here — do NOT scatter them into an unrelated existing module.
 
 **Validation**: the test is red against a `Path.cwd()`-derived resolution and green against the
 stored-topology resolution (both branches — it must be able to fail).
@@ -209,13 +215,15 @@ This is a **cross-package** writer (ACL boundary) — coordinate with WP06 (whic
 ## Definition of Done
 
 - [ ] `map-requirements` emits an `InnerStateChanged` `tracker_refs` union delta (and a correct
-      set-replace on `--replace`); no `tracker_refs` frontmatter write; unchanged WP files are not
-      rewritten.
+      set-replace on `--replace` via WP01's `tracker_refs_replace` delta field — never degraded to
+      union); no `tracker_refs` frontmatter write; unchanged WP files are not rewritten.
 - [ ] The external `orchestrator_api/commands.py:1563` Activity-Log writer emits a `note`-append delta;
       no WP-file write; the structured error-envelope contract is preserved.
 - [ ] Every new emit site resolves `destination_ref` from stored topology/target branch, never
       `Path.cwd()` (C-003).
-- [ ] SC-008 test is present, two-sided (fails against a cwd-derived resolution), and green.
+- [ ] SC-008 test lands as the **net-new owned** `tests/integration/test_sc008_topology_resolution.py`
+      (added to `owned_files` + `create_intent`), two-sided (fails against a cwd-derived resolution),
+      and green.
 - [ ] Full quality gate green: `pytest`, `ruff`, `mypy`; no dead imports; C-001 honored for the
       `tracker_refs` reader/writer switch (atomic or FR-005-flagged dual-write).
 
@@ -225,13 +233,14 @@ This is a **cross-package** writer (ACL boundary) — coordinate with WP06 (whic
   it runs from arbitrary external cwds. A `Path.cwd()`-derived write destination silently reopens #2647.
   Mitigate: derive `destination_ref` from stored topology and pin it with the two-sided SC-008 test.
 - **`--replace` degrading to union.** The reducer's `tracker_refs` rule is union; a naive port drops
-  the replace semantics and resurrects stale refs. Mitigate: use the sanctioned replace mechanism from
-  WP01; assert both paths.
+  the replace semantics and resurrects stale refs. Mitigate: route `--replace` through WP01's dedicated
+  `tracker_refs_replace` delta field (set-replace); assert both paths.
 - **Reader/writer split-brain (C-001).** `map-requirements` reads existing refs to compute coverage; if
   the writer emits but the read still consults frontmatter (or vice versa) across the window, coverage
   projection drifts. Mitigate: gate on WP03 verify; dual-read behind the FR-005 flag if not atomic.
-- **Test ownership gap.** `tasks.md` grants no test file to this WP; the SC-008 test must land in an
-  existing owned/adjacent module or ownership must be extended — do not exceed `owned_files` silently.
+- **Test ownership gap — RESOLVED.** The SC-008 test was homeless in the original slice; ownership is
+  now extended: `tests/integration/test_sc008_topology_resolution.py` is a net-new owned test in both
+  `owned_files` and `create_intent`. Author it there; do not scatter SC-008 assertions elsewhere.
 
 ## Reviewer guidance
 
@@ -244,6 +253,8 @@ This is a **cross-package** writer (ACL boundary) — coordinate with WP06 (whic
   style point.
 - Confirm the orchestrator-api error-envelope contract is intact: a failed emit still returns a
   structured `_fail(...)` envelope, not a bare traceback.
-- Flag the `owned_files`/test-home tension explicitly in review: the SC-008 integration test needs a
-  home not granted by `tasks.md`; confirm it landed in an existing owned module or that ownership was
-  extended deliberately.
+- Confirm the SC-008 test landed as the net-new owned `tests/integration/test_sc008_topology_resolution.py`
+  (ownership was extended deliberately in this triage — it is in `owned_files` + `create_intent`), not
+  scattered into an unrelated module.
+- Confirm `--replace` routes through WP01's `tracker_refs_replace` delta field (set-replace), never a
+  degraded union or a clear-then-union emulation.

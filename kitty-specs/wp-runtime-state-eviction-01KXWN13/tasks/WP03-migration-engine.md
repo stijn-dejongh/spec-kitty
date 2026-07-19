@@ -17,6 +17,7 @@ subtasks:
 - T013
 - T014
 agent: claude
+model: claude-opus-4-8
 history: []
 agent_profile: python-pedro
 authoritative_surface: src/specify_cli/migration/
@@ -50,7 +51,9 @@ legacy fallbacks (WP10 owns those deletes), and do not weaken the fail-closed ab
 Build the migration engine that seeds the live mission corpus into the event log safely and gates every
 field vertical's authority activation on **verified parity**. Extend the canonical
 `strip_frontmatter.py:MUTABLE_FIELDS` (add `shell_pid_created_at`, `review_artifact_override_*`,
-`reviewer_shell_pid`; move `history` out of `STATIC_FIELDS`; retire `progress`), ship a net-new
+`reviewer_shell_pid`, and `history`; move `history` **out** of `STATIC_FIELDS` **and into**
+`MUTABLE_FIELDS` so the corpus strip actually removes it — mirroring `progress`; retire `progress`),
+ship a net-new
 `backfill_runtime_state.py` that reconstructs each WP's frontmatter/checkbox runtime state as seed
 `transition` + `InnerStateChanged` events with **deterministic namespaced ULIDs** ordered *after* the
 annotated transition at equal `at`, and implement a **fail-closed verify** that aborts before any
@@ -72,10 +75,16 @@ run, corrupt seed aborts before cutover) and **NFR-002** (idempotent, 100% count
 
 **Design-of-record facts you must honour** (see `contracts/migration.md`):
 
-- **Strict order**: `backfill → verify(FAIL-CLOSED) → reader cutover → writer cutover → delete
-  fallbacks → land hash guard`. This WP owns **backfill + verify + the `MUTABLE_FIELDS` field-moves**;
-  it does **not** perform reader/writer cutover (the field verticals do) and does **not** delete the
-  legacy fallbacks (WP10 does, gated on this backfill).
+- **Strict order**: `backfill → verify(pre-strip, FAIL-CLOSED) → reader cutover → writer cutover →
+  strip mutable fields → delete fallbacks → land hash guard`. This WP owns **backfill + verify + the
+  `MUTABLE_FIELDS` field-moves**; it does **not** perform reader/writer cutover (the field verticals do)
+  and does **not** delete the legacy fallbacks (WP10 does, gated on this backfill).
+- **Verify runs against the UN-stripped frontmatter.** `verify` MUST compare the reduced snapshot
+  against the OLD frontmatter/checkbox reader reading the **un-stripped** frontmatter (or an
+  independently reconstructed legacy value) — the strip (`strip_mutable_fields`) MUST NOT run before
+  `verify`. If the strip runs first, the old reader reads empty frontmatter → vacuous parity → a false
+  green that masks a real mismatch. The pinned sequence is `backfill → verify(pre-strip) → cutover →
+  strip`; never `strip → verify`.
 - **Deterministic namespaced ULIDs.** Seed `event_id` = a content-namespaced ULID
   (`mission_id + wp_id + field`), idempotent (a re-run seeds nothing). The seed ULID MUST order
   **after** the `claimed` transition it annotates at equal `at` (FR-002 partition; the WP01 reducer
@@ -120,12 +129,13 @@ run, corrupt seed aborts before cutover) and **NFR-002** (idempotent, 100% count
 - **Legacy fallback readers (T013 zero-reader targets; do NOT delete — WP10 does):**
   `workflow_cores.py:328-348` `resolve_review_feedback_context` reads frontmatter `review_status`
   (`:340`) / `review_feedback` (`:341`), returning a `"frontmatter"` source when `review_status ==
-  "has_feedback"` (`:342-346`); `done_bookkeeping.py:95-113` `_extract_done_evidence` reads
+  "has_feedback"` (`:342-346`); `_extract_done_evidence` at **`src/specify_cli/merge/done_bookkeeping.py:95`**
+  (`:95-113`, note the `merge/` subtree — **not** a top-level `done_bookkeeping.py`) reads
   `meta.reviewed_by` (`:104`) / `meta.review_status` (`:105`), synthesising `DoneEvidence` when
   approved. Both read exactly the fields `MUTABLE_FIELDS` strips — once stripped + backfilled they
   become permanently-empty (zero-reader) paths.
 
-### Subtask T010: Extend `MUTABLE_FIELDS`; move `history` out of `STATIC_FIELDS`; retire `progress`
+### Subtask T010: Extend `MUTABLE_FIELDS` (incl. `history`); move `history` out of `STATIC_FIELDS`; retire `progress`
 
 **Purpose**: Reclassify the newly-evicted fields in the canonical stripper so a corpus strip removes
 them from frontmatter, without forking the field registry.
@@ -133,11 +143,17 @@ them from frontmatter, without forking the field registry.
 **Steps**:
 1. In `src/specify_cli/migration/strip_frontmatter.py`, extend `MUTABLE_FIELDS` (`:23-34`) with
    `shell_pid_created_at`, the `review_artifact_override_*` field name(s) (enumerate the concrete keys
-   — mirror the exact frontmatter key names the write half in `tasks_materialization.py` used), and
-   `reviewer_shell_pid`. Do **not** fork the set; extend it in place.
-2. Move `history` **out** of `STATIC_FIELDS` (`:56`). Per FR-010 `history[]` is dead and mis-filed;
-   removing it from the static allowlist is step one — the actual outright deletion of `history[]` and
-   its writer `add_history_entry` is WP06/IC-06 territory, not here. This WP only reclassifies.
+   — mirror the exact frontmatter key names the write half in `tasks_materialization.py` used),
+   `reviewer_shell_pid`, **and `history`**. Do **not** fork the set; extend it in place.
+2. Move `history` **out** of `STATIC_FIELDS` (`:56`) **and add it to `MUTABLE_FIELDS`** (step 1) — the
+   two moves are a pair. `STATIC_FIELDS` is documentation/allowlist only; the stripper is driven purely
+   by `MUTABLE_FIELDS`, so removing `history` from `STATIC_FIELDS` **without** adding it to
+   `MUTABLE_FIELDS` leaves the field orphaned in frontmatter (the stripper never removes it — the exact
+   strip gap this fixes). Adding `history` to `MUTABLE_FIELDS` alongside `shell_pid_created_at`/
+   `review_artifact_override_*`/`reviewer_shell_pid` makes the corpus strip remove it, mirroring how
+   `progress` is stripped. Per FR-010 `history[]` is dead and mis-filed; this WP only *reclassifies +
+   strips* it — the actual outright deletion of the `history[]` field and its writer `add_history_entry`
+   is **WP07/T028** territory, not here.
 3. `progress` is already in `MUTABLE_FIELDS` (`:29`); FR-010 says **retire `progress` explicitly, do
    not silently drop**. Add a comment/marker (or a dedicated retired-fields note) documenting the
    retirement so a reader knows it was deliberate, and ensure the strip removes it (it already does via
@@ -149,9 +165,11 @@ them from frontmatter, without forking the field registry.
 
 **Validation checklist**:
 - [ ] `MUTABLE_FIELDS` contains `shell_pid_created_at`, `review_artifact_override_*`,
-      `reviewer_shell_pid` (and still `progress`, `shell_pid`, `agent`, `assignee`, review fields).
-- [ ] `history` is no longer in `STATIC_FIELDS`.
-- [ ] A strip over a fixture WP removes the newly-added mutable keys and leaves static intent intact.
+      `reviewer_shell_pid`, **and `history`** (and still `progress`, `shell_pid`, `agent`, `assignee`,
+      review fields).
+- [ ] `history` is no longer in `STATIC_FIELDS` **and IS in `MUTABLE_FIELDS`** (both halves of the move).
+- [ ] A strip over a fixture WP removes the newly-added mutable keys — **including `history`** — and
+      leaves static intent intact (assert the stripped frontmatter has no `history` key).
 
 **Edge cases**: a WP missing a given mutable key strips cleanly (no `KeyError`); `review_artifact_
 override_*` may be multiple concrete keys — enumerate all, do not glob-guess.
@@ -213,6 +231,12 @@ field's reader authority activates; abort on any mismatch or fault-injected corr
    materialise the WP01 reduced snapshot and compare, per WP and per field, against the value the OLD
    frontmatter/checkbox reader produces (the pre-eviction read path). Compare by **count** (same number
    of WPs/subtasks/notes/tracker_refs) **and value** (each slot equals the legacy-derived value).
+   **Verify against the UN-stripped frontmatter.** The old frontmatter/checkbox reader in this compare
+   MUST read the **un-stripped** frontmatter (or an independently reconstructed legacy value). Do
+   **not** run `strip_mutable_fields` before `verify` — if the strip runs first the old reader reads
+   empty frontmatter and every field trivially "matches" empty → **vacuous parity → false green** that
+   masks a real backfill mismatch. Enforce the pinned order `backfill → verify(pre-strip) → cutover →
+   strip`; the strip is a *downstream* step, never a precondition of verify.
 2. On **any** mismatch, raise/return a fail-closed result that **aborts before reader cutover** — the
    caller (and the eventual field verticals) must not proceed. Never downgrade a mismatch to a warning.
 3. Support **fault injection** for the test: a corrupted seed value (e.g. a mangled `shell_pid` or a
@@ -229,6 +253,9 @@ field's reader authority activates; abort on any mismatch or fault-injected corr
 - [ ] A fault-injected corrupt seed makes verify abort (no-go), asserted in the test.
 - [ ] Verify compares both count and value (a value-only or count-only check is insufficient — test a
       count-match/value-mismatch case).
+- [ ] Verify runs against the **un-stripped** frontmatter — assert that `strip_mutable_fields` has NOT
+      run at verify time (a strip-then-verify ordering would produce a vacuous false green; test that
+      inverting the order is caught).
 
 **Edge cases**: an empty mission (no WPs) verifies `ok` trivially; a WP present in the snapshot but
 absent from the legacy reader (or vice versa) is a count mismatch → abort.
@@ -236,19 +263,22 @@ absent from the legacy reader (or vice versa) is a count mismatch → abort.
 ### Subtask T013: Zero-reader verification for `history[]` / `progress`
 
 **Purpose**: Prove `history[]` and `progress` have **zero** live readers before they are deleted (the
-deletion itself is WP06/WP10; this WP produces the proof).
+`history[]`/`add_history_entry` deletion is WP07/T028, the fallback deletion is WP10; this WP produces
+the proof).
 
 **Steps**:
 1. Add a zero-reader verification (a test and/or an import/call-graph assertion under
    `tests/unit/migration/` or `tests/architectural/`) proving no live reader anywhere consumes
    `history[]` frontmatter or `progress` — not merely no *authority*-read. Reference the known legacy
-   readers documented above (`workflow_cores.py:328-348`, `done_bookkeeping.py:95-113`) to confirm they
-   read `review_status`/`review_feedback`/`reviewed_by` (which ARE zero-reader after strip+backfill) and
+   readers documented above (`workflow_cores.py:328-348`, and `_extract_done_evidence` at
+   **`src/specify_cli/merge/done_bookkeeping.py:95`** — the `merge/` subtree, so the zero-reader grep
+   targets `src/specify_cli/merge/done_bookkeeping.py`, not a top-level file) to confirm they read
+   `review_status`/`review_feedback`/`reviewed_by` (which ARE zero-reader after strip+backfill) and
    that neither `history[]` nor `progress` has any remaining consumer.
 2. Do **not** delete `add_history_entry`, the `history[]` field, or the fallbacks — those deletes are
-   WP06 (`add_history_entry` + `__all__` + `test_no_dead_symbols` allowlist) and WP10
-   (`workflow_cores`/`done_bookkeeping` fallbacks). Your deliverable is the **verification** that makes
-   those deletes safe.
+   **WP07/T028** (`add_history_entry` + `__all__` + `test_no_dead_symbols` allowlist) and WP10
+   (`workflow_cores`/`merge/done_bookkeeping` fallbacks). Your deliverable is the **verification** that
+   makes those deletes safe.
 
 **Files**: `tests/unit/migration/test_backfill_runtime_state.py` (zero-reader assertions) and/or a
 targeted grep-based assertion helper in the backfill module.
@@ -302,8 +332,9 @@ with a never-claimed WP exercises the T011 clamp-anchor fallback.
 ## Definition of Done
 
 - [ ] `MUTABLE_FIELDS` extended with `shell_pid_created_at`/`review_artifact_override_*`/
-      `reviewer_shell_pid`; `history` moved out of `STATIC_FIELDS`; `progress` retired explicitly
-      (FR-010, T010).
+      `reviewer_shell_pid`/`history`; `history` moved out of `STATIC_FIELDS` **and into
+      `MUTABLE_FIELDS`** so the corpus strip removes it (mirroring `progress`); `progress` retired
+      explicitly (FR-010, T010).
 - [ ] `backfill_runtime_state.py` seeds claim transitions + `InnerStateChanged` annotations with
       deterministic namespaced ULIDs, idempotently, clamping subtask `at` to `claimed` (FR-011, T011).
 - [ ] `verify_backfill` is fail-closed: count+value parity vs the OLD reader; any mismatch or corrupt
@@ -315,7 +346,7 @@ with a never-claimed WP exercises the T011 clamp-anchor fallback.
 - [ ] `pytest tests/integration/test_migration_backfill.py tests/unit/migration`, `ruff check
       src/specify_cli/migration/`, and `mypy src/specify_cli/migration/` are green.
 - [ ] No changes outside `owned_files` (in particular: no deletes in `workflow_cores.py`,
-      `done_bookkeeping.py`, or `frontmatter.py`).
+      `src/specify_cli/merge/done_bookkeeping.py`, or `frontmatter.py`).
 
 ## Risks
 
@@ -329,8 +360,8 @@ with a never-claimed WP exercises the T011 clamp-anchor fallback.
   seed-chronology precondition asserted. If a consumer later reads completion time, the contract breaks
   — assert the precondition now.
 - **Premature deletion.** Deleting the legacy fallbacks or `history[]`/`add_history_entry` here would
-  clobber un-migrated on-disk WPs. Those deletes are WP06/WP10, gated on this backfill — do not pull
-  them forward.
+  clobber un-migrated on-disk WPs. Those deletes are WP07/T028 (`history[]`/`add_history_entry`) and
+  WP10 (fallbacks), gated on this backfill — do not pull them forward.
 
 ## Reviewer guidance
 
@@ -342,6 +373,6 @@ with a never-claimed WP exercises the T011 clamp-anchor fallback.
 - Confirm the fault-injection test actually corrupts a seed and observes a terminal abort (non-vacuous).
 - Confirm the clamp is honest (subtask `at == claimed`) and the no-completion-time-reader precondition
   is asserted, not assumed.
-- Confirm nothing was deleted that belongs to WP06/WP10 (`add_history_entry`, `history[]`, the
-  `workflow_cores`/`done_bookkeeping` fallbacks).
+- Confirm nothing was deleted that belongs to WP07/T028 (`add_history_entry`, `history[]`) or WP10
+  (the `workflow_cores`/`merge/done_bookkeeping` fallbacks).
 - Confirm no `Path.cwd()` in the new module.

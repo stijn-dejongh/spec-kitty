@@ -16,6 +16,7 @@ subtasks:
 - T020
 - T021
 agent: claude
+model: claude-sonnet-5
 history: []
 agent_profile: python-pedro
 authoritative_surface: src/specify_cli/core/stale_detection.py
@@ -61,8 +62,12 @@ construction (NFR-004).
 - **FR-005**: claim-liveness (`stale_detection.py:402-403`) and model readers
   `WorkPackage.{shell_pid,agent,assignee}` (`task_utils/support.py:287-296`) +
   `WPMetadata` coercion resolve from the reduced snapshot; the frontmatter fallback is
-  **retained behind a flag until backfill is verified, then removed** (removal is WP10's
-  IC-07 closeout — do NOT delete the fallback here).
+  **retained behind a flag until backfill is verified, then torn down by this WP**.
+  **Flag-teardown ownership**: WP05 OWNS the teardown of the
+  `status/emit.py::_phase1_dual_write_enabled` dual-write usage in its own files
+  (`stale_detection.py`) at this vertical's completion — gated after its reader cutover
+  verifies (WP03 fail-closed verify has passed). This is **NOT** deferred to WP10; WP10
+  only **verifies** via the FR-013 arch test that no dual-write path remains.
 - **C-001 (symmetric window)**: this is the **reader** half of a per-field atomic
   switch. A snapshot-first reader must never consult the frontmatter fallback once a
   slot is backfilled — hence the flag gates authority, not a permanent dual read.
@@ -76,8 +81,11 @@ construction (NFR-004).
 - **Key facts (two-sided liveness + fallback flag)**: the test must exercise *both*
   polarities off the **snapshot** — a live-then-dead flip driven by mutating the
   snapshot slot, not the frontmatter. The frontmatter read stays as a flagged fallback
-  (this WP keeps it; WP10 deletes it). FR-013 forbids a second permanent authority read
-  path — the snapshot is the single authority once the flag resolves to it.
+  only during the migration window; **WP05 tears down its own dual-write fallback in
+  `stale_detection.py`** once its reader cutover verifies (gated on WP03's fail-closed
+  verify) — WP10 does not delete it, it only verifies via the FR-013 arch test. FR-013
+  forbids a second permanent authority read path — the snapshot is the single authority
+  once the flag resolves to it.
 
 ### Subtask T018 — Claim-liveness `stale_detection` → snapshot (behind flag)
 
@@ -115,10 +123,14 @@ today's frontmatter behavior, zero regression.
 live-PID trust (D3a, `:249-250`). Recycled PID (baseline mismatch) → not alive. No
 worktree → `fresh` early return unchanged (`:296-301`).
 
-### Subtask T019 — `WorkPackage.{shell_pid,agent,assignee}` → snapshot
+### Subtask T019 — `WorkPackage.{shell_pid,agent,assignee}` + Activity Log / History render → snapshot
 
 **Purpose**: The `WorkPackage` model properties that liveness and orchestration read
-must return the event-sourced values, not `extract_scalar` off frontmatter bytes.
+must return the event-sourced values, not `extract_scalar` off frontmatter bytes — **and**
+the `## Activity Log` / `## History` render that `task_utils/support.py` produces must be
+re-sourced to fold `notes`/history from the reduced snapshot (the event log), not the
+WP-file body, so **SC-004 ("renders from events with no content loss") is actually
+delivered** by this vertical.
 
 **Steps** (file:line-grounded in `task_utils/support.py`):
 1. `WorkPackage` currently exposes `assignee` (`:287-288`), `agent` (`:291-292`),
@@ -135,18 +147,37 @@ must return the event-sourced values, not `extract_scalar` off frontmatter bytes
    the caller contract that `stale_detection` and orchestration already depend on).
 4. Do **not** re-point `title`/`work_package_id` (`:279-284`) — those are static
    design-intent and stay frontmatter-canonical (field-authority table).
+5. **SC-004 render re-point**: locate the `## Activity Log` / `## History` render in
+   `task_utils/support.py` and re-source it to fold the `notes`/history from the reduced
+   snapshot (the event-sourced `notes` slot + transition/annotation history), **not** the
+   `## Activity Log` / `## History` sections parsed out of the WP-file body. Behind the
+   FR-005 flag with the body-parse retained as the tolerated migration-window fallback,
+   consistent with the other readers here. The render must fold from events with **no
+   content loss** — every note/history entry the body carried must still appear.
+6. Reuse the same canonical reducer entry as the property re-points (steps 1-2) — do NOT
+   introduce a second parser/read path for the render (#2093 / FR-013).
 
 **Files**: `src/specify_cli/task_utils/support.py`.
 
+**Out-of-map note**: `cli/commands/agent/tasks.py` **also** renders `## Activity Log` /
+`## History` and is **NOT** in this WP's `owned_files`. If that renderer must be
+re-sourced in lockstep to keep SC-004 whole, flag it to the reviewer/orchestrator as a
+**documented out-of-map edit** (or a WP10 follow-up) rather than silently widening
+ownership. Do not edit it without that explicit sign-off.
+
 **Validation**: `WorkPackage.shell_pid` returns the snapshot PID (as `str`) when the
 flag resolves to the snapshot; `agent`/`assignee` likewise. With the flag off, returns
-the frontmatter value. Type signatures unchanged (`mypy` clean).
+the frontmatter value. Type signatures unchanged (`mypy` clean). The rendered `## Activity
+Log` / `## History` (flag on) reproduces every note/history entry from the event-sourced
+snapshot with no content loss; the WP10 golden test (`test_render_parity_golden.py`) is
+the mission-level parity guard.
 
 **Edge cases**: a WP file whose frontmatter has no `work_package_id` still resolves the
 id via `path.stem` (matches `lane`). Empty snapshot slot → `None` (or flagged
 fallback). Do not eagerly reduce on every property access if it is hot — cache/reduce
 once per `WorkPackage` if the existing pattern allows, but never at the cost of
-correctness.
+correctness. A WP whose body carries legacy `## Activity Log` lines not yet backfilled
+must still render them via the tolerated fallback (no content loss mid-migration).
 
 ### Subtask T020 — `WPMetadata` coercion → snapshot
 
@@ -229,18 +260,27 @@ parallel band with WP06/WP07/WP08/WP09; owns disjoint files so no writer-race wi
   `shell_pid_created_at`, frontmatter behind the FR-005 flag; conservative + timestamp
   heuristics unchanged.
 - T019: `WorkPackage.{shell_pid,agent,assignee}` return snapshot values (flag on),
-  frontmatter fallback (flag off); return types unchanged; static fields untouched.
+  frontmatter fallback (flag off); return types unchanged; static fields untouched. The
+  `## Activity Log` / `## History` render is re-sourced to fold `notes`/history from the
+  reduced snapshot (SC-004, no content loss); the unowned `cli/commands/agent/tasks.py`
+  renderer is flagged as a documented out-of-map edit if it must move in lockstep.
 - T020: `WPMetadata` runtime-field read authority is the snapshot; inert IC-08 fields
   left in place; `agent_profile`/authored fields still frontmatter-canonical.
 - T021: two-sided snapshot liveness test lands and passes (live + dead-flip + resume
   control).
-- The FR-005 fallback flag is **retained** (removal is WP10) — no fallback deleted here.
+- **WP05 removes its own dual-write fallback** (`_phase1_dual_write_enabled` usage in
+  `stale_detection.py`) once its reader cutover verifies (gated on WP03's fail-closed
+  verify); **WP10 only verifies** this via the FR-013 arch test — WP05 does not defer its
+  own teardown to WP10.
 - `pytest` (touched paths + new test), `ruff`, `mypy` all clean.
 
 ## Risks
 
 - **Deleting the fallback too early**: removing the frontmatter path before WP03's
-  verify + WP10's closeout strands un-migrated on-disk WPs. Keep it flagged.
+  fail-closed verify passes strands un-migrated on-disk WPs. Keep it flagged **until this
+  WP's reader cutover verifies**, then WP05 tears down its own dual-write in
+  `stale_detection.py` (this teardown is owned here, not deferred to WP10 — WP10 only
+  verifies via the FR-013 arch test).
 - **One-sided test theatre**: a live-only assertion can pass on a frontmatter
   passthrough. The dead-side flip **must** be driven by the snapshot mutation (SC-002).
 - **Type drift at the boundary**: snapshot stores `shell_pid: int`; `WorkPackage.shell_
@@ -253,7 +293,13 @@ parallel band with WP06/WP07/WP08/WP09; owns disjoint files so no writer-race wi
 
 - Verify the dead-side of T021 flips stale by mutating **only** the snapshot PID (assert
   frontmatter bytes unchanged) — the two-sided proof is the whole point.
-- Confirm the FR-005 flag still exists and gates authority; nothing deleted.
+- Confirm WP05 tears down its **own** `_phase1_dual_write_enabled` dual-write fallback in
+  `stale_detection.py` once its reader cutover verifies (gated on WP03) — this teardown is
+  owned here, not punted to WP10; WP10 only verifies via the FR-013 arch test.
+- Confirm the `## Activity Log` / `## History` render folds from the event-sourced
+  snapshot with no content loss (SC-004), and that any lockstep edit to the unowned
+  `cli/commands/agent/tasks.py` renderer was surfaced as a documented out-of-map edit,
+  not made silently.
 - Confirm `stale_detection` still applies the timestamp heuristic when no PID is
   provably alive (no behavior regression when the flag is off).
 - Confirm `agent_profile` and authored/static fields still resolve from frontmatter

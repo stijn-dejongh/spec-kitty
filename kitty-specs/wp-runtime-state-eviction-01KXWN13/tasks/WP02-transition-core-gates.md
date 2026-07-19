@@ -15,6 +15,7 @@ subtasks:
 - T008
 - T009
 agent: claude
+model: claude-opus-4-8
 history: []
 agent_profile: python-pedro
 authoritative_surface: src/specify_cli/cli/commands/agent/
@@ -45,13 +46,21 @@ feel tempted to hard-code an edge list, stop — that is the exact anti-pattern 
 
 Fix the false-force provenance bug and re-source the subtask gate, both of which live in
 `tasks_transition_core.py`. First: stop `build_transition_plan` from auto-stamping `force=True` on the
-five evidence-gated review-rejection backward edges — decided by **asking the FSM** whether the edge is
-legal force-free given the supplied evidence, never by a frozen edge list (so it cannot rot if the
-matrix changes). Second: re-source `_guard_subtasks` to read subtask completion from the reduced
-snapshot (WP01's `subtasks` slot) instead of `tasks.md` bytes. Land this early — right after WP01 — so
-every writer WP rebases onto corrected force/gate logic instead of racing it on shared files. The WP is
-proven by a persisted-layer force-provenance regression driven through the **real** move-task path, plus
-re-pointed existing plan-level force tests.
+**three plan-reachable** evidence-gated review-rejection backward edges (`in_progress→planned`,
+`approved→in_progress`, `approved→planned`) — decided by **asking the FSM** whether the edge is legal
+force-free given the supplied evidence, never by a frozen edge list (so it cannot rot if the matrix
+changes). To carry review evidence in, `build_transition_plan` gains an **optional `review_result`
+param** (default `None`); WP02 only threads the evidence it already has at the plan layer (`reason`/
+`review_feedback_pointer`, `arb_review_ref`) into the FSM query for those three edges. The two
+`in_review→*` edges need a **structured `review_result`** that is **not available at the plan layer
+today** (the signature carries only the `review_feedback_pointer`/`arb_review_ref` scalars, and the
+caller that could construct it — `tasks_move_task.py:1302` — is **WP06-owned**), so those two edges and
+the construction/threading of `review_result` are **WP06's scope**, not WP02's. Second: re-source
+`_guard_subtasks` to read subtask completion from the reduced snapshot (WP01's `subtasks` slot) instead
+of `tasks.md` bytes. Land this early — right after WP01 — so every writer WP rebases onto corrected
+force/gate logic. The WP is proven by a persisted-layer force-provenance regression driven through the
+**real** move-task path over the three edges (plus a genuine-force positive control), plus re-pointed
+existing plan-level force tests.
 
 ## Context
 
@@ -60,10 +69,20 @@ re-pointed existing plan-level force tests.
 `plan.md`. Contract of record: `contracts/emit-force.md`.
 
 **Requirements owned here**: FR-015 (ask-the-FSM force suppression; edge-specific evidence; re-point
-existing tests; persisted assertion) and FR-003's gate half (`_guard_subtasks` re-source to the reduced
-snapshot). Success criterion **SC-007** (persisted `StatusEvent.force` falsy for the five edges + a
-genuine-force positive control, via the real move-task entry point) and **NFR-003** (0 false-force
-stamps).
+existing tests; persisted assertion) — **scoped to the three plan-reachable edges**
+(`in_progress→planned`, `approved→in_progress`, `approved→planned`) — and FR-003's gate half
+(`_guard_subtasks` re-source to the reduced snapshot). Success criterion **SC-007** is **split by
+layer**: WP02's persisted-force regression covers the **three** plan-reachable edges + a genuine-force
+positive control via the real move-task entry point; **WP06 extends SC-007 to all five** once it
+constructs and threads the structured `review_result` for the two `in_review→*` edges. **NFR-003** (0
+false-force stamps) holds across the split.
+
+**Explicitly moved to WP06** (do not implement here): the two `in_review→*` edges
+(`in_review→planned`, `in_review→in_progress`) and the construction/threading of the structured
+`review_result` object (reviewer + verdict + reference). WP02 only *adds the optional `review_result`
+param* to `build_transition_plan`'s signature so WP06 has the seam to thread into; WP02 leaves it
+defaulting to `None` and never populates it, because the caller `tasks_move_task.py:1302` that would
+build it is WP06-owned.
 
 **Design-of-record facts you must honour**:
 
@@ -73,10 +92,13 @@ stamps).
   **confirmatory/illustrative — NOT the implementation surface**; encoding it literally would rot when
   the matrix changes (FR-015, close-by-construction).
 - **Evidence is edge-specific and not interchangeable.** `reason` for `in_progress→planned`;
-  `review_ref` for `approved→*`; a **structured `review_result` object** (reviewer + verdict +
-  reference) for the two `in_review→*` edges (a scalar reason is rejected at `wp_state.py:624`). The
-  FSM already enforces this via `_check_review_result` (`wp_state.py:612-629`) — you supply the
-  evidence into the context, the FSM decides legality.
+  `review_ref`/`arb_review_ref` for `approved→*` — **these two evidence types are available at the plan
+  layer today, so WP02 wires them for its three edges.** A **structured `review_result` object**
+  (reviewer + verdict + reference) is required for the two `in_review→*` edges (a scalar reason is
+  rejected at `wp_state.py:624`); that object is **not available at the plan layer today** and is
+  **WP06's** responsibility to construct/thread — WP02 does not supply it. The FSM already enforces this
+  via `_check_review_result` (`wp_state.py:612-629`) — you supply the evidence into the context, the FSM
+  decides legality.
 - **Persisted-force assertion via the real move-task.** SC-007 is the **persisted** `StatusEvent.force`
   read off `status.events.jsonl` after driving the real move-task entry point — **not** the plan
   object. Add the command-layer regression and re-point (delete-the-assertion-not-the-test) the
@@ -89,7 +111,11 @@ Point to `contracts/emit-force.md` for the exact FSM-query shape and the SC-007 
 ### Current wiring (grounded)
 
 - `build_transition_plan` is defined at `tasks_transition_core.py:173` (keyword-only signature:
-  `old_lane, target_lane, force, review_feedback_pointer, arb_review_ref, note_text`).
+  `old_lane, target_lane, force, review_feedback_pointer, arb_review_ref, note_text`). **Note the
+  signature carries only the `review_feedback_pointer`/`arb_review_ref` scalars — there is no
+  `review_result` param today.** WP02 adds an **optional `review_result` param** (default `None`) as the
+  seam WP06 will thread the structured object into; WP02 itself never populates it (the caller
+  `tasks_move_task.py:1302` that constructs it is WP06-owned).
 - `tasks_transition_core.py:210` — `emit_force = force` (baseline mirrors the `--force` flag).
 - `tasks_transition_core.py:218-219` — the bug: `if not force and _is_backward_transition(old_lane,
   canonical_lane): emit_force = True`. Lines 220-230 then synthesise the `"backward rewind: <old> ->
@@ -117,18 +143,26 @@ Point to `contracts/emit-force.md` for the exact FSM-query shape and the SC-007 
 evidence-gated review-rejection edges persist an honest, force-free transition.
 
 **Steps**:
-1. In `src/specify_cli/cli/commands/agent/tasks_transition_core.py`, locate the auto-promotion at
-   `tasks_transition_core.py:218-219`. Replace the unconditional `emit_force = True` with the FSM query
-   from `contracts/emit-force.md`:
+1. In `src/specify_cli/cli/commands/agent/tasks_transition_core.py`, first add an **optional
+   `review_result` param** (default `None`) to `build_transition_plan`'s keyword-only signature
+   (`tasks_transition_core.py:173`) — the seam WP06 threads its structured object into. WP02 leaves it
+   `None`. Then locate the auto-promotion at `tasks_transition_core.py:218-219` and replace the
+   unconditional `emit_force = True` with the FSM query from `contracts/emit-force.md`:
    ```
    if not force and _is_backward_transition(old_lane, canonical_lane):
        legal_force_free, _ = validate_transition(old_lane, canonical_lane, ctx_with_evidence)
        emit_force = not legal_force_free
    ```
-   where `ctx_with_evidence` is a `GuardContext` (`transitions.py:80`) populated with the edge-specific
-   evidence already available to `build_transition_plan`: the `reason`/`review_feedback_pointer`
-   (`in_progress→planned`), `arb_review_ref` (`approved→*`), and the structured `review_result` (the
-   `in_review→*` edges). Import `validate_transition` from `status.transitions`.
+   where `ctx_with_evidence` is a `GuardContext` (`transitions.py:80`) populated with the **plan-layer
+   evidence WP02 actually has**: the `reason`/`review_feedback_pointer` (`in_progress→planned`) and
+   `arb_review_ref` (`approved→*`). Thread `review_result` into the context too **when supplied**, but in
+   WP02 it is always `None` — so the two `in_review→*` edges are FSM-rejected force-free and **stay
+   `emit_force = True`** here (honest: WP02 has no valid evidence for them). That is the intended WP02
+   behaviour; **WP06** populates `review_result` and flips those two edges force-free. Import
+   `validate_transition` from `status.transitions`. Note the query mechanism is edge-agnostic (it asks
+   the FSM for *any* backward edge) — WP02 does **not** hard-code a three-edge list; only the *evidence
+   it supplies* differs, so the three plan-reachable edges resolve force-free and the two `in_review→*`
+   edges do not until WP06 supplies their evidence.
 2. Preserve the reason synthesis at `tasks_transition_core.py:220-230` — an honest force-free backward
    transition still carries its `"backward rewind: ..."` reason and any feedback pointer / user note.
    Only the `force` bit changes, not the audit narrative.
@@ -143,16 +177,21 @@ evidence-gated review-rejection edges persist an honest, force-free transition.
 **Files**: `src/specify_cli/cli/commands/agent/tasks_transition_core.py`.
 
 **Validation checklist**:
-- [ ] The five evidence-gated edges resolve `emit_force == False` **at the plan layer** when supplied
-      their edge-specific evidence.
+- [ ] The **three** plan-reachable edges (`in_progress→planned`, `approved→in_progress`,
+      `approved→planned`) resolve `emit_force == False` **at the plan layer** when supplied their
+      edge-specific evidence (`reason`/`review_feedback_pointer`, `arb_review_ref`).
+- [ ] With `review_result=None` (the WP02 default), the two `in_review→*` edges resolve
+      `emit_force == True` (WP06 flips them — not this WP).
 - [ ] A genuine-force edge (e.g. leaving `done`) still resolves `emit_force == True`.
-- [ ] No hard-coded five-edge tuple/set/list appears anywhere (grep the diff).
+- [ ] `build_transition_plan` accepts an optional `review_result` param (default `None`).
+- [ ] No hard-coded edge tuple/set/list appears anywhere (grep the diff) — the FSM query is edge-agnostic.
 - [ ] The `"backward rewind: ..."` reason is unchanged for the force-free edges.
 
 **Edge cases**: an `in_review→planned` supplied only a **scalar** `reason` (no structured
 `review_result`) is FSM-rejected force-free (`wp_state.py:624`) → `emit_force` stays `True` (honest —
-the caller did not supply valid evidence); explicit `--force=True` short-circuits at
-`tasks_transition_core.py:210` before the query (unchanged); a forward edge never enters the branch.
+the caller did not supply valid evidence; this is exactly WP02's `review_result=None` state for the two
+`in_review→*` edges); explicit `--force=True` short-circuits at `tasks_transition_core.py:210` before the
+query (unchanged); a forward edge never enters the branch.
 
 ### Subtask T008: `_guard_subtasks` re-source to the reduced snapshot (FR-003)
 
@@ -206,14 +245,21 @@ persisted-layer regression through the real move-task entry point.
      force-free backward edges.
 2. Re-point `tests/specify_cli/cli/commands/agent/test_tasks_backward_emit.py` (end-to-end via Typer
    `CliRunner`, reading emitted `StatusEvent.force` off `status.events.jsonl`). The backward-rewind
-   assertions currently expect `force is True` (`:348,:395,:445,:529,:556`); flip the **evidence-gated
-   review-rejection** edges to `force is False`, keep the genuine-force edges (`:205` and the explicit
-   `--force` `"Force move to ..."` path at `:351-361`) truthy as positive controls.
-3. Create `tests/regression/test_2684_force_provenance.py` (SC-007): drive each of the five
-   evidence-gated edges through the **real move-task entry point** (Typer `CliRunner`, not the plan
-   object), read the **persisted** `StatusEvent.force` off `status.events.jsonl`, assert falsy for all
-   five with correct edge-specific evidence, and assert a retained genuine-force edge (e.g. leaving
-   `done`) persists `force` truthy (positive control). Register the `regression` marker per `pytest.ini`.
+   assertions currently expect `force is True` (`:348,:395,:445,:529,:556`); flip **only the three
+   plan-reachable evidence-gated edges** (`in_progress→planned`, `approved→in_progress`,
+   `approved→planned`) to `force is False`. **Leave the two `in_review→*` edges asserting `force is
+   True`** — WP02 supplies no `review_result`, so they legitimately stay force-stamped until WP06 flips
+   them (do not touch those assertions here; WP06 re-points them). Keep the genuine-force edges (`:205`
+   and the explicit `--force` `"Force move to ..."` path at `:351-361`) truthy as positive controls.
+3. Create `tests/regression/test_2684_force_provenance.py` (SC-007, **WP02 slice = three edges**): drive
+   each of the **three** plan-reachable evidence-gated edges through the **real move-task entry point**
+   (Typer `CliRunner`, not the plan object), read the **persisted** `StatusEvent.force` off
+   `status.events.jsonl`, assert falsy for all three with correct edge-specific evidence, and assert a
+   retained genuine-force edge (e.g. leaving `done`) persists `force` truthy (positive control).
+   Optionally add the two `in_review→*` edges as **truthful-force controls** for the WP02 window (force
+   still truthy because no `review_result` is threaded). **WP06 extends this same file to assert the two
+   `in_review→*` edges force-free** once it constructs/threads `review_result` — leave that extension to
+   WP06; do not pre-flip them here. Register the `regression` marker per `pytest.ini`.
 
 **Files**: `tests/specify_cli/cli/commands/agent/test_tasks_transition_core.py` (re-point),
 `tests/specify_cli/cli/commands/agent/test_tasks_backward_emit.py` (re-point),
@@ -223,8 +269,9 @@ persisted-layer regression through the real move-task entry point.
 - [ ] No re-pointed test was **deleted** — only its expected value corrected (the tests still exist and
       still assert force provenance).
 - [ ] The new regression reads persisted force from the jsonl, not from the plan object.
-- [ ] Each of the five edges is supplied its correct evidence type; a scalar-reason `in_review→*` case
-      is included as a truthful-force control.
+- [ ] Each of the **three** plan-reachable edges is supplied its correct evidence type and asserts force
+      falsy; the two `in_review→*` edges (no `review_result` in WP02) are left/asserted force-truthy as
+      the WP02-window control, with their force-free flip deferred to WP06.
 
 **Edge cases**: an edge that is force-free-legal but where the caller omits evidence → persisted `force`
 truthy (honest); the genuine-force positive control must fail loudly if T007 over-suppresses.
@@ -234,20 +281,33 @@ truthy (honest); the genuine-force positive control must fail loudly if T007 ove
 - **Planning base branch**: `mission-prep/2684-wp-runtime-state-eviction`.
 - **Final merge target**: `mission-prep/2684-wp-runtime-state-eviction`.
 - **Strategy**: `lane-per-wp`. Execution worktrees allocated per computed lane from `lanes.json`.
-  **Land order**: WP02 depends on WP01 and MUST land before the writer WPs (WP04/WP06/WP07/WP08/WP09) so
-  they rebase onto corrected `tasks_transition_core.py` force/gate logic instead of racing it (plan
-  "Land order note" — avoid `tasks_transition_core.py`/`tasks_move_task.py`/`emit.py` merge races).
+  **Land order**: WP02 depends on WP01 and MUST land before the writer WPs (WP04/WP06/WP07/WP08/WP09).
+  The reason is **logical dependency, not a merge race**: WP02 owns `tasks_transition_core.py` alone, so
+  there is no shared-file contention to avoid (the "avoid `tasks_transition_core.py`/
+  `tasks_move_task.py`/`emit.py` merge races" rationale in the older land-order note is factually wrong —
+  those files are owned by *different* WPs and never co-edited). The real reason is that WP04 and WP06
+  build **on top of** WP02's corrected force-provenance and re-sourced subtask gate: WP06 threads
+  `review_result` into the seam WP02 adds and extends SC-007 to the two `in_review→*` edges, and the
+  writer WPs must rebase onto the corrected force logic so they never re-introduce the false-force stamp.
+  Landing WP02 first means everyone downstream starts from honest force provenance rather than patching
+  it afterward.
 
 ## Definition of Done
 
-- [ ] `build_transition_plan` suppresses `emit_force` on FSM-legal-force-free backward edges via the
-      `validate_transition` query, with **no** hard-coded edge list (FR-015, T007).
+- [ ] `build_transition_plan` gains an optional `review_result` param (default `None`) as the seam WP06
+      threads into; WP02 never populates it (T007).
+- [ ] `build_transition_plan` suppresses `emit_force` on the **three plan-reachable** FSM-legal-force-free
+      backward edges (`in_progress→planned`, `approved→in_progress`, `approved→planned`) via the
+      `validate_transition` query, with **no** hard-coded edge list; the two `in_review→*` edges stay
+      force-truthy under WP02 (no `review_result`) and are WP06's to flip (FR-015, T007).
 - [ ] Edge-specific evidence flows into the FSM context; genuine-force edges stay truthy (T007).
 - [ ] `_guard_subtasks` decides from the reduced-snapshot `subtasks` slot and still refuses
       genuinely-incomplete WPs (FR-003, T008).
 - [ ] The enumerated plan-level force tests are **re-pointed, not deleted** (SC-007, T009).
 - [ ] `tests/regression/test_2684_force_provenance.py` asserts persisted `StatusEvent.force` falsy for
-      all five edges + a genuine-force positive control, via the real move-task path (SC-007/NFR-003).
+      the **three** plan-reachable edges + a genuine-force positive control, via the real move-task path;
+      the two `in_review→*` edges remain force-truthy controls in the WP02 window, with **WP06 extending
+      SC-007 to all five** (SC-007/NFR-003).
 - [ ] `pytest tests/specify_cli/cli/commands/agent/test_tasks_transition_core.py
       tests/specify_cli/cli/commands/agent/test_tasks_backward_emit.py
       tests/regression/test_2684_force_provenance.py`, `ruff check`, and `mypy` on the module are green.
@@ -256,20 +316,25 @@ truthy (honest); the genuine-force positive control must fail loudly if T007 ove
 
 ## Risks
 
-- **Hard-coding the five edges.** The single biggest anti-pattern here; the design explicitly forbids it
-  because the matrix can change. Ask the FSM.
+- **Hard-coding an edge list.** The single biggest anti-pattern here; the design explicitly forbids it
+  because the matrix can change. Ask the FSM. The query is edge-agnostic — WP02 covers the three
+  plan-reachable edges purely by *which evidence it supplies*, never by enumerating edges.
 - **Over-suppression.** If `ctx_with_evidence` is under-populated, a genuinely-force edge could go
   force-free (silent provenance loss the other way). The genuine-force positive control guards this —
   keep it.
 - **Evidence type confusion.** `in_review→*` needs a structured `review_result`, not a scalar reason
-  (`wp_state.py:624`). Supplying the wrong type makes the FSM reject force-free → force stays truthy,
-  which is *correct* but easy to misread as a bug. Test both.
+  (`wp_state.py:624`). In WP02 that object is never supplied (it is WP06's to construct/thread), so those
+  two edges stay force-truthy — *correct* for the WP02 window, but easy to misread as a bug or to "fix"
+  by over-suppressing. Do not flip them here; leave them to WP06. Test that they stay truthy under WP02.
 - **Cross-file bleed.** The subtask reader lives upstream in files this WP does not own. Re-source the
   **consumer** (`_guard_subtasks`) only; do not touch `tasks_move_task.py`/`tasks_shared.py`.
 
 ## Reviewer guidance
 
-- Grep the diff for any literal set/list of the five lane pairs — its presence is an automatic reject.
+- Grep the diff for any literal set/list of lane pairs (three or five) — its presence is an automatic
+  reject; the FSM query must stay edge-agnostic.
+- Confirm WP02 flips exactly the **three** plan-reachable edges and leaves the two `in_review→*` edges
+  force-truthy (no `review_result` populated) — flipping them here is out of scope (WP06 owns it).
 - Confirm the persisted-force regression reads `status.events.jsonl`, not `plan.emit_force`.
 - Confirm the re-pointed tests still assert provenance (they were corrected, not gutted) — count
   assertions before/after.

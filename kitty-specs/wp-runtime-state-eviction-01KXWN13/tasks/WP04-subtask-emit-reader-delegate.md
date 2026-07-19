@@ -15,14 +15,17 @@ subtasks:
 - T016
 - T017
 agent: claude
+model: claude-sonnet-5
 history: []
 agent_profile: python-pedro
 authoritative_surface: src/specify_cli/cli/commands/agent/tasks_mark_status.py
-create_intent: []
+create_intent:
+- tests/specify_cli/cli/commands/agent/test_check_unchecked_subtasks_snapshot_source.py
 execution_mode: code_change
 owned_files:
 - src/specify_cli/cli/commands/agent/tasks_mark_status.py
 - src/specify_cli/cli/commands/agent/tasks_shared.py
+- tests/specify_cli/cli/commands/agent/test_check_unchecked_subtasks_snapshot_source.py
 role: implementer
 tags: []
 ---
@@ -70,11 +73,13 @@ still unchecked at the instant of success (SC-003 / AC-3 / US1).
   WP is refused (both branches); and **the resolution source is the reduced-snapshot
   `subtasks` slot, not a `HistoryAdded` read** — the merged red test flips green for
   the right mechanism.
-- **Key facts**: WP04 turns the merged red test green. T017 asserts the snapshot
-  `subtasks` slot is the resolution source (not the pre-existing `HistoryAdded` emit
-  that `_ms_emit_history` already fires). WP04 owns **no test file** — the regression
-  test is already merged and NOT edited here; T017 is a verification-and-inspection
-  subtask.
+- **Key facts**: WP04 turns the merged red test green. WP04 **owns one net-new test
+  file** — `tests/specify_cli/cli/commands/agent/test_check_unchecked_subtasks_snapshot_source.py`
+  (in both `create_intent` and `owned_files`) — an owned unit test asserting the gate
+  follows the reduced-snapshot `subtasks` slot, NOT the pre-existing `HistoryAdded` emit
+  that `_ms_emit_history` already fires, and NOT `tasks.md` bytes (T017). The already-merged
+  regression test `test_issue_2684_subtask_completion_event_sourced.py` is NOT owned and
+  NOT edited here — it is run, not modified.
 - **Snapshot API (from WP01)**: the reduced snapshot exposes a per-WP `subtasks`
   slot (`Mapping[str, Status]`) and an `emit_inner_state_changed(...)` API on
   `status/emit.py`. Import the reducer/snapshot the same way `status/emit.py` already
@@ -144,11 +149,15 @@ completion (T015) is invisible and the gate falsely blocks.
    frontmatter `subtasks` list) for the roster, then decide checked/unchecked from the
    snapshot slot. This preserves the "which rows count" close of #2062 while moving the
    completion authority to the log.
-3. Behind the FR-005 migration flag: during the window before a WP's backfill is
-   verified, retain the `tasks.md`-checkbox read as a *tolerated fallback* (not
-   authority). Gate the snapshot-first path on the same flag WP01/WP03 expose; when the
-   flag is off, resolve purely from the snapshot. Do not introduce a second permanent
-   read path (#2093 / FR-013).
+3. Gate the snapshot-first re-source behind the shared dual-write flag
+   `status/emit.py::_phase1_dual_write_enabled` (the flag already exists — do not fork a
+   second one). During the window before WP03's fail-closed `verify` has run, the flag
+   resolves to **legacy read by default**: retain the `tasks.md`-checkbox read as the
+   *tolerated fallback* (not authority) while dual-write is enabled. Only when
+   `_phase1_dual_write_enabled` is off (post-verify cutover) does the reader resolve
+   **purely** from the snapshot. This matches the migration order (`backfill →
+   verify(pre-strip) → reader cutover`) — the reader must not front-run WP03's verify.
+   Do not introduce a second permanent read path (#2093 / FR-013).
 4. Preserve the primary-partition resolution (`TASKS_INDEX`, `:432-440`) for locating
    `feature_dir` so a coord-topology `-coord` husk cannot shadow the real primary.
 
@@ -164,36 +173,52 @@ early return when no `tasks.md`). A subtask present in the snapshot but absent f
 authored roster is ignored (roster is authority for membership). Missing/empty snapshot
 (pre-backfill) falls to the flagged fallback, never crashes.
 
-### Subtask T017 — Verify the merged red test flips green; assert snapshot is the source
+### Subtask T017 — Owned unit test: `_check_unchecked_subtasks` follows the snapshot, not `tasks.md`/`HistoryAdded`
 
 **Purpose**: Prove the headline outcome fired for the *right mechanism* — the reduced
-`subtasks` slot, not a `HistoryAdded` read.
+`subtasks` slot, not a `HistoryAdded` read and not `tasks.md` bytes — with an **owned
+unit test** (not inspection-only), so the invariant has a local guard.
 
 **Steps**:
-1. Run `pytest tests/regression/test_issue_2684_subtask_completion_event_sourced.py -x`.
-   With T015 (emit) + T016 (reader) + WP02's `_guard_subtasks` re-source landed, both
-   acceptance branches pass: log-recorded completion → `move-task WP01 --to for_review`
-   succeeds with checkboxes unchecked; genuinely-incomplete WP → refused.
-2. **Do not edit the regression test** — it is already merged and is NOT in this WP's
-   `owned_files`. If it still fails, the defect is in T015/T016 (or a WP01/WP02 API
-   mismatch) — fix your owned files, escalate an API gap to the orchestrator; never
-   patch the test to pass.
-3. Confirm-by-inspection that the resolution source is the snapshot `subtasks` slot:
-   the gate path is `_guard_subtasks` (WP02) → `_check_unchecked_subtasks`
+1. Create the net-new owned test
+   `tests/specify_cli/cli/commands/agent/test_check_unchecked_subtasks_snapshot_source.py`
+   (in both `create_intent` and `owned_files`). This is an **ownership change** for this
+   WP — the file is new and owned here.
+2. **Discriminating assertion (the crux)**: feed `_check_unchecked_subtasks` a scenario
+   where the sources **contradict** — a reduced snapshot whose `subtasks` slot records
+   the WP's subtasks **complete**, WHILE a contradicting `HistoryAdded` note and an
+   **unchecked** `tasks.md` (`- [ ]`) surface say otherwise. Assert the gate follows the
+   **snapshot** (returns `[]` — complete), NOT `tasks.md` and NOT the `HistoryAdded`
+   read. Add the mirror case: snapshot says incomplete while `tasks.md` shows `- [x]`
+   checked → assert the gate follows the snapshot and returns the incomplete ids. Only a
+   contradiction proves the source; a concordant fixture would pass off either surface.
+3. Run `pytest tests/regression/test_issue_2684_subtask_completion_event_sourced.py -x`
+   as a companion check. With T015 (emit) + T016 (reader) + WP02's `_guard_subtasks`
+   re-source landed, both acceptance branches pass: log-recorded completion → `move-task
+   WP01 --to for_review` succeeds with checkboxes unchecked; genuinely-incomplete WP →
+   refused. **Do not edit that regression test** — it is already merged and is NOT in this
+   WP's `owned_files`. If it still fails, the defect is in T015/T016 (or a WP01/WP02 API
+   mismatch) — fix your owned files, escalate an API gap to the orchestrator; never patch
+   the test to pass.
+4. The gate path is `_guard_subtasks` (WP02) → `_check_unchecked_subtasks`
    (`tasks_shared.py:412`, T016) → snapshot. The `HistoryAdded` note emitted by
-   `_ms_emit_history` must play **no** role in the gate decision. The permanent
-   assertion of this invariant is the FR-013 architectural test (WP10); T017's job is
-   to verify the wiring locally so WP10 has a green substrate.
+   `_ms_emit_history` must play **no** role in the gate decision. The permanent assertion
+   of this invariant is the FR-013 architectural test (WP10); T017's owned unit test
+   verifies the wiring locally so WP10 has a green substrate.
 
-**Files**: none created or edited (verification only).
+**Files**:
+`tests/specify_cli/cli/commands/agent/test_check_unchecked_subtasks_snapshot_source.py`
+(new, owned).
 
-**Validation**: the regression test is green; `move-task` success path shows unchanged
-`tasks.md` bytes; grepping the gate call-graph confirms no `HistoryAdded` read on the
-authority path.
+**Validation**: the new owned test is green and *fails* if `_check_unchecked_subtasks` is
+reverted to read `tasks.md`/`HistoryAdded` (non-vacuous — the contradiction fixture is the
+proof); the merged regression test is green; grepping the gate call-graph confirms no
+`HistoryAdded` read on the authority path.
 
-**Edge cases**: if the test passes but via the frontmatter fallback (flag still on),
-that is not "the right mechanism" — run it with the flag resolving to the snapshot and
-confirm it still passes.
+**Edge cases**: run the discriminating assertion with `_phase1_dual_write_enabled`
+resolving to the snapshot (post-verify cutover), so the pass is "the right mechanism" and
+not the tolerated `tasks.md` fallback. A concordant (non-contradicting) fixture is
+insufficient — it would pass off either surface; the test MUST contradict the sources.
 
 ## Branch Strategy
 
@@ -209,10 +234,15 @@ re-source + force fix) — land after both. WP02 lands early specifically so `ma
   checkbox byte-write for the canonical subtask surface is cut; the emit target is
   resolved from stored topology, never `Path.cwd()`.
 - T016: `_check_unchecked_subtasks` resolves completion from the reduced-snapshot
-  `subtasks` slot (roster still from the authored section); frontmatter fallback only
-  behind the FR-005 flag.
-- T017: `test_issue_2684_subtask_completion_event_sourced.py` is green (unedited);
-  resolution source confirmed as the snapshot slot.
+  `subtasks` slot (roster still from the authored section); `tasks.md`-checkbox fallback
+  only behind `status/emit.py::_phase1_dual_write_enabled` (default legacy read until
+  WP03 verify).
+- T017: net-new owned test
+  `tests/specify_cli/cli/commands/agent/test_check_unchecked_subtasks_snapshot_source.py`
+  lands and is green — feeds a snapshot-complete vs contradicting `HistoryAdded`/unchecked
+  `tasks.md` fixture and asserts the gate follows the **snapshot**; the merged
+  `test_issue_2684_subtask_completion_event_sourced.py` is green (unedited); resolution
+  source confirmed as the snapshot slot.
 - `pytest` (this WP's touched paths + the regression test), `ruff`, `mypy` all clean.
 - No change to the byte-frozen `--help` surface; `--json` payload shape unchanged.
 
@@ -236,7 +266,11 @@ re-source + force fix) — land after both. WP02 lands early specifically so `ma
   `mark-status`, and that `_check_unchecked_subtasks` returns `[]` for a
   log-completed-but-checkbox-unchecked WP.
 - Confirm the emit `destination_ref` derivation contains no `Path.cwd()` call.
-- Confirm the regression test file is unmodified (diff shows only the two owned source
-  files).
+- Confirm the merged `test_issue_2684_subtask_completion_event_sourced.py` is unmodified;
+  the diff shows only the two owned source files plus the net-new owned test
+  `tests/specify_cli/cli/commands/agent/test_check_unchecked_subtasks_snapshot_source.py`.
+- Confirm the new owned test is non-vacuous: it contradicts the snapshot against
+  `tasks.md`/`HistoryAdded` and asserts the gate follows the snapshot (it would fail if
+  the reader reverted to `tasks.md`).
 - Confirm no second reducer/read path was introduced — the snapshot is read via the
   same reducer entry `status/emit.py` uses.

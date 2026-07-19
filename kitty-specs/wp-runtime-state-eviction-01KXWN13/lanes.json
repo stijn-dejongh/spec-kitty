@@ -22,6 +22,7 @@
       "predicted_surfaces": [
         "api",
         "artifact-rendering",
+        "legacy-cleanup",
         "tracker-integration"
       ],
       "depends_on_lanes": [],
@@ -76,11 +77,13 @@
       ],
       "write_scope": [
         "src/specify_cli/cli/commands/agent/tasks_mark_status.py",
-        "src/specify_cli/cli/commands/agent/tasks_shared.py"
+        "src/specify_cli/cli/commands/agent/tasks_shared.py",
+        "tests/specify_cli/cli/commands/agent/test_check_unchecked_subtasks_snapshot_source.py"
       ],
       "predicted_surfaces": [
         "api",
-        "artifact-rendering"
+        "artifact-rendering",
+        "legacy-cleanup"
       ],
       "depends_on_lanes": [
         "lane-a",
@@ -100,6 +103,7 @@
       ],
       "predicted_surfaces": [
         "api",
+        "artifact-rendering",
         "legacy-cleanup"
       ],
       "depends_on_lanes": [
@@ -140,7 +144,8 @@
       ],
       "write_scope": [
         "src/specify_cli/cli/commands/agent/tasks_map_requirements.py",
-        "src/specify_cli/orchestrator_api/commands.py"
+        "src/specify_cli/orchestrator_api/commands.py",
+        "tests/integration/test_sc008_topology_resolution.py"
       ],
       "predicted_surfaces": [
         "api",
@@ -162,7 +167,9 @@
       ],
       "write_scope": [
         "src/specify_cli/cli/commands/agent/tasks_materialization.py",
-        "src/specify_cli/review/artifacts.py"
+        "src/specify_cli/post_merge/review_artifact_consistency.py",
+        "src/specify_cli/review/artifacts.py",
+        "tests/regression/test_2684_review_override_recognition.py"
       ],
       "predicted_surfaces": [
         "api",
@@ -208,7 +215,8 @@
         "src/specify_cli/merge/done_bookkeeping.py",
         "tests/architectural/test_2093_authority_invariant.py",
         "tests/architectural/test_no_dead_symbols.py",
-        "tests/integration/test_ac5_hash_guard.py"
+        "tests/integration/test_ac5_hash_guard.py",
+        "tests/integration/test_render_parity_golden.py"
       ],
       "predicted_surfaces": [
         "api",
@@ -227,7 +235,7 @@
       "parallel_group": 4
     }
   ],
-  "computed_at": "2026-07-19T08:51:55.763668+00:00",
+  "computed_at": "2026-07-19T09:30:49.860132+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": []
 }

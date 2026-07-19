@@ -21,6 +21,7 @@ subtasks:
 - T024
 - T025
 agent: claude
+model: claude-opus-4-8
 history: []
 agent_profile: python-pedro
 authoritative_surface: src/specify_cli/cli/commands/agent/tasks_move_task.py
@@ -56,9 +57,16 @@ subtask uncheck — into the WP file on every transition. Replace those **field 
 with `InnerStateChanged` emits (T022), **delete** the orphaned tails the cut creates —
 `_mt_persist_tracker_refs`, the `_mt_*uncheck*` trio, and `_mt_clear_rollback_claim_
 markers` (T023) — and make **every** emit site resolve `destination_ref` from stored
-topology, **never** `Path.cwd()` (T024, SC-008 / #2647). Prove it with a proof-of-drive
-lifecycle hash test: no WP-file write across a full driven lifecycle (T025, SC-001 /
-SC-005 / AC-5 / US2).
+topology, **never** `Path.cwd()` (T024, SC-008 / #2647). This WP additionally **takes the
+2 `in_review→*` force edges re-scoped from WP02**: it owns `tasks_move_task.py` including
+the `build_transition_plan` caller (`:1302`), so it constructs a structured `review_result`
+(reviewer + verdict + reference) and threads it into `build_transition_plan` to make
+`in_review→planned` and `in_review→in_progress` **force-free** (T022), asserting persisted
+`StatusEvent.force` is falsy for those 2 edges via the real move-task path (SC-007). Prove
+the writer cut with a scoped move-task writer-cut hash regression test: no WP-file write
+across the driven move-task actions (T025). *(Full-lifecycle SC-001/SC-005 acceptance is
+**not** claimed here — see the T025 scope note; WP10/T038 is the sole SC-001/SC-005
+acceptance.)*
 
 ## Context
 
@@ -76,9 +84,21 @@ SC-005 / AC-5 / US2).
   its write target from stored topology / target branch, **never** `Path.cwd()`. An
   emit run from a cwd different from the mission root must land at the stored-topology
   target, not a cwd-derived location.
+- **SC-007 (force-free `in_review` edges, re-scoped from WP02)**: WP06 owns the 2 edges
+  `in_review→planned` and `in_review→in_progress`. It constructs a structured
+  `review_result` (reviewer + verdict + reference) and threads it into
+  `build_transition_plan` (`tasks_move_task.py:1302`) so those transitions no longer set
+  `force=True`; the persisted `StatusEvent.force` is falsy for both, asserted via the real
+  move-task path. **WP02 owns the other 3 force edges + the optional `review_result`
+  parameter on `build_transition_plan`**; WP06 only threads a concrete `review_result`
+  through the move-task caller for these 2 edges. Do not redesign the `review_result`
+  shape or the `build_transition_plan` signature — WP02 delivers them; WP06 consumes.
 - **NFR-001 / SC-005 (AC-5)**: across a full lifecycle (claim → subtask-done → review →
   history) the raw-byte content hash of `tasks/WP##.md` (and the `tasks.md` WP section)
-  changes **0 times**.
+  changes **0 times**. *(NOTE: WP06 does **not** carry the full-lifecycle SC-001/SC-005
+  acceptance — the `implement`/`orchestrator` writers are cut in WP07/WP08, which are not
+  WP06 deps. WP06's T025 is a **scoped** move-task writer-cut hash regression; the sole
+  SC-001/SC-005 full-lifecycle acceptance is WP10/T038.)*
 - **Key facts (god-write hub)**: `_mt_persist_wp_file` is called from `_mt_execute`
   (`:1970`); `_mt_reset_for_planned_rollback` (`:1972`) drives the uncheck tail. Cut the
   field writes, delete the tails including `_mt_clear_rollback_claim_markers`
@@ -115,13 +135,25 @@ stops carrying runtime state; the log carries it.
    runtime field writes go.
 5. Update `_mt_execute` (`:1953-1972`) so the god-write call (`:1970`) invokes the new
    emit path; `_mt_reset_for_planned_rollback` (`:1972`) is handled in T023.
+6. **Take the 2 `in_review→*` force edges (re-scoped from WP02).** At the
+   `build_transition_plan` caller (`:1302`), construct a structured `review_result`
+   (reviewer + verdict + reference) from the resolved move context and thread it into
+   `build_transition_plan` for the `in_review→planned` and `in_review→in_progress`
+   transitions, so those plans do **not** set `force=True` — the `review_result` justifies
+   the reverse transition instead of a raw force flag. WP02 delivers the optional
+   `review_result` parameter on `build_transition_plan` and owns the other 3 force edges;
+   WP06 only passes a concrete `review_result` through the move-task caller for these 2
+   edges. Do **not** alter the `build_transition_plan` signature or the `review_result`
+   shape (WP02 owns those). The persisted `StatusEvent.force` MUST be falsy for both edges
+   (SC-007) — assert it in T025 via the real move-task path.
 
 **Files**: `src/specify_cli/cli/commands/agent/tasks_move_task.py`.
 
 **Validation**: after `move-task WP01 --to claimed --shell-pid <pid> --agent claude`,
 the reduced snapshot carries `shell_pid`/`agent`; `tasks/WP01.md` bytes are unchanged;
-a persisted `annotation` (or claim-transition `policy_metadata`) event exists. `ruff` /
-`mypy` clean.
+a persisted `annotation` (or claim-transition `policy_metadata`) event exists. Driving
+`in_review→planned` / `in_review→in_progress` persists a `StatusEvent` with falsy `force`
+and a threaded `review_result`. `ruff` / `mypy` clean.
 
 **Edge cases**: the claim path vs the reassignment path resolve to different carriers
 (transition `policy_metadata` vs `InnerStateChanged`) — do not conflate. The
@@ -207,33 +239,45 @@ on any emit-target derivation path.
 mid8 for a flattened mission (`_coord_status_events_path` `:2178-2181`) and the flat
 target is canonical on primary; both must land correctly without a cwd fallback.
 
-### Subtask T025 — Proof-of-drive lifecycle hash test (no WP-file write across lifecycle)
+### Subtask T025 — Move-task writer-cut hash regression (scoped; no WP-file write across the move-task actions)
 
-**Purpose**: Prove "unchanged" means "the actions fired AND the file bytes never moved"
-— the AC-5 headline, with a proof-of-drive so it can't mean "untouched" (SC-001/005).
+**Purpose**: Prove "unchanged" means "the move-task actions fired AND the file bytes never
+moved" — a **scoped move-task writer-cut** proof-of-drive so it can't mean "untouched".
+**This is NOT the full-lifecycle SC-001/SC-005 acceptance.** The `implement`/`orchestrator`
+writers are cut in WP07/WP08 (not WP06 deps), so a full-lifecycle acceptance cannot be
+claimed here; **WP10/T038 is the sole SC-001/SC-005 acceptance**. T025 regresses only the
+`move-task` writer cut this WP owns (plus the SC-008 cwd arm and the SC-007 force-free
+edges).
 
 **Steps**:
 1. Create `tests/integration/test_wp_file_hash_stability.py` (new; `@pytest.mark.
    integration`, likely `@pytest.mark.git_repo`). Build a real lanes mission fixture
    with a claimed WP.
-2. Drive the **mandatory action set** through the real `move-task` / `mark-status`
-   entry points: `claim → mark-subtask-done → add note → tracker_ref append →
-   review-reject → review-approve → history append`.
+2. Drive the **move-task action set this WP cuts** through the real `move-task` entry
+   point: `claim → add note → tracker_ref append → review-reject (in_review→in_progress)
+   → review-approve → rollback (in_review→planned)`. (Subtask completion via `mark-status`
+   is WP04's cut; include it only as a driven input to the gate, not as this WP's
+   acceptance surface.)
 3. **Proof-of-drive**: assert a persisted event exists in `status.events.jsonl` for
-   **each** action (the action fired).
-4. **Hash stability**: assert the raw-byte content hash of `tasks/WP##.md` (and the
-   WP's `tasks.md` section) is **byte-identical** from `claimed` to `done` (NFR-001:
-   changes 0 times). `mtime` is informational only — hash the bytes, not the stat.
+   **each** driven action (the action fired).
+4. **Hash stability (scoped)**: assert the raw-byte content hash of `tasks/WP##.md` (and
+   the WP's `tasks.md` section) is **byte-identical** across the driven `move-task`
+   actions (NFR-001: the move-task path changes it 0 times). `mtime` is informational
+   only — hash the bytes, not the stat.
 5. **SC-008 arm**: run at least one off-axis `InnerStateChanged` emit from a cwd
    **different** from the mission root (`monkeypatch.chdir(tmp_path)`), and assert the
    write landed at the stored-topology target branch — never a `Path.cwd()`-derived
    location.
+6. **SC-007 arm**: drive `in_review→planned` and `in_review→in_progress` through the real
+   move-task path and assert the persisted `StatusEvent.force` is **falsy** for both edges
+   (the `review_result` threaded in T022 replaces the force flag).
 
 **Files**: `tests/integration/test_wp_file_hash_stability.py` (create — in owned_files).
 
 **Validation**: the test is green with T022–T024 landed; it is red if any runtime write
-leaks back into the WP file (positive control: temporarily restore one field write and
-watch the hash assertion fail).
+leaks back into the WP file on the move-task path (positive control: temporarily restore
+one field write and watch the hash assertion fail). Does **not** assert full-lifecycle
+SC-001/SC-005 — that is WP10/T038.
 
 **Edge cases**: idempotent no-op writes bump `mtime` but not the hash — the test must
 key on the hash, not `mtime` (spec: "mtime is informational, not gated"). Cover both
@@ -253,15 +297,21 @@ the reverse (C-006).** Carry that rebase note.
 
 - T022: `_mt_persist_wp_file` no longer writes `agent`/`assignee`/`shell_pid` or the
   Activity-Log line into the WP file; those become `InnerStateChanged` emits (claim
-  rides `policy_metadata`); no runtime WP-file write remains on the transition path.
+  rides `policy_metadata`); no runtime WP-file write remains on the transition path. A
+  structured `review_result` is threaded into `build_transition_plan` (`:1302`) for
+  `in_review→planned` and `in_review→in_progress`, making both edges force-free (SC-007;
+  WP02 owns the other 3 edges + the `review_result` param).
 - T023: `_mt_persist_tracker_refs`, `_mt_clear_rollback_claim_markers`, and the
   `_mt_*uncheck*` trio are deleted; rollback re-blocks the gate via a `subtasks` reset
   delta; no orphan import/symbol left in the file.
 - T024: every emit resolves `destination_ref` from stored topology / `st.target_branch`;
   zero `Path.cwd()` on any emit-target path.
-- T025: `tests/integration/test_wp_file_hash_stability.py` lands and is green —
-  proof-of-drive (event per action) + byte-stable WP-file hash across the lifecycle +
-  the SC-008 foreign-cwd arm.
+- T025: `tests/integration/test_wp_file_hash_stability.py` lands and is green — a
+  **scoped move-task writer-cut hash regression**: proof-of-drive (event per driven
+  move-task action) + byte-stable WP-file hash across the move-task actions + the SC-008
+  foreign-cwd arm + the SC-007 force-free arm for the 2 `in_review→*` edges. **Does NOT
+  claim full-lifecycle SC-001/SC-005 acceptance** (implement/orchestrator writers are
+  WP07/WP08; WP10/T038 is the sole SC-001/SC-005 acceptance).
 - `pytest` (touched paths + new test), `ruff`, `mypy` all clean.
 
 ## Risks
@@ -293,3 +343,10 @@ the reverse (C-006).** Carry that rebase note.
 - Confirm rollback-to-`planned` still re-blocks the review gate via the snapshot
   `subtasks` slot (drive it, don't assume).
 - Confirm the SC-008 arm actually chdir's away from the mission root before emitting.
+- Confirm the 2 `in_review→*` edges are force-free: a `review_result` is threaded into
+  `build_transition_plan` (`:1302`) and the persisted `StatusEvent.force` is falsy for
+  `in_review→planned` and `in_review→in_progress` (SC-007) — driven via the real
+  move-task path, not the WP02 unit surface. Confirm the `build_transition_plan` signature
+  and `review_result` shape were **not** redesigned here (WP02 owns them).
+- Confirm T025 is correctly scoped as a **move-task writer-cut** regression and does NOT
+  assert full-lifecycle SC-001/SC-005 (that acceptance is WP10/T038).

@@ -32,7 +32,7 @@ completes; land as a separate bounded reduction after this mission merges.
 | T014 | Migration idempotency + fail-closed tests | WP03 | |
 | T015 | `mark-status` emits subtask `InnerStateChanged` (stop writing `tasks.md` checkbox) | WP04 | [P] |
 | T016 | `_check_unchecked_subtasks` re-source to snapshot | WP04 | [P] |
-| T017 | Verify merged red test flips green; assert snapshot `subtasks` slot is the resolution source | WP04 | [P] |
+| T017 | Owned unit test: `_check_unchecked_subtasks` follows the reduced snapshot, not `tasks.md`/`HistoryAdded` | WP04 | [P] |
 | T018 | Claim-liveness `stale_detection` → snapshot (behind flag) | WP05 | [P] |
 | T019 | `WorkPackage.{shell_pid,agent,assignee}` → snapshot | WP05 | [P] |
 | T020 | `WPMetadata` coercion → snapshot | WP05 | [P] |
@@ -45,6 +45,7 @@ completes; land as a separate bounded reduction after this mission merges.
 | T027 | `workflow_executor` claim writers (`:695`/`:1370`) → `policy_metadata` | WP07 | [P] |
 | T028 | Delete `write_shell_pid_claim*` + `add_history_entry` + `__all__`; re-point orphaned baseline tests | WP07 | [P] |
 | T029 | Strike `tracker_refs` from `WP_FIELD_ORDER` | WP07 | [P] |
+| T029a | Resume/re-claim `shell_pid` refresh emitted as `InnerStateChanged` (FR-004/US3) | WP07 | [P] |
 | T030 | `tracker_refs` union emit from `map-requirements` | WP08 | [P] |
 | T031 | External activity-log writer → `InnerStateChanged` (`orchestrator_api`) | WP08 | [P] |
 | T032 | SC-008 cross-package topology-resolution test | WP08 | [P] |
@@ -53,7 +54,8 @@ completes; land as a separate bounded reduction after this mission merges.
 | T035 | Override-recognition regression (no false merge block) | WP09 | [P] |
 | T036 | Delete FR-005 fallback flag + any dual-write shim | WP10 | |
 | T037 | Delete legacy fallbacks `workflow_cores.py:340-348` + `done_bookkeeping.py:104-105` (post-backfill) | WP10 | |
-| T038 | Land AC-5 stable-hash guard (proof-of-drive lifecycle) | WP10 | |
+| T038 | Land AC-5 stable-hash guard (proof-of-drive lifecycle) — sole SC-001/SC-005 acceptance | WP10 | |
+| T038a | SC-004 render-parity golden (activity/history/review vs legacy-sourced golden) | WP10 | |
 | T039 | #2093 refactor-stable arch test (no dynamic-frontmatter authority; no dual-home) + reconcile `test_no_dead_symbols` | WP10 | |
 | T040 | Full-suite green; re-pointed force tests reconciled | WP10 | |
 

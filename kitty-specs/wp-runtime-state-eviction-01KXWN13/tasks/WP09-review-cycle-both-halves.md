@@ -15,14 +15,18 @@ subtasks:
 - T034
 - T035
 agent: claude
+model: claude-opus-4-8
 history: []
 agent_profile: python-pedro
 authoritative_surface: src/specify_cli/review/artifacts.py
-create_intent: []
+create_intent:
+- tests/regression/test_2684_review_override_recognition.py
 execution_mode: code_change
 owned_files:
 - src/specify_cli/cli/commands/agent/tasks_materialization.py
 - src/specify_cli/review/artifacts.py
+- src/specify_cli/post_merge/review_artifact_consistency.py
+- tests/regression/test_2684_review_override_recognition.py
 role: implementer
 tags: []
 ---
@@ -55,10 +59,16 @@ block merge**. Both halves move together, into the `review` snapshot slot (owned
    recognition** (`latest_review_artifact_verdict` `has_override` `:318`;
    `rejected_review_artifact_for_terminal_lane` `:322-340`; consumed by
    `find_rejected_review_artifact_conflicts`, read by the merge lane gate
-   `cli/commands/review/_lane_gate.py:54`) to resolve the override from the `review` snapshot slot.
-3. **T035** — Override-recognition regression: a rejected artifact carrying a complete approval override
-   does **not** falsely block merge — the terminal-lane consistency gate honors the event-sourced
-   override exactly as it honored the frontmatter one (#1924 preserved).
+   `cli/commands/review/_lane_gate.py:54`) to resolve the override from the `review` snapshot slot. This
+   also includes the **orphaned post-merge reader** `post_merge/review_artifact_consistency.py` (now
+   **owned** by this WP — OWNERSHIP CHANGE), which reads `has_complete_override` from frontmatter and
+   must migrate to the `review` snapshot slot as part of the same both-halves pair (otherwise it becomes
+   a stranded second read path).
+3. **T035** — Override-recognition regression as a **net-new owned test**
+   `tests/regression/test_2684_review_override_recognition.py` (added to `owned_files` + `create_intent`;
+   it was homeless in the original slice): a rejected artifact carrying a complete approval override does
+   **not** falsely block merge — the terminal-lane consistency gate honors the event-sourced override
+   exactly as it honored the frontmatter one (#1924 preserved).
 
 ## Context
 
@@ -96,9 +106,11 @@ path; the merge gate reads the reduced snapshot.
   lane gate consumes it at `cli/commands/review/_lane_gate.py:54`. **This is the recognition that must
   read the event-sourced override, or merge falsely blocks.**
 - **WP01 owns the `review` snapshot slot + fold.** The `WPInnerStateDelta.review: ReviewOverride?`
-  field (replace rule, data-model.md) and the snapshot `review` slot are landed by WP01. Confirm the
-  `ReviewOverride` shape (reviewer/actor + reason + wp_id + at, and the "complete" predicate) and call
-  `emit_inner_state_changed` with a `review` delta.
+  field (replace rule, data-model.md) and the snapshot `review` slot are landed by WP01. The
+  `ReviewOverride` shape is exactly **`ReviewOverride {at, actor, wp_id, reason}`** (all four fields),
+  and its **`complete` predicate is true iff all four are present/non-blank** — use these exact WP01
+  names, not `reviewer`/synonyms. Call `emit_inner_state_changed` with a `review` delta carrying that
+  shape.
 - **WP03 owns backfill.** Legacy on-disk approvals are seeded as events by WP03's backfill; the fallback
   deletes that depend on that seeding are WP10. Here you migrate the live read to the snapshot with the
   frontmatter fallback retained behind the FR-005 flag until WP03's verify passes (C-001).
@@ -113,7 +125,7 @@ authority.
 1. In `tasks_materialization.py::_persist_review_artifact_override` (`:46-67`), replace the
    `set_scalar(...)` frontmatter stamps (`:58-61`) + `write_text_within_directory(...)` (`:62-67`) with
    a call to WP01's `emit_inner_state_changed` carrying a `review` delta
-   (`{actor, reason, wp_id, at}` → the `ReviewOverride` shape). Resolve the emit's `destination_ref`
+   (the `ReviewOverride {at, actor, wp_id, reason}` shape — all four fields). Resolve the emit's `destination_ref`
    from the stored-topology target (the same `repo_root`/feature-dir the caller already resolves), never
    `Path.cwd()` (C-003).
 2. **Delete** `_persist_review_artifact_override_in_coord` (`:70-135`) entirely. Its sole purpose was to
@@ -158,8 +170,16 @@ event-sourced overrides. This is the half that, if omitted, causes false merge b
    here (that is gated on WP03 backfill + WP10). Do NOT keep them as a *second authority* — the snapshot
    is the single authority; the frontmatter parse is a tolerated migration-window fallback only (FR-013:
    distinguish authority-read from migration-window fallback-read).
+4. **Migrate the newly-owned post-merge reader** `post_merge/review_artifact_consistency.py`: it reads
+   `has_complete_override` off artifact frontmatter today. Re-point its override recognition to the
+   `review` snapshot slot (same snapshot-first-with-flagged-fallback posture as `artifacts.py`), so the
+   post-merge consistency check honors event-sourced overrides. This reader is the **third leg of the
+   both-halves pair** — leaving it on the frontmatter parse strands a second read path (#2093) and can
+   surface a post-merge false-inconsistency. Use the same `ReviewOverride` shape and `complete` predicate
+   as the merge-gate migration (step 1-2); do not introduce a parallel event-read path.
 
-**Files**: `src/specify_cli/review/artifacts.py`.
+**Files**: `src/specify_cli/review/artifacts.py`,
+`src/specify_cli/post_merge/review_artifact_consistency.py` (now owned).
 
 **Validation**: with an event-sourced override in the snapshot and NO override in artifact frontmatter,
 assert `latest_review_artifact_verdict(...).has_override` is true and
@@ -168,10 +188,11 @@ i.e. the merge gate does not block. Two-sided: a rejected artifact with **no** o
 frontmatter nor snapshot) still IS a conflict.
 
 **Edge cases**: `post_merge/review_artifact_consistency.py` also references `has_complete_override` (grep
-hit) — it is NOT in `owned_files`; do not edit it, but verify your snapshot-sourced change does not break
-its expectations (it may need a WP10 follow-up). The merge lane gate `_lane_gate.py:54` is likewise NOT
-owned — confirm it consumes `find_rejected_review_artifact_conflicts` unchanged (you change the
-recognition *inside* `artifacts.py`, not the gate's call).
+hit) — it is **now owned** by this WP (OWNERSHIP CHANGE) and is migrated to the `review` snapshot slot in
+step 4 as the third leg of the both-halves pair; it is no longer a "do-not-edit / WP10 follow-up" — do
+the migration here so no stranded frontmatter read survives. The merge lane gate `_lane_gate.py:54`
+remains NOT owned — confirm it consumes `find_rejected_review_artifact_conflicts` unchanged (you change
+the recognition *inside* `artifacts.py` / `review_artifact_consistency.py`, not the gate's call).
 
 ### Subtask T035 — Override-recognition regression (no false merge block)
 
@@ -187,17 +208,18 @@ review does NOT falsely block merge, exactly as a frontmatter override did (#192
    proving the test can fail and the gate still refuses genuinely-unresolved rejections.
 3. Mark it `regression` (and `git_repo`/`integration` as the fixture requires).
 
-**Files**: The regression needs a home. `owned_files` for this WP is limited to the two source modules
-(`tasks.md` grants no test file). Place the assertions in an **existing** owned/adjacent review test
-module rather than creating a new owned test file, OR flag to the reviewer that `owned_files` should be
-extended for a net-new regression module. Do NOT silently widen ownership (see Reviewer guidance).
+**Files**: `tests/regression/test_2684_review_override_recognition.py` (**create** — now an owned test
+file, added to both `owned_files` and `create_intent`). This regression was homeless in the original
+slice; it is now a **net-new owned test**. Author the assertions here — do NOT scatter them into an
+existing review module.
 
 **Validation**: red before T033/T034 (frontmatter-only recognition ignores the event override → false
 block), green after (snapshot recognition honors it); the negative control stays red-refuses.
 
-**Edge cases**: An override that is *incomplete* (actor but no reason, or vice versa) must NOT be
-honored — `has_complete_override` requires both non-blank (`:108-115`); preserve that predicate on the
-`ReviewOverride`/snapshot side. A partial override still blocks merge.
+**Edge cases**: An override that is *incomplete* (missing any of `at`/`actor`/`wp_id`/`reason`) must NOT
+be honored — WP01's `ReviewOverride` **`complete` predicate is all-four-present**, mirroring the legacy
+`has_complete_override` (`:108-115`); preserve that predicate on the `ReviewOverride`/snapshot side. A
+partial override still blocks merge.
 
 ## Branch Strategy
 
@@ -216,11 +238,15 @@ WP01+WP02+WP03. The legacy verdict-field fallback deletes (`workflow_cores.py:34
       no longer stamps frontmatter; `_persist_review_artifact_override_in_coord` is **deleted** (mirror
       collapsed to the single topology-resolved emit).
 - [ ] The read half + merge-gate recognition (`has_override`,
-      `rejected_review_artifact_for_terminal_lane`) resolve the override from the `review` snapshot slot,
-      with the frontmatter parse retained ONLY as an FR-005-flagged migration-window fallback (single
-      authority, not dual).
-- [ ] Regression proves an event-sourced complete override does NOT falsely block merge; the negative
-      control (no override) still blocks; an incomplete override still blocks.
+      `rejected_review_artifact_for_terminal_lane`) **and the now-owned post-merge reader**
+      `post_merge/review_artifact_consistency.py` resolve the override from the `review` snapshot slot
+      (`ReviewOverride {at, actor, wp_id, reason}`, `complete` = all-four), with the frontmatter parse
+      retained ONLY as an FR-005-flagged migration-window fallback (single authority, not dual). No
+      stranded frontmatter override-read survives across the both-halves pair.
+- [ ] Regression lands as the **net-new owned** `tests/regression/test_2684_review_override_recognition.py`
+      (added to `owned_files` + `create_intent`) and proves an event-sourced complete override does NOT
+      falsely block merge; the negative control (no override) still blocks; an incomplete override
+      (missing any of the four fields) still blocks.
 - [ ] `destination_ref` for the review emit resolves from stored topology, never `Path.cwd()` (C-003).
 - [ ] Full quality gate green: `pytest`, `ruff`, `mypy`; no dead imports; both halves land together.
 
@@ -235,11 +261,13 @@ WP01+WP02+WP03. The legacy verdict-field fallback deletes (`workflow_cores.py:34
 - **Coord mirror half-collapse.** Emitting the primary but still stamping the coord artifact leaves the
   duplication FR-009 targets. Mitigate: delete `_persist_review_artifact_override_in_coord` outright and
   confirm no caller remains.
-- **Non-owned consumers.** `post_merge/review_artifact_consistency.py` and `_lane_gate.py` read the
-  recognition surface but are not owned here — a snapshot-source change could surface a WP10 follow-up;
-  flag it rather than editing out-of-scope files.
-- **Test ownership gap.** `tasks.md` grants no test file; T035 must land in an existing owned/adjacent
-  module or ownership must be extended — do not exceed `owned_files` silently.
+- **Non-owned consumers.** `post_merge/review_artifact_consistency.py` is **now owned** (OWNERSHIP
+  CHANGE) and migrated in T034 step 4 — do not leave it on the frontmatter parse. Only `_lane_gate.py`
+  remains non-owned; confirm it consumes `find_rejected_review_artifact_conflicts` unchanged rather than
+  editing it.
+- **Test ownership gap — RESOLVED.** The regression was homeless in the original slice; ownership is now
+  extended: `tests/regression/test_2684_review_override_recognition.py` is a net-new owned test in both
+  `owned_files` and `create_intent`. Author it there; do not scatter assertions elsewhere.
 
 ## Reviewer guidance
 
@@ -252,7 +280,12 @@ WP01+WP02+WP03. The legacy verdict-field fallback deletes (`workflow_cores.py:34
   WP10, not here).
 - Check the regression is two-sided (honors an event override; still blocks with no override; still
   blocks an incomplete override) — proof-of-drive, not proof-of-absence.
-- Flag the `owned_files`/test-home tension: the regression needs a home not granted by `tasks.md`;
-  confirm it landed in an existing owned module or that ownership was extended deliberately.
-- Confirm no out-of-scope edits to `post_merge/review_artifact_consistency.py` or `_lane_gate.py`;
-  surface any needed follow-up as a WP10 note rather than editing them here.
+- Confirm the regression landed as the net-new owned
+  `tests/regression/test_2684_review_override_recognition.py` (ownership extended deliberately in this
+  triage — it is in `owned_files` + `create_intent`), not scattered into an existing module.
+- Confirm `post_merge/review_artifact_consistency.py` (now owned) was migrated to the `review` snapshot
+  slot as the third leg of the both-halves pair — no stranded frontmatter override-read. Only
+  `_lane_gate.py` remains out of scope; confirm it consumes `find_rejected_review_artifact_conflicts`
+  unchanged rather than being edited.
+- Confirm the `ReviewOverride {at, actor, wp_id, reason}` shape and its `complete` = all-four predicate
+  are used by the exact WP01 names on both the write and every read leg.

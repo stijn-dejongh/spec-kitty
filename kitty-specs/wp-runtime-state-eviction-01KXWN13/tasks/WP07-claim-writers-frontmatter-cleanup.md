@@ -19,7 +19,9 @@ subtasks:
 - T027
 - T028
 - T029
+- T029a
 agent: claude
+model: claude-sonnet-5
 history: []
 agent_profile: python-pedro
 authoritative_surface: src/specify_cli/frontmatter.py
@@ -61,9 +63,15 @@ orphans. Concretely:
    reducer extracts those keys from `policy_metadata` into the snapshot slots.
 2. **T028** — Delete the now-orphaned `frontmatter.py::write_shell_pid_claim` /
    `write_shell_pid_claim_to_file` and `frontmatter.py::add_history_entry` (module fn + manager
-   method), remove their `__all__` exports, and re-point the orphaned baseline tests.
+   method), remove their `__all__` exports, and re-point the orphaned baseline tests. **WP07/T028 is the
+   sole owner of the `add_history_entry` deletion** (FR-010) — downstream references (e.g. WP10's
+   dead-symbol allowlist reconciliation) must attribute the deletion to WP07/T028, not to WP03/IC-06.
 3. **T029** — Strike `tracker_refs` from `FrontmatterManager.WP_FIELD_ORDER` so it is not dual-homed
    (dynamic-in-events per FR-006 AND static-in-frontmatter) — the #2093 no-dual-home invariant.
+4. **T029a** — Refresh `shell_pid`/`shell_pid_created_at` on resume/re-claim of an already-`in_progress`
+   WP via an `InnerStateChanged` emit (FR-004 / US3). The resume path in `workflow_executor.py` is a
+   no-op today; this emit is **owned here**, NOT punted to WP05 (WP05 owns only the reader that consumes
+   the refreshed snapshot slot).
 
 This WP **owns the `implement.py` shell_pid-writer restructuring outright (FR-014)**. The former #2160
 co-sequence is retired: #2160's writer work is `pr:deferred` and yields (C-006), so there is **no
@@ -148,7 +156,8 @@ in T028 — reconcile the re-export surface).
 **Edge cases**: `capture_creation_time_baseline` returns `None` (unsupported platform / race) → omit
 `shell_pid_created_at`, claim still succeeds (legacy-claim semantics, D3a). A re-claim / resume of an
 already-`in_progress` WP is NOT a `planned→claimed` transition — its PID refresh is an
-`InnerStateChanged` (owned by WP05, not here); do not route a resume through `policy_metadata`.
+`InnerStateChanged` annotation, **owned here in T029a** (NOT WP05), and is emitted separately from the
+`policy_metadata` claim path; do not route a resume through `policy_metadata`.
 
 ### Subtask T027 — `workflow_executor` claim writers (`:695`/`:1370`) → `policy_metadata`
 
@@ -191,8 +200,11 @@ symbol).
    `:27` are removed as part of this cut.
 2. Delete `add_history_entry`: the module-level function (`frontmatter.py:347-349`), the
    `FrontmatterManager.add_history_entry` method (`:176-...`), and the `__all__` entry (`:445`). This
-   is FR-010's history-writer deletion — confirm the zero-reader/zero-writer verification (WP03 owns
-   the migration-side check) before deleting; there must be no live caller.
+   is FR-010's history-writer deletion, and **WP07/T028 is its sole owner** — confirm the
+   zero-reader/zero-writer verification (WP03 owns only the migration-side check) before deleting; there
+   must be no live caller. WP10 does NOT delete this symbol; it only reconciles the now-stale dead-symbol
+   allowlist entry after this deletion merges (so WP10's T039 must reference WP07/T028 as the deleter,
+   not WP03/IC-06).
 3. Update the module docstring reference at `frontmatter.py:23` that names `write_shell_pid_claim` so
    the surviving doc does not describe a deleted symbol.
 4. Re-point the orphaned baseline tests: `test_shell_pid_claim_baseline.py` (owned, 187L) asserts on
@@ -240,6 +252,46 @@ it lands in WP10.
 crash the reader — striking it from `WP_FIELD_ORDER` moves it into the `remaining` (sorted trailing)
 bucket on read, which is tolerant. Confirm no reader treats a struck-but-present field as an error.
 
+### Subtask T029a — Resume/re-claim PID-refresh emit (`InnerStateChanged`, FR-004 / US3) — HIGH
+
+**Purpose**: On resume/re-claim of an already-`in_progress` WP, the `shell_pid` (and its baseline) must
+be **refreshed** so a resumed WP's liveness is decided by the *current* shell, not a stale/dead PID from
+the original claim (US3 — a resumed WP is never falsely flagged stale). Today the resume path in
+`workflow_executor.py` is a **no-op**: it does not refresh `shell_pid` anywhere (it never wrote
+frontmatter on resume, and it does not yet emit an event). This gap is **owned here** (WP07 owns
+`workflow_executor.py`), NOT punted to WP05. WP05 owns the *reader* that consumes the refreshed
+snapshot PID (its T021 resume-window control asserts a resumed WP whose snapshot PID was refreshed via an
+`InnerStateChanged` delta stays live) — but the *emit* that produces that refreshed slot is this subtask.
+
+**Steps**:
+1. Locate the resume / re-claim path in `workflow_executor.py` (the branch that re-enters an
+   already-`in_progress` WP without a fresh `planned→claimed` transition). Confirm it currently performs
+   **no** `shell_pid` refresh.
+2. Add an `InnerStateChanged` emit (via WP01's `emit_inner_state_changed`) carrying a `shell_pid` /
+   `shell_pid_created_at` refresh delta for the resumed WP. Capture the current PID (`os.getppid()`) and
+   a truthful `shell_pid_created_at` via `capture_creation_time_baseline` (best-effort per C-007: omit the
+   baseline key when it cannot be captured, never fail the resume). Because resume is **not** a lane
+   transition, this rides the generic off-axis `InnerStateChanged` annotation — NOT the `policy_metadata`
+   claim path (that is FR-004's *transition*-ride, reserved for `planned→claimed` / `for_review→in_review`).
+3. Resolve the emit's `destination_ref` from stored topology / the resolved target branch the resume path
+   already knows, never `Path.cwd()` (C-003).
+4. Honor C-001: while WP05's `shell_pid` reader has not cut over, keep the resume refresh consistent with
+   the same FR-005 dual-write flag posture as the claim writers (T026/T027) so a refreshed PID is never
+   invisible to a still-frontmatter-reading liveness check.
+
+**Files**: `src/specify_cli/cli/commands/agent/workflow_executor.py`.
+
+**Validation**: extend the owned claim/executor suite (e.g. `test_shell_pid_claim_baseline.py` or
+`test_implement_runtime_frontmatter_claim.py`) to drive a resume of an `in_progress` WP and assert an
+`InnerStateChanged` `shell_pid`/`shell_pid_created_at` refresh event is persisted, the reduced snapshot's
+`shell_pid` slot reflects the current PID, and the WP-file byte hash is unchanged (no frontmatter write).
+This is the emit half of WP05/T021's resume-window control — the two must compose (WP07 emits, WP05 reads).
+
+**Edge cases**: a resume where `capture_creation_time_baseline` returns `None` still refreshes
+`shell_pid` (baseline omitted, D3a). Do not emit a spurious refresh when the WP was never claimed (no
+`in_progress` state → no resume). Avoid double-emitting on a resume that also drives a genuine lane
+transition — the transition claim path (T026) owns that case.
+
 ## Branch Strategy
 
 `lane-per-wp`. Planning artifacts were generated on
@@ -253,19 +305,31 @@ onto *this* writer cutover, not the reverse. Land after WP02 has settled `tasks_
 
 ## Definition of Done
 
-- [ ] No claim path (`_implement_start_claim`/`_implement_write_claim_and_commit`; the review-claim
-      block) writes `shell_pid`/baseline/`agent` into `tasks/WP##.md`; the triple rides the claim
-      transition's `policy_metadata` with the exact keys WP01's reducer extracts.
+- [ ] The claim triple `(shell_pid, shell_pid_created_at, agent)` rides the claim transition's
+      `policy_metadata` with the exact keys WP01's reducer extracts (both the `planned→claimed` and
+      `for_review→in_review` claim paths).
+- [ ] **"No claim path writes `shell_pid`/baseline/`agent` into `tasks/WP##.md`" holds only AFTER the
+      atomic switch with WP05's reader.** Until WP05's `shell_pid` reader cuts over, the FR-005 dual-write
+      (via `status/emit.py::_phase1_dual_write_enabled`, **default ON**) is **MANDATORY** — the claim
+      MUST write both the frontmatter and the event so a fresh claim is never invisible to the still
+      frontmatter-reading liveness check. This resolves the apparent contradiction with the item above:
+      the frontmatter write is removed **at** the atomic switch, not before it.
+- [ ] **Flag-teardown ownership**: WP07 OWNS the teardown of its **own** dual-write in `frontmatter.py`
+      / `implement.py` / `workflow_executor.py` once the atomic switch with WP05's reader completes (WP03
+      verify passed + WP05 reader cut over). WP10 does **not** tear down WP07's dual-write — it only
+      verifies via the FR-013 arch test that no dual-write path remains.
 - [ ] `write_shell_pid_claim`, `write_shell_pid_claim_to_file`, and `add_history_entry` (module fn +
       manager method) are deleted, with their `__all__` entries removed and the module docstring
-      reference reconciled; `rg` finds no live caller in `src/`.
+      reference reconciled; `rg` finds no live caller in `src/`. **WP07/T028 is the sole owner of the
+      `add_history_entry` deletion** (not WP03/IC-06).
 - [ ] `tracker_refs` is struck from `WP_FIELD_ORDER`; derived surfaces flow correctly.
+- [ ] Resume/re-claim of an already-`in_progress` WP refreshes `shell_pid`/`shell_pid_created_at` via an
+      `InnerStateChanged` emit (T029a, FR-004/US3) — owned here, not WP05; the WP-file hash is unchanged
+      across the resume.
 - [ ] Orphaned baseline tests re-pointed (not deleted); the new
       `test_implement_runtime_frontmatter_claim.py` proves the claim triple lands in `policy_metadata`
       and the WP-file hash is unchanged across the claim.
 - [ ] Full quality gate green: `pytest` (owned + adjacent suites), `ruff`, `mypy`. No dead imports.
-- [ ] C-001 honored: the writer cut is atomic with WP05's reader, or a bounded FR-005-flagged
-      dual-write is in place until the reader cuts over.
 
 ## Risks
 
@@ -286,7 +350,14 @@ onto *this* writer cutover, not the reverse. Land after WP02 has settled `tasks_
 
 - Confirm the claim triple is on the **transition's** `policy_metadata`, not a separate
   `InnerStateChanged` (the claim path is FR-004's transition-ride; only the *resume* refresh is an
-  annotation, and that is WP05).
+  annotation, and that resume refresh is **T029a here in WP07**, not WP05 — WP05 owns only the reader
+  that consumes the refreshed snapshot slot).
+- Confirm the resume PID-refresh emit (T029a) actually fires on re-claim of an `in_progress` WP (the
+  path was a no-op before this WP) and that its snapshot slot composes with WP05/T021's resume-window
+  reader control.
+- Confirm WP07 tears down its **own** `_phase1_dual_write_enabled` dual-write in `frontmatter.py` /
+  `implement.py` / `workflow_executor.py` at the atomic switch — this teardown is owned here, not
+  deferred to WP10 (WP10 only verifies via the FR-013 arch test).
 - Verify the deletions are total: symbol body + `__all__` + docstring reference + no live caller. A
   surviving stub is a campsiting failure.
 - Check C-001 sequencing explicitly: is there a moment where a fresh `shell_pid` write is invisible to
