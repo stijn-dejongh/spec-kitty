@@ -16,6 +16,45 @@ related:
 > starts with zero undecided code facts. Every line number below was grep-verified on `main`;
 > where the tracker's numbers had drifted, the correction is called out.
 
+## 0. Decisions resolved (HiC, 2026-07-19)
+
+The seven open decisions from §14 are now **closed**. These are binding inputs for
+`/spec-kitty.specify`; §14 is retained as the rationale record.
+
+1. **Off-axis events → Option A, realized as ONE generic `InnerStateChanged` event.** Non-transition
+   mutations enter the log via a single annotation event carrying a **typed partial delta**
+   (`WPInnerStateDelta` with optional typed fields — *not* a free `dict[str, Any]`, to avoid
+   re-introducing the split-brain). It bypasses `validate_transition` (no `from_lane`/`to_lane`) and
+   is folded by the reducer with a per-field merge rule and **no `force_count` increment**. This is
+   the reusable realization of the Option A annotation class — one event kind, not per-kind variants.
+2. **Subtask granularity → subsumed by the delta.** No separate per-subtask-vs-snapshot event: the
+   `InnerStateChanged` delta carries `subtasks: Mapping[str, Status]`, which expresses a single mark
+   *and* a batch mark naturally, and (per the HiC framing) the same generic event also carries the
+   PID refresh — a reusable state-delta pattern.
+3. **Activity notes → fold into `InnerStateChanged`.** A `note` delta field with **append**
+   semantics; the reducer keeps a `notes` list on the snapshot; **AC-4** renders the Activity Log
+   from it. One off-axis event class for pid + subtasks + notes.
+4. **`tracker_refs` → EVICT (runtime, event-sourced).** `map-requirements` and `move-task` emit an
+   `InnerStateChanged` delta (`tracker_refs` with **union/append** merge); FR-011 runtime append is
+   preserved. Consistent with the eviction thesis.
+5. **Review-cycle → evict ALL in this mission.** Delete the dead verdict-field read fallbacks
+   (`workflow_cores.py:340-341`, `done_bookkeeping.py:104-105`) **and** evict the actively-written
+   `review_artifact_override_*` into `InnerStateChanged`. **Governing principle:** #2684 is the
+   *authoritative owner* of the WP-metadata surface — deferred PR **#2641** yields to the mission
+   (its file-collision risk is moot; it was deferred precisely for treading on this active-design
+   turf). AC-1 is fully complete within this mission. (The #2160 co-sequence for the
+   `implement.py:1730` shell_pid writer still stands — a live epic, not a deferred PR.)
+6. **Static-model election → DEFER to a follow-up.** Land + verify the eviction first (blocker B4:
+   `WPMetadata` can't become a clean static-only projection until its runtime half is stripped);
+   the election coordinates with #1619 and opens against a clean surface next.
+7. **`progress` field → retire explicitly.** Remove from `MUTABLE_FIELDS`/schema; document the
+   removal in the migration notes (backfill no-op — no writer ever existed).
+
+**Net effect on the decomposition (§10):** WP-A collapses to *one* `InnerStateChanged` event class +
+*one* typed `WPInnerStateDelta` + *one* reducer fold covering `shell_pid`(+baseline), `subtasks`
+(map/replace), `notes` (append), and `tracker_refs` (union) — simpler than per-kind annotations. WP-F
+(`tracker_refs`) is now decided (evict) and folds into WP-B/WP-D rather than standing alone.
+
 ## 1. The mission in one paragraph
 
 `tasks/WP##.md` (and the `tasks.md` subtask surface) is **two authorities glued into one YAML
@@ -282,7 +321,9 @@ target branch**, riding this exact path. **Every new emit site (Option A annotat
 - **#2686 semantic-only hash — follow-up** that shrinks once nothing writes runtime state (co-move
   `sync/body_upload.py` TOCTOU; no mixed spec/raw parity pool across the un-migrated corpus).
 
-## 14. Open decisions the spec MUST close
+## 14. Open decisions the spec MUST close — RESOLVED 2026-07-19 (see §0)
+
+> All seven are now closed; see **§0** for the binding calls. Retained below as the rationale record.
 
 1. **`tracker_refs` — author-immutable vs evict.** Runtime-written today (`tasks_move_task.py:1721`,
    `tasks_map_requirements.py:428`, FR-011) yet listed static in the schema proposal. Cannot be both.
