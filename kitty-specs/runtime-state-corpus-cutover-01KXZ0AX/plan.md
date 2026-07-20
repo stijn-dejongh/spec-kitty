@@ -15,8 +15,9 @@ that library into two callers — an operator CLI (`spec-kitty migrate backfill-
 auto-discovered upgrade migration — through **one shared cutover orchestration helper** (backfill →
 verify → atomic per-mission `status_phase` flip), then removes the flag branch across all 12 call
 sites, deletes the predicate and the T037 fallbacks, routes the two remaining bypass readers onto the
-snapshot seam, and hardens the #2093 invariant to forbid any frontmatter authority read. IC-08 field
-reduction is an optional post-cutover tail.
+snapshot seam, and hardens the #2093 invariant to forbid any frontmatter authority read. The deferred
+#2684 inert-field reduction (this mission's IC-06) is an optional post-cutover tail. Then (operator
+decision) IC-07/IC-08/IC-09 add the resolved-binding record + reconstruction.
 
 The load-bearing invariant is **fail-closed atomicity**: a mission's `status_phase` is flipped **only**
 after its backfill+verify passes; a verify failure aborts before any flip and leaves the deployment on
@@ -54,7 +55,8 @@ event-writing paths resolve via `canonicalize_feature_dir` (never `Path.cwd()`; 
 **Scale/Scope**: remove the flag branch at **12 call sites across 11 files**; delete 1 predicate + its
 facade alias/`__all__` entry; delete 2 legacy fallback blocks (1 shared with a bypass reader); route 2
 bypass readers; empty 1 arch-test tolerated set + rewrite 1 vacuous test arm; un-pin a 15-symbol
-dead-symbol frozenset; add 1 CLI command + 1 upgrade migration. Six implementation concerns.
+dead-symbol frozenset; add 1 CLI command + 1 upgrade migration. **Ten implementation concerns** (IC-01,
+IC-01b, IC-02–IC-06 cutover; IC-07/IC-08/IC-09 resolved-binding record+reconstruct + the IC-08a ADR).
 
 ## Charter Check
 
@@ -91,7 +93,8 @@ kitty-specs/runtime-state-corpus-cutover-01KXZ0AX/
 ├── data-model.md        # Phase 1 — entities/state (event, snapshot, status_phase marker)
 ├── quickstart.md        # Phase 1 — operator + upgrade runbook
 ├── contracts/
-│   └── cutover-cli.md    # Phase 1 — CLI + upgrade-migration behavioural contract
+│   ├── cutover-cli.md        # Phase 1 — CLI + upgrade-migration behavioural contract
+│   └── resolved-binding.md   # Phase 1 — reconstruction reader + vocabulary + SaaS fan-out contract
 └── tasks.md             # Phase 2 (/spec-kitty.tasks — NOT created here)
 ```
 
@@ -136,13 +139,24 @@ tests/
 │   └── test_no_dead_symbols.py            # EDIT — remove 15-symbol `_CATEGORY_C_DEFERRED_RUNTIME_STATE_BACKFILL_CUTOVER`
 ├── (status suite)                          # EDIT — reconcile flag-ON/flag-OFF split; delete/re-point dual-write tests
 └── (new)                                   # NEW — CLI command, orchestration helper, upgrade migration, #2815 repo-root-write guard
+
+# Resolved-binding scope (IC-07/08/09, operator decision):
+src/specify_cli/status/wp_view.py            # NEW (IC-07) — canonical reconstruct_wp_view; 3 gates → 1
+src/specify_cli/status/models.py             # EDIT (IC-08) — WPInnerStateDelta: +role/agent_profile(+version)/model/provider
+src/specify_cli/status/reducer.py            # EDIT (IC-08) — _RUNTIME_SLOTS + _apply_annotation_delta: resolved-binding slots
+src/specify_cli/cli/commands/agent/workflow_executor.py  # EDIT (IC-08) — resolve seam at claim/review-claim
+src/specify_cli/invocation/executor.py       # READ/EDIT (IC-08) — thread resolved model (RoutingRecommendation, advisory today)
+src/specify_cli/status/emit.py               # EDIT (IC-09) — enrich structured actor on claim StatusEvent + fan-out
+docs/adr/3.x/2026-07-19-1-*.md               # EDIT (IC-08a) — field-authority addendum (C-009)
+docs/context/identity.md                     # EDIT (IC-08a) — add authored-intent / resolved-binding terms
 ```
 
-**Structure Decision**: Single-project Python CLI. The one net-new module is
-`migration/runtime_state_cutover.py` — a thin **shared orchestration seam** (backfill → fail-closed
-verify → atomic per-mission `status_phase` flip) consumed by *both* the operator CLI and the upgrade
-migration, so the fail-closed atomicity lives in exactly one place (avoids the logical-duplication
-trap of two callers re-implementing verify-then-flip). Everything else is edits to existing surfaces.
+**Structure Decision**: Single-project Python CLI. Net-new modules: `migration/runtime_state_cutover.py`
+— a thin **shared orchestration seam** (backfill → fail-closed verify → atomic per-mission `status_phase`
+flip) consumed by *both* the operator CLI and the upgrade migration, so the fail-closed atomicity lives
+in one place (avoids two callers re-implementing verify-then-flip); and `status/wp_view.py` — the single
+**WP-view reconstruction reader** (IC-07) that collapses the three hand-rolled snapshot gates. The
+resolved-binding vocabulary (IC-08) extends `status/models.py`/`reducer.py`; everything else is edits.
 
 ## Complexity Tracking
 
@@ -166,7 +180,10 @@ trap of two callers re-implementing verify-then-flip). Everything else is edits 
 > "record + reconstruct" slice — the WP/dashboard reader reconstructs resolved final-state from the event
 > log, and the actual `role`/`agent_profile`/`model` are event-sourced (distinct from authored intent).
 > These build on the cutover (depend on IC-03/IC-04) and carry their own ADR (IC-08a). The full
-> fail-closed *enforcement* (#2399) stays out of scope.
+> fail-closed *enforcement* (#2399) stays out of scope. **Second merge-unit atomicity constraint:** IC-08's
+> dogfood re-seed (new resolved-binding slots) must land with IC-07 in one merge unit — if IC-07's reader
+> reaches local main before the re-seed, the dogfood corpus shows empty resolved slots (IC-07's
+> tolerate-absent behaviour degrades gracefully but the corpus is under-populated until re-seed).
 
 ### IC-01 — Cutover orchestration + operator CLI (backfill → verify → atomic flip)
 
@@ -261,9 +278,10 @@ trap of two callers re-implementing verify-then-flip). Everything else is edits 
     `_process_wp_file` reads runtime `agent` (:937), `assignee` (:978), and subtask completion (:954-965,
     checkbox-counting) via `read_wp_frontmatter(...).<attr>` — **attribute access on typed `WPMetadata`,
     not `extract_scalar`** — so it escaped the pre-planning #2093-debt list AND the arch invariant. Route
-    the **runtime** fields (`agent`, `assignee`, subtask completion) onto the snapshot; **keep** the
-    static/authored-intent fields (`agent_profile`, `role`) frontmatter-sourced (#2093 keeps those
-    canonical). The lane already comes from the event log (`get_wp_lane`, :918) — good.
+    the **runtime** fields (`agent`, `assignee`, subtask completion) onto the snapshot. For
+    `role`/`agent_profile`/`model`: keep the **AUTHORED** recommendation frontmatter-sourced, but the
+    **RESOLVED actual** is event-sourced and reconstructed via IC-07/IC-08 (FR-012/FR-013) — do NOT leave
+    the resolved value frontmatter-read. The lane already comes from the event log (`get_wp_lane`, :918).
   - **Reader/writer surface sweep (found by the events-boundary review — confirm at `/tasks`)**:
     `core/stale_detection.py:231` (`_is_claiming_process_alive` — verify it fully sources `shell_pid`
     from the snapshot post-cutover, not a partial/conditional read); `frontmatter.py:321`
@@ -345,7 +363,11 @@ trap of two callers re-implementing verify-then-flip). Everything else is edits 
   `role`/`profile`/`model` slots to reconstruct them).
 - **Risks**: the three gates encode subtly different fallback behaviour; unify carefully and keep a test
   per consumer proving parity (SC-007). `prompt_builder.py` reads authored `agent_profile` for governance
-  rendering — that is authored intent (correctly frontmatter); do not reroute it.
+  rendering — that is authored intent (correctly frontmatter); do not reroute it. **Tolerate-absent
+  (re-seed gap):** IC-07 MUST handle a WP with no resolved-binding slots (never reclaimed, or predating the
+  IC-08 dogfood re-seed) by showing the authored recommendation + an empty/None resolved actual — never a
+  crash or a silent fall-back to reading the authored value *as* the resolved one (that would re-introduce
+  the split-brain). Add this to SC-008/INV-8's coverage.
 
 ### IC-08 — Resolved-binding event vocabulary + model/profile resolve seam
 
@@ -364,8 +386,12 @@ trap of two callers re-implementing verify-then-flip). Everything else is edits 
     claim-time emit at `workflow_executor.py` (implement-claim :845, review-claim :1503-1514) and the
     `tasks_move_task.py` reassign. Resolved profile comes from `resolve_profile`/`resolved_agent()` (also
     recorded on the Op path `invocation/record.py` — reuse, do not re-read frontmatter; C-007).
-  - **Backfill**: seed the authored frontmatter values as the historical resolved actual for pre-existing
-    missions (extend the backfill library's `MUTABLE_FIELDS`/delta build).
+  - **Backfill + dogfood re-seed (re-seed gap fix)**: extend the backfill library's `MUTABLE_FIELDS`/delta
+    build to seed the authored frontmatter values as the historical resolved actual, **and RE-RUN the
+    dogfood corpus backfill** (as IC-01b did for the #2684 fields) after the vocabulary extension, **in the
+    same merge unit**, so IC-07 reads *seeded* resolved slots. Without this, IC-07 reads empty resolved
+    slots for every dogfood mission — the same empty-snapshot failure mode IC-01b closes, reopened for the
+    new fields.
   - **IC-08a — ADR (C-009)**: author the field-authority ADR (addendum to `2026-07-19-1`, which deferred
     model election as blocker B4): resolved `role`/`agent_profile`/`model` → dynamic/event; authored →
     static/frontmatter. Add `authored intent`/`resolved binding` to `docs/context/identity.md`.
