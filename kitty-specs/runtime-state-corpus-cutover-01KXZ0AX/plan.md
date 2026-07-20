@@ -113,7 +113,11 @@ src/specify_cli/
 ├── task_utils/
 │   └── support.py                      # EDIT — remove flag branch (TWO sites)
 ├── merge/
-│   └── done_bookkeeping.py             # EDIT — delete `_extract_done_evidence` frontmatter synthesis
+│   └── done_bookkeeping.py             # EDIT — build snapshot done-evidence, then delete frontmatter synthesis
+├── dashboard/
+│   └── scanner.py                      # EDIT — route agent/assignee/subtask reads to snapshot (MISSED bypass reader)
+├── frontmatter.py                      # EDIT — stop the shell_pid frontmatter WRITER (byte-stability)
+├── task_metadata_validation.py         # EDIT — stop baking shell_pid into WP templates
 └── upgrade/migrations/
     └── m_<version>_runtime_state_backfill.py   # NEW — auto-discovered fail-closed upgrade migration
 
@@ -214,7 +218,11 @@ trap of two callers re-implementing verify-then-flip). Everything else is edits 
   `status_phase`**, so the flip has a live consequence: flipping a mission to `status_phase=1` **activates
   the lane mirror** for it (today all missions are `status_phase=0` → mirror OFF). Add a regression
   asserting lane behaviour is unchanged by the mirror activation; if activation is problematic, decoupling
-  the lane mirror from `status_phase` is a **follow-up** (still C-004 out-of-scope here).
+  the lane mirror from `status_phase` is a **follow-up** (still C-004 out-of-scope here). **Byte-stability
+  (NFR-003) requires the writer cutover too** — the `shell_pid` frontmatter **writer**
+  (`frontmatter.py:write_shell_pid_claim`) and the template emitter (`task_metadata_validation.py`) must
+  stop writing runtime fields to `tasks/WP##.md`, or the file is not byte-stable even with readers cut
+  over (see IC-04 surface sweep).
 
 ### IC-04 — Wire snapshot done-evidence, then delete T037 legacy fallbacks + route bypass readers
 
@@ -234,6 +242,20 @@ trap of two callers re-implementing verify-then-flip). Everything else is edits 
     ONE edit that deletes the fallback and resolves via the snapshot.
   - `cli/commands/agent/tasks_move_task.py` — route the `agent`/`current_agent` ownership read onto the
     snapshot accessor.
+  - **`dashboard/scanner.py` — MISSED BYPASS READER (found by the dashboard-path review).**
+    `_process_wp_file` reads runtime `agent` (:937), `assignee` (:978), and subtask completion (:954-965,
+    checkbox-counting) via `read_wp_frontmatter(...).<attr>` — **attribute access on typed `WPMetadata`,
+    not `extract_scalar`** — so it escaped the pre-planning #2093-debt list AND the arch invariant. Route
+    the **runtime** fields (`agent`, `assignee`, subtask completion) onto the snapshot; **keep** the
+    static/authored-intent fields (`agent_profile`, `role`) frontmatter-sourced (#2093 keeps those
+    canonical). The lane already comes from the event log (`get_wp_lane`, :918) — good.
+  - **Reader/writer surface sweep (found by the events-boundary review — confirm at `/tasks`)**:
+    `core/stale_detection.py:231` (`_is_claiming_process_alive` — verify it fully sources `shell_pid`
+    from the snapshot post-cutover, not a partial/conditional read); `frontmatter.py:321`
+    (`write_shell_pid_claim` — the dual-write **WRITER** that still writes `shell_pid` to `tasks/WP##.md`;
+    must stop for NFR-003 byte-stability); `task_metadata_validation.py:86,141` (bakes `shell_pid` into
+    generated WP frontmatter templates); `ownership/frontmatter_source.py` and `context/resolver.py`
+    (targeted check for `assignee`/`agent` reads).
 - **Sequencing/depends-on**: IC-03 (fallbacks safe to delete only after the flip; C-001) and **IC-01b**
   (backfill has seeded the approvals/review as events in this corpus). Same merge unit.
 - **Risks**: `done_bookkeeping` feeds the **merge** gate — deleting synthesis before the snapshot read is
@@ -253,7 +275,13 @@ trap of two callers re-implementing verify-then-flip). Everything else is edits 
   `core`, `sync`, `orchestrator_api`, `integration`, `regression`, `upgrade`):
   - `tests/architectural/test_2093_authority_invariant.py` — `_SANCTIONED_READER_MODULES` → `frozenset()`;
     rewrite the now-vacuous canonical-gate-identity arm (imports the deleted predicate) into a "zero
-    frontmatter-authority reads" assertion.
+    frontmatter-authority reads" assertion. **CRITICAL COVERAGE GAP (found by the dashboard review):**
+    the detector `_reads_dynamic_field_via_extract_scalar` (:312) only matches `extract_scalar(…, "<field>")`
+    calls — it is **blind to attribute-access reads** (`read_wp_frontmatter(...).agent`, `WPMetadata.<runtime>`,
+    `WorkPackage.<runtime>`). Emptying the tolerated set is a **false green** until the invariant also
+    detects the attribute-read class. IC-05 must **extend the detector** to catch runtime-field attribute
+    reads on the typed frontmatter/metadata objects, then confirm it flags the dashboard scanner **red
+    before** IC-04 reroutes it (non-vacuous proof).
   - the explicit **flag-ON/flag-OFF pair** `test_move_task_rollback_clears_claim.py` +
     `..._flag_off.py` — delete the flag-OFF twin; make the flag-ON assertions unconditional.
   - `test_tasks_compat_surface.py` — asserts the facade seam IC-03 removes → reconcile (breaks on the

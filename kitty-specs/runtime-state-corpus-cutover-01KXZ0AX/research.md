@@ -114,6 +114,38 @@ authoritative design ground for `/spec-kitty.tasks`.
 - **Alternatives rejected**: rely on the consumer upgrade migration to cover the dogfood repo — it runs
   on `spec-kitty upgrade`, not on this mission's merge, so it does not close the in-repo window.
 
+## D-08 — `InnerStateChanged` stays LOCAL; escalation to `spec_kitty_events` is a conditional follow-up, not this slice
+
+- **Decision**: Do **not** escalate `InnerStateChanged` into the shared `spec_kitty_events` package to
+  close #2816. It is correctly a local off-axis annotation folded by the local reducer.
+- **Evidence** (events-boundary review): the only cross-boundary event contract is the lane transition
+  (`StatusEvent` → `spec_kitty_events` `StatusTransitionPayload`), already shared. `emit_inner_state_changed`
+  (`emit.py:888-951`) **persists + materializes only** — no `_saas_fan_out`, no `fire_dossier_sync`
+  (contrast the lane path's Step-7 SaaS fan-out / Step-8 dossier sync). `_saas_fan_out` is typed to
+  `StatusEvent` (lane fields only). The dossier/sync projection (`dossier/snapshot.py`) carries artifact
+  content-hashes + completeness counts — **zero WP runtime fields**. `InnerStateChanged.to_dict()`
+  serializes only to the local `status.events.jsonl`; no wire form crosses the package boundary. The
+  5.2.0/6.0.0 version gate is about the `Lane` **enum** (genesis lane), orthogonal to runtime annotations.
+- **Conditional follow-up (out of scope; file only if/when needed)**: if a future SaaS surface must
+  display live WP runtime state (e.g. "agent X, PID Y on WP03"), add a shared `WPRuntimeStateChanged`
+  event type to `spec_kitty_events` + a fan-out call in `emit_inner_state_changed`. That is a product
+  decision, NOT a #2816 correctness gap. Recorded in the spec's Out-of-Scope section.
+
+## D-09 — The dashboard is a bypass reader, and the #2093 invariant is blind to it (found reviewing the dashboard path)
+
+- **Finding**: `dashboard/scanner.py::_process_wp_file` reads runtime `agent` (:937), `assignee` (:978),
+  and subtask completion (:954-965) via `read_wp_frontmatter(...).<attr>` — **typed attribute access, not
+  `extract_scalar`**. The #2093 invariant's detector (`_reads_dynamic_field_via_extract_scalar`, :312)
+  matches only `extract_scalar(…, "<field>")`, so it never saw this reader. Emptying the tolerated set
+  without extending the detector is a **false green**.
+- **Decision**: IC-04 routes the dashboard's runtime reads onto the snapshot (keeping `agent_profile`/
+  `role` frontmatter-sourced — those are #2093 static authored-intent, not runtime). IC-05 **extends the
+  detector** to catch runtime-field attribute reads on typed frontmatter/metadata objects, and proves it
+  flags the dashboard scanner red **before** the reroute (non-vacuous).
+- **Why it matters**: the dashboard is the operator's primary runtime-state view; post-cutover, reading
+  stale/stripped frontmatter would show wrong `agent`/`assignee`/progress. This is exactly the
+  split-brain #2093 forbids — and the class the invariant must actually cover to be meaningful.
+
 ## Risks & pre-existing-red discipline (charter: Pre-existing Failure Reporting)
 
 - **Phantom `SYNC_DISABLE_ENV_VARS`** `arch-adversarial (arch_shard_1)` red is **pre-existing on main**
