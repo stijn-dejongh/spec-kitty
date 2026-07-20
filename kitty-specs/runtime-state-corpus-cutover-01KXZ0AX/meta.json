@@ -1,0 +1,15 @@
+{
+  "coordination_branch": "kitty/mission-runtime-state-corpus-cutover-01KXZ0AX",
+  "created_at": "2026-07-20T05:35:15.105291+00:00",
+  "flattened": false,
+  "friendly_name": "Runtime-State Corpus Cutover",
+  "mission_id": "01KXZ0AXN00WSF6D0R7D5QR599",
+  "mission_number": null,
+  "mission_slug": "runtime-state-corpus-cutover-01KXZ0AX",
+  "mission_type": "software-dev",
+  "purpose_context": "Mission #2684 evicted work-package runtime state into the append-only event log but shipped it as dual-write behind an off-by-default flag, so production still treats the legacy WP files as authority. This mission runs the deferred corpus cutover — a fail-closed backfill-and-verify migration, an unconditional flag flip, and removal of the legacy fallbacks — so that stopping WP-file runtime writes becomes the real production behaviour and existing deployments migrate safely on upgrade.",
+  "purpose_tldr": "Make the event log the unconditional authority for work-package runtime state and retire the dual-write phase-1 toggle via a fail-closed corpus migration.",
+  "slug": "runtime-state-corpus-cutover-01KXZ0AX",
+  "target_branch": "feat/runtime-state-corpus-cutover",
+  "topology": "coord"
+}
