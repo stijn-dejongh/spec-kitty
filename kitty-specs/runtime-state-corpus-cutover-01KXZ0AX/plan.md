@@ -22,6 +22,15 @@ The load-bearing invariant is **fail-closed atomicity**: a mission's `status_pha
 after its backfill+verify passes; a verify failure aborts before any flip and leaves the deployment on
 a consistent, non-partially-flipped state.
 
+**Scope generalization (operator decision 2026-07-20):** the mission also makes the WP/dashboard reader
+reconstruct a WP's **resolved final-state from the event log** (one canonical reader replacing three
+hand-rolled gates), and generalizes the eviction to the WP's runtime **identity** — the *actual*
+`role`/`agent_profile`/`model` are event-sourced (recorded at each pick-up, latest-wins), distinct from
+the *authored* recommendation in frontmatter, because the actual identity shifts across the lifecycle.
+This is the "record + reconstruct" half of #2093's ruling (IC-07/08/09, with a field-authority ADR); the
+full fail-closed #2399 *enforcement* stays out of scope. SaaS delivery rides the existing structured
+`actor` on the claim transition — no shared-package change on the preferred path.
+
 ## Technical Context
 
 **Language/Version**: Python 3.11+
@@ -152,6 +161,12 @@ trap of two callers re-implementing verify-then-flip). Everything else is edits 
 > repo's seed events, **every dogfood mission reads an empty snapshot** and the suite goes red instantly
 > — this is the exact contract-step-ownership gap the mission's own field report documents. The plan
 > owns the backfill *execution*, not just the *tool*.
+>
+> **Scope generalization (operator decision 2026-07-20):** IC-07/IC-08/IC-09 add the resolved-binding
+> "record + reconstruct" slice — the WP/dashboard reader reconstructs resolved final-state from the event
+> log, and the actual `role`/`agent_profile`/`model` are event-sourced (distinct from authored intent).
+> These build on the cutover (depend on IC-03/IC-04) and carry their own ADR (IC-08a). The full
+> fail-closed *enforcement* (#2399) stays out of scope.
 
 ### IC-01 — Cutover orchestration + operator CLI (backfill → verify → atomic flip)
 
@@ -310,3 +325,70 @@ trap of two callers re-implementing verify-then-flip). Everything else is edits 
   `_legacy_lane_mirror_enabled` still reads it (C-004), so retiring the field would silently disable the
   lane mirror. Scope IC-06 to `wp_metadata` runtime fields only. Otherwise non-behavioural; keep the full
   suite green; confirm zero live readers before removal (`assert_zero_readers` proof).
+
+### IC-07 — Canonical WP-view reconstruction reader (collapse 3 gates → 1)
+
+- **Purpose**: Replace the three independently hand-rolled snapshot-authority gates with ONE reader that
+  reconstructs a WP's resolved final-state from the event log/snapshot for all dynamic fields, and
+  surfaces the authored/recommended assignment from frontmatter **distinctly** — so the dashboard, the
+  CLI status board, and `WorkPackage` can never disagree.
+- **Relevant requirements**: FR-012, C-008 (authored vs resolved never conflated), SC-007, SC-008.
+- **Affected surfaces**: NEW `status/wp_view.py::reconstruct_wp_view(feature_dir, wp_id)` (or extend
+  `status/wp_metadata.py::_resolve_runtime_fields_from_snapshot`); force the three readers onto it —
+  `dashboard/scanner.py::_process_wp_file`, `cli/commands/agent/tasks_status_cmd.py` (the `agent tasks
+  status` board — a **third missed reader**, reads `agent_profile` via `extract_scalar` at :289 and feeds
+  the human-in-charge sentinel `_get_hic_marker`), `task_utils/support.py::WorkPackage` (no
+  `model`/`role`/`agent_profile` property today; third copy of the gate). Also decide the **subtasks
+  split-brain**: the dashboard counts `tasks.md` checkboxes while the snapshot has a `subtasks` slot —
+  pick the snapshot as authority.
+- **Sequencing/depends-on**: IC-03/IC-04 (reads the post-cutover snapshot) and IC-08 (needs the resolved
+  `role`/`profile`/`model` slots to reconstruct them).
+- **Risks**: the three gates encode subtly different fallback behaviour; unify carefully and keep a test
+  per consumer proving parity (SC-007). `prompt_builder.py` reads authored `agent_profile` for governance
+  rendering — that is authored intent (correctly frontmatter); do not reroute it.
+
+### IC-08 — Resolved-binding event vocabulary + model/profile resolve seam
+
+- **Purpose**: Record the **actual** resolved `role`/`agent_profile`(+version)/`model`/`provider` on the
+  event log at each pick-up, folded latest-wins into the snapshot, so the reconstruction reader (IC-07)
+  has a source. This is the net-new eviction (these fields are NOT in the event vocabulary today).
+- **Relevant requirements**: FR-013 (vocabulary), FR-014 (resolve seam), C-007 (never re-read frontmatter),
+  C-009 (ADR), SC-008.
+- **Affected surfaces**:
+  - **Vocabulary**: extend `WPInnerStateDelta` (`status/models.py:381-403` + `to_dict`/`from_dict`/`is_empty`)
+    OR carry the structured actor on the claim `StatusEvent` — decide in IC-08a ADR. Reducer:
+    `status/reducer.py` `_RUNTIME_SLOTS` + `_apply_annotation_delta`; add `role`/`agent_profile`/
+    `agent_profile_version`/`model`/`provider` slots.
+  - **Resolve seam (the real work)**: `model` is advisory-only (`invocation/executor.py:264-265`
+    `RoutingRecommendation`, never persisted); thread the genuinely-resolved model + profile into the
+    claim-time emit at `workflow_executor.py` (implement-claim :845, review-claim :1503-1514) and the
+    `tasks_move_task.py` reassign. Resolved profile comes from `resolve_profile`/`resolved_agent()` (also
+    recorded on the Op path `invocation/record.py` — reuse, do not re-read frontmatter; C-007).
+  - **Backfill**: seed the authored frontmatter values as the historical resolved actual for pre-existing
+    missions (extend the backfill library's `MUTABLE_FIELDS`/delta build).
+  - **IC-08a — ADR (C-009)**: author the field-authority ADR (addendum to `2026-07-19-1`, which deferred
+    model election as blocker B4): resolved `role`/`agent_profile`/`model` → dynamic/event; authored →
+    static/frontmatter. Add `authored intent`/`resolved binding` to `docs/context/identity.md`.
+- **Sequencing/depends-on**: IC-01b/IC-03 (post-cutover snapshot is authority); ADR (IC-08a) precedes the
+  vocabulary change. Feeds IC-07 and IC-09.
+- **Risks**: model resolution is the genuine unknown — verify a resolved model is actually available at
+  the claim seam (dispatch `--model` / `RoutingRecommendation`); if not universally available, record what
+  is and mark absence explicitly (never fabricate). #2093's C-007 line: the recorded value must come from
+  the resolver, never the frontmatter string.
+
+### IC-09 — SaaS fan-out of the resolved binding
+
+- **Purpose**: Deliver the resolved binding across the package boundary to the SaaS consumer (already
+  aware), preferentially with zero shared-package change.
+- **Relevant requirements**: FR-015.
+- **Affected surfaces**: **Preferred** — enrich the structured `actor` (`{role, profile, tool, model}`) on
+  the claim/review `StatusEvent` and its existing lane fan-out (`_saas_fan_out`, `emit.py:954-1008`);
+  `spec_kitty_events` 6.1.0 `StatusTransitionPayload.actor` is already `Union[str, Dict]` → no shared-package
+  change. **Fallback** — a new `WPResolvedBindingChanged` shared event + a fan-out added to
+  `emit_inner_state_changed` (which has none today, `emit.py:941-949`), version-gated exactly like the
+  genesis-lane gate (`emit.py:82-94`).
+- **Sequencing/depends-on**: IC-08 (the resolved actuals must exist to fan out). Coordinate the final
+  contract with the SaaS team.
+- **Risks**: cross-repo — if the fallback off-axis event is chosen, it needs a `spec_kitty_events` release;
+  the version gate lets #2816 land the local event now and enable fan-out when the package ships (do NOT
+  block on the external release). Feature-detect the structured-dict actor defensively before sending.

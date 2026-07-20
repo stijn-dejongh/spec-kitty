@@ -54,6 +54,33 @@ about.
 | `_SANCTIONED_READER_MODULES` (#2093 tolerated set) | → `frozenset()` | IC-05 |
 | inert `wp_metadata` fields + `WP_FIELD_ORDER` slots | **removed** (optional) | IC-06 |
 
+## Resolved runtime identity (event-sourced) vs authored recommendation (frontmatter)
+
+Added by the 2026-07-20 operator decision (FR-012–FR-015). Two *distinct* representations of a WP's
+role/profile/model, never conflated (C-008):
+
+| | **Authored / recommended** | **Resolved / actual** |
+|---|---|---|
+| Meaning | who/what a WP was *designed* to run by | who/what *actually* resolved and ran it |
+| Authority | frontmatter (static, `#2093` authored-intent) | event log → snapshot (dynamic, latest-wins) |
+| Fields | authored `role`, `agent_profile`, `model` | resolved `role`, `agent_profile`(+`agent_profile_version`), `model`, `provider` |
+| Written | once, at tasks-finalize | at each pick-up/claim/reassign transition |
+| Lifecycle | fixed | **shifts** (implementer→reviewer, model swap) — the reason it must be event-sourced |
+| Source of truth for the recorded value | n/a | `resolve_profile`/`resolved_agent()` / dispatch resolution — **never** the frontmatter string (C-007) |
+
+**New event vocabulary (IC-08)** — NOT present today; to be added:
+- `WPInnerStateDelta` (or the structured claim-transition `actor`) gains `role`, `agent_profile`,
+  `agent_profile_version`, `model`, `provider`.
+- reducer `_RUNTIME_SLOTS` + `_apply_annotation_delta` gain matching latest-wins slots.
+- backfill seeds the authored frontmatter values as the historical resolved actual for legacy missions.
+
+**Reconstruction reader (IC-07)** — one `reconstruct_wp_view(feature_dir, wp_id)` replaces the three
+hand-rolled gates (dashboard scanner, `agent tasks status` board, `WorkPackage`), assembling resolved
+fields from the snapshot and authored fields from frontmatter (distinctly labeled).
+
+**SaaS delivery (IC-09)** — the resolved actual rides the structured `actor` (`{role, profile, tool,
+model}`) on the claim `StatusEvent`; `spec_kitty_events` 6.1.0 already accepts it.
+
 ## Invariants (acceptance-shaping)
 
 - **INV-1 (fail-closed)**: `status_phase` is `"1"` for a mission **iff** that mission's backfill+verify
@@ -65,3 +92,10 @@ about.
   (NFR-002)
 - **INV-5 (no repo-root write)**: all event writes resolve via `canonicalize_feature_dir`; nothing lands
   at repo root. (C-003, #2815)
+- **INV-6 (resolved from resolver, never frontmatter)**: a recorded resolved `agent_profile`/`role`/`model`
+  originates from `resolve_profile`/`resolved_agent()` / dispatch resolution, never a copy of the
+  frontmatter `agent_profile` string. (C-007, FR-013)
+- **INV-7 (authored ≠ resolved)**: every WP-view consumer surfaces authored recommendation and resolved
+  actual as distinct values; the reconstruction reader is the single assembly point. (C-008, FR-012, SC-007)
+- **INV-8 (latest-actual wins)**: after multiple pick-ups, the reconstructed resolved identity equals the
+  most recent transition's actual, with 0 bytes written to `tasks/WP##.md`. (FR-013, SC-008)

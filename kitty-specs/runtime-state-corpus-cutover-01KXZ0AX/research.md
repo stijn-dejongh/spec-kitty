@@ -114,6 +114,12 @@ authoritative design ground for `/spec-kitty.tasks`.
 - **Alternatives rejected**: rely on the consumer upgrade migration to cover the dogfood repo — it runs
   on `spec-kitty upgrade`, not on this mission's merge, so it does not close the in-repo window.
 
+> **⚠️ D-08/D-09 SUPERSEDED IN PART by the 2026-07-20 operator decision** — see D-10/D-11 below. D-08's
+> "escalation is a conditional follow-up" is now "SaaS delivery is in scope, via the existing structured
+> actor (no shared-package change)". D-09's "keep `agent_profile`/`role` frontmatter" is reversed for the
+> *resolved actual* (event-sourced); only the *authored* recommendation stays frontmatter. Kept for the
+> audit trail.
+
 ## D-08 — `InnerStateChanged` stays LOCAL; escalation to `spec_kitty_events` is a conditional follow-up, not this slice
 
 - **Decision**: Do **not** escalate `InnerStateChanged` into the shared `spec_kitty_events` package to
@@ -145,6 +151,46 @@ authoritative design ground for `/spec-kitty.tasks`.
 - **Why it matters**: the dashboard is the operator's primary runtime-state view; post-cutover, reading
   stale/stripped frontmatter would show wrong `agent`/`assignee`/progress. This is exactly the
   split-brain #2093 forbids — and the class the invariant must actually cover to be meaningful.
+
+## D-10 — Resolved runtime IDENTITY (role/profile/model) is event-sourced; authored intent stays frontmatter (operator decision 2026-07-20)
+
+- **Decision**: The *actual* `role`, `agent_profile` (+version), `model`, and `provider` that take a WP
+  are recorded on the event log at each **pick-up/claim/reassign** transition and folded **latest-wins**
+  into the snapshot. The WP/dashboard reader reconstructs this resolved final-state from the event log;
+  the *authored/recommended* assignment stays frontmatter-canonical and is shown **distinctly**.
+- **Rationale (the operator's lifecycle argument)**: the actual identity **shifts** across the WP
+  lifecycle — an implementer profile on model A claims it, a reviewer profile on model B picks it up, a
+  model can be swapped mid-cycle. A single static frontmatter value is therefore **wrong mid-cycle**;
+  only the event log's latest-actual reduction is correct. This is why a *pre-computed/pre-advised* value
+  cannot be the canonical "what is running this WP".
+- **Grounding (3-lens research)**: these fields are NOT event-sourced today — `WPInnerStateDelta` carries
+  no `profile`/`model`/`role`; the `agent` slot holds only the bare `--agent` string; `model` is
+  persisted nowhere (advisory `RoutingRecommendation` only; ADR-2026-07-19-1 deferred it as blocker B4);
+  resolved profile is recorded only on the dispatch/Op path (`kitty-ops`, keyed by invocation_id, no
+  WP-lane back-ref). So this is **net-new vocabulary + a resolve seam** (IC-08), not a reroute.
+- **#2093 guard (C-007)**: the recorded value MUST come from `resolve_profile`/`resolved_agent()` / the
+  dispatch resolution — copying the frontmatter `agent_profile` string into an event would manufacture a
+  *new* split-brain (the exact anti-pattern #2093 forbids).
+- **role reversal**: the #2093 ruling text lists `role` as dynamic; an interim note had kept it
+  frontmatter. Ratified here (C-009 ADR) as: authored role → frontmatter; **actual** role → event-sourced.
+- **Scope**: this is #2093's resolved-binding "record" slice + #2400's WP-metadata half. The full #2399
+  fail-closed *enforcement* (agent cannot act without a resolved+recorded profile) stays OUT.
+
+## D-11 — SaaS delivery rides the existing structured `actor`; no shared-package change on the preferred path
+
+- **Decision**: Deliver the resolved binding to the SaaS consumer by enriching the **structured `actor`**
+  (`{role, profile, tool, model}`) on the claim/review `StatusEvent` and its existing `_saas_fan_out`
+  (`emit.py:954-1008`). `spec_kitty_events` 6.1.0 `StatusTransitionPayload.actor` is already
+  `Union[str, Dict]` accepting exactly that shape → **zero shared-package change**.
+- **Fallback**: if the SaaS UI needs an *off-transition* binding-change event (e.g. a mid-WP model swap
+  with no lane change), add a `WPResolvedBindingChanged` shared event + a fan-out to
+  `emit_inner_state_changed` (which has none today), **version-gated** exactly like the genesis-lane gate
+  (`_EVENTS_SUPPORTS_… = hasattr(spec_kitty_events, "WPResolvedBindingChanged")`). This lets #2816 land the
+  local event now and enable fan-out when the package ships — never block on the external release.
+- **Do NOT escalate `InnerStateChanged` itself** — it is a grab-bag (shell_pid/subtasks/tracker_refs) the
+  SaaS consumer does not want; the actor-on-transition or a purpose-built binding event is cleaner.
+- **Sequencing (cross-repo)**: `spec_kitty_events` is external (consume via public imports only). Preferred
+  path needs no release. Fallback path: local-first + version-gated fan-out (option i), never block-on-shared.
 
 ## Risks & pre-existing-red discipline (charter: Pre-existing Failure Reporting)
 

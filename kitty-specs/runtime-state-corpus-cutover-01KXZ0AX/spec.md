@@ -24,6 +24,17 @@ backfill + fail-closed verify + an upgrade path for existing deployments), not a
 governing contract is `kitty-specs/wp-runtime-state-eviction-01KXWN13/contracts/migration.md`; the
 ADR of record is `docs/adr/3.x/2026-07-19-1-wp-runtime-state-event-log-eviction-via-innerstatechanged.md`.
 
+**Scope generalization (operator decision 2026-07-20).** Beyond flipping the flag, the mission makes
+the **WP/dashboard reader** reconstruct a WP's **resolved final-state from the event log** rather than
+reading in-file metadata for canonical status — and generalizes the eviction to the WP's runtime
+**identity**: the *actual* `role`, `agent_profile`, and `model` that take a WP are **event-sourced**
+(recorded at each pick-up), distinct from the *authored/recommended* assignment that stays
+frontmatter-canonical. The reason is a lifecycle one: the actual identity **shifts** (implementer→reviewer,
+model swaps), so a static frontmatter value is wrong mid-cycle. This implements the resolved-binding
+("record + reconstruct") half of #2093's ruling and the WP-metadata slice of sub-epic #2400; the full
+fail-closed *enforcement* (#2399) stays out of scope. A SaaS consumer for the resolved binding is in the
+works (the SaaS team is aware); delivery rides the existing structured `actor` on the claim transition.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Operator runs a safe, fail-closed corpus cutover (Priority: P1)
@@ -158,6 +169,40 @@ references them; the full suite stays green. If deferred, the mission still comp
 
 ---
 
+### User Story 6 - WP runtime identity reflects the actual, reconstructed from the event log (Priority: P2)
+
+The dashboard, the `agent tasks status` board, and every WP-view consumer must show a WP's **resolved
+actual** runtime identity — the `role`/`agent_profile`/`model` that genuinely took the WP — reconstructed
+from the event log, not the stale authored recommendation in frontmatter. Because that identity **shifts
+across the lifecycle** (an implementer profile on model A claims it, later a reviewer profile on model B
+picks it up), a single frontmatter value is wrong mid-cycle; only the event log's latest-actual reduction
+is correct. The authored/recommended assignment is still shown, but **distinctly labeled** — never
+conflated with the actual.
+
+**Why this priority**: This is the operator's canonical-authority decision generalized beyond the
+#2684-evicted fields. It closes the split-brain where a viewer trusts a pre-advised profile/model that no
+longer matches reality. It depends on the cutover (US1–US4) but is the reason the reconstruction reader
+exists.
+
+**Independent Test**: Drive a WP through implement-claim (profile P1/model M1) then review-claim
+(profile P2/model M2). Assert the reconstructed view shows the *current* actual (P2/M2) after the review
+claim, the authored recommendation from frontmatter separately, and that all three readers (dashboard,
+status board, `WorkPackage`) agree because they share one reconstruction path.
+
+**Acceptance Scenarios**:
+
+1. **Given** a WP claimed by an implementer (profile P1, model M1), **When** the reconstruction reader
+   assembles its view, **Then** the resolved `role`/`agent_profile`/`model` = P1/M1 (from the event log),
+   and the authored recommendation is shown as a distinct field.
+2. **Given** that WP later review-claimed (profile P2, model M2), **When** the view is reassembled,
+   **Then** the resolved actuals update to P2/M2 (latest-wins reduction) with no frontmatter write.
+3. **Given** the dashboard, the `agent tasks status` board, and `WorkPackage`, **When** each renders the
+   same WP, **Then** they agree (one shared reconstruction reader, three gates collapsed to one).
+4. **Given** the recorded resolved profile, **When** it is written, **Then** it came from
+   `resolve_profile`/`resolved_agent()`, never a copy of the frontmatter `agent_profile` string (#2093).
+
+---
+
 ### Edge Cases
 
 - **A WP that was never claimed** carries no claim anchor; its runtime seeds are skipped (a
@@ -187,11 +232,15 @@ references them; the full suite stays green. If deferred, the mission still comp
 | FR-004 | Unconditional reader/writer cutover | As a maintainer, I want the flag-OFF (legacy/dual-write) branch removed across **all 12 call sites in 11 files** — the brief's 10 files **plus `cli/commands/agent/tasks_status_cmd.py`, and note `task_utils/support.py` carries two sites** — so the reduced snapshot is always the authority and runtime writes are event-only. Remove each paired local `from specify_cli.status import …` import too. | High | Open |
 | FR-005 | Delete the phase-1 predicate | As a maintainer, I want `_phase1_snapshot_authority_active` (`status/emit.py`) and its status-facade export (`status/__init__.py` alias `phase1_snapshot_authority_active` + `__all__` entry) deleted so that no runtime flag remains. `_legacy_lane_mirror_enabled` is **kept** (C-004). | High | Open |
 | FR-006 | Replace + delete T037 legacy fallbacks | As a maintainer, I want the legacy fallbacks removed: (a) the verdict/review-field read fallback in `cli/commands/agent/workflow_cores.py` (`resolve_review_feedback_context`), and (b) the done-evidence synthesis in `merge/done_bookkeeping.py` (`_extract_done_evidence`). **(b) requires BUILDING the event-sourced done-evidence read first** — neither `_extract_done_evidence` nor the `:295` fallback reads the snapshot `review` slot today; that snapshot-sourced read must be wired and tested (event-only mission, no frontmatter review → correct `DoneEvidence`) **before** the frontmatter synthesis is deleted (C-001 order). | High | Open |
-| FR-007 | Route bypass readers onto the snapshot seam | As a maintainer, I want every ungated frontmatter runtime reader resolved via the snapshot accessor: `tasks_move_task.py` (`agent`/`current_agent`), `workflow_cores.py` (`review_status`/`review_feedback`), and **`dashboard/scanner.py`** (`agent`/`assignee`/subtask-completion — a MISSED reader that uses `read_wp_frontmatter().<attr>` attribute access, keeping `agent_profile`/`role` frontmatter-sourced). **Note:** the `workflow_cores.py` read is the **same code block** as FR-006(a) — ONE edit. A `/tasks` surface sweep must also confirm the writer-side (`frontmatter.write_shell_pid_claim`, `task_metadata_validation` template emitters) and partial readers (`stale_detection`, `ownership/frontmatter_source`, `context/resolver`). | High | Open |
+| FR-007 | Route bypass readers onto the snapshot seam | As a maintainer, I want every ungated frontmatter runtime reader for the **#2684-evicted fields** resolved via the snapshot accessor: `tasks_move_task.py` (`agent`/`current_agent`), `workflow_cores.py` (`review_status`/`review_feedback`), and **`dashboard/scanner.py`** + **`tasks_status_cmd.py`** (`agent`/`assignee`/subtask-completion — MISSED readers using `read_wp_frontmatter().<attr>` / `extract_scalar` attribute access). Resolved `role`/`agent_profile`/`model` reconstruction is FR-012/FR-013 (event-sourced, not "keep frontmatter"). **Note:** the `workflow_cores.py` read is the **same code block** as FR-006(a) — ONE edit. A `/tasks` surface sweep must also confirm the writer-side (`frontmatter.write_shell_pid_claim`, `task_metadata_validation` template emitters) and partial readers (`stale_detection`, `ownership/frontmatter_source`, `context/resolver`). | High | Open |
 | FR-008 | Harden the #2093 invariant | As a maintainer, I want the #2093 invariant to forbid **any** frontmatter authority read: reduce `_SANCTIONED_READER_MODULES` to `frozenset()`, rewrite the now-vacuous canonical-gate-identity arm into a "zero frontmatter-authority reads" assertion, **and EXTEND the detector to catch attribute-access reads** (`read_wp_frontmatter().<field>` / `WPMetadata`/`WorkPackage` runtime attributes) — today it only matches `extract_scalar(…)`, so emptying the tolerated set alone is a false green (the dashboard reader escapes it). Prove the extended detector flags the dashboard scanner red before FR-007 reroutes it. | High | Open |
 | FR-009 | Reconcile the split test suite | As a maintainer, I want the flag-ON/flag-OFF split test suite reconciled — flag-OFF dual-write tests deleted or re-pointed, flag-ON assertions made unconditional — so the suite reflects the single end-state. | High | Open |
 | FR-010 | Upgrade-path migration | As an upgrading user, I want the runtime-state backfill+verify to run as an **auto-discovered** `m_<version>_runtime_state_backfill.py` upgrade migration (self-registers via `@MigrationRegistry.register`; version-key ordered to sort **after** the charter folds; idempotent; no-op on fresh installs; fail-closed on verify failure) so my corpus migrates safely. | High | Open |
-| FR-011 | IC-08 inert-field reduction | As a maintainer, I want the now-inert `wp_metadata` fields and cosmetic `WP_FIELD_ORDER` slots reduced, safe only post-cutover, so the model carries no dead runtime slots. (The six-way `wp_snapshot_state` accessor dedup already shipped in #2817 — scope is field/slot removal only.) | Low (optional/deferrable) | Open |
+| FR-011 | Inert-field reduction (deferred #2684 cleanup) | As a maintainer, I want the now-inert `wp_metadata` fields and cosmetic `WP_FIELD_ORDER` slots reduced, safe only post-cutover, so the model carries no dead runtime slots. (The six-way `wp_snapshot_state` accessor dedup already shipped in #2817 — scope is field/slot removal only.) | Low (optional/deferrable) | Open |
+| FR-012 | Canonical WP-view reconstruction reader | As a maintainer, I want the **three** hand-rolled snapshot-authority gates — `dashboard/scanner.py`, `cli/commands/agent/tasks_status_cmd.py` (the `agent tasks status` board), and `task_utils/support.py::WorkPackage` — collapsed into **one** canonical reader that reconstructs a WP's **resolved final-state from the event log/snapshot** for all dynamic fields (lane, agent, assignee, subtasks, review, and the resolved `role`/`agent_profile`/`model` from FR-013), while surfacing the **authored/recommended** assignment from frontmatter **distinctly labeled** (so the dashboard shows "assigned X / running Y" without conflating them). No reader hand-rolls its own gate afterward. | High | Open |
+| FR-013 | Resolved-binding event vocabulary (role/profile/model actuals) | As an operator, I want the **actual** resolved `role`, `agent_profile` (+ `agent_profile_version`), `model`, and `provider` that take a WP **recorded on the event log at each pick-up/claim/reassign transition**, folded latest-wins into the snapshot, so the reconstructed view reflects what genuinely ran — because these actuals **shift across the WP lifecycle** (implementer→reviewer, model swaps), a static frontmatter value is wrong mid-cycle. The recorded value MUST come from `AgentProfileRepository.resolve_profile`/`resolved_agent()`, **never** the frontmatter `agent_profile` string (#2093). The **authored/recommended** assignment stays frontmatter-canonical. | High | Open |
+| FR-014 | Model/profile resolve seam | As a maintainer, I want a resolve seam that threads the **genuinely-resolved model** (from the dispatch `--model` / `RoutingRecommendation.model`, which is advisory-only and persisted nowhere today) and resolved profile into the claim-time emit, so FR-013 records real actuals, not a re-read of frontmatter. Home: the claim seams (`workflow_executor.py` implement-claim + review-claim; `tasks_move_task.py` reassign). | High | Open |
+| FR-015 | SaaS fan-out of resolved binding | As the SaaS team (consumer, already aware of the new event), I want the resolved-binding actuals delivered across the package boundary — preferentially by enriching the **structured `actor`** (`{role, profile, tool, model}`) on the claim/review transition, which `spec_kitty_events` 6.1.0 `StatusTransitionPayload.actor` **already accepts** (`Union[str, Dict]`) → **zero shared-package change**; add a version-gated off-axis fan-out from `emit_inner_state_changed` only if an off-transition binding-change event is required. Coordinate the contract with the SaaS team. | Medium | Open |
 
 ### Non-Functional Requirements
 
@@ -214,6 +263,9 @@ references them; the full suite stays green. If deferred, the mission still comp
 | C-004 | Lane-mirror out of scope | `_legacy_lane_mirror_enabled` is retained — the `lane` field is still frontmatter-authored, so evicting it is a separate concern deferred to its own follow-up. | Technical | Medium | Open |
 | C-005 | Honesty bound (no-data-loss) | "No data loss" is asserted against count+value parity of the reduced snapshot, not temporal fidelity: backfilled subtask timestamps are clamped and seed ULIDs are content-namespaced. Holds only because no consumer reads subtask-completion time or relies on seed-ULID chronological order — asserted as a precondition. | Technical | Medium | Open |
 | C-006 | No dead-symbol / arch-gate drift | The 15-symbol `_CATEGORY_C_DEFERRED_RUNTIME_STATE_BACKFILL_CUTOVER` frozenset in `tests/architectural/test_no_dead_symbols.py` (content-hash pins for the WP03 backfill library) MUST be **removed** in the same WP that first wires a caller — the ratchet + `test_auto_exempt_disjoint_from_hand_allowlist` trips otherwise. `test_2093`'s `_SANCTIONED_READER_MODULES` → `frozenset()`. Updated in-mission, never suppressed; no new `# noqa`/`# type: ignore`. | Technical | High | Open |
+| C-007 | Resolved binding never re-reads frontmatter | The recorded resolved `agent_profile`/`role`/`model` MUST be produced by `resolve_profile`/`resolved_agent()` / the dispatch resolution, **never** by copying the frontmatter `agent_profile` string into an event (#2093: copying static intent into events manufactures a *new* split-brain). | Technical | High | Open |
+| C-008 | Authored intent and resolved actual never conflated | The reconstruction reader surfaces the frontmatter **authored/recommended** assignment and the event-sourced **resolved actual** as **distinct** values; no consumer treats the authored value as "what ran" or the resolved value as "what was intended". | Technical | Medium | Open |
+| C-009 | Field-authority ADR of record | The per-field authority decision (resolved `role`/`agent_profile`/`model` → dynamic/event-log; authored assignment → static/frontmatter) is recorded as an ADR (addendum to `2026-07-19-1`, which deferred model election as blocker B4) before the vocabulary lands — a per-field authority ruling is ADR-worthy per #2093 precedent. | Process | High | Open |
 
 ### Key Entities
 
@@ -228,8 +280,29 @@ references them; the full suite stays green. If deferred, the mission still comp
   `meta.json` `status_phase`; to be deleted.
 - **`status_phase` (meta.json)**: the per-mission cutover marker the CLI flips atomically after a
   passing verify (the only writer of this field).
-- **Bypass readers (`tasks_move_task.py`, `workflow_cores.py`)**: the two ungated frontmatter
-  authority reads (#2093 debt) to be routed onto the snapshot seam.
+- **Bypass readers (`tasks_move_task.py`, `workflow_cores.py`, `dashboard/scanner.py`, `tasks_status_cmd.py`)**:
+  the ungated frontmatter authority reads (#2093 debt) routed onto the snapshot seam.
+- **Resolved binding (event-sourced)**: the *actual* `role` + `agent_profile` (+ version) + `model` +
+  `provider` that took a WP at a pick-up/claim/reassign transition; folded latest-wins into the snapshot.
+- **Authored/recommended assignment (frontmatter)**: the *design-intent* `role`/`agent_profile`/`model`
+  authored at tasks-finalize; static, frontmatter-canonical; distinct from the resolved actual.
+- **Canonical WP-view reconstruction reader**: the single reader (replacing the three hand-rolled gates)
+  that assembles a WP's resolved final-state from the snapshot + authored intent from frontmatter.
+- **Structured actor (`spec_kitty_events` 6.1.0 `StatusTransitionPayload.actor`)**: `Union[str, Dict]`
+  carrying `{role, profile, tool, model}` — the SaaS delivery vehicle for the resolved binding (FR-015).
+
+## Domain Language *(canonical terms — use consistently)*
+
+- **Authored intent** (a.k.a. *assigned/recommended*, *static design-intent*): who/what a WP was
+  designed to be run by — authored once at planning, **frontmatter-canonical**, never mirrored into
+  events. Fields: authored `role`/`agent_profile`/`model` recommendation.
+- **Resolved binding** (a.k.a. *actual on pick-up*, *dynamic runtime state*): who/what **actually**
+  resolved and ran the WP at a given lifecycle transition — **event-log/snapshot-authoritative**,
+  latest-wins. Shifts across the lifecycle (implementer→reviewer, model swaps). Produced by
+  `resolve_profile`/`resolved_agent()`; never a re-read of the frontmatter string.
+- **Canonical authority**: exactly one source per datum — static → frontmatter; dynamic → event log.
+  (Terms `authored intent` / `resolved binding` are #2093-ruling vocabulary, pending glossary adoption
+  in `docs/context/identity.md` — see C-009.)
 
 ## Success Criteria *(mandatory)*
 
@@ -247,6 +320,13 @@ references them; the full suite stays green. If deferred, the mission still comp
   and no-ops on a fresh install; a verify failure aborts the step with an actionable message.
 - **SC-006**: The full `tests/architectural/` suite (per-file) and the `status` suite are green on
   the branch; `ruff` + `mypy` clean with no new suppressions.
+- **SC-007**: The dashboard, the `agent tasks status` board, and `WorkPackage` return the **same**
+  resolved runtime state for a WP (one shared reconstruction reader; three hand-rolled gates → one).
+- **SC-008**: After a WP is implement-claimed (profile P1/model M1) then review-claimed (P2/M2), the
+  reconstructed view shows the **current actual** (P2/M2) from the event log — with **0 bytes** written
+  to `tasks/WP##.md` — while the authored recommendation remains readable and distinctly labeled.
+- **SC-009**: The extended #2093 detector flags an attribute-access frontmatter runtime read (e.g. the
+  pre-reroute dashboard scanner) **red**, and is green only once every such reader resolves the snapshot.
 
 ## Out of Scope & Follow-ups
 
@@ -256,21 +336,25 @@ references them; the full suite stays green. If deferred, the mission still comp
   deems the lane deferral to hold #2093 open, downgrade the PR to `Contributes to #2093`.
 - **IC-08 (FR-011)** — if deferred rather than landed in-mission, **file a fresh follow-up issue** so
   nothing tracked in #2816's scope dangles.
-- **Profile-loading authority half of the #2400 epic** (#2399) — out of scope; this mission advances the
-  **WP-metadata dynamic-state** half of #2400 (concretely implementing #2093's "dynamic runtime state
-  retires to event-log authority" ruling) but does not touch #2399's `resolve→materialize→record`
-  profile-loading seam.
-- **Escalating `InnerStateChanged` to `spec_kitty_events`** — NOT required to close #2816 (the event fans
-  out nowhere; the only cross-boundary contract is lane transitions, already shared). **Conditional
-  follow-up**: if a future SaaS surface must display live WP runtime state, add a shared
-  `WPRuntimeStateChanged` event + a fan-out in `emit_inner_state_changed`. Product decision, not a
-  correctness gap here (see research D-08).
+- **The "record" slice of the resolved-binding half is now IN SCOPE** (operator decision 2026-07-20):
+  FR-012–FR-015 record the resolved `role`/`agent_profile`/`model` actuals and reconstruct the WP view
+  from them. **Out of scope remains #2399's full fail-closed *enforcement*** — an agent being unable to
+  act without a resolved+recorded profile, across ops/dispatch/ad-hoc/mission-WP. This mission does
+  **record + reconstruct**; #2399 owns **enforce**.
+- **Escalating to `spec_kitty_events`** — the SaaS delivery (FR-015) rides the **existing** structured
+  `actor` on the claim transition (`spec_kitty_events` 6.1.0 already accepts `{role, profile, tool,
+  model}`), so **no shared-package change is required** for the preferred path. A new off-axis shared
+  event (`WPResolvedBindingChanged`) + a `emit_inner_state_changed` fan-out is the **fallback**, added
+  behind a version gate (mirroring the genesis-lane gate) only if an off-transition binding-change event
+  is needed. Coordinate the final contract with the SaaS team (already aware).
 
-**Closing posture for the eventual PR:** `Closes #2816` **only if** FR-001–FR-010 all land **and**
-IC-08 is either completed or split to a filed follow-up; otherwise `Contributes to #2816`.
-`Closes #2093` iff FR-007 + FR-008 land (both in US4, inside the DoD) and the lane-mirror follow-up
-is filed. `Contributes to #2400` (never Closes). Establish tracker links: #2400 → #2093 → #2816;
-note downstream dependant #2819 (event-log replay) and co-constraint #2815 (repo-root write class).
+**Closing posture for the eventual PR:** `Closes #2816` **only if** FR-001–FR-015 land (or FR-011/optional
+and any deferred slice are split to filed follow-ups); otherwise `Contributes to #2816`. `Closes #2093`
+iff the resolved-binding record + reconstruction (FR-012–FR-014) and the invariant hardening (FR-008)
+land and the lane-mirror follow-up is filed. `Contributes to #2400` and `Contributes to #2399` (the
+record slice; #2399 stays open for enforcement) — never Closes either. Establish tracker links:
+#2400 → {#2093, #2399} → #2816; note downstream dependant #2819 (event-log replay) and co-constraint
+#2815 (repo-root write class). *(Tracker refreshed 2026-07-20 — comments posted on #2093/#2400/#2399.)*
 
 ## Pre-planning verification note
 
@@ -295,3 +379,12 @@ lives under `merge/`; the upgrade migration is **auto-discovered** (no registry-
 - **The WP03 backfill library is complete and correct** (seed backfill + fail-closed verify that
   catches value tampering regardless of ULID fold order); this mission wires + invokes it, and does
   not re-derive it.
+- **Resolved-binding scope (operator decision 2026-07-20)**: `role`/`agent_profile`/`model` **actuals**
+  are event-sourced (all three), distinct from the frontmatter **authored** recommendation, because the
+  actual identity shifts across the WP lifecycle. This mission owns **record + reconstruct** (FR-012–015);
+  #2399 owns the full fail-closed **enforcement**.
+- **SaaS delivery rides the existing structured `actor`** (`spec_kitty_events` 6.1.0), so no shared-package
+  release blocks this mission; a new off-axis shared event is a version-gated fallback only.
+- **`role` is treated as a resolved actual** here (per the #2093 ruling text), reversing the earlier
+  interim "keep role frontmatter" note — the authored role recommendation still lives in frontmatter, but
+  the *actual* role that ran is event-sourced. Ratified in the C-009 ADR.
