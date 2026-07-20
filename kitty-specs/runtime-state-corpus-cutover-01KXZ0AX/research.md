@@ -18,31 +18,35 @@ authoritative design ground for `/spec-kitty.tasks`.
   CLI — brittle, couples migration to CLI parsing; (b) duplicate verify-then-flip in each caller —
   drifts, and a bug fixed in one is missed in the other.
 
-## D-02 — status_phase is the *sole-writer, post-verify migrated-marker*; correctness rests on ordering, not a runtime gate
+## D-02 — status_phase is the sole-writer, post-verify flip; it stays a LIVE runtime gate for the kept lane mirror (corrected post-planning)
 
 - **Decision**: The cutover helper is the **only** writer of `meta.json` `status_phase`, and writes it
-  **only after** a mission's verify passes (FR-003). After IC-03 deletes the predicate, runtime readers
-  are **unconditional** (always the snapshot) and no longer read `status_phase`; the field then serves
-  as a durable per-mission "backfilled + verified" audit/idempotency marker.
-- **Why this is coherent (the subtle part)**: Once readers are unconditional, an un-backfilled mission
-  reads `None` **regardless** of `status_phase`. So end-state correctness for existing deployments does
-  **not** come from a runtime gate — it comes from the **upgrade migration running the backfill before
-  the upgraded code serves a runtime read** (IC-02). `spec-kitty upgrade` installs new code and runs
-  migrations within one command; the only window where new-code-meets-un-backfilled-corpus is *inside*
-  that command, closed by the migration itself. This is standard migration sequencing; recorded as a
-  precondition (no concurrent spec-kitty runtime command during `upgrade`).
-- **Consequence / refuse-to-flip footgun**: because `status_phase` has no other writer, the guard
-  "refuse to flip a mission whose verify hasn't passed" is enforced by making the helper the sole path
-  that ever writes it — there is no hand-flip surface to abuse (the brief's explicit concern).
-- **Idempotency source of truth**: the **backfill seeds** (deterministic content-namespaced ULIDs),
-  not `status_phase`. A re-run seeds nothing because the ids already exist; `status_phase` is a fast
-  skip-hint, not the correctness anchor.
-- **Open refinement (→ IC-06 candidate, non-blocking)**: once readers are unconditional, `status_phase`
-  is inert at runtime. Retiring the meta field itself could fold into the IC-08 reduction — but only
-  after confirming zero readers. Kept OUT of the critical path; FR-003 as specified stands.
-- **Alternatives rejected**: drop `status_phase` entirely and rely only on backfill idempotency — loses
-  the audit marker and contradicts FR-003's explicit "sole writer" requirement; keep `status_phase` as a
-  live runtime gate — contradicts C-002 (unconditional; predicate deleted).
+  **only after** a mission's verify passes (FR-003). IC-03 deletes the phase-1 **reader-authority**
+  predicate `_phase1_snapshot_authority_active`, so *runtime-slot* readers become unconditional (always
+  the snapshot).
+- **CORRECTION (post-planning architect review)**: `status_phase` does **not** become inert after IC-03.
+  The kept `_legacy_lane_mirror_enabled` (`emit.py:413-424`, retained by C-004) **still reads
+  `status_phase`** via `_read_status_phase`. So:
+  - FR-003's atomic verify-then-flip is **load-bearing, not vestigial** — it now gates the *lane mirror*
+    rather than the deleted runtime-slot predicate. (This answers the brief's status_phase question: the
+    flip still matters.)
+  - **Side effect of the flip**: today every mission is `status_phase=0` → lane mirror **OFF**; flipping
+    a mission to `status_phase=1` **activates** the lane mirror for it. IC-03 must carry a regression
+    proving lane behaviour is unchanged by the activation. If activation proves problematic, decoupling
+    the lane mirror from `status_phase` is a **follow-up** (C-004 keeps it out of scope here).
+  - **IC-06 must NOT retire the `status_phase` field** — dropping it would silently disable the lane
+    mirror corpus-wide. `status_phase` is explicitly out of IC-06's bounds.
+- **Correctness for existing deployments** rests on the **upgrade migration running the backfill (and
+  flipping `status_phase`) before the upgraded code serves reads** (IC-02) — plus **IC-01b** backfilling
+  *this* repo's corpus in the mission's own merge unit. `spec-kitty upgrade` installs new code and runs
+  migrations within one command; the new-code-meets-un-backfilled-corpus window is *inside* that command,
+  closed by the migration (precondition: no concurrent spec-kitty runtime command during `upgrade`).
+- **Refuse-to-flip footgun**: because `status_phase` has no other writer, "refuse to flip a mission whose
+  verify hasn't passed" is enforced by making the helper the sole writer — no hand-flip surface to abuse.
+- **Idempotency source of truth**: the **backfill seeds** (deterministic content-namespaced ULIDs), not
+  `status_phase`; a re-run seeds nothing because the ids exist. `status_phase` is a fast skip-hint.
+- **Alternatives rejected**: drop `status_phase` entirely — breaks the lane mirror (C-004) and
+  contradicts FR-003; keep the runtime-slot predicate as a live gate — contradicts C-002.
 
 ## D-03 — CLI = per-mission best-effort; upgrade migration = fail-closed abort on any failure
 
@@ -91,6 +95,24 @@ authoritative design ground for `/spec-kitty.tasks`.
   same-string replacement.
 - **Re-verify trigger**: if, during implementation, the collapse proves mechanically uniform across
   sites, revisit and add the map. Current evidence (squad) says heterogeneous.
+
+## D-07 — The dogfood corpus backfill is a WP with an owner (BLOCKER-fix from post-planning review)
+
+- **Decision**: Add IC-01b — a WP that **runs** `migrate backfill-runtime-state` over **this repo's**
+  `kitty-specs/` and **commits** the resulting seed events + `status_phase` flips, landing in the same
+  merge unit as IC-03/IC-04, with edges `IC-01 → IC-01b → {IC-03, IC-04}`.
+- **Why (the failure it prevents)**: all 299 dogfood missions are `status_phase=0` today, and under the
+  flag-OFF path runtime slots are written to frontmatter **only, never emitted as events**
+  (`emit.py:314-317`). The moment IC-03 makes readers unconditional on local main, every dogfood mission
+  reads an **empty snapshot** → `_infer_subtasks_complete` fail-closes to `False`, ownership/review reads
+  return `None`, the suite goes red. IC-01 ships the *tool*; IC-02 backfills *consumers*; **no WP
+  backfilled this repo** — the exact contract-step-ownership gap the mission's own field report documents
+  (`docs/plans/engineering-notes/2026-07-19-migration-contract-step-ownership-field-report.md`). The plan
+  must own backfill *execution*, not just the *tool*.
+- **Merge-unit atomicity**: IC-01b must land before IC-03 during WP-by-WP merge to local main, else main
+  is transiently red. The dependency edges enforce it; the mission PR carries all three together.
+- **Alternatives rejected**: rely on the consumer upgrade migration to cover the dogfood repo — it runs
+  on `spec-kitty upgrade`, not on this mission's merge, so it does not close the in-repo window.
 
 ## Risks & pre-existing-red discipline (charter: Pre-existing Failure Reporting)
 

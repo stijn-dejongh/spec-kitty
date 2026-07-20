@@ -138,9 +138,16 @@ trap of two callers re-implementing verify-then-flip). Everything else is edits 
 ## Implementation Concern Map
 
 > Concerns are NOT work packages. `/spec-kitty.tasks` translates these into WPs. The **contract order**
-> (C-001) is the hard sequencing spine: IC-01 (backfill+verify+flip wiring) must precede IC-03
-> (unconditional flip), which must precede IC-04 (delete fallbacks). IC-05 hardens the end-state; IC-06
-> is an optional tail.
+> (C-001) is the hard sequencing spine: IC-01 (wire) → **IC-01b (RUN the backfill on this repo's own
+> corpus + commit the seeds)** → IC-03 (unconditional flip) → IC-04 (wire snapshot done-evidence, then
+> delete fallbacks). IC-05 hardens the end-state; IC-06 is an optional tail.
+>
+> **⚠️ Merge-unit atomicity (post-planning review, BLOCKER-fix):** IC-01b, IC-03, and IC-04 must land in
+> **one merge unit** (the mission PR) with the dependency edges below enforced during WP-by-WP merge to
+> local main. If IC-03 (unconditional readers) reaches local main before IC-01b has committed this
+> repo's seed events, **every dogfood mission reads an empty snapshot** and the suite goes red instantly
+> — this is the exact contract-step-ownership gap the mission's own field report documents. The plan
+> owns the backfill *execution*, not just the *tool*.
 
 ### IC-01 — Cutover orchestration + operator CLI (backfill → verify → atomic flip)
 
@@ -159,6 +166,22 @@ trap of two callers re-implementing verify-then-flip). Everything else is edits 
 - **Risks**: `status_phase` has no existing writer — this helper is the *only* writer; guard against a
   hand-flip of an unverified mission (refuse-to-flip on non-`ok` verify). Dead-symbol un-pin must land
   in the same WP that adds the caller. `#2815` class: write target via `canonicalize_feature_dir` only.
+
+### IC-01b — Execute the dogfood corpus backfill + commit the seeds (BLOCKER-fix)
+
+- **Purpose**: RUN `migrate backfill-runtime-state` over **this repo's own `kitty-specs/`** and **commit**
+  the resulting seed events + `status_phase` flips, so that when IC-03 makes readers unconditional, every
+  dogfood mission already has its runtime state in the event log. Without this, the contract's
+  *backfill-execution* step has no owner in the merge unit (the #2684 field-report failure mode).
+- **Relevant requirements**: FR-001/FR-002/FR-003 applied to *this* corpus; C-001 (order); NFR-001.
+- **Affected surfaces**: `kitty-specs/**/status.events.jsonl` (seed-event deltas — data, not code),
+  `kitty-specs/**/meta.json` (`status_phase` flips). No source edits.
+- **Sequencing/depends-on**: **depends-on IC-01**; **blocks IC-03 and IC-04**; lands in the same merge unit.
+- **Risks**: currently **all 299 dogfood missions are `status_phase=0`** and their runtime slots live in
+  frontmatter only (no events) — the seed diff is large but is exactly the migration payload. Acceptance:
+  post-run, `wp_snapshot_state` is non-empty for every mission that carries runtime state, corpus-wide
+  `verify_backfill` is `ok`, and a sampled done mission's `_infer_subtasks_complete` returns the correct
+  value **with the predicate deleted** (dry-run IC-03 locally to prove it). Re-runnable/idempotent.
 
 ### IC-02 — Upgrade-path migration (existing deployments)
 
@@ -183,27 +206,41 @@ trap of two callers re-implementing verify-then-flip). Everything else is edits 
 - **Affected surfaces**: the 12 call sites in 11 files (see Project Structure); `status/emit.py` (delete
   `_phase1_snapshot_authority_active`, keep `_legacy_lane_mirror_enabled`); `status/__init__.py` (drop
   alias + `__all__`); remove each paired local `from specify_cli.status import …` import.
-- **Sequencing/depends-on**: IC-01 (C-001: backfill+verify must be wired+passing before the flip is safe).
+- **Sequencing/depends-on**: **IC-01b** (C-001: this repo's corpus must be backfilled + committed before
+  readers go unconditional) — transitively IC-01. Same merge unit.
 - **Risks**: undersizing — the brief said "~10"; the real surface is 12/11 incl. `tasks_status_cmd.py`
   and the double site in `support.py`. Each site collapses *differently* (not a mechanical rename → not
-  a bulk edit). Must NOT touch `_legacy_lane_mirror_enabled`.
+  a bulk edit). **Must NOT touch `_legacy_lane_mirror_enabled`** — it is KEPT (C-004) and **still reads
+  `status_phase`**, so the flip has a live consequence: flipping a mission to `status_phase=1` **activates
+  the lane mirror** for it (today all missions are `status_phase=0` → mirror OFF). Add a regression
+  asserting lane behaviour is unchanged by the mirror activation; if activation is problematic, decoupling
+  the lane mirror from `status_phase` is a **follow-up** (still C-004 out-of-scope here).
 
-### IC-04 — Delete T037 legacy fallbacks + route bypass readers onto the snapshot seam
+### IC-04 — Wire snapshot done-evidence, then delete T037 legacy fallbacks + route bypass readers
 
-- **Purpose**: Remove the frontmatter fallbacks that synthesised done-evidence / verdict for un-migrated
-  WPs (safe only post-backfill) and eliminate the two remaining split-brain bypass readers.
-- **Relevant requirements**: FR-006 (delete fallbacks), FR-007 (route bypass readers), C-001 (order).
-- **Affected surfaces**: `cli/commands/agent/workflow_cores.py` — `resolve_review_feedback_context`: the
-  verdict fallback (FR-006a) and the `review_status`/`review_feedback` bypass reader (FR-007) are the
-  **same block** → ONE edit that deletes the fallback and resolves via the snapshot; `merge/done_bookkeeping.py`
-  — delete `_extract_done_evidence` frontmatter synthesis (verify the event-sourced done-evidence
-  replacement exists first); `cli/commands/agent/tasks_move_task.py` — route the `agent`/`current_agent`
-  ownership read onto the snapshot accessor.
-- **Sequencing/depends-on**: IC-03 (fallbacks are only safe to delete after the flip; C-001 order) and
-  IC-01 (backfill has seeded the approvals as events).
-- **Risks**: `done_bookkeeping` feeds the **merge** done path — deleting the synthesis without an
-  event-sourced replacement would break merge; verify before delete. FR-006a and FR-007-workflow_cores
-  are one block — do not decompose into two edits to the same lines.
+- **Purpose**: Move done-evidence / verdict / ownership reads onto the snapshot seam and remove the
+  frontmatter fallbacks — **including building the event-sourced done-evidence read that does not yet
+  exist** (post-planning review: the "replacement" is a gap, not a given).
+- **Relevant requirements**: FR-006 (delete fallbacks + build snapshot done-evidence), FR-007 (route
+  bypass readers), C-001 (order).
+- **Affected surfaces**:
+  - `merge/done_bookkeeping.py` — **NEW scope**: `_extract_done_evidence` (95-113) AND the `:295-304`
+    fallback both read frontmatter (`meta.review_status`/`reviewed_by`/`metadata.agent`); **neither reads
+    the snapshot `review` slot** where the backfill puts the evidence. Wire `_mark_wp_merged_done` /
+    `_extract_done_evidence` onto the snapshot `review` slot **first**, then delete the frontmatter
+    synthesis. This is real implementation, not "delete + verify".
+  - `cli/commands/agent/workflow_cores.py` — `resolve_review_feedback_context`: the verdict fallback
+    (FR-006a) and the `review_status`/`review_feedback` bypass reader (FR-007) are the **same block** →
+    ONE edit that deletes the fallback and resolves via the snapshot.
+  - `cli/commands/agent/tasks_move_task.py` — route the `agent`/`current_agent` ownership read onto the
+    snapshot accessor.
+- **Sequencing/depends-on**: IC-03 (fallbacks safe to delete only after the flip; C-001) and **IC-01b**
+  (backfill has seeded the approvals/review as events in this corpus). Same merge unit.
+- **Risks**: `done_bookkeeping` feeds the **merge** gate — deleting synthesis before the snapshot read is
+  wired drops event-only missions to the lane-approved fallback with degraded reviewer attribution
+  (`metadata.agent` → `"unknown"` once `agent` is snapshot-sourced). **Acceptance test**: an event-only
+  mission with NO frontmatter review produces correct `DoneEvidence` through the merge path. FR-006a and
+  FR-007-workflow_cores are one block — do not decompose into two edits to the same lines.
 
 ### IC-05 — Authority-invariant hardening (#2093) + test-suite reconciliation
 
@@ -211,15 +248,26 @@ trap of two callers re-implementing verify-then-flip). Everything else is edits 
   reconcile the flag-ON/flag-OFF split test suite to the single end-state.
 - **Relevant requirements**: FR-008 (empty tolerated set + rewrite vacuous arm), FR-009 (reconcile
   split suite), C-006 (arch-gate updated not suppressed), SC-003, SC-004, SC-006.
-- **Affected surfaces**: `tests/architectural/test_2093_authority_invariant.py` — `_SANCTIONED_READER_MODULES`
-  → `frozenset()`, and rewrite the now-vacuous canonical-gate-identity arm (it imports the deleted
-  predicate) into a "zero frontmatter-authority reads" assertion; the `status`-suite dual-write
-  (flag-OFF) tests — delete or re-point (the flag-ON assertions become unconditional). Add the NFR-003
-  byte-stability regression and the #2815 repo-root-write guard if not already added in IC-01/IC-02.
-- **Sequencing/depends-on**: IC-03 and IC-04 (the invariant/tests must reflect the end-state).
+- **Affected surfaces** (post-planning review: **~33 test files, not "the status suite"** — the union of
+  `status_phase`/`_phase1` refs (~25 files) and `dual-write` refs (~17 files) spans `cli/commands/agent`,
+  `core`, `sync`, `orchestrator_api`, `integration`, `regression`, `upgrade`):
+  - `tests/architectural/test_2093_authority_invariant.py` — `_SANCTIONED_READER_MODULES` → `frozenset()`;
+    rewrite the now-vacuous canonical-gate-identity arm (imports the deleted predicate) into a "zero
+    frontmatter-authority reads" assertion.
+  - the explicit **flag-ON/flag-OFF pair** `test_move_task_rollback_clears_claim.py` +
+    `..._flag_off.py` — delete the flag-OFF twin; make the flag-ON assertions unconditional.
+  - `test_tasks_compat_surface.py` — asserts the facade seam IC-03 removes → reconcile (breaks on the
+    alias drop otherwise).
+  - `tests/architectural/baselines/fast-tests-core-misc-nodeids.txt` (and the gate-coverage baselines) —
+    **regenerate**; deleted/renamed test node IDs trip both baselines (`--update-baseline` /
+    `--freeze-baselines`).
+  - Add the NFR-003 byte-stability regression and the #2815 repo-root-write guard if not already added
+    in IC-01/IC-02.
+- **Sequencing/depends-on**: IC-03 and IC-04 (the invariant/tests must reflect the end-state). Own WP;
+  enumerate the full ~33-file set at `/tasks`.
 - **Risks**: the arm rewrite is more than a set edit — the test currently asserts the *identity* of the
   canonical gate symbol, which no longer exists. Keep the guard **non-vacuous** (a reintroduced
-  frontmatter read must still fail it).
+  frontmatter read must still fail it). Undersizing IC-05 is the plan's second-biggest risk after IC-01b.
 
 ### IC-06 — IC-08 inert-field reduction (optional tail; the deferred #2684 IC-08)
 
@@ -230,5 +278,7 @@ trap of two callers re-implementing verify-then-flip). Everything else is edits 
   `wp_snapshot_state` accessor dedup already shipped in #2817 so this is field/slot removal only.
 - **Sequencing/depends-on**: IC-03 (post-cutover). **Deferrable** — does not gate mission DoD; may split
   to a fresh follow-up issue (then the PR uses `Contributes to #2816`, not `Closes`).
-- **Risks**: none behavioural; keep the full suite green; confirm zero live readers before removal
-  (the library's `assert_zero_readers` proof).
+- **Risks**: **`status_phase` is OUT OF BOUNDS for IC-06** (post-planning correction) — the kept
+  `_legacy_lane_mirror_enabled` still reads it (C-004), so retiring the field would silently disable the
+  lane mirror. Scope IC-06 to `wp_metadata` runtime fields only. Otherwise non-behavioural; keep the full
+  suite green; confirm zero live readers before removal (`assert_zero_readers` proof).

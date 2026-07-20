@@ -32,12 +32,14 @@ about.
 - **Type**: string/int; `>= 1` historically meant "snapshot authority active" (predicate `status_phase >= 1`).
 - **Writer**: the cutover orchestration helper — **sole writer**, writes only **after** a passing verify
   (FR-003). No other production writer exists (confirmed by squad).
-- **Reader**: `_phase1_snapshot_authority_active` — **deleted in IC-03**. After IC-03 the field is not
-  read at runtime; it persists as a per-mission "backfilled + verified at <event-time>" audit marker and
-  a fast re-run skip-hint.
+- **Readers**: `_phase1_snapshot_authority_active` (runtime-slot authority) — **deleted in IC-03**. BUT
+  `_legacy_lane_mirror_enabled` (kept by C-004) — **still reads `status_phase`**. So after IC-03 the
+  field remains a **live runtime gate for the lane mirror**, not an inert marker (corrected post-planning;
+  see research D-02). Flipping `0 → 1` therefore also **activates the lane mirror** for that mission.
 - **State transition**: `absent | null | "0"`  →(backfill+verify passes)→  `"1"`. No reverse transition
-  in this mission. (Potential later retirement of the field itself is an IC-06/IC-08 candidate,
-  non-blocking — see research D-02.)
+  in this mission. **IC-06 must NOT retire this field** (would disable the lane mirror corpus-wide).
+- **Today's corpus state**: all 299 dogfood missions are `status_phase=0` → lane mirror OFF, runtime
+  slots read from frontmatter. IC-01b flips this repo's corpus; IC-02 flips consumers' on upgrade.
 
 ## Deleted / inert model surfaces (end-state)
 
