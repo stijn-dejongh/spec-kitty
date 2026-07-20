@@ -55,8 +55,10 @@ event-writing paths resolve via `canonicalize_feature_dir` (never `Path.cwd()`; 
 **Scale/Scope**: remove the flag branch at **12 call sites across 11 files**; delete 1 predicate + its
 facade alias/`__all__` entry; delete 2 legacy fallback blocks (1 shared with a bypass reader); route 2
 bypass readers; empty 1 arch-test tolerated set + rewrite 1 vacuous test arm; un-pin a 15-symbol
-dead-symbol frozenset; add 1 CLI command + 1 upgrade migration. **Ten implementation concerns** (IC-01,
-IC-01b, IC-02–IC-06 cutover; IC-07/IC-08/IC-09 resolved-binding record+reconstruct + the IC-08a ADR).
+dead-symbol frozenset; add 1 CLI command + 1 upgrade migration. **Eleven implementation concerns** (IC-01,
+IC-01b, IC-02–IC-06 cutover; IC-07/IC-08/IC-09 resolved-binding record+reconstruct + the IC-08a ADR;
+IC-10 subtask event-sourcing + checkbox removal). IC-08's dispatch→claim linkage and IC-10's
+doctrine-template breadth are the scope-growth risks (operator-accepted).
 
 ## Charter Check
 
@@ -356,9 +358,11 @@ resolved-binding vocabulary (IC-08) extends `status/models.py`/`reducer.py`; eve
   `dashboard/scanner.py::_process_wp_file`, `cli/commands/agent/tasks_status_cmd.py` (the `agent tasks
   status` board — a **third missed reader**, reads `agent_profile` via `extract_scalar` at :289 and feeds
   the human-in-charge sentinel `_get_hic_marker`), `task_utils/support.py::WorkPackage` (no
-  `model`/`role`/`agent_profile` property today; third copy of the gate). Also decide the **subtasks
-  split-brain**: the dashboard counts `tasks.md` checkboxes while the snapshot has a `subtasks` slot —
-  pick the snapshot as authority.
+  `model`/`role`/`agent_profile` property today; third copy of the gate). **Scope the reader to
+  identity/runtime fields ONLY** (adversarial finding): the dashboard also produces presentation fields
+  (`title` regex'd from the prompt body, `prompt_markdown`, `prompt_path`) NOT in the reader's contract —
+  keep those consumer-side or the reroute reads as a regression. The **subtasks** authority is resolved by
+  IC-10 (snapshot slot, checkboxes removed) — the reader reads the slot, not `tasks.md` counting.
 - **Sequencing/depends-on**: IC-03/IC-04 (reads the post-cutover snapshot) and IC-08 (needs the resolved
   `role`/`profile`/`model` slots to reconstruct them).
 - **Risks**: the three gates encode subtly different fallback behaviour; unify carefully and keep a test
@@ -369,38 +373,45 @@ resolved-binding vocabulary (IC-08) extends `status/models.py`/`reducer.py`; eve
   crash or a silent fall-back to reading the authored value *as* the resolved one (that would re-introduce
   the split-brain). Add this to SC-008/INV-8's coverage.
 
-### IC-08 — Resolved-binding event vocabulary + model/profile resolve seam
+### IC-08 — Resolved-binding vocabulary + dispatch→claim linkage (operator: full model-actual now)
 
 - **Purpose**: Record the **actual** resolved `role`/`agent_profile`(+version)/`model`/`provider` on the
   event log at each pick-up, folded latest-wins into the snapshot, so the reconstruction reader (IC-07)
-  has a source. This is the net-new eviction (these fields are NOT in the event vocabulary today).
-- **Relevant requirements**: FR-013 (vocabulary), FR-014 (resolve seam), C-007 (never re-read frontmatter),
-  C-009 (ADR), SC-008.
+  has a source. Net-new eviction (NOT in the event vocabulary today).
+- **Relevant requirements**: FR-013 (vocabulary), FR-014 (dispatch→claim linkage), C-007 (never re-read
+  frontmatter), C-009 (ADR), C-011 (re-seed namespace), SC-008.
 - **Affected surfaces**:
-  - **Vocabulary**: extend `WPInnerStateDelta` (`status/models.py:381-403` + `to_dict`/`from_dict`/`is_empty`)
-    OR carry the structured actor on the claim `StatusEvent` — decide in IC-08a ADR. Reducer:
-    `status/reducer.py` `_RUNTIME_SLOTS` + `_apply_annotation_delta`; add `role`/`agent_profile`/
-    `agent_profile_version`/`model`/`provider` slots.
-  - **Resolve seam (the real work)**: `model` is advisory-only (`invocation/executor.py:264-265`
-    `RoutingRecommendation`, never persisted); thread the genuinely-resolved model + profile into the
-    claim-time emit at `workflow_executor.py` (implement-claim :845, review-claim :1503-1514) and the
-    `tasks_move_task.py` reassign. Resolved profile comes from `resolve_profile`/`resolved_agent()` (also
-    recorded on the Op path `invocation/record.py` — reuse, do not re-read frontmatter; C-007).
-  - **Backfill + dogfood re-seed (re-seed gap fix)**: extend the backfill library's `MUTABLE_FIELDS`/delta
-    build to seed the authored frontmatter values as the historical resolved actual, **and RE-RUN the
-    dogfood corpus backfill** (as IC-01b did for the #2684 fields) after the vocabulary extension, **in the
-    same merge unit**, so IC-07 reads *seeded* resolved slots. Without this, IC-07 reads empty resolved
-    slots for every dogfood mission — the same empty-snapshot failure mode IC-01b closes, reopened for the
-    new fields.
-  - **IC-08a — ADR (C-009)**: author the field-authority ADR (addendum to `2026-07-19-1`, which deferred
-    model election as blocker B4): resolved `role`/`agent_profile`/`model` → dynamic/event; authored →
-    static/frontmatter. Add `authored intent`/`resolved binding` to `docs/context/identity.md`.
-- **Sequencing/depends-on**: IC-01b/IC-03 (post-cutover snapshot is authority); ADR (IC-08a) precedes the
+  - **Vocabulary**: extend `WPInnerStateDelta` (`status/models.py` + `to_dict`/`from_dict`/`is_empty`) —
+    **data-drive the field list** (tidy-first) so 5 new slots don't triple-enumerate. Reducer
+    `status/reducer.py`: add `role`/`agent_profile`/`agent_profile_version`/`model`/`provider` to
+    `_RUNTIME_SLOTS` + `_apply_annotation_delta` — **first extract the flat if-chain into a data-driven
+    replace-slot table** (tidy-first: `_apply_annotation_delta` is cx 13 and these slots push it >15).
+  - **Dispatch→claim linkage (operator decision Q1 — the real work)**: the genuine model + profile are
+    resolved only on the dispatch/Op path (`invocation/executor.py` `RoutingRecommendation.model` +
+    `registry.resolve`; recorded in `invocation/record.py`, keyed by `invocation_id`) — the claim seam has
+    only the bare `--agent` string + frontmatter-coerced values (C-007-forbidden to record). **Thread the
+    resolved model+profile(+`invocation_id`) into the implement/review commands** (`cli/commands/agent/workflow.py`
+    — new `--model`/`--profile`/`--invocation-id` options or a sanctioned side-channel), consumed at the
+    claim seams (`workflow_executor.py` implement-claim + review-claim) and the `tasks_move_task.py` reassign.
+    This is a **cross-layer addition** (dispatch/invocation + command surface + claim seams).
+  - **Emit shape (annotation + actor, reconciled)**: emit the binding as an **`InnerStateChanged`
+    annotation** (latest-wins at BOTH implement-claim and review-claim — the claim `policy_metadata` fold
+    fires only on `planned→claimed`, so review-claim would be missed), AND enrich the transition's
+    structured `actor` for the IC-09 fan-out. Both, not either.
+  - **Backfill + dogfood re-seed (C-011)**: extend the backfill to seed the authored value as the
+    historical resolved actual, **under a NEW `_seed_id(…, "resolved_binding")` namespace** (never the
+    committed `"claim"` id — else the re-run silently skips), and **RE-RUN the dogfood backfill in the same
+    merge unit** so IC-07 reads seeded slots. Acceptance test: after IC-01b's seeds are committed, the
+    extended backfill returns `"wrote"` (not `"skip"`) and resolved slots are non-empty.
+  - **IC-08a — ADR (C-009)**: author the field-authority ADR (addendum to `2026-07-19-1`, model-election
+    blocker B4): resolved `role`/`agent_profile`/`model` → dynamic/event; authored → static/frontmatter.
+    Add `authored intent`/`resolved binding` to `docs/context/identity.md`.
+- **Sequencing/depends-on**: IC-01b/IC-03 (post-cutover snapshot is authority); IC-08a ADR precedes the
   vocabulary change. Feeds IC-07 and IC-09.
-- **Risks**: model resolution is the genuine unknown — verify a resolved model is actually available at
-  the claim seam (dispatch `--model` / `RoutingRecommendation`); if not universally available, record what
-  is and mark absence explicitly (never fabricate). #2093's C-007 line: the recorded value must come from
-  the resolver, never the frontmatter string.
+- **Risks**: the dispatch→claim linkage is the scope-growth risk — it touches the invocation layer and the
+  command surface; keep the resolved values flowing from the resolver (C-007), and where a genuine model is
+  still unavailable for a given path, record it **explicitly absent**, never fabricated/frontmatter-copied.
+  Re-seed namespace (C-011) is a silent-skip trap if ignored.
 
 ### IC-09 — SaaS fan-out of the resolved binding
 
@@ -410,11 +421,45 @@ resolved-binding vocabulary (IC-08) extends `status/models.py`/`reducer.py`; eve
 - **Affected surfaces**: **Preferred** — enrich the structured `actor` (`{role, profile, tool, model}`) on
   the claim/review `StatusEvent` and its existing lane fan-out (`_saas_fan_out`, `emit.py:954-1008`);
   `spec_kitty_events` 6.1.0 `StatusTransitionPayload.actor` is already `Union[str, Dict]` → no shared-package
-  change. **Fallback** — a new `WPResolvedBindingChanged` shared event + a fan-out added to
-  `emit_inner_state_changed` (which has none today, `emit.py:941-949`), version-gated exactly like the
-  genesis-lane gate (`emit.py:82-94`).
+  change. **⚠️ LOCAL PLUMBING REQUIRED (adversarial finding):** the local emit path is `str`-typed
+  end-to-end — `StatusEvent.actor: str` (`status/models.py:258`), `build_status_event(actor: str)`
+  (`emit.py:145`), `emit_status_transition(actor: str|None)` (`emit.py:512`), and `from_dict` does
+  `str(data["actor"])` (`models.py:360,:506`) which would **corrupt a dict actor on round-trip**. IC-09
+  must widen `actor` to `str | dict` across those signatures, guard the `str(...)` coercions so a dict
+  survives JSONL round-trip, and audit every reducer/consumer doing string ops on `actor`. So FR-015 is
+  **"zero *shared-package* change, non-trivial *local* type-surface change"** — size it accordingly.
+  **Fallback** — a new `WPResolvedBindingChanged` shared event + a fan-out added to
+  `emit_inner_state_changed` (none today, `emit.py:941-949`), version-gated like the genesis-lane gate
+  (`emit.py:82-94`).
 - **Sequencing/depends-on**: IC-08 (the resolved actuals must exist to fan out). Coordinate the final
   contract with the SaaS team.
-- **Risks**: cross-repo — if the fallback off-axis event is chosen, it needs a `spec_kitty_events` release;
-  the version gate lets #2816 land the local event now and enable fan-out when the package ships (do NOT
-  block on the external release). Feature-detect the structured-dict actor defensively before sending.
+- **Risks**: the local `actor` type-surface change touches mypy-strict signatures across the emit chain —
+  bigger than "pass the dict through". Cross-repo: the fallback off-axis event needs a `spec_kitty_events`
+  release; the version gate lets #2816 land locally now and enable fan-out when the package ships (never
+  block-on-shared). Feature-detect the structured-dict actor defensively before sending.
+
+### IC-10 — Subtask completion fully event-sourced; markdown checkboxes removed (operator decision Q2)
+
+- **Purpose**: Make the snapshot `subtasks` slot the **sole** authority for subtask completion, remove the
+  `- [ ] T###` markdown checkboxes (the incoherent proxy the WP view must stop reading), and redirect
+  agents to `mark-status`.
+- **Relevant requirements**: FR-016, C-010 (removal ordered after seed), NFR-003.
+- **Affected surfaces**:
+  - **Reader reroute**: dashboard (`dashboard/scanner.py:954-965` checkbox counting) and any subtask-count
+    reader → snapshot `subtasks` slot (via IC-07's reader).
+  - **Lane-transition guard**: `core/subtask_rows.py` (`iter_wp_section_subtask_rows` /
+    `count_wp_section_subtask_rows`) is the guard's blocking source — reroute the guard onto the snapshot
+    `subtasks` slot, then retire the checkbox parsing.
+  - **Checkbox removal**: strip `- [ ] T###` rows from `tasks.md`/WP templates — **only after** the
+    backfill has seeded historical completion from them (C-010). The backfill's `_subtasks_from_tasks_md`
+    reads them, so backfill-then-remove ordering is mandatory.
+  - **Doctrine prompt templates (breadth risk)**: `src/doctrine/missions/mission-steps/…` + tasks
+    templates that instruct checkbox ticking → direct agents to `spec-kitty agent tasks mark-status`.
+    Propagates to all agent copies via `spec-kitty upgrade` (do NOT hand-edit agent dirs). Run the
+    terminology guard + docs-freshness after prose edits.
+- **Sequencing/depends-on**: IC-01b (backfill seeds subtask completion from checkboxes first), IC-07
+  (reader reads the slot). Checkbox removal lands after the seed (C-010).
+- **Risks**: **large doctrine/template surface** (13 agents' prompt families + the lane guard); the guard
+  reroute is behaviour-sensitive (it blocks lane transitions on incomplete subtasks). Add a regression
+  proving the guard blocks/*un*blocks correctly off the snapshot. Historical missions whose checkboxes are
+  removed must already be seeded (C-010) or their completion is lost.

@@ -192,6 +192,66 @@ authoritative design ground for `/spec-kitty.tasks`.
 - **Sequencing (cross-repo)**: `spec_kitty_events` is external (consume via public imports only). Preferred
   path needs no release. Fallback path: local-first + version-gated fan-out (option i), never block-on-shared.
 
+## D-12 — Dispatch→claim linkage for the resolved binding (operator decision Q1, 2026-07-20)
+
+- **Decision**: obtain the genuine resolved model+profile from the dispatch/Op path and **thread it into
+  the implement/review commands** (new `--model`/`--profile`/`--invocation-id` options or side-channel on
+  `cli/commands/agent/workflow.py`), consumed at the claim seams. Operator chose full model-actual now over
+  the leaner resolve-at-seam.
+- **Why forced**: adversarial grounding proved the claim seam has ONLY the bare `--agent` string +
+  frontmatter-coerced values (`workflow.py:918,:1368`; `resolved_agent()` derives from frontmatter,
+  `wp_metadata.py:418-470`); the genuine resolution (`RoutingRecommendation.model`, `registry.resolve`)
+  lives only in `invocation/executor.py:249,265`, keyed by `invocation_id`, no WP-lane back-ref. Recording
+  the frontmatter value would violate C-007/INV-6.
+- **Emit-shape reconciliation**: emit the binding as an **annotation** (latest-wins at BOTH claim points —
+  the reducer's `policy_metadata` claim fold fires only on `planned→claimed`, `reducer.py:102`, so
+  review-claim would be missed) AND enrich the transition's structured `actor` for the IC-09 fan-out. Both.
+- **Re-seed namespace (C-011)**: seed under a NEW `_seed_id(…, "resolved_binding")` — reusing the committed
+  `"claim"` id makes the re-run silently skip (idempotency drop, `backfill_runtime_state.py:512-519`).
+- **Scope note**: this is a cross-layer addition (invocation + command surface + claim seams) — the
+  mission's largest scope-growth. Operator-accepted ("implementation can wait; get the spec right").
+
+## D-13 — Subtask completion fully event-sourced; markdown checkboxes removed (operator decision Q2)
+
+- **Decision**: the snapshot `subtasks` slot is the **sole** authority; **remove** the `- [ ] T###`
+  markdown checkboxes; agents use `spec-kitty agent tasks mark-status`; update the doctrine prompt
+  templates to direct them there. The WP view pulls resolved status, not the incoherent checkbox proxy.
+- **Grounding**: today the dashboard counts live `tasks.md` checkboxes (`scanner.py:958-965`) and the
+  lane-transition guard blocks on checkbox rows (`core/subtask_rows.py`); the snapshot slot is written only
+  by `mark-status` (`tasks_mark_status.py:371`). So a raw checkbox edit without `mark-status` shows frozen
+  progress — the incoherence the operator wants removed.
+- **Ordering (C-010)**: remove checkboxes **only after** the backfill seeds historical completion from
+  them (`_subtasks_from_tasks_md` reads them). Backfill-then-remove, same class as C-001.
+- **Breadth**: touches the lane-transition guard (behaviour-sensitive) + the doctrine prompt templates
+  across the mission-step families (propagated to 13 agent dirs via `spec-kitty upgrade`; never hand-edit
+  agent copies). Own concern → IC-10.
+
+## D-14 — Campsite census: two forced tidy-firsts, god-module surgical-only, extra consolidation seams
+
+- **Two functions breach the complexity ceiling as a direct result of this mission's edits** → tidy-first
+  extract in the SAME WP: `status/reducer.py::_apply_annotation_delta` (cx 13 → >15 when IC-08 adds slots)
+  → data-driven replace-slot table; `dashboard/scanner.py::_process_wp_file` (cx 13 → >15 on the IC-04/07
+  reroute) → extract a `_wp_runtime_view` helper backed by the reconstruction reader.
+  `tasks_move_task.py::_mt_emit_runtime_state` is already at 15 (flag removal lowers it; the ownership
+  reroute must extract, not inline).
+- **God-modules — surgical edits ONLY, degod is OUT (tracked separately)**: `cli/commands/implement.py`
+  (1863), `workflow_executor.py` (2044), `status/emit.py` (1008; `emit_status_transition` carries a
+  tracked `# NOSONAR` — do NOT let IC-08/09 actor-enrichment inflate it; thread via a helper),
+  `tasks_move_task.py` (2416), `migration/mission_state.py` (1982).
+- **`migration/mission_state.py` is in the brief's surface list but NOT in the plan's edit map** — verify
+  at `/tasks` whether it is actually touched; drop from the surface list if not, else surgical-only.
+- **Extra consolidation seams** (beyond the 3-gates→1 and the shared cutover helper): (1) `tasks_status_cmd.py`
+  is a **4th** gate consumer — the canonical `reconstruct_wp_view` must back all four; (2) a **shared
+  review-slot reader** across `merge/done_bookkeeping.py::_extract_done_evidence` and
+  `workflow_cores.py::resolve_review_feedback_context` (both interpret the review slot with different
+  fallbacks → merge-gate vs CLI could diverge on reviewer attribution); (3) `WPInnerStateDelta`'s
+  triple-enumeration (`is_empty`/`to_dict`/`from_dict`) → data-drive before IC-08 adds fields.
+- **Per-IC campsite tasks** (SAFE unless noted): IC-01 hoist duplicated `--dry-run`/`--mission`/summary
+  option decls in `migrate_cmd.py` (S1192); IC-03 delete the orphan flag-wrapper functions + dead docstring
+  refs at each of the 12 sites (don't leave orphan wrappers); IC-04 narrow the broad `except Exception:`
+  in `workflow_cores.py:299` + delete the dead `frontmatter-migration:` synth branch in `done_bookkeeping.py`;
+  IC-06 keep `status_phase` out of bounds.
+
 ## Risks & pre-existing-red discipline (charter: Pre-existing Failure Reporting)
 
 - **Phantom `SYNC_DISABLE_ENV_VARS`** `arch-adversarial (arch_shard_1)` red is **pre-existing on main**

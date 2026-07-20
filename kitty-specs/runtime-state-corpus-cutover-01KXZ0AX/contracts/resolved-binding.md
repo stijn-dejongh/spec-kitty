@@ -12,10 +12,16 @@ Add resolved-binding fields (home decided by the C-009 ADR — delta slots vs st
 resolved: { role, agent_profile, agent_profile_version, model, provider }
 ```
 
-- **Written**: at each pick-up/claim/reassign transition (`workflow_executor` implement-claim + review-claim;
-  `tasks_move_task` reassign). Value from `resolve_profile`/`resolved_agent()` + dispatch model resolution.
-- **NEVER** a copy of the frontmatter `agent_profile` string (C-007 / INV-6).
-- **Reduced**: latest-wins into a snapshot `resolved_binding` slot (`_RUNTIME_SLOTS` + `_apply_annotation_delta`).
+- **Source (dispatch→claim linkage, operator decision Q1)**: the genuine model+profile are resolved on the
+  dispatch/Op path (`invocation/executor.py` `RoutingRecommendation`, `registry.resolve`; recorded in
+  `invocation/record.py`, keyed by `invocation_id`) and **threaded into the implement/review commands**
+  (new `--model`/`--profile`/`--invocation-id` on `cli/commands/agent/workflow.py`) — the claim seam alone
+  has only the bare `--agent` string. **NEVER** a copy of the frontmatter `agent_profile` string (C-007 / INV-6).
+- **Written**: at each pick-up/claim/reassign transition, as an **`InnerStateChanged` annotation** (so it
+  folds latest-wins at BOTH implement-claim and review-claim — the `policy_metadata` claim fold fires only
+  on `planned→claimed`), **plus** enriching the transition's structured `actor` for the IC-09 fan-out.
+- **Reduced**: latest-wins into snapshot resolved slots (`_RUNTIME_SLOTS` + `_apply_annotation_delta`).
+- **Seeded (C-011)**: under a NEW `_seed_id(…, "resolved_binding")` namespace — never the committed `"claim"` id.
 - **Absence is valid**: a never-reclaimed WP has no resolved slot → reconstruction shows empty resolved.
 
 ## Reconstruction reader (IC-07) — `status/wp_view.py::reconstruct_wp_view(feature_dir, wp_id)`

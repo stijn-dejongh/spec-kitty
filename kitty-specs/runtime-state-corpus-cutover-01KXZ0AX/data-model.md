@@ -53,6 +53,9 @@ about.
 | `_CATEGORY_C_DEFERRED_RUNTIME_STATE_BACKFILL_CUTOVER` (15 dead-symbol pins) | **removed** (library now has callers) | IC-01 |
 | `_SANCTIONED_READER_MODULES` (#2093 tolerated set) | → `frozenset()` | IC-05 |
 | inert `wp_metadata` fields + `WP_FIELD_ORDER` slots | **removed** (optional) | IC-06 |
+| `- [ ] T###` markdown checkboxes (`tasks.md`/WP) | **removed** — subtask completion is snapshot-only (via `mark-status`); removed only after backfill seeds from them (C-010) | IC-10 |
+| lane-transition guard checkbox parsing (`core/subtask_rows.py`) | **rerouted** to the snapshot `subtasks` slot | IC-10 |
+| doctrine prompt templates instructing checkbox ticks | **updated** → direct agents to `mark-status` | IC-10 |
 
 ## Resolved runtime identity (event-sourced) vs authored recommendation (frontmatter)
 
