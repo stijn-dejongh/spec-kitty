@@ -182,16 +182,16 @@ references them; the full suite stays green. If deferred, the mission still comp
 | ID | Title | User Story | Priority | Status |
 |----|-------|------------|----------|--------|
 | FR-001 | Backfill CLI entry point | As an operator, I want an invocable `migrate backfill-runtime-state` command with a `--dry-run` mode so that I can seed the corpus and preview counts before writing. | High | Open |
-| FR-002 | Fail-closed verify | As an operator, I want the command to verify count+value parity of the reduced snapshot against the old frontmatter/checkbox reader and abort on any mismatch so that no mission is flipped on divergent state. | High | Open |
-| FR-003 | Atomic verify-then-flip | As an operator, I want the command to flip `status_phase` to snapshot-authority **only** for missions whose backfill+verify passed, refusing to flip otherwise, so that there is no hand-flip data-loss footgun. | High | Open |
-| FR-004 | Unconditional reader/writer cutover | As a maintainer, I want the flag-OFF (legacy/dual-write) branch removed across the ~10 read/write sites so that the reduced snapshot is always the authority and runtime writes are event-only. | High | Open |
-| FR-005 | Delete the phase-1 predicate | As a maintainer, I want `_phase1_snapshot_authority_active` and its status-facade export deleted so that no runtime flag remains. | High | Open |
-| FR-006 | Delete T037 legacy fallbacks | As a maintainer, I want the legacy fallbacks removed (`workflow_cores.py` verdict-field read fallback; `done_bookkeeping.py` done-evidence synthesis) now that backfill seeds those approvals as events. | High | Open |
-| FR-007 | Route bypass readers onto the snapshot seam | As a maintainer, I want the two remaining ungated bypass readers (`tasks_move_task.py` ownership read; `workflow_cores.py` review-status read) resolved via the snapshot accessor so no split-brain reader survives. | High | Open |
-| FR-008 | Harden the #2093 invariant | As a maintainer, I want `test_2093_authority_invariant.py` to run with an empty tolerated-gate set, forbidding any frontmatter authority read, so the single-authority guarantee is permanent. | High | Open |
+| FR-002 | Fail-closed verify (wire) | As an operator, I want the command to invoke the **existing** WP03 fail-closed verify (count+value parity vs the old reader; the conflicting-seed value-parity guard already shipped in #2817) and abort on any mismatch, so that no mission is flipped on divergent state. Scope is *wiring* the library verify, not re-deriving it. | High | Open |
+| FR-003 | Atomic verify-then-flip | As an operator, I want the command to flip `status_phase` to snapshot-authority **only** for missions whose backfill+verify passed, refusing to flip otherwise, so that there is no hand-flip data-loss footgun. (`status_phase` has no production writer today — this CLI is the clean-slate sole writer.) | High | Open |
+| FR-004 | Unconditional reader/writer cutover | As a maintainer, I want the flag-OFF (legacy/dual-write) branch removed across **all 12 call sites in 11 files** — the brief's 10 files **plus `cli/commands/agent/tasks_status_cmd.py`, and note `task_utils/support.py` carries two sites** — so the reduced snapshot is always the authority and runtime writes are event-only. Remove each paired local `from specify_cli.status import …` import too. | High | Open |
+| FR-005 | Delete the phase-1 predicate | As a maintainer, I want `_phase1_snapshot_authority_active` (`status/emit.py`) and its status-facade export (`status/__init__.py` alias `phase1_snapshot_authority_active` + `__all__` entry) deleted so that no runtime flag remains. `_legacy_lane_mirror_enabled` is **kept** (C-004). | High | Open |
+| FR-006 | Delete T037 legacy fallbacks | As a maintainer, I want the legacy fallbacks removed: (a) the verdict/review-field read fallback in `cli/commands/agent/workflow_cores.py` (`resolve_review_feedback_context`), and (b) the done-evidence synthesis in `merge/done_bookkeeping.py` (`_extract_done_evidence`) — the latter feeds the merge done-bookkeeping path, so its event-sourced replacement must exist before deletion (C-001 order). | High | Open |
+| FR-007 | Route bypass readers onto the snapshot seam | As a maintainer, I want the two remaining ungated bypass readers resolved via the snapshot accessor: `tasks_move_task.py` (`agent`/`current_agent` ownership read) and `workflow_cores.py` (`review_status`/`review_feedback`). **Note:** the `workflow_cores.py` read is the **same code block** as FR-006(a) — treat FR-006(a)+FR-007-workflow_cores as ONE edit, not two. | High | Open |
+| FR-008 | Harden the #2093 invariant | As a maintainer, I want the #2093 invariant to forbid **any** frontmatter authority read: reduce `_SANCTIONED_READER_MODULES` to `frozenset()`, **and** rewrite the now-vacuous canonical-gate-identity arm (which imports `_phase1_snapshot_authority_active`) into a "zero frontmatter-authority reads" assertion. The AST-derived module list + symbol-identity mechanism already shipped in #2817 — scope is the end-state, not re-deriving the mechanism. | High | Open |
 | FR-009 | Reconcile the split test suite | As a maintainer, I want the flag-ON/flag-OFF split test suite reconciled — flag-OFF dual-write tests deleted or re-pointed, flag-ON assertions made unconditional — so the suite reflects the single end-state. | High | Open |
-| FR-010 | Upgrade-path migration | As an upgrading user, I want the runtime-state backfill+verify to run as a sequenced `spec-kitty upgrade` migration (idempotent; no-op on fresh installs; fail-closed on verify failure) so my corpus migrates safely. | High | Open |
-| FR-011 | IC-08 inert-field reduction | As a maintainer, I want the now-inert `wp_metadata` fields and cosmetic `WP_FIELD_ORDER` slots reduced, safe only post-cutover, so the model carries no dead runtime slots. | Low (optional/deferrable) | Open |
+| FR-010 | Upgrade-path migration | As an upgrading user, I want the runtime-state backfill+verify to run as an **auto-discovered** `m_<version>_runtime_state_backfill.py` upgrade migration (self-registers via `@MigrationRegistry.register`; version-key ordered to sort **after** the charter folds; idempotent; no-op on fresh installs; fail-closed on verify failure) so my corpus migrates safely. | High | Open |
+| FR-011 | IC-08 inert-field reduction | As a maintainer, I want the now-inert `wp_metadata` fields and cosmetic `WP_FIELD_ORDER` slots reduced, safe only post-cutover, so the model carries no dead runtime slots. (The six-way `wp_snapshot_state` accessor dedup already shipped in #2817 — scope is field/slot removal only.) | Low (optional/deferrable) | Open |
 
 ### Non-Functional Requirements
 
@@ -210,10 +210,10 @@ references them; the full suite stays green. If deferred, the mission still comp
 |----|-------|------------|----------|----------|--------|
 | C-001 | Strict contract order | The migration MUST follow `backfill → verify(FAIL-CLOSED) → flip reader+writer → delete fallbacks → reduce`; no step may precede its predecessor (deleting a fallback before backfill is wired+verified strands legacy corpora). | Technical | High | Open |
 | C-002 | Big-bang production default | The end-state is a genuine unconditional flip: the predicate is **deleted**, not merely defaulted ON; no residual runtime toggle remains. | Technical | High | Open |
-| C-003 | Canonical write target | Backfill resolves its write target via `canonicalize_feature_dir`, never `Path.cwd()` (C-003 / #2647). | Technical | High | Open |
+| C-003 | Canonical write target | Backfill AND the upgrade migration resolve their write target via `canonicalize_feature_dir`, never `Path.cwd()` (C-003 / #2647). The new event-writing paths must add **no** repo-root write path (#2815 co-constraint); a regression test asserts no `status.events.jsonl` lands at repo root. | Technical | High | Open |
 | C-004 | Lane-mirror out of scope | `_legacy_lane_mirror_enabled` is retained — the `lane` field is still frontmatter-authored, so evicting it is a separate concern deferred to its own follow-up. | Technical | Medium | Open |
 | C-005 | Honesty bound (no-data-loss) | "No data loss" is asserted against count+value parity of the reduced snapshot, not temporal fidelity: backfilled subtask timestamps are clamped and seed ULIDs are content-namespaced. Holds only because no consumer reads subtask-completion time or relies on seed-ULID chronological order — asserted as a precondition. | Technical | Medium | Open |
-| C-006 | No dead-symbol / arch-gate drift | Symbol-allowlist and arch-count gates (`test_no_dead_symbols.py` content-hash pins; `test_2093` reader-module set) must be updated in-mission to the post-cutover form, not suppressed. | Technical | Medium | Open |
+| C-006 | No dead-symbol / arch-gate drift | The 15-symbol `_CATEGORY_C_DEFERRED_RUNTIME_STATE_BACKFILL_CUTOVER` frozenset in `tests/architectural/test_no_dead_symbols.py` (content-hash pins for the WP03 backfill library) MUST be **removed** in the same WP that first wires a caller — the ratchet + `test_auto_exempt_disjoint_from_hand_allowlist` trips otherwise. `test_2093`'s `_SANCTIONED_READER_MODULES` → `frozenset()`. Updated in-mission, never suppressed; no new `# noqa`/`# type: ignore`. | Technical | High | Open |
 
 ### Key Entities
 
@@ -247,6 +247,32 @@ references them; the full suite stays green. If deferred, the mission still comp
   and no-ops on a fresh install; a verify failure aborts the step with an actionable message.
 - **SC-006**: The full `tests/architectural/` suite (per-file) and the `status` suite are green on
   the branch; `ruff` + `mypy` clean with no new suppressions.
+
+## Out of Scope & Follow-ups
+
+- **`_legacy_lane_mirror_enabled` / `lane` eviction** (C-004) — kept in place; the frontmatter-authored
+  `lane` field is a separate concern. **File a follow-up issue** for lane-mirror eviction so that
+  `Closes #2093` is defensible (its title frames "generalize the lane retirement"); if the operator
+  deems the lane deferral to hold #2093 open, downgrade the PR to `Contributes to #2093`.
+- **IC-08 (FR-011)** — if deferred rather than landed in-mission, **file a fresh follow-up issue** so
+  nothing tracked in #2816's scope dangles.
+- **Profile-loading authority half of the #2400 epic** (e.g. #2399) — out of scope; this mission
+  advances #2400 but does not close it.
+
+**Closing posture for the eventual PR:** `Closes #2816` **only if** FR-001–FR-010 all land **and**
+IC-08 is either completed or split to a filed follow-up; otherwise `Contributes to #2816`.
+`Closes #2093` iff FR-007 + FR-008 land (both in US4, inside the DoD) and the lane-mirror follow-up
+is filed. `Contributes to #2400` (never Closes). Establish tracker links: #2400 → #2093 → #2816;
+note downstream dependant #2819 (event-log replay) and co-constraint #2815 (repo-root write class).
+
+## Pre-planning verification note
+
+The concrete code claims in this spec were verified against the post-#2817 tree by a brownfield
+point-cut squad (2 lenses). Corrections already folded above: the flag surface is **12 call sites
+across 11 files** (not "~10"); FR-006(a) and FR-007-`workflow_cores` are the **same** code block;
+FR-002/FR-008/FR-011 are **narrowed** to exclude parts already shipped in #2817; `done_bookkeeping.py`
+lives under `merge/`; the upgrade migration is **auto-discovered** (no registry-list edit); and the
+15-symbol dead-symbol frozenset must be un-pinned in the CLI-wiring WP.
 
 ## Assumptions
 
