@@ -5,7 +5,7 @@
 **Status**: Draft
 **Input**: Model doctrine tension as first-class DRG edges, retiring the legacy `opposed_by` field. Anchored on Accepted ADR `docs/adr/3.x/2026-07-21-1-in-tension-with-drg-edge.md`. Anchor ticket #2537 under epic #2466; folds #2737. Out of scope: cascade-all-kinds (#2829), `delegates_to` swarm (#2827).
 
-> **Refined 2026-07-21** after a 4-lens adversarial/enhancement squad (doctrine-daphne, reviewer-renata, architect-alphonso, paula-patterns). Non-decision findings are remediated below; three decisions are escalated as `[NEEDS CLARIFICATION]` markers.
+> **Refined 2026-07-21** after a 4-lens adversarial/enhancement squad (doctrine-daphne, reviewer-renata, architect-alphonso, paula-patterns). Non-decision findings are remediated below; three escalated decisions (D1/D2/D3) were resolved by the operator and folded into the requirements (see Resolved Decisions).
 
 ## User Scenarios & Testing *(mandatory)*
 
