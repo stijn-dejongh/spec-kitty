@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [x] No [NEEDS CLARIFICATION] markers remain
+- [~] Three deliberate [NEEDS CLARIFICATION] markers remain (D1 downstream-compat, D2 anti-pattern-node-kind, D3 tension-under-all-active) — escalated to the operator by the post-spec squad; each carries a decision_id and is tracked via the decision protocol
 - [x] Requirements are testable and unambiguous
 - [x] Requirement types are separated (Functional / Non-Functional / Constraints)
 - [x] IDs are unique across FR-###, NFR-###, and C-### entries
@@ -36,4 +36,5 @@
 ## Notes
 
 - The Change Surface Map is intentional: this is a doctrine-infrastructure mission where the schema/model changes and their propagation across read/write/checkup surfaces ARE the deliverable and the acceptance backbone (per operator instruction).
-- Items marked incomplete require spec updates before `/spec-kitty.plan`. All items pass.
+- Refined 2026-07-21 after a 4-lens adversarial/enhancement squad. Non-decision findings remediated: fakeable gates tightened (NFR-003 exact set, NFR-001 must-fire), anti-pattern marker home corrected to `DRGNode`, glossary parity scoped + comparator made a deliverable (A2), migration order pinned (C-006), bulk-edit flagged (C-007), test-blast-radius + freshness canary + cascade-exclusion test added to the checkup surface, correctness invariants promoted to acceptance (INV-001..005), grep scope reconciled (NFR-002/SC-004).
+- Three decisions escalated to the operator (D1/D2/D3) — spec is committed WITH markers pending those answers; not a quality-bar failure.

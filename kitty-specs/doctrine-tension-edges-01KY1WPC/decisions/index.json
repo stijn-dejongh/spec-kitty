@@ -1,0 +1,75 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-07-21T08:44:04.598646Z",
+      "decision_id": "01KY1XHCKPP44C33P5BJ7QJBPV",
+      "final_answer": null,
+      "input_key": "downstream_opposed_by_compat",
+      "mission_id": "01KY1WPC3STDPG0RMP2SFYS794",
+      "mission_slug": "doctrine-tension-edges-01KY1WPC",
+      "opened_by": "cli",
+      "options": [
+        "accept-hard-break-and-record",
+        "add-consumer-migration-or-deprecation-window"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Removing opposed_by from additionalProperties:false schemas hard-breaks any downstream/org-pack YAML that authored it. Accept the hard break (opposed_by was built-in-only, undocumented as a pack-author surface) or add a deprecation/migration path?",
+      "rationale": "Escalated to operator: downstream/org-pack opposed_by compat policy (hard break vs deprecation) \u2014 product/compat decision.",
+      "resolved_at": "2026-07-21T08:47:48.006653Z",
+      "resolved_by": null,
+      "slot_key": "specify.migration.downstream-opposed-by-compat",
+      "status": "deferred",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-07-21T08:44:05.580286Z",
+      "decision_id": "01KY1XHDJC35VFFFHH5S10G2Y7",
+      "final_answer": null,
+      "input_key": "anti_pattern_node_kind",
+      "mission_id": "01KY1WPC3STDPG0RMP2SFYS794",
+      "mission_slug": "doctrine-tension-edges-01KY1WPC",
+      "opened_by": "cli",
+      "options": [
+        "new-nodekind-anti-pattern",
+        "keep-existing-kind-plus-tag"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "Anti-pattern/smell targets of rejects edges: introduce a new NodeKind (e.g. anti_pattern/smell) that ripples through ArtifactKind + activation filter, or keep them as kind:paradigm/tactic nodes carrying an anti-pattern tag?",
+      "rationale": "Escalated to operator: anti-pattern node kind (new NodeKind vs tag-on-existing) \u2014 ripples through ArtifactKind/activation filter.",
+      "resolved_at": "2026-07-21T08:47:48.998961Z",
+      "resolved_by": null,
+      "slot_key": "specify.model.anti-pattern-node-kind",
+      "status": "deferred",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-07-21T08:44:06.562757Z",
+      "decision_id": "01KY1XHEH2T9RDX8ZCHCSV2VA0",
+      "final_answer": null,
+      "input_key": "tension_under_all_active",
+      "mission_id": "01KY1WPC3STDPG0RMP2SFYS794",
+      "mission_slug": "doctrine-tension-edges-01KY1WPC",
+      "opened_by": "cli",
+      "options": [
+        "run-under-all-active-too",
+        "only-under-explicit-activation"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "consistency-check short-circuits to coherent=true when there is no explicit activation list (backward-compat all-active). Should the tension check run under implicit all-active too (making FR-011 reconciliation artefact load-bearing and SC-002 a live assertion), or only under explicit activation?",
+      "rationale": "Escalated to operator: tension check semantics under implicit all-active activation \u2014 determines FR-011 load-bearing-ness.",
+      "resolved_at": "2026-07-21T08:47:49.975243Z",
+      "resolved_by": null,
+      "slot_key": "specify.check.tension-under-all-active",
+      "status": "deferred",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01KY1WPC3STDPG0RMP2SFYS794",
+  "version": 1
+}
