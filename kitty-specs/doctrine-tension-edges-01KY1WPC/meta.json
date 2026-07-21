@@ -1,0 +1,15 @@
+{
+  "coordination_branch": "kitty/mission-doctrine-tension-edges-01KY1WPC",
+  "created_at": "2026-07-21T08:29:19.354166+00:00",
+  "flattened": false,
+  "friendly_name": "Doctrine Tension as First-Class DRG Edges",
+  "mission_id": "01KY1WPC3STDPG0RMP2SFYS794",
+  "mission_number": null,
+  "mission_slug": "doctrine-tension-edges-01KY1WPC",
+  "mission_type": "software-dev",
+  "purpose_context": "Doctrine today models obligation richly but tension not at all, so competing rules resolve silently and the operator never sees the conflict. This mission makes tension queryable structure that charter activation and consistency-check can flag with concrete resolution paths, and retires the mis-encoded opposed_by field in favour of composable, self-describing DRG edges.",
+  "purpose_tldr": "Model doctrine tension as first-class DRG edges (in_tension_with / reconciles_tension / rejects), retiring the legacy opposed_by field.",
+  "slug": "doctrine-tension-edges-01KY1WPC",
+  "target_branch": "doctrine/drg-missing-links-analysis",
+  "topology": "coord"
+}
