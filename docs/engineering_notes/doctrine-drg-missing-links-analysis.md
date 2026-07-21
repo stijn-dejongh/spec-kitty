@@ -30,12 +30,22 @@ Relation usage vs. the full `Relation` enum in `src/doctrine/drg/models.py`:
 | `instantiates` | 8 | action → template |
 | `specializes_from` | 4 | implementer family only |
 | `applies` | 1 | single edge, see finding 4 |
-| `governs` | **0** | enum member, never emitted |
+| `governs` | **0** | **NOT an enum member** — magic string in `orphan.py` only (never authorable) |
 | `vocabulary` | **0** | enum member, never emitted |
 | `delegates_to` | **0** | enum member, never emitted |
 | `enhances` | **0** | enum member, never emitted |
 | `overrides` | **0** | enum member, never emitted |
 | `refines` | **0** | enum member, never emitted |
+
+> **Canonical-but-sparse by design — not gaps (operator clarification).** `replaces`,
+> `enhances`, `overrides`, and `specializes_from` are **canonical** relations whose primary
+> role is **multi-tier pack composition** — an org/project pack augmenting or superseding
+> built-in doctrine. The Spec Kitty repository does **not currently set up its own multi-tier
+> pack layering**, so their low/zero edge count in the built-in layer is **expected, not a
+> missing link**. Do NOT "fix" these by authoring built-in edges. Distinct cases: `governs`
+> (never an enum member — a defective lint rule, #2737) and `vocabulary`/`refines` (real enum
+> members, org/project-layer); `delegates_to` is a documented topological relation with no
+> runtime effect yet (loose-governance agent swarm — future scope, ADR 2026-07-21-1).
 
 ---
 
