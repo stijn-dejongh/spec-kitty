@@ -4,9 +4,9 @@
 - **Origin flow:** `specify`
 - **Slot key:** `specify.check.tension-under-all-active`
 - **Input key:** `tension_under_all_active`
-- **Status:** `deferred`
+- **Status:** `resolved`
 - **Created:** `2026-07-21T08:44:06.562757+00:00`
-- **Resolved:** `2026-07-21T08:47:49.975243+00:00`
+- **Resolved:** `2026-07-21T09:04:57.398575+00:00`
 - **Opened by:** `cli`
 - **Other answer:** `false`
 
@@ -21,13 +21,13 @@ consistency-check short-circuits to coherent=true when there is no explicit acti
 
 ## Final answer
 
-_(none)_
+Always on: the tension check runs regardless of explicit activation (simplifies logic, no short-circuit special-case). Consequence: the new curated default charter (tracked work; will NOT enable all doctrine elements) becomes a P0 release-blocker for this mission's release, since always-on tension checking requires a default charter that does not co-activate unreconciled tensions.
 
 ## Rationale
 
-Escalated to operator: tension check semantics under implicit all-active activation — determines FR-011 load-bearing-ness.
+_(none)_
 
 ## Change log
 
 - `2026-07-21T08:44:06.562757+00:00` — opened
-- `2026-07-21T08:47:49.975243+00:00` — deferred
+- `2026-07-21T09:04:57.398575+00:00` — resolved (final_answer="Always on: the tension check runs regardless of explicit activation (simplifies logic, no short-circuit special-case). Consequence: the new curated default charter (tracked work; will NOT enable all doctrine elements) becomes a P0 release-blocker for this mission's release, since always-on tension checking requires a default charter that does not co-activate unreconciled tensions.")

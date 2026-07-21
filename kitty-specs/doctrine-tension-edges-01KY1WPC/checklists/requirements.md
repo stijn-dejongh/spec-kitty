@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [~] Three deliberate [NEEDS CLARIFICATION] markers remain (D1 downstream-compat, D2 anti-pattern-node-kind, D3 tension-under-all-active) — escalated to the operator by the post-spec squad; each carries a decision_id and is tracked via the decision protocol
+- [x] No [NEEDS CLARIFICATION] markers remain — the three squad-escalated decisions (D1 downstream-compat, D2 anti-pattern-node-kind, D3 tension-under-all-active) are RESOLVED via the decision protocol and folded into FR-015 / FR-004 / FR-009 + C-008
 - [x] Requirements are testable and unambiguous
 - [x] Requirement types are separated (Functional / Non-Functional / Constraints)
 - [x] IDs are unique across FR-###, NFR-###, and C-### entries
