@@ -1,7 +1,7 @@
 {
-  "event_count": 9,
-  "last_event_id": "01KY5C8GA0EZQ560DG4FDPHHHK",
-  "materialized_at": "2026-07-22T16:59:05.407827+00:00",
+  "event_count": 11,
+  "last_event_id": "01KY5C8SBPB39Z6GP3N0G9B2K5",
+  "materialized_at": "2026-07-22T16:59:14.677343+00:00",
   "mission_number": "",
   "mission_slug": "docs-structural-sanity-01KY53KJ",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 2,
+    "in_progress": 3,
     "in_review": 0,
-    "planned": 3
+    "planned": 2
   },
   "work_packages": {
     "WP01": {
@@ -55,11 +55,19 @@
       "shell_pid_created_at": "1784739534.86"
     },
     "WP04": {
-      "actor": "finalize-tasks",
+      "actor": "claude:sonnet:curator-carla:implementer",
+      "agent": "claude:sonnet:curator-carla:implementer",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01KY56RKXQYQ6VNMPG6PHH70HK",
-      "last_transition_at": "2026-07-22T15:23:01.943946+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01KY5C8SBPB39Z6GP3N0G9B2K5",
+      "last_transition_at": "2026-07-22T16:59:14.677343+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 3356247,
+      "shell_pid_created_at": "1784739534.86"
     },
     "WP05": {
       "actor": "finalize-tasks",
