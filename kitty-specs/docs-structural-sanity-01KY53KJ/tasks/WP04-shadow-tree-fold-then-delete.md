@@ -8,7 +8,9 @@ requirement_refs:
 planning_base_branch: docs/common-docs-section-audit
 merge_target_branch: docs/common-docs-section-audit
 branch_strategy: Planning artifacts for this mission were generated on docs/common-docs-section-audit. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into docs/common-docs-section-audit unless the human explicitly redirects the landing branch.
-created_at: '2026-07-22T16:30:00+00:00'
+base_branch: kitty/mission-docs-structural-sanity-01KY53KJ
+base_commit: aac68479d6dcdde4b46b6d4565acc4bcbc0f4d8d
+created_at: '2026-07-22T16:59:14.559640+00:00'
 subtasks:
 - T018
 - T019
