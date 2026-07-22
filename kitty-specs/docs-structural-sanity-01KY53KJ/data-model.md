@@ -22,10 +22,10 @@ The classification the audit assigns each doc.
 
 Relocations land specifically in `engineering-notes/` (D7), but the lint's ALLOW zone is `plans/**` broadly so the STAY subtrees `plans/{research,investigations}/**` and era-dated `adr/**` pass without churn (NFR-003).
 
-## Redirect-map entry
+## Redirect map (NOT modified by this mission)
 
-- **Fields**: `old_path` (e.g. `architecture/audits/2026-05-spec-kitty-caacs.html`), `new_path` (e.g. `plans/engineering-notes/architecture-audits/2026-05-spec-kitty-caacs.html`)
-- **Rule**: exactly one entry per moved/removed path (NFR-002 1:1); no orphan entries.
+- **This mission generates NO redirect-map entries.** The moved/removed paths are never-published (absent from `redirect_baseline_urls.json`), so `redirect_stub_generator regenerate-map` would derive `{}` and OVERWRITE `redirect_map.yaml`, wiping the landed `01KW3SBK` mission's 149 published-URL redirects. `redirect_map.yaml` is left untouched (proven via `git status`).
+- **NFR-002 (reframed)**: no baseline-URL 404 regression (verified against `redirect_baseline_urls.json`) + all in-repo relative links resolve (`relative_link_fixer --check`). Link integrity is delivered by `relative_link_fixer` (in-repo docs) + `bulk_ref_rewrite` (non-`docs/`), NOT by redirect stubs.
 
 ## Extended documentation doctrine (FR-006, FR-011) — NOT a new directive
 
@@ -43,17 +43,17 @@ Relocations land specifically in `engineering-notes/` (D7), but the lint's ALLOW
 
 ## Page-inventory lockfile / toc
 
-- **Generated** from frontmatter; **path-pinned** (`test_inventory_path_stable.py`). Regenerated in place per move; never relocated (C-004).
+- **Page-inventory**: generated from frontmatter; **path-pinned** (`test_inventory_path_stable.py`). Regenerated in place via `inventory_lockfile.py --write` after the moves; never relocated (C-004). (`check_docs_freshness --inventory` is the read-only verify, not a writer.)
+- **toc.yml**: verify-only — no `toc.yml` references a moved path and no generator exists; left untouched.
 
 ## State transition (per moved file)
 
 ```
 placed(old) --git mv--> placed(new)
-             --redirect entry--> redirect_covered
-             --relative_link_fixer--> referrers_repointed
-             --inventory+toc regen--> nav_consistent
+             --relative_link_fixer (docs/) + bulk_ref_rewrite (non-docs/)--> referrers_repointed
+             --inventory_lockfile --write (toc verify-only)--> nav_consistent
              --lint green--> compliant
 ```
-Terminal: `compliant` (all gates green). A move is "done" only at `compliant`.
+Terminal: `compliant` (all gates green). A move is "done" only at `compliant`. No redirect step — the moved paths are never-published (see Redirect map above).
 
-**Fold-then-delete variant** (the 3 shadow entries — canonical twin EXISTS): the first transition is `reconcile-into-canonical --git rm shadow-->` (NOT `git mv`, which would clobber the canonical), then the same redirect / link-fix / regen / lint path. See `occurrence_map.yaml` fold entries and quickstart Recipe B.
+**Fold-then-delete variant** (the 3 shadow entries — canonical twin EXISTS): the first transition is `reconcile-into-canonical --git rm shadow-->` (NOT `git mv`, which would clobber the canonical), then the same link-fix / inventory-regen / lint path (no redirect). See `occurrence_map.yaml` fold entries and quickstart Recipe B.
