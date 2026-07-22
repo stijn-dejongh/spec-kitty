@@ -18,7 +18,7 @@
 - [x] Requirement types are separated (Functional / Non-Functional / Constraints)
 - [x] IDs are unique across FR-###, NFR-###, and C-### entries
 - [x] All requirement rows include a non-empty Status value (all `Open`)
-- [x] Non-functional requirements include measurable thresholds (0 broken links, 100% detection, <5s, 1:1 redirect coverage)
+- [x] Non-functional requirements include measurable thresholds (0 broken links, 100% detection, <5s, no baseline-URL 404 regression)
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (outcome-framed: counts, coverage %, pass/fail)
 - [x] All acceptance scenarios are defined
