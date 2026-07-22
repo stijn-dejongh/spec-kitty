@@ -1,0 +1,92 @@
+# Occurrence map — docs-structural-sanity-01KY53KJ
+#
+# Bulk-edit shape: STRUCTURAL RELOCATION, not a product-term rename. Point-in-time
+# artifacts and a split-brain shadow tree move to their canonical concern-homes;
+# every cross-file referrer (relative links) is repointed and redirect stubs are
+# added. The per-path relocations live in the `moves:` block (schema IC-10); the
+# eight single-term categories classify the ancillary occurrences.
+#
+# Measured referrer counts (docs/, excl. the audit note itself):
+#   architecture/audits/ -> 11 files · adr-connector -> 6 · feature-detection -> 5
+#   teamspace-...-920-closeout -> 4 · 883-mission-type-authority-brief -> 2
+#   code-as-a-crime-scene-overview -> 2 · gap-analysis-connector -> 1 · 883-research-synthesis -> 0
+#
+# Schema: src/doctrine/schemas/occurrence-map.schema.yaml
+
+target:
+  term: "docs/ point-in-time & shadow-tree structural relocation"
+  replacement: null
+  operation: rename          # relocation is the dominant op; shadow-tree deletes are folds into canonical twins (see moves)
+
+categories:
+  # No code identifiers are renamed. The new lint module is NEW code, not a rename.
+  code_symbols:        { action: do_not_change }          # no existing symbol renamed
+
+  # No Python import statements are repointed (new lint module is additive).
+  import_paths:        { action: do_not_change }          # additive scripts/docs module; no importer rewrite
+
+  # PRIMARY category: relative-link path literals in ~25-30 referrer .md files point
+  # at the old locations and are rewritten to the new paths (relative_link_fixer),
+  # with redirect stubs covering external/bookmarked URLs. Per-path relocations in `moves:`.
+  filesystem_paths:    { action: rename }                 # in-repo relative links repointed to new homes; moves: carries the file relocations
+
+  # redirect_map.yaml gains one entry per moved/removed path; the page-inventory
+  # lockfile is regenerated (path-keyed). Reviewed for 1:1 redirect coverage (NFR-002).
+  serialized_keys:     { action: manual_review }          # redirect_map entries added + page-inventory regenerated; verify 1:1
+
+  # No CLI subcommand/flag references the moved paths.
+  cli_commands:        { action: do_not_change }          # no command surface touched
+
+  # The moved docs ARE user-visible; link TEXT / prose cross-references that name the
+  # old location are updated where user-visible (nav labels, "see also" links).
+  user_facing_strings: { action: rename_if_user_visible } # docs prose/link text repointed where visible
+
+  # test_inventory_path_stable.py PINS the page-inventory path (must stay); new lint
+  # unit tests + the 4-finding regression fixture are ADDED. Reviewed together.
+  tests_fixtures:      { action: manual_review }           # keep pinned inventory path; add docs-lint tests + fixture
+
+  # No log/telemetry strings name the moved paths.
+  logs_telemetry:      { action: do_not_change }          # none
+
+# Structural relocations (multi-path). Each `from` set folds into one `to`.
+moves:
+  # --- IC-03: point-in-time architecture artifacts -> engineering-notes ---
+  - from: ["docs/architecture/883-research-synthesis.md"]
+    to: "docs/plans/engineering-notes/883-research-synthesis.md"
+    reason: "Self-declared point-in-time pre-spec research for #883; superseded by the ADR + brief."
+  - from: ["docs/architecture/883-mission-type-authority-brief.md"]
+    to: "docs/plans/engineering-notes/883-mission-type-authority-brief.md"
+    reason: "Dated mission dossier, not living design."
+  - from: ["docs/architecture/audits/"]
+    to: "docs/plans/engineering-notes/architecture-audits/"
+    reason: "7 dated 2026-05 CaaCS forensic audits / triage / issue-draft dumps — point-in-time, not living design."
+  # --- IC-03 borderline (FR-002): move with recorded rationale ---
+  - from: ["docs/architecture/assessments/code-as-a-crime-scene-overview.md"]
+    to: "docs/plans/engineering-notes/code-as-a-crime-scene-overview.md"
+    reason: "Borderline assessment; adjudicated as point-in-time overview -> engineering-notes (revisit in plan if a living-design case emerges)."
+  # --- IC-04: shadow-tree retirement (fold drifted dup into canonical twin, delete shadow) ---
+  - from: ["docs/plans/notes/feature-detection.md"]
+    to: "docs/architecture/feature-detection.md"
+    reason: "Drifted split-brain duplicate (396 vs 388 lines); reconcile unique content into canonical twin, delete shadow, repoint 5 referrers."
+  - from: ["docs/plans/notes/gap-analysis-connector-installation-model.md"]
+    to: "docs/architecture/gap-analysis-connector-installation-model.md"
+    reason: "Duplicate of canonical architecture copy; reconcile + delete shadow, repoint 1 referrer."
+  - from: ["docs/plans/notes/adr-connector-auth-binding-separation.md"]
+    to: "docs/adr/3.x/adr-connector-auth-binding-separation.md"
+    reason: "Drifted duplicate (179 vs 177 lines) of the canonical ADR; reconcile + delete shadow, repoint 6 referrers."
+  # --- IC-05: migrations closeout -> engineering-notes ---
+  - from: ["docs/migrations/teamspace-mission-state-920-closeout.md"]
+    to: "docs/plans/engineering-notes/teamspace-mission-state-920-closeout.md"
+    reason: "Dated one-mission closeout evidence; belongs in engineering-notes, not the operator-runbook zone."
+
+# Path-pinned / boundary exceptions — must NOT move.
+exceptions:
+  - path: "docs/development/3-2-page-inventory.yaml"
+    action: do_not_change
+    reason: "Generated page-inventory lockfile; path pinned by test_inventory_path_stable.py (C-004). Regenerate contents in place."
+  - path: "docs/**/toc.yml"
+    action: do_not_change
+    reason: "DocFX nav; regenerate contents in place, never relocate (C-004)."
+  - path: "docs/guides/**"
+    action: do_not_change
+    reason: "End-user zone; FR-003 boundary — nothing moves here, referrers repointed via redirect (C-001)."
