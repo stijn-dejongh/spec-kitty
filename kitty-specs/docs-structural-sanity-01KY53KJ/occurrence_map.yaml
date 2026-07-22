@@ -137,8 +137,8 @@ exceptions:
     action: do_not_change
     reason: "Baseline-URL manifest (180 URLs); LEFT UNTOUCHED — this mission regenerates no redirect_map (PB2). The firm moves + shadow folds are never-published (absent here), so no baseline 404. The 920-closeout URL IS published here: a verified closeout MOVE would 404 it with no redirect — WP03 T016 escalates that to the operator rather than moving silently (default STAYS keeps it green)."
   - path: "kitty-specs/docs-structural-sanity-01KY53KJ/status.events.jsonl"
-    action: do_not_change
-    reason: "Mission runtime state (append-only lane status log) auto-committed by move-task/the sync daemon in every WP lane — NOT part of the bulk edit. Exempted so the pre-review diff-compliance gate does not BLOCK on this unclassified runtime surface."
+    action: manual_review
+    reason: "Mission runtime state (append-only lane status log) written by move-task/the sync daemon in every WP lane — it legitimately CHANGES, so manual_review (not do_not_change) exempts it from bulk-edit classification without asserting immutability. Not part of the bulk edit."
   - path: "kitty-specs/docs-structural-sanity-01KY53KJ/status.json"
-    action: do_not_change
-    reason: "Mission runtime snapshot (reduced status) auto-committed alongside status.events.jsonl — runtime state, not bulk-edit content."
+    action: manual_review
+    reason: "Mission runtime snapshot (reduced status) written alongside status.events.jsonl — runtime state that changes, not bulk-edit content."
