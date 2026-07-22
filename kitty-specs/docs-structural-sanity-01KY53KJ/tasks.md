@@ -6,12 +6,15 @@
 Two independent tracks that converge at the aggregate sweep:
 
 - **Doctrine + guard** (the durable keystone): **WP01 → WP02** — extend DIRECTIVE_042 + the `common-docs`
-  styleguide config block (SSOT), then land the config-driven `docs_structural_lint.py` + CI wiring.
+  styleguide `structural_lint_config:` block (SSOT), then land the config-driven `docs_structural_lint.py`
+  (CI wiring is deferred to WP05, post-move).
 - **Content redistribution** (parallel, disjoint file sets): **WP03** (point-in-time moves + architecture
   index) ∥ **WP04** (shadow-tree fold-then-delete). Both feed the final IA-mechanics sweep.
-- **IA mechanics & aggregate gate**: **WP05** — un-pins the foreign-pinned redirect tooling, regenerates
-  the derived redirect-map / page-inventory / toc, repoints every referrer, and runs the aggregate gate
-  (incl. the new lint) over the whole diff.
+- **IA mechanics, CI wiring & aggregate gate**: **WP05** — safely parametrizes `bulk_ref_rewrite`'s foreign
+  default, repoints every referrer (both tools via `--occurrence-map $MAP`), regenerates the page-inventory
+  lockfile in place, wires the lint into CI (post-move), and runs the aggregate gate (incl. the new lint) over
+  the whole diff. **Does NOT regenerate `redirect_map.yaml`** (never-published paths — regenerating wipes the
+  landed `01KW3SBK` redirects, PB2) and does NOT regenerate `toc.yml` (verify-only).
 
 WP01, WP03, WP04 are parallel-startable (disjoint surfaces). WP02 needs WP01's config block; WP05 needs
 the final move set (WP03+WP04) and the lint (WP02).
@@ -28,9 +31,8 @@ the final move set (WP03+WP04) and the lint (WP02).
 | T006 | Implement the 4 scoped checks in `docs_structural_lint.py` (index/point-in-time/shadow/frontmatter) | WP02 | |
 | T007 | LOAD policy from the WP01 styleguide config block (FR-011) — no hard-coded divergent policy | WP02 | |
 | T008 | Red-first regression fixture: one instance of each of the 4 finding-classes | WP02 | |
-| T009 | Clean-tree assertions (adr/**, plans/{research,investigations}/**, 38 index/README nav basenames, 3 ADR READMEs) | WP02 | |
-| T010 | Config-SSOT agreement test (lint runtime behaviour == styleguide config) | WP02 | |
-| T011 | Wire the lint into `.github/workflows/docs-freshness.yml`; verify < 5 s | WP02 | |
+| T009 | Post-move-shaped zero-violation fixture + live cohort-clean assertions (no zero-TOTAL over live pre-move tree; that gate is WP05's) | WP02 | |
+| T010 | Config-SSOT agreement test (lint runtime behaviour == `structural_lint_config:`) | WP02 | |
 | T012 | `git mv` `883-research-synthesis.md` → `engineering-notes/` | WP03 | [P] |
 | T013 | `git mv` `883-mission-type-authority-brief.md` → `engineering-notes/` | WP03 | [P] |
 | T014 | `git mv` `architecture/audits/` (7 files) → `engineering-notes/architecture-audits/` | WP03 | [P] |
@@ -41,11 +43,11 @@ the final move set (WP03+WP04) and the lint (WP02).
 | T019 | Fold-then-delete `plans/notes/gap-analysis-connector-installation-model.md` → canonical | WP04 | [P] |
 | T020 | Fold-then-delete `plans/notes/adr-connector-auth-binding-separation.md` → canonical `adr/3.x/` (flag #2227) | WP04 | [P] |
 | T021 | Correct/remove `plans/notes/README.md` for the emptied shadow dir | WP04 | |
-| T022 | FR-010 un-pin: `redirect_stub_generator` `MISSION_SLUG` + `bulk_ref_rewrite` `01KW3SBK` default | WP05 | |
-| T023 | Regenerate `redirect_map.yaml` via `regenerate-map --occurrence-map $MAP` (relocations + 3 folds) | WP05 | |
-| T024 | `relative_link_fixer` over docs/** + `bulk_ref_rewrite` for the non-docs paradigm referrer | WP05 | |
-| T025 | Regenerate page-inventory (`check_docs_freshness --inventory`) + `toc.yml` in place | WP05 | |
-| T026 | Aggregate gate sweep (link-check, freshness, terminology, `tests/docs/`, lint clean) | WP05 | |
+| T022 | FR-010 (narrowed) safely parametrize `bulk_ref_rewrite`'s `01KW3SBK` `DEFAULT_OCCURRENCE_MAP` (keep symbol resolvable) | WP05 | |
+| T023 | Leave `redirect_map.yaml` UNTOUCHED; verify baseline preserved (no redirect regen — never-published paths, PB2) | WP05 | |
+| T024 | `relative_link_fixer --occurrence-map $MAP` over docs/** + `bulk_ref_rewrite --occurrence-map $MAP` for the non-docs paradigm referrer | WP05 | |
+| T025 | Regenerate page-inventory (`inventory_lockfile.py --write`) in place; `toc.yml` verify-only | WP05 | |
+| T026 | Wire the lint into `.github/workflows/docs-freshness.yml` (FR-008, post-move) + aggregate gate sweep (link-check, freshness, terminology, `tests/docs/`, live lint clean) | WP05 | |
 
 ---
 
@@ -66,22 +68,25 @@ the final move set (WP03+WP04) and the lint (WP02).
 - [ ] T004 Reconcile `common-docs-curation` + `common-docs-scaffold` tactics — ratchet steps → lint (WP01)
 - [ ] T005 Run the DRG/doctrine freshness gate; record the IC-02→IC-01 reverse-edge follow-up (WP01)
 
-### WP02 — Structural docs lint + config-SSOT + CI wiring (IC-02) · Track: Doctrine · Priority P1
+### WP02 — Structural docs lint + config-SSOT (IC-02) · Track: Doctrine · Priority P1
 
 - **Goal**: Land `scripts/docs/docs_structural_lint.py` — the durable successor to the retired ratchet —
-  with 4 checks scoped so the current clean tree passes (NFR-003), LOADING the WP01 styleguide config as
-  its single source of truth (FR-011), plus a red-first regression fixture and CI wiring (FR-008).
+  with 4 checks scoped so a POST-MOVE-SHAPED fixture passes and the current clean COHORTS pass (NFR-003),
+  LOADING the WP01 `structural_lint_config:` block as its single source of truth (FR-011), plus a red-first
+  regression fixture. **CI wiring + the live-tree zero-violation gate are WP05's** (post-move) — WP02 does NOT
+  enable CI and does NOT assert zero-TOTAL over the live pre-move tree (the 7 audits are live violations by
+  design until WP03).
 - **Independent test**: `pytest tests/docs/test_docs_structural_lint.py -q` — the 4-class fixture is RED
-  before the checks land / GREEN after; the current tree passes with zero violations in < 5 s.
+  before the checks land / GREEN after; the post-move-shaped fixture is zero-violation and the live cohort
+  assertions pass, in < 5 s.
 - **Dependencies**: WP01 (consumes its config block — may start against a stub, finalize after WP01).
   **Prompt**: `tasks/WP02-docs-structural-lint-and-ci.md`
-- **Subtasks**: T006, T007, T008, T009, T010, T011
+- **Subtasks**: T006, T007, T008, T009, T010
 - [ ] T006 Implement the 4 scoped checks (index/point-in-time/shadow/frontmatter) (WP02)
-- [ ] T007 LOAD policy from the WP01 styleguide config block (FR-011) — no hard-coded divergent policy (WP02)
+- [ ] T007 LOAD policy from the WP01 `structural_lint_config:` block (FR-011) — fail LOUD on missing block (WP02)
 - [ ] T008 Red-first regression fixture: one instance of each of the 4 finding-classes (WP02)
-- [ ] T009 Clean-tree assertions (adr/**, plans/{research,investigations}/**, nav basenames, 3 ADR READMEs) (WP02)
-- [ ] T010 Config-SSOT agreement test (lint runtime behaviour == styleguide config) (WP02)
-- [ ] T011 Wire the lint into `.github/workflows/docs-freshness.yml`; verify < 5 s (WP02)
+- [ ] T009 Post-move-shaped zero-violation fixture + live cohort-clean assertions (no live zero-TOTAL) (WP02)
+- [ ] T010 Config-SSOT agreement test (lint runtime behaviour == `structural_lint_config:`) (WP02)
 
 ### WP03 — Point-in-time redistribution + architecture index (IC-03 + IC-05) · Track: Content · Priority P1/P3
 
@@ -113,21 +118,26 @@ the final move set (WP03+WP04) and the lint (WP02).
 - [ ] T020 Fold-then-delete `plans/notes/adr-connector-auth-binding-separation.md` → canonical `adr/3.x/` (flag #2227) (WP04)
 - [ ] T021 Correct/remove `plans/notes/README.md` for the emptied shadow dir (WP04)
 
-### WP05 — IA-mechanics, tooling un-pin & aggregate gate sweep (IC-06) · Track: Convergence · Priority P1
+### WP05 — IA-mechanics, tooling un-pin, CI wiring & aggregate gate sweep (IC-06) · Track: Convergence · Priority P1
 
-- **Goal**: Un-pin the foreign-pinned redirect/link tooling (FR-010/C-007), regenerate the derived
-  redirect-map / page-inventory / toc against THIS mission's map, repoint every referrer (docs/** + the
-  one non-docs paradigm ref), and run the aggregate gate — the mission's Definition of Done.
-- **Independent test**: `relative_link_fixer --check` clean (NFR-001); `check_docs_freshness --ci` green
-  (NFR-004); `redirect_stub_generator check-map` reports 1:1 coverage (NFR-002); `docs_structural_lint`
-  exits 0 (SC-003/004/005); `pytest tests/docs/` + terminology guard green.
+- **Goal**: Safely parametrize `bulk_ref_rewrite`'s foreign default (FR-010/C-007), repoint every referrer
+  (docs/** + the one non-docs paradigm ref — BOTH tools driven with `--occurrence-map $MAP`), regenerate the
+  page-inventory lockfile in place, wire the lint into CI now the tree is post-move-clean (FR-008), and run the
+  aggregate gate — the mission's Definition of Done. **Does NOT regenerate `redirect_map.yaml`** (moved paths
+  are never-published; regenerating wipes the landed `01KW3SBK` 149 redirects — PB2); the redirect corpus is
+  left untouched.
+- **Independent test**: `relative_link_fixer --check --occurrence-map $MAP` clean (NFR-001);
+  `check_docs_freshness --ci` green (NFR-004); `redirect_map.yaml` + `redirect_baseline_urls.json` UNMODIFIED
+  in `git status` (NFR-002 reframed — no redirect regen, 0 baseline 404); `docs_structural_lint` exits 0 on
+  the live post-move tree and is wired into CI (SC-003/004/005, FR-008); `pytest tests/docs/` + terminology
+  guard green.
 - **Dependencies**: WP02 (the lint), WP03, WP04 (the final move set). **Prompt**: `tasks/WP05-ia-mechanics-and-gate-sweep.md`
 - **Subtasks**: T022, T023, T024, T025, T026
-- [ ] T022 FR-010 un-pin: `redirect_stub_generator` `MISSION_SLUG` + `bulk_ref_rewrite` `01KW3SBK` default (WP05)
-- [ ] T023 Regenerate `redirect_map.yaml` via `regenerate-map --occurrence-map $MAP` (relocations + 3 folds) (WP05)
-- [ ] T024 `relative_link_fixer` over docs/** + `bulk_ref_rewrite` for the non-docs paradigm referrer (WP05)
-- [ ] T025 Regenerate page-inventory (`check_docs_freshness --inventory`) + `toc.yml` in place (WP05)
-- [ ] T026 Aggregate gate sweep (link-check, freshness, terminology, `tests/docs/`, lint clean) (WP05)
+- [ ] T022 FR-010 (narrowed) safely parametrize `bulk_ref_rewrite`'s `01KW3SBK` `DEFAULT_OCCURRENCE_MAP` (keep symbol resolvable) (WP05)
+- [ ] T023 Leave `redirect_map.yaml` UNTOUCHED; verify baseline preserved (no redirect regen — PB2) (WP05)
+- [ ] T024 `relative_link_fixer --occurrence-map $MAP` over docs/** + `bulk_ref_rewrite --occurrence-map $MAP` for the non-docs paradigm referrer (WP05)
+- [ ] T025 Regenerate page-inventory (`inventory_lockfile.py --write`) in place; `toc.yml` verify-only (WP05)
+- [ ] T026 Wire the lint into `.github/workflows/docs-freshness.yml` (FR-008) + aggregate gate sweep (link-check, freshness, terminology, `tests/docs/`, live lint clean) (WP05)
 
 ---
 
@@ -144,10 +154,11 @@ Content:   WP03 ─────────────┼── WP05
 - **WP02 → WP01**: the lint LOADS WP01's styleguide config block (FR-011). Start against a stub if needed;
   the config is authoritative before merge. **Reverse edge (IC-02→IC-01)**: the lint's module path is written
   back into WP01's 4 artifacts — WP01 T005 records this so it is not lost.
-- **WP05 → WP02, WP03, WP04**: the redirect-map regeneration + aggregate sweep need the final move set AND
-  the lint. WP05 also carries the **sanctioned tool-driven leeway** to `relative_link_fixer --write` /
-  `toc.yml` regen across referrer files outside any WP's `owned_files` (no other WP claims those referrers —
-  the no-overlap guard holds).
+- **WP05 → WP02, WP03, WP04**: the referrer sweep + CI wiring + aggregate gate need the final move set AND the
+  lint. WP05 also carries the **sanctioned tool-driven leeway** to run `relative_link_fixer` across referrer
+  files — some of which ARE owned by other WPs (`architecture/index.md`, the folded twins). The leeway is safe
+  **by SEQUENCING** (WP05 deps WP02/WP03/WP04, so those files are final before the sweep), NOT because the
+  referrers are unowned. WP05 regenerates NO `redirect_map.yaml` and NO `toc.yml`.
 - **MVP**: WP01→WP02 (the durable guard) is the keystone; without it every content move re-accretes. WP03 is
   the largest single content win.
 - Coord topology; `finalize-tasks` computes `lanes.json` from these dependencies.
@@ -163,12 +174,12 @@ Content:   WP03 ─────────────┼── WP05
 | FR-005 (migrations closeout relocation) | WP03 | borderline — default stays unless verified |
 | FR-006 (extend doctrine + reconcile ratchet refs) | WP01 | |
 | FR-007 (lint, 4 checks) | WP02 | |
-| FR-008 (CI wiring) | WP02 | |
-| FR-009 (redirect-map/inventory/toc, 1:1 coverage) | WP05 | |
-| FR-010 (un-pin foreign-pinned tooling) | WP05 | |
+| FR-008 (CI wiring) | WP05 | post-move: WP02 defers CI enablement so the gate goes green only after WP03/WP04 land |
+| FR-009 (referrer repoint + inventory in place; NO redirect-map regen) | WP05 | never-published paths — redirect_map left untouched (PB2) |
+| FR-010 (safely parametrize `bulk_ref_rewrite` foreign default; keep symbol resolvable) | WP05 | narrowed — `redirect_stub_generator` not invoked |
 | FR-011 (styleguide config SSOT) | WP01 (author) | WP02 consumes/asserts agreement |
 | NFR-001 (link integrity) | WP05 | |
-| NFR-002 (redirect coverage) | WP05 | |
+| NFR-002 (no baseline-URL 404 regression + relative links resolve; redirect corpus untouched) | WP05 | reframed — no redirect regen |
 | NFR-003 (guard efficacy + clean-tree + speed) | WP02 | |
 | NFR-004 (no suite regressions) | WP05 | aggregate sweep |
 | NFR-005 (zero split-brain) | WP04 (produce) / WP02 (verify) | shadow-tree check |
@@ -181,8 +192,14 @@ Content:   WP03 ─────────────┼── WP05
 
 ## Risks
 
-- **Foreign-pinned tooling silently consumed** (C-007): every redirect/link command MUST pass
-  `--occurrence-map $MAP`; WP05 T022 un-pins the default so an omission cannot bind the foreign mission.
+- **Foreign-pinned tooling silently consumed** (C-007): every link command (`relative_link_fixer` AND
+  `bulk_ref_rewrite`) MUST pass `--occurrence-map $MAP`; WP05 T022 safely parametrizes the shared
+  `DEFAULT_OCCURRENCE_MAP` (keeping it resolvable for importing callers) so an omission cannot bind the foreign
+  mission.
+- **Wiping the foreign redirect corpus** (PB2): regenerating `redirect_map.yaml` for this mission derives ZERO
+  entries (never-published paths) and OVERWRITES the landed `01KW3SBK` 149 redirects — FORBIDDEN. WP05 T023
+  leaves the map untouched and proves it via `git status`; link integrity is `relative_link_fixer` +
+  `bulk_ref_rewrite` only.
 - **Fold-then-delete clobber** (WP04): a mechanical `git mv shadow canonical` destroys the canonical twin —
   the 3 shadow entries are reconcile-into-canonical + `git rm`, per occurrence_map fold notes / quickstart B.
 - **Config/lint drift** (FR-011): the styleguide config and the lint must agree — WP02 T010's config-SSOT

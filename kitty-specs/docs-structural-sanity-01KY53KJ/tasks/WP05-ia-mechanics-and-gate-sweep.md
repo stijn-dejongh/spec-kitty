@@ -8,6 +8,7 @@ dependencies:
 requirement_refs:
 - C-006
 - C-007
+- FR-008
 - FR-009
 - FR-010
 - NFR-001
@@ -33,10 +34,9 @@ create_intent: []
 execution_mode: code_change
 model: sonnet
 owned_files:
-- scripts/docs/redirect_stub_generator.py
 - scripts/docs/bulk_ref_rewrite.py
-- scripts/docs/redirect_map.yaml
 - docs/development/3-2-page-inventory.yaml
+- .github/workflows/docs-freshness.yml
 role: implementer
 tags: []
 tracker_refs: []
@@ -60,31 +60,46 @@ loaded and its init declaration is on the record.
 
 ## Sanctioned tool-driven leeway (read first — ownership note)
 
-This WP runs `relative_link_fixer` (writes across `docs/**` referrers) + `toc.yml` regeneration across
-referrer files that are NOT in any WP's `owned_files`. This is **sanctioned tool-driven leeway**: the
-referrers are touched by a canonical tool sweep, not hand-edited feature work, and **no other WP claims those
-referrer files** (WP03/WP04 explicitly deferred referrer repointing to this WP), so the no-overlap ownership
-guard holds. The rationale is recorded here per the ownership-map-leeway discipline. Do NOT expand beyond the
-tool-driven referrer rewrites + the derived artifacts in `owned_files`.
+This WP runs `relative_link_fixer` (writes across `docs/**` referrers) — a canonical tool sweep, not
+hand-edited feature work — over referrer files, some of which ARE owned by other WPs (e.g.
+`docs/architecture/index.md` and the folded canonical twins). The leeway is safe **by SEQUENCING, not by the
+referrers being unowned**: WP05 depends on WP02 **and** WP03 **and** WP04, so every owning WP has already
+landed its content before this sweep runs — the tool only repoints links in files whose content is final, so
+there is no concurrent-write overlap. (WP03/WP04 explicitly deferred referrer repointing to this WP.) The
+rationale is recorded here per the ownership-map-leeway discipline. Do NOT expand beyond the tool-driven
+referrer rewrites + the derived artifacts in `owned_files`.
 
 ## Objectives & Success Criteria
 
-Close the mission: un-pin the foreign-pinned redirect/link tooling (FR-010/C-007), regenerate the DERIVED
-redirect-map / page-inventory / `toc.yml` against THIS mission's `occurrence_map.yaml`, repoint every referrer
-(docs/** via `relative_link_fixer` + the one non-docs paradigm ref via `bulk_ref_rewrite`/manual), and run the
-aggregate gate — the mission's Definition of Done.
+Close the mission: safely parametrize the foreign-pinned `bulk_ref_rewrite` default (FR-010/C-007), repoint
+every referrer (docs/** via `relative_link_fixer` + the one non-docs paradigm ref via `bulk_ref_rewrite`) —
+BOTH driven with `--occurrence-map "$MAP"` (C-007) — regenerate the page-inventory lockfile in place, WIRE the
+lint into CI now that the tree is post-move-clean (FR-008), and run the aggregate gate — the mission's
+Definition of Done.
+
+> **CRITICAL — this mission does NOT regenerate `redirect_map.yaml`.** Proven by execution: this mission's
+> moved paths are **never-published** (absent from `scripts/docs/redirect_baseline_urls.json`, 180 baseline
+> URLs), so `redirect_stub_generator regenerate-map --occurrence-map "$MAP"` would derive **ZERO** entries and
+> **OVERWRITE** `redirect_map.yaml`, destroying the landed `01KW3SBK` mission's 149 published-URL redirects.
+> There is **NO** `regenerate-map` / `check-map` step in this WP. Link integrity is delivered by
+> `relative_link_fixer` (in-repo docs) + `bulk_ref_rewrite` (non-docs) ONLY. `redirect_map.yaml` and
+> `redirect_baseline_urls.json` are LEFT UNTOUCHED (verified in T023). Upstream gap recorded in research.md D5.
 
 ```bash
 MAP=kitty-specs/docs-structural-sanity-01KY53KJ/occurrence_map.yaml
 ```
 
 **Success criteria (SC-002/003/004/005/006; NFR-001/002/004)**:
-- `relative_link_fixer --check` → 0 broken relative links, 0 baseline-URL 404s (NFR-001).
-- `redirect_stub_generator check-map --occurrence-map $MAP` → 1:1 coverage, no orphan (NFR-002).
-- `check_docs_freshness --ci` → inventory/toc fresh, no baseline 404 (NFR-004).
-- `docs_structural_lint` → exit 0 (SC-003/004/005: clean tree, 0 shadow basenames, full architecture/ index).
+- `relative_link_fixer --check --occurrence-map "$MAP"` → 0 broken relative links, 0 baseline-URL 404s
+  (NFR-001/NFR-002 reframed: no baseline-URL 404 regression + all in-repo relative links resolve).
+- `redirect_map.yaml` + `redirect_baseline_urls.json` are byte-for-byte UNTOUCHED (the 149 `01KW3SBK`
+  redirects preserved) — this WP regenerates NO redirect map.
+- `check_docs_freshness --ci` → inventory fresh, no baseline 404 (NFR-004).
+- `docs_structural_lint` → exit 0 on the live post-move tree (SC-003/004/005: clean tree, 0 shadow basenames,
+  full architecture/ index) — and the lint is wired into `.github/workflows/docs-freshness.yml` (FR-008).
 - `pytest tests/docs/` + the terminology guard green (NFR-004).
-- Neither tool silently consumes the foreign `01KW3SBK` default (C-007).
+- `bulk_ref_rewrite` no longer silently consumes the foreign `01KW3SBK` default; every redirect/link command
+  passes `--occurrence-map "$MAP"` (C-007).
 
 ## Context & Constraints
 
@@ -96,23 +111,31 @@ MAP=kitty-specs/docs-structural-sanity-01KY53KJ/occurrence_map.yaml
   `occurrence_map.yaml` (the `moves:` spine + 3 fold entries + the `exceptions` incl. the non-docs paradigm
   referrer + the baseline-URL manifest note), `data-model.md` (redirect-map entry + state transition).
 - **VERIFIED real CLIs (research.md D5 / quickstart — do NOT fabricate)**:
-  - `redirect_stub_generator.py` subcommands: `regenerate-map | check-map | generate | coverage`. There is
-    **NO** `--add/--old/--new`. `redirect_map.yaml` is **single-writer + DERIVED** ("do not hand-edit") —
-    REGENERATED from the baseline manifest + this mission's `occurrence_map.yaml` `moves:` spine.
+  - `redirect_stub_generator.py` is **NOT invoked by this mission.** Its `regenerate-map` derives redirects
+    only for PUBLISHED (baseline) URLs; this mission's moved paths are never-published, so `regenerate-map`
+    derives ZERO entries and OVERWRITES `redirect_map.yaml`, wiping the landed `01KW3SBK` 149 redirects. Do
+    NOT run `regenerate-map` / `check-map`; leave `redirect_map.yaml` untouched.
   - `relative_link_fixer.py` **writes by default** (flags `--dry-run` / `--check` / `--no-exclude`; there is
-    **NO** `--write`) and walks **`docs/**` ONLY**.
-  - `check_docs_freshness.py` uses `--inventory` (NOT `--write-inventory`) and `--ci`.
+    **NO** `--write`) and walks **`docs/**` ONLY**. It reads an occurrence map — its default is the
+    `DEFAULT_OCCURRENCE_MAP` symbol IMPORTED from `bulk_ref_rewrite.py` (foreign-pinned), so it **MUST** be
+    driven with `--occurrence-map "$MAP"` (C-007, PC5).
+  - `check_docs_freshness.py` `--inventory` is **READ-ONLY (a checker, NOT a writer)** and it exposes `--ci`.
+    Regenerate the page-inventory lockfile CONTENTS via
+    `python scripts/docs/inventory_lockfile.py --write docs/development/3-2-page-inventory.yaml`, then VERIFY
+    with `check_docs_freshness --ci` (PB3).
   - `bulk_ref_rewrite.py` is the prefix-anchored complement for non-`docs/` (`src/`, `scripts/`) referrers;
-    accepts `--occurrence-map`.
-- **C-007 (binding)**: EVERY redirect/link command passes `--occurrence-map "$MAP"`. Never rely on the built-in
-  default (pinned to the foreign `common-docs-structural-move-01KW3SBK`).
-- **C-004**: `3-2-page-inventory.yaml` + `toc.yml` are path-pinned (`test_inventory_path_stable.py`) —
-  regenerate CONTENTS in place, NEVER relocate.
+    accepts `--occurrence-map` and MUST be driven with `--occurrence-map "$MAP"`.
+- **C-007 (binding)**: EVERY link command (`relative_link_fixer` AND `bulk_ref_rewrite`) passes
+  `--occurrence-map "$MAP"`. Never rely on the built-in default (pinned to the foreign
+  `common-docs-structural-move-01KW3SBK`).
+- **C-004**: `3-2-page-inventory.yaml` + `toc.yml` are path-pinned (`test_inventory_path_stable.py`) — the
+  inventory lockfile is regenerated CONTENTS in place, NEVER relocated. **`toc.yml` is NOT regenerated by this
+  mission** (no `toc.yml` references a moved path and no generator exists) — it is a verify-only grep (PN1).
 - **Prereqs**: WP03 (final move set) + WP04 (folds) must be landed; WP02's lint must exist. Read WP03's and
   WP04's Activity Logs for the referrer lists + the non-docs paradigm referrer hand-off + any borderline that
-  moved (assessment/closeout) — the redirect-map regen must cover exactly the ACTUAL move set.
-- **Stale-install note**: `redirect_stub_generator`/`bulk_ref_rewrite` behaviour reflects the installed CLI —
-  if you edit them (T022) and behaviour seems unchanged, `pip install -e .` may be stale; run via
+  moved (assessment/closeout) — the referrer sweep must cover exactly the ACTUAL move/fold set.
+- **Stale-install note**: `bulk_ref_rewrite`/`relative_link_fixer` behaviour reflects the installed CLI —
+  if you edit `bulk_ref_rewrite` (T022) and behaviour seems unchanged, `pip install -e .` may be stale; run via
   `python -m scripts.docs.<tool>` from the repo root (which uses the working tree) to be sure.
 
 ## Branch Strategy
@@ -125,52 +148,66 @@ MAP=kitty-specs/docs-structural-sanity-01KY53KJ/occurrence_map.yaml
 
 ## Subtasks & Detailed Guidance
 
-### Subtask T022 — FR-010 un-pin the foreign-pinned tooling
+### Subtask T022 — FR-010 (narrowed) safely parametrize `bulk_ref_rewrite`'s foreign default
 
-- **Purpose**: FR-010/C-007 — neither tool may silently bind the foreign mission's occurrence map.
+- **Purpose**: FR-010/C-007 (narrowed per the post-tasks squad, PC7) — `bulk_ref_rewrite.py` must not silently
+  bind the foreign mission's occurrence map, WITHOUT breaking the non-owned callers that import its
+  `DEFAULT_OCCURRENCE_MAP` symbol. `redirect_stub_generator.py` is **out of scope** here — this mission does
+  not invoke it (PB2), so its own foreign `MISSION_SLUG` default is left as a pre-existing condition (note it in
+  the Activity Log as an upstream observation; do NOT edit it as part of this WP).
 - **Steps**:
-  1. `redirect_stub_generator.py`: find `MISSION_SLUG = "common-docs-structural-move-01KW3SBK"` (its DEFAULT
-     occurrence-map source). Un-pin it — make the occurrence-map path a REQUIRED `--occurrence-map` argument
-     (no foreign default) OR parametrize `MISSION_SLUG` so the default is not a specific foreign mission. If
-     a clean un-pin is not feasible without broader refactor, **file an upstream gap** (charter: missing/broken
-     canonical surface → trace + file) and drive strictly via `--occurrence-map` — record the gap issue in the
-     Activity Log.
-  2. `bulk_ref_rewrite.py`: find the hardcoded `.../common-docs-structural-move-01KW3SBK/occurrence_map.yaml`
-     DEFAULT; un-pin identically (require `--occurrence-map` or parametrize) or file the same gap.
-  3. Add/adjust a focused test if these tools have unit tests (`tests/docs/test_bulk_ref_rewrite.py` exists) —
-     assert the default no longer resolves to the foreign slug (or that omitting `--occurrence-map` errors
-     clearly rather than silently consuming a foreign map).
-- **Files**: `scripts/docs/redirect_stub_generator.py`, `scripts/docs/bulk_ref_rewrite.py`.
-- **Validation**: grep both for `01KW3SBK` → no live default binding; ruff/mypy clean; the existing
-  `tests/docs/test_bulk_ref_rewrite.py` still green (adjust if it asserted the old default).
-- **Edge cases**: if you file a gap instead of a full un-pin, the mission still proceeds via `--occurrence-map`
-  — but the grep-for-`01KW3SBK`-default must show it is no longer SILENTLY consumed.
+  1. `bulk_ref_rewrite.py` defines `DEFAULT_OCCURRENCE_MAP` (line ~60, pinned to
+     `kitty-specs/common-docs-structural-move-01KW3SBK/occurrence_map.yaml`). **KEEP the symbol defined** —
+     `relative_link_fixer.py` imports it (line ~76), `tests/docs/test_bulk_ref_rewrite.py` +
+     `tests/docs/test_redirect_stub_generator.py` and `.github/workflows/docs-freshness.yml` rely on a resolvable
+     default. Do NOT remove it and do NOT make `--occurrence-map` unconditionally required (that would break
+     those callers). Instead **parametrize it to resolve DYNAMICALLY** (e.g. resolve from an env var / the
+     newest mission map / a non-foreign sentinel) so it is no longer hard-bound to `01KW3SBK` yet stays a valid
+     `Path` for the importing callers.
+  2. For THIS mission's runs, always pass `--occurrence-map "$MAP"` explicitly (C-007) — the parametrization is
+     the safety net, not the driver.
+  3. Adjust `tests/docs/test_bulk_ref_rewrite.py` (and, if it asserts the symbol, `test_redirect_stub_generator.py`)
+     to assert the default no longer resolves to the foreign `01KW3SBK` slug — while remaining a resolvable
+     default the importing callers can use. If a clean dynamic parametrization is not feasible without a broader
+     refactor, **file an upstream gap** (charter: missing/broken canonical surface → trace + file) and drive
+     strictly via `--occurrence-map` — record the gap issue in the Activity Log.
+- **Files**: `scripts/docs/bulk_ref_rewrite.py` (+ its tests under `tests/docs/`).
+- **Validation**: grep `bulk_ref_rewrite.py` for `01KW3SBK` → no live default binding; `DEFAULT_OCCURRENCE_MAP`
+  still importable + resolvable (relative_link_fixer imports cleanly, `tests/docs/` green); ruff/mypy clean.
+- **Edge cases**: the symbol is a shared contract — a removal/required-arg change reds non-owned callers
+  (`relative_link_fixer.py`, `docs-freshness.yml`, two `tests/docs/`); parametrize, do not delete.
 
-### Subtask T023 — Regenerate `redirect_map.yaml` against this mission's map
+### Subtask T023 — Leave `redirect_map.yaml` UNTOUCHED; verify the baseline is preserved (NFR-002 reframed)
 
-- **Purpose**: FR-009/NFR-002 — one redirect entry per moved/removed path (relocations + the 3 fold
-  old-shadow→existing-canonical redirects).
+- **Purpose**: NFR-002 (reframed) — this mission's moved/removed paths are **never-published** (not in
+  `redirect_baseline_urls.json`), so they need NO redirect entries; and regenerating the DERIVED
+  `redirect_map.yaml` would derive ZERO new entries and OVERWRITE it, wiping the landed `01KW3SBK` mission's
+  149 published-URL redirects. So: regenerate NOTHING; PROVE the redirect corpus is preserved.
 - **Steps**:
-  1. `python -m scripts.docs.redirect_stub_generator regenerate-map --occurrence-map "$MAP"` — regenerates the
-     DERIVED `redirect_map.yaml` from the baseline manifest + this map's `moves:` spine (incl. the fold from→to
-     pairs, which derive old-shadow.html → EXISTING canonical.html).
-  2. `python -m scripts.docs.redirect_stub_generator check-map --occurrence-map "$MAP"` — assert 1:1 coverage
-     (NFR-002): no moved/removed path lacks an entry, no orphan entry.
-  3. If a borderline MOVED in WP03 (assessment/closeout verified point-in-time), ensure the map's `moves:`
-     spine includes it before regenerating — the redirect must cover the ACTUAL move set. (If a borderline
-     STAYED, it must NOT have a redirect entry.)
-- **Files**: `scripts/docs/redirect_map.yaml` (DERIVED — regenerated, never hand-edited).
-- **Validation**: `check-map` passes 1:1; `redirect_baseline_urls.json` closeout URL stays green (verify no
-  baseline 404 after any closeout move).
-- **Edge cases**: NEVER hand-edit `redirect_map.yaml` — if `check-map` fails, fix the `occurrence_map.yaml`
-  `moves:` spine or the tooling, then regenerate.
+  1. Do **NOT** run `redirect_stub_generator regenerate-map` / `check-map`. `redirect_map.yaml` is NOT in this
+     WP's `owned_files` and MUST NOT be modified.
+  2. Verify the redirect corpus is byte-for-byte unchanged: `git status --porcelain scripts/docs/redirect_map.yaml
+     scripts/docs/redirect_baseline_urls.json` → both show **no modification** across the whole mission diff.
+  3. Confirm (spot-check) the moved paths are absent from `redirect_baseline_urls.json` (never-published) — that
+     is why no redirect entry is required and why the aggregate `check_docs_freshness --ci` sees no baseline 404.
+- **Files**: none written (verification only; `redirect_map.yaml` intentionally NOT owned/edited).
+- **Validation**: `redirect_map.yaml` + `redirect_baseline_urls.json` unmodified in `git status`; the 149
+  `01KW3SBK` redirects intact; no baseline 404 in `check_docs_freshness --ci` (T026).
+- **Edge cases**: the **assessment** borderline, if MOVED, is a never-published in-repo path — repoint its
+  referrers (T024), no redirect needed. The **920-closeout** borderline is DIFFERENT: its URL **is** in
+  `redirect_baseline_urls.json` (published), so a MOVE would 404 the baseline with no redirect (this mission
+  regenerates none) — WP03 T016 escalates a closeout MOVE to the operator rather than moving silently; the
+  expected outcome is STAYS, which keeps the baseline green. Upstream gap — non-cumulative redirect derivation
+  across missions — is recorded in research.md D5.
 
 ### Subtask T024 — Repoint referrers (docs/** + the non-docs paradigm ref)
 
 - **Purpose**: FR-009/NFR-001/C-006 — every in-repo referrer resolves to the new path.
 - **Steps**:
-  1. `python -m scripts.docs.relative_link_fixer` (writes by default; `docs/**` ONLY) — repoints relative
-     links across the ~25–30 docs referrers to the moved/folded paths.
+  1. `python -m scripts.docs.relative_link_fixer --occurrence-map "$MAP"` (writes by default; `docs/**` ONLY) —
+     repoints relative links across the ~25–30 docs referrers to the moved/folded paths. **The
+     `--occurrence-map "$MAP"` is mandatory (C-007, PC5)**: `relative_link_fixer`'s default is the foreign
+     `DEFAULT_OCCURRENCE_MAP` it imports from `bulk_ref_rewrite`; omitting it consumes the `01KW3SBK` map.
   2. `python -m scripts.docs.bulk_ref_rewrite --occurrence-map "$MAP"` — the prefix-anchored complement that
      rewrites NON-`docs/` referrers (`src/`, `scripts/`). This MUST catch
      `src/doctrine/paradigms/built-in/brownfield-onboarding.paradigm.yaml:50` (the moved audit path
@@ -180,72 +217,106 @@ MAP=kitty-specs/docs-structural-sanity-01KY53KJ/occurrence_map.yaml
   3. Cross-check against WP03/WP04's Activity-Log referrer lists (audits→11, adr-connector→6,
      feature-detection→5, 883-brief→2, gap-analysis→1, + any borderline) — confirm each is repointed.
 - **Files**: docs/** referrers (tool-driven leeway) + `src/doctrine/paradigms/built-in/brownfield-onboarding.paradigm.yaml`.
-- **Validation**: `relative_link_fixer --check` clean (T026); grep the paradigm.yaml for the old audit path →
-  gone.
+- **Validation**: `relative_link_fixer --check --occurrence-map "$MAP"` clean (T026); grep the paradigm.yaml for
+  the old audit path → gone.
 - **Edge cases**: the non-docs referrer is the classic gap (`docs/**`-only walk) — do NOT declare done until it
   is confirmed rewritten.
 
-### Subtask T025 — Regenerate page-inventory + toc in place
+### Subtask T025 — Regenerate the page-inventory lockfile in place (toc verify-only)
 
-- **Purpose**: FR-009/C-004 — the pinned generated nav artifacts reflect the new tree.
+- **Purpose**: FR-009/C-004 — the pinned generated page-inventory reflects the new tree.
 - **Steps**:
-  1. `python -m scripts.docs.check_docs_freshness --inventory docs/development/3-2-page-inventory.yaml` —
-     regenerate the page-inventory lockfile CONTENTS in place (path pinned by `test_inventory_path_stable.py`).
-  2. Regenerate any `docs/**/toc.yml` the moves affected (per the freshness tooling / DocFX nav) — contents in
-     place, never relocated.
-- **Files**: `docs/development/3-2-page-inventory.yaml` (+ affected `toc.yml` files — tool-driven, in place).
+  1. Regenerate the page-inventory lockfile CONTENTS in place with the WRITER (PB3 —
+     `check_docs_freshness --inventory` is READ-ONLY, it does NOT write):
+     `python scripts/docs/inventory_lockfile.py --write docs/development/3-2-page-inventory.yaml`
+     (path pinned by `test_inventory_path_stable.py`; regenerate contents, never relocate).
+  2. **`toc.yml`: verify-only, do NOT regenerate (PN1).** No `docs/**/toc.yml` references a moved path and no
+     `toc.yml` generator exists in `scripts/docs/`. Confirm with a grep
+     (`grep -rl '<moved-basename>' docs/**/toc.yml` → nothing), record the grep result, and leave `toc.yml`
+     untouched. If (unexpectedly) a `toc.yml` DID reference a moved path, escalate — do not hand-fabricate a
+     regeneration.
+- **Files**: `docs/development/3-2-page-inventory.yaml` (tool-driven, in place). No `toc.yml` written.
 - **Validation**: `check_docs_freshness --ci` green (T026); the inventory path is unchanged (still at the
-  pinned location).
-- **Edge cases**: never move the pinned inventory/`toc.yml` — regenerate contents only (C-004).
+  pinned location); the `toc.yml` grep confirms no moved-path reference.
+- **Edge cases**: never move the pinned inventory (C-004); regenerate via `inventory_lockfile.py --write`, then
+  VERIFY with `check_docs_freshness --ci` — the checker is not the writer.
 
-### Subtask T026 — Aggregate gate sweep (mission Definition of Done)
+### Subtask T026 — Wire the lint into CI (FR-008) + aggregate gate sweep (mission Definition of Done)
 
-- **Purpose**: NFR-001/002/004 + SC verification — prove the whole diff is green.
+- **Purpose**: FR-008 + NFR-001/002/004 + SC verification — enable the deferred CI gate now that the tree is
+  post-move-clean, and prove the whole diff is green.
 - **Steps** (run from repo root; obey quickstart's verify block):
-  1. `python -m scripts.docs.relative_link_fixer --check` — NFR-001: 0 broken relative links + 0 baseline 404s.
-  2. `python -m scripts.docs.redirect_stub_generator check-map --occurrence-map "$MAP"` — NFR-002: 1:1 coverage.
-  3. `python -m scripts.docs.check_docs_freshness --ci` — NFR-004: inventory/toc fresh, no baseline 404.
-  4. `python -m scripts.docs.docs_structural_lint` — SC-003/004/005: exit 0 (clean tree, 0 shadow basenames,
-     full architecture/ index — proves WP03's index + WP04's folds are complete and the lint is satisfied).
-  5. `pytest tests/docs/ -q` — the lint regression fixture + config-SSOT assert + `test_bulk_ref_rewrite` +
+  1. **CI enablement (FR-008 — the wiring WP02 deferred so it lands post-move):** read
+     `.github/workflows/docs-freshness.yml` fully, then add a step that runs
+     `python -m scripts.docs.docs_structural_lint` (nonzero exit fails the job), placed alongside the existing
+     freshness/link checks in the same guarded job (respect any `pr:deferred`/`pr:skip-ci` label guard; reuse
+     the existing Python setup — do not add a new job unless the existing one lacks Python). This is safe now
+     ONLY because WP03/WP04 have landed and the lint is green on the live tree (step 5).
+  2. `python -m scripts.docs.relative_link_fixer --check --occurrence-map "$MAP"` — NFR-001: 0 broken relative
+     links + 0 baseline 404s.
+  3. **Redirect corpus preserved (NFR-002 reframed, T023):** `git status --porcelain scripts/docs/redirect_map.yaml
+     scripts/docs/redirect_baseline_urls.json` → both UNMODIFIED (the 149 `01KW3SBK` redirects intact). This WP
+     regenerates NO redirect map.
+  4. `python -m scripts.docs.check_docs_freshness --ci` — NFR-004: inventory fresh, no baseline 404.
+  5. `python -m scripts.docs.docs_structural_lint` — SC-003/004/005: exit 0 on the LIVE post-move tree (clean
+     tree, 0 shadow basenames, full architecture/ index — proves WP03's index + WP04's folds are complete and
+     the lint is satisfied). This is the live zero-violation gate WP02 deferred to WP05.
+  6. `pytest tests/docs/ -q` — the lint regression fixture + config-SSOT assert + `test_bulk_ref_rewrite` +
      `test_inventory_path_stable` all green.
-  6. `pytest tests/architectural/test_no_legacy_terminology.py -q` — NFR-004 terminology guard (CI-only gate).
-  7. ruff/mypy clean on the touched `scripts/docs/` modules.
-- **Files**: none new (verification).
-- **Validation**: every command green; record the results in the Activity Log as the DoD evidence. If the lint
-  flags something, it is a REAL structural gap (missing index entry, an un-folded shadow, a mis-placed move) —
-  fix the underlying content/move (coordinate with WP03/WP04 owners), do not weaken the lint.
+  7. `pytest tests/architectural/test_no_legacy_terminology.py -q` — NFR-004 terminology guard (CI-only gate).
+  8. ruff/mypy clean on the touched `scripts/docs/` modules.
+- **Files**: `.github/workflows/docs-freshness.yml` (the CI enablement); otherwise verification only.
+- **Validation**: the CI step invokes the lint inside the existing guarded flow (YAML parses); every command
+  green; record the results in the Activity Log as the DoD evidence. If the lint flags something, it is a REAL
+  structural gap (missing index entry, an un-folded shadow, a mis-placed move) — fix the underlying content/move
+  (coordinate with WP03/WP04 owners), do not weaken the lint.
 - **Edge cases**: a red terminology guard on doctrine/prose is CI-only — run it locally before declaring done.
-  If `check_docs_freshness --ci` fails on baseline 404, a redirect entry is missing — re-run T023's `check-map`.
+  `check_docs_freshness --ci` should NOT 404 on baseline: the moved paths are never-published, so no redirect
+  entry is expected — if it DOES 404, a referrer was missed (re-run T024), NOT a redirect (T023 leaves the map
+  untouched by design).
 
 ## Test Strategy
 
 - Verification-driven (this WP's product is a green aggregate). Mandatory green:
-  `relative_link_fixer --check`, `redirect_stub_generator check-map`, `check_docs_freshness --ci`,
-  `docs_structural_lint` (exit 0), `pytest tests/docs/`, the terminology guard.
-- If T022 changes tool defaults, `tests/docs/test_bulk_ref_rewrite.py` must stay green (update it to assert the
-  new non-foreign default).
+  `relative_link_fixer --check --occurrence-map "$MAP"`, `check_docs_freshness --ci`,
+  `docs_structural_lint` (exit 0 on the live post-move tree), `pytest tests/docs/`, the terminology guard;
+  plus `redirect_map.yaml` + `redirect_baseline_urls.json` UNMODIFIED in `git status` (no redirect regen).
+- If T022 changes the `bulk_ref_rewrite` default, `tests/docs/test_bulk_ref_rewrite.py` (and, if affected,
+  `test_redirect_stub_generator.py`) must stay green — assert the default no longer resolves to the foreign
+  `01KW3SBK` slug WHILE `DEFAULT_OCCURRENCE_MAP` remains importable and resolvable for its callers.
 
 ## Risks & Mitigations
 
-- **Silent foreign-default consumption** (C-007): mitigate by ALWAYS passing `--occurrence-map "$MAP"` + the
-  T022 un-pin (grep-for-`01KW3SBK` proves it is gone).
-- **Hand-editing the derived redirect-map** (D5): forbidden — always `regenerate-map`; `check-map` is the gate.
+- **Silent foreign-default consumption** (C-007): mitigate by ALWAYS passing `--occurrence-map "$MAP"` to BOTH
+  `relative_link_fixer` and `bulk_ref_rewrite` + the T022 safe parametrization (grep `bulk_ref_rewrite.py` for
+  `01KW3SBK` proves the live default binding is gone).
+- **Wiping the foreign redirect corpus** (PB2/D5): `redirect_stub_generator regenerate-map` would derive ZERO
+  entries for this mission's never-published paths and OVERWRITE `redirect_map.yaml`, destroying 149 landed
+  `01KW3SBK` redirects — FORBIDDEN. Do NOT run `regenerate-map`/`check-map`; leave the map untouched and prove
+  it via `git status` (T023). Non-cumulative redirect derivation is an upstream gap (research.md D5).
+- **Breaking `DEFAULT_OCCURRENCE_MAP` callers** (PC7): removing the symbol or requiring `--occurrence-map`
+  unconditionally reds `relative_link_fixer.py`, `docs-freshness.yml` and two `tests/docs/` — parametrize
+  dynamically instead (T022).
 - **Missed non-docs referrer** (R6): `relative_link_fixer` won't see `paradigm.yaml` — T024 explicitly drives
   `bulk_ref_rewrite` + a grep confirmation.
-- **Moving a pinned artifact** (C-004): regenerate `3-2-page-inventory.yaml`/`toc.yml` contents in place only.
+- **Moving a pinned artifact** (C-004): regenerate `3-2-page-inventory.yaml` contents in place via
+  `inventory_lockfile.py --write` (never relocate); `toc.yml` is verify-only (not regenerated, PN1).
 - **Stale editable install**: run tools via `python -m scripts.docs.<tool>` from the repo root so working-tree
   edits take effect.
 
 ## Review Guidance (reviewer-renata / opus)
 
-Verify: no live default binds `01KW3SBK` (grep both tools); every redirect/link invocation passed
-`--occurrence-map "$MAP"`; `redirect_map.yaml` was REGENERATED (not hand-edited) and `check-map` is 1:1;
-`relative_link_fixer --check` clean incl. the non-docs `paradigm.yaml` rewrite (grep the old audit path →
-gone); `check_docs_freshness --ci` green; `docs_structural_lint` exits 0 (full architecture/ index, 0 shadow
-basenames); pinned inventory/`toc.yml` regenerated in place (path unchanged); `pytest tests/docs/` + terminology
-guard green; the tool-driven referrer leeway is within sanctioned scope (no hand-edited feature work outside
-owned_files beyond the recorded paradigm.yaml line).
+Verify: no live default binds `01KW3SBK` in `bulk_ref_rewrite.py` (grep) yet `DEFAULT_OCCURRENCE_MAP` is still
+importable + resolvable for its callers; every link invocation (BOTH `relative_link_fixer` and
+`bulk_ref_rewrite`) passed `--occurrence-map "$MAP"`; **`redirect_map.yaml` + `redirect_baseline_urls.json` are
+UNMODIFIED in `git status`** (NO `regenerate-map` was run — the 149 `01KW3SBK` redirects are intact);
+`relative_link_fixer --check --occurrence-map "$MAP"` clean incl. the non-docs `paradigm.yaml` rewrite (grep the
+old audit path → gone); `check_docs_freshness --ci` green; `docs_structural_lint` exits 0 on the LIVE post-move
+tree (full architecture/ index, 0 shadow basenames) and is WIRED into `.github/workflows/docs-freshness.yml`
+(FR-008); the pinned inventory was regenerated in place via `inventory_lockfile.py --write` (path unchanged) and
+`toc.yml` is verify-only/untouched; `pytest tests/docs/` + terminology guard green; the tool-driven referrer
+leeway is within sanctioned scope (safe by SEQUENCING — WP05 deps WP02/WP03/WP04 — not by referrers being
+unowned; no hand-edited feature work outside owned_files beyond the recorded paradigm.yaml line).
 
 ## Activity Log
 

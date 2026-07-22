@@ -1,11 +1,10 @@
 ---
 work_package_id: WP02
-title: Structural docs lint + config-SSOT + CI wiring
+title: Structural docs lint + config-SSOT
 dependencies:
 - WP01
 requirement_refs:
 - FR-007
-- FR-008
 - FR-011
 - NFR-003
 - NFR-005
@@ -20,7 +19,6 @@ subtasks:
 - T008
 - T009
 - T010
-- T011
 history:
 - timestamp: '2026-07-22T16:30:00Z'
   agent: system
@@ -35,13 +33,12 @@ model: sonnet
 owned_files:
 - scripts/docs/docs_structural_lint.py
 - tests/docs/test_docs_structural_lint.py
-- .github/workflows/docs-freshness.yml
 role: implementer
 tags: []
 tracker_refs: []
 ---
 
-# Work Package Prompt: WP02 – Structural docs lint + config-SSOT + CI wiring
+# Work Package Prompt: WP02 – Structural docs lint + config-SSOT
 
 ## ⚡ Do This First: Load Agent Profile
 
@@ -60,18 +57,29 @@ init declaration is on the record.
 ## Objectives & Success Criteria
 
 Land `scripts/docs/docs_structural_lint.py` — the durable mechanical successor to the retired anti-sprawl
-ratchet — implementing the 4 checks in `contracts/docs-structural-lint.md`, **each scoped so the current
-clean tree passes with zero violations** (NFR-003), and LOADING all policy from the WP01 styleguide config
-block (FR-011, no hard-coded divergent policy). Ship it red-first (a regression fixture reintroducing each of
-the 4 finding-classes), prove the clean tree passes, assert lint-behaviour == styleguide-config, and wire it
-into `.github/workflows/docs-freshness.yml` (FR-008), completing in < 5 s.
+ratchet — implementing the 4 checks in `contracts/docs-structural-lint.md`, **each scoped so a POST-MOVE-SHAPED
+fixture passes with zero violations and the current clean COHORTS pass** (NFR-003), and LOADING all policy from
+the WP01 styleguide config block (`structural_lint_config:`) (FR-011, no hard-coded divergent policy). Ship it
+red-first (a regression fixture reintroducing each of the 4 finding-classes), assert lint-behaviour ==
+styleguide-config, and complete in < 5 s.
+
+> **Timing boundary (do NOT breach — this WP does NOT gate the live tree).** The 7
+> `docs/architecture/audits/2026-05-*.md` and the 3 `docs/plans/notes/` shadows are **live point-in-time /
+> shadow-basename violations by design** until WP03 relocates the audits and WP04 folds the shadows. Therefore
+> **WP02 does NOT run the lint over the real `docs/` tree asserting zero-TOTAL violations**, and **WP02 does NOT
+> enable the CI gate** — CI wiring + the live post-move zero-violation assertion belong to **WP05** (which
+> depends on WP02/WP03/WP04, so the tree is clean when it enables the gate). WP02's own zero-violation proof runs
+> against a **synthetic post-move-shaped fixture** (audits placed under `plans/engineering-notes/`, no
+> `plans/notes/` shadows), plus discriminating **live cohort-clean assertions** on the cohorts that ARE already
+> clean.
 
 **Success criteria**:
-- `python -m scripts.docs.docs_structural_lint` exits 0 on the current tree in < 5 s; `--json` emits
+- `python -m scripts.docs.docs_structural_lint` runs in < 5 s; `--json` emits
   `{"violations": [{rule_id, path, message}], "checked": <int>}`.
-- The 4-class fixture is caught 100% (SC-003); the current tree is zero-violation (NFR-003).
-- The lint reads the WP01 config block; a test proves behaviour matches config (FR-011).
-- CI runs the lint on every docs change.
+- The 4-class fixture is caught 100% (SC-003); the **post-move-shaped fixture** is zero-violation (NFR-003).
+- The live COHORT-clean assertions pass: `adr/**` era-dated (×132), `plans/{research,investigations}/**`,
+  the 38 `index.md` / 38 `README.md` nav basenames, and the 3 frontmatter-less ADR READMEs.
+- The lint reads the `structural_lint_config:` block; a test proves behaviour matches config (FR-011).
 
 ## Context & Constraints
 
@@ -79,7 +87,8 @@ into `.github/workflows/docs-freshness.yml` (FR-008), completing in < 5 s.
   tooling with focused unit tests per check), no suppressions.
 - **Read before editing**: `contracts/docs-structural-lint.md` (AUTHORITATIVE — the invocation, the 4-rule
   table with exact scope/exemptions, the §Configuration SSOT, the fixture requirement, the non-goals),
-  `plan.md` (IC-02), `spec.md` (FR-007/008/011, NFR-003/005/006, US2 acceptance scenarios 1–4),
+  `plan.md` (IC-02), `spec.md` (FR-007/011, NFR-003/005/006, US2 acceptance scenarios 1–4; FR-008/CI wiring is
+  WP05's, post-move),
   `research.md` (D2 — verified clean-tree counts), `data-model.md` (rule & violation shape).
 - **Dependency on WP01 (FR-011)**: the lint LOADS policy from the `common-docs.styleguide.yaml` config block
   WP01 authored. Coordinate the exact key path with WP01's T005 follow-up note. If WP01 has not landed, start
@@ -116,10 +125,18 @@ into `.github/workflows/docs-freshness.yml` (FR-008), completing in < 5 s.
      aggregates, prints (`--json` or human), and exits nonzero iff any violation. Keep each function
      complexity ≤15 — extract walk/parse helpers.
   2. `index_completeness`: ONLY for sections in `curated_complete_sections` (initially `architecture/`). Fail
-     when a non-index page in that section is absent from its `index.md`. Message names the missing page + the
+     when a non-index page in that section is absent from its `index.md`. **Subdir-recursion semantics (PIN):**
+     the check recurses into the curated-complete section's SUBDIRECTORIES — a page under
+     `architecture/assessments/…` (e.g. a STAYING `architecture/assessments/code-as-a-crime-scene-overview.md`)
+     MUST be enumerated in `architecture/index.md` or the check fails. WP03 T017 enumerates every non-index
+     `.md` under `architecture/` (incl. subdirs) to satisfy exactly this. Message names the missing page + the
      section index. Every other section index is a landing page — exempt.
-  3. `point_in_time_placement`: fail when a file whose basename matches a dated pattern (`^\d{4}-\d{2}`) or
-     self-declares point-in-time/closeout lives OUTSIDE `plans/**` and is not allowlisted. Allowlist:
+  3. `point_in_time_placement`: fail when a file lives OUTSIDE `plans/**`, is not allowlisted, AND EITHER its
+     basename matches a config `point_in_time_patterns` entry (e.g. `^\d{4}-\d{2}`) OR it self-declares
+     point-in-time via a **config `point_in_time_markers`** signal — do NOT guess the self-declaration. Read the
+     concrete markers from the styleguide `structural_lint_config:` (a machine-checkable list, e.g. frontmatter
+     `field: value` pairs or a description phrase) authored by WP01 T002; the `883-*` dossiers do NOT match
+     `^\d{4}-\d{2}`, so they are caught (only) via a `point_in_time_markers` signal, not by pattern. Allowlist:
      `adr/**` + `plans/research/**` + `plans/investigations/**` (from config). Message names the file + its
      canonical home.
   4. `shadow_tree_basename`: fail when the same NON-NAV content basename exists under two distinct section
@@ -139,14 +156,16 @@ into `.github/workflows/docs-freshness.yml` (FR-008), completing in < 5 s.
 - **Purpose**: One policy store, not two (C-005). The lint must not hard-code policy that can diverge from
   doctrine.
 - **Steps**:
-  1. Add a `load_config()` that reads `src/doctrine/styleguides/built-in/common-docs.styleguide.yaml`,
-     navigates to the config block key WP01 chose (confirm via WP01's T005 note), and returns a typed config
-     object (dataclass) exposing: `curated_complete_sections`, `point_in_time_patterns`,
-     `point_in_time_allowlist`, `frontmatter_required_fields`, `frontmatter_in_scope_exclusions`,
-     `shadow_tree_nav_exemptions`, `concern_bucket_to_section`.
+  1. Add a `load_config()` that reads `src/doctrine/styleguides/built-in/common-docs.styleguide.yaml` and
+     navigates to the **concrete wrapper key `structural_lint_config:`** (the constant WP01 T002 authored —
+     this is the pinned interface contract; confirm it is present via WP01's T005 note). It returns a typed
+     config object (dataclass) exposing: `curated_complete_sections`, `point_in_time_patterns`,
+     `point_in_time_markers`, `point_in_time_allowlist`, `frontmatter_required_fields`,
+     `frontmatter_in_scope_exclusions`, `shadow_tree_nav_exemptions`, `concern_bucket_to_section`.
   2. Thread the config into each check — no literal section/pattern/field lists inside the check bodies.
-  3. Fail loudly (clear error, nonzero exit) if the config block is missing/malformed — do NOT silently fall
-     back to an inline default (that recreates the drift C-005 forbids).
+  3. **Fail LOUD** (clear error naming the missing `structural_lint_config:` block, nonzero exit) if the block
+     is missing/malformed — do NOT silently fall back to an inline default (that recreates the drift C-005
+     forbids). A missing block is a hard error, never a soft default.
 - **Files**: `scripts/docs/docs_structural_lint.py`.
 - **Validation**: grepping the module for a hard-coded `"architecture"` / `^\d{4}-\d{2}` / frontmatter field
   list inside check bodies finds none (they come from config); mypy clean.
@@ -172,24 +191,33 @@ into `.github/workflows/docs-freshness.yml` (FR-008), completing in < 5 s.
 - **Edge cases**: seed the fixture with its OWN styleguide config (or reuse the real one) so the fixture's
   curated-complete set/allowlist is deterministic and not coupled to future config edits.
 
-### Subtask T009 — Clean-tree (zero-false-positive) assertions
+### Subtask T009 — Post-move-shaped zero-violation fixture + live cohort-clean assertions
 
-- **Purpose**: NFR-003 — the guard must not force churn on correctly-placed files; explicit assertions on the
-  verified counts (research.md D2, contract §Regression fixture).
+- **Purpose**: NFR-003 — the guard must not force churn on correctly-placed files, proven WITHOUT gating the
+  live pre-move tree (the 7 audits + 3 shadows are live violations by design until WP03/WP04 land). Two proofs:
+  (a) a synthetic post-move-shaped fixture is zero-violation; (b) the cohorts that ARE already clean on the
+  real tree stay clean.
 - **Steps**:
-  1. Run all 4 checks over the REAL `docs/` tree and assert **zero violations**.
-  2. Add explicit sub-assertions that the known-clean cohorts pass: `adr/**` era-dated files (132) do NOT trip
-     point_in_time; `plans/{research,investigations}/**` pass (allowlisted); the 38 `index.md` / 38 `README.md`
-     nav basenames do NOT trip shadow_tree; the 3 `docs/adr/{1.x,2.x,3.x}/README.md` do NOT trip frontmatter.
-  3. Assert the whole-tree run completes in < 5 s (time-box with a generous margin; NFR-003).
+  1. **Post-move-shaped fixture (the zero-TOTAL proof):** build a synthetic docs tree that mirrors the tree
+     AFTER WP03/WP04 land — the 2026-05 audits under `plans/engineering-notes/architecture-audits/`, no
+     `plans/notes/` shadow basenames, `architecture/index.md` enumerating its (sub-)members. Run all 4 checks
+     over THIS fixture and assert **zero violations**. Do **NOT** run a zero-TOTAL assertion over the real
+     `docs/` tree — that tree legitimately carries the 7 audit point-in-time violations until WP03 relocates
+     them (WP05 owns the live post-move zero-violation gate).
+  2. **Live cohort-clean assertions (discriminating, on the real tree):** assert the already-clean cohorts do
+     NOT trip: `adr/**` era-dated files (132) do NOT trip point_in_time; `plans/{research,investigations}/**`
+     pass (allowlisted); the 38 `index.md` / 38 `README.md` nav basenames do NOT trip shadow_tree; the 3
+     `docs/adr/{1.x,2.x,3.x}/README.md` do NOT trip frontmatter. These are cohort assertions, NOT a whole-tree
+     zero-total assertion.
+  3. Assert each run completes in < 5 s (time-box with a generous margin; NFR-003).
 - **Files**: `tests/docs/test_docs_structural_lint.py`.
-- **Validation**: clean-tree run green; the cohort assertions are discriminating (would fail if scope/allowlist
-  were wrong).
-- **Edge cases**: this test depends on the real tree state — if WP03/WP04 have not yet moved files, the tree is
-  still clean for the LINT's purposes (nothing the lint checks is currently in violation on `main`); the moves
-  do not introduce lint violations, they resolve pre-existing misfilings the lint would otherwise not flag
-  (the misfilings are point-in-time files the audit found — confirm they are within the lint's current-clean
-  calibration or are resolved by the moves, and note any interaction in the Activity Log).
+- **Validation**: the post-move fixture is zero-violation; the cohort assertions are discriminating (would fail
+  if scope/allowlist were wrong); no assertion demands zero-TOTAL over the live pre-move tree.
+- **Design note (NOT an edge case — by design):** the 7 `docs/architecture/audits/2026-05-*.md` are LIVE
+  point-in-time placement violations on the current tree by design; they are RESOLVED by WP03's relocation to
+  `plans/engineering-notes/architecture-audits/` (and the 3 `plans/notes/` shadows by WP04's folds). WP02 must
+  not pretend the live tree is zero-total; it proves calibration via the post-move fixture + cohort assertions,
+  and WP05 runs the real-tree zero-violation gate once the moves have landed.
 
 ### Subtask T010 — Config-SSOT agreement test (FR-011)
 
@@ -205,25 +233,17 @@ into `.github/workflows/docs-freshness.yml` (FR-008), completing in < 5 s.
 - **Edge cases**: keep this test resilient to WP01 adding EXTRA config keys — assert on the keys the lint
   consumes, not exact dict equality of the whole block.
 
-### Subtask T011 — Wire the lint into CI + verify speed (FR-008)
-
-- **Purpose**: Assume the gate role the retired ratchet vacated (US2 keystone).
-- **Steps**:
-  1. Read `.github/workflows/docs-freshness.yml` fully. Add a step that runs
-     `python -m scripts.docs.docs_structural_lint` (nonzero exit fails the job), placed alongside the existing
-     freshness/link checks. Match the workflow's existing step style (shell, working-dir, python setup).
-  2. Confirm the step runs in the same job that already has the docs deps; do not add a new job unless the
-     existing one lacks Python.
-  3. Locally time `python -m scripts.docs.docs_structural_lint` — confirm < 5 s (NFR-003).
-- **Files**: `.github/workflows/docs-freshness.yml`.
-- **Validation**: YAML parses; the step invokes the lint; local timing < 5 s.
-- **Edge cases**: respect any label-skip guard the workflow already honours (`pr:deferred`/`pr:skip-ci`) — do
-  not bypass it; add the lint inside the existing guarded flow.
+> **CI wiring (FR-008) is deliberately NOT in WP02.** Enabling the lint in
+> `.github/workflows/docs-freshness.yml` while the 7 audits are still live point-in-time violations would red
+> the gate on this branch until WP03/WP04 land. CI enablement + the live post-move zero-violation assertion are
+> **WP05's** (it depends on WP02/WP03/WP04, so the tree is clean when it turns the gate on). WP02 just verifies
+> the lint completes in < 5 s locally (NFR-003).
 
 ## Test Strategy
 
-- **Mandatory tests** live in `tests/docs/test_docs_structural_lint.py`: 4-class detection (T008), clean-tree
-  zero-violation + cohort assertions + < 5 s (T009), config-SSOT agreement (T010).
+- **Mandatory tests** live in `tests/docs/test_docs_structural_lint.py`: 4-class detection (T008),
+  post-move-shaped fixture zero-violation + live cohort-clean assertions + < 5 s (T009), config-SSOT
+  agreement (T010). No zero-TOTAL assertion over the live pre-move `docs/` tree (that gate is WP05's).
 - Run: `pytest tests/docs/test_docs_structural_lint.py -q`, then `pytest tests/docs/ -q` (no regressions),
   then `ruff check scripts/docs/docs_structural_lint.py tests/docs/test_docs_structural_lint.py` and
   `mypy scripts/docs/docs_structural_lint.py`.
@@ -242,11 +262,13 @@ into `.github/workflows/docs-freshness.yml` (FR-008), completing in < 5 s.
 ## Review Guidance (reviewer-renata / opus)
 
 Verify: the 4-class fixture genuinely RED-then-GREEN (not a tautology); no check body hard-codes a section /
-dated pattern / frontmatter field (all from config — grep the module); the clean-tree run is zero-violation
-with discriminating cohort assertions; the config-SSOT agreement test actually exercises config-reading (the
-mutated-config behavioural assert); `--json` shape matches the contract; the lint lands at exactly
-`scripts/docs/docs_structural_lint.py` (WP01 cites it); CI step added inside the existing guarded flow;
-< 5 s; ruff/mypy clean, no suppressions.
+dated pattern / frontmatter field / point-in-time marker (all from the `structural_lint_config:` block — grep
+the module); the **post-move-shaped fixture** is zero-violation and the **live cohort assertions** are
+discriminating (and there is **NO** zero-TOTAL assertion over the live pre-move tree, and **NO** CI enablement
+— both are WP05's, post-move); `load_config()` fails LOUD on a missing `structural_lint_config:` block (no soft
+default); the config-SSOT agreement test actually exercises config-reading (the mutated-config behavioural
+assert); `--json` shape matches the contract; the lint lands at exactly `scripts/docs/docs_structural_lint.py`
+(WP01 cites it); < 5 s; ruff/mypy clean, no suppressions.
 
 ## Activity Log
 

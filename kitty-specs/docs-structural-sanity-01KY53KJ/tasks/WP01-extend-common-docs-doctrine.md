@@ -125,18 +125,24 @@ and the config block round-trips through the doctrine loader.
 - **Purpose**: Give the lint ONE policy store to LOAD (FR-011, C-005) so prose-standard and code-gate cannot
   drift. This is the load-bearing deliverable of the WP.
 - **Steps**:
-  1. Open `src/doctrine/styleguides/built-in/common-docs.styleguide.yaml`; read it fully. Decide the block's
-     top-level key (e.g. `structural_lint_config:` or `config:` under an existing section) — pick a name that
-     reads naturally in the styleguide's schema and that WP02 can load deterministically. **Coordinate the
-     exact key path with WP02** (it is the interface contract): record the chosen key in T005's follow-up note.
+  1. Open `src/doctrine/styleguides/built-in/common-docs.styleguide.yaml`; read it fully. The block's
+     top-level wrapper key is the **concrete constant `structural_lint_config:`** (PINNED interface contract —
+     WP02's `load_config()` codes against exactly this key and fails LOUD if it is absent, so it is not a free
+     choice). Place it where it reads naturally in the styleguide's schema. Record the pinned key
+     `structural_lint_config:` in T005's follow-up note for WP02.
   2. Populate the block with, at minimum (see `contracts/docs-structural-lint.md` §Configuration + `data-model.md`):
      - `curated_complete_sections:` — list, initially `["architecture"]` only (all other section indexes are
        landing pages, exempt from `index_completeness`).
      - `concern_bucket_to_section:` — the (a–e) bucket → canonical home map from `data-model.md`
        (`how_to`→`development/`, `reference_policy`→`development/`, `point_in_time`→`plans/engineering-notes/`,
        `ops_runbook`→`operations/`, `generated_nav`→pinned, `doctrine_artifact`→`src/doctrine/`).
-     - `point_in_time_patterns:` — the dated-filename regex/patterns (e.g. `^\d{4}-\d{2}`) + any
-       self-declared point-in-time markers.
+     - `point_in_time_patterns:` — the dated-filename regex/patterns ONLY (e.g. `^\d{4}-\d{2}`).
+     - `point_in_time_markers:` — a **machine-checkable** list encoding the "self-declares point-in-time"
+       signal for files whose basename does NOT match a dated pattern (the `883-*` dossiers are point-in-time
+       but do NOT match `^\d{4}-\d{2}`). Encode it concretely so WP02 T006 codes against a config field, NOT a
+       guess — e.g. a list of frontmatter `field: value` pairs (`doc_status: point_in_time`,
+       `doc_status: closeout`) and/or exact description phrases the lint can substring-match. Do NOT leave this
+       as free-prose "use judgment".
      - `point_in_time_allowlist:` — `["adr/**", "plans/research/**", "plans/investigations/**"]` plus the
        broad `plans/**` allow-zone.
      - `frontmatter_required_fields:` — the fields every in-scope page must carry (`doc_status`/`updated`;
@@ -159,8 +165,10 @@ and the config block round-trips through the doctrine loader.
 
 - **Purpose**: Reconcile 2 of the 4 dangling-ratchet references (US2 scenario 5).
 - **Steps**:
-  1. In the same styleguide file, find every `tooling:` map row and the `quality_test` field that names the
-     "WP05 anti-sprawl structure ratchet" (`research.md` D1 / `plan.md` IC-01 flag these rows).
+  1. In the same styleguide file, the **`tooling:` section still cites the retired "WP05 anti-sprawl structure
+     ratchet"** as a live gate — this is a KNOWN live citation that MUST be reconciled (do not miss it). Find
+     every `tooling:` map row and the `quality_test` field that names that ratchet (`research.md` D1 /
+     `plan.md` IC-01 flag these rows).
   2. Rewrite each to name `scripts/docs/docs_structural_lint.py` (and its invocation
      `python -m scripts.docs.docs_structural_lint`, matching `quickstart.md`), describing it as the
      structural gate. Preserve the row structure/keys — swap the referent, not the schema.
@@ -197,10 +205,10 @@ and the config block round-trips through the doctrine loader.
      generated graph files).
   2. Run the terminology guard on the doctrine edits:
      `pytest tests/architectural/test_no_legacy_terminology.py -q` (CI-only gate — run it locally before push).
-  3. **Record the IC-02→IC-01 reverse edge** in this WP's Activity Log: the config-block key path chosen in
-     T002 and the lint module path (`scripts/docs/docs_structural_lint.py`) that WP02 must both LOAD and
-     match. This is the interface contract between the two WPs — if WP02 lands the lint at a different path or
-     reads a different key, this WP's citations must be reconciled.
+  3. **Record the IC-02→IC-01 reverse edge** in this WP's Activity Log: the pinned config wrapper key
+     `structural_lint_config:` (T002) and the lint module path (`scripts/docs/docs_structural_lint.py`) that
+     WP02 must both LOAD and match. This is the interface contract between the two WPs — if WP02 lands the lint
+     at a different path or reads a different key, this WP's citations must be reconciled.
 - **Files**: none new (verification + log).
 - **Validation**: `spec-kitty doctor doctrine --json` green; terminology guard green; the follow-up note is
   in the Activity Log.
