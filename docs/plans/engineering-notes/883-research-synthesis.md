@@ -6,7 +6,7 @@ type: explanation
 updated: '2026-07-14'
 related:
 - docs/adr/3.x/2026-07-14-2-doctrine-to-core-mission-type-resolution-unification.md
-- docs/architecture/883-mission-type-authority-brief.md
+- docs/plans/engineering-notes/883-mission-type-authority-brief.md
 ---
 
 # Issue #883 — Pre-spec research synthesis (4-lens squad)
