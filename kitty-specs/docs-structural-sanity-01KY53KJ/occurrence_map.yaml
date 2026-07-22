@@ -1,22 +1,43 @@
 # Occurrence map — docs-structural-sanity-01KY53KJ
 #
 # Bulk-edit shape: STRUCTURAL RELOCATION, not a product-term rename. Point-in-time
-# artifacts and a split-brain shadow tree move to their canonical concern-homes;
-# every cross-file referrer (relative links) is repointed and redirect stubs are
-# added. The per-path relocations live in the `moves:` block (schema IC-10); the
-# eight single-term categories classify the ancillary occurrences.
+# artifacts move to their canonical concern-homes and a split-brain shadow tree is
+# FOLDED into its existing canonical twins; every cross-file referrer (relative
+# links AND non-docs/ prefix refs) is repointed and redirect stubs are derived.
+#
+# THREE distinct entry kinds live below — do NOT treat them uniformly:
+#   1. moves:            genuine relocations (the `to` target does NOT yet exist) -> git mv.
+#   2. FOLD-THEN-DELETE  the 3 shadow entries whose `to` ALREADY EXISTS (canonical
+#                        twin). A mechanical `git mv` would CLOBBER the canonical.
+#                        Each such entry's `reason` is prefixed "FOLD-THEN-DELETE";
+#                        the executor reconciles unique content INTO the canonical,
+#                        then `git rm` the shadow (quickstart Recipe B). The from->to
+#                        pair is retained here ONLY so redirect_stub_generator derives
+#                        old-shadow.html -> EXISTING canonical.html (redirect_map is
+#                        single-writer/DERIVED and cannot be hand-edited).
+#   3. BORDERLINE:       the 2 FR-002 borderlines (assessment + closeout) DEFAULT to
+#                        "stays" per the audit; they are held out of the firm moves:
+#                        spine below and listed in the commented BORDERLINE note. Only
+#                        a per-borderline point-in-time verification (at /tasks or
+#                        implement) promotes one into moves:.
+#
+# Redirect/link tooling is driven against THIS map via --occurrence-map (its built-in
+# default is pinned to a foreign mission, common-docs-structural-move-01KW3SBK; never
+# consume that default — FR-010/C-007).
 #
 # Measured referrer counts (docs/, excl. the audit note itself):
 #   architecture/audits/ -> 11 files · adr-connector -> 6 · feature-detection -> 5
 #   teamspace-...-920-closeout -> 4 · 883-mission-type-authority-brief -> 2
 #   code-as-a-crime-scene-overview -> 2 · gap-analysis-connector -> 1 · 883-research-synthesis -> 0
+# NON-docs/ referrer (relative_link_fixer walks docs/** ONLY — needs bulk_ref_rewrite/manual):
+#   src/doctrine/paradigms/built-in/brownfield-onboarding.paradigm.yaml -> the moved audit path
 #
 # Schema: src/doctrine/schemas/occurrence-map.schema.yaml
 
 target:
-  term: "docs/ point-in-time & shadow-tree structural relocation"
+  term: "docs/ point-in-time relocation + shadow-tree fold-then-delete"
   replacement: null
-  operation: rename          # relocation is the dominant op; shadow-tree deletes are folds into canonical twins (see moves)
+  operation: rename          # relocation dominates; the 3 shadow entries are folds (see reasons)
 
 categories:
   # No code identifiers are renamed. The new lint module is NEW code, not a rename.
@@ -25,14 +46,16 @@ categories:
   # No Python import statements are repointed (new lint module is additive).
   import_paths:        { action: do_not_change }          # additive scripts/docs module; no importer rewrite
 
-  # PRIMARY category: relative-link path literals in ~25-30 referrer .md files point
-  # at the old locations and are rewritten to the new paths (relative_link_fixer),
-  # with redirect stubs covering external/bookmarked URLs. Per-path relocations in `moves:`.
-  filesystem_paths:    { action: rename }                 # in-repo relative links repointed to new homes; moves: carries the file relocations
+  # PRIMARY category: relative-link path literals in ~25-30 docs/ referrer .md files
+  # are rewritten to the new paths (relative_link_fixer, docs/** ONLY). Non-docs/
+  # prefix referrers (src/, scripts/) are rewritten by bulk_ref_rewrite / manual review
+  # (see exceptions) — they are NOT do_not_change. Redirect stubs cover external URLs.
+  filesystem_paths:    { action: rename }                 # docs/ relative links + non-docs/ prefix refs repointed; moves: carries relocations
 
-  # redirect_map.yaml gains one entry per moved/removed path; the page-inventory
-  # lockfile is regenerated (path-keyed). Reviewed for 1:1 redirect coverage (NFR-002).
-  serialized_keys:     { action: manual_review }          # redirect_map entries added + page-inventory regenerated; verify 1:1
+  # redirect_map.yaml is single-writer + DERIVED — REGENERATED from this map's moves:
+  # spine (incl. the fold from->to pairs), never hand-edited. page-inventory lockfile
+  # regenerated (path-keyed). Reviewed for 1:1 redirect coverage (NFR-002).
+  serialized_keys:     { action: manual_review }          # redirect_map regenerated + inventory regenerated; verify 1:1 + baseline URLs
 
   # No CLI subcommand/flag references the moved paths.
   cli_commands:        { action: do_not_change }          # no command surface touched
@@ -42,44 +65,55 @@ categories:
   user_facing_strings: { action: rename_if_user_visible } # docs prose/link text repointed where visible
 
   # test_inventory_path_stable.py PINS the page-inventory path (must stay); new lint
-  # unit tests + the 4-finding regression fixture are ADDED. Reviewed together.
-  tests_fixtures:      { action: manual_review }           # keep pinned inventory path; add docs-lint tests + fixture
+  # unit tests + the 4-finding regression fixture + the FR-011 config-SSOT assertion
+  # are ADDED. Reviewed together.
+  tests_fixtures:      { action: manual_review }           # keep pinned inventory path; add docs-lint tests + fixture + config-SSOT assert
 
   # No log/telemetry strings name the moved paths.
   logs_telemetry:      { action: do_not_change }          # none
 
-# Structural relocations (multi-path). Each `from` set folds into one `to`.
+# ---------------------------------------------------------------------------
+# FIRM structural relocations (target does NOT yet exist -> git mv). Each `from`
+# set folds into one `to`. The 3 shadow entries at the bottom are FOLD-THEN-DELETE
+# (their `to` EXISTS) — see the kind-2 note in the header and each reason prefix.
+# ---------------------------------------------------------------------------
 moves:
-  # --- IC-03: point-in-time architecture artifacts -> engineering-notes ---
+  # --- IC-03: point-in-time architecture artifacts -> engineering-notes (RELOCATION) ---
   - from: ["docs/architecture/883-research-synthesis.md"]
     to: "docs/plans/engineering-notes/883-research-synthesis.md"
-    reason: "Self-declared point-in-time pre-spec research for #883; superseded by the ADR + brief."
+    reason: "RELOCATION. Self-declared point-in-time pre-spec research for #883; superseded by the ADR + brief."
   - from: ["docs/architecture/883-mission-type-authority-brief.md"]
     to: "docs/plans/engineering-notes/883-mission-type-authority-brief.md"
-    reason: "Dated mission dossier, not living design."
+    reason: "RELOCATION. Dated mission dossier, not living design. 2 referrers."
   - from: ["docs/architecture/audits/"]
     to: "docs/plans/engineering-notes/architecture-audits/"
-    reason: "7 dated 2026-05 CaaCS forensic audits / triage / issue-draft dumps — point-in-time, not living design."
-  # --- IC-03 borderline (FR-002): move with recorded rationale ---
-  - from: ["docs/architecture/assessments/code-as-a-crime-scene-overview.md"]
-    to: "docs/plans/engineering-notes/code-as-a-crime-scene-overview.md"
-    reason: "Borderline assessment; adjudicated as point-in-time overview -> engineering-notes (revisit in plan if a living-design case emerges)."
-  # --- IC-04: shadow-tree retirement (fold drifted dup into canonical twin, delete shadow) ---
+    reason: "RELOCATION. 7 dated 2026-05 CaaCS forensic audits / triage / issue-draft dumps — point-in-time, not living design. 11 referrers + 1 NON-docs referrer (brownfield-onboarding.paradigm.yaml, see exceptions)."
+  # --- IC-04: shadow-tree FOLD-THEN-DELETE (canonical twin EXISTS — do NOT git mv) ---
   - from: ["docs/plans/notes/feature-detection.md"]
     to: "docs/architecture/feature-detection.md"
-    reason: "Drifted split-brain duplicate (396 vs 388 lines); reconcile unique content into canonical twin, delete shadow, repoint 5 referrers."
+    reason: "FOLD-THEN-DELETE — canonical twin docs/architecture/feature-detection.md EXISTS. Do NOT git mv (clobbers canonical). Reconcile unique content (396 vs 388 lines) INTO the canonical, git rm the shadow, repoint 5 referrers; from->to retained here ONLY to derive the old-shadow->canonical redirect."
   - from: ["docs/plans/notes/gap-analysis-connector-installation-model.md"]
     to: "docs/architecture/gap-analysis-connector-installation-model.md"
-    reason: "Duplicate of canonical architecture copy; reconcile + delete shadow, repoint 1 referrer."
+    reason: "FOLD-THEN-DELETE — canonical twin EXISTS. Do NOT git mv. Reconcile INTO canonical, git rm shadow, repoint 1 referrer; from->to retained ONLY for redirect derivation."
   - from: ["docs/plans/notes/adr-connector-auth-binding-separation.md"]
     to: "docs/adr/3.x/adr-connector-auth-binding-separation.md"
-    reason: "Drifted duplicate (179 vs 177 lines) of the canonical ADR; reconcile + delete shadow, repoint 6 referrers."
-  # --- IC-05: migrations closeout -> engineering-notes ---
-  - from: ["docs/migrations/teamspace-mission-state-920-closeout.md"]
-    to: "docs/plans/engineering-notes/teamspace-mission-state-920-closeout.md"
-    reason: "Dated one-mission closeout evidence; belongs in engineering-notes, not the operator-runbook zone."
+    reason: "FOLD-THEN-DELETE — canonical ADR twin EXISTS. Do NOT git mv. Reconcile unique content (179 vs 177 lines) INTO the canonical ADR, git rm shadow, repoint 6 referrers; from->to retained ONLY for redirect derivation."
 
-# Path-pinned / boundary exceptions — must NOT move.
+# ---------------------------------------------------------------------------
+# BORDERLINE (FR-002) — DEFAULT: STAYS. Held OUT of the firm moves: spine so the
+# tooling does not derive a premature redirect. A per-borderline point-in-time
+# verification (at /tasks or implement) decides; only a VERIFIED point-in-time file
+# is promoted into moves: with the full move contract. Flagged for /tasks.
+#   - docs/architecture/assessments/code-as-a-crime-scene-overview.md
+#       provisional -> docs/plans/engineering-notes/code-as-a-crime-scene-overview.md
+#       2 referrers. Default STAYS unless verified point-in-time.
+#   - docs/migrations/teamspace-mission-state-920-closeout.md  (US5/FR-005, P3)
+#       provisional -> docs/plans/engineering-notes/teamspace-mission-state-920-closeout.md
+#       4 referrers; redirect_baseline_urls.json already carries the closeout URL.
+#       Default STAYS unless verified point-in-time (dated one-mission closeout).
+# ---------------------------------------------------------------------------
+
+# Path-pinned / boundary / non-docs exceptions.
 exceptions:
   - path: "docs/development/3-2-page-inventory.yaml"
     action: do_not_change
@@ -90,3 +124,9 @@ exceptions:
   - path: "docs/guides/**"
     action: do_not_change
     reason: "End-user zone; FR-003 boundary — nothing moves here, referrers repointed via redirect (C-001)."
+  - path: "src/doctrine/paradigms/built-in/brownfield-onboarding.paradigm.yaml"
+    action: manual_review
+    reason: "NON-docs/ referrer (line 50) of a MOVED audit path (docs/architecture/audits/2026-05-spec-kitty-caacs.md). relative_link_fixer walks docs/** ONLY and will NOT catch it; rewrite via bulk_ref_rewrite (prefix-anchored) or by hand (R6)."
+  - path: "scripts/docs/redirect_baseline_urls.json"
+    action: manual_review
+    reason: "Baseline-URL manifest; already carries teamspace-...-920-closeout URLs. Verify no baseline 404 after any borderline closeout move (NFR-001); the redirect_map regeneration must keep it green."
