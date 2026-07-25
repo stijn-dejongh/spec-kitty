@@ -10,8 +10,9 @@ Consolidated from the pre-spec grounding (a 4-lens #2917 squad + a 2-lens #2841-
 
 ## D-02 — Birth seam at merge, reusing `cutover_mission`
 
-- **Decision**: stamp the cutover at the `_bake_mission_number_into_mission_branch` hook (`merge/ordering.py`, from `_phase_bake_and_pre_target_done`), reusing `cutover_mission` (the sole `status_phase` writer), fired after the target commit is durable.
-- **Rationale**: a bare create/finalize stamp is *provably wrong* — while `implement` still dual-writes runtime, verify reds the moment work accrues (the 12 prove it). Merge is the one moment runtime is complete + stable. The bake hook is a proven structural twin (same tolerant `write_meta`, idempotent, resume-guarded).
+- **Decision**: stamp the cutover at the merge bake stage, reusing `cutover_mission` (the sole `status_phase` writer). The `_bake_mission_number` hook (`merge/ordering.py`, from `_phase_bake_and_pre_target_done`) is a proven structural twin. **Timing is pre-target** (`executor.py:1319` precedes `_phase_mission_to_target`), so the PRIMARY meta flip **rides the mission→target merge atomically** — abort ⇒ never reaches target ⇒ consistent. (An earlier draft mis-stated "after target durable"; corrected.)
+- **Rationale**: a bare create/finalize stamp is *provably wrong* — while `implement` still dual-writes runtime, verify reds the moment work accrues (the 12 prove it). Merge is the one moment runtime is complete + stable.
+- **OPEN for IC-08** (surfaced by the post-plan squad): `cutover_mission(feature_dir)` is single-`feature_dir`; the meta→PRIMARY / seed-events→COORD split needs either a two-target spine form or delegation to the coord projection, with a transactional/resume-heal envelope so a crash between the two writes cannot half-birth a mission. Decide relocate-vs-ride-merge for the PRIMARY leg in tasks.
 - **Alternatives**: create-time stamp (rejected — vacuous verify then re-drift); a new flip-only writer (rejected — forks the sole-writer invariant, C-004).
 
 ## D-03 — Event-source exactly two authoring paths (not broad retirement)
