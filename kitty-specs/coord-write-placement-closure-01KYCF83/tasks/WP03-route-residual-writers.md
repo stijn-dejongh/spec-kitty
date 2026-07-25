@@ -67,6 +67,7 @@ Route the three residual mission-artifact writers through the placement port so 
 
 - Spec: [spec.md](../spec.md) US3 AS4, FR-003, FR-006, SC-006. Plan: [plan.md](../plan.md) IC-04-routing. Contract: [contracts/placement-enforcement.md](../contracts/placement-enforcement.md) "Routing coverage".
 - **Depends on WP02**: the classifier (`kind_for_mission_file`) and the `decisions.events.jsonl` / `traces/` classifications must already exist. Call the classifier — never re-classify.
+- **CAUTION — both target writers are ALREADY partially seam-adopted (post-tasks squad finding); do NOT no-op**: `git/bookkeeping_commit.py:66` already passes `target=CommitTarget(ref=branch)` and `events/decision_log.py` already **accepts an injected `target`**. The seam call *shape* is therefore already present — so the **real delta is NOT "introduce a target arg"**. The delta is to **swap the ambient/`branch` ref for a `kind_for_mission_file`-classifier-derived target**. Warn: an implementer who sees the existing `target=CommitTarget(ref=branch)` / injected-`target` fallback and leaves it in place has **no-op'd the WP**. The commit must derive `ref` from the classifier partition, not from the ambient current branch.
 - **bookkeeping_projection.py ownership note**: WP09 (birth-cutover) may need to write the COORD seed events. It is steered to the **two-target cutover-spine form** (editing `runtime_state_cutover.py`, which it owns) precisely so it does NOT co-edit this file. If WP09 must instead delegate to `_phase_record_done_and_project` here, that is a documented leeway edit made after this WP lands (WP09 depends transitively on WP02 and lands much later) — no concurrent ownership.
 
 ## Branch Strategy
@@ -88,23 +89,23 @@ Route the three residual mission-artifact writers through the placement port so 
 ### Subtask T011 – Route `bookkeeping_commit`
 
 - **Purpose**: FR-003 — `git/bookkeeping_commit.py` must be seam-derived.
-- **Steps**: Derive the commit target from the placement seam via the classifier. Confirm it satisfies the widened write gate's `target=CommitTarget(...)` seam-derivation shape (WP06 asserts this syntactically).
+- **Steps**: Derive the commit target from the placement seam via the classifier. Confirm it satisfies the widened write gate's `target=CommitTarget(...)` seam-derivation shape (WP06 asserts this syntactically). **Real delta (see CAUTION above)**: `:66` already reads `target=CommitTarget(ref=branch)` — the fix is to replace the ambient `branch` ref with a `kind_for_mission_file`-classifier-derived partition ref, NOT to add the `target=` arg (already present). Do not leave the ambient-`branch` fallback in place.
 - **Files**: `src/specify_cli/git/bookkeeping_commit.py`.
-- **Validation**: the commit target is a `resolve_placement_only`/`write_target` call, not a re-derived ref.
+- **Validation**: the commit target's `ref` is a `resolve_placement_only`/`write_target` classifier derivation, not the ambient current branch.
 
 ### Subtask T012 – Route `decision_log` + confirm `decisions.events.jsonl` lands COORD
 
 - **Purpose**: FR-003 / SC-006 — `decision_log` writes `decisions.events.jsonl` to its COORD classification.
-- **Steps**: At `events/decision_log.py:209`, route the write through the port using `kind_for_mission_file("decisions.events.jsonl")` (COORD, from WP02). Confirm the file lands on the COORD surface.
+- **Steps**: At `events/decision_log.py:209`, route the write through the port using `kind_for_mission_file("decisions.events.jsonl")` (COORD, from WP02). Confirm the file lands on the COORD surface. **Real delta (see CAUTION above)**: `decision_log.py` already **accepts an injected `target`** — so wiring an arg is not the work. The work is to make the *default/derived* target come from the classifier partition (COORD), not the ambient `feature_dir`/injected fallback. Do not no-op on the existing injected-`target` path.
 - **Files**: `src/specify_cli/events/decision_log.py`.
-- **Validation**: a decision-log write resolves to COORD via the port.
+- **Validation**: a decision-log write resolves to COORD via the classifier-derived port target (not the ambient fallback).
 
-### Subtask T013 – Routing regression test
+### Subtask T013 – Routing regression test (red-first)
 
-- **Purpose**: prove all three writers route (FR-003/FR-006, SC-006 "0 residual unclassified writers for these paths").
-- **Steps**: Write `tests/specify_cli/coordination/test_residual_writer_routing.py` driving each writer against a coord-topology fixture and asserting the write lands on the classified partition surface (COORD for decisions/traces/bookkeeping-coord). Use realistic mission fixtures (production-shaped ids), not stubs that bypass the port.
+- **Purpose**: prove all three writers route (FR-003/FR-006, SC-006 "0 residual unclassified writers for these paths"). **Red-first (DIRECTIVE_041)**: this test must fail on the *pre-routing* writers, not be green-on-arrival.
+- **Steps**: Write `tests/specify_cli/coordination/test_residual_writer_routing.py` driving each writer against a coord-topology fixture and asserting the write lands on the **classified COORD** partition surface. **Author the assertions BEFORE the T010–T012 edits and confirm they red**: pre-routing, the ambient-`feature_dir`/`branch` writers land the write on the *primary/ambient* surface, so a "must land COORD" assertion fails; it goes green only after each writer swaps the ambient ref for the classifier-derived target. Use realistic mission fixtures (production-shaped ids), not stubs that bypass the port.
 - **Files**: `tests/specify_cli/coordination/test_residual_writer_routing.py` (new).
-- **Validation**: green; bypassing the classifier in any writer makes it red.
+- **Validation**: red on the pre-routing (ambient-ref) writers — asserting the COORD target before the edit; green after T010–T012; bypassing the classifier in any writer re-reds.
 
 ## Test Strategy
 

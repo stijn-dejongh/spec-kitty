@@ -67,6 +67,8 @@ Complete FR-008's retirement leg. WP04 event-sourced the claim (dual-write retai
 - Spec: [spec.md](../spec.md) US2, FR-008. Plan: [plan.md](../plan.md) IC-07-readers + the folded reader-coupling finding. Research D-03.
 - **Depends on WP04**: the claim event must already be emitted (so the snapshot carries `shell_pid`) before readers can rely on it.
 - **Ordering invariant (folded squad finding)**: migrate readers BEFORE retiring the write. Retiring first would break claim-liveness / stale-sweep. The red-first stale-sweep test (T021) must pass on the snapshot *before* T023 removes the write.
+- **Write-location seam (post-tasks squad)**: the claim `shell_pid`/`agent` frontmatter write is authored in **`frontmatter.py`** (constants at `frontmatter.py:71`/`:288`) — NOT in WP04's `status_transition.py`. So T023 retires the dual-write by editing **`frontmatter.py` alone**; you do NOT need to (and must not) re-touch `status_transition.py`. This keeps owned_files disjoint from WP04.
+- **CAUTION — `stale_detection.py` may already be half-migrated (post-tasks squad); verify the LIVE read path before editing**: `stale_detection.py` already carries snapshot-reader machinery (`_read_wp_runtime_snapshot_state:263`) and may be **transitionally half-migrated** from a prior FR-005 mission. Before rewriting T021, grep the **live** `shell_pid` read path (`:230` region) and confirm whether it still reads frontmatter or already routes through the snapshot helper. The real delta may be **smaller than the prompt implies** — possibly just wiring `_is_claiming_process_alive` to the existing `_read_wp_runtime_snapshot_state`. Do not re-introduce a snapshot reader that already exists.
 - **C-002 scope**: only these two readers + the one write retirement. No broader frontmatter retirement.
 
 ## Branch Strategy
@@ -87,7 +89,7 @@ Complete FR-008's retirement leg. WP04 event-sourced the claim (dual-write retai
 ### Subtask T021 – Migrate `stale_detection.py` reader
 
 - **Purpose**: FR-008 — `_is_claiming_process_alive` reads `shell_pid` from the snapshot.
-- **Steps**: At `stale_detection.py:230`, replace the frontmatter `shell_pid` read with a reduced-snapshot read (`materialize`/reducer). Preserve the liveness semantics exactly (same alive/dead decision).
+- **Steps**: At `stale_detection.py:230`, replace the frontmatter `shell_pid` read with a reduced-snapshot read (`materialize`/reducer). Preserve the liveness semantics exactly (same alive/dead decision). **First verify the live read path** (see CAUTION above): `_read_wp_runtime_snapshot_state:263` may already exist — if so, the delta is to route `_is_claiming_process_alive` through it, not to build a new snapshot reader.
 - **Files**: `src/specify_cli/core/stale_detection.py`.
 - **Validation**: T020 turns green; existing stale-sweep suites stay green.
 - **Edge cases**: a mission with no claim event → treat as not-claimed (no false "alive").

@@ -16,6 +16,7 @@ subtasks:
 - T007
 - T008
 - T009
+- T054
 phase: Phase 1 - Placement foundation
 history:
 - at: '2026-07-25T12:00:00Z'
@@ -81,8 +82,10 @@ This is the **foundational placement WP** (no dependencies). It owns `src/missio
 
 - **Purpose**: FR-002 risk (a) — before flipping the sentinel, prove no consumer treats `None` as "skip commit".
 - **Steps**: `grep -rn "commit_target" src/` and inspect every read site, especially `resolution.py:949`. Confirm the sentinel is inert today (the plan's grep says so — verify on this branch). Record the audit result in `tracers/design-decisions.md` (mission dir, not owned_files). If a consumer DOES branch on `None`, stop and hand the required consumer edit to WP07 with the exact site.
+- **CONFIRMED-INERT (post-tasks squad evidence — record this verdict in the tracer)**: the audit is **CONFIRMED INERT**. Only `resolution.py:949` reads the *port* `home.commit_target`; the `tasks_map_requirements.py` `commit_target` hits are a **different** `MergeState.commit_target` (not the placement port). Because the sole port consumer at `:949` does not branch on `None`-as-skip, WP07's T033 `:949` adjustment is therefore **cosmetic** (an inertness-asserting regression, not a behavioral change). This is precisely why **no WP09→WP07 dependency is added** (avoids needless serialization).
+- **Fallback line (record in tracer)**: IF a future change makes the sentinel **non-inert** (a real consumer starts branching on `None`), promote WP09→WP07 so the birth-cutover write cannot race the consumer adjustment.
 - **Files**: read-only + tracer note.
-- **Validation**: written audit with the enumerated consumer sites.
+- **Validation**: written audit with the enumerated consumer sites + the CONFIRMED-INERT verdict + the fallback line.
 
 ### Subtask T006 – Flip `PRIMARY_METADATA.commit_target` to partition-aware
 
@@ -107,12 +110,19 @@ This is the **foundational placement WP** (no dependencies). It owns `src/missio
 - **Validation**: a `traces/…` path classifies to COORD via the classifier.
 - **Edge cases**: confirm no other classifier already homes `traces/` to PRIMARY (avoid a double-home that breaks disjointness).
 
-### Subtask T009 – Pin the mapping + partition invariant (unit test)
+### Subtask T009 – Pin the mapping + partition invariant (red-first unit test)
 
-- **Purpose**: lock the SSOT so a future edit that breaks exhaustiveness/disjointness reds.
-- **Steps**: Write `tests/mission_runtime/test_artifact_partition_mapping.py` asserting: (a) `PRIMARY_METADATA` resolves a non-None PRIMARY `commit_target`; (b) `decisions.events.jsonl` → COORD; (c) `traces/` → COORD; (d) `assert_partition_invariant()` passes (exhaustive + disjoint). Use behavioral assertions on the resolver, not literal dict snapshots that break on unrelated additions.
+- **Purpose**: lock the SSOT so a future edit that breaks exhaustiveness/disjointness reds. **Red-first (DIRECTIVE_041)**: these assertions must be authored to fail on the *pre-edit* classifier and pass only after T006–T008 land — not green-on-arrival.
+- **Steps**: Write `tests/mission_runtime/test_artifact_partition_mapping.py` asserting: (a) `PRIMARY_METADATA` resolves a non-None PRIMARY `commit_target`; (b) `decisions.events.jsonl` → COORD; (c) `traces/` → COORD; (d) `assert_partition_invariant()` passes (exhaustive + disjoint). Use behavioral assertions on the resolver, not literal dict snapshots that break on unrelated additions. **Author the test BEFORE the T006–T008 edits and confirm it reds**: pre-edit, `traces/` and `decisions.events.jsonl` resolve to their stale/`None`/PRIMARY home and `PRIMARY_METADATA.commit_target` is `None`, so assertions (a)–(c) fail; they go green only after the SSOT edits.
 - **Files**: `tests/mission_runtime/test_artifact_partition_mapping.py` (new).
-- **Validation**: test green; deleting either classification makes it red.
+- **Validation**: red on the pre-edit classifier (asserting the target COORD/PRIMARY partitions before the edit); green after T006–T008; deleting any classification re-reds.
+
+### Subtask T054 – Behavioral proof: `write_meta` lands meta on the PRIMARY surface via the port
+
+- **Purpose**: FR-002 behavioral closure — the flipped sentinel must be proven to *route a real meta write* to the PRIMARY surface here at the foundation, NOT first observed at WP09's birth-cutover seam (where a regression would surface far too late).
+- **Steps**: In the same `tests/mission_runtime/test_artifact_partition_mapping.py`, add a small behavioral test that drives `write_meta` (or the nearest real meta-write entry point that consumes `PRIMARY_METADATA`) against a coord-topology fixture and asserts `meta.json` lands on the resolved **PRIMARY** surface via the port (non-None routed `commit_target`), not an ambient `feature_dir`. Keep it a behavioral assertion on the resolved surface, not a dict snapshot.
+- **Files**: `tests/mission_runtime/test_artifact_partition_mapping.py` (extend).
+- **Validation**: `write_meta` routes meta to PRIMARY via the port; forcing the old `commit_target=None` arm makes it red.
 
 ## Test Strategy
 
@@ -124,6 +134,7 @@ This is the **foundational placement WP** (no dependencies). It owns `src/missio
 - `PRIMARY_METADATA.commit_target` flipped; sentinel audit recorded.
 - `decisions.events.jsonl` + `traces/` classified COORD in the two SSOT dicts only.
 - `assert_partition_invariant()` exhaustive + disjoint.
+- FR-002 behavioral proof present (T054): `write_meta` routes meta to the PRIMARY surface via the port — validated here, not deferred to WP09.
 - No new top-level `specify_cli` import in `artifacts.py`.
 - `ruff` + `mypy` clean.
 

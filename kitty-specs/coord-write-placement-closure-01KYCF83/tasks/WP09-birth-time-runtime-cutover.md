@@ -86,10 +86,10 @@ Make new missions **born runtime-reconciled**: stamp `status_phase` and reconcil
 
 ### Subtask T042 – RED-first: create→implement→merge lands reconciled
 
-- **Purpose**: DIRECTIVE_041 — the birth repro drives the real entry points, not a fixture.
-- **Steps**: Write `tests/regression/test_birth_cutover.py` that creates a mission through the real entry points, claims a WP + completes a subtask, merges it, and asserts it lands `status_phase>=1` + `verify_backfill().ok` + a non-empty snapshot with NO migration invocation. It must fail before T044.
+- **Purpose**: DIRECTIVE_041 — the birth repro drives the real entry points, not a fixture. **The coord-topology two-partition split is part of THIS red-first anchor, not a soft afterthought (post-tasks squad)**: the base asserts (`status_phase>=1` + `verify_backfill().ok` + non-empty snapshot) all pass on a *single-partition* write, so they do NOT prove the split — the anchor must also assert on the resolved partition surfaces.
+- **Steps**: Write `tests/regression/test_birth_cutover.py` that creates a **coord-topology** mission through the real entry points, claims a WP + completes a subtask, merges it, and asserts it lands `status_phase>=1` + `verify_backfill().ok` + a non-empty snapshot with NO migration invocation **AND** (the load-bearing split assertions) seed events are **PRESENT on the COORD surface and ABSENT from PRIMARY**, while `meta.json`/`status_phase` land on **PRIMARY**. It must fail before T044 — and specifically fail on the split assertions for a single-partition implementation, not merely on the phase stamp.
 - **Files**: `tests/regression/test_birth_cutover.py` (new).
-- **Validation**: red before implementation.
+- **Validation**: red before implementation, including the resolved-partition split assertions (a single-partition birth reds this anchor).
 
 ### Subtask T043 – Resolve the pre-target timing decision
 
@@ -121,10 +121,10 @@ Make new missions **born runtime-reconciled**: stamp `status_phase` and reconcil
 
 ### Subtask T047 – Coord vs flat topology
 
-- **Purpose**: US2 AS3 — the two-partition write for coord topology, and the flat degenerate case.
-- **Steps**: For coord topology, verify meta→PRIMARY / seed→COORD. For flat/single-branch, verify the single-partition case still lands reconciled. Extend `test_birth_cutover.py` with both topologies.
+- **Purpose**: US2 AS3 — the two-partition write for coord topology, and the flat degenerate case. This subtask **hardens** the split assertions the red-first anchor (T042) already carries — it is the exhaustive partition-surface proof, not the first place the split is checked.
+- **Steps**: For coord topology, assert on the **resolved partition surfaces** (not just "reconciled"): seed events are **PRESENT on COORD** and **ABSENT from PRIMARY**; `meta.json`/`status_phase` are **PRESENT on PRIMARY** (and not on COORD). For flat/single-branch, verify the single-partition degenerate case still lands reconciled (both legs collapse to the one partition). Extend `test_birth_cutover.py` with both topologies and assert the surface split explicitly.
 - **Files**: `tests/regression/test_birth_cutover.py`.
-- **Validation**: both topologies land reconciled.
+- **Validation**: coord topology — seed events on COORD only, meta/status_phase on PRIMARY only (a single-partition write reds); flat topology — single-partition reconciled.
 
 ### Subtask T048 – Whole-tree gate + green
 
@@ -140,7 +140,7 @@ Make new missions **born runtime-reconciled**: stamp `status_phase` and reconcil
 
 ## Definition of Done
 
-- Birth repro green: create→implement→merge lands reconciled with no manual backfill.
+- Birth repro green: create→implement→merge lands reconciled with no manual backfill; the red-first anchor (T042) asserts the resolved-partition split (seed events COORD-only, meta/status_phase PRIMARY-only), not just the phase stamp.
 - Timing, two-partition split, atomicity, idempotency all resolved + recorded.
 - `cutover_mission` is the sole `status_phase` writer (two-target form extends, not forks).
 - WP06 gate green; `ruff` + `mypy` clean.

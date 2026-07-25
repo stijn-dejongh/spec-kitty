@@ -17,7 +17,8 @@ Decomposition partitions by **file ownership**, not 1:1 by IC, because several I
 | T006 | Flip `PRIMARY_METADATA.commit_target` to partition-aware | WP02 | [P] |
 | T007 | Classify `decisions.events.jsonl` in the basename SSOT | WP02 | [P] |
 | T008 | Classify `traces/` in the residue-dirs SSOT | WP02 | [P] |
-| T009 | Pin the mapping + partition invariant (unit test) | WP02 | [P] |
+| T009 | Pin the mapping + partition invariant (red-first unit test) | WP02 | [P] |
+| T054 | Behavioral proof: `write_meta` lands meta on PRIMARY via the port | WP02 | [P] |
 | T010 | Route `bookkeeping_projection` through the port | WP03 |  |
 | T011 | Route `bookkeeping_commit` through the port | WP03 |  |
 | T012 | Route `decision_log` + confirm decisions→COORD | WP03 |  |
@@ -45,6 +46,7 @@ Decomposition partitions by **file ownership**, not 1:1 by IC, because several I
 | T034 | Fold #2906 accept-time guards into the authority | WP07 |  |
 | T035 | New read gate (reuse WP06 scanner) | WP07 |  |
 | T036 | Red-first lenient-degrade regressions | WP07 |  |
+| T055 | Close the `traces/` read leg (FR-006 read-side) | WP07 |  |
 | T037 | Adjudicate distinctness vs `repair_repo` | WP08 | [P] |
 | T038 | RED-first: FF and refuse paths | WP08 | [P] |
 | T039 | Implement the repair command | WP08 | [P] |
@@ -105,7 +107,8 @@ Prompt: [tasks/WP02-artifacts-port-kind-mapping.md](tasks/WP02-artifacts-port-ki
 - [ ] T006 Flip `PRIMARY_METADATA.commit_target` to partition-aware (WP02)
 - [ ] T007 Classify `decisions.events.jsonl` in the basename SSOT (WP02)
 - [ ] T008 Classify `traces/` in the residue-dirs SSOT (WP02)
-- [ ] T009 Pin the mapping + partition invariant unit test (WP02)
+- [ ] T009 Pin the mapping + partition invariant red-first unit test (WP02)
+- [ ] T054 Behavioral proof: `write_meta` lands meta on PRIMARY via the port (WP02)
 
 **Summary**: foundational — merges IC-03 (meta commit_target flip) + IC-04-classify into the single artifacts.py SSOT. **Risks**: sentinel not inert (hand `:949` to WP07); traces/ double-home; topology scope creep.
 
@@ -165,7 +168,7 @@ Prompt: [tasks/WP06-whole-tree-write-gate.md](tasks/WP06-whole-tree-write-gate.m
 ## WP07 — Read-side enforcement + fold #2906 + read gate
 
 Prompt: [tasks/WP07-read-side-enforcement.md](tasks/WP07-read-side-enforcement.md)
-**Deps**: WP02, WP06 | **FRs**: FR-004, NFR-002 | **Prompt size**: ~large
+**Deps**: WP02, WP06 | **FRs**: FR-004, FR-006 (read leg), NFR-002 | **Prompt size**: ~large
 
 - [ ] T031 Enumerate every lenient read + build the whitelist (WP07)
 - [ ] T032 Fail-loud `read_dir` authority (WP07)
@@ -173,6 +176,7 @@ Prompt: [tasks/WP07-read-side-enforcement.md](tasks/WP07-read-side-enforcement.m
 - [ ] T034 Fold #2906 accept-time guards into the authority (WP07)
 - [ ] T035 New read gate reuse WP06 scanner (WP07)
 - [ ] T036 Red-first lenient-degrade regressions (WP07)
+- [ ] T055 Close the `traces/` read leg — FR-006 read-side (WP07)
 
 **Summary**: highest blast radius (~68 read sites) — fail-loud read authority, fold #2906 guards (delegate), whitelist sanctioned degrades. **Risks**: breaking a degrade; double-guard drift; layering regression.
 
@@ -228,7 +232,7 @@ Prompt: [tasks/WP10-rekey-acceptance-lock.md](tasks/WP10-rekey-acceptance-lock.m
 | FR-003 | WP02, WP03, WP04 |
 | FR-004 | WP07 |
 | FR-005 | WP08 |
-| FR-006 | WP02, WP03 |
+| FR-006 | WP02, WP03, WP07 |
 | FR-007 | WP01 |
 | FR-008 | WP04, WP05 |
 | FR-009 | WP09 |
@@ -242,4 +246,19 @@ Prompt: [tasks/WP10-rekey-acceptance-lock.md](tasks/WP10-rekey-acceptance-lock.m
 | C-003 | WP10 |
 | C-004 | WP09 |
 
-C-001 (phase sequence A→B) and C-002 (scope boundary) are encoded across the dependency graph and per-WP scope constraints rather than owned by a single WP.
+C-001 (phase sequence A→B) and C-002 (scope boundary) are **enforced structurally via the dependency graph + per-WP scope** (not as `requirement_refs` on any WP): C-001's FR-008→FR-009→FR-010 order is the `WP04→WP05→WP09→WP10` edge chain, and C-002's scope boundary is each WP's `owned_files` + explicit "do NOT broaden" constraints. This intentional structural enforcement closes analyze finding **C2** (LOW).
+
+## Success-Criteria Coverage
+
+Each spec success criterion (SC-001..006) maps to the WP/subtask that proves it:
+
+| SC | Criterion (abbrev.) | Proving WP → subtask(s) |
+|----|---------------------|-------------------------|
+| SC-001 | `test_dogfood_corpus_backfilled` green on main + stays green after ≥3 merges (no re-drift) | WP01 T003/T004 (initial) → **WP10 T052/T053 (durable)** |
+| SC-002 | Synthetic non-seam write in **any** `src/` module reds the whole-tree gate | WP06 T030 (formerly-out-of-scope modules) + T026/T029 |
+| SC-003 | Wrong-partition read fails loud with a typed error at 100% of routed sites | WP07 T032 (fail-loud authority) + T035/T036 (gate + degrades) |
+| SC-004 | `agent mission repair` forward-only FF, zero data loss, refuses on divergence | WP08 T038/T039/T041 |
+| SC-005 | create→implement→merge lands `status_phase>=1` + `verify_backfill().ok` + non-empty snapshot, no manual backfill | **WP09 T042 (red-first anchor) + strengthened T047 (resolved-partition split)** |
+| SC-006 | `decisions.events.jsonl` + `traces/` classified in SSOT, route COORD via port; emit HEAD fallback removed | WP02 T007/T008 (classify) + WP03 T010–T013 (write route) + WP04 T017 (emit fallback) + **WP07 T055 (traces/ read leg)** |
+
+**SC-005 is proven by WP09** (its functional owner) — the red-first anchor T042 (strengthened to assert the coord two-partition split) plus the exhaustive T047 partition-surface proof. This closes analyze finding **C1** (MEDIUM: SC-005 previously untraced).

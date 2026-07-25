@@ -70,7 +70,9 @@ Replace the 17-module `_CHECKOUT_GRAMMAR_MODULES` allowlist with a **whole-tree 
 ## Context & Constraints
 
 - Spec: [spec.md](../spec.md) US3 AS1, FR-001, NFR-001, NFR-004, SC-002. Plan: [plan.md](../plan.md) IC-02. Contract: [contracts/placement-enforcement.md](../contracts/placement-enforcement.md) "Write". Research D-01.
-- **Reuse, do not add** (folded squad finding): reuse the **existing** `_BOUNDARY_SANCTIONED_MODULES:486` — do NOT add a new collection. **Forbid dir-prefix exclusions** (`_BOUNDARY_SANCTIONED_PREFIXES` is how an allowlist creeps back). Keep exclusions **per-file** with an inline rationale enforced by the meta-test at `:746`.
+- **Reuse, do not add** (folded squad finding): reuse the **existing** `_BOUNDARY_SANCTIONED_MODULES:486` — do NOT add a new collection. Keep exclusions **per-file** with an inline rationale enforced by the meta-test at `:746`.
+- **Prefix guard — RETAIN, do not create (post-tasks squad correction)**: `_BOUNDARY_SANCTIONED_PREFIXES` **already exists at `:494`** — the instruction is NOT "never let a prefix collection exist" (an earlier framing implied that, incorrectly). The instruction is: **RETAIN the existing prefix guard as-is and forbid ADDING any NEW dir-prefix entry** (a new prefix is how the retired allowlist creeps back in inverted form). The meta-test must red on a *newly-added* prefix, while leaving the existing `:494` entries untouched.
+- **Allowlist arithmetic (post-tasks squad — for T026/T030)**: `_CHECKOUT_GRAMMAR_MODULES = _ADOPTED_MODULES(14) + _EXTRA(3) = 17`. The whole-tree proof (T030) hinges on this exact former-scope set: any module **not** in those 17 was previously invisible.
 - **def-vs-call discrimination**: ~15 modules newly enter scope, including **definition sites** (`commit_helpers.safe_commit`, `mission_metadata.write_meta`, `merge/baseline.py`, `acceptance/__init__.py`, `doc_state.py`, …). The gate must discriminate a *definition* of `safe_commit`/`write_meta`/`CommitTarget` from a *call* — or it false-reds the def sites. Budget each newly-scanned module as route (already done in WP02-04) vs sanctioned.
 - **Proxy honesty**: the gate proves **syntactic** provenance (the arg is a `resolve_placement_only`/`placement_seam.write_target` call), not value-flow. State this in the gate docstring; do not over-promise semantic proof.
 - **Baseline-red gotcha**: after widening, any newly-red module is either a real un-routed writer (fix belongs to WP02-04 — coordinate) or a sanctioned primitive (add per-file with rationale). Do NOT green-wash by broadening exclusions.
@@ -114,16 +116,16 @@ Replace the 17-module `_CHECKOUT_GRAMMAR_MODULES` allowlist with a **whole-tree 
 ### Subtask T029 – Per-file sanctioned exclusions + meta-test rationale
 
 - **Purpose**: NFR-001 — sanctioned primitives carry inline rationale; no dir-prefix creep.
-- **Steps**: For each genuinely-sanctioned primitive (e.g. lane-deliverable commit, invocation/upgrade commits), add a per-file entry to the **existing** `_BOUNDARY_SANCTIONED_MODULES` with an inline rationale. Extend the meta-test at `:746` to REQUIRE a rationale per entry. Confirm no `_BOUNDARY_SANCTIONED_PREFIXES`-style dir exclusion is introduced.
+- **Steps**: For each genuinely-sanctioned primitive (e.g. lane-deliverable commit, invocation/upgrade commits), add a per-file entry to the **existing** `_BOUNDARY_SANCTIONED_MODULES` with an inline rationale. Extend the meta-test at `:746` to REQUIRE a rationale per entry. **Prefix guard**: RETAIN the existing `_BOUNDARY_SANCTIONED_PREFIXES:494` entries untouched; the meta-test must red only on a **newly-added** dir-prefix entry (not on the pre-existing ones). Do not introduce any new prefix exclusion.
 - **Files**: `tests/architectural/test_no_write_side_rederivation.py`.
 - **Validation**: the meta-test reds if any sanctioned entry lacks a rationale.
 
-### Subtask T030 – Synthetic-bypass proof + non-regression
+### Subtask T030 – Whole-tree proof: bypass in a formerly-out-of-scope module reds + non-regression
 
-- **Purpose**: SC-002 / NFR-004.
-- **Steps**: Add a test that injects a synthetic non-seam-derived write into a scratch module path and asserts the gate reds and **names the offending site**. Run the three existing write-side gates — they must stay green.
+- **Purpose**: SC-002 / NFR-004 — prove the gate now covers **100% of `src/`**, specifically the modules the retired 17-module allowlist could NOT see. A bypass in a module that was *already* in the old allowlist proves nothing about the widening.
+- **Steps**: Add a **parametrized** test that injects a synthetic non-seam-derived mission-artifact write into **≥2 modules demonstrably NOT in the former `_CHECKOUT_GRAMMAR_MODULES` (14 adopted + 3 extra = 17) allowlist** — e.g. a `doc_state.py`-adjacent path and one other formerly-out-of-scope `src/` module. For each parametrized site, assert the gate **reds AND names the offending site**. (Injecting into a formerly-in-scope module would not exercise the widening — pick modules the old allowlist excluded.) Run the three existing write-side gates — they must stay green.
 - **Files**: `tests/architectural/test_no_write_side_rederivation.py`.
-- **Validation**: synthetic bypass reds with the site named; existing gates green.
+- **Validation**: each formerly-out-of-scope injected bypass reds with its site named; a control injection into a formerly-in-scope module still reds too (regression parity); existing gates green.
 
 ## Test Strategy
 
