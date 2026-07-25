@@ -7,6 +7,7 @@
   "mission_number": null,
   "mission_slug": "coord-write-placement-closure-01KYCF83",
   "mission_type": "software-dev",
+  "pr_bound": true,
   "purpose_context": "Spec Kitty's coordination and primary partitions can still drift: writes are only partially routed through the placement port (enforced by a file allowlist, not whole-tree), reads are not routed at all, there is no cure for an already-diverged mission, and new missions are never runtime-reconciled, so the dogfood corpus re-reds every merge wave. This mission closes those residuals with whole-tree placement enforcement for writes and reads, a repair command for pre-existing drift, and a birth-time runtime-state cutover, making the split-brain unrepresentable and self-healing.",
   "purpose_tldr": "Make coordination/primary write and read placement single-authority and self-healing, and make new missions born runtime-reconciled so the mission corpus never re-drifts.",
   "slug": "coord-write-placement-closure-01KYCF83",
