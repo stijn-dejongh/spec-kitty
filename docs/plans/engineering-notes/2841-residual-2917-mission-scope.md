@@ -45,8 +45,8 @@ Coord-trust PR **#2874 (MERGED 2026-07-23**, dossier `kitty-specs/coord-commit-i
 ## Scope boundary vs #1619 (do NOT creep)
 OUT: retiring *all* frontmatter/tasks.md dual-writes beyond B2; re-architecting `MissionArtifactHome`/topology; growing `doctor coordination --fix` into arbitrary-drift repair (C-003 — a *new* Gap-2 command is fine, `--fix` growth is not); loop-friction siblings #2803/#2853.
 
-## The decision for the operator
-The mandatory core (A1+A2+A3, B1–B4) closes the *write* parallel-path and lands #2917. **Two optional residuals materially change scope:** **A4** (read-side symmetry) and **A5** (Gap-2 cure command). "So the parallel write is closed" could mean write-only (A1–A3) or full read/write symmetry (+A4) ± cure (+A5).
+## Operator decision (2026-07-25): **maximal residual closure**
+Scope = Core (A1 whole-tree write enforcement + A2 meta.json routing + A3 emit-fork/unscanned writers + A6 traces) **+ A4 read-side symmetry + A5 Gap-2 cure command**, then **Part B = #2917 Option C**. Full read/write placement symmetry, plus a distinct `agent mission repair` command for pre-existing content drift (kept out of `doctor coordination --fix` per C-003). One mission, phases A→B; WP1 front-load lands first to clear 3.2.6 CI. Proceeding to `/spec-kitty.specify`.
 
 ## Key files
 `src/mission_runtime/{artifacts.py,resolution.py}` · `src/specify_cli/coordination/{commit_router.py,status_transition.py}` · `src/specify_cli/status/{emit.py,bootstrap.py}` · `src/specify_cli/migration/runtime_state_cutover.py` · `src/specify_cli/merge/{ordering.py,bookkeeping_projection.py}` · `src/specify_cli/mission_metadata.py` · `tests/architectural/{test_no_write_side_rederivation.py,test_safe_commit_import_boundary.py,test_write_surface_placement_guard.py}` · `kitty-specs/coord-commit-integrity-01KY5JS8/spec.md`.
