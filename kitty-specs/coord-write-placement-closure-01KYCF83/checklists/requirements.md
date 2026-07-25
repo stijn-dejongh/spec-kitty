@@ -36,4 +36,5 @@
 ## Notes
 
 - Two items marked `[~]` are the standard framework-internals caveat: this mission's acceptance surface IS internal seams (placement port, `status_phase`, coord/primary partition), so naming them is required for testable requirements, not a leak. All other items pass.
+- **Validated by a 2-lens squad (2026-07-25):** fact-check (`architect-alphonso`) = ACCURATE, every code anchor CONFIRMED against the tree (allowlist size corrected 20→17; fork reworded HEAD-derived). Consistency (`reviewer-renata`) = NEEDS-FIX → all 4 MAJOR traceability gaps folded (FR-003/FR-006/FR-009 now carry acceptance scenarios + SC-006; FR-008↔C-002 boundary pinned to the two enumerated authoring paths; C-001 intra-Part-B ordering; FR-010 self-mission exclusion; NFR-006 migration-coexistence guard).
 - No unresolved clarifications; ready for `/spec-kitty.plan`.

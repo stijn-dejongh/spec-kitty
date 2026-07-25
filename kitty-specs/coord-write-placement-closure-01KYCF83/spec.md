@@ -34,12 +34,13 @@ A mission taken through create → implement → merge lands already runtime-rec
 
 1. **Given** the runtime-authoring dual-write is event-sourced, **When** a mission is merged, **Then** the birth-cutover stamps `status_phase` and reconciles any residual runtime through the placement port, one routed write.
 2. **Given** a merged mission whose event log carries runtime, **When** the re-keyed acceptance lock runs, **Then** it requires `status_phase>=1` and a non-empty snapshot (event-log-keyed), and would red if a future mission merged un-reconciled.
+3. **Given** a **coord-topology** mission at land, **When** the birth-cutover runs, **Then** `meta.json`/`status_phase` lands on the PRIMARY surface and the seed events on the COORD surface, each resolved through the placement port — without conflating a single `feature_dir`. *(FR-009 coord/flat two-partition write; depends on FR-002.)*
 
 ### User Story 3 - Split-brain writes are unrepresentable everywhere (Priority: P1)
 
 Any mission-artifact write in the codebase that bypasses the placement port is rejected by an architectural gate — regardless of which module it lives in — so the coord/primary split-brain cannot reappear through a new, unlisted writer.
 
-**Why this priority**: #2874 enforced write routing only within a ~20-file allowlist; a new writer elsewhere silently recreates the bug. This closes the write side completely.
+**Why this priority**: #2874 enforced write routing only within a 17-module allowlist (`_CHECKOUT_GRAMMAR_MODULES`); a new writer elsewhere silently recreates the bug. This closes the write side completely.
 
 **Independent Test**: add a synthetic mission-artifact write (`safe_commit`/`CommitTarget`/`write_meta`) that bypasses the port to a module outside the former allowlist; the whole-tree gate must red.
 
@@ -47,6 +48,8 @@ Any mission-artifact write in the codebase that bypasses the placement port is r
 
 1. **Given** the whole-tree enforcement gate, **When** a non-seam-derived mission-artifact write is added to any `src/` module, **Then** the gate fails and names the offending site.
 2. **Given** meta.json / `PRIMARY_METADATA` writes, **When** they run, **Then** they resolve their partition through the placement port (enabling a coord/primary two-partition write), not a single ambient `feature_dir`.
+3. **Given** the `emit` HEAD-derived current-branch fallback (`_current_branch`, deferred #1716), **When** a status write resolves its target, **Then** it routes through the placement port and no longer falls back to the ambient checkout HEAD. *(FR-003)*
+4. **Given** `decisions.events.jsonl` and `traces/` are classified in the partition SSOT, **When** they are written or read, **Then** each resolves to its classified partition (coord) via the port rather than an ambient `feature_dir`. *(FR-003, FR-006)*
 
 ### User Story 4 - Reads are partition-safe (Priority: P2)
 
@@ -88,15 +91,15 @@ A maintainer can detect and safely repair a mission whose bookkeeping content ha
 | ID | Title | User Story | Priority | Status |
 |----|-------|------------|----------|--------|
 | FR-001 | Whole-tree write-placement enforcement | As the framework, I want any mission-artifact write that bypasses the placement port to be rejected anywhere in `src/`, so the split-brain cannot reappear through a new unlisted writer. | High | Open |
-| FR-002 | Partition-aware meta.json routing | As the framework, I want `meta.json` / `PRIMARY_METADATA` writes (`write_meta`, `_flip_phase`, `_bake_mission_number`) to resolve their partition through the placement port, so a coord/primary two-partition write is expressible. | High | Open |
-| FR-003 | Close the emit fork + unscanned writers | As the framework, I want the `emit` primary-default fallback (#1716) closed and `bookkeeping_projection`/`bookkeeping_commit`/`decision_log` routed through the port, with `decisions.events.jsonl` classified in the partition SSOT. | High | Open |
+| FR-002 | Partition-aware meta.json routing | As the framework, I want `meta.json` / `PRIMARY_METADATA` writes (`write_meta`, `_flip_phase`, `_bake_mission_number`) to resolve their partition through the placement port, so a coord/primary two-partition write is expressible. This **extends the existing port kind-mapping** (gives `PRIMARY_METADATA` a partition-aware write target); it is NOT a `MissionArtifactHome`/topology re-architecture (see C-002). | High | Open |
+| FR-003 | Close the emit fork + unscanned writers | As the framework, I want the `emit` **HEAD-derived current-branch fallback** (`status_transition.py::_current_branch`, deferred #1716) closed and `bookkeeping_projection`/`bookkeeping_commit`/`decision_log` routed through the port, with `decisions.events.jsonl` classified in the partition SSOT. | High | Open |
 | FR-004 | Read-side placement enforcement | As the framework, I want every mission-artifact read routed through the read-surface authority and failing loud on a partition mismatch, so reads are symmetric with writes. | Medium | Open |
 | FR-005 | Repair pre-existing split-brain | As a maintainer, I want an `agent mission repair` command that detects and forward-only repairs a diverged mission (fail-loud with a diff otherwise), so an already-split corpus can be cured. | Medium | Open |
 | FR-006 | Correct `traces/` classification | As the framework, I want `traces/` classified to its doctrine-correct partition (COORD) in the SSOT, with writers/readers routed accordingly. | Low | Open |
 | FR-007 | Front-load the drifted corpus | As a maintainer, I want the runtime-state backfill run over the currently-drifted missions and committed, so `test_dogfood_corpus_backfilled` passes and 3.2.6 is unblocked. | High | Open |
-| FR-008 | Event-source the runtime authoring | As the framework, I want claim (`shell_pid`/`agent`) and subtask-completion writes event-sourced rather than dual-written to frontmatter/`tasks.md`, to the extent a valid birth-stamp requires. | High | Open |
+| FR-008 | Event-source the runtime authoring | As the framework, I want **exactly two** runtime-authoring dual-writes event-sourced — the claim fields (`shell_pid`/`agent`) written to WP frontmatter, and subtask-completion written to `tasks.md` checkboxes (#2684) — so nothing un-seeded accrues. No other frontmatter/`tasks.md` authoring is in scope (see C-002). | High | Open |
 | FR-009 | Birth-time runtime cutover | As the framework, I want a mission stamped `status_phase` and runtime-reconciled at land (mission-number bake hook), routed through the placement port (FR-002), so it is born reconciled. | High | Open |
-| FR-010 | Event-log-keyed acceptance lock | As the framework, I want `test_dogfood_corpus_backfilled` re-keyed so every mission whose event log carries runtime must be `status_phase>=1` with a non-empty snapshot, so the lock survives authoring retirement (no green-wash). | High | Open |
+| FR-010 | Event-log-keyed acceptance lock | As the framework, I want `test_dogfood_corpus_backfilled` re-keyed so every mission whose event log carries runtime (excluding the self-referential cutover mission) must be `status_phase>=1` with a non-empty snapshot, so the lock survives authoring retirement (no green-wash). | High | Open |
 
 ### Non-Functional Requirements
 
@@ -107,13 +110,14 @@ A maintainer can detect and safely repair a mission whose bookkeeping content ha
 | NFR-003 | Idempotency | The birth-cutover and the one-time backfill are idempotent: a second run seeds 0 events and leaves `status_phase` and the event log byte-identical (deterministic seed IDs namespaced on immutable `mission_id`). | Reliability | High | Open |
 | NFR-004 | No write-side regression | The existing coord-trust write-side gates (`test_no_write_side_rederivation`, `test_safe_commit_import_boundary`, `test_write_surface_placement_guard`) remain green. | Reliability | High | Open |
 | NFR-005 | Repair safety | `agent mission repair` forwards only under strict-ancestor + clean worktree; otherwise it fails loud with a specific diff and never force-overwrites divergent content. | Safety | High | Open |
+| NFR-006 | Migration coexistence | After FR-008 retires the two authoring paths, the one-time backward-flow migration (`migrate backfill-runtime-state` / `m_zz_runtime_state_backfill`) still cuts over a legacy corpus green — its path retains a regression test. | Reliability | Medium | Open |
 
 ### Constraints
 
 | ID | Title | Constraint | Category | Priority | Status |
 |----|-------|------------|----------|----------|--------|
-| C-001 | Phase sequence A→B | FR-009 (birth-write) depends on FR-002 (meta routing); Part A lands before Part B's birth-write. FR-007 (front-load) is independent and lands first. | Technical | High | Open |
-| C-002 | Scope boundary vs #1619 | OUT: broad frontmatter/`tasks.md` dual-write retirement beyond FR-008's minimum; topology / `MissionArtifactHome` re-architecture; growing `doctor coordination --fix` into arbitrary-drift repair (FR-005 is a distinct command per #2874 C-003); loop-friction siblings #2803/#2853. All remain #1619. | Technical | High | Open |
+| C-001 | Phase sequence A→B | FR-009 (birth-write) depends on FR-002 (meta routing). Within Part B, FR-008 (event-source the two authoring paths) precedes FR-009 (birth-stamp) — else a flipped-but-unseeded mission recurs (the "12's shape") — and FR-010 (re-key the lock) follows FR-008. FR-007 (front-load) is independent and lands first. | Technical | High | Open |
+| C-002 | Scope boundary vs #1619 | OUT: any frontmatter/`tasks.md` dual-write retirement beyond the **two paths enumerated in FR-008** (claim `shell_pid`/`agent` + subtask-completion checkboxes); topology / `MissionArtifactHome` re-architecture; growing `doctor coordination --fix` into arbitrary-drift repair (FR-005 is a distinct `agent mission repair` command per #2874 C-003); loop-friction siblings #2803/#2853. All remain #1619. | Technical | High | Open |
 | C-003 | No green-wash | The lock's `verify_backfill` parity assertion is preserved or strengthened; the fix genuinely closes the drift and must not relax the predicate to pass (failing-test-remediation discipline). | Technical | High | Open |
 | C-004 | Canonical single writer | The birth seam reuses `runtime_state_cutover.cutover_mission` as the sole `status_phase` writer (a 3rd call site), not a parallel writer. | Technical | Medium | Open |
 
@@ -129,10 +133,11 @@ A maintainer can detect and safely repair a mission whose bookkeeping content ha
 ### Measurable Outcomes
 
 - **SC-001**: `test_dogfood_corpus_backfilled` passes on `main` and **stays green after at least 3 subsequent mission merges** with no manual backfill (no re-drift).
-- **SC-002**: A synthetic non-seam-derived mission-artifact write added to **any** `src/` module reds the whole-tree enforcement gate (100% coverage; previously invisible outside the ~20-file allowlist).
+- **SC-002**: A synthetic non-seam-derived mission-artifact write added to **any** `src/` module reds the whole-tree enforcement gate (100% coverage; previously invisible outside the 17-module allowlist). *(FR-001, and FR-002/FR-003's now-routed writers fall under the same whole-tree gate.)*
 - **SC-003**: A mission-artifact read from the wrong partition fails loud with a typed error in **100% of routed read sites** (zero silent substitutions).
 - **SC-004**: `agent mission repair` detects and repairs a synthetically-injected pre-existing content split-brain forward-only with **zero data loss**, and refuses (with a diff) on genuine divergence.
 - **SC-005**: A mission taken create→implement→merge lands `status_phase>=1` + `verify_backfill().ok` + non-empty snapshot with **no manual backfill invocation**.
+- **SC-006**: `decisions.events.jsonl` and `traces/` are classified in the partition SSOT and route to their COORD surface via the port; the `emit` HEAD-derived fallback is removed. Verified by 0 residual unclassified mission-artifact writers in the whole-tree scan for these paths. *(FR-003, FR-006.)*
 
 ## Assumptions
 
