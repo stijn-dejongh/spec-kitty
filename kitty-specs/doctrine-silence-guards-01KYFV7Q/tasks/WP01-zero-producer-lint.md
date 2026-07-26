@@ -27,10 +27,14 @@ agent_profile: python-pedro
 authoritative_surface: tests/architectural/
 create_intent:
 - tests/architectural/test_no_inert_schema_slots.py
+- tests/architectural/_inert_slots.py
+- tests/architectural/_inert_slots_baseline.yaml
 execution_mode: code_change
 model: ''
 owned_files:
 - tests/architectural/test_no_inert_schema_slots.py
+- tests/architectural/_inert_slots.py
+- tests/architectural/_inert_slots_baseline.yaml
 role: implementer
 tags: []
 task_type: implement
@@ -135,3 +139,6 @@ Allowlist must have exactly 0 entries. If the shipped tree genuinely has an iner
 > **CRITICAL**: entries in chronological order, oldest first. **Append** new entries at the END.
 
 - 2026-07-26T19:45:15Z – system – Prompt created.
+- 2026-07-26T20:33:34Z – python-pedro – T001/T002 landed: definition adopted in the test-module docstring, failing-first test committed (`4d4ff529d`).
+- 2026-07-26T21:10:00Z – python-pedro – T003/T004 landed (`c577487f6`). Lint implemented; non-vacuity verified by mutation (readmitting the generated schemas as producers turns the planted-violation tests RED). T005 first run on the shipped tree: **41 findings**, reported to the operator rather than allowlisted.
+- 2026-07-26T21:40:00Z – python-pedro – Operator ruling folded: SC-001's zero-entry allowlist cannot hold (8 findings belong to WP05, which runs after this WP; 20 to Mission D / I9 — the dependency is inverted). Adopted a frozen shrink-only baseline at `tests/architectural/_inert_slots_baseline.yaml` with a per-entry owner and a three-value disposition vocabulary that has no "accept". `ALLOWLIST` stays `frozenset()`. Added the anti-weasel gate: a baseline entry may not survive its owner reaching `approved`/`done`, proven non-vacuous against a planted mission. `owned_files`/`create_intent` corrected — the `ACTIVE_WP_SCOPE_VIOLATION` on `_inert_slots.py` was a real prompt defect.
