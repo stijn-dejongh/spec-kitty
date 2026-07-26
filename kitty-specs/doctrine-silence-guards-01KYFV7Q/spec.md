@@ -133,6 +133,30 @@ the branch and invites someone to "fix" it by accepting a regeneration that dele
 2. **Given** a model field added without regenerating, **Then** CI fails and names the stale schema.
 3. **Given** `structural_lint_config`, **Then** the generator **emits** it — it is a real declared field the generator currently drops, and accepting its deletion would invalidate a shipped artefact.
 
+---
+
+### User Story 6 - A frozen-contract gate cannot go unrun on the branch it protects (Priority: P1)
+
+A maintainer relies on a frozen-contract test — the mission-CLI golden contract, the committed
+completion manifest — to catch a regression on `main`. The test exists, passes locally, and is
+collected by a CI job. But that job is **conditional on the push diff touching CLI paths**, so on
+every main push that does not, the contract is never evaluated. A regression introduced by one merge
+stays invisible through every subsequent green main run.
+
+**Why this priority**: This is the same defect class as User Story 1 at a different layer. A schema
+slot with no producer and a gate that never runs are both **inert mechanisms that look like
+coverage** — and this one already fired: [#2957](https://github.com/Priivacy-ai/spec-kitty/issues/2957)
+records four test files red on `main` @ `1a15bcf6c` while main CI reported green.
+
+**Independent Test**: Diff the union of every main-branch job's collection against the full
+collection; assert the difference is empty.
+
+**Acceptance Scenarios**:
+
+1. **Given** the full test tree, **When** the union of all main-branch jobs' collected node IDs is computed, **Then** every test file appears in **at least one** job.
+2. **Given** a test file added to a directory no job collects, **When** the meta-test runs, **Then** it fails and names the file.
+3. **Given** the four files in #2957, **Then** each is collected by a main-branch job and its current red status is visible rather than masked.
+
 ### Edge Cases
 
 - **The `graph.yaml` grep gate false-reds on correct code.** `.kittify/doctrine/graph.yaml` is a live
@@ -162,29 +186,35 @@ the branch and invites someone to "fix" it by accepting a regeneration that dele
 
 ### Functional Requirements
 
-| ID | Parent | Title | Priority | Status |
-|----|----|-------|----------|--------|
-| FR-001 | FR-029 | **Zero-producer lint.** A schema slot with no producer fails a test. Rank 1; gates nothing; guards every field B1 and B2 add. | High | Open |
-| FR-002 | NFR-013 | **Occurrence-map field-path granularity.** Extend `occurrence-map.schema.yaml` so `do_not_change` can name a YAML field path inside a file that also migrates. Legacy single-term maps keep validating. | High | Open |
-| FR-003 | FR-030 | **Four-site silent-kind-drop closure.** Unknown kinds fail loudly at all four sites. Collides with `#2532` — pin behaviourally. Unblocks `#2468`/`#2847`/`#2862`/`#2829`. | High | Open |
-| FR-004 | FR-031 | **`extra="forbid"` + writers + round-trip** on `DRGNode`, `DRGEdge`, `AgentProfile`. Model + writer + round-trip test in **one commit**. | High | Open |
-| FR-005 | — | **Schema-generation integrity.** Fix the generator's `structural_lint_config` drop, adjudicate `point_in_time_marker`, verify the `paradigm_reference` `$ref` targets, regenerate the 7 stale schemas, then wire `--check` into CI. | Medium | Open |
-| FR-006 | FR-004 | **Freeze the reference-kind enums** with a ratchet on the four member sets, not only a comment. | High | Open |
-| FR-007 | — | **Layout gate second segment.** Validate `parts[0] == kind.plural` **and** `parts[1] == built-in`. | Medium | Open |
-| FR-008 | FR-005 | **Correct the unfollowable migration hint** — the hint and its contract fixture name an existing per-kind fragment. | High | Open |
-| FR-009 | FR-006, FR-020 | **Correct the surviving `shipped/` references**, enforced by a gate: the earlier fix-by-inspection missed 21 of 27. | High | Open |
-| FR-010 | FR-021 | **Fix the org→DRG bridge** — silent cross-layer drop, blind re-kinding of bare targets, raw pydantic on URN-shaped targets. | High | Open |
-| FR-011 | FR-022 | **Fix the documented `specializes_from` example** in `CLAUDE.md` so it produces an edge. | Medium | Open |
-| FR-012 | FR-023 | **Retype daphne's `applies` edge and gate the relation.** | Medium | Open |
+> Traceability to the programme's requirement IDs lives in the
+> [programme record's routing table](../doctrine-canonical-structure-remediation-01KYEYSD/spec.md#requirement-routing--no-requirement-falls-between-the-missions),
+> which is the single authority for it. Repeating it here would be a second mapping to drift.
+
+| ID | Title | Priority | Status |
+|----|-------|----------|--------|
+| FR-001 | **Zero-producer lint.** A schema slot with no producer fails a test. Rank 1; gates nothing; guards every field B1 and B2 add. | High | Open |
+| FR-002 | **Occurrence-map field-path granularity.** Extend `occurrence-map.schema.yaml` so `do_not_change` can name a YAML field path inside a file that also migrates. Legacy single-term maps keep validating. | High | Open |
+| FR-003 | **Four-site silent-kind-drop closure.** Unknown kinds fail loudly at all four sites. Collides with `#2532` — pin behaviourally. Unblocks `#2468`/`#2847`/`#2862`/`#2829`. | High | Open |
+| FR-004 | **`extra="forbid"` + writers + round-trip** on `DRGNode`, `DRGEdge`, `AgentProfile`. Model + writer + round-trip test in **one commit**. | High | Open |
+| FR-005 | **Schema-generation integrity.** Fix the generator's `structural_lint_config` drop, adjudicate `point_in_time_marker`, verify the `paradigm_reference` `$ref` targets, regenerate the 7 stale schemas, then wire `--check` into CI. | Medium | Open |
+| FR-006 | **Freeze the reference-kind enums** with a ratchet on the four member sets, not only a comment. | High | Open |
+| FR-007 | **Layout gate second segment.** Validate `parts[0] == kind.plural` **and** `parts[1] == built-in`. | Medium | Open |
+| FR-008 | **Correct the unfollowable migration hint** — the hint and its contract fixture name an existing per-kind fragment. | High | Open |
+| FR-009 | **Correct the surviving `shipped/` references**, enforced by a gate: the earlier fix-by-inspection missed 21 of 27. | High | Open |
+| FR-010 | **Fix the org→DRG bridge** — silent cross-layer drop, blind re-kinding of bare targets, raw pydantic on URN-shaped targets. | High | Open |
+| FR-011 | **Fix the documented `specializes_from` example** in `CLAUDE.md` so it produces an edge. | Medium | Open |
+| FR-012 | **Retype daphne's `applies` edge and gate the relation.** | Medium | Open |
+| FR-013 | **Guarantee every test file is collected by at least one main-branch job.** Determine why main's shard/job selection skips `tests/specify_cli/cli/`, `tests/cli/` and friends, then close it with an architectural meta-test that diffs the union of job collections against the full collection. | High | Open |
 
 ### Non-Functional Requirements
 
-| ID | Parent | Requirement | Priority |
-|----|----|-------------|----------|
-| NFR-001 | NFR-001 | **Every gate is non-vacuous.** Each carries a self-mutation test planting the real violation shape and asserting RED, plus a zero-entry allowlist. A gate-unmask cannot self-validate. | High |
-| NFR-002 | NFR-012 | **No `applies` edge is authored** — enforced by a gate built on measurement, not on the wrong comment at `drg/merge.py:97-98`. | Medium |
-| NFR-003 | — | **Both path gates carry their discriminators**, each proven by a fixture that would false-red without it. | High |
-| NFR-004 | — | **No graph content change.** Node/edge/orphan counts move by exactly 0, except FR-012's `applies` retype — a ledgered relation change at constant cardinality. | High |
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| NFR-001 | **Every gate is non-vacuous.** Each carries a self-mutation test planting the real violation shape and asserting RED, plus a zero-entry allowlist. A gate-unmask cannot self-validate. | High |
+| NFR-002 | **No `applies` edge is authored** — enforced by a gate built on measurement, not on the wrong comment at `drg/merge.py:97-98`. | Medium |
+| NFR-003 | **Both path gates carry their discriminators**, each proven by a fixture that would false-red without it. | High |
+| NFR-004 | **No graph content change.** Node/edge/orphan counts move by exactly 0, except FR-012's `applies` retype — a ledgered relation change at constant cardinality. | High |
+| NFR-005 | **The collection-completeness meta-test is non-vacuous and reports honestly.** It must fail on a planted uncollected file, and it must **not** be satisfied by re-classifying a red as expected. Any test it newly surfaces as red is an honest pre-existing red under ADR `2026-07-17-1` — report it, do not fix it here and do not mask it. | High |
 
 ### Constraints
 
@@ -208,15 +238,16 @@ the branch and invites someone to "fix" it by accepting a regeneration that dele
 
 ### Measurable Outcomes
 
-- **SC-001** (SC-021): The zero-producer lint fails on a planted producerless slot and passes on the shipped tree, so `aliases`, `impacts` and `is_symmetric` cannot ship inert.
-- **SC-002** (SC-023): An unknown kind fails loudly at all four sites, proven by a planted unknown kind at each.
-- **SC-003** (SC-022): An unknown field on `DRGNode`/`DRGEdge`/`AgentProfile` is a load error, and a round-trip test proves a new field survives write→read.
+- **SC-001**: The zero-producer lint fails on a planted producerless slot and passes on the shipped tree, so `aliases`, `impacts` and `is_symmetric` cannot ship inert.
+- **SC-002**: An unknown kind fails loudly at all four sites, proven by a planted unknown kind at each.
+- **SC-003**: An unknown field on `DRGNode`/`DRGEdge`/`AgentProfile` is a load error, and a round-trip test proves a new field survives write→read.
 - **SC-004**: `scripts/generate_schemas.py --check` exits **0** and runs in CI. `structural_lint_config` is emitted; `point_in_time_marker` has a recorded adjudication.
-- **SC-005** (SC-018): Adding a member to any of the four `<kind>_reference.type` enums fails a test.
-- **SC-006** (SC-016): The layout gate validates both mandatory segments — a tactic under `assets/built-in/` is rejected. Allowlist: exactly 0 entries.
-- **SC-007** (SC-003): Zero source sites instruct an operator to edit `src/doctrine/graph.yaml`, and the gate does not flag the live project-tier path or the forbidding-mentions.
-- **SC-008** (SC-015): Zero `<kind>/shipped/` path references remain under `src/doctrine/`; every relative cross-link in built-in markdown resolves; the gate does not flag "shipped/packaged".
+- **SC-005**: Adding a member to any of the four `<kind>_reference.type` enums fails a test.
+- **SC-006**: The layout gate validates both mandatory segments — a tactic under `assets/built-in/` is rejected. Allowlist: exactly 0 entries.
+- **SC-007**: Zero source sites instruct an operator to edit `src/doctrine/graph.yaml`, and the gate does not flag the live project-tier path or the forbidding-mentions.
+- **SC-008**: Zero `<kind>/shipped/` path references remain under `src/doctrine/`; every relative cross-link in built-in markdown resolves; the gate does not flag "shipped/packaged".
 - **SC-009**: An unresolvable built-in→pack edge produces a conflict record, never `None`-with-silence. The `CLAUDE.md` snippet produces an edge.
 - **SC-010**: `procedure:onboard-external-agent-to-pack` has a traversable inbound edge, and a gate rejects a newly-authored `applies` edge.
 - **SC-011**: An occurrence map can mark a YAML field path `do_not_change` inside a file that also carries migrating entries — demonstrated against B2's real exemption set (188 GOVERNANCE + 14 RAW).
 - **SC-012**: Node, edge and orphan counts are unchanged by this mission, except the single ledgered `applies` retype.
+- **SC-013**: The union of every main-branch job's collection equals the full collection — proven by a meta-test that fails on a planted uncollected file. The four files named in #2957 are collected by a main-branch job, and whatever their status then is, it is **visible**.

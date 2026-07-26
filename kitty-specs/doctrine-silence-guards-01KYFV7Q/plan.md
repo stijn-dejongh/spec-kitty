@@ -32,7 +32,7 @@ regeneration, and the tests would stay green.
 **Project Type**: single project
 **Performance Goals**: no runtime regression; the new lints are test-time only and must not add measurable time to graph load
 **Constraints**: zero graph-content change (NFR-004); every gate non-vacuous with a zero-entry allowlist (NFR-001); no `# noqa` / `# type: ignore` to pass ruff or mypy
-**Scale/Scope**: 4 silent-drop sites · 3 pydantic models · 7 stale schemas · 4 reference enums · 22 `shipped/` hits across 9 files · ~10 dead-`graph.yaml` sites · 16 `NodeKind` members · ~55–70 files total
+**Scale/Scope**: 4 silent-drop sites · 3 pydantic models · 7 stale schemas · 4 reference enums · 22 `shipped/` hits across 9 files · ~10 dead-`graph.yaml` sites · 16 `NodeKind` members · 1 CI collection-completeness gap · **~60–80 files total** (was ~55–70 before #2957 folded in; **5–7 agent-days**, was 4–6)
 
 ### Measured ground truth (executed on this branch, 2026-07-26)
 
@@ -163,6 +163,15 @@ Concern IDs match the programme record, which owns IC-01…IC-07. `tasks.md` tur
 - **Depends on**: IC-03. **Must land before mission B1** (ADR 2026-07-26-3, Negative consequences).
 - **Risks**: **`applies` is not a dead sink** — the comment at `drg/merge.py:97-98` is wrong. `charter_runtime/lint/checks/orphan.py` reads it and `charter/synthesizer/project_drg.py` produces it. Build the gate on measurement, not on that comment. Retyping daphne's edge changes a live traversal result; ledger it.
 
+### IC-08 — CI collection completeness *(folded in from [#2957](https://github.com/Priivacy-ai/spec-kitty/issues/2957), 2026-07-26)*
+
+- **Purpose**: A frozen-contract test that no main-branch job collects is exactly as inert as a schema slot with no producer — IC-01 one layer up. This one has already fired: four test files were red on `main` @ `1a15bcf6c` while main CI reported green.
+- **Requirements**: FR-013, NFR-005, SC-013
+- **Surfaces**: `.github/workflows/ci-quality.yml` (the `changes` paths-filter and the job `if:` conditions); a new `tests/architectural/` meta-test
+- **Depends on**: IC-01 — the same anti-vacuity mechanic, and the lint should cover the meta-test's own slots
+- **Mechanism, verified in-tree 2026-07-26**: `fast-tests-cli` and `integration-tests-cli` both gate on `needs.changes.outputs.cli == 'true'`, and the `cli` filter is `src/specify_cli/cli/**` + `tests/cli/**` + `tests/specify_cli/cli/**`. So on any main push whose diff misses those paths, **neither job runs and none of their tests are collected**. A red introduced by one merge stays invisible through every later green main run. The `fast-tests-core-misc` shard split compounds it: `specify-cli-rest` carries `--ignore=tests/specify_cli/cli`, `specify-cli-rest-2` does not include it, and `core-misc` ignores `tests/specify_cli` wholesale.
+- **Risks**: **The shard-split's own completeness check was scoped to the split, not the tree.** Its comment records "Verified disjoint + union-complete locally: 3241 + 3079 == 6320 (today's real `specify-cli-rest` selection, unchanged)" — that verifies the *bin-split* preserved a selection which **already had the hole**. Any replacement check must diff against the **full** collection, or it reproduces the same vacuity. Second risk: the meta-test will surface currently-masked reds. Those are honest pre-existing reds under ADR `2026-07-17-1` — **report them, do not fix them here, and never satisfy the gate by reclassifying a red as expected.**
+
 ## Ordering within the mission
 
 ```
@@ -172,7 +181,7 @@ WP01 (zero-producer lint)  ─── first, guards everything
    │                                      │
    │                                      └──► WP08 (bridge) ──► WP09 (applies)
    │
-   └── WP02, WP05, WP06, WP07  ── independent, parallelizable after WP01
+   └── WP02, WP05, WP06, WP07, WP10  ── independent, parallelizable after WP01
 ```
 
 **WP01 first** is C-001: the lint is what proves the later WPs' new gates are not themselves inert.
