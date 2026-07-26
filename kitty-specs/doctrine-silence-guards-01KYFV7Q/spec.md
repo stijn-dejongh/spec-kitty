@@ -198,19 +198,19 @@ collection; assert the difference is empty.
 | FR-004 | **`extra="forbid"` + writers + round-trip** on `DRGNode`, `DRGEdge`, `AgentProfile`. Model + writer + round-trip test in **one commit**. | High | Open |
 | FR-005 | **Schema-generation integrity.** Fix the generator's `structural_lint_config` drop, adjudicate `point_in_time_marker`, verify the `paradigm_reference` `$ref` targets, regenerate the 7 stale schemas, then wire `--check` into CI. | Medium | Open |
 | FR-006 | **Freeze the reference-kind enums** with a ratchet on the four member sets, not only a comment. | High | Open |
-| FR-007 | **Layout gate second segment.** Validate `parts[0] == kind.plural` **and** `parts[1] == built-in`. | Medium | Open |
+| FR-007 | ~~**Layout gate second segment.**~~ **WITHDRAWN 2026-07-26 — already delivered.** `test_doctrine_artefact_layout.py:106` already validates both segments, `_ALLOWLIST` is already `frozenset()`, and `test_allowlist_is_empty` exists; **17 tests pass**. The fix landed in `1a15bcf6c`. The parent spec's SC-016 was inherited as Open without re-measuring — a planning error the post-tasks squad caught. | — | Withdrawn |
 | FR-008 | **Correct the unfollowable migration hint** — the hint and its contract fixture name an existing per-kind fragment. | High | Open |
 | FR-009 | **Correct the surviving `shipped/` references**, enforced by a gate: the earlier fix-by-inspection missed 21 of 27. | High | Open |
 | FR-010 | **Fix the org→DRG bridge** — silent cross-layer drop, blind re-kinding of bare targets, raw pydantic on URN-shaped targets. | High | Open |
 | FR-011 | **Fix the documented `specializes_from` example** in `CLAUDE.md` so it produces an edge. | Medium | Open |
 | FR-012 | **Retype daphne's `applies` edge and gate the relation.** | Medium | Open |
-| FR-013 | **Guarantee every test file is collected by at least one main-branch job.** Determine why main's shard/job selection skips `tests/specify_cli/cli/`, `tests/cli/` and friends, then close it with an architectural meta-test that diffs the union of job collections against the full collection. | High | Open |
+| FR-013 | **Guarantee every test file is collected by at least one main-branch job.** *(#2957 asks for "exactly one"; deliberately narrowed to "at least one" — that is the anti-vacuity property. The disjointness half remains with the existing shard-split assertion.)* Determine why main's shard/job selection skips `tests/specify_cli/cli/`, `tests/cli/` and friends, then close it. **Implementation is already precedented in this workflow**: add a `|| github.event_name == 'push'` disjunct to the group-gated jobs' `if:`, exactly as `slow-tests` (`ci-quality.yml:2747`) and `e2e-cross-cutting` (`:2972`) already do — PR runs keep today's narrowing, main pushes become complete. | High | Open |
 
 ### Non-Functional Requirements
 
 | ID | Requirement | Priority |
 |----|-------------|----------|
-| NFR-001 | **Every gate is non-vacuous.** Each carries a self-mutation test planting the real violation shape and asserting RED, plus a zero-entry allowlist. A gate-unmask cannot self-validate. | High |
+| NFR-001 | **Every gate is non-vacuous.** Each carries a self-mutation test that plants the real violation shape and asserts RED, plus a zero-entry allowlist. **The self-mutation test must invoke the same public checker callable as the shipped-tree assertion**, differing only in the tree it points at — one that reimplements the check inline stays green forever while the production checker rots. This binds **every** gate-adding WP — WP01, WP05, WP06, WP07, WP09, WP10 — not the two the coverage table previously named. | High |
 | NFR-002 | **No `applies` edge is authored** — enforced by a gate built on measurement, not on the wrong comment at `drg/merge.py:97-98`. | Medium |
 | NFR-003 | **Both path gates carry their discriminators**, each proven by a fixture that would false-red without it. | High |
 | NFR-004 | **No graph content change.** Node/edge/orphan counts move by exactly 0, except FR-012's `applies` retype — a ledgered relation change at constant cardinality. | High |
@@ -243,11 +243,11 @@ collection; assert the difference is empty.
 - **SC-003**: An unknown field on `DRGNode`/`DRGEdge`/`AgentProfile` is a load error, and a round-trip test proves a new field survives write→read.
 - **SC-004**: `scripts/generate_schemas.py --check` exits **0** and runs in CI. `structural_lint_config` is emitted; `point_in_time_marker` has a recorded adjudication.
 - **SC-005**: Adding a member to any of the four `<kind>_reference.type` enums fails a test.
-- **SC-006**: The layout gate validates both mandatory segments — a tactic under `assets/built-in/` is rejected. Allowlist: exactly 0 entries.
+- ~~**SC-006**~~: **WITHDRAWN** — verified already true on this branch (17 passed). See FR-007.
 - **SC-007**: Zero source sites instruct an operator to edit `src/doctrine/graph.yaml`, and the gate does not flag the live project-tier path or the forbidding-mentions.
 - **SC-008**: Zero `<kind>/shipped/` path references remain under `src/doctrine/`; every relative cross-link in built-in markdown resolves; the gate does not flag "shipped/packaged".
 - **SC-009**: An unresolvable built-in→pack edge produces a conflict record, never `None`-with-silence. The `CLAUDE.md` snippet produces an edge.
 - **SC-010**: `procedure:onboard-external-agent-to-pack` has a traversable inbound edge, and a gate rejects a newly-authored `applies` edge.
 - **SC-011**: An occurrence map can mark a YAML field path `do_not_change` inside a file that also carries migrating entries — demonstrated against B2's real exemption set (188 GOVERNANCE + 14 RAW).
 - **SC-012**: Node, edge and orphan counts are unchanged by this mission, except the single ledgered `applies` retype.
-- **SC-013**: The union of every main-branch job's collection equals the full collection — proven by a meta-test that fails on a planted uncollected file. The four files named in #2957 are collected by a main-branch job, and whatever their status then is, it is **visible**.
+- **SC-013**: **Every test *node* is collected by ≥1 job on a push to `main`.** Evaluated with the real per-job selectors (paths, `--ignore`, and `-m` marker expressions) under main-push filter state — not "all jobs assumed to run", and not from declared globs. Baseline to move: **950 of 2166 files / 14,870 of 33,665 nodes uncollected**. *Node*, not file: a file with one `slow` test and twenty fast ones satisfies a file-level reading while the twenty never run — and three of #2957's four files are exactly that shape. The literal "union equals the full collection" wording is withdrawn: it is only satisfiable by dismantling the dorny topology, which ~17 architectural invariants pin — proven by a meta-test that fails on a planted uncollected file. The four files named in #2957 are collected by a main-branch job, and whatever their status then is, it is **visible**.

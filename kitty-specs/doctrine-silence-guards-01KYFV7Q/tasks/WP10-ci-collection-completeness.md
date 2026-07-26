@@ -105,6 +105,15 @@ Whatever reds this newly surfaces are **honest pre-existing reds** under ADR `20
 
 WP05's SC-004 deliverable; this WP owns the workflow file.
 
+## ⚠️ Four traps found by the post-tasks squad — read before starting
+
+1. **A sanctioned greenwashing path already exists, and it is on your route.** `test_gate_coverage.py` ratchets against `_gate_coverage_baseline.json`, and its own assertion message ends *"regenerate the baseline with `--update-baseline`"* (`:603`, `:627`). Add gating-awareness and you get ~950 new orphans plus one documented command that erases them. **The new gate must be baseline-free and must not read `_gate_coverage_baseline.json`.** Reviewers: check this explicitly.
+2. **Do not build a new parser.** `_gate_coverage.py:457` already carries `WorkflowModel.job_gating_groups` (job → dorny group, populated at `:556`). The existing `analyze()` is blind only because `Gate` (`:194`) has no gating-group field, so a test counts as covered if any selector matches regardless of whether that job runs — which is why the committed baseline records `orphan_test_count: 0`, true in the "all jobs run" model and vacuous in reality. The fix is `analyze(..., active_groups=…)`, not a rewrite.
+3. **The naive fix breaks an existing invariant.** `test_src_filter_coverage.py:180-192` (`test_every_named_group_gates_a_test_running_job_live`) asserts every named group gates ≥1 test-running job. Deleting `needs.changes.outputs.cli == 'true'` orphans the `cli` group and reds it. The `|| github.event_name == 'push'` disjunct preserves the reference and keeps it green.
+4. **This WP's own new test file would be inert.** All three `arch-adversarial` legs run the same four paths and partition by the `arch_shard_N` marker applied from `tests/_arch_shard_map.py` (`ci-quality.yml:1916`, `:1933`). An unregistered new file under `tests/architectural/` is collected and then **deselected by every leg**. **Register it in `tests/_arch_shard_map.py` as part of T052.**
+
+**Cost note, so nobody builds the wrong thing:** one whole-tree `--collect-only` is ~50 s for 33,665 tests and `collect_universe()` already runs in CI, so gate simulation is in-process and sub-second — zero marginal cost. The subprocess-per-job approach took ~25 minutes wall-clock at 6-way parallelism. Design for one collection.
+
 ## Test Strategy
 
 - `PYTHONPATH=src python -m pytest tests/architectural/test_ci_collection_completeness.py -q`
