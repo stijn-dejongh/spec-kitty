@@ -37,6 +37,25 @@ becomes a node minter plus validator; node discovery stays derived.
 — hand counts were wrong twice): 559 MIGRATE / 188 GOVERNANCE / 14 RAW across 171 files; 169 MIGRATE
 files. Estimated 11–14 agent-days, ~365–390 files.
 
+## Inherited burn-down obligation — `aliases` and `banned_synonyms`
+
+Mission A's zero-producer lint owns two baseline entries against this mission:
+`aliases` (`drg/models.py`-adjacent, the field FR-028 adds) and `banned_synonyms`
+(`glossary_packs/models.py`). Both are declared today and nothing populates them —
+`glossary_packs/models.py` says so in its own docstring: they *"are carried and
+round-tripped for Mission B forward-compat but are inert (unwired) in Mission A."*
+
+**This mission cannot reach `done` while they stand** (mission A SC-001a, enforced by
+test). The disposition is `wire-the-producer`: FR-028 is what makes `aliases` real.
+
+Worth knowing how nearly this was missed. The lint's first implementation did **not**
+flag `aliases` at all — its producer scan was repo-wide, so an unrelated use of the
+bare name elsewhere in `src/` masked it, and the gate stayed green over the exact
+field it was built to guard. Then, once surfaced, it was parked as `unassigned`
+because this mission's slug was believed not to exist. Twice in one work package the
+mechanism nearly went inert against its own purpose. If FR-028 ships and this entry
+is still in the baseline, that is the third time.
+
 ## Carried constraints — do not lose these when speccing
 
 - **Never sweep `directive-references` (68).** Zero DRG edges, but it is the **seed set for the entire charter governance closure**. Deleting it empties every profile-routed prompt while fragments, golden counts and a zero-entries gate all stay green.
