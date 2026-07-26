@@ -10,8 +10,8 @@ planning_base_branch: remediation/doctrine-silence-guards
 merge_target_branch: remediation/doctrine-silence-guards
 branch_strategy: Planning artifacts for this mission were generated on remediation/doctrine-silence-guards. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into remediation/doctrine-silence-guards unless the human explicitly redirects the landing branch.
 base_branch: kitty/mission-doctrine-silence-guards-01KYFV7Q
-base_commit: 28784aa4ef1a692118ca16f29b40356371dfd76e
-created_at: '2026-07-26T20:33:34.662287+00:00'
+base_commit: ef39aa2ae939c6465b527f49d30f963f4af521d8
+created_at: '2026-07-26T20:50:40.086816+00:00'
 subtasks:
 - T001
 - T002
