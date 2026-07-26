@@ -27,6 +27,10 @@ agent_profile: python-pedro
 authoritative_surface: tests/architectural/
 create_intent:
 - tests/architectural/test_no_inert_schema_slots.py
+- tests/architectural/_inert_slots.py
+- tests/architectural/_inert_slots_baseline.yaml
+- tests/architectural/_inert_slots.py
+- tests/architectural/_inert_slots_baseline.yaml
 execution_mode: code_change
 model: ''
 owned_files:
