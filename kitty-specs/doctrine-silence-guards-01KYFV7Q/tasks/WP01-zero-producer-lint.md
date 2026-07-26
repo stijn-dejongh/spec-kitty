@@ -10,8 +10,8 @@ planning_base_branch: remediation/doctrine-silence-guards
 merge_target_branch: remediation/doctrine-silence-guards
 branch_strategy: Planning artifacts for this mission were generated on remediation/doctrine-silence-guards. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into remediation/doctrine-silence-guards unless the human explicitly redirects the landing branch.
 base_branch: kitty/mission-doctrine-silence-guards-01KYFV7Q
-base_commit: ef39aa2ae939c6465b527f49d30f963f4af521d8
-created_at: '2026-07-26T20:50:40.086816+00:00'
+base_commit: 28784aa4ef1a692118ca16f29b40356371dfd76e
+created_at: '2026-07-26T20:33:34.662287+00:00'
 subtasks:
 - T001
 - T002
@@ -142,4 +142,3 @@ Allowlist must have exactly 0 entries. If the shipped tree genuinely has an iner
 - 2026-07-26T20:33:34Z – python-pedro – T001/T002 landed: definition adopted in the test-module docstring, failing-first test committed (`4d4ff529d`).
 - 2026-07-26T21:10:00Z – python-pedro – T003/T004 landed (`c577487f6`). Lint implemented; non-vacuity verified by mutation (readmitting the generated schemas as producers turns the planted-violation tests RED). T005 first run on the shipped tree: **41 findings**, reported to the operator rather than allowlisted.
 - 2026-07-26T21:40:00Z – python-pedro – Operator ruling folded: SC-001's zero-entry allowlist cannot hold (8 findings belong to WP05, which runs after this WP; 20 to Mission D / I9 — the dependency is inverted). Adopted a frozen shrink-only baseline at `tests/architectural/_inert_slots_baseline.yaml` with a per-entry owner and a three-value disposition vocabulary that has no "accept". `ALLOWLIST` stays `frozenset()`. Added the anti-weasel gate: a baseline entry may not survive its owner reaching `approved`/`done`, proven non-vacuous against a planted mission. `owned_files`/`create_intent` corrected — the `ACTIVE_WP_SCOPE_VIOLATION` on `_inert_slots.py` was a real prompt defect.
-- 2026-07-27T00:20:00Z – python-pedro – REJECTED at review; three fixes folded. (1) SC-001 was demonstrably unmet: `_code_producers` harvested all of `src/` (12,742 names), which masked `aliases` — so B2 could have shipped the field this WP exists to guard, inert, with the gate green. Scoped producers to `src/doctrine/` (807 names); `aliases` and `overrides` both surface, baseline 41→59, `enhances`/`overrides` now complete at 8. (2) No concrete floor: every shipped-tree assertion is an absence assertion and all passed on an empty scan. Added a scanned-slot floor (216 today, floor 180) plus a baseline-intersection floor. (3) `unassigned` was an uncapped hatch the anti-weasel gate can never fire for — added a shrink-only cap (25) and an owner-resolution test, which immediately caught a real bug in my own helper (a specified-but-unplanned mission read as nonexistent). Also registered the baseline size with the charter ratchet in `_baselines.yaml` + `test_ratchet_baselines.py`, and disclosed the `models.py`-glob under-count (~99 invisible fields) in the docstring.
