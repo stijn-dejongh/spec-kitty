@@ -165,6 +165,7 @@ T024 **Fix the generator** so it emits `structural_lint_config` (a real declared
 T025 Adjudicate `point_in_time_marker` — declared in no model, used by a shipped artefact. Decide, record, do not regenerate blindly
 T026 Verify the `reference` → `paradigm_reference` rename's `$ref` targets resolve
 T027 Regenerate the 7 stale schemas
+T027a **Clear WP05's 8 entries from `_inert_slots_baseline.json`.** WP01's lint independently found what T024 was already scoped to fix: the four schemas advertise `enhances` while the models **raise** on it (`_RETIRED_RELATIONSHIP_FIELDS`), so the schema documents a shape the loader rejects. `overrides` is the same defect, masked in the report by an unrelated name collision. **This WP cannot reach `done` with those entries outstanding** — SC-001a enforces it by test.
 
 > `--check` is wired into CI by **WP10/T056**, which owns the workflow file.
 
