@@ -153,28 +153,3 @@ Each gate needs a fixture that would false-red **without** its discriminator. Th
 > **CRITICAL**: entries in chronological order, oldest first. **Append** new entries at the END.
 
 - 2026-07-26T19:45:15Z – system – Prompt created.
-- 2026-07-27T00:00:00Z – doctrine-daphne – T035 out-of-ownership edit, as the
-  prompt's third risk note directs. `owned_files` cannot carry a `kitty-specs/`
-  path, so the rejection-error contract fixture at
-  `kitty-specs/excise-doctrine-curation-and-inline-references-01KP54J6/contracts/validator-rejection-error.schema.json`
-  was updated here instead: its `migration_hint` regex now reads
-  `to src/doctrine/[a-z_]+\.graph\.yaml$`, its example names
-  `src/doctrine/directive.graph.yaml`, and its title description records the
-  correction. The commit guard **warned** on this path (and on the occurrence
-  map) rather than blocking, so nothing was forced.
-- 2026-07-27T00:00:00Z – doctrine-daphne – Occurrence map reconciled against the
-  real occurrence set (documented bulk-edit exception). Three divergences
-  recorded in the map itself: WP04's T023a had already shrunk the dead-path
-  carrier set 17→16; the live project-tier `.kittify/doctrine/graph.yaml` class
-  was under-enumerated 2→6; and `shipped/` prose also exists outside
-  `src/doctrine/` (`runtime/next/_internal_runtime/planner.py:104`). Exceptions
-  were only added, never widened to excuse an unfixed site.
-- 2026-07-27T00:00:00Z – doctrine-daphne – WP02's `field_path` exception key is
-  **not** available on this lane: lane-g's copy of
-  `src/doctrine/schemas/occurrence-map.schema.yaml` still has
-  `additionalProperties: false` on `exception_entry` with no `field_path`.
-  Resolves at merge; path-glob granularity covered every WP07 exemption, so
-  nothing was blocked by it.
-- 2026-07-27T00:00:00Z – doctrine-daphne – Graph invariant verified at the final
-  commit: `doctrine regenerate-graph --check` reports fresh, and the loaded DRG
-  is 311 nodes / 774 edges. `doctrine validate src/doctrine` passes 252/252.
