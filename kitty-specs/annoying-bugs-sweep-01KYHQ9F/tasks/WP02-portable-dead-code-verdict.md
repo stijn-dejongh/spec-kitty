@@ -3,6 +3,7 @@ work_package_id: WP02
 title: P0 portable and honest dead-code review gate
 dependencies: []
 requirement_refs:
+- C-005
 - C-008
 - C-009
 - FR-014
@@ -14,6 +15,7 @@ planning_base_branch: fix/annoying-bugs-sweep
 merge_target_branch: fix/annoying-bugs-sweep
 branch_strategy: Planning artifacts for this mission were generated on fix/annoying-bugs-sweep. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into fix/annoying-bugs-sweep unless the human explicitly redirects the landing branch.
 subtasks:
+- T028
 - T007
 - T008
 - T009
@@ -80,6 +82,14 @@ never report a clean zero when source discovery did not establish a supported de
 
 ## Subtasks
 
+### T028 - Open the WP: tracker, ownership, and campsite
+
+Before code changes, assign #2987 to the current Human-in-Charge and add a tracker comment naming
+this mission. Record both links in the evidence file. Re-check the actual diff against C-005 and all
+other WP ownership, then perform a bounded domain-matched Sonar/complexity scout of the owned review
+surfaces. Land necessary behavior-preserving cleanup first with focused tests, or record a clean
+finding. Stop and update ownership before touching an undeclared file.
+
 ### T007 - Reporter coordination
 
 Comment on #2987 before code changes. State that `git grep` addresses FR-014 only, ask whether their
@@ -91,6 +101,12 @@ discovery half on an option that cannot satisfy it.
 Retarget the existing non-git `tmp_path` case from clean-zero to undeterminable. Add a fast test
 that injects `FileNotFoundError` at the subprocess boundary; do not patch `shutil.which`. Add a
 supported POSIX fixture that captures the exact symbol result set before refactoring.
+
+Also invoke the real `spec-kitty review --mode post-merge` CLI path in a valid temporary Git
+repository with a supported symbol-bearing diff. Use a subprocess spy/PATH fixture that permits Git
+but raises if any external reference-search executable is attempted. Assert the command completes,
+gate 2 reports the deliberately unreferenced symbol as non-clean, no clean-zero is emitted, and the
+observed subprocess executable set contains Git only.
 
 The tests must distinguish:
 
@@ -136,6 +152,8 @@ Record the pre/post symbol-set comparison and red-first node IDs in the evidence
 - Clean-zero requires a successful, non-vacuous supported scan.
 - Current POSIX supported behavior is pinned and unchanged.
 - Fast tests directly guard both defect halves.
+- The real post-merge CLI path works with Git available and no external `grep`.
+- The actual changed-file set remains disjoint from every other WP.
 
 ## Reviewer Guidance
 

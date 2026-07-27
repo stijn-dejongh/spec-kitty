@@ -5,11 +5,13 @@ dependencies: []
 requirement_refs:
 - C-003
 - C-004
+- C-005
 - FR-012
 planning_base_branch: fix/annoying-bugs-sweep
 merge_target_branch: fix/annoying-bugs-sweep
 branch_strategy: Planning artifacts for this mission were generated on fix/annoying-bugs-sweep. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into fix/annoying-bugs-sweep unless the human explicitly redirects the landing branch.
 subtasks:
+- T030
 - T018
 - T019
 - T020
@@ -73,6 +75,14 @@ command that matches its local intent.
 
 ## Subtasks
 
+### T030 - Open the WP: tracker, ownership, and campsite
+
+Before edits, assign #2983 to the current Human-in-Charge and add a tracker comment naming this
+mission. Re-check the intended diff against C-005 and all other WP ownership, then perform a bounded
+domain-matched campsite scout of the owned doctrine, documentation, and test surfaces. Apply any
+necessary behavior-preserving cleanup first with focused checks, or record a clean finding. Stop and
+revise ownership before touching an undeclared file.
+
 ### T018 - Classify occurrences
 
 For each scoped occurrence, identify the intended owning command from the live Typer tree and
@@ -98,9 +108,10 @@ environment examples.
 
 ### T021 - Regression guard
 
-Add a non-vacuous architectural test over the exact scoped source set. It should assert each
-concrete command parses against the live CLI or a canonical command inventory, not merely ban one
-string. Assert the file denominator so deletion cannot green the test.
+Add a non-vacuous architectural test over the exact scoped source set. Resolve each concrete command
+through the real Typer command tree; do not certify a hand-maintained allowlist. Assert the file
+denominator and include a self-mutation fixture proving a nonexistent replacement turns the gate
+red, so deletion or inventory drift cannot green the test.
 
 ### T022 - Gates
 
@@ -108,6 +119,8 @@ string. Assert the file denominator so deletion cannot green the test.
 PWHEADLESS=1 pytest tests/architectural/test_status_command_guidance.py -q
 PWHEADLESS=1 pytest tests/architectural/test_docs_cli_reference_parity.py -q
 PWHEADLESS=1 pytest tests/architectural/test_no_legacy_terminology.py -q
+ruff check tests/architectural/test_status_command_guidance.py
+npx --yes markdownlint-cli2@0.18.1 --config .markdownlint-cli2.jsonc docs/api/environment-variables.md docs/api/upgrade-lifecycle.md docs/architecture/launch-readiness-future.md docs/guides/install-and-upgrade.md
 ```
 
 Validate YAML and Markdown formatting with the repository's existing focused checks.
@@ -118,9 +131,9 @@ Validate YAML and Markdown formatting with the repository's existing focused che
 - The canonical styleguide remains valid.
 - Changelog and archived mission history are untouched.
 - A non-vacuous test prevents recurrence.
+- The actual changed-file set remains disjoint from every other WP.
 
 ## Reviewer Guidance
 
 Review each replacement in context. Reject uniform substitution, historical rewrites, or a test
 that merely asserts the forbidden string disappeared without validating the replacement.
-

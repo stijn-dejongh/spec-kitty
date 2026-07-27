@@ -3,12 +3,14 @@ work_package_id: WP05
 title: Invocation opener discoverability
 dependencies: []
 requirement_refs:
+- C-005
 - C-007
 - FR-013
 planning_base_branch: fix/annoying-bugs-sweep
 merge_target_branch: fix/annoying-bugs-sweep
 branch_strategy: Planning artifacts for this mission were generated on fix/annoying-bugs-sweep. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into fix/annoying-bugs-sweep unless the human explicitly redirects the landing branch.
 subtasks:
+- T031
 - T023
 - T024
 - T025
@@ -65,6 +67,14 @@ Make the standalone invocation lifecycle discoverable in both directions: the ex
 
 ## Subtasks
 
+### T031 - Open the WP: tracker, ownership, and campsite
+
+Before edits, assign #2984 to the current Human-in-Charge and add a tracker comment naming this
+mission. Re-check the intended diff against C-005 and all other WP ownership, then perform a bounded
+domain-matched Sonar/complexity scout of the owned Typer and test surfaces. Apply necessary
+behavior-preserving cleanup first with focused tests, or record a clean finding. Stop and revise
+ownership before touching an undeclared file.
+
 ### T023 - Add epilog guidance
 
 Add concise help text explaining:
@@ -100,6 +110,7 @@ mypy src/specify_cli/cli/commands/profile_invocation.py
 - Existing close behavior is unchanged.
 - No alias, new command, or completion-manifest churn.
 - Focused tests and static checks pass.
+- The actual changed-file set remains disjoint from every other WP.
 
 ## Reviewer Guidance
 

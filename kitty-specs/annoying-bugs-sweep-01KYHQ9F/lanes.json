@@ -20,6 +20,7 @@
       "predicted_surfaces": [
         "api",
         "legacy-cleanup",
+        "tracker-integration",
         "workspace"
       ],
       "depends_on_lanes": [],
@@ -42,6 +43,7 @@
         "app-shell",
         "artifact-rendering",
         "legacy-cleanup",
+        "tracker-integration",
         "workspace"
       ],
       "depends_on_lanes": [],
@@ -64,6 +66,7 @@
       "predicted_surfaces": [
         "api",
         "legacy-cleanup",
+        "tracker-integration",
         "workspace"
       ],
       "depends_on_lanes": [],
@@ -85,6 +88,7 @@
       "predicted_surfaces": [
         "api",
         "legacy-cleanup",
+        "tracker-integration",
         "workspace"
       ],
       "depends_on_lanes": [],
@@ -101,13 +105,15 @@
       ],
       "predicted_surfaces": [
         "api",
+        "legacy-cleanup",
+        "tracker-integration",
         "workspace"
       ],
       "depends_on_lanes": [],
       "parallel_group": 0
     }
   ],
-  "computed_at": "2026-07-27T13:38:34.122027+00:00",
+  "computed_at": "2026-07-27T13:45:52.583733+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": []
 }

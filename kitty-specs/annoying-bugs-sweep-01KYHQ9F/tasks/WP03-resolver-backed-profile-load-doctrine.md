@@ -3,6 +3,7 @@ work_package_id: WP03
 title: Resolver-backed profile-load doctrine
 dependencies: []
 requirement_refs:
+- C-005
 - C-006
 - FR-007
 - FR-008
@@ -13,6 +14,7 @@ planning_base_branch: fix/annoying-bugs-sweep
 merge_target_branch: fix/annoying-bugs-sweep
 branch_strategy: Planning artifacts for this mission were generated on fix/annoying-bugs-sweep. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into fix/annoying-bugs-sweep unless the human explicitly redirects the landing branch.
 subtasks:
+- T029
 - T013
 - T014
 - T015
@@ -80,6 +82,14 @@ primary mechanism, while preserving the explicit read-only-harness fallback requ
 
 ## Subtasks
 
+### T029 - Open the WP: tracker, ownership, and campsite
+
+Before edits, assign #1840 to the current Human-in-Charge and add a tracker comment naming this
+mission. Record the links for PR evidence. Re-check the intended diff against C-005 and every other
+WP, then scout the owned doctrine/test surfaces for domain-matched stale duplication, length, and
+Sonar findings. Apply required behavior-preserving cleanup first with focused tests, or record a
+clean bounded finding. Stop and revise ownership before touching an undeclared source.
+
 ### T013 - Inventory and classify
 
 Enumerate tracked instruction occurrences under `src/doctrine/**`. Classify each as
@@ -125,6 +135,7 @@ PWHEADLESS=1 pytest tests/architectural/test_profile_load_resolver_guidance.py -
 PWHEADLESS=1 pytest tests/doctrine/test_spk_skill_pack.py -q
 PWHEADLESS=1 pytest tests/architectural/test_docs_cli_reference_parity.py -q
 PWHEADLESS=1 pytest tests/architectural/test_no_legacy_terminology.py -q
+ruff check tests/architectural/test_profile_load_resolver_guidance.py tests/doctrine/test_spk_skill_pack.py
 ```
 
 ## Definition Of Done
@@ -134,9 +145,9 @@ PWHEADLESS=1 pytest tests/architectural/test_no_legacy_terminology.py -q
 - Every surviving raw fallback is explicitly bounded and caveated.
 - The guard is non-vacuous, enumerable, and self-proving.
 - #1840 no longer misdirects and has recorded evidence.
+- The actual changed-file set remains disjoint from every other WP.
 
 ## Reviewer Guidance
 
 Reject edits to generated skill copies, an unconditional raw-read ban, a grep with zero denominator,
 or a canonical skill that still depends on the legacy alias for mechanics.
-
