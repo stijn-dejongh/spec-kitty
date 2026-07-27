@@ -1,7 +1,7 @@
 {
-  "event_count": 51,
-  "last_event_id": "01KYHH0KW7RQMBGYFDXCFS6H75",
-  "materialized_at": "2026-07-27T10:13:02.983992+00:00",
+  "event_count": 52,
+  "last_event_id": "01KYHHPYHZTFED67ANPZW5JYW8",
+  "materialized_at": "2026-07-27T10:25:14.815818+00:00",
   "mission_number": "",
   "mission_slug": "doctrine-silence-guards-01KYFV7Q",
   "mission_type": "software-dev",
@@ -11,9 +11,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 4,
+    "for_review": 3,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 1
   },
   "work_packages": {
@@ -205,13 +205,18 @@
     },
     "WP10": {
       "actor": "user",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
-      "lane": "for_review",
-      "last_event_id": "01KYHG0V6H6H6E88WW9AJF7PJ1",
-      "last_transition_at": "2026-07-27T09:55:41.905390+00:00",
+      "lane": "in_review",
+      "last_event_id": "01KYHHPYHZTFED67ANPZW5JYW8",
+      "last_transition_at": "2026-07-27T10:25:14.815818+00:00",
+      "model": "__resolved_model_absent__",
       "notes": [
         "review REJECT (reporting + three MINOR guard defects); remediating on lane-j"
       ],
+      "provider": "__resolved_provider_absent__",
+      "role": "reviewer",
       "subtasks": {
         "T050": "done",
         "T051": "done",
