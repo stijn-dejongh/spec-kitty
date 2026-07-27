@@ -1,7 +1,7 @@
 {
-  "event_count": 41,
-  "last_event_id": "01KYH95WHV6EQ36Q8FN0X7K225",
-  "materialized_at": "2026-07-27T07:56:07.099383+00:00",
+  "event_count": 42,
+  "last_event_id": "01KYHDZY92WH6KTAC816Z5J2D8",
+  "materialized_at": "2026-07-27T09:20:15.138529+00:00",
   "mission_number": "",
   "mission_slug": "doctrine-silence-guards-01KYFV7Q",
   "mission_type": "software-dev",
@@ -11,9 +11,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 3,
+    "for_review": 2,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 3
   },
   "work_packages": {
@@ -87,20 +87,28 @@
       }
     },
     "WP04": {
-      "actor": "implement-command",
+      "actor": "user",
       "agent": "implement-command",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "for_review",
-      "last_event_id": "01KYH8YFHEFJ9WCN19EGXY551K",
-      "last_transition_at": "2026-07-27T07:52:04.398315+00:00",
+      "lane": "in_review",
+      "last_event_id": "01KYHDZY92WH6KTAC816Z5J2D8",
+      "last_transition_at": "2026-07-27T09:20:15.138529+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "reviewer",
       "shell_pid": 1244143,
       "shell_pid_created_at": "1785135817.26",
       "subtasks": {
+        "T015": "done",
+        "T016": "done",
         "T018": "done",
         "T019": "done",
         "T020": "done",
         "T021": "done",
-        "T022": "done"
+        "T022": "done",
+        "T023a": "done"
       }
     },
     "WP05": {
