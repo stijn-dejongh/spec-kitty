@@ -1,7 +1,7 @@
 {
-  "event_count": 43,
-  "last_event_id": "01KYHE03J1MGM5P1Q68QT8KA7Q",
-  "materialized_at": "2026-07-27T09:20:20.545100+00:00",
+  "event_count": 45,
+  "last_event_id": "01KYHE2N758ND87Z94K0QPWM06",
+  "materialized_at": "2026-07-27T09:21:44.164160+00:00",
   "mission_number": "",
   "mission_slug": "doctrine-silence-guards-01KYFV7Q",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 2,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 3
+    "planned": 2
   },
   "work_packages": {
     "WP01": {
@@ -168,11 +168,14 @@
       "last_transition_at": "2026-07-26T19:47:07.352626+00:00"
     },
     "WP08": {
-      "actor": "finalize-tasks",
+      "actor": "implement-command",
+      "agent": "implement-command",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01KYFZF7737RKVYQF6KG7Y44PE",
-      "last_transition_at": "2026-07-26T19:47:12.739170+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01KYHE2N758ND87Z94K0QPWM06",
+      "last_transition_at": "2026-07-27T09:21:44.164160+00:00",
+      "shell_pid": 1803519,
+      "shell_pid_created_at": "1785144099.3"
     },
     "WP09": {
       "actor": "finalize-tasks",
