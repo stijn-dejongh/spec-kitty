@@ -1,20 +1,20 @@
 {
-  "event_count": 41,
-  "last_event_id": "01KYH95WHV6EQ36Q8FN0X7K225",
-  "materialized_at": "2026-07-27T07:56:07.099383+00:00",
+  "event_count": 49,
+  "last_event_id": "01KYHG0V6H6H6E88WW9AJF7PJ1",
+  "materialized_at": "2026-07-27T09:55:41.905390+00:00",
   "mission_number": "",
   "mission_slug": "doctrine-silence-guards-01KYFV7Q",
   "mission_type": "software-dev",
   "summary": {
-    "approved": 4,
+    "approved": 5,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 3,
-    "in_progress": 0,
+    "for_review": 2,
+    "in_progress": 2,
     "in_review": 0,
-    "planned": 3
+    "planned": 1
   },
   "work_packages": {
     "WP01": {
@@ -87,20 +87,28 @@
       }
     },
     "WP04": {
-      "actor": "implement-command",
+      "actor": "user",
       "agent": "implement-command",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "for_review",
-      "last_event_id": "01KYH8YFHEFJ9WCN19EGXY551K",
-      "last_transition_at": "2026-07-27T07:52:04.398315+00:00",
+      "lane": "approved",
+      "last_event_id": "01KYHE03J1MGM5P1Q68QT8KA7Q",
+      "last_transition_at": "2026-07-27T09:20:20.545100+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "reviewer",
       "shell_pid": 1244143,
       "shell_pid_created_at": "1785135817.26",
       "subtasks": {
+        "T015": "done",
+        "T016": "done",
         "T018": "done",
         "T019": "done",
         "T020": "done",
         "T021": "done",
-        "T022": "done"
+        "T022": "done",
+        "T023a": "done"
       }
     },
     "WP05": {
@@ -153,18 +161,24 @@
       }
     },
     "WP07": {
-      "actor": "finalize-tasks",
+      "actor": "implement-command",
+      "agent": "implement-command",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01KYFZF1YRSMR60WN4Y0RK6N1Y",
-      "last_transition_at": "2026-07-26T19:47:07.352626+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01KYHE2WW9X65X2X1XYR1B1DX7",
+      "last_transition_at": "2026-07-27T09:21:52.008860+00:00",
+      "shell_pid": 1804289,
+      "shell_pid_created_at": "1785144106.56"
     },
     "WP08": {
-      "actor": "finalize-tasks",
+      "actor": "implement-command",
+      "agent": "implement-command",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01KYFZF7737RKVYQF6KG7Y44PE",
-      "last_transition_at": "2026-07-26T19:47:12.739170+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01KYHE2N758ND87Z94K0QPWM06",
+      "last_transition_at": "2026-07-27T09:21:44.164160+00:00",
+      "shell_pid": 1803519,
+      "shell_pid_created_at": "1785144099.3"
     },
     "WP09": {
       "actor": "finalize-tasks",
@@ -175,10 +189,13 @@
     },
     "WP10": {
       "actor": "user",
-      "force_count": 0,
+      "force_count": 1,
       "lane": "for_review",
-      "last_event_id": "01KYH95WHV6EQ36Q8FN0X7K225",
-      "last_transition_at": "2026-07-27T07:56:07.099383+00:00",
+      "last_event_id": "01KYHG0V6H6H6E88WW9AJF7PJ1",
+      "last_transition_at": "2026-07-27T09:55:41.905390+00:00",
+      "notes": [
+        "review REJECT (reporting + three MINOR guard defects); remediating on lane-j"
+      ],
       "subtasks": {
         "T050": "done",
         "T051": "done",
