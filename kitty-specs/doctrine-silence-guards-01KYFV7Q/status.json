@@ -1,7 +1,7 @@
 {
-  "event_count": 60,
-  "last_event_id": "01KYHPFB0QD0AY4362XJ0V2S31",
-  "materialized_at": "2026-07-27T11:48:28.311469+00:00",
+  "event_count": 62,
+  "last_event_id": "01KYHS56GZEMKDSN980WXHBZ8P",
+  "materialized_at": "2026-07-27T12:35:21.759867+00:00",
   "mission_number": "",
   "mission_slug": "doctrine-silence-guards-01KYFV7Q",
   "mission_type": "software-dev",
@@ -187,10 +187,10 @@
     "WP08": {
       "actor": "user",
       "agent": "implement-command",
-      "force_count": 2,
+      "force_count": 3,
       "lane": "in_progress",
-      "last_event_id": "01KYHPFB0QD0AY4362XJ0V2S31",
-      "last_transition_at": "2026-07-27T11:48:28.311469+00:00",
+      "last_event_id": "01KYHS56GZEMKDSN980WXHBZ8P",
+      "last_transition_at": "2026-07-27T12:35:21.759867+00:00",
       "shell_pid": 1803519,
       "shell_pid_created_at": "1785144099.3",
       "subtasks": {
