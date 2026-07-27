@@ -137,3 +137,69 @@ WP05's SC-004 deliverable; this WP owns the workflow file.
 > **CRITICAL**: entries in chronological order, oldest first. **Append** new entries at the END.
 
 - 2026-07-26T19:45:15Z – system – Prompt created.
+- 2026-07-27T11:55:00Z – architect-alphonso – **T055 report — what the completeness gate found on its first live runs.** Recorded here rather than in a commit message: NFR-005 requires the meta-test to *report honestly*, and a commit message is not a durable report.
+
+  **Measurement basis.** All figures below were re-measured on
+  lane branch `kitty/mission-doctrine-silence-guards-01KYFV7Q-lane-j` at its WP10 tip (lane shas
+  are rewritten by rebase; the gate re-derives every figure live), rebased onto
+  `remediation/doctrine-silence-guards` at `1764b4c0b`. One whole-tree `--collect-only` pass;
+  job activation evaluated for `event_name=push`, `branch=main`, `active_groups=∅` (the worst
+  reachable filter state). **Universe: 33,822 collected test NODES across 2,174 files.**
+
+  | | suite jobs started | test NODES uncollected | files with ≥1 such node |
+  |---|---|---|---|
+  | **Before** (workflow topology at `1764b4c0b`) | 10 of 50 | **31,547** (93.3%) | 1,966 of 2,174 |
+  | **After** (this lane) | 49 of 50 | **0** | 0 |
+
+  (56 vs 17 counts the *whole* job graph including non-suite jobs such as `changes`, `lint` and
+  `build-wheel`; 49 vs 10 counts only jobs that actually invoke pytest. Both pairs are correct
+  measurements of different things — the suite-job pair is the one that bears on collection.)
+
+  All four files named in **#2957** were uncollected before and are collected after.
+
+  **Superseded figures.** The `950 of 2166 files / 14,870 of 33,665 nodes` in SC-013 and the
+  `31,540 of 33,771` first written into the `ci-quality.yml` header are both withdrawn; SC-013 is
+  amended in `spec.md` and the `ci-quality.yml` header is corrected on the lane. The `33,771` universe
+  predated two files: WP10's own gate module and the campsite roster test (see below).
+  `33,771 + 34 + 7 = 33,812`, and the gate module then grew from 34 to 44 nodes during review
+  remediation, giving today's `33,822`. Nothing else moved; the earlier reviewer/implementer
+  discrepancy is fully accounted for by measurement timing, not by a tree difference.
+
+  **Green-path qualifier.** `needs.<job>.result == 'success'` is the model's one deliberate
+  fail-OPEN conjunct, so the guarantee is *"collected on a push to `main` on the green path"* and
+  the before-figure is a **lower bound** on a run where an upstream job fails. Both docstrings now
+  state this rather than asserting the property unconditionally.
+
+- 2026-07-27T11:56:00Z – architect-alphonso – **T055 report — reds and gaps the gate surfaced. Reported, not repaired.**
+
+  **1. `tests/release/test_dogfood_command_set.py` — a routed file with no tier marker.** Its 5
+  nodes carry only `skipif`; no `unit`, `fast` or `integration`. Both `ci-quality.yml` release jobs
+  deselected it on their `-m` expressions, and the only gate that selected it was
+  `release.yml::build-release`, which triggers on `v*.*.*` tags — never on a push to `main`. So the
+  file was uncollectable on `main` for a reason that has nothing to do with the dorny topology:
+  it is under a routed *path* and invisible to the *marker* partition. WP10's topology-fix commit widened
+  `integration-tests-release` to `… or not fast`, which catches marker-less files. **That is
+  containment, not a fix**, and it is fragile in an unusual direction — verified by counterfactual
+  against the live gate model: give the file a `fast` marker and it moves cleanly to
+  `fast-tests-release`; give it `fast` while the `not fast` fallback is the only thing holding it
+  and it would have gone dark again. The real fix is a tier marker on the file.
+
+  **2. `tests/specify_cli/cli/commands/agent/test_mark_status_authored_roster.py` — the gate's
+  first live catch, on a file that had existed for eleven hours.** It landed on
+  `remediation/doctrine-silence-guards` in campsite commit `f65646ae7` (2026-07-27 00:08) with **no
+  markers at all** — not `unit`, not `fast`, nothing — so no job's `-m` expression selected any of
+  its 7 nodes and they ran in no CI job on any event. Neither the ratchet
+  (`test_gate_coverage.py`, which models every job as running) nor any review caught it; the
+  completeness gate did, on its first green-topology run. Fixed on the planning branch in
+  `1764b4c0b` (`pytestmark = [pytest.mark.unit, pytest.mark.fast]`, the sibling convention for
+  pure-logic `tmp_path` tests) — **not** by this WP, and **not** by relaxing the gate.
+
+  **3. The class is open.** Both instances are the same defect: a test file with no tier marker is
+  invisible to a marker-partitioned CI, and nothing in the repository rejects one at authoring
+  time. WP10 closes the *topology* half (a job that never starts) and leaves the *taxonomy* half
+  (a file no `-m` expression selects) open, filed as a follow-up rather than folded in — the fix is
+  a new always-on marker-completeness gate plus a sweep of existing offenders, which is
+  mission-sized. Follow-up issue: see the issue-matrix row for #2957.
+
+  **No red was reclassified, no baseline was regenerated, and no allowlist was added.** The gate
+  has none of the three to offer.
