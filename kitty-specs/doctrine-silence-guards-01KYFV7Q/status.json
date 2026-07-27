@@ -57,7 +57,12 @@
       "shell_pid": 1052808,
       "shell_pid_created_at": "1785130206.64",
       "subtasks": {
-        "T006": "planned"
+        "T006": "done",
+        "T007": "done",
+        "T008": "done",
+        "T009": "done",
+        "T010": "done",
+        "T011": "done"
       }
     },
     "WP03": {
