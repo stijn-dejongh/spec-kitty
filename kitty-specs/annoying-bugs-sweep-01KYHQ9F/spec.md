@@ -2,7 +2,7 @@
 
 **Mission Branch**: `fix/annoying-bugs-sweep`
 **Created**: 2026-07-27
-**Status**: Draft (revised post-squad)
+**Status**: Approved (revised post-squad)
 **Input**: Operator request — "Address these all in an annoying bugs mission": #2985, #1840, #2983, #2984.
 **Folded in**: #2987 (P0, Windows/reliability) added 2026-07-27 post-squad.
 **Change mode**: normal (no `change_mode` key; see Change Classification for why `bulk_edit` was set and then reverted)
@@ -242,8 +242,10 @@ An operator opens an Op with top-level `spec-kitty dispatch` but closes it with
 - A mission that has genuinely never been cut over — the stamp must still work (scenario 4).
 - A terminal WP re-opened by an explicit forced transition — must remain possible (scenario 6).
 - **Already-seeded corpora.** Seed ids namespace on `mission_id|wp_id|field` and exclude `at`, while
-  verify compares the full payload. A fix that re-anchors the seed makes every previously-seeded
-  mission fail verify permanently, with no repair path. Must be addressed (FR-010).
+  verify compares the full payload. Existing rows cannot be replaced by appending the same id:
+  deduplication preserves the first row. The compatibility path therefore needs a distinct,
+  deterministic repair identity that restores the state reduced with migration seeds excluded,
+  preserves later legitimate writers, and converges without rewriting history (FR-010).
 - Coordination topology: three surfaces, not two — seed write + anchor read + verify + snapshot land
   on COORD; `tasks/` frontmatter reads from PRIMARY; `status_phase` writes to PRIMARY. The
   terminal-lane knowledge the fix needs exists only on the COORD leg, and the two seams resolve COORD
@@ -268,7 +270,7 @@ An operator opens an Op with top-level `spec-kitty dispatch` but closes it with
 | FR-007 | US3 | Resolver-backed command is the primary mechanism | As a delegated agent, I want every profile-load instruction to name a resolver-backed command as primary, so I load the profile I was actually assigned. | Medium | Open |
 | FR-008 | US3 | Read-only-harness fallback preserved and scoped | As an agent in a harness that cannot shell out, I want a scoped raw-read fallback with an inline divergence caveat, so #2304 is not re-broken. | Medium | Open |
 | FR-009 | US3 | Canonical profile-load skill is self-sufficient | As an agent, I want the canonical skill self-sufficient — mechanics land in `spk-doctrine-profile-load/references/*.md` (the `CanonicalSkill.references` mechanism, precedent `spk-meta-skill-map/references/`), **not** inlined: `test_spk_skill_pack.py:108` caps `spk-*` bodies at 80 lines and `ad-hoc-profile-load` is 268. Flipping the convention across all 13 alias pairs is out of scope. | Medium | Open |
-| FR-010 | US1 | Already-seeded corpora remain flippable | As an operator with an already-seeded corpus, I want the fix not to strand my missions on a permanent verify failure. | High | Open |
+| FR-010 | US1 | Already-seeded corpora remain flippable | As an operator with an already-seeded corpus, I want a deterministic append-only compatibility repair for an old colliding seed, so the intended pre-seed state is restored, later legitimate writers still win, verification succeeds, and reruns append nothing. | High | Open |
 | FR-011 | US3 | #1840 ticket body no longer misdirects | As an implementer, I want **both** stale claims struck: the "reading the YAML directly is the reliable mechanism" advice, **and** the "zero occurrences of either canonical command anywhere in `src/doctrine/`" assertion, which is false — there are 7 occurrences across 4 skills. *(verification_method: manual — permalink pasted in the PR body.)* | Medium | Open |
 | FR-012 | US4a | Styleguide and docs name real commands | As an agent, I want doctrine and published docs to name commands that exist — scoped to `docs/api/environment-variables.md`, `docs/api/upgrade-lifecycle.md`, `docs/architecture/launch-readiness-future.md`, `docs/guides/install-and-upgrade.md`. **Excludes `docs/changelog/CHANGELOG.md`** (a shipped release note; rewriting it is history rewriting, and root `CHANGELOG.md` is a symlink to it, so editing its body would collide with both P0 stanzas on C-005's excepted file). Several occurrences mean "any command" generically and need per-site judgement, not substitution. | Low | Open |
 | FR-013 | US4b | Invocation opener discoverable from closer | As an operator, I want `profile-invocation --help` to name `spec-kitty dispatch`. | Low | Open |
@@ -290,7 +292,7 @@ An operator opens an Op with top-level `spec-kitty dispatch` but closes it with
 | ID | Title | Constraint | Category | Priority | Status |
 |----|-------|------------|----------|----------|--------|
 | C-001 | Single cutover authority, full caller set | No forked writer. The authority has **five** writing callers, not two: accept, merge, the `spec-kitty upgrade` migration (`m_zz_runtime_state_backfill.py`, which passes no `status_feature_dir` and so collapses both legs), `migrate backfill-runtime-state` (single + corpus). Any not covered must be scoped out with a reason. | Technical | High | Open |
-| C-002 | Seed ordering, not reducer precedence | Planning resolved the lever to **per-WP seed-anchor clamping**: when a WP already has transition or annotation history, every migration seed for that WP must sort strictly before the earliest existing row under the reducer's exact `(at, event_id)` ordering. Seed suppression is barred because it discards claim-borne runtime slots; reducer precedence is barred because it changes the global state machine for a migration-only defect. Verification must still independently witness the three claim-borne legacy values. | Technical | High | Resolved |
+| C-002 | Seed ordering, not reducer precedence | Planning resolved the primary lever to **per-WP seed-anchor clamping**: when a WP already has transition or annotation history, every newly-created migration seed for that WP must sort strictly before the earliest existing row under the reducer's exact `(at, event_id)` ordering. An already-persisted bad seed is repaired with a distinct deterministic append-only compatibility identity; the repair restores the state obtained with migration seeds excluded and must not override a later legitimate writer. Seed suppression is barred because it discards claim-borne runtime slots; reducer precedence and event-stream rewrites are barred because they change global semantics or history. Verification must independently witness the three claim-borne legacy values. | Technical | High | Resolved |
 | C-003 | No new top-level `status` | #2983 is resolved by correcting the surfaces, not by minting a top-level `status`. Note a `spec-kitty.status` **slash command** does ship in the agent surface, which plausibly explains the example — that split is not a reason to add a CLI verb. | Technical | Medium | Open |
 | C-004 | Historical artifacts immutable | Archived `kitty-specs/` snapshots referencing retired commands are excluded. | Technical | Medium | Open |
 | C-005 | P0 file-set separability | **Each** P0 work package's changed-file set is disjoint from every other work package's, `CHANGELOG.md` excepted (each P0 stanza a self-contained block; its *body* is never edited — see FR-012). **To be re-verified at tasks time against C-001's full caller set** — the spec-time enumeration was incomplete, omitting `m_zz_runtime_state_backfill.py`, `cli/commands/migrate/`, `acceptance/`, `review/__init__.py`, and (if `/plan` picks the C-002 precedence lever) `status/reducer.py`. The invariant survived every check run so far — `src/specify_cli/cli/commands/review/_dead_code.py` never meets the #2985 set — but the constraint must not assert a verification it did not perform. | Process | High | Open |
@@ -332,8 +334,8 @@ An operator opens an Op with top-level `spec-kitty dispatch` but closes it with
 
 ## Assumptions
 
-- The lever is the anchor chain, the seed set, or the same-timestamp precedence rule — **not** file
-  placement, which the corrected mechanism shows is inert. C-002 is open; `/plan` decides on evidence.
+- The chosen lever is per-WP seed-anchor clamping across transition and annotation history — **not**
+  file placement, seed suppression, or global reducer precedence. C-002 records the planning decision.
 - `spec-kitty agent tasks status` is the replacement for #2983. Both resolver commands named in US2
   were verified to exist (`profiles_cmd.py:319`, `charter/context.py:28-30`).
 - #2984's CLI is not defective; verified working during triage.
@@ -362,16 +364,11 @@ regression from a just-merged PR, so the fix window is cheapest now.
 
 ## Change Classification
 
-Classified **`bulk_edit`** (`meta.json`), reversing the first draft's declination.
+Classified **normal** (no `change_mode` key in `meta.json`).
 
-The first draft argued the occurrences were "prose requiring individually authored replacements
-rather than a uniform identifier substitution". That answers a question DIRECTIVE_035 does not ask.
-Its predicate is *"does this require changing the same existing string in more than one file?"* — and
-the path literal `src/doctrine/agent_profiles/built-in/…` changes in at least four tracked files, with
-`manual_review` being a first-class action precisely for individually-authored replacements. The
-directive's tie-break is *"if uncertain, treat as bulk edit"*. The declination was also recorded only
-in prose, so it was not machine-visible — contradicting its own claim to be reviewable.
-
-The occurrence map and the guard are **orthogonal, not substitutable**: the map enumerates today's set
-(including the benign `.agent.yaml` data-references that must be classified `do_not_change`); the
-guard prevents tomorrow's. Both are in scope. `occurrence_map.yaml` is produced at plan.
+Although several profile-load surfaces need correction, their occurrences are not one uniform
+replacement: resolver-capable prompts must lead with the canonical command, read-only harness
+fallbacks must remain with a divergence caveat, procedure prose needs different wording, and benign
+`.agent.yaml` data references remain unchanged. The work is therefore a bounded set of individually
+designed defect fixes, not an occurrence migration. NFR-003's source-tree guard closes future drift
+by construction; no `occurrence_map.yaml` is required.

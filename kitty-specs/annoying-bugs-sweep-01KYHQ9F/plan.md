@@ -112,6 +112,7 @@ edited.
 | Deliberate choice | Why needed | Simpler alternative rejected because |
 |---|---|---|
 | Per-WP seed floor covers transitions and annotations | Lane and runtime slots have separate reducer passes; both can be superseded | Clamping only the claim transition leaves stale annotation seeds able to win |
+| Deterministic append-only compatibility repair | Existing bad seed IDs deduplicate to the first persisted row and cannot be re-anchored in place | Reusing the seed ID is a no-op; rewriting the event stream violates append-only authority |
 | Explicit `undeterminable` review finding | Polyglot/non-source-root analysis cannot honestly claim zero symbols | Treating empty discovery as clean repeats #2987 |
 | Pure-Python reference scan | Cross-platform and preserves untracked/ignored Python behavior | `git grep` is unavailable outside Git, misses untracked files, and solves only FR-014 |
 
@@ -119,19 +120,22 @@ edited.
 
 ### IC-01 - Birth-cutover red-first evidence and seed ordering
 
-- **Purpose**: Reproduce the terminal-lane rewind and runtime-slot overwrite, then make all seeds
-  sort before existing per-WP history without changing reducer precedence.
+- **Purpose**: Reproduce the terminal-lane rewind and runtime-slot overwrite, make all new seeds sort
+  before existing per-WP history, and repair already-persisted colliding seeds through a separate
+  deterministic append-only compatibility identity without changing reducer precedence.
 - **Relevant requirements**: FR-001 through FR-006, FR-010; NFR-001, NFR-002, NFR-004; C-001, C-002.
 - **Affected surfaces**: `migration/backfill_runtime_state.py`, focused migration/regression tests,
   and caller-path tests for accept, merge, upgrade migration, and migrate single/corpus modes.
 - **Sequencing/depends-on**: first P0 slice; tests precede code.
 - **Risks**: raw timestamp strings are the reducer's comparator input; the helper must prove strict
-  `(at, event_id)` precedence for both event kinds and remain deterministic/idempotent.
+  `(at, event_id)` precedence for both event kinds and remain deterministic/idempotent. Reusing an
+  old seed ID cannot repair it because reducer deduplication preserves the first row.
 
 ### IC-02 - Independent cutover verification witness
 
 - **Purpose**: Prevent builder/verify tautology and prove the legacy reader's three claim-borne
-  values appear in the reduced snapshot while later legitimate state still wins.
+  values appear in raw seed evidence. Require snapshot equality only when no later legitimate writer
+  owns that slot; otherwise prove the later value wins.
 - **Relevant requirements**: FR-003, FR-005, FR-010; NFR-002.
 - **Affected surfaces**: `migration/backfill_runtime_state.py`, unit/integration tests.
 - **Sequencing/depends-on**: IC-01.

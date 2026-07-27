@@ -43,10 +43,25 @@ to make the invariant testable.
 | `wp_id` | `str` | Matches the legacy row |
 | `slot` | enum | `shell_pid`, `shell_pid_created_at`, or `agent` |
 | `legacy_value` | scalar | Derived directly from `read_legacy_runtime` |
+| `raw_seed_value` | scalar | Value persisted in the migration seed evidence |
 | `snapshot_value` | scalar | Reduced after seed append |
-| `matches` | `bool` | True when values are equal |
+| `later_legitimate_writer` | bool | Whether non-migration history owns the final slot |
+| `matches` | `bool` | Raw seed equals legacy; snapshot equals legacy only without a later writer |
 
-Every non-null legacy claim slot requires a matching snapshot witness.
+Every non-null legacy claim slot requires a matching raw seed witness. Snapshot equality is required
+only when no later legitimate writer exists; otherwise verification proves that later value wins.
+
+### SeedCompatibilityRepair
+
+| Field | Type | Rule |
+|---|---|---|
+| `repair_id` | ULID | Deterministic namespace distinct from the original seed id |
+| `corrupting_seed_id` | ULID | Identifies the persisted pre-fix seed |
+| `restored_value` | scalar | Value reduced from legitimate history with migration seeds excluded |
+| `slot` | lane or annotation field | Repairs only a value the old seed currently corrupts |
+
+Compatibility repairs are append-only and idempotent. They are not emitted for correctly ordered
+seeds or where a later legitimate writer already wins.
 
 ### DeadCodeVerdict
 
@@ -70,8 +85,8 @@ State rules:
 ### Birth cutover
 
 ```text
-legacy read -> seed plan -> append missing deterministic seeds
-            -> reduce -> independent verify -> flip status_phase
+legacy read -> seed/compatibility plan -> append missing deterministic seeds or repairs
+            -> reduce -> independent raw + snapshot verify -> flip status_phase
 ```
 
 Any append or verification error leaves `status_phase` unchanged.
@@ -85,4 +100,3 @@ baseline present -> diff discovery
        -> unreferenced symbols -> findings
        -> none -> clean
 ```
-
