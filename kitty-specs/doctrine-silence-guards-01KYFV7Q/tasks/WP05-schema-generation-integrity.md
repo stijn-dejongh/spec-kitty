@@ -101,6 +101,37 @@ A definition rename `reference` → `paradigm_reference`; confirm every `$ref` t
 
 The 7 stale schemas, after T024–T026 — not before.
 
+## ⚠️ Binding handoff from WP01's review — you will hit a floor, and how you fix it is checked
+
+WP01's zero-producer lint carries two baseline-entry floors. **Excising the retired
+`enhances`/`overrides` schema properties (T024) deletes 8 schema-side baseline entries and takes
+that count 36 → 28 against a floor of 30. It will go red. That red is correct — your change is
+correct — and it is a scheduled false-red, not a defect you introduced.**
+
+**Do NOT hand-lower the floor 30 → 24.** The assertion message currently invites exactly that
+("lower the floor deliberately in the same change"), and taking it at face value is how floors rot.
+The two entry floors are absolute counts of a quantity this mission exists to drive to zero, so they
+drop for two unrelated reasons — the producer scan broke, or someone paid the debt — and an author
+who lowers one because it went red, without establishing which, erodes the gate.
+
+**Convert them to the proportional form instead**, in `tests/architectural/_inert_slots.py`:
+
+```python
+# instead of an absolute MINIMUM_*_BASELINE_ENTRIES_STILL_FOUND
+assert len(schema_entries) >= 0.8 * len(
+    [e for e in baseline.entries if is_schema_declared(e.slot)]
+)
+```
+
+Today 36/36 passes; after your excision 28/28 still passes with **no floor edit**; and the failure
+mode the floors actually exist for still fires. WP01's reviewer verified that last point with a
+mutation the implementer had not run: readmitting the generated schemas as producers gives
+`0 schema-declared baseline entries … the floor is 30`. **That class is caught by the entry floors
+and by nothing else** — it is the original vacuity bug that made the first version of the checker
+useless. So the floors must not be deleted, only made burn-down-native.
+
+**Reviewer of this WP:** check which of the two happened. A hand-lowered floor is a reject.
+
 ## Test Strategy
 
 - `PYTHONPATH=src python scripts/generate_schemas.py --check` → must exit 0
