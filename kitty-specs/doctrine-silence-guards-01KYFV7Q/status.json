@@ -1,18 +1,18 @@
 {
-  "event_count": 34,
-  "last_event_id": "01KYH66EHWS8Q94Y83SEAY32E8",
-  "materialized_at": "2026-07-27T07:03:59.804981+00:00",
+  "event_count": 35,
+  "last_event_id": "01KYH796GX684TDBRYYV25FH18",
+  "materialized_at": "2026-07-27T07:22:58.461709+00:00",
   "mission_number": "",
   "mission_slug": "doctrine-silence-guards-01KYFV7Q",
   "mission_type": "software-dev",
   "summary": {
     "approved": 3,
-    "blocked": 2,
+    "blocked": 1,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 1,
-    "in_progress": 1,
+    "in_progress": 2,
     "in_review": 0,
     "planned": 3
   },
@@ -122,11 +122,18 @@
       }
     },
     "WP06": {
-      "actor": "implement-command",
+      "actor": "python-pedro",
       "force_count": 0,
-      "lane": "blocked",
-      "last_event_id": "01KYH665RQEPFFPSG8BJ34GAVC",
-      "last_transition_at": "2026-07-27T07:03:50.807306+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01KYH796GX684TDBRYYV25FH18",
+      "last_transition_at": "2026-07-27T07:22:58.461709+00:00",
+      "subtasks": {
+        "T029": "done",
+        "T030": "done",
+        "T031": "done",
+        "T032": "done",
+        "T033": "done"
+      }
     },
     "WP07": {
       "actor": "finalize-tasks",
