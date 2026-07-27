@@ -1,19 +1,19 @@
 {
-  "event_count": 29,
-  "last_event_id": "01KYH45NV0B33CFCYBT8N91M2W",
-  "materialized_at": "2026-07-27T06:28:37.344032+00:00",
+  "event_count": 30,
+  "last_event_id": "01KYH45V95QCJVG102PHBJ2P33",
+  "materialized_at": "2026-07-27T06:28:42.917862+00:00",
   "mission_number": "",
   "mission_slug": "doctrine-silence-guards-01KYFV7Q",
   "mission_type": "software-dev",
   "summary": {
-    "approved": 2,
+    "approved": 3,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 1,
     "in_progress": 0,
-    "in_review": 1,
+    "in_review": 0,
     "planned": 6
   },
   "work_packages": {
@@ -94,9 +94,9 @@
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
-      "lane": "in_review",
-      "last_event_id": "01KYH45NV0B33CFCYBT8N91M2W",
-      "last_transition_at": "2026-07-27T06:28:37.344032+00:00",
+      "lane": "approved",
+      "last_event_id": "01KYH45V95QCJVG102PHBJ2P33",
+      "last_transition_at": "2026-07-27T06:28:42.917862+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "T023-T027 complete: --check exits 0, structural_lint_config + point_in_time_marker adjudicated and preserved, paradigm_reference/mission_step_template_ref verified, WP01 floors converted to proportional form, baseline 59->51."
