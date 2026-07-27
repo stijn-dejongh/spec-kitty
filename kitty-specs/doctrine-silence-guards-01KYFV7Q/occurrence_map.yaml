@@ -23,9 +23,13 @@
 # path, a reason, and a reviewer's eye — a widened discriminator becomes a
 # visible diff here rather than a quiet regex tweak.
 #
-# Reproduce the scope:
-#   grep -rl "src/doctrine/graph\.yaml" src/      → 17 files   (at authoring)
-#   grep -rn "shipped/" src/doctrine/             → 22 hits / 9 files
+# Reproduce the scope — commands must match the GATE's scope, which is all of
+# src/, not just src/doctrine/. The original second line scanned the narrower
+# path and so under-enumerated: it reported 2 live project-tier sites where the
+# gate sees 6, and 1 prose site where the gate sees 2. Retargeted at src/ so the
+# map's own reproduce step reproduces the numbers the map is governing.
+#   grep -rl "src/doctrine/graph\.yaml" src/      → 17 files       (at authoring)
+#   grep -rn "shipped/" src/                      → 23 hits / 10 files (at authoring)
 #
 # ─────────────────────────────────────────────────────────────────────────────
 # RECONCILED AT IMPLEMENTATION (WP07, lane-g)
