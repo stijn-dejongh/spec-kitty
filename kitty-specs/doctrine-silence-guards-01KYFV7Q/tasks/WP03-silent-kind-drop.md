@@ -1,6 +1,6 @@
 ---
 work_package_id: WP03
-title: Four-site silent-kind-drop closure
+title: Silent-kind-drop closure — consumer sites
 dependencies:
 - WP01
 requirement_refs:
@@ -14,8 +14,6 @@ subtasks:
 - T012
 - T013
 - T014
-- T015
-- T016
 - T017
 phase: Phase 2 - Boundaries
 history:
@@ -38,7 +36,7 @@ task_type: implement
 tracker_refs: []
 ---
 
-# Work Package Prompt: WP03 – Four-site silent-kind-drop closure
+# Work Package Prompt: WP03 – Silent-kind-drop closure (consumer sites)
 
 ## ⚡ Do This First: Load Agent Profile
 
