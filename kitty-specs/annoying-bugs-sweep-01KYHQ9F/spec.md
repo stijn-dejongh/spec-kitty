@@ -4,6 +4,7 @@
 **Created**: 2026-07-27
 **Status**: Draft (revised post-squad)
 **Input**: Operator request — "Address these all in an annoying bugs mission": #2985, #1840, #2983, #2984.
+**Folded in**: #2987 (P0, Windows/reliability) added 2026-07-27 post-squad.
 **Change mode**: `bulk_edit` (recorded in `meta.json`; see Change Classification)
 
 > **Revision note.** A post-spec adversarial squad (architect / debugger / reviewer / planner lenses)
@@ -15,16 +16,21 @@
 
 ## Intent Summary
 
-Four defects share one shape: **a surface that looks authoritative but silently misdirects.**
+Five defects share one shape: **a surface that looks authoritative but silently misdirects.**
 
-One misdirects *data* — a birth-cutover seed can supersede a work package's terminal lane, so a
-finished WP reads back as `claimed` (#2985, P0, confirmed live on `main` at `d0a5bacf7`). Three
-misdirect *agents* — profile-load surfaces instruct raw `.agent.yaml` reads that bypass doctrine
+Two misdirect *machines*. A birth-cutover seed can supersede a work package's terminal lane, so a
+finished WP reads back as `claimed` (#2985, P0, live on `main` at `d0a5bacf7`). And the post-merge
+dead-code gate hardcodes a POSIX `grep` over `src/**/*.py` — so it crashes on Windows, and on any
+non-Python or non-`src/` consumer project it reports "0 unreferenced public symbols" **without having
+examined anything** (#2987, P0).
+
+Three misdirect *agents* — profile-load surfaces instruct raw `.agent.yaml` reads that bypass doctrine
 resolution (#1840), a plain-language styleguide teaches a command that does not exist (#2983), and
 the invocation lifecycle opens under one command path but closes under another (#2984).
 
 The unifying acceptance property: **no shipped surface may confidently assert something false.**
-For #2985 the false assertion is machine state; for the other three it is an instruction to an agent.
+#2987 is the thesis at its sharpest: a gate that returns a clean verdict it did not earn. For #2985
+the false assertion is machine state; for the other three it is an instruction to an agent.
 
 ### The P0 mechanism (corrected)
 
@@ -105,7 +111,43 @@ populated, and `verify_backfill` is `ok`.
 
 ---
 
-### User Story 2 - A delegated agent loads the profile it was actually assigned (Rank: US-Med · issue #1840, P2)
+### User Story 2 - The post-merge review gate runs everywhere and never passes vacuously (Rank: US-High · issue #2987, P0)
+
+`spec-kitty review --mode post-merge` shells out to POSIX `grep` with no `shutil.which` probe and no
+`FileNotFoundError` handling. On Windows without `grep` on PATH the gate does not degrade — it
+raises, *after* the merge has already succeeded, so the mission never receives a post-merge verdict.
+
+The same call hardcodes `src/` and `--include=*.py`. On a consumer project that is not Python, or
+that does not use a `src/` root, `grep` matches nothing and the gate reports **"0 unreferenced public
+symbols" without having examined anything** — a clean pass it did not earn. That is this mission's
+thesis in its purest form: a surface confidently asserting something false.
+
+**Why this rank**: a second P0. The crash is a hard failure on a supported platform at a terminal
+lifecycle seam; the vacuous pass is silent and ships to every non-Python consumer project. Verified
+against live source — `_dead_code.py:94-99` has no `shutil.which`, no `try/except`, and hardcodes
+both the root and the glob.
+
+**Independent Test**: run the gate with `grep` removed from PATH and assert a structured diagnostic
+rather than a traceback; run it against a non-Python / non-`src/` fixture and assert it does **not**
+report a clean pass.
+
+**Acceptance Scenarios**:
+
+1. **Given** a host with no POSIX `grep` on PATH, **When** `review --mode post-merge` reaches the
+   dead-code gate, **Then** it completes and emits a verdict — no unhandled `FileNotFoundError`.
+2. **Given** a repository whose sources are not under `src/`, or are not Python, **When** the gate
+   runs, **Then** it does **not** report a clean pass; it either scans the correct file set or fails
+   loudly as undeterminable. A zero-symbol result must be earned, not assumed.
+3. **Given** the gate scans successfully on a POSIX host today, **When** the fix lands, **Then** the
+   set of symbols it reports is unchanged — this is a portability and honesty fix, not a semantics
+   change.
+4. **Given** a contributor removes the portability guard, **When** the suite runs, **Then** a test
+   simulating an absent `grep` fails. *(No such test exists today, and no `windows_ci` marker covers
+   this path — which is why the defect shipped.)*
+
+---
+
+### User Story 3 - A delegated agent loads the profile it was actually assigned (Rank: US-Med · issue #1840, P2)
 
 Shipped prompt surfaces instruct agents to read a profile's `.agent.yaml` directly. That bypasses
 doctrine resolution — `specializes_from` lineage, pack overlays, and `enhances` (field-merge) versus
@@ -144,7 +186,7 @@ regardless, because the guard is the cheap part and is what prevents recurrence.
 
 ---
 
-### User Story 3a - The styleguide names a real command (Rank: US-Low · issue #2983, P2)
+### User Story 4a - The styleguide names a real command (Rank: US-Low · issue #2983, P2)
 
 The plain-language styleguide's `good_example` instructs `spec-kitty status`, which does not exist.
 Agents copy `good_example` blocks — that is their function.
@@ -158,7 +200,7 @@ Agents copy `good_example` blocks — that is their function.
 
 ---
 
-### User Story 3b - The invocation opener is discoverable from the closer (Rank: US-Low · issue #2984, P3)
+### User Story 4b - The invocation opener is discoverable from the closer (Rank: US-Low · issue #2984, P3)
 
 An operator opens an Op with top-level `spec-kitty dispatch` but closes it with
 `spec-kitty profile-invocation complete`. Looking for the opener where the closer lives yields
@@ -199,13 +241,16 @@ An operator opens an Op with top-level `spec-kitty dispatch` but closes it with
 | FR-004 | US1 | All writing cutover callers behave consistently | As a maintainer, I want every writing caller of the shared cutover authority to hold FR-001, so the fix is not accept-only. | High | Open |
 | FR-005 | US1 | Seed set and verify predicate share one source | As a maintainer, I want `verify_backfill`'s `seeded_wps` predicate derived from the same source as the seed builder, so suppressing a seed cannot make `status_phase` permanently un-flippable. | High | Open |
 | FR-006 | US1 | Reproduction is collected by a named CI job | As a maintainer, I want the #2985 reproduction asserted to be selected by a named CI job, so this P0 cannot silently return. | High | Open |
-| FR-007 | US2 | Resolver-backed command is the primary mechanism | As a delegated agent, I want every profile-load instruction to name a resolver-backed command as primary, so I load the profile I was actually assigned. | Medium | Open |
-| FR-008 | US2 | Read-only-harness fallback preserved and scoped | As an agent in a harness that cannot shell out, I want a scoped raw-read fallback with an inline divergence caveat, so #2304 is not re-broken. | Medium | Open |
-| FR-009 | US2 | Canonical profile-load skill is self-sufficient | As an agent, I want the canonical skill to hold the mechanics and the legacy alias to point at it, not the reverse. | Medium | Open |
+| FR-007 | US3 | Resolver-backed command is the primary mechanism | As a delegated agent, I want every profile-load instruction to name a resolver-backed command as primary, so I load the profile I was actually assigned. | Medium | Open |
+| FR-008 | US3 | Read-only-harness fallback preserved and scoped | As an agent in a harness that cannot shell out, I want a scoped raw-read fallback with an inline divergence caveat, so #2304 is not re-broken. | Medium | Open |
+| FR-009 | US3 | Canonical profile-load skill is self-sufficient | As an agent, I want the canonical skill to hold the mechanics and the legacy alias to point at it, not the reverse. | Medium | Open |
 | FR-010 | US1 | Already-seeded corpora remain flippable | As an operator with an already-seeded corpus, I want the fix not to strand my missions on a permanent verify failure. | High | Open |
-| FR-011 | US2 | #1840 ticket body no longer misdirects | As an implementer, I want the stale advice struck. *(verification_method: manual — permalink to the edited comment pasted in the PR body.)* | Medium | Open |
-| FR-012 | US3a | Styleguide and docs name real commands | As an agent, I want doctrine and published docs to name commands that exist. | Low | Open |
-| FR-013 | US3b | Invocation opener discoverable from closer | As an operator, I want `profile-invocation --help` to name `spec-kitty dispatch`. | Low | Open |
+| FR-011 | US3 | #1840 ticket body no longer misdirects | As an implementer, I want the stale advice struck. *(verification_method: manual — permalink to the edited comment pasted in the PR body.)* | Medium | Open |
+| FR-012 | US4a | Styleguide and docs name real commands | As an agent, I want doctrine and published docs to name commands that exist. | Low | Open |
+| FR-013 | US4b | Invocation opener discoverable from closer | As an operator, I want `profile-invocation --help` to name `spec-kitty dispatch`. | Low | Open |
+| FR-014 | US2 | Dead-code gate is portable | As a Windows operator, I want the post-merge dead-code gate to complete without a POSIX `grep` on PATH, so a successful merge still yields a verdict. | High | Open |
+| FR-015 | US2 | Dead-code gate never passes vacuously | As a consumer-project maintainer, I want a zero-symbol result to mean the gate examined the right files, not that it matched nothing — it must scan the correct set or fail loudly. | High | Open |
+| FR-016 | US2 | Portability is regression-guarded | As a maintainer, I want a test simulating an absent `grep` and a non-Python layout, so this class cannot silently return. | High | Open |
 
 ### Non-Functional Requirements
 
@@ -224,9 +269,11 @@ An operator opens an Op with top-level `spec-kitty dispatch` but closes it with
 | C-002 | **OPEN QUESTION** — reducer precedence lever | The first draft ruled out "making the reducer order-independent", which misnames the lever: the reducer is already order-independent, and `_should_apply_event` already carries a same-timestamp precedence layer. Squad split — architect says bar it (governs every WP in every mission; rollback precedence is load-bearing for parallel-worktree merges), debugger says it is a ~5-line well-fenced rule. **Reopened by operator decision: `/plan` evaluates anchor-clamping, seed-suppression, and precedence on evidence.** | Technical | High | Open |
 | C-003 | No new top-level `status` | #2983 is resolved by correcting the surfaces, not by minting a top-level `status`. Note a `spec-kitty.status` **slash command** does ship in the agent surface, which plausibly explains the example — that split is not a reason to add a CLI verb. | Technical | Medium | Open |
 | C-004 | Historical artifacts immutable | Archived `kitty-specs/` snapshots referencing retired commands are excluded. | Technical | Medium | Open |
-| C-005 | P0 file-set separability | The P0 work package's **changed-file set is disjoint** from every papercut work package's, `CHANGELOG.md` excepted, whose P0 stanza is authored as a self-contained block. Verified disjoint at spec time. Dependency-freedom alone is insufficient — the operator bought disjointness. | Process | High | Open |
+| C-005 | P0 file-set separability | **Each** P0 work package's changed-file set is disjoint from every other work package's, `CHANGELOG.md` excepted (each P0 stanza authored as a self-contained block). Verified at spec time: #2985 touches `migration/`, `accept.py`, `merge/executor.py`; #2987 touches `review/_dead_code.py` — mutually disjoint and disjoint from the papercuts. Dependency-freedom alone is insufficient; the operator bought disjointness so either P0 can be cherry-picked out. | Process | High | Open |
 | C-006 | Read-only-harness fallback preserved | A raw `.agent.yaml` read may remain **only** where scoped to harnesses that cannot invoke the CLI, with an inline resolution-divergence caveat. An unscoped ban re-breaks open **P1 #2304**. | Technical | High | Open |
 | C-007 | No `profile-invocation dispatch` alias | #2984 is fixed by help text only. The alias option would regenerate `_completion_manifest.json`, breaking C-005 disjointness. | Technical | Medium | Open |
+| C-008 | Dead-code gate semantics unchanged on POSIX | The #2987 fix is portability + honesty only. On a POSIX host with `src/`-rooted Python, the set of symbols reported must be identical before and after. | Technical | High | Open |
+| C-009 | Coordinate with the #2987 reporter | The reporter offered a PR for their option 2 (`git grep`). Confirm before implementing, or the mission duplicates external work. | Process | High | Open |
 
 ### Key Entities
 
@@ -255,6 +302,9 @@ An operator opens an Op with top-level `spec-kitty dispatch` but closes it with
 - **SC-005**: `"dispatch"` appears in `profile-invocation`'s help output.
 - **SC-006**: The #2985 reproduction's node id is named in the PR body, with committed evidence of
   failing at the merge base and passing after.
+- **SC-007**: `review --mode post-merge` completes and emits a verdict with no POSIX `grep` on PATH.
+- **SC-008**: On a non-Python / non-`src/` fixture the dead-code gate does not report a clean pass;
+  on a POSIX `src/`-rooted Python repo its reported symbol set is byte-identical to today's (C-008).
 
 ## Assumptions
 
@@ -275,11 +325,14 @@ An operator opens an Op with top-level `spec-kitty dispatch` but closes it with
 - **#2400** (#1840's parent epic), **#2961** (skills prescribing a retired path — same defect class as
   #2983, deferred to keep this mission bounded), **#2527 / #2748 / #2690** (generated-skill
   propagation, which owns the half of #1840 that NFR-003 deliberately does not enforce).
+- **#2330** (the broader Python/pytest layout assumption). #2987's vacuous-pass fix addresses the
+  dead-code gate specifically; the general layout assumption stays with #2330.
+- **#630** is closed and cited only as precedent (same Windows subprocess class).
 - Archived `kitty-specs/` snapshots (C-004).
 
 ## Delivery sequencing note
 
-Three P0s are open concurrently: #2985 (this mission), #2962, #2939. #2985 is sequenced first because
+Four P0s are open concurrently: #2985 and #2987 (both this mission), #2962, #2939. #2985 is sequenced first because
 it is the only one that **persists** corruption into an acceptance commit, and it is a fresh
 regression from a just-merged PR, so the fix window is cheapest now.
 
