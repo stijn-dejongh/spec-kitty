@@ -140,7 +140,8 @@ WP05's SC-004 deliverable; this WP owns the workflow file.
 - 2026-07-27T11:55:00Z – architect-alphonso – **T055 report — what the completeness gate found on its first live runs.** Recorded here rather than in a commit message: NFR-005 requires the meta-test to *report honestly*, and a commit message is not a durable report.
 
   **Measurement basis.** All figures below were re-measured on
-  `kitty/mission-doctrine-silence-guards-01KYFV7Q-lane-j` at commit `7dbdc5772`, rebased onto
+  lane branch `kitty/mission-doctrine-silence-guards-01KYFV7Q-lane-j` at its WP10 tip (lane shas
+  are rewritten by rebase; the gate re-derives every figure live), rebased onto
   `remediation/doctrine-silence-guards` at `1764b4c0b`. One whole-tree `--collect-only` pass;
   job activation evaluated for `event_name=push`, `branch=main`, `active_groups=∅` (the worst
   reachable filter state). **Universe: 33,822 collected test NODES across 2,174 files.**
@@ -158,7 +159,7 @@ WP05's SC-004 deliverable; this WP owns the workflow file.
 
   **Superseded figures.** The `950 of 2166 files / 14,870 of 33,665 nodes` in SC-013 and the
   `31,540 of 33,771` first written into the `ci-quality.yml` header are both withdrawn; SC-013 is
-  amended in `spec.md` and the workflow header is corrected in `7dbdc5772`. The `33,771` universe
+  amended in `spec.md` and the `ci-quality.yml` header is corrected on the lane. The `33,771` universe
   predated two files: WP10's own gate module and the campsite roster test (see below).
   `33,771 + 34 + 7 = 33,812`, and the gate module then grew from 34 to 44 nodes during review
   remediation, giving today's `33,822`. Nothing else moved; the earlier reviewer/implementer
@@ -176,7 +177,7 @@ WP05's SC-004 deliverable; this WP owns the workflow file.
   deselected it on their `-m` expressions, and the only gate that selected it was
   `release.yml::build-release`, which triggers on `v*.*.*` tags — never on a push to `main`. So the
   file was uncollectable on `main` for a reason that has nothing to do with the dorny topology:
-  it is under a routed *path* and invisible to the *marker* partition. `d42b11455` widened
+  it is under a routed *path* and invisible to the *marker* partition. WP10's topology-fix commit widened
   `integration-tests-release` to `… or not fast`, which catches marker-less files. **That is
   containment, not a fix**, and it is fragile in an unusual direction — verified by counterfactual
   against the live gate model: give the file a `fast` marker and it moves cleanly to
