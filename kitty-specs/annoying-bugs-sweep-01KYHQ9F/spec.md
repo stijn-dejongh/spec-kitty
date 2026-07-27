@@ -5,7 +5,7 @@
 **Status**: Draft (revised post-squad)
 **Input**: Operator request — "Address these all in an annoying bugs mission": #2985, #1840, #2983, #2984.
 **Folded in**: #2987 (P0, Windows/reliability) added 2026-07-27 post-squad.
-**Change mode**: `bulk_edit` (recorded in `meta.json`; see Change Classification)
+**Change mode**: normal (no `change_mode` key; see Change Classification for why `bulk_edit` was set and then reverted)
 
 > **Revision note.** A post-spec adversarial squad (architect / debugger / reviewer / planner lenses)
 > returned 3 CRITICAL findings and one disqualifying scope reversal against the first draft. All
@@ -87,11 +87,15 @@ populated, and `verify_backfill` is `ok`.
 
 1. **Given** a mission with ≥3 WPs — mixed terminal and non-terminal, at least one whose claim anchor
    collides with its terminal transition's `at` — **When** `spec-kitty accept` runs on the
-   real-commit path, **Then** every WP's canonical lane is unchanged, and no seeded transition sorts
-   at-or-after any WP's terminal transition under the reducer's `(at, event_id)` order.
+   real-commit path (mode `commit`), **Then** every WP's canonical lane is unchanged, and **for each
+   WP** every seeded transition for *that* WP sorts strictly before *that* WP's terminal transition
+   under `(at, event_id)`. *(Quantified per-WP: a non-terminal WP's legitimate anchor may legally be
+   later than a different WP's terminal `at`; the reducer keys state by `wp_id`.)*
 2. **Given** that mission after a first successful accept, **When** accept runs again, **Then** the
-   gate converges (`summary.ok`) with no outstanding work packages, in each mutating mode
-   (`commit`, `no_commit`); `diagnose` is read-only and expected to be a no-op — state which and why.
+   gate converges (`summary.ok`) with no outstanding work packages. **Only `commit` exercises the
+   stamp** — `accept.py:601` gates it on `commit_required`, so `--no-commit` never reaches
+   `_stamp_birth_cutover_for_accept` and `diagnose` is read-only. Both are convergence-only
+   assertions and must be labelled as such, not counted as coverage of the #2985 seam.
 3. **Given** any accept run, **When** it completes, **Then** no appended event changes any WP's
    canonical lane. *(Quantified on lane-delta, not event count — the first draft's "unless the stamp
    had genuinely new runtime state" escape clause was satisfied by the bug itself.)*
@@ -99,8 +103,14 @@ populated, and `verify_backfill` is `ok`.
    **When** the stamp runs, **Then** it still seeds runtime state and `CutoverResult.flipped` is
    `True` — the fix must not disable the feature.
 5. **Given** a WP carrying **both** a terminal transition **and** genuinely unseeded legacy runtime
-   state, **When** accept runs, **Then** (a) its canonical lane is still terminal, (b) every legacy
-   runtime slot is populated in the reduced snapshot, and (c) `verify_backfill` reports `ok`.
+   state, **When** accept runs, **Then** (a) its canonical lane is still terminal, (b) the three
+   **claim-borne** slots — `shell_pid`, `shell_pid_created_at`, `agent` — are each present in the
+   reduced snapshot and equal to the legacy value, and (c) `verify_backfill` reports `ok` *(supporting
+   only)*. Clause (b) must **not** be asserted via `_has_snapshot_runtime`: it is an `any()` over
+   twelve slots, and `assignee`/`tracker_refs`/`subtasks`/`review` ride annotations a claim-suppression
+   fix leaves untouched — so it stays `True` while the claim slots vanish silently. Clause (c) is
+   near-vacuous alone, because `_verify_expected_seed_events` rebuilds expectations from the same
+   builder a suppression fix would edit.
    *(This is the anti-disable oracle: a fix of the shape "skip the seed whenever the WP is terminal"
    satisfies scenarios 1–4 while silently discarding `shell_pid`/`agent`/`assignee`/`subtasks`/`review`
    — the same data-loss class as the P0.)*
@@ -117,15 +127,23 @@ populated, and `verify_backfill` is `ok`.
 `FileNotFoundError` handling. On Windows without `grep` on PATH the gate does not degrade — it
 raises, *after* the merge has already succeeded, so the mission never receives a post-merge verdict.
 
-The same call hardcodes `src/` and `--include=*.py`. On a consumer project that is not Python, or
-that does not use a `src/` root, `grep` matches nothing and the gate reports **"0 unreferenced public
-symbols" without having examined anything** — a clean pass it did not earn. That is this mission's
-thesis in its purest form: a surface confidently asserting something false.
+The vacuous pass is a **separate defect with a different lever**, and the first framing of this story
+got it wrong in the same way the first draft got the P0 wrong. Symbol *discovery* is already scoped
+before `grep` is ever reached: `_dead_code.py:71-74` runs `git diff {baseline}..HEAD -- "src/"`, and
+the extraction regex matches only Python `def|class`. On a non-`src/` or non-Python project
+`new_symbols` is empty, the reference-search loop never executes, and the gate prints **"0
+unreferenced public symbols" without `grep` running at all** — a clean pass it did not earn.
+
+The consequence is concrete: swapping the matcher for `git grep` closes the crash (FR-014) and is a
+**complete no-op on the vacuous pass** (FR-015). FR-015's levers are the diff pathspec and the
+language regex, plus a fail-loud *undeterminable* verdict — never the reference search.
 
 **Why this rank**: a second P0. The crash is a hard failure on a supported platform at a terminal
 lifecycle seam; the vacuous pass is silent and ships to every non-Python consumer project. Verified
-against live source — `_dead_code.py:94-99` has no `shutil.which`, no `try/except`, and hardcodes
-both the root and the glob.
+against live source — `src/specify_cli/cli/commands/review/_dead_code.py:93-98` has no `shutil.which`
+and no `try/except` (the module imports no `shutil` at all), and the `git diff` subprocess at
+`:71-74` is equally unguarded. This repo is `src/`-rooted Python, so the vacuous pass never fires
+here — it harms only consumer projects, which is why it shipped.
 
 **Independent Test**: run the gate with `grep` removed from PATH and assert a structured diagnostic
 rather than a traceback; run it against a non-Python / non-`src/` fixture and assert it does **not**
@@ -136,14 +154,20 @@ report a clean pass.
 1. **Given** a host with no POSIX `grep` on PATH, **When** `review --mode post-merge` reaches the
    dead-code gate, **Then** it completes and emits a verdict — no unhandled `FileNotFoundError`.
 2. **Given** a repository whose sources are not under `src/`, or are not Python, **When** the gate
-   runs, **Then** it does **not** report a clean pass; it either scans the correct file set or fails
-   loudly as undeterminable. A zero-symbol result must be earned, not assumed.
+   runs, **Then** it does **not** report a clean pass; it either scans the correct file set or emits
+   an explicit **undeterminable** verdict. A zero-symbol result must be earned, not assumed.
+   *(`tests/.../review/test_dead_code_baseline.py:86-110` currently codifies the opposite — it asserts
+   the clean-pass string against a non-git `tmp_path`. Retarget that assertion to the undeterminable
+   verdict; do not delete the case and do not weaken FR-015 to keep it green.)*
 3. **Given** the gate scans successfully on a POSIX host today, **When** the fix lands, **Then** the
    set of symbols it reports is unchanged — this is a portability and honesty fix, not a semantics
    change.
 4. **Given** a contributor removes the portability guard, **When** the suite runs, **Then** a test
-   simulating an absent `grep` fails. *(No such test exists today, and no `windows_ci` marker covers
-   this path — which is why the defect shipped.)*
+   asserting on an injected `FileNotFoundError` fails. It must **not** assert by patching
+   `shutil.which`, which greens the moment someone re-adds a raw `subprocess.run` beside the guard.
+   Mark it `fast`, not `windows_ci` — `windows_ci` is deselected from the default pole, so the guard
+   would never run on the CI most PRs hit. *(No such test exists today, and no `windows_ci` marker
+   covers this path — which is why the defect shipped.)*
 
 ---
 
@@ -239,18 +263,18 @@ An operator opens an Op with top-level `spec-kitty dispatch` but closes it with
 | FR-002 | US1 | Accept converges on an unchanged tree | As an operator, I want a second accept on an unchanged tree to converge, in each mutating mode, with the stamp reporting success (`error is None`). | High | Open |
 | FR-003 | US1 | Cutover remains functional | As a maintainer, I want the cutover to still seed genuinely-absent runtime state and still flip `status_phase`, so the fix does not disable the feature. | High | Open |
 | FR-004 | US1 | All writing cutover callers behave consistently | As a maintainer, I want every writing caller of the shared cutover authority to hold FR-001, so the fix is not accept-only. | High | Open |
-| FR-005 | US1 | Seed set and verify predicate share one source | As a maintainer, I want `verify_backfill`'s `seeded_wps` predicate derived from the same source as the seed builder, so suppressing a seed cannot make `status_phase` permanently un-flippable. | High | Open |
+| FR-005 | US1 | Seed set and verify cannot disagree, without collapsing verify | As a maintainer, I want the seed builder and `verify_backfill` unable to disagree about *which* WPs need seeding, **while verify retains at least one witness derived from the legacy reader rather than from the builder** — so suppressing a seed cannot make `status_phase` permanently un-flippable, and verify does not become tautological. | High | Open |
 | FR-006 | US1 | Reproduction is collected by a named CI job | As a maintainer, I want the #2985 reproduction asserted to be selected by a named CI job, so this P0 cannot silently return. | High | Open |
 | FR-007 | US3 | Resolver-backed command is the primary mechanism | As a delegated agent, I want every profile-load instruction to name a resolver-backed command as primary, so I load the profile I was actually assigned. | Medium | Open |
 | FR-008 | US3 | Read-only-harness fallback preserved and scoped | As an agent in a harness that cannot shell out, I want a scoped raw-read fallback with an inline divergence caveat, so #2304 is not re-broken. | Medium | Open |
-| FR-009 | US3 | Canonical profile-load skill is self-sufficient | As an agent, I want the canonical skill to hold the mechanics and the legacy alias to point at it, not the reverse. | Medium | Open |
+| FR-009 | US3 | Canonical profile-load skill is self-sufficient | As an agent, I want the canonical skill self-sufficient — mechanics land in `spk-doctrine-profile-load/references/*.md` (the `CanonicalSkill.references` mechanism, precedent `spk-meta-skill-map/references/`), **not** inlined: `test_spk_skill_pack.py:108` caps `spk-*` bodies at 80 lines and `ad-hoc-profile-load` is 268. Flipping the convention across all 13 alias pairs is out of scope. | Medium | Open |
 | FR-010 | US1 | Already-seeded corpora remain flippable | As an operator with an already-seeded corpus, I want the fix not to strand my missions on a permanent verify failure. | High | Open |
-| FR-011 | US3 | #1840 ticket body no longer misdirects | As an implementer, I want the stale advice struck. *(verification_method: manual — permalink to the edited comment pasted in the PR body.)* | Medium | Open |
-| FR-012 | US4a | Styleguide and docs name real commands | As an agent, I want doctrine and published docs to name commands that exist. | Low | Open |
+| FR-011 | US3 | #1840 ticket body no longer misdirects | As an implementer, I want **both** stale claims struck: the "reading the YAML directly is the reliable mechanism" advice, **and** the "zero occurrences of either canonical command anywhere in `src/doctrine/`" assertion, which is false — there are 7 occurrences across 4 skills. *(verification_method: manual — permalink pasted in the PR body.)* | Medium | Open |
+| FR-012 | US4a | Styleguide and docs name real commands | As an agent, I want doctrine and published docs to name commands that exist — scoped to `docs/api/environment-variables.md`, `docs/api/upgrade-lifecycle.md`, `docs/architecture/launch-readiness-future.md`, `docs/guides/install-and-upgrade.md`. **Excludes `docs/changelog/CHANGELOG.md`** (a shipped release note; rewriting it is history rewriting, and root `CHANGELOG.md` is a symlink to it, so editing its body would collide with both P0 stanzas on C-005's excepted file). Several occurrences mean "any command" generically and need per-site judgement, not substitution. | Low | Open |
 | FR-013 | US4b | Invocation opener discoverable from closer | As an operator, I want `profile-invocation --help` to name `spec-kitty dispatch`. | Low | Open |
 | FR-014 | US2 | Dead-code gate is portable | As a Windows operator, I want the post-merge dead-code gate to complete without a POSIX `grep` on PATH, so a successful merge still yields a verdict. | High | Open |
 | FR-015 | US2 | Dead-code gate never passes vacuously | As a consumer-project maintainer, I want a zero-symbol result to mean the gate examined the right files, not that it matched nothing — it must scan the correct set or fail loudly. | High | Open |
-| FR-016 | US2 | Portability is regression-guarded | As a maintainer, I want a test simulating an absent `grep` and a non-Python layout, so this class cannot silently return. | High | Open |
+| FR-016 | US2 | Portability is regression-guarded | As a maintainer, I want a `fast`-marked test that injects `FileNotFoundError` into the subprocess (not one that patches `shutil.which`) plus a non-Python-layout fixture, so neither half of this class can silently return. | High | Open |
 
 ### Non-Functional Requirements
 
@@ -258,7 +282,7 @@ An operator opens an Op with top-level `spec-kitty dispatch` but closes it with
 |----|-------|-------------|----------|----------|--------|
 | NFR-001 | Red-first proof, pinned | A NEW test reproducing the lane supersession is committed, with its node id named in the PR body, demonstrated failing at `git merge-base HEAD upstream/main` and passing after. Citing a pre-existing failing test does not satisfy this. | Reliability | High | Open |
 | NFR-002 | Every new branch tested | Every new branch or helper carries a focused test named in the PR body. Self-contained: the repo's enforced `diff-cover --include critical_paths` does **not** cover `migration/`, `cli/`, or `acceptance/`, so the 90% gate cannot be appealed to at the fix site. | Maintainability | High | Open |
-| NFR-003 | Guard is enumerable and fail-closed | The raw-read guard scans **tracked** surfaces only (`src/doctrine/**`, plus the generator's render path), asserts a non-zero scanned-file count per root, and names each offending file. It must not reference `.agents/**`, which is gitignored and absent from the repo. | Reliability | Medium | Open |
+| NFR-003 | Guard is enumerable and fail-closed | The raw-read guard scans exactly one root — **`src/doctrine/**`** — asserts a non-zero scanned-file count, and names each offending file. That single root is *total*: per ADR `2026-07-19-1`, skill projection is a byte-for-byte `shutil.copy2`, so a source-tree guard provably covers every projected surface (DIRECTIVE_043, closed by construction). It must not reference `.agents/**` (untracked, outside the guard's denominator) nor "the generator's render path", which names no content source — `skills/registry.py` resolves the canonical root back to `src/doctrine/skills`. | Reliability | Medium | Open |
 | NFR-004 | Attribution, not green-washing | Every test greened is first confirmed failing at the merge base, evidenced by a committed baseline artifact. Pre-existing reds are reported as such and left alone. | Process | High | Open |
 
 ### Constraints
@@ -266,14 +290,14 @@ An operator opens an Op with top-level `spec-kitty dispatch` but closes it with
 | ID | Title | Constraint | Category | Priority | Status |
 |----|-------|------------|----------|----------|--------|
 | C-001 | Single cutover authority, full caller set | No forked writer. The authority has **five** writing callers, not two: accept, merge, the `spec-kitty upgrade` migration (`m_zz_runtime_state_backfill.py`, which passes no `status_feature_dir` and so collapses both legs), `migrate backfill-runtime-state` (single + corpus). Any not covered must be scoped out with a reason. | Technical | High | Open |
-| C-002 | **OPEN QUESTION** — reducer precedence lever | The first draft ruled out "making the reducer order-independent", which misnames the lever: the reducer is already order-independent, and `_should_apply_event` already carries a same-timestamp precedence layer. Squad split — architect says bar it (governs every WP in every mission; rollback precedence is load-bearing for parallel-worktree merges), debugger says it is a ~5-line well-fenced rule. **Reopened by operator decision: `/plan` evaluates anchor-clamping, seed-suppression, and precedence on evidence.** | Technical | High | Open |
+| C-002 | Seed ordering, not reducer precedence | Planning resolved the lever to **per-WP seed-anchor clamping**: when a WP already has transition or annotation history, every migration seed for that WP must sort strictly before the earliest existing row under the reducer's exact `(at, event_id)` ordering. Seed suppression is barred because it discards claim-borne runtime slots; reducer precedence is barred because it changes the global state machine for a migration-only defect. Verification must still independently witness the three claim-borne legacy values. | Technical | High | Resolved |
 | C-003 | No new top-level `status` | #2983 is resolved by correcting the surfaces, not by minting a top-level `status`. Note a `spec-kitty.status` **slash command** does ship in the agent surface, which plausibly explains the example — that split is not a reason to add a CLI verb. | Technical | Medium | Open |
 | C-004 | Historical artifacts immutable | Archived `kitty-specs/` snapshots referencing retired commands are excluded. | Technical | Medium | Open |
-| C-005 | P0 file-set separability | **Each** P0 work package's changed-file set is disjoint from every other work package's, `CHANGELOG.md` excepted (each P0 stanza authored as a self-contained block). Verified at spec time: #2985 touches `migration/`, `accept.py`, `merge/executor.py`; #2987 touches `review/_dead_code.py` — mutually disjoint and disjoint from the papercuts. Dependency-freedom alone is insufficient; the operator bought disjointness so either P0 can be cherry-picked out. | Process | High | Open |
+| C-005 | P0 file-set separability | **Each** P0 work package's changed-file set is disjoint from every other work package's, `CHANGELOG.md` excepted (each P0 stanza a self-contained block; its *body* is never edited — see FR-012). **To be re-verified at tasks time against C-001's full caller set** — the spec-time enumeration was incomplete, omitting `m_zz_runtime_state_backfill.py`, `cli/commands/migrate/`, `acceptance/`, `review/__init__.py`, and (if `/plan` picks the C-002 precedence lever) `status/reducer.py`. The invariant survived every check run so far — `src/specify_cli/cli/commands/review/_dead_code.py` never meets the #2985 set — but the constraint must not assert a verification it did not perform. | Process | High | Open |
 | C-006 | Read-only-harness fallback preserved | A raw `.agent.yaml` read may remain **only** where scoped to harnesses that cannot invoke the CLI, with an inline resolution-divergence caveat. An unscoped ban re-breaks open **P1 #2304**. | Technical | High | Open |
-| C-007 | No `profile-invocation dispatch` alias | #2984 is fixed by help text only. The alias option would regenerate `_completion_manifest.json`, breaking C-005 disjointness. | Technical | Medium | Open |
-| C-008 | Dead-code gate semantics unchanged on POSIX | The #2987 fix is portability + honesty only. On a POSIX host with `src/`-rooted Python, the set of symbols reported must be identical before and after. | Technical | High | Open |
-| C-009 | Coordinate with the #2987 reporter | The reporter offered a PR for their option 2 (`git grep`). Confirm before implementing, or the mission duplicates external work. | Process | High | Open |
+| C-007 | No `profile-invocation dispatch` alias | #2984 is fixed by help text only, landing in the Typer **epilog** — the completion manifest schema is `{help, hidden, deprecated, commands}` with no `epilog`, so an epilog edit leaves it untouched. Putting the pointer in `help=` would regenerate `_completion_manifest.json` and break C-005 disjointness exactly as the alias option would. | Technical | Medium | Open |
+| C-008 | Dead-code gate semantics unchanged on POSIX | Portability + honesty only: on a POSIX `src/`-rooted Python host the reported symbol set must be identical before and after. **`git grep` does not preserve this by construction** — it misses untracked and gitignored `.py`, needs `--recurse-submodules`, and exits 128 outside a work tree (which an existing test exercises). Byte-identity holds on *this* repo only by contingent fact. A pure-Python scan is the recommended primary. Two quirks must be preserved verbatim: the `"test" not in f` **substring** filter (not a path-component match), and cwd-relative output compared against repo-root-relative POSIX `defined_in` paths. | Technical | High | Open |
+| C-009 | Coordinate with the #2987 reporter | The reporter offered a PR for their option 2 (`git grep`). Confirm before implementing. Note their option closes **FR-014 only** and is a no-op on FR-015, and does not satisfy C-008 by construction — so the coordination is about splitting the work, not handing over the story. | Process | High | Open |
 
 ### Key Entities
 
