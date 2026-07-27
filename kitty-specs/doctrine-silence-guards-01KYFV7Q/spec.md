@@ -131,7 +131,7 @@ the branch and invites someone to "fix" it by accepting a regeneration that dele
 
 1. **Given** the reconciled tree, **When** `--check` runs in CI, **Then** it exits 0.
 2. **Given** a model field added without regenerating, **Then** CI fails and names the stale schema.
-3. **Given** `structural_lint_config`, **Then** the generator **emits** it — it is a real declared field the generator currently drops, and accepting its deletion would invalidate a shipped artefact.
+3. **Given** `structural_lint_config`, **Then** the generator emits it **at its full contract**, not merely at all. *(Premise corrected 2026-07-27, WP05 review: the generator does **not** drop this property — pydantic emits it either way, as a permissive `{type: object, additionalProperties: true}`. `common-docs.styleguide.yaml` would have validated against that unchanged, so the risk was never invalidation. The real risk is **silent widening**: the narrow 10-key contract the companion lint actually requires collapses to "any object", and every malformed config then validates clean. That is this mission's own defect class — a check that passes while checking nothing.)*
 
 ---
 
@@ -238,7 +238,8 @@ collection; assert the difference is empty.
 
 ### Measurable Outcomes
 
-- **SC-001**: The zero-producer lint fails on a planted producerless slot and passes on the shipped tree, so `aliases`, `impacts` and `is_symmetric` cannot ship inert.
+- **SC-001** *(amended 2026-07-26 — the original assumed a clean tree; it is not)*: The zero-producer lint fails on a planted producerless slot, and the shipped tree is governed by a **frozen shrink-only baseline** rather than passing outright. **41 real findings** were measured on first run — 8 belong to WP05, 20 to Mission D's I9, 13 await adjudication — so a green shipped-tree assertion was never reachable from WP01, which runs *before* both. Growth above baseline **fails**; shrinkage warns. `ALLOWLIST` stays `frozenset()`: an allowlist entry is permanently excused, a baseline entry is **debt with a named owner and a mandatory structural fix**.
+- **SC-001a**: **No baseline entry survives its owner reaching `done`** — enforced by a test, not by intent. Every entry carries an `owner` and a `disposition` drawn from exactly `wire-the-producer` / `delete-the-declaration` / `fix-the-lint-definition`. There is deliberately **no `accepted` disposition**: a finding is either fixed at the producer, fixed at the declaration, or it was a false positive and the *checker* changes. Without this the baseline is an allowlist with better manners.
 - **SC-002**: An unknown kind fails loudly at all four sites, proven by a planted unknown kind at each.
 - **SC-003**: An unknown field on `DRGNode`/`DRGEdge`/`AgentProfile` is a load error, and a round-trip test proves a new field survives write→read.
 - **SC-004**: `scripts/generate_schemas.py --check` exits **0** and runs in CI. `structural_lint_config` is emitted; `point_in_time_marker` has a recorded adjudication.
