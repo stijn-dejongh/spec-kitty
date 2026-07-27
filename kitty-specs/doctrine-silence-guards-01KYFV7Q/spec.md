@@ -201,7 +201,7 @@ collection; assert the difference is empty.
 | FR-007 | ~~**Layout gate second segment.**~~ **WITHDRAWN 2026-07-26 — already delivered.** `test_doctrine_artefact_layout.py:106` already validates both segments, `_ALLOWLIST` is already `frozenset()`, and `test_allowlist_is_empty` exists; **17 tests pass**. The fix landed in `1a15bcf6c`. The parent spec's SC-016 was inherited as Open without re-measuring — a planning error the post-tasks squad caught. | — | Withdrawn |
 | FR-008 | **Correct the unfollowable migration hint** — the hint and its contract fixture name an existing per-kind fragment. | High | Open |
 | FR-009 | **Correct the surviving `shipped/` references**, enforced by a gate: the earlier fix-by-inspection missed 21 of 27. | High | Open |
-| FR-010 | **Fix the org→DRG bridge** — silent cross-layer drop, blind re-kinding of bare targets, raw pydantic on URN-shaped targets. | High | Open |
+| FR-010 | **Fix the org→DRG bridge** — **five** shapes, not the three originally specced: silent cross-layer drop, blind re-kinding of bare targets, raw pydantic on URN-shaped targets, **plus** a hand-restated plural→singular kind map drifted two kinds behind (`mission_types`, `glossary_packs` crash the merge with a bare `KeyError`), **plus** a producer whose entire output was discarded at the bridge (`_collect_augmentation_edges` emits `<kind>:<id>`; the source lookup keyed on bare ids, so 100% of the field-projection path was dropped). See the WP08 note below. | High | Open |
 | FR-011 | **Fix the documented `specializes_from` example** in `CLAUDE.md` so it produces an edge. | Medium | Open |
 | FR-012 | **Retype daphne's `applies` edge and gate the relation.** | Medium | Open |
 | FR-013 | **Guarantee every test file is collected by at least one main-branch job.** *(#2957 asks for "exactly one"; deliberately narrowed to "at least one" — that is the anti-vacuity property. The disjointness half remains with the existing shard-split assertion.)* Determine why main's shard/job selection skips `tests/specify_cli/cli/`, `tests/cli/` and friends, then close it. **Implementation is already precedented in this workflow**: add a `|| github.event_name == 'push'` disjunct to the group-gated jobs' `if:`, exactly as `slow-tests` (`ci-quality.yml:2747`) and `e2e-cross-cutting` (`:2972`) already do — PR runs keep today's narrowing, main pushes become complete. | High | Open |
@@ -233,6 +233,43 @@ collection; assert the difference is empty.
 - **Silent-drop site**: a branch that discards an unrecognised kind without raising or logging.
 - **Occurrence map**: the DIRECTIVE_035 per-mission classification artefact; gains field-path granularity here.
 - **Layout gate**: the architectural test pinning `<type>/<pack>/[<category>/]<name>`.
+
+## Implementation findings that widened the spec
+
+Recorded during implementation; the requirement rows above are amended in place.
+
+### FR-010 / IC-07 — the bridge carried five defect shapes, not three (WP08, 2026-07-27)
+
+Two were found while characterizing, not from the spec:
+
+**D4 — the bridge is a *fourth* hand-restated writer.** `merge._PLURAL_TO_SINGULAR`
+restated the org-pack kind universe by hand and had drifted two kinds behind. Merging a
+pack declaring `mission_types` or `glossary_packs` crashed with a bare `KeyError` — 10 of
+12 canonical kinds worked. The in-repo fixture
+`tests/doctrine/fixtures/relationship_packs/augment-all-kinds-pack` could therefore not be
+merged at all, so the "all kinds" fixture never exercised all kinds.
+
+**D5 — a producer whose output never landed.** `org_pack_loader._collect_augmentation_edges`
+emits `<kind>:<id>` on both endpoints; the bridge's source lookup keyed on bare
+fragment-local ids. **100% of the legacy field-projection path was discarded at the
+bridge.** This is FR-001's defect class inverted: FR-001 targets a *schema slot with no
+producer*; D5 is a *producer with no consumer*. Both are silence, and the mission's
+requirement set only named one direction.
+
+**Root cause is shared.** The bridge ran two asymmetric endpoint policies — a source had to
+be fragment-local (miss → dropped silently); a target fell back to `directive:<id>` (miss →
+invented kind). Neither accepted the URN form the pack's own emitter produces. One ordered
+precedence in `_resolve_edge_endpoint` closes all five.
+
+**Design decision worth carrying forward:** cross-pack references must be fully qualified.
+Bare ids resolve against the fragment and the built-in layer only — *never* the running
+merge state. Resolving against merge state makes the result depend on the operator's
+`organisation_packs:` declaration order: same two packs, two orders, two different graphs,
+nothing reported. That hazard was introduced and closed within the WP.
+
+Existence is deliberately **not** required for the qualified form. Dangling-reference
+detection belongs to the DRG validator; what the bridge owes is never to invent a kind and
+never to drop in silence.
 
 ## Success Criteria *(mandatory)*
 
