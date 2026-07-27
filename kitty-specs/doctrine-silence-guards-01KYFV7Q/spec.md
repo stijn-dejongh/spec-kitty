@@ -131,7 +131,7 @@ the branch and invites someone to "fix" it by accepting a regeneration that dele
 
 1. **Given** the reconciled tree, **When** `--check` runs in CI, **Then** it exits 0.
 2. **Given** a model field added without regenerating, **Then** CI fails and names the stale schema.
-3. **Given** `structural_lint_config`, **Then** the generator **emits** it — it is a real declared field the generator currently drops, and accepting its deletion would invalidate a shipped artefact.
+3. **Given** `structural_lint_config`, **Then** the generator emits it **at its full contract**, not merely at all. *(Premise corrected 2026-07-27, WP05 review: the generator does **not** drop this property — pydantic emits it either way, as a permissive `{type: object, additionalProperties: true}`. `common-docs.styleguide.yaml` would have validated against that unchanged, so the risk was never invalidation. The real risk is **silent widening**: the narrow 10-key contract the companion lint actually requires collapses to "any object", and every malformed config then validates clean. That is this mission's own defect class — a check that passes while checking nothing.)*
 
 ---
 
