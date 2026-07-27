@@ -1,0 +1,15 @@
+{
+  "coordination_branch": "kitty/mission-annoying-bugs-sweep-01KYHQ9F",
+  "created_at": "2026-07-27T12:02:44.651800+00:00",
+  "flattened": false,
+  "friendly_name": "Annoying Bugs Sweep",
+  "mission_id": "01KYHQ9F9BCK9E301PQJG6T7QZ",
+  "mission_number": null,
+  "mission_slug": "annoying-bugs-sweep-01KYHQ9F",
+  "mission_type": "software-dev",
+  "purpose_context": "Four defects share one shape: a surface that looks authoritative but silently misdirects. The P0 (#2985) makes spec-kitty accept append a historical claim event after a work package's terminal transition, so a finished WP reads as claimed, accept stops converging, and the mission cannot proceed to lane consolidation. The other three misdirect agents rather than data: profile-load surfaces instruct raw agent.yaml reads that bypass doctrine resolution (#1840), a plain-language styleguide teaches a command that does not exist (#2983), and the invocation lifecycle opens under one command path and closes under another (#2984). Together they cost users corrupted mission state and cost agents wasted passes following guidance that cannot work.",
+  "purpose_tldr": "Fix a P0 that rewinds finished work packages to claimed, and three agent-facing papercuts where shipped guidance points at the wrong command or bypasses doctrine resolution.",
+  "slug": "annoying-bugs-sweep-01KYHQ9F",
+  "target_branch": "fix/annoying-bugs-sweep",
+  "topology": "coord"
+}
