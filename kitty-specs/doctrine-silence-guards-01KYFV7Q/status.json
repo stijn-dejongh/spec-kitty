@@ -1,19 +1,19 @@
 {
-  "event_count": 52,
-  "last_event_id": "01KYHHPYHZTFED67ANPZW5JYW8",
-  "materialized_at": "2026-07-27T10:25:14.815818+00:00",
+  "event_count": 53,
+  "last_event_id": "01KYHHQEJDQY26XCWJDEPBRJ75",
+  "materialized_at": "2026-07-27T10:25:31.213258+00:00",
   "mission_number": "",
   "mission_slug": "doctrine-silence-guards-01KYFV7Q",
   "mission_type": "software-dev",
   "summary": {
-    "approved": 5,
+    "approved": 6,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 3,
     "in_progress": 0,
-    "in_review": 1,
+    "in_review": 0,
     "planned": 1
   },
   "work_packages": {
@@ -208,9 +208,9 @@
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
-      "lane": "in_review",
-      "last_event_id": "01KYHHPYHZTFED67ANPZW5JYW8",
-      "last_transition_at": "2026-07-27T10:25:14.815818+00:00",
+      "lane": "approved",
+      "last_event_id": "01KYHHQEJDQY26XCWJDEPBRJ75",
+      "last_transition_at": "2026-07-27T10:25:31.213258+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "review REJECT (reporting + three MINOR guard defects); remediating on lane-j"
