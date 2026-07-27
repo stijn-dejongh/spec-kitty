@@ -132,3 +132,4 @@ inexpressibility argument is about **files** (17 and 7). Both matter; do not con
 > **CRITICAL**: entries in chronological order, oldest first. **Append** new entries at the END.
 
 - 2026-07-26T19:45:15Z – system – Prompt created.
+- 2026-07-27T01:00:00Z – claude – **Approved.** Formal approval was held on a cross-lane artefact, not on WP02's own content: `test_a_baseline_entry_does_not_survive_its_owner` fires on any lane where WP05 is `approved` (status is mission-global) but WP05's 8 baseline deletions are absent (files are lane-local, on lane-e). Diagnosis confirmed by direct measurement rather than assumed — the gate **passes on lane-e** and **fails on lane-b** with the same commit of WP01's checker. It resolves at lane consolidation, when status and files land together. Recorded here so a later reader does not mistake it for a WP02 defect or for the gate misbehaving.
