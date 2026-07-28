@@ -56,6 +56,23 @@ healthy case; zero lenient or flat-topology sites begin raising; enumerated
 gate-bite conditions all hold; census totals reconcile exactly). Each is
 mechanically checkable.
 
+**Note 5 — Scope expanded to the full placement-authority closure (2026-07-28, operator-chosen).**
+After the post-spec squad, the operator asked whether the "already policed" sites route
+through the seam or are semi-compliance with a hardcoded target. A placement-authority
+audit established: the 34 sites pass a canonical *handle* (all the existing floors
+check) while **hardcoding the partition at the call site**; `read_dir(<PRIMARY kind>)`
+is answer-equivalent across eight real-repo fixtures and **strictly better** on a
+backfilled mission (the blind composition returns a non-existent path); the 33
+compositions are hand-inlined resolver internals (`resolve_planning_read_dir`'s PRIMARY
+leg *is* that composition); the six "lands on the husk" comments argue against a
+*different* resolver; and the floor collision is bookkeeping with five recorded in-tree
+shrinks. The operator prescribed **delegate-then-remove** and chose to carry both steps
+here. Two live gate holes found and folded in as FR-001 (an unrecognised canonicalizer
+passing by omission, and allow-sets that would let migrated sites go green-by-omission).
+Scope is now 17 FR / 9 NFR / 8 C / 11 SC across six user stories — larger than a typical
+mission; the tasks phase should expect roughly 8–10 work packages with the delegation
+(FR-002/003) as a hard sequencing gate before any call-site rewrite (C-005).
+
 **Note 4 — The spec was RE-FRAMED after a post-spec adversarial squad (2026-07-28).**
 The first draft inherited #3014's premise and a two-lens squad (architect +
 patterns) returned **10 MAJOR findings** against the live tree, three of which
