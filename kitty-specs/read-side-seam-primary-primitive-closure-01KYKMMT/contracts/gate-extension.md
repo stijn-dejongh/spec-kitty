@@ -18,12 +18,19 @@ proving the gate still flags a bad read in a migrated module (NFR-005, SC-004).
 
 ## E2 — Censused callees (FR-012)
 
-- The read-side census gains **one** callee: the kind-blind, topology-routed resolver that
-  no gate covers.
-- The mis-identified primary primitive is **deliberately not added** — its fail-loud surface
-  is zero, it is already censused on the anchoring axis, and adding it would flag ~34
-  correct sites. This decision and its rationale are recorded in the ledger's Known-gap
-  section (FR-016/FR-017), so it is not re-derived.
+- The censused-callee set grows **2 → 4**: the kind-blind, topology-routed resolver that no
+  gate covers (`resolve_feature_dir_for_mission`), **and** the primary primitive, which
+  inherits the guarantee transferred from the retired use-count floors (E5).
+- **Superseded framing (recorded so it is not re-derived):** an earlier draft excluded the
+  primary primitive on the grounds that its fail-loud surface is zero and it was already
+  censused on the anchoring axis. That held while the floors survived. Once the operator
+  prescribed delegate-then-remove and FR-007 retired the floors, exclusion would leave the
+  primitive policed by nothing — so it is censused here, with its end-state sanctions
+  (resolver-internal + the four named foundation sites of FR-005). The ~34 in-flight sites
+  are **expected red** between the gate landing and the migration completing; that red is
+  the mission's acceptance signal (US8 / FR-023), not a defect.
+- The ledger's Known-gap section still records which gate covers each *non*-censused
+  primitive, on which axis, with its sized residual (FR-016/FR-017).
 - **Alias resolution** MUST hold: an aliased import cannot defeat the census.
 
 ## E3 — Sanctions: asserted, never silently skipped

@@ -3,11 +3,11 @@ work_package_id: WP01
 title: The suite states the target design
 dependencies: []
 requirement_refs:
-- FR-023
 - FR-001
 - FR-007
 - FR-014
 - FR-016
+- FR-023
 - FR-024
 - NFR-004
 - NFR-005
