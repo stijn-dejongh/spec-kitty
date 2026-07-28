@@ -16,12 +16,12 @@
 - [x] No [NEEDS CLARIFICATION] markers remain (zero markers; every open scope question was resolved by an explicit operator decision before authoring)
 - [x] Requirements are testable and unambiguous
 - [x] Requirement types are separated (Functional / Non-Functional / Constraints)
-- [x] IDs are unique across FR-###, NFR-###, and C-### entries (FR-001…017, NFR-001…009, C-001…008)
+- [x] IDs are unique across FR-###, NFR-###, and C-### entries (FR-001…019, NFR-001…011, C-001…008)
 - [x] All requirement rows include a non-empty Status value (all `Open`)
 - [x] Non-functional requirements include measurable thresholds — *see Note 2*
-- [x] Success criteria are measurable (SC-001…011 are counts, identity assertions, or binary gate outcomes)
+- [x] Success criteria are measurable (SC-001…013 are counts, identity assertions, binary gate outcomes, or a comprehension check)
 - [x] Success criteria are technology-agnostic — *see Note 1*
-- [x] All acceptance scenarios are defined (6 user stories × 3–4 scenarios each)
+- [x] All acceptance scenarios are defined (7 user stories × 3–4 scenarios each)
 - [x] Edge cases are identified (10, including the backfilled composed-handle divergence and the foundation-site recursion hazard)
 - [x] Scope is clearly bounded (explicit Out of Scope section + C-006 scope boundary + C-004/FR-005 naming what is deliberately *not* touched)
 - [x] Dependencies and assumptions identified (Assumptions section, 5 entries, each either independently verified or explicitly scheduled for re-derivation)
@@ -29,7 +29,7 @@
 ## Feature Readiness
 
 - [x] All functional requirements have clear acceptance criteria (each FR maps to a user story whose Acceptance Scenarios are the criteria)
-- [x] User scenarios cover primary flows (single placement authority, delegation-surfaces-the-delta, no-green-by-omission, husk protection, ledger integrity, residual + record closure)
+- [x] User scenarios cover primary flows (single placement authority, delegation-surfaces-the-delta, no-green-by-omission, husk protection, ledger integrity, residual + record closure, and design-doc-instead-of-rediscovery)
 - [x] Feature meets measurable outcomes defined in Success Criteria
 - [x] No implementation details leak into specification — *see Note 1*
 
@@ -102,10 +102,29 @@ ledger and the gate docstring; FR-010/FR-016 re-derive and correct it rather tha
 trusting the issue text. The corrected findings were posted to #3014.
 
 **Note 5 — Size and sequencing.**
-17 FR / 9 NFR / 8 C / 11 SC across six user stories is larger than a typical mission
-here. The tasks phase should expect roughly 8–10 work packages, with two hard
+19 FR / 11 NFR / 8 C / 13 SC across seven user stories is larger than a typical mission
+here. The tasks phase should expect roughly 9–11 work packages, with two hard
 sequencing gates: the grammar/index prerequisites (FR-008/009) before any ledger rows,
 and the delegation (FR-002/003) before any call-site rewrite (C-005). The floors move
 only in Step 2, deliberately (NFR-007).
+
+**Note 6 — New IC added at operator request (2026-07-28): document the seam.**
+FR-018/FR-019 add the operator-requested implementation concern — *"update the
+architecture docs to describe the routing/decisioning seam, and formalize the split
+between runtime, decision module, path resolution"* — as a first-class deliverable
+rather than a follow-up. Rationale: the seam has been repeatedly misappropriated as a
+"stable API to strangle through", and the discovery cost of re-establishing the layering
+has now been paid three times (a follow-up filed on a false premise, two spec
+re-framings, and a full operator-guided audit) even though the governing decisions
+already existed. Grounding checked before writing the requirement: ADR `2026-06-24-1`
+(kind-and-topology-aware placement) and ADR `2026-07-23-1` (`TopologySurface`
+vocabulary) already state the principle — the latter even names the forbidden
+conditioning pattern that *is* this mission's semi-compliance shape — so the gap is a
+findable **explanation**, not a missing decision. `docs/architecture/branch-target-routing.md`
+already owns the *branch* sense of "routing", and the glossary already defines
+`PRIMARY partition`, `COORD partition` and `Topology Surface`; FR-018/019 therefore
+require alignment and cross-reference (NFR-011) rather than a competing vocabulary, plus
+docs-hygiene compliance for a new page (NFR-010). Verified as a comprehension outcome
+(SC-012) rather than a "page exists" checkbox.
 
 - Items marked incomplete require spec updates before `/spec-kitty.plan` — none are incomplete.
