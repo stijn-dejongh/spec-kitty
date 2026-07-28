@@ -2,6 +2,7 @@
 
 **Mission Branch**: `fix/read-side-seam-primary-primitive-closure`
 **Created**: 2026-07-28 · **Re-framed twice** (see Provenance)
+**Slug/branch note**: the mission slug and branch are frozen at creation (`…primary-primitive-closure`); the title reflects the re-framed scope, of which closing that primitive is one part. Slug is immutable identity and is not renamed.
 **Status**: Draft
 **Input**: Close the #3013 residuals (#2886, #2824 comment) and discharge #3014 honestly — then **move the placement decision out of the call sites and into the resolver** for the last holdout primitive, via delegate-then-remove.
 
@@ -38,7 +39,7 @@ still decides *where*:
    **does not exist** while the seam recovers it. Structurally guaranteed:
    `declared_read_surface` short-circuits to PRIMARY for any primary kind *before any
    coord probe*.
-3. **The 33 compositions are hand-inlined resolver internals.**
+3. **The 33 compositions are hand-inlined resolver internals.** (34 sites are in scope: 33 semi-compliant compositions discharged by the migration, plus **one non-compliant site** — `status/aggregate.py:522` — discharged by FR-001, not by the 33 mechanical edits.)
    `resolve_planning_read_dir`'s PRIMARY leg *is* that composition verbatim — so the
    sites are not choosing a different answer, they are duplicating the resolver's body
    and keeping the decision in the caller.
@@ -80,6 +81,7 @@ still decides *where*:
 | **Husk** | A coord worktree that exists but carries no `meta.json`. | A deleted coordination branch (which raises for COORD kinds). |
 | **Tier-1 idiom** | `placement_seam(...).read_dir(kind)` / `resolve_artifact_surface(root, slug, kind)` — kind named, partition delegated, fail-loud. | `resolve_planning_read_dir(..., kind=)`, which delegates the partition but is **lenient**, and is censused as a bypass on the leniency axis. |
 | **Green-by-omission** | A migrated site that passes a gate only because the gate's allow/flag sets do not mention the new idiom. | Genuine compliance. |
+| **Disposition** | The per-site verdict on the classification axis, one of exactly three values: **migrate-fail-loud** (route through the seam; a wrong partition must raise), **stay-lenient** (keep the lenient path and its degrade contract), **sanction-infra** (a seam-internal or named-foundation call site, asserted-sanctioned). Use these three names only. | Ad-hoc synonyms such as "fail-loud-classified", "raise-or-degrade", or "deliberate/lenient" — NFR-011's no-synonym rule applies inward to this spec too. |
 | **Foundation site** | A call site *underneath* the seam (consumed by `resolve_placement_only` / peer branch resolvers), where routing through the seam risks recursion. | An ordinary consumer site. |
 
 ## User Scenarios & Testing *(mandatory)*
@@ -170,7 +172,7 @@ including via an alias.
 
 1. **Given** a coord mission whose worktree is a husk, **When** a fail-loud-classified site reads its PRIMARY artifact, **Then** it resolves the primary anchor.
 2. **Given** a planted direct or **aliased** call in a non-sanctioned module, **When** the read-side gate runs, **Then** it reds; a prose mention stays green.
-3. **Given** a site whose production comment documents that the topology-routed answer is required, **Then** its behaviour is unchanged and its rationale is a ledger row.
+3. **Given** a site whose production comment documents that the topology-routed answer is required, **When** the classification pass runs, **Then** its behaviour is unchanged and its rationale is a ledger row.
 
 ---
 
@@ -188,8 +190,8 @@ time. Parsed row count equals the summed per-primitive census.
 **Acceptance Scenarios**:
 
 1. **Given** a mutated ledger row for primitive *N*, **When** the gate runs, **Then** it reds — for every *N*.
-2. **Given** the parsed sections, **Then** parsed row count equals the summed census; a dropped table or shifted column reds loudly rather than parsing empty.
-3. **Given** a module with several censused sites in one function, **Then** the index addresses each distinctly and its uniqueness assertion holds.
+2. **Given** the parsed sections, **When** the gate parses the ledger, **Then** parsed row count equals the summed census; a dropped table or shifted column reds loudly rather than parsing empty.
+3. **Given** a module with several censused sites in one function, **When** the stay-lenient index is built and validated, **Then** the index addresses each distinctly and its uniqueness assertion holds.
 
 ---
 
@@ -210,9 +212,9 @@ size.
 **Acceptance Scenarios**:
 
 1. **Given** both reads routed, **When** the pin and its pin-existence test are removed together, **Then** the closeout gate's clean scan is green with non-vacuity from its site floor.
-2. **Given** the audit-metadata write following the read, **Then** the `meta.json` write resolves through the same authority as the read; `gap-analysis.md` (which has **no** kind) anchors on that resolved directory and is recorded as an honest bound.
-3. **Given** any count in the ledger or gate docstring, **Then** it matches a fresh census; the stale figure is corrected in both places and the closeout gate's recorded census is exact.
-4. **Given** the six husk comments, **Then** each states accurately that the *kind-blind* resolver selects the husk while the kind-aware seam does not.
+2. **Given** the audit-metadata write following the read, **When** the documentation-wiring path runs, **Then** the `meta.json` write resolves through the same authority as the read; `gap-analysis.md` (which has **no** kind) anchors on that resolved directory and is recorded as an honest bound.
+3. **Given** any count in the ledger or gate docstring, **When** it is compared against a fresh census, **Then** it matches; the stale figure is corrected in both places and the closeout gate's recorded census is exact.
+4. **Given** the six husk comments, **When** a maintainer reads them, **Then** each states accurately that the *kind-blind* resolver selects the husk while the kind-aware seam does not.
 
 ---
 
@@ -260,27 +262,28 @@ re-deriving.
 
 ### Functional Requirements
 
-| ID | Title | User Story | Priority | Status |
-|----|-------|------------|----------|--------|
-| FR-001 | Close the gate holes before migrating | As a maintainer, I want `status/aggregate.py:522`'s unrecognised canonicalizer closed and the fold-prescription gate's allow/flag sets widened to know the tier-1 seam idiom, so migrated sites are affirmatively checked rather than green-by-omission. | High | Open |
-| FR-002 | Step 1 — delegate the primitive to the seam | As a maintainer, I want `primary_feature_dir_for_mission` to resolve through the kind-aware seam internally, with call sites untouched, so the existing suite surfaces every behavioural delta at one edit's cost and the anchoring floors stay unmoved. | High | Open |
-| FR-003 | Attribute and pin the delegation's deltas | As a maintainer, I want each divergence Step 1 surfaces attributed (anchoring / backfill recovery / husk / raising) and the accepted one — backfill recovery — pinned by test, so the delta is documented rather than absorbed. | High | Open |
-| FR-004 | Step 2 — callers declare the kind | As a maintainer, I want each consumer site to pass its artifact kind to the seam instead of naming a primary-only helper, so the placement decision lives in the resolver. | High | Open |
-| FR-005 | Keep foundation sites out, by name | As a maintainer, I want the sites that sit *beneath* the seam (`core/paths.py:727`, `:780`, `core/git_ops.py:444`, `coordination/surface_resolver.py:739`) left unrouted and recorded as named sanctioned foundation sites with their recursion rationale, so authority tidiness does not buy a resolution cycle. | High | Open |
-| FR-006 | Privatise the primitive | As a maintainer, I want the primitive dropped from the module's public exports and renamed module-private once its consumers are routed, so the invariant is structural rather than enforced by counting its uses. | High | Open |
-| FR-007 | Retire the use-count floors and transfer the teeth | As a maintainer, I want the two canonicalizer floors retired (or honestly re-pinned with recorded before/after) and their guarantee transferred to the read-side census as a censused callee with an explicit sanctioned set, so no gate obliges the primitive to keep being used. | High | Open |
-| FR-008 | Fix the ledger's machine-parse grammar first | As a maintainer, I want the parsed sections constrained (one table per parsed heading, verbatim headings, verdict/path/qualname at fixed leading positions, any primitive discriminator appended as a trailing column) **before** rows are added, so a multi-primitive ledger cannot parse silently-empty. | High | Open |
-| FR-009 | Give the index a per-site discriminator | As a maintainer, I want the stay-lenient index able to address several censused sites in one qualname, with its uniqueness assertion updated in the same change. | High | Open |
-| FR-010 | Census and classify the unpoliced resolver | As a maintainer, I want an AST census (aliases resolved) of `resolve_feature_dir_for_mission` and every site classified with disposition **and both axes** — raise-or-degrade, anchoring root (verbatim argument plus its semantic class with provenance), handle form, target kind, idempotence under the seam's output. | High | Open |
-| FR-011 | Route its PRIMARY-artifact reads; justify the rest | As a maintainer, I want each of its sites that reads a PRIMARY artifact routed onto the seam, and each site that genuinely needs the topology-routed answer preserved as a rationale-bearing allow-list entry reusing its production comment. | High | Open |
-| FR-012 | Police it in the read-side gate | As a maintainer, I want `resolve_feature_dir_for_mission` added to the censused callees with sanctioned modules asserted **per primitive** and residuals allow-listed shrink-only under the staleness twin-guard. | High | Open |
-| FR-013 | Route both `_run_documentation_wiring` reads | As a maintainer, I want **both** metadata reads routed through the partition-aware authority, so routing one does not leave the other reading off a coord-bound directory. | Medium | Open |
-| FR-014 | Retire the `#2214` pin with its pin-existence test | As a maintainer, I want the allow-list entry **and** the test asserting that pin exists retired together, so the gate does not red by construction. | Medium | Open |
-| FR-015 | Correct every misleading comment | As a maintainer, I want the two `acceptance/__init__.py` comments **and** the six husk-conflating comments corrected, so no reader concludes the seam has the kind-blind resolver's failure modes or that `lanes.json` belongs on COORD. | Medium | Open |
-| FR-016 | Correct the false and stale record | As a maintainer, I want the ledger's Known-gap text to name the anchoring-axis authority and axis rather than claiming "policed by nothing", the stale site count corrected in **both** the ledger and the gate docstring, the closeout gate's off-by-one census fixed, and the drifted definition-line reference updated. | High | Open |
-| FR-017 | Enumerate the honest bounds | As a maintainer, I want the gate's advertised bounds to name, with sizes, what it does not cover: the wrong-`kind` class, wrapper laundering, the zero-site latent sibling, the sanctioned foundation and resolver-internal sites — so no planner repeats #3014. | High | Open |
-| FR-018 | Document the routing/decisioning seam and its layering | As a future mission planner, I want an architecture explanation page in `docs/architecture/` that defines what **routing** means in the placement context, formalises the three-layer split (**runtime/callers** declare the artifact kind → **decision module** maps kind + topology to a `TopologySurface` → **path resolution** assembles the concrete directory), names the code owner of each layer, records the compliant tier-1 idiom against the semi-compliant and non-compliant shapes, and cites ADR `2026-06-24-1` and ADR `2026-07-23-1` (including its forbidden conditioning pattern) as governing — so a later mission cites the design instead of re-running discovery. | High | Open |
-| FR-019 | Disambiguate "routing" in the glossary | As a maintainer, I want the canonical glossary to carry a `Routing` disambiguation in the style of the existing `primary`/`merge` footgun — separating **placement routing** (kind + topology → `TopologySurface`) from **branch-target routing**, **commit routing**, **dispatch/profile routing** and **sync fan-out**, each with a "do NOT use when" guard — and terms for the placement seam and semi-compliance where they aid recall, aligned to the existing `PRIMARY partition` / `COORD partition` / `Topology Surface` entries rather than duplicating them. | High | Open |
+| ID | Title | Story | Requirement (user-value statement) | Priority | Status |
+|----|-------|-------|------------------------------------|----------|--------|
+| FR-001 | Close the gate holes before migrating | US3 | As a maintainer, I want `status/aggregate.py:522`'s unrecognised canonicalizer closed and the fold-prescription gate's allow/flag sets widened to know the tier-1 seam idiom, so migrated sites are affirmatively checked rather than green-by-omission. | High | Open |
+| FR-002 | Step 1 — delegate the primitive to the seam | US2 | As a maintainer, I want `primary_feature_dir_for_mission` to resolve through the kind-aware seam internally, with call sites untouched, so the existing suite surfaces every behavioural delta at one edit's cost and the anchoring floors stay unmoved. | High | Open |
+| FR-003 | Attribute and pin the delegation's deltas | US2 | As a maintainer, I want each divergence Step 1 surfaces attributed (anchoring / backfill recovery / husk / raising) and the accepted one — backfill recovery — pinned by test, so the delta is documented rather than absorbed. | High | Open |
+| FR-004 | Step 2 — callers declare the kind | US1 | As a maintainer, I want each consumer site to pass its artifact kind to the seam instead of naming a primary-only helper, so the placement decision lives in the resolver. | High | Open |
+| FR-005 | Keep foundation sites out, by name | US1 | As a maintainer, I want the sites that sit *beneath* the seam (`core/paths.py:727`, `:780`, `core/git_ops.py:444`, `coordination/surface_resolver.py:739`) left unrouted and recorded as named sanctioned foundation sites with their recursion rationale, so authority tidiness does not buy a resolution cycle. | High | Open |
+| FR-006 | Privatise the primitive | US1 | As a maintainer, I want the primitive dropped from the module's public exports and renamed module-private once its consumers are routed, so the invariant is structural rather than enforced by counting its uses. | High | Open |
+| FR-007 | Retire the use-count floors and transfer the teeth | US1 | As a maintainer, I want the two canonicalizer floors retired (or honestly re-pinned with recorded before/after) and their guarantee transferred to the read-side census as a censused callee with an explicit sanctioned set, so no gate obliges the primitive to keep being used. | High | Open |
+| FR-008 | Fix the ledger's machine-parse grammar first | US5 | As a maintainer, I want the parsed sections constrained (one table per parsed heading, verbatim headings, verdict/path/qualname at fixed leading positions, any primitive discriminator appended as a trailing column) **before** rows are added, so a multi-primitive ledger cannot parse silently-empty. | High | Open |
+| FR-009 | Give the index a per-site discriminator | US5 | As a maintainer, I want the stay-lenient index able to address several censused sites in one qualname, with its uniqueness assertion updated in the same change. | High | Open |
+| FR-010 | Census and classify the unpoliced resolver, with per-disposition counts | US4 | As a maintainer, I want an AST census (aliases resolved) of `resolve_feature_dir_for_mission` and every site classified with disposition **and both axes** — raise-or-degrade, anchoring root (verbatim argument plus its semantic class with provenance), handle form, target kind, idempotence under the seam's output — and I want the census to record the **count per disposition**, so a zero-fail-loud outcome is an explicit, reviewable finding rather than a silently satisfied requirement. | High | Open |
+| FR-011 | Route its PRIMARY-artifact reads; justify the rest | US4 | As a maintainer, I want each of its sites that reads a PRIMARY artifact routed onto the seam, and each site that genuinely needs the topology-routed answer preserved as a rationale-bearing allow-list entry reusing its production comment. | High | Open |
+| FR-012 | Police it in the read-side gate | US4 | As a maintainer, I want `resolve_feature_dir_for_mission` added to the censused callees with sanctioned modules asserted **per primitive** and residuals allow-listed shrink-only under the staleness twin-guard. | High | Open |
+| FR-013 | Route both `_run_documentation_wiring` reads | US6 | As a maintainer, I want **both** metadata reads routed through the partition-aware authority, so routing one does not leave the other reading off a coord-bound directory. | Medium | Open |
+| FR-014 | Retire the `#2214` pin with its pin-existence test | US6 | As a maintainer, I want the allow-list entry **and** the test asserting that pin exists retired together, so the gate does not red by construction. | Medium | Open |
+| FR-015 | Correct every misleading comment | US6 | As a maintainer, I want the two `acceptance/__init__.py` comments **and** the six husk-conflating comments corrected, so no reader concludes the seam has the kind-blind resolver's failure modes or that `lanes.json` belongs on COORD. | Medium | Open |
+| FR-016 | Correct the false and stale record | US6 | As a maintainer, I want the ledger's Known-gap text to name the anchoring-axis authority and axis rather than claiming "policed by nothing", the stale site count corrected in **both** the ledger and the gate docstring, the closeout gate's off-by-one census fixed, and the drifted definition-line reference updated. | High | Open |
+| FR-017 | Enumerate the honest bounds | US6 | As a maintainer, I want the gate's advertised bounds to name, with sizes, what it does not cover: the wrong-`kind` class, wrapper laundering, the zero-site latent sibling, the sanctioned foundation and resolver-internal sites, and artifacts with no kind (`gap-analysis.md`, which anchor on a resolved directory rather than being routed) — so no planner repeats #3014. | High | Open |
+| FR-018 | Document the placement seam and its verified layering | US7 | As a future mission planner, I want an explanation page (`docs/architecture/artifact-placement-seam.md` — not a third `*-routing.md`) that defines **routing** in the placement sense and formalises the layering **as the code actually is**: (L0) the caller declares a `MissionArtifactKind` through `PlacementSeam`; (L1) the kind→partition classification, topology-blind (`artifacts.py` kind frozensets + `assert_partition_invariant`); (L2) the decision layer, which is **two functions whose divergence is load-bearing** — `declared_read_surface` (materialization-**blind**, so it can disagree with a resolved stamp, which is what makes the `surface_cannot_hold` / #2906 guard possible) and `_classify_artifact_surface` (materialization-**aware**, consuming coord-state probing); (L3) candidate discovery and path **assembly** (`_read_path_resolver`); (L4) `translate_surface`, which **selects** an already-discovered location off `SurfaceLocations` and refuses when absent — it does **not** assemble a path. It must show **both** composition roots (`resolve_artifact_surface` for reads, `resolve_placement_only` for writes) reached through one seam, record the compliant / semi-compliant / non-compliant idioms, and carry the honest bounds: `LANE`/`CONSOLIDATED`/`TEMP` have no production producer, and `_PLACEMENT_ARTIFACT_KINDS` still carries the retired `PLACEMENT` word as residual rename debt (named, not laundered). | High | Open |
+| FR-020 | Retire the competing placement authority | US7 | As a maintainer, I want `docs/architecture/branch-target-routing.md` narrowed to the *branch* sense in the same slice as the new page — its per-artifact-kind placement claims and its pre-`TopologySurface` "How the routing decision is made" section removed or reduced to a link — because it currently asserts normative placement content in retired vocabulary ("primary target branch", an alias the glossary explicitly retires), so publishing a new page without narrowing it would create two authorities answering one question. | High | Open |
+| FR-019 | Disambiguate "routing" in the prose glossary | US7 | As a maintainer, I want a `Routing` disambiguation added to `docs/context/orchestration.md` **plus** a Terminology Canon line in `CLAUDE.md` — exactly how the `primary`/`merge` footgun is actually implemented — extending (not restating) the existing `PRIMARY partition` / `COORD partition` / `Topology Surface` entries, which already frame partition as an artifact-kind routing concept. It must **govern** the senses that appear in governed prose — placement, branch-target, commit, dispatch/profile, sync fan-out, model/task routing (`src/doctrine/model_task_routing/`, the highest-collision sense in agent-authored text) and scope routing — each with a "do NOT use when" guard, and **explicitly scope out by name** the infrastructural senses (event routing, HTTP request routing, significance routing bands) rather than passing over them in silence. It must NOT edit `src/doctrine/glossary_packs/built-in/spec-kitty-core.glossary-pack.yaml` or `.kittify/glossaries/spec_kitty_core.yaml` (byte-frozen by a seed SHA + term-count pin and a parity gate), and must not reword or renumber existing headings that ADRs deep-link. | High | Open |
 
 ### Non-Functional Requirements
 
@@ -295,8 +298,8 @@ re-deriving.
 | NFR-007 | Honest floor accounting | Any floor that moves records its before/after integers and the reason (a routing shrink), per the floors' own doctrine; no floor is relaxed without a recorded census. | Maintainability | High | Open |
 | NFR-008 | Census reconciliation, correctly scoped | Reconciliation covers the **live residual/lenient** totals per primitive — the figures the gate parses — not the historical pre-migration totals, which are preserved and labelled as an audit record. | Maintainability | High | Open |
 | NFR-009 | No resolution cycle | No change introduces a cycle in the `read_dir` call graph; the foundation sites named in FR-005 stay outside it. | Reliability | High | Open |
-| NFR-010 | Docs hygiene for the new page | The new architecture page is registered in the explanation index/TOC, the page inventory and docs retrieval index are regenerated, relative links resolve, and `check_docs_freshness --ci` reports zero errors. | Maintainability | High | Open |
-| NFR-011 | Vocabulary consistency, not competition | The page and glossary use the canonical `TopologySurface` vocabulary and the existing `PRIMARY partition` / `COORD partition` entries; no new synonym for an already-named concept is introduced, and the terminology guard stays green. | Maintainability | High | Open |
+| NFR-010 | Docs hygiene for the new page | The page is registered in `docs/architecture/index.md` (mandatory — the curated `explanation-index.md` / `explanation-toc.yml` are ungated subsets and are a judgement call, not a requirement), the two **gated** registries `docs/development/3-2-page-inventory.yaml` and `docs/development/3-2-docs-retrieval-index.yaml` are regenerated, relative links resolve, and `check_docs_freshness --ci` reports zero errors. | Maintainability | High | Open |
+| NFR-011 | Explanatory only; vocabulary consistent, not competing | The page and glossary use the canonical `TopologySurface` vocabulary and extend the existing entries; no new synonym for an already-named concept. The page is **explanatory**: it links to ADR `2026-06-24-1` / `2026-07-23-1` for normative rules (the placement invariant, the forbidden-conditioning rule, alias retirement) rather than restating them, and **every code-shape claim carries a `module:symbol` citation** so drift is detectable. The terminology, glossary-canonical-terms, and glossary-pack parity/no-regression gates all stay green. | Maintainability | High | Open |
 
 ### Constraints
 
@@ -307,7 +310,8 @@ re-deriving.
 | C-003 | No file-scoped blanket exemptions | Allow-list entries are per-site descriptors with individual rationale. | Technical | High | Open |
 | C-004 | The primitive is privatised, never deleted | It is the terminal `KITTY_SPECS_DIR` constructor the resolver is built on and the sanctioned owner of that assembly; the end state is module-private with in-module and named-sanctioned callers only. | Technical | High | Open |
 | C-005 | Sequence is delegate-then-remove | Step 1 (delegation) lands and is verified before any call-site rewrite; the floors move only in Step 2, deliberately. | Technical | High | Open |
-| C-006 | Scope boundary | Out of scope: the #2966 remainder, the #2964 terminology migration, re-fixing #2824's landed defect, new `MissionArtifactKind` members, extending the pinned scan-scope prefix set, and the ~14 hand-assembled `KITTY_SPECS_DIR` paths outside sanctioned constructors (tracked separately). | Technical | High | Open |
+| C-009 | Grammar before rows | The ledger's parse grammar (FR-008) and the index discriminator (FR-009) land and are verified **before** any classification row is written for a newly censused primitive; a row added under the old grammar can parse silently-empty. This is the second hard sequencing gate alongside C-005. | Technical | High | Open |
+| C-006 | Scope boundary | The authoritative list is the **Out of Scope** section at the end of this spec; in summary: the #2966 remainder, the #2964 terminology migration, re-fixing #2824's landed defect, new `MissionArtifactKind` members, extending the pinned scan-scope prefix set, and the ~14 hand-assembled `KITTY_SPECS_DIR` paths outside sanctioned constructors (tracked separately). | Technical | High | Open |
 | C-007 | Not a bulk edit | Each site needs an individual semantic decision (which kind, which disposition, which anchoring class); the machine-parsed ledger is the guardrail of record. Operator-confirmed 2026-07-28. | Technical | Medium | Open |
 | C-008 | Targeted verification only | The exhaustive architectural sweep is CI's responsibility. Locally named gates: read-side census, closeout, anchoring-authority floors, fold-prescription, trio-seam, write-side, plus the mission suites. | Technical | Medium | Open |
 
@@ -324,19 +328,25 @@ re-deriving.
 
 ## Success Criteria *(mandatory)*
 
+### Measurable Outcomes
+
 - **SC-001**: Zero consumer modules outside the resolver/sanctioned set name `primary_feature_dir_for_mission`, and it is absent from the module's public exports.
 - **SC-002**: Every migrated site resolves an identical directory for a materialized mission; the only recorded behavioural delta is backfill recovery, pinned by test.
 - **SC-003**: Step 1 lands with the anchoring floor counts unchanged, and every divergence it surfaces is attributed in writing.
 - **SC-004**: A non-compliant read planted in a migrated module is still flagged, and `status/aggregate.py:522` no longer passes by omission.
-- **SC-005**: For every fail-loud-classified `resolve_feature_dir_for_mission` site, a husk mission resolves the primary anchor — zero husk substitutions; a planted direct or aliased call reds the gate.
+- **SC-005**: For all *N* fail-loud-classified `resolve_feature_dir_for_mission` sites, a husk mission resolves the primary anchor — zero husk substitutions; a planted direct or aliased call reds the gate. **Zero-case discharge:** if the census yields *N* = 0, that is recorded as an honest bound under FR-017 (with its per-disposition counts from FR-010) and the husk guarantee is pinned by a synthetic-site regression instead — the criterion is never satisfied by an empty set.
 - **SC-006**: Mutating a ledger row for **each** primitive independently reds the gate; parsed row count equals the summed per-primitive census.
 - **SC-007**: The `#2214` pin and its pin-existence test are both absent, both `_run_documentation_wiring` reads are routed, and the closeout gate is green.
 - **SC-008**: Every count claimed in the ledger and the gate docstring matches a fresh census; the previously stale figure is corrected in both places.
 - **SC-009**: All eight misleading comments (two acceptance, six husk) state what the code does.
 - **SC-010**: Any floor that moved records its before/after integers and reason; no floor obliges the primitive to remain in use.
 - **SC-011**: The named targeted gates and mission suites are green on the rebased tip; `ruff` and project-mode `mypy` report zero new findings.
-- **SC-012**: A reader given only the new architecture page can name the three layers, the code owner of each, what "routing" means here versus the four other senses, and why a canonical handle is not compliance — with zero references to this mission's spec required.
-- **SC-013**: Docs hygiene is green for the new page (registered in the explanation index/TOC, inventory and retrieval index regenerated, relative links resolve, `check_docs_freshness --ci` zero errors) and the terminology guard passes.
+- **SC-012**: The new page structurally carries: a named section per layer with that layer's owning module path; a `Routing` disambiguation table covering every **governed** sense, each with a "do NOT use when" guard, plus the infrastructural senses named as out of scope; a compliant / semi-compliant / non-compliant idiom table; citations to both governing ADRs; both composition roots; and the honest bounds (unwired surface members, the residual `PLACEMENT` rename debt). Asserted by a docs test alongside the SC-013 hygiene checks. (The comprehension intent lives in User Story 7's Independent Test, where a human check belongs.)
+- **SC-014**: The foundation sites of FR-005 are recorded by name with their recursion rationale, and remain unrouted — verified by census.
+- **SC-015**: The index discriminator (FR-009) admits a module with several censused sites in one qualname — demonstrated by the known four-site case — and its uniqueness assertion holds.
+- **SC-016**: The classification's per-disposition counts (FR-010) are published in the ledger, and the honest bounds enumeration (FR-017) matches the live tree item-for-item with sizes.
+- **SC-013**: Docs hygiene is green (page registered in `docs/architecture/index.md`; both gated registries regenerated; relative links resolve; `check_docs_freshness --ci` zero errors), the terminology and glossary-canonical-terms guards pass, and the glossary-pack parity + no-regression gates are **untouched-green** (proving neither frozen store was edited).
+- **SC-017**: `docs/architecture/branch-target-routing.md` no longer asserts per-artifact-kind placement rules and no longer uses the retired `primary target branch` alias; it links to the new page for the placement sense.
 
 ## Assumptions
 
