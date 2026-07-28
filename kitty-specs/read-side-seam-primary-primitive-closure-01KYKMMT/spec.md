@@ -247,6 +247,38 @@ re-deriving.
 
 ---
 
+### User Story 8 - The suite states the destination, so red→green is the acceptance signal (Priority: P1)
+
+Rather than retiring each defunct enforcement reactively — after the code it no longer
+describes has already changed — an early work package re-expresses the suite's
+expectations against the **target** design. The suite goes deliberately red, and that red
+is the mission's specification: as each migration lands, specific nodes turn green, and
+"done" is observable rather than argued.
+
+**Why this priority**: it converts a scattered set of bookkeeping chores into a single
+acceptance signal, and it dissolves two hazards structurally — the use-count floors are
+gone *before* the fifth routed site can trip their strict bound, and the two
+green-by-omission gates get positive assertions *before* anything can slip past them.
+
+**The bar this depends on**: the signal is only worth having if the rewritten expectations
+genuinely encode the design. A suite red-stated carelessly *hides* regressions instead of
+revealing them, and a red that is a **collection error** (a missing symbol) is not
+red-first evidence at all — the red must manifest in an assertion about behaviour.
+
+**Independent Test**: after this WP alone, every red is either an expected assertion about
+the target design (traceable to a named FR) or a foreign honest-red P0; no red is a
+collection error caused by this WP; and the count of expected-red nodes is recorded so
+later WPs can show the intended red→green transitions.
+
+**Acceptance Scenarios**:
+
+1. **Given** the suite rewritten to the target design, **When** it runs before any migration lands, **Then** each red traces to a named requirement, and no red is an import/collection error introduced by this WP.
+2. **Given** a later migration WP lands, **When** the suite runs, **Then** the specific nodes that WP was expected to green **are** green, and nothing previously green went red.
+3. **Given** a red that is neither expected-by-design nor a foreign honest-red P0, **When** it is triaged, **Then** it is treated as a load-bearing regression and the product is fixed.
+4. **Given** the retired use-count floors, **When** the migration passes its fifth routed site, **Then** no strict-bound assertion breaks mid-drain (the floors are already gone).
+
+---
+
 ### Edge Cases
 
 - **Backfilled mission + composed handle** — the one real behavioural delta; must be pinned by test, per site where it applies.
@@ -270,9 +302,11 @@ re-deriving.
 | FR-004 | Step 2 — callers declare the kind | US1 | As a maintainer, I want each consumer site to pass its artifact kind to the seam instead of naming a primary-only helper, so the placement decision lives in the resolver. | High | Open |
 | FR-005 | Keep foundation sites out, by name | US1 | As a maintainer, I want the sites that sit *beneath* the seam (`core/paths.py:727`, `:780`, `core/git_ops.py:444`, `coordination/surface_resolver.py:739`) left unrouted and recorded as named sanctioned foundation sites with their recursion rationale, so authority tidiness does not buy a resolution cycle. | High | Open |
 | FR-006 | Delete the public wrapper; keep the private assembler | US1 | As a maintainer, I want the **public** `primary_feature_dir_for_mission` wrapper **deleted** once its consumers are routed — the terminal `KITTY_SPECS_DIR` assembler surviving as a module-private leaf — so the invariant is structural: the public name ceases to exist and cannot be re-imported, and no renamed private name needs re-blessing in the trio gate. | High | Open |
+| FR-023 | Re-express suite expectations against the target design, early | US8 | As a maintainer, I want an early work package that rewrites the affected gates' expectations to describe the **target** design — retiring the use-count floors, replacing the two green-by-omission exemptions with positive assertions, and re-authoring the stale content descriptors — so the suite becomes the mission's acceptance signal (red→green per landing WP) instead of a trail of reactive bookkeeping. Every red it leaves must be an **assertion** about behaviour traceable to a requirement, never a collection error, and the expected-red set must be recorded. | High | Open |
+| FR-024 | Ground execution in the cited refactoring doctrine | US8 | As an implementer, I want each work package body to carry the doctrine that governs it as executable citations (`Run: spec-kitty charter context --include <kind>:<id>`) with a when-doing trigger, so the mission's refactoring intent reaches the execution run — because spec/plan prose is **not** composed into a WP prompt, and a new frontmatter field would be rejected outright. | High | Open |
 | FR-021 | Extract the terminal assembler first (tidy-first) | US1 | As a maintainer, I want the pure `KITTY_SPECS_DIR` assembly extracted into a module-private leaf and the seam's own PRIMARY leg (plus the 11 resolver-internal callers) re-pointed at it **before** any delegation, because the seam reaches the primitive through its PRIMARY leg — delegating without this extraction is an **infinite recursion**, not a refactor. | High | Open |
 | FR-022 | Drain and privatise the co-drained canonicalizer | US1 | As a maintainer, I want `_canonicalize_primary_read_handle` (86 references / 22 `src/` files) treated as a peer of the primary primitive: the seam canonicalizes internally, so every routed site drains it too — it must be censused, drained, and privatised/deleted in this cycle, so no public leaf is left propped up by an integer floor. | High | Open |
-| FR-007 | Retire the use-count floors and transfer the teeth | US1 | As a maintainer, I want the two canonicalizer floors retired (or honestly re-pinned with recorded before/after) and their guarantee transferred to the read-side census as a censused callee with an explicit sanctioned set, so no gate obliges the primitive to keep being used. | High | Open |
+| FR-007 | Retire the use-count floors and transfer the guarantee (with doctrinal adjudication) | US1 | As a maintainer, I want the two canonicalizer floors retired (or honestly re-pinned with recorded before/after) and their guarantee transferred to the read-side census as a censused callee with an explicit sanctioned set, so no gate obliges the primitive to keep being used. **This must be adjudicated explicitly against `DIRECTIVE_043` (`enforcement: required`, "a gate that trivially passes when the relevant call-site count is zero is non-compliant — the gate must have a concrete floor") and against `tactic:architectural-gate-non-vacuity`, whose step 4 prescribes the very routed-count floor being retired**: non-vacuity is *preserved by transfer* — the bypass census carries its own concrete floor and per-primitive non-vaciuty proof — not abandoned. Silence here would read as violating a required directive. | High | Open |
 | FR-008 | Fix the ledger's machine-parse grammar first | US5 | As a maintainer, I want the parsed sections constrained (one table per parsed heading, verbatim headings, verdict/path/qualname at fixed leading positions, any primitive discriminator appended as a trailing column) **before** rows are added, so a multi-primitive ledger cannot parse silently-empty. | High | Open |
 | FR-009 | Give the index a per-site discriminator | US5 | As a maintainer, I want the stay-lenient index able to address several censused sites in one qualname, with its uniqueness assertion updated in the same change. | High | Open |
 | FR-010 | Census and classify the unpoliced resolver, with per-disposition counts | US4 | As a maintainer, I want an AST census (aliases resolved) of `resolve_feature_dir_for_mission` and every site classified with disposition **and both axes** — raise-or-degrade, anchoring root (verbatim argument plus its semantic class with provenance), handle form, target kind, idempotence under the seam's output — and I want the census to record the **count per disposition**, so a zero-fail-loud outcome is an explicit, reviewable finding rather than a silently satisfied requirement. | High | Open |
@@ -313,6 +347,8 @@ re-deriving.
 | C-004 | Private assembler permanent; public wrapper deleted | The terminal `KITTY_SPECS_DIR` assembler is module-private and permanent (the resolver is built on it, and it is the sanctioned owner of that assembly). The **public wrapper** is a transitional shim and is **deleted** at the end of the migration — it is not merely renamed. Operator-decided 2026-07-28, superseding the earlier "privatise, never delete" framing. | Technical | High | Open |
 | C-005 | Sequence is extract → delegate → remove | **Step 0** extracts the terminal assembler and re-points the seam's PRIMARY leg (FR-021) — without it Step 1 recurses. **Step 1** delegates the public wrapper and is verified with call sites untouched. **Step 2** rewrites call sites, then deletes the wrapper. The use-count floors are retired at the **start** of Step 2, not after it: their strict bound breaks mid-drain. | Technical | High | Open |
 | C-009 | Grammar before rows | The ledger's parse grammar (FR-008) and the index discriminator (FR-009) land and are verified **before** any classification row is written for a newly censused primitive; a row added under the old grammar can parse silently-empty. This is the second hard sequencing gate alongside C-005. | Technical | High | Open |
+| C-010 | Foreign honest-red P0s are out of scope | Missions landing on `upstream/main` carry **deliberately red** red-first P0 pins (e.g. `tests/sync/test_sync_consent_default_deny.py`, hosted-sync consent #3031, red by design per ADR `2026-07-17-1` and marked `fast`, so it appears in fast lanes). This mission does **not** remediate them. Classification is by **surface**: a red is this mission's business only if it touches a placement/read-path surface this mission owns, or is a demonstrable product regression from this mission's diff. Never green-wash a foreign P0; never treat its presence as a reason to widen scope. | Technical | High | Open |
+| C-011 | Doctrine citations live in the WP body | Doctrine references reach an implementer **only** through the WP task-file body (composed verbatim into the prompt) as `Run: spec-kitty charter context --include <kind>:<id>` stanzas with a when-doing trigger, plus the validated `agent_profile` field. Citations in `spec.md`/`plan.md` are for reviewers and the accept gate, **not** a propagation mechanism. A new frontmatter key (`doctrine_refs:`, `directives:`, …) is **forbidden** — the WP schema is `extra="forbid"`, so it raises and breaks workspace resolution, dependency gating and status emission. Do not add to the mission-type action index (over-broadcasts permanently and is inert on this route). | Technical | High | Open |
 | C-006 | Scope boundary | The authoritative list is the **Out of Scope** section at the end of this spec; in summary: the #2966 remainder, the #2964 terminology migration, re-fixing #2824's landed defect, new `MissionArtifactKind` members, extending the pinned scan-scope prefix set, and the ~14 hand-assembled `KITTY_SPECS_DIR` paths outside sanctioned constructors (tracked separately). | Technical | High | Open |
 | C-007 | Not a bulk edit | Each site needs an individual semantic decision (which kind, which disposition, which anchoring class); the machine-parsed ledger is the guardrail of record. Operator-confirmed 2026-07-28. | Technical | Medium | Open |
 | C-008 | Targeted verification only | The exhaustive architectural sweep is CI's responsibility. Locally named gates: read-side census, closeout, anchoring-authority floors, fold-prescription, trio-seam, write-side, plus the mission suites. | Technical | Medium | Open |
@@ -348,6 +384,8 @@ re-deriving.
 - **SC-015**: The index discriminator (FR-009) admits a module with several censused sites in one qualname — demonstrated by the known four-site case — and its uniqueness assertion holds.
 - **SC-016**: The classification's per-disposition counts (FR-010) are published in the ledger, and the honest bounds enumeration (FR-017) matches the live tree item-for-item with sizes.
 - **SC-013**: Docs hygiene is green (page registered in `docs/architecture/index.md`; both gated registries regenerated; relative links resolve; `check_docs_freshness --ci` zero errors), the terminology and glossary-canonical-terms guards pass, and the glossary-pack parity + no-regression gates are **untouched-green** (proving neither frozen store was edited).
+- **SC-020**: After the suite-expectations WP, every red is either an expected assertion traceable to a named requirement or a listed foreign honest-red P0 — zero collection errors introduced by that WP — and the expected-red set is recorded so later WPs demonstrate their red→green transitions.
+- **SC-021**: Each WP body carries its governing doctrine as `--include` citations with when-doing triggers; every cited id resolves (the command exits non-zero on a bad id); no WP frontmatter carries an unschema'd doctrine key.
 - **SC-018**: The extraction (FR-021) is behaviour-neutral and lands with zero call-site changes; a PRIMARY-kind read through the seam completes without recursion.
 - **SC-019**: Every red observed during the migration is classified *stale → re-pin/retire* · *scaffold → delete* · *valid → fix product*, and the classification is recorded; no product change is made to satisfy a gate that encodes the retired shape.
 - **SC-017**: `docs/architecture/branch-target-routing.md` no longer asserts per-artifact-kind placement rules and no longer uses the retired `primary target branch` alias; it links to the new page for the placement sense.

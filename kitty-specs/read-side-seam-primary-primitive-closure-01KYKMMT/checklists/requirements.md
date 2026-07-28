@@ -102,11 +102,14 @@ ledger and the gate docstring; FR-016 re-derives and corrects it rather than
 trusting the issue text. The corrected findings were posted to #3014.
 
 **Note 5 — Size and sequencing.**
-20 FR / 11 NFR / 9 C / 17 SC across seven user stories is larger than a typical mission
-here. The tasks phase should expect roughly 9–11 work packages, with two hard
-sequencing gates now both at constraint level (C-005, C-009): the grammar/index prerequisites (FR-008/009) before any ledger rows,
-and the delegation (FR-002/003) before any call-site rewrite (C-005). The floors move
-only in Step 2, deliberately (NFR-007).
+24 FR / 11 NFR / 11 C / 21 SC across eight user stories is larger than a typical mission
+here. The tasks phase should expect roughly 10–12 work packages, with **three** hard
+sequencing gates at constraint level: the grammar/index prerequisites (FR-008/009) before
+any ledger rows (C-009), the delegation before any call-site rewrite (C-005), and the
+tidy-first extraction before the delegation (IC-00, which exists because delegating
+without it is literal infinite recursion). The floors are retired at the **start** of
+Step 2 — IC-0T — because their strict bound breaks at roughly the fifth routed site
+(NFR-007).
 
 **Note 7 — Quick post-spec squad (2026-07-28): 6 MAJOR folded, spec is draft 4.**
 A two-lens quick pass on the *new* material found 6 MAJOR. **Document coherence (renata):**
@@ -153,5 +156,60 @@ already owns the *branch* sense of "routing", and the glossary already defines
 require alignment and cross-reference (NFR-011) rather than a competing vocabulary, plus
 docs-hygiene compliance for a new page (NFR-010). Verified as a comprehension outcome
 (SC-012) rather than a "page exists" checkbox.
+
+**Note 8 — Suite-expectations WP + doctrine grounding (2026-07-28, operator-directed).**
+Three additions, all at the operator's instruction, after two model-disciplined doctrine
+scouts swept all 23 activated artefacts.
+
+*(a) The suite as the acceptance signal.* US8 + FR-023 make an early "re-express the suite's
+expectations against the target design" work package explicit, and IC-0T is its plan-side
+concern. The operator's own bar is now the DoD: it is *only* a good acceptance signal **if
+the tests are updated adequately** — so every remaining red must manifest in an
+**assertion** traceable to a named FR, with **zero collection errors introduced**, and the
+expected-red node list is recorded so later WPs can demonstrate the intended greens. This
+is also where the two use-count floors are retired, which converts "the floors break around
+the fifth routed site" from a timing hope into a structural fact. Grounded in
+`DIRECTIVE_034` (a red must go red *in the assertion*, not at import) — two of the mission's
+worst frictions are precisely collection errors.
+
+*(b) Doctrine grounding.* FR-024 + C-011 + the plan's new **Doctrine grounding** section
+cite the refactor-specific artefacts. The load-bearing finding: all of them are **activated
+but wired to no action index**, so an implementer receives *none* of them from charter
+context — they reach execution only via an explicit `Run: spec-kitty charter context
+--include <kind>:<id>` citation in the WP body (the command is activation-exempt and exits
+non-zero on a bad id, so a wrong citation is self-detecting). The chain that matters:
+`tactic:refactoring-change-function-declaration` **is** delegate-then-remove (C-005/FR-006
+are that tactic, not a local invention); `tactic:canonical-source-unification` step 5 —
+*"do not leave a non-canonical copy as a fallback"* — is the doctrinal case for deleting the
+wrapper; `DIRECTIVE_041` supplies the disposition taxonomy the ledger had been restating;
+`DIRECTIVE_025` bounds IC-00's tidy-first extraction. C-011 forbids the two tempting
+propagation shortcuts: a new WP frontmatter key (`WPMetadata` is `extra="forbid"` — it
+raises and breaks workspace resolution) and the mission-type action index (permanent,
+mission-type-wide over-broadcast, and inert on the implement route anyway).
+
+*One genuine doctrine-vs-doctrine tension surfaced and is adjudicated in the plan:*
+`DIRECTIVE_043` (`enforcement: required`) demands a concrete gate floor, while FR-007
+retires two. Resolution: non-vacuity is **preserved by transfer** — the retired floors count
+uses of a symbol being deliberately drained, so post-migration they assert only that the
+resolver calls its own assembler; the guarantee moves to the bypass census, which carries
+its own floor, per-primitive non-vacuity, alias resistance and a shrink-only allow-list.
+The retiring commit must say so, citing both artefacts.
+
+*Doctrine gaps recorded, not fixed:* the **semantic-compression** family (the best fit for
+"behaviour-preserving with one named delta", and the only home of "characterization test")
+is unactivated here; no artefact adjudicates tensions of this shape; `agent action
+implement` does not forward the WP's `agent_profile` into charter context though `dispatch`
+does; and activated directives can be silently pruned out of an action's resolved context
+via non-activated intermediate paradigms.
+
+*(c) Foreign honest-red P0s are out of scope (C-010).* Missions have landed on
+`upstream/main` carrying deliberately-red P0 pins — live on our base:
+`tests/sync/test_sync_consent_default_deny.py` (#3031, red by design per ADR
+`2026-07-17-1`, and marked `fast` so implementers **will** see it, on
+`sync/routing.py` — the *sync fan-out* sense of routing, zero surface overlap). The
+classification rule is **by surface, not by timing**: a red is this mission's business only
+if it touches a placement/read-path surface the mission owns, or is a demonstrable
+regression from this mission's diff. Never green-wash a foreign P0; never let its presence
+justify widening scope.
 
 - Items marked incomplete require spec updates before `/spec-kitty.plan` — none are incomplete.
