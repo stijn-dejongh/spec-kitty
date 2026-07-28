@@ -56,6 +56,26 @@ healthy case; zero lenient or flat-topology sites begin raising; enumerated
 gate-bite conditions all hold; census totals reconcile exactly). Each is
 mechanically checkable.
 
+**Note 4 — The spec was RE-FRAMED after a post-spec adversarial squad (2026-07-28).**
+The first draft inherited #3014's premise and a two-lens squad (architect +
+patterns) returned **10 MAJOR findings** against the live tree, three of which
+falsified the premise: (a) `primary_feature_dir_for_mission` is already
+census-policed on the anchoring axis by `test_resolution_authority_gates.py`;
+(b) its fail-loud surface is **zero** — all 34 in-scope sites read a PRIMARY
+artifact off a deliberately PRIMARY anchor, six with comments stating the
+topology-routed resolver would be wrong — and migrating them would red two census
+floors plus a third module; (c) a **fourth** kind-blind resolver
+(`resolve_feature_dir_for_mission`, 8 sites / 7 files) is the genuinely unpoliced
+gap. The squad also *executed* the originally-prescribed ledger restructuring and
+demonstrated it parses **silently vacuously**, and showed the index grammar cannot
+represent a multi-site qualname, and that deleting the `#2214` pin reds a test by
+construction. The operator chose the honest-reframe. Every MAJOR is now either a
+requirement (FR-004/005 grammar prerequisites, FR-002 paired retirement, FR-011
+record correction, FR-012 honest bounds, NFR-004 per-primitive non-vacuity, NFR-007
+no floor breakage) or an explicit constraint (C-004 excludes the mis-identified
+primitive with rationale). Re-validated against every checklist item after the
+rewrite.
+
 **Note 3 — Two facts in the source issues were corrected during authoring.**
 (a) #2824's functional defect is already fixed (`6923d1d40`, regression-green,
 independently re-verified) and its *suggested* fix would have broken `lanes.json`
