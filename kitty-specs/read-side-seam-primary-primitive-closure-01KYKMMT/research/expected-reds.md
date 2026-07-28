@@ -81,4 +81,81 @@ diff.
 
 ## WP01 — architectural gate expectations
 
-*Pending — WP01 is still implementing in lane-a. Its section lands here on completion.*
+**Scope**: T001–T007 (`test_resolution_authority_gates.py`,
+`resolution_gate_allowlist.yaml`, `test_gate_read_literal_ban.py`,
+`test_trio_seam_only.py`, `test_coord_read_residuals_closeout.py`,
+`_gate_coverage_baseline.json`, `_golden_count_baseline.json`). **Zero
+changes under `src/`.**
+
+**Reconciled against a live run of all six C-008 gates** (`PWHEADLESS=1
+SPEC_KITTY_SYNC_MINIMAL_IMPORT=1 uv run pytest test_no_read_side_bypass.py
+test_resolution_authority_gates.py test_gate_read_literal_ban.py
+test_coord_read_residuals_closeout.py test_trio_seam_only.py
+test_no_write_side_rederivation.py -q`, lane-a): **166 passed / 3 failed / 0
+collection errors** — the 3 failures are exactly the 3 nodes below, no
+unpredicted red.
+
+| # | Node id | Finding (rel_path :: qualname) | FR | Greened by | Why expected |
+|---|---|---|---|---|---|
+| 1 | `test_coord_read_residuals_closeout.py::test_fr007_arm_live_identity_scan_is_clean` | `src/specify_cli/cli/commands/agent/mission_setup_plan.py::_run_documentation_wiring` (flag: `get_mission_type(feature_dir)`) | FR-014 | WP04 | T005 retired the `#2214` allow-list pin (`_IDENTITY_CALLSHAPE_KNOWN_RESIDUALS`) that tolerated this one-hop residual, together with the test asserting the pin exists. The live arm still (correctly) flags the site — it is not yet routed. |
+| 2 | `test_trio_seam_only.py::test_trio_imports_route_only_through_seam_wrappers` | 7 sites still import `_canonicalize_primary_read_handle` / `primary_feature_dir_for_mission` from `_read_path_resolver`: `workflow.py::<module>`, `workflow_executor.py::<module>`, `acceptance/__init__.py::<module>` (top-level imports), `implement.py::find_wp_file`, `implement.py::_load_primary_anchored_mission_meta`, `implement.py::_planning_artifact_source_dir`, `implement.py::_build_implement_json_payload` | FR-004/FR-005 | WP05 | T006 shrank `_SEAM_ALLOWED_READ_PATH_RESOLVER_NAMES` to `{resolve_handle_to_read_path}` (a tightening, Ledger M5). This is a **pre-existing** gate (zero code change to itself) that now structurally enforces the shrink. |
+| 3 | `test_trio_seam_only.py::test_allowed_read_path_resolver_names_are_currently_used` | same reacquisition set as #2 | FR-004/FR-012 | WP05 | T006's replacement for the self-nullifying exemption (Ledger M6 — the retired `blessed - used - {"resolve_handle_to_read_path"}` shape was the empty set by construction once `blessed` shrank to one name, vacuously green regardless of what the trio imported). The new positive assertion reds on the identical still-imported leaf primitives until WP05 routes all four trio rewrite targets. |
+
+**T001/T002 gate-defect fixes (not widenings)**: `_PRIMARY_FOLD_CALLSHAPE_FUNCS`'s
+two consumption sites (`callshape_violations` here; `test_no_status_leg_
+rerouted_to_primary` above) now UNION a kind-discriminated helper
+(`_names_bound_from_primary_read_dir`, via `mission_runtime.
+is_primary_artifact_kind` — never a hardcoded kind list) instead of widening
+the frozenset by callee name (Ledger M7 — a callee-name widening would have
+sanctioned `STATUS_STATE` reads through the same seam call, producing a false
+positive on `test_no_status_leg_rerouted_to_primary` above; verified that
+node does **not** acquire a new failure from this change). `test_write_arm_
+resolvers_anchor_meta_on_primary` now asserts the positive `reads_via_primary`
+signal it used to discard (Ledger M8); making it positive against the REAL
+write-arm surfaces (`core/paths.py`, `core/git_ops.py`, `mission_finalize.py`)
+surfaced a genuine pre-existing detection gap (all three are thin adapters
+over `read_target_branch_from_meta`, never matching the literal `anchor(...)
+/ "meta.json"` BinOp shape) — fixed alongside the positive assertion, not
+carried as a red.
+
+**T003/T004 floor retirement (FR-007, DIRECTIVE_043 required)**: retired
+`CANONICALIZER_FLOOR` (was 44) and `ROUTED_CANONICALIZER_FLOOR` /
+`_MARGIN` (were 40 / 4) together with `test_canonicalizer_gate_floor` /
+`test_routed_count_floor`. Live re-derived census at retirement
+(quickstart.md §1 recipe, re-run fresh): **46 total canonicalizer call sites,
+43 routed** (both figures had already drifted from the stale 44/40 recorded
+in-tree — unrelated `src/` growth between missions). This is a **retirement**,
+not a re-pin: after Step 2 the floors' only remaining subject population is
+resolver-internal + named-sanctioned code, where a raw handle is correct by
+contract, so a floor obliging continued use would invert its own purpose.
+**DIRECTIVE_043 adjudication**: non-vacuity is preserved by **transfer**, not
+abandoned — `tactic:architectural-gate-non-vacuity`'s routed-count-floor
+element moves to WP02's read-side bypass census above (its own concrete
+floor, per-primitive non-vacuity, alias resistance, shrink-only allow-list).
+`test_coord_read_residuals_closeout.py`'s floor **import** + both equality
+pins + the two bound checks (the whole `test_routed_canonicalizer_floor_
+matches_recorded_census` test — zero coverage beyond the retired floor's own
+derivation) retired in the **same commit** — otherwise `ImportError` at
+collection, ~20 tests (DIRECTIVE_034). Also corrected the module's
+off-by-one identity read-site census in the same pass (FR-016): **24** live,
+not the recorded 22 (re-derived via the module's own
+`_count_read_call_sites`; unrelated drift since that figure was written).
+
+**T007 baselines**: `_gate_coverage_baseline.json` (orphan baseline,
+`--update-baseline`) refrozen — `total_tests` 32346 → 33948, `duplicate_
+test_count` 924 → 1046 (repo-wide drift unrelated to this WP's ~10-test net
+delta; `orphan_test_count`/`orphan_files` unchanged at 0/`[]`).
+`_golden_count_baseline.json` (selection baseline) needed **no change** —
+none of this WP's additions introduce a new `len(x) == n` golden-count shape
+(the retired floor tests used `>=`/`>`/`<=`, never `==`).
+
+**Contradictions with the WP prompt** (reported, not silently resolved):
+(1) T003's "corresponding block in `resolution_gate_allowlist.yaml`" does not
+exist — that YAML's `canonicalizer:` allow-list (3 permanent entries) is a
+separate, still-live def-use correctness gate, untouched; (2) T005's
+"off-by-one" was actually **+2** (22 → 24), not literally one — same drift
+class as the canonicalizer census above; (3) `tests/architectural/
+test_inline_meta_read_gate.py` (not owned by WP01) carries a stale docstring
+precedent-citation to `ROUTED_CANONICALIZER_FLOOR` — a comment-only mention,
+left untouched (out of WP01's `owned_files` and task list), flagged here for
+a future cleanup pass.
