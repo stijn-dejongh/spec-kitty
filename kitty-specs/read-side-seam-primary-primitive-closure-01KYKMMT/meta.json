@@ -7,6 +7,7 @@
   "mission_number": null,
   "mission_slug": "read-side-seam-primary-primitive-closure-01KYKMMT",
   "mission_type": "software-dev",
+  "pr_bound": true,
   "purpose_context": "An earlier change made mission-file reads fail loudly when the data they need lives on a branch that no longer exists, and added an automated guard so the mistake cannot be reintroduced. That guard covered only two of three sibling lookup helpers; the third is still unguarded, so a read can quietly return a plausible-but-wrong location instead of failing. This mission classifies and routes the remaining call sites, extends the guard to cover them, and clears two smaller related residuals so the protection has no known gaps.",
   "purpose_tldr": "Close the last unpoliced topology-blind read primitive so mission data is never silently read from the wrong place.",
   "slug": "read-side-seam-primary-primitive-closure-01KYKMMT",
