@@ -102,8 +102,8 @@ else is machine-derivable, and the machine-derivable fields are what the gate re
 
 | Element | Rule |
 |---|---|
-| Censused callees | the set of kind-blind primitives the AST census flags; **grows** by one this mission |
-| Sanctioned modules | asserted-sanctioned with rationale, **never silently skipped**; non-vacuity proven **per primitive** |
+| Censused callees | the set of kind-blind primitives the AST census flags; grows from **2 to 4** this mission (the newly policed kind-blind resolver, plus the primary primitive inheriting the retired floors' guarantee) |
+| Sanctioned modules | asserted-sanctioned with rationale, **never silently skipped**; non-vacuity proven **per primitive**. `core/paths.py` and `core/git_ops.py` are NOT currently sanctioned and need explicit per-site allow-list entries (FR-005 / C-003) |
 | Allow-list entries | per-site content descriptors (no path blankets); **shrink-only** |
 | Staleness twin-guard | an entry whose site is routed or gone **reds** until deleted |
 | Alias resolution | an aliased import must not defeat the census |
