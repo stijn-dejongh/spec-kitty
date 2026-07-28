@@ -16,13 +16,13 @@
 - [x] No [NEEDS CLARIFICATION] markers remain (zero markers; every open scope question was resolved by an explicit operator decision before authoring)
 - [x] Requirements are testable and unambiguous
 - [x] Requirement types are separated (Functional / Non-Functional / Constraints)
-- [x] IDs are unique across FR-###, NFR-###, and C-### entries (FR-001…019, NFR-001…011, C-001…008)
+- [x] IDs are unique across FR-###, NFR-###, and C-### entries (FR-001…020, NFR-001…011, C-001…009)
 - [x] All requirement rows include a non-empty Status value (all `Open`)
 - [x] Non-functional requirements include measurable thresholds — *see Note 2*
-- [x] Success criteria are measurable (SC-001…013 are counts, identity assertions, binary gate outcomes, or a comprehension check)
+- [x] Success criteria are measurable (SC-001…017 are counts, identity assertions, or binary gate outcomes; the comprehension check moved to US7's Independent Test)
 - [x] Success criteria are technology-agnostic — *see Note 1*
 - [x] All acceptance scenarios are defined (7 user stories × 3–4 scenarios each)
-- [x] Edge cases are identified (10, including the backfilled composed-handle divergence and the foundation-site recursion hazard)
+- [x] Edge cases are identified (10 across 8 bullets, including the backfilled composed-handle divergence and the foundation-site recursion hazard)
 - [x] Scope is clearly bounded (explicit Out of Scope section + C-006 scope boundary + C-004/FR-005 naming what is deliberately *not* touched)
 - [x] Dependencies and assumptions identified (Assumptions section, 5 entries, each either independently verified or explicitly scheduled for re-derivation)
 
@@ -98,15 +98,42 @@ delete), C-005 (delegation is a hard sequencing gate). Note that C-004's meaning
 independently re-verified) and its *suggested* fix would have broken `lanes.json`
 placement — recorded as C-001. The issue was closed with that evidence; only its
 comments remain in scope (FR-015). (b) #3014's census figure (40) is stale in both the
-ledger and the gate docstring; FR-010/FR-016 re-derive and correct it rather than
+ledger and the gate docstring; FR-016 re-derives and corrects it rather than
 trusting the issue text. The corrected findings were posted to #3014.
 
 **Note 5 — Size and sequencing.**
-19 FR / 11 NFR / 8 C / 13 SC across seven user stories is larger than a typical mission
+20 FR / 11 NFR / 9 C / 17 SC across seven user stories is larger than a typical mission
 here. The tasks phase should expect roughly 9–11 work packages, with two hard
-sequencing gates: the grammar/index prerequisites (FR-008/009) before any ledger rows,
+sequencing gates now both at constraint level (C-005, C-009): the grammar/index prerequisites (FR-008/009) before any ledger rows,
 and the delegation (FR-002/003) before any call-site rewrite (C-005). The floors move
 only in Step 2, deliberately (NFR-007).
+
+**Note 7 — Quick post-spec squad (2026-07-28): 6 MAJOR folded, spec is draft 4.**
+A two-lens quick pass on the *new* material found 6 MAJOR. **Document coherence (renata):**
+`SC-005`/`FR-011` were **conditionally vacuous** — a zero-fail-loud census would have
+satisfied them with zero work and silently evaporated User Story 4, which is exactly how
+draft 1 died on the *other* primitive; `FR-010` now records per-disposition counts and
+`SC-005` carries an explicit zero-case discharge. The FR table's "User Story" column held
+narrative rather than story ids, so the Feature-Readiness claim was unverifiable and
+`/plan` could not see the mapping; the table now carries a `Story` column (US1…US7, no
+orphans either way). **SSOT (paula):** my asserted three-layer split **misdescribed the
+code in two load-bearing ways** — the decision layer is *two* functions whose divergence
+is deliberate (`declared_read_surface` is materialization-blind precisely so it can
+disagree with a resolved stamp, which is what makes the `surface_cannot_hold`/#2906 guard
+possible), and `translate_surface` **selects** an already-discovered location rather than
+assembling a path. Publishing the original description would have taught readers to
+strangle through `translate_surface` and re-add discovery at the call site — *causing* the
+misappropriation the page exists to prevent. `docs/architecture/branch-target-routing.md`
+already asserts per-artifact-kind placement rules in retired vocabulary, so FR-020 now
+narrows it in the same slice instead of leaving two authorities. The glossary home is
+pinned to the prose glossary + `CLAUDE.md` Canon (the doctrine pack and seed are
+byte-frozen by a SHA + term-count pin and a parity gate). And "routing" has **≥10** senses,
+not 5 — governed senses now include model/task routing (the highest-collision sense in
+agent-authored prose) and scope routing, with the infrastructural senses scoped out by
+name. Minors folded: docs registries corrected to the gated ones, explanatory-only +
+`module:symbol` citation discipline, filename `artifact-placement-seam.md`, anchor
+stability, 33-vs-34 reconciled, slug/title note, Given/When/Then completion, and SCs added
+for previously uncovered FRs.
 
 **Note 6 — New IC added at operator request (2026-07-28): document the seam.**
 FR-018/FR-019 add the operator-requested implementation concern — *"update the
