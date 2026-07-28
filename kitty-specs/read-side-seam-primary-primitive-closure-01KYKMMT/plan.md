@@ -35,9 +35,33 @@ names to be **currently used**. Their reds are **expected consequences of a corr
 migration, not regressions.**
 
 **The single most dangerous failure mode in this mission is an implementer "fixing" the
-product to keep a defunct gate green.** Judge every red against the failing-test
-remediation framework — *stale → re-pin/retire · scaffold → delete · genuinely valid → fix
-the product* — and record which of the three it was (SC-019). **Never retry-to-green.**
+product to keep a defunct gate green.** Judge every red against **`DIRECTIVE_041`
+(tests-as-scaffold-not-friction)** — whose taxonomy this is: *STALE → remediate ·
+PATCHWORK/stub → delete · VALID and current → **fix the product***, plus *never
+retry-to-green* and *"a green test that would stay green if the code regressed provides no
+coverage"* (which is exactly M6/M8 below). Record which disposition applied (SC-019).
+
+    Run: spec-kitty charter context --include directive:DIRECTIVE_041
+    Run: spec-kitty charter context --include tactic:delete-the-assertion-not-the-test
+
+The second is the operational how-to for the 26 friction points: classify before touching,
+**mine the non-obvious coverage first**, re-point implementation-coupled assertions in
+place, and reserve deletion for provably zero-coverage scaffolding.
+
+### Third category — foreign honest-red P0s (not ours; do not remediate)
+
+Missions land on `upstream/main` carrying **deliberately red** P0 pins. Live example on our
+base: `tests/sync/test_sync_consent_default_deny.py` — hosted-sync consent (**#3031**), red
+by design per ADR `2026-07-17-1`, and marked `fast`, so **it appears in fast lanes** and an
+implementer will see it. Its surface is `sync/routing.py` /
+`is_sync_enabled_for_checkout` — the *sync fan-out* sense of "routing", zero overlap with
+ours. Its own docstring flags further #3031 work as not yet pinned, so more may land
+mid-mission.
+
+**Classification rule is by surface, not by timing:** a red is this mission's business only
+if it touches a placement/read-path surface this mission owns, or is a demonstrable
+regression from this mission's diff (C-010). Never green-wash a foreign P0, and never let
+its presence justify widening scope.
 
 26 friction points across **14** files were censused. The nine that change the plan:
 
@@ -188,6 +212,16 @@ above.
 - **Sequencing/depends-on**: none — **hard gate before IC-04** (C-005 Step 0)
 - **Risks**: Behaviour must be identical with **zero** call-site changes. The Class-C patch fixture stubs four resolver names *because* the PRIMARY leg calls them internally; re-pointing that leg makes the stubs unreached, so the fixture may go red **or vacuously green** — hand-verify it here rather than discovering it later. A negative patch elsewhere asserts a specific kind never routes through the planning resolver; confirm the extraction does not trip it.
 
+### IC-0T — Re-express the suite's expectations against the target design *(early; the acceptance signal)*
+
+- **Purpose**: Rewrite the affected gates so they describe the **destination**, not the structure being removed — making the suite the mission's specification and its red→green transitions the acceptance signal.
+- **Relevant requirements**: FR-023, FR-007 (floor retirement lands here), NFR-004, NFR-005, NFR-007, SC-019, SC-020
+- **Affected surfaces**: `tests/architectural/test_resolution_authority_gates.py` + its allow-list YAML (retire the two use-count floors and the margin's two-sided bound); `tests/architectural/test_coord_read_residuals_closeout.py` (its floor **import** and equality pins — otherwise a collection error); `tests/architectural/test_gate_read_literal_ban.py` (kind-discriminated fold-set widening; positive write-arm assertion); `tests/architectural/test_trio_seam_only.py` (positive assertion replacing the self-nullifying exemption); `tests/architectural/test_single_mission_surface_resolver.py` (re-author the import-time content descriptor onto the post-extraction leaf); gate-coverage baselines
+- **Sequencing/depends-on**: IC-02 for anything the ledger parses; otherwise **first**. The floor retirement must precede the fifth routed site of IC-05 — landing it here is what makes that structural rather than a timing hope.
+- **Doctrine**: `DIRECTIVE_041` (disposition taxonomy, never retry-to-green) · `tactic:delete-the-assertion-not-the-test` (re-point in place; delete only provably-zero-coverage scaffolding) · `DIRECTIVE_034` (a red must manifest in an **assertion**, not a missing symbol) · `tactic:frozen-baseline-shrink-only-ratchet` (a routing shrink is legitimate; record before→after inline with a tracker ref) · `tactic:architectural-gate-non-vacuity` + `DIRECTIVE_043` (see the adjudication below)
+- **Definition of done (the bar the operator named)**: every remaining red is an **assertion** traceable to a named FR — **zero collection errors introduced here**; the expected-red set is recorded (node list) so later WPs can demonstrate the intended greens; no gate is left weaker than before (widenings are kind-discriminated, exemptions become positive assertions); and no foreign honest-red P0 is touched.
+- **Risks**: This WP deliberately leaves the suite red, so it is the one WP whose "green" is *not* the acceptance criterion — review it against the recorded expected-red list, not against a green run. A carelessly red-stated suite **hides** regressions rather than revealing them: that is the whole downside, and the DoD above is what prevents it. Retiring node-ids drifts the gate-coverage baselines.
+
 ### IC-01 — Close the gate holes before anything moves
 
 - **Purpose**: Make the gates capable of noticing the migration, so nothing later passes by omission.
@@ -267,10 +301,57 @@ above.
 - **Sequencing/depends-on**: IC-03 and IC-05 — the page must document the layering **as landed**, not as intended
 - **Risks**: This concern's failure mode is becoming the fifth authority it exists to replace. Mitigations are in the requirements: the page is explanatory and links to the two ADRs for normative rules; every code-shape claim carries a `module:symbol` citation; the competing page is narrowed in the same slice; the byte-frozen glossary pack and seed are excluded (parity + SHA pins); existing glossary headings that ADRs deep-link must not be reworded. The layer model must be the **verified** one — an earlier draft misdescribed it in two load-bearing ways, and publishing that would have taught the very misappropriation the page prevents.
 
+## Doctrine grounding
+
+These artefacts are **activated but wired into no action index** (verified across all 23),
+so an implementer does *not* receive them from charter context — they reach execution only
+by explicit citation in a WP body. Cited here for reviewers and the accept gate; the
+propagation mechanism is the recipe below (C-011).
+
+| Artefact | Grounds |
+|---|---|
+| `tactic:refactoring-change-function-declaration` | **The delegate-then-remove sequence itself** — "have the old function call the new one internally… migrate callers one by one… remove the old function when no callers remain", selected "when the function is public API or has many callers". C-005 and FR-006 are this tactic; the plan cites it rather than re-deriving it. |
+| `tactic:refactoring-strangler-fig` | Reroute cadence only (one caller at a time, verify after **each**, delete the legacy path last). Its "build a parallel implementation" step does **not** apply — ours already exists with 88 compliant sites. |
+| `DIRECTIVE_025` (boy-scout) | The licence *and the bound* for IC-00's tidy-first extraction: campsite-clean the surface first, as a distinct preceding step, behaviour-preserving, scoped to surfaces the mission touches. |
+| `tactic:canonical-source-unification` | Single-authority consolidation — and its own worked example is this repo's read surface. Step 5, *"do not leave a non-canonical copy as a fallback — fallbacks revive the split-brain silently"*, is the doctrinal case for **deleting** the wrapper (FR-006) and for narrowing the competing docs authority (FR-020). |
+| `DIRECTIVE_044` (canonical sources / unification) | `required`. Unification-not-parity as a red line, with the exception this mission relies on: never drop a load-bearing invariant without a migration path proven safe by tests — the frame for FR-007's guarantee transfer. |
+| `DIRECTIVE_041` + `tactic:delete-the-assertion-not-the-test` | The Expected-Red Ledger's disposition taxonomy and the how-to for 26 friction points / 43 test files. Also prescribes anchoring ratchet keys on **qualname + normalised token, never `file.py:NNN`** — which is FR-009's per-site discriminator. |
+| `DIRECTIVE_034` (test-first) | NFR-003, plus the clause that matters most for IC-0T: a red must go red **because the behaviour manifests in the assertion**, not because a symbol is missing at collection. Two of our worst frictions *are* collection errors. |
+| `tactic:architectural-gate-non-vacuity` + `DIRECTIVE_043` | The four-element gate recipe behind FR-008/FR-012/NFR-004/NFR-005, and its named failure mode "vacuous gate" *is* M6/M8. **See the adjudication below.** |
+| `tactic:frozen-baseline-shrink-only-ratchet` | NFR-007: growth fails, shrink warns, baselines move only by human action with an inline justification naming before→after plus a tracker ref. |
+| `DIRECTIVE_042` + `styleguide:common-docs` | NFR-010/SC-013 — frontmatter as per-page SSOT, the page-inventory rollup as a generated freshness-gated lockfile (never hand-maintained). |
+| `paradigm:deep-module-design` | One-line framing for FR-018: a small stable interface should hold every fact a caller must know. |
+
+Already wired to `implement` and therefore *not* cited: `procedure:refactoring` (the default
+posture), `DIRECTIVE_024`/`030`/`037`, `tactic:change-apply-smallest-viable-diff`,
+`tactic:tdd-red-green-refactor`, `tactic:quality-gate-verification`.
+
+### Adjudication — FR-007 vs `DIRECTIVE_043` (`enforcement: required`)
+
+`DIRECTIVE_043` requires that a gate not trivially pass at zero call sites — *"the gate must
+have a concrete floor"* — and `tactic:architectural-gate-non-vacuity` step 4 prescribes the
+routed-count floor FR-007 retires. **Resolution: non-vacuity is preserved by transfer, not
+abandoned.** The retired floors count *uses of a symbol we are deliberately draining*, so
+after the migration they assert only that resolver-internal code still calls its own
+assembler — no longer a defect-class guard. The guarantee moves to the read-side bypass
+census, which carries its own concrete floor, per-primitive non-vacuity proof, alias
+resistance, and a shrink-only allow-list under a staleness twin-guard. The mission must
+state this in the retiring commit, citing both artefacts. *(Doctrine gap: no artefact
+adjudicates doctrine-vs-doctrine tensions of this shape — the only reconciliation directive
+covers change-scope, not gate discipline. Worth filing.)*
+
+### Doctrine gaps found while grounding (file, do not fix here)
+
+1. The **semantic-compression** family — the best-fitting doctrine for "behaviour-preserving with exactly one named delta" (behavioural-boundary mapping, equivalence verification, abstraction extraction requiring characterization coverage for *every* rerouted caller) — is **not activated** for this project, though the repo ships the matching profile and skill. NFR-001/SC-002 are currently grounded by mission prose alone.
+2. "**Characterization test**" — what IC-04's "existing suite as harness" actually is — exists as doctrine vocabulary only inside non-activated artefacts.
+3. `agent action implement`/`review` do not forward the WP's `agent_profile` into charter context, so the implement step contract's documented "guaranteed citations" promise is unmet on the primary implement surface (measured: 6,178 vs 17,143 chars of governance), while `dispatch` does forward it.
+4. Activated directives can be silently stripped from an action's resolved context by edge-pruning through non-activated intermediate paradigms (`DIRECTIVE_033` on `implement`; `DIRECTIVE_033` + `DIRECTIVE_041` on `review`). No gate covers reachability from the action node.
+
 ### Sequencing summary
 
 ```text
-IC-00 (extract) ──┐
+IC-0T (suite states the target design — floors retired here) ─┐
+IC-00 (extract) ──┐                                            │
 IC-01 (gates)  ───┼──> IC-04 (delegate) ──> IC-05 (route · trio-first · delete wrapper) ──┐
 IC-02 (grammar) ──┴──> IC-03 (classify) ──────────────────────────────────────────────────┤
 IC-01 ──> IC-07 (residuals) ──> IC-06 (floors retired at START of IC-05; owns closeout) ───┤
@@ -289,6 +370,24 @@ IC-01 ──> IC-07 (residuals) ──> IC-06 (floors retired at START of IC-05;
 | `tests/architectural/test_coord_read_residuals_closeout.py` | IC-06's WP | IC-07 pin removal, IC-08 recorded census |
 | `src/specify_cli/missions/_read_path_resolver.py` | serial, by phase | IC-00 extract → IC-04 wrapper body → IC-05 delete + `__all__` |
 | `tests/architectural/test_trio_seam_only.py` | the trio WP of IC-05 | — |
+
+**Doctrine-propagation recipe for `/spec-kitty.tasks` (C-011).** Doctrine reaches an
+implementer **only** through the WP task-file body, which is embedded verbatim in the
+prompt; `spec.md` and `plan.md` are *not* composed into it. So, per WP:
+
+- add a `## Doctrine for this WP` block under Context & Constraints, each entry being *id ·
+  one-line why · `Run: spec-kitty charter context --include <kind>:<id>` · a **when-doing
+  trigger*** (an implementer skips a bare link but acts on a conditional). The command
+  resolves the full artefact body regardless of activation and **exits non-zero on a bad
+  id**, so a wrong citation is self-detecting;
+- repeat the trigger inside the subtask it governs — the block is far from the point of use
+  in a long WP;
+- set the validated `agent_profile` field to a profile whose existing directive references
+  already overlap this mission's emphasis; do **not** author or edit a shared profile;
+- **never** invent a frontmatter key — the WP schema is `extra="forbid"`, so it raises and
+  breaks workspace resolution, dependency gating and status emission;
+- **never** add to the mission-type action index — permanent, mission-type-wide
+  over-broadcast, and inert on this route anyway.
 
 **Rule for `/spec-kitty.tasks`**: an enforcement retirement is owned by the WP whose diff
 makes it defunct — never by a downstream "bookkeeping" WP. **Per-WP acceptance = the full
