@@ -79,6 +79,24 @@ Classification is **by surface, not by timing**: a red is this mission's busines
 a placement/read-path surface the mission owns, or is a demonstrable regression from this mission's
 diff.
 
+**Second expected red (T010.3 / NFR-008, cycle-1 fix).** The Live census summary table now
+declares the **post-migration end state** rather than the in-flight tree, so
+`test_ledger_summary_counts_reconcile_with_the_allow_list_and_themselves` mismatches on the
+`Total real call sites` row for both `resolve_feature_dir_for_mission` (declares 7, live finds 8)
+and `primary_feature_dir_for_mission` (declares 3, live finds 34), from commit `feb88514f`
+onward. **WP08 is the greening owner** — as WP04–WP07 route the remaining sites the live count
+converges on the declared end state, and WP08's closeout is what makes the two agree again. The
+test asserts the mismatch is limited to **exactly these two primitives** by error-message prefix
+rather than hardcoded counts, so it stays meaningful as the live numbers shift during WP04–WP07.
+
+**Lane isolation note (for whoever reconciles the union).** Each lane's red count is measured
+against a tree that does **not** contain the other lanes' work: WP01's `168 passed / 3 failed`
+was measured without WP02's gate changes, and WP02's `188 passed / 1 failed` without WP01's.
+Neither is wrong; they are simply different trees. Verified: WP01's fix commit `6c9ec7f7e` is
+**not** an ancestor of lane-b, and lane-b's diff is exactly its two owned files. The aggregate
+red set therefore only materialises at merge — which is precisely what WP08 T039 step 6
+(reconcile the union of all `## WPnn` sections) exists to check.
+
 ## WP01 — architectural gate expectations
 
 **Scope**: T001–T007 (`test_resolution_authority_gates.py`,
