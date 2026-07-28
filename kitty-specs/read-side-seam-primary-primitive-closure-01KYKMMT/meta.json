@@ -8,9 +8,11 @@
   "mission_slug": "read-side-seam-primary-primitive-closure-01KYKMMT",
   "mission_type": "software-dev",
   "pr_bound": true,
-  "purpose_context": "Where a mission's files live is supposed to be decided in one place, from the kind of file being read. In practice 34 call sites still decide it themselves by calling a location-specific helper, and one sibling helper is guarded by nothing at all. An audit proved the central resolver returns the same answer in every case tested \u2014 and a better answer for missions created before a recent rename. This mission moves those decisions into the resolver using a safe two-step refactor, guards the unguarded helper, closes two small related residuals, and corrects the records that misdescribed all of this.",
+  "purpose_context": "Where a mission's files live is supposed to be decided in one place, from the kind of file being read. In practice 34 call sites still decide it themselves by calling a location-specific helper, and one sibling helper is guarded by nothing at all. An audit proved the central resolver returns the same answer in every case tested — and a better answer for missions created before a recent rename. This mission moves those decisions into the resolver using a safe two-step refactor, guards the unguarded helper, closes two small related residuals, and corrects the records that misdescribed all of this.",
   "purpose_tldr": "Move the 'which partition?' decision out of 34 call sites and into the one resolver that should own it, and guard the resolver nobody guards.",
   "slug": "read-side-seam-primary-primitive-closure-01KYKMMT",
   "target_branch": "fix/read-side-seam-primary-primitive-closure",
-  "topology": "coord"
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-07-28T10:23:28.780288+00:00"
 }
