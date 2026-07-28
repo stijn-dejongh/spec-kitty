@@ -252,6 +252,10 @@ Plus the six C-008 gates (tasks.md §5), `uv run ruff check <changed>`, and proj
 - `commit_router.py` routed; the **four** foundation sites recorded by name with per-site
   rationale and **still unrouted**, proven by census; no cycle (T034, SC-014, NFR-009).
 - Behaviour preservation pinned red-first; no new raises.
+- **SC-009 aggregate (this WP is the last comment-touching WP, so it owns the count)**: all **eight**
+  misleading comments are corrected across the mission — 2 in `acceptance/__init__.py` + 3 in
+  `workflow_executor.py` (WP05), 1 in `next_cmd.py` (WP06), 2 in the runtime bridge (this WP).
+  Verify all eight, not just your two; report any WP05/WP06 gap rather than fixing it silently.
 - No edits under `tests/architectural/`.
 - **Per-site kind table in the Activity Log** (this is what makes Reviewer Guidance #1
   checkable): one row per routed site — *site → kind chosen → the downstream filename that

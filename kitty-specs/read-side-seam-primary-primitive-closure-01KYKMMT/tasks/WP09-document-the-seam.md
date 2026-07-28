@@ -331,6 +331,10 @@ fails at CI if skipped. Run it before handing off.
   tools; relative links resolve; `check_docs_freshness --ci` **zero errors** (T043).
 - The docs test asserts structure and citations, not prose wording (T044, SC-012).
 - Terminology guard green.
+- **SC-011 terminal green (this WP owns it, as the mission's last WP)**: on the rebased tip the six
+  C-008 gates and the mission suites are green, and `ruff` + project-mode `mypy` report zero new
+  findings against the baseline defined in tasks.md. This is the only point where SC-011 is
+  evaluated — it is deliberately not a per-WP criterion (FR-023/US8).
 - #2653 cross-referenced (no closing keyword).
 - Finish: commit, `spec-kitty agent tasks mark-status T040 T041 T042 T043 T044 --status done`, then `spec-kitty agent tasks move-task WP09 --to
   for_review` and **wait** for the synchronous pre-review gate.

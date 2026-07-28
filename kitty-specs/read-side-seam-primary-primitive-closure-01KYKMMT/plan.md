@@ -147,7 +147,7 @@ No violations requiring justification → **Complexity Tracking is intentionally
 
 ```text
 kitty-specs/read-side-seam-primary-primitive-closure-01KYKMMT/
-├── spec.md                # 20 FR / 11 NFR / 9 C / 17 SC / 7 user stories
+├── spec.md                # 24 FR / 11 NFR / 11 C / 21 SC / 8 user stories
 ├── plan.md                # this file
 ├── research.md            # Phase 0 — decisions already established by the audits
 ├── data-model.md          # Phase 1 — the layer model + ledger row schema
@@ -262,7 +262,7 @@ above.
 
 - **Purpose**: Move the placement decision into the resolver for every consumer, then make the invariant structural rather than counted.
 - **Relevant requirements**: FR-004, FR-005, FR-006, FR-011 (routing half), FR-012, NFR-009, SC-001, SC-002, SC-005, SC-014
-- **Affected surfaces**: ~30 routable consumer sites; `_read_path_resolver.py` (**delete the public wrapper** + drop both drained names from `__all__`); `_canonicalize_primary_read_handle` (co-drained — 86 references / 22 files — drained and privatised in this cycle per FR-022); the named foundation sites (`core/paths.py` ×2, `core/git_ops.py`, `coordination/surface_resolver.py`) **recorded, not routed**; the `agent/tasks.py` re-export that exists **only** to serve a test patch seam (**delete it and rewrite the two tests against the real seam** — do not preserve it to keep tests green); `tests/architectural/surface_resolution_audit/` (second census — **hand-edit `inventory.md`; do NOT run the rekey script, it is not round-trip-safe, #3011**); the ~11 test modules importing the drained names
+- **Affected surfaces**: **31** routable consumer sites (34 in scope − 3 in-scope foundation sites; see spec.md Assumptions); `_read_path_resolver.py` (**delete the public wrapper** + drop both drained names from `__all__`); `_canonicalize_primary_read_handle` (co-drained — 86 references / 22 files — drained and privatised in this cycle per FR-022); the named foundation sites (`core/paths.py` ×2, `core/git_ops.py`, `coordination/surface_resolver.py`) **recorded, not routed**; the `agent/tasks.py` re-export that exists **only** to serve a test patch seam (**delete it and rewrite the two tests against the real seam** — do not preserve it to keep tests green); `tests/architectural/surface_resolution_audit/` (second census — **hand-edit `inventory.md`; do NOT run the rekey script, it is not round-trip-safe, #3011**); the ~11 test modules importing the drained names
 - **Slicing axis (non-negotiable)**: **trio-membership first, then directory.** The trio gate asserts its blessed names are *currently used* by 8 specific files, 4 of which are rewrite targets — a directory split scatters them across three WPs and the blessed-name shrink would only be safe after the third lands. One WP must own all 8 trio files **and** the trio gate. Recommended: trio (10 sites) · agent-CLI non-trio (5) · CLI-commands + core/misc (15).
 - **Sequencing/depends-on**: IC-03, IC-04
 - **Risks**: Each site needs an individual kind decision — this is the expensive part and the reason C-007 treats it as semantic, not mechanical. Routing a foundation site risks a resolution cycle (`core/paths.py` feeds the write-side composition root). The seam-internal sites under the pinned scan-scope prefix cannot be brought into scope; accountability there is a per-file rationale plus a per-primitive non-vacuity assertion.
