@@ -118,14 +118,14 @@ else is machine-derivable, and the machine-derivable fields are what the gate re
 The only lifecycle here is the migration's own sequence, and it is gated:
 
 ```text
-gates closed (IC-01) ──┐
-                       ├──> delegation verified (IC-04) ──> callers declare kinds (IC-05)
-grammar+index (IC-02) ─┴──> sites classified (IC-03) ──────┘
-                                                            └──> primitive private,
-                                                                 floors retired (IC-05/06)
+assembler extracted (IC-00) ─┐
+gates fixed (IC-01) ─────────┼─> delegation verified (IC-04) ─> callers declare kinds (IC-05)
+grammar+index (IC-02) ───────┴─> sites classified (IC-03) ────┘   └─> public wrapper DELETED,
+                                                                      canonicalizer drained,
+                                                                      floors retired (IC-05/06)
 ```
 
 - **No ledger row** may be written before the grammar/index prerequisite lands (C-009).
 - **No call site** may be rewritten before the delegation is verified (C-005).
-- **Floors move only** in the final step, deliberately, with recorded before/after
-  (NFR-007).
+- **Floors are retired at the START of the call-site migration** — their bound is strict and breaks mid-drain — with recorded before/after (NFR-007).
+- **No delegation** before the terminal assembler is extracted and the seam's PRIMARY leg re-pointed (C-005 Step 0) — otherwise the delegation recurses.
