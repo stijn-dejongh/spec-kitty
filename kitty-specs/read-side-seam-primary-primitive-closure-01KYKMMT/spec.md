@@ -216,6 +216,35 @@ size.
 
 ---
 
+### User Story 7 - A future mission is pointed at a design document, not a rediscovery (Priority: P1)
+
+A planner picking up the next placement-related residual reads one architecture page
+that states what "routing" means here, which layer owns the decision, and what
+semi-compliance looks like — instead of re-running the multi-round discovery, audit and
+operator-guidance cycle this mission needed to establish facts that were already true.
+
+**Why this priority**: This is the durable deliverable. The misappropriation of the
+seam as a "stable API to strangle through" has now cost three separate missions their
+discovery budget: #3014 was filed on a false premise, this mission was re-framed twice,
+and the governing decision (ADR `2026-06-24-1`, plus the `TopologySurface` vocabulary
+in ADR `2026-07-23-1`) already forbade the exact anti-pattern in prose that nobody
+found. Documented layering converts recurring archaeology into a citation.
+
+**Independent Test**: Hand the new page to a reader who has not followed this
+programme; they can state (a) what routing means in this context and how it differs
+from branch-target routing, (b) which layer decides placement, (c) why a canonical
+handle is not compliance. A future mission spec can cite the page instead of
+re-deriving.
+
+**Acceptance Scenarios**:
+
+1. **Given** the new architecture page, **When** a reader looks for "who decides where an artifact lives", **Then** they find the three-layer split — callers/runtime declare *what*, the decision module maps kind + topology to a `TopologySurface`, path resolution assembles the concrete directory — with the code owners of each layer named.
+2. **Given** the word "routing", **When** a reader consults the glossary or the page, **Then** the placement sense is distinguished from branch-target routing, commit routing, dispatch/profile routing, and sync fan-out, each with a "do NOT use when" guard.
+3. **Given** ADR `2026-06-24-1` and ADR `2026-07-23-1`, **When** the page is read, **Then** it cites them as the governing decisions and restates the forbidden conditioning pattern, rather than introducing a competing vocabulary.
+4. **Given** the semi-compliance shape this mission fixes, **When** a future reviewer reads the page, **Then** they can recognise it (canonical handle + caller-chosen surface) and know which gate does and does not catch it.
+
+---
+
 ### Edge Cases
 
 - **Backfilled mission + composed handle** — the one real behavioural delta; must be pinned by test, per site where it applies.
@@ -250,6 +279,8 @@ size.
 | FR-015 | Correct every misleading comment | As a maintainer, I want the two `acceptance/__init__.py` comments **and** the six husk-conflating comments corrected, so no reader concludes the seam has the kind-blind resolver's failure modes or that `lanes.json` belongs on COORD. | Medium | Open |
 | FR-016 | Correct the false and stale record | As a maintainer, I want the ledger's Known-gap text to name the anchoring-axis authority and axis rather than claiming "policed by nothing", the stale site count corrected in **both** the ledger and the gate docstring, the closeout gate's off-by-one census fixed, and the drifted definition-line reference updated. | High | Open |
 | FR-017 | Enumerate the honest bounds | As a maintainer, I want the gate's advertised bounds to name, with sizes, what it does not cover: the wrong-`kind` class, wrapper laundering, the zero-site latent sibling, the sanctioned foundation and resolver-internal sites — so no planner repeats #3014. | High | Open |
+| FR-018 | Document the routing/decisioning seam and its layering | As a future mission planner, I want an architecture explanation page in `docs/architecture/` that defines what **routing** means in the placement context, formalises the three-layer split (**runtime/callers** declare the artifact kind → **decision module** maps kind + topology to a `TopologySurface` → **path resolution** assembles the concrete directory), names the code owner of each layer, records the compliant tier-1 idiom against the semi-compliant and non-compliant shapes, and cites ADR `2026-06-24-1` and ADR `2026-07-23-1` (including its forbidden conditioning pattern) as governing — so a later mission cites the design instead of re-running discovery. | High | Open |
+| FR-019 | Disambiguate "routing" in the glossary | As a maintainer, I want the canonical glossary to carry a `Routing` disambiguation in the style of the existing `primary`/`merge` footgun — separating **placement routing** (kind + topology → `TopologySurface`) from **branch-target routing**, **commit routing**, **dispatch/profile routing** and **sync fan-out**, each with a "do NOT use when" guard — and terms for the placement seam and semi-compliance where they aid recall, aligned to the existing `PRIMARY partition` / `COORD partition` / `Topology Surface` entries rather than duplicating them. | High | Open |
 
 ### Non-Functional Requirements
 
@@ -264,6 +295,8 @@ size.
 | NFR-007 | Honest floor accounting | Any floor that moves records its before/after integers and the reason (a routing shrink), per the floors' own doctrine; no floor is relaxed without a recorded census. | Maintainability | High | Open |
 | NFR-008 | Census reconciliation, correctly scoped | Reconciliation covers the **live residual/lenient** totals per primitive — the figures the gate parses — not the historical pre-migration totals, which are preserved and labelled as an audit record. | Maintainability | High | Open |
 | NFR-009 | No resolution cycle | No change introduces a cycle in the `read_dir` call graph; the foundation sites named in FR-005 stay outside it. | Reliability | High | Open |
+| NFR-010 | Docs hygiene for the new page | The new architecture page is registered in the explanation index/TOC, the page inventory and docs retrieval index are regenerated, relative links resolve, and `check_docs_freshness --ci` reports zero errors. | Maintainability | High | Open |
+| NFR-011 | Vocabulary consistency, not competition | The page and glossary use the canonical `TopologySurface` vocabulary and the existing `PRIMARY partition` / `COORD partition` entries; no new synonym for an already-named concept is introduced, and the terminology guard stays green. | Maintainability | High | Open |
 
 ### Constraints
 
@@ -286,6 +319,8 @@ size.
 - **Fold-prescription gate** — blesses the primary-fold call shape; its allow/flag sets must learn the tier-1 idiom (FR-001) or migration is green-by-omission.
 - **Coord-read closeout gate** — loses the `#2214` pin and its pin-existence test; keeps its site floor.
 - **Leaf primitives** — the privatised primary constructor, the two censused kind-blind resolvers, `resolve_feature_dir_for_mission` (newly policed), and the zero-site latent sibling.
+- **Routing/decisioning architecture page** (new, `docs/architecture/`) — the durable explanation of the three-layer split and the meaning of "routing" in the placement context; the artifact future missions cite instead of re-running discovery. Governed by ADR `2026-06-24-1` (kind-and-topology-aware placement) and ADR `2026-07-23-1` (`TopologySurface` vocabulary + the forbidden conditioning pattern); cross-referenced with `docs/architecture/branch-target-routing.md`, which owns the *branch* sense of the word.
+- **Canonical glossary** (`docs/context/orchestration.md`, alongside the doctrine glossary pack) — already carries `PRIMARY partition`, `COORD partition`, `Topology Surface`; gains the `Routing` disambiguation.
 
 ## Success Criteria *(mandatory)*
 
@@ -300,6 +335,8 @@ size.
 - **SC-009**: All eight misleading comments (two acceptance, six husk) state what the code does.
 - **SC-010**: Any floor that moved records its before/after integers and reason; no floor obliges the primitive to remain in use.
 - **SC-011**: The named targeted gates and mission suites are green on the rebased tip; `ruff` and project-mode `mypy` report zero new findings.
+- **SC-012**: A reader given only the new architecture page can name the three layers, the code owner of each, what "routing" means here versus the four other senses, and why a canonical handle is not compliance — with zero references to this mission's spec required.
+- **SC-013**: Docs hygiene is green for the new page (registered in the explanation index/TOC, inventory and retrieval index regenerated, relative links resolve, `check_docs_freshness --ci` zero errors) and the terminology guard passes.
 
 ## Assumptions
 
@@ -323,6 +360,17 @@ justifying comments conflate two resolvers, and that the floor collision is
 bookkeeping with in-tree precedent. The operator prescribed the delegate-then-remove
 sequence and chose to carry both steps in this mission. Issue #3014's premise is
 superseded; the corrected findings are posted there.
+
+## Note for the Plan Phase
+
+FR-018/FR-019 are the operator-requested **new implementation concern**: *"update the
+architecture docs to describe the routing/decisioning seam, and formalize the split
+between runtime, decision module, path resolution"*. It is deliberately a first-class
+deliverable of this mission rather than a follow-up, because the discovery cost it
+removes has already been paid three times. Plan should carry it as its own IC and its
+own work package — it has no code dependency on the migration WPs and can run in
+parallel, but it must be authored **after** the classification WP so the page documents
+the layering as landed rather than as intended.
 
 ## Out of Scope
 
