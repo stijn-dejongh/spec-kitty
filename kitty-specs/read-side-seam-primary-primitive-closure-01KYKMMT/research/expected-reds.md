@@ -91,7 +91,7 @@ changes under `src/`.**
 SPEC_KITTY_SYNC_MINIMAL_IMPORT=1 uv run pytest test_no_read_side_bypass.py
 test_resolution_authority_gates.py test_gate_read_literal_ban.py
 test_coord_read_residuals_closeout.py test_trio_seam_only.py
-test_no_write_side_rederivation.py -q`, lane-a): **166 passed / 3 failed / 0
+test_no_write_side_rederivation.py -q`, lane-a): **168 passed / 3 failed / 0
 collection errors** — the 3 failures are exactly the 3 nodes below, no
 unpredicted red.
 
@@ -102,21 +102,50 @@ unpredicted red.
 | 3 | `test_trio_seam_only.py::test_allowed_read_path_resolver_names_are_currently_used` | same reacquisition set as #2 | FR-004/FR-012 | WP05 | T006's replacement for the self-nullifying exemption (Ledger M6 — the retired `blessed - used - {"resolve_handle_to_read_path"}` shape was the empty set by construction once `blessed` shrank to one name, vacuously green regardless of what the trio imported). The new positive assertion reds on the identical still-imported leaf primitives until WP05 routes all four trio rewrite targets. |
 
 **T001/T002 gate-defect fixes (not widenings)**: `_PRIMARY_FOLD_CALLSHAPE_FUNCS`'s
-two consumption sites (`callshape_violations` here; `test_no_status_leg_
-rerouted_to_primary` above) now UNION a kind-discriminated helper
-(`_names_bound_from_primary_read_dir`, via `mission_runtime.
-is_primary_artifact_kind` — never a hardcoded kind list) instead of widening
-the frozenset by callee name (Ledger M7 — a callee-name widening would have
-sanctioned `STATUS_STATE` reads through the same seam call, producing a false
-positive on `test_no_status_leg_rerouted_to_primary` above; verified that
-node does **not** acquire a new failure from this change). `test_write_arm_
-resolvers_anchor_meta_on_primary` now asserts the positive `reads_via_primary`
-signal it used to discard (Ledger M8); making it positive against the REAL
-write-arm surfaces (`core/paths.py`, `core/git_ops.py`, `mission_finalize.py`)
-surfaced a genuine pre-existing detection gap (all three are thin adapters
-over `read_target_branch_from_meta`, never matching the literal `anchor(...)
-/ "meta.json"` BinOp shape) — fixed alongside the positive assertion, not
-carried as a red.
+two consumption sites (`callshape_violations` here; `test_no_status_leg_rerouted_to_primary`
+above) now UNION a kind-discriminated helper (`_names_bound_from_primary_read_dir`, via
+`mission_runtime.is_primary_artifact_kind` — never a hardcoded kind list) instead of widening
+the frozenset by callee name (Ledger M7 — a callee-name widening would have sanctioned
+`STATUS_STATE` reads through the same seam call, producing a false positive on
+`test_no_status_leg_rerouted_to_primary`; verified that node does **not** acquire a new failure
+from this change). `test_write_arm_resolvers_anchor_meta_on_primary` now asserts the positive
+`reads_via_primary` signal it used to discard (Ledger M8); making it positive against the REAL
+write-arm surfaces (`core/paths.py::get_feature_target_branch`,
+`core/git_ops.py::resolve_target_branch`, `mission_finalize.py::finalize_tasks`) surfaced a
+genuine pre-existing detection gap — all three are thin adapters over
+`read_target_branch_from_meta` and never match the literal `anchor(...) / "meta.json"` BinOp
+shape.
+
+**Review-cycle-1 (B1) found that gap only HALF-closed.** The initial fix (`_anchor_invoked_in`)
+recognised the thin-adapter shape only when anchored on the exact **deleted** wrapper name
+`primary_feature_dir_for_mission`, while its docstring claimed the seam branch was "the
+surviving spelling after WP08". That branch requires a literal `/ "meta.json"` join no real
+surface has, so it could never match its own subjects: the moment WP08 deletes the wrapper the
+positive assertion would have gone **unrecorded-red** — in WP06 (`mission_finalize.py:1645`
+sits inside `finalize_tasks`, a WP06 routing target) and again in WP08 (`core/paths.py` ×2 and
+`core/git_ops.py` forced off the name) — emitting a message instructing the implementer to
+"POSITIVELY anchor on `primary_feature_dir_for_mission`". That is a gate **obliging a deleted
+primitive to keep being used**: the very inversion T003 retires on the read arm, rebuilt on the
+write arm.
+
+Cycle-1 closed it by adding `_primary_partition_seam_invoked_in` — the seam-idiom counterpart
+of `_anchor_invoked_in`, **kind**-discriminated (via `_is_primary_partition_read_dir_call`)
+rather than **name**-discriminated, recognising a PRIMARY-partition `<seam>.read_dir(kind)`
+call anywhere in the function, which is the actual post-WP08 shape. Verified by AST mutation
+against the live tree on all three surfaces:
+
+| Mutant | Required | Result (all 3 surfaces) |
+|---|---|---|
+| baseline | green | `(False, True)` ✓ |
+| → candidate resolver | bites | `(False, False)` ✓ |
+| → unrelated third resolver (M8 case) | bites | `(False, False)` ✓ |
+| **→ post-migration seam idiom** | **GREEN** | **`(False, True)`** ✓ *(was `(False, False)` — the B1 defect)* |
+| → `read_dir(STATUS_STATE)`, same shape | bites | `(False, False)` ✓ *(kind discipline holds)* |
+
+Locked in by two new self-tests
+(`test_write_arm_recognises_primary_seam_thin_adapter_post_migration_shape`,
+`test_write_arm_primary_seam_thin_adapter_kind_discipline_holds`). Both the pre-migration and
+post-migration thin-adapter shapes are now covered — **fixed, not carried as a red.**
 
 **T003/T004 floor retirement (FR-007, DIRECTIVE_043 required)**: retired
 `CANONICALIZER_FLOOR` (was 44) and `ROUTED_CANONICALIZER_FLOOR` /
