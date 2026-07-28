@@ -50,7 +50,33 @@ tracker_refs: []
 # Work Package Prompt: WP01 – The suite states the target design
 
 ## ⚡ Do This First: Load Agent Profile
-Use `/ad-hoc-profile-load` to load `python-pedro` (implementer, claude).
+
+Use the `/ad-hoc-profile-load` skill to load the agent profile specified in the frontmatter, and behave according to its guidance before parsing the rest of this prompt.
+
+- **Profile**: `python-pedro`
+- **Role**: `implementer`
+- **Agent/tool**: `claude`
+
+If no profile is specified, run `spec-kitty agent profile list` and select the best match for this work package's `task_type` and `authoritative_surface`.
+
+---
+
+## ⚠️ IMPORTANT: Review Feedback
+
+**Read this first if you are implementing this task!**
+
+- **Has review feedback?**: Check the `review_ref` field in the event log (via `spec-kitty agent status` or the Activity Log below).
+- **You must address all feedback** before your work is complete. Feedback items are your implementation TODO list.
+- **Report progress**: As you address each feedback item, update the Activity Log explaining what you changed.
+
+---
+
+## Review Feedback
+
+*[If this WP was returned from review, the reviewer feedback reference appears in the Activity Log below or in the status event log.]*
+
+---
+
 
 ## Objective
 
@@ -123,15 +149,22 @@ citation that does not resolve is a bug in this prompt — report it rather than
   `Run: spec-kitty charter context --include directive:DIRECTIVE_034`
   **When doing T004** — the closeout module's floor *import* is the exact hazard: deleting the
   constants without retiring the consumer errors ~20 tests at collection.
-- **`tactic:architectural-gate-non-vacuity`** — the four-element gate recipe. Its named
-  failure mode "vacuous gate" *is* M6 and M8.
+- **`tactic:architectural-gate-non-vacuity`** — its four elements, **verbatim**: **concrete
+  floor · self-mutation test · shrink-only allowlist · routed-count floor**. Its named failure
+  mode "vacuous gate" *is* M6 and M8.
   `Run: spec-kitty charter context --include tactic:architectural-gate-non-vacuity`
-  **When doing T002 and T006**, apply the recipe: a gate needs a positive assertion, a bite
-  test, a concrete floor, and per-primitive non-vacuity.
+  **When doing T002 and T006**, apply those four as named. **Note the tension honestly**: T003
+  retires a *routed-count floor* and an allow-list YAML block — two of the four elements. That is
+  not licence; it is the transfer adjudicated under `DIRECTIVE_043` below, where the shrink-only
+  allowlist and the routed-count floor both move to the read-side bypass census. Do not paraphrase
+  the four elements into softer words (an earlier draft of this prompt did, and the two it dropped
+  were exactly the two that police T003).
 - **`tactic:frozen-baseline-shrink-only-ratchet`** — growth fails, shrink warns, baselines
   move only by human action with an inline justification naming before→after plus a tracker
   ref. `Run: spec-kitty charter context --include tactic:frozen-baseline-shrink-only-ratchet`
-  **When doing T003 and T007.**
+  **When doing T003 and T007.** ⚠ Its `notes` field references WP numbers (WP02/WP03/WP09) from a
+  **different** mission. This mission also has a WP02, WP03 and WP09 — **ignore that numbering**;
+  it is not about you.
 - **`DIRECTIVE_043`** — `enforcement: required`. Read the adjudication in
   [plan.md](../plan.md) "Adjudication — FR-007 vs `DIRECTIVE_043`" **before** T003.
   `Run: spec-kitty charter context --include directive:DIRECTIVE_043`
@@ -288,12 +321,22 @@ reviewers cannot distinguish your reds from regressions.
    baseline takes `--freeze-baselines`. Use the one the failure message names.
 2. If a golden-count assertion moves, follow the in-repo convention (`# golden-count`
    annotation) rather than editing the integer silently.
-3. Write `kitty-specs/read-side-seam-primary-primitive-closure-01KYKMMT/.expected-reds.md`
-   (a **mission artifact**, deliberately outside `owned_files` — the ownership map covers code
-   surfaces; commit it with your WP) containing, per red: the **node id**, the FR it traces to, the WP expected to green it, and
-   one line of why. Include a short **foreign honest-red P0** section naming
+3. Write `kitty-specs/read-side-seam-primary-primitive-closure-01KYKMMT/research/expected-reds.md`
+   — a **mission research artifact**, written as **one `## WP01` section** (WP02 appends its own
+   `## WP02` section in a parallel lane, so keep to your own section: append-only, no shared
+   lines, no lane conflict). It is deliberately outside `owned_files`
+   (`finalize-tasks` rejects `owned_files` entries under `kitty-specs/`; the ownership map
+   covers code surfaces only), so commit it with your WP. Per red, record: the **node id**, the
+   FR it traces to, the WP expected to green it, and one line of why. Include a short **foreign honest-red P0** section naming
    `tests/sync/test_sync_consent_default_deny.py` (#3031) explicitly as not-ours.
-4. Run the six C-008 gates and reconcile the actual reds against your list. A red you did not
+4. **Record the read-side census red as an enumerated FINDING SET, not a node id.** This is the
+   one place the acceptance model could go blind: the bypass gate collects every unsanctioned
+   finding and fails **once** with the whole set, so that node is red before *and* after every
+   routing WP — it yields no signal for WP05/WP06/WP07, and a genuinely new bypass (30 → 31
+   findings) is indistinguishable from the recorded expectation. The gate already emits
+   `(rel_path, qualname)` composite keys, so dump the **flagged set** rather than the node name.
+   That converts a one-bit red into a per-site ratchet at no cost.
+5. Run the six C-008 gates and reconcile the actual reds against your list. A red you did not
    predict is either a regression you caused or a gap in your understanding — resolve it, do
    not append it silently.
 
@@ -305,10 +348,11 @@ list contains **zero** collection errors; the count of expected reds is stated.
 - Planning/base branch: **`fix/read-side-seam-primary-primitive-closure`**
 - Final merge target: **`fix/read-side-seam-primary-primitive-closure`**
 - Your execution worktree is allocated **per computed lane** from `lanes.json` by
-  `spec-kitty implement WP01`. Do not construct a worktree path by hand, and do not `git
-  stash` inside a lane worktree (the stash stack is shared across worktrees).
+  `spec-kitty agent action implement WP01 --agent <name>` — the canonical entry point. Do not
+  construct a worktree path by hand, and do not `git stash` inside a lane worktree (the stash
+  stack is shared across worktrees).
 
-## Test strategy
+## Test Strategy
 
 Run the six C-008 gates (tasks.md §5) plus:
 
@@ -329,7 +373,7 @@ cross-package imports and must never be used to justify a cast.
 - The closeout module **collects cleanly** — zero collection errors (T004).
 - `#2214` pin and its pin-existence test removed in one commit; off-by-one census corrected
   (T005).
-- Baselines refrozen with provenance; `.expected-reds.md` written and reconciled against an
+- Baselines refrozen with provenance; `research/expected-reds.md` written and reconciled against an
   actual run (T007).
 - `ruff` and project-mode `mypy` report zero new findings.
 - **Zero changes under `src/`.**
@@ -340,7 +384,7 @@ cross-package imports and must never be used to justify a cast.
 ## Risks
 
 - **The suite will be red when you hand off.** That is correct. Reviewers must read
-  `.expected-reds.md`, not a green run.
+  `research/expected-reds.md`, not a green run.
 - **Cross-module propagation** (T001): the fold sets are consumed by the closeout gate. A
   callee-name widening produces a false NFR-001 regression three files away.
 - **Collection errors are the failure mode**, not assertion failures — two of this WP's
@@ -348,9 +392,9 @@ cross-package imports and must never be used to justify a cast.
 - **Do not touch** `tests/sync/test_sync_consent_default_deny.py` or anything else on the
   `sync/routing.py` surface. Different sense of "routing" entirely (C-010).
 
-## Reviewer guidance
+## Reviewer Guidance
 
-Review this WP against `.expected-reds.md`, not against a green test run. Specifically check:
+Review this WP against `research/expected-reds.md`, not against a green test run. Specifically check:
 
 1. Is **every** widening kind-discriminated? A callee-name widening is a silent loosening.
 2. Do T002's and T006's new assertions actually **bite**? Mutate the subject and confirm the
@@ -360,3 +404,12 @@ Review this WP against `.expected-reds.md`, not against a green test run. Specif
 4. Are there **zero** new collection errors, and **zero** `src/` changes?
 5. Is any red on the list actually a foreign honest-red P0 mislabelled as ours (or vice
    versa)? Classification is by **surface**.
+
+## Activity Log
+
+> **CRITICAL**: entries MUST be chronological — **append** new entries at the END, never
+> prepend or insert. Format: `- YYYY-MM-DDTHH:MM:SSZ – <agent_id> – <action>`, timestamp in
+> UTC (`date -u "+%Y-%m-%dT%H:%M:%SZ"`). The acceptance system reads the LAST entry as the
+> current state, so out-of-order entries fail acceptance even when the work is complete.
+
+- 2026-07-28T09:27:08Z – system – Prompt created.

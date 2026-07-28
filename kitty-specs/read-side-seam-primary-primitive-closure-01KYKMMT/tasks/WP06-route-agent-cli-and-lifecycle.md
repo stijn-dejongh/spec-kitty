@@ -2,6 +2,7 @@
 work_package_id: WP06
 title: Route the agent-CLI and lifecycle shells
 dependencies:
+- WP02
 - WP03
 requirement_refs:
 - FR-004
@@ -45,7 +46,33 @@ tracker_refs: []
 # Work Package Prompt: WP06 – Route the agent-CLI and lifecycle shells
 
 ## ⚡ Do This First: Load Agent Profile
-Use `/ad-hoc-profile-load` to load `python-pedro` (implementer, claude).
+
+Use the `/ad-hoc-profile-load` skill to load the agent profile specified in the frontmatter, and behave according to its guidance before parsing the rest of this prompt.
+
+- **Profile**: `python-pedro`
+- **Role**: `implementer`
+- **Agent/tool**: `claude`
+
+If no profile is specified, run `spec-kitty agent profile list` and select the best match for this work package's `task_type` and `authoritative_surface`.
+
+---
+
+## ⚠️ IMPORTANT: Review Feedback
+
+**Read this first if you are implementing this task!**
+
+- **Has review feedback?**: Check the `review_ref` field in the event log (via `spec-kitty agent status` or the Activity Log below).
+- **You must address all feedback** before your work is complete. Feedback items are your implementation TODO list.
+- **Report progress**: As you address each feedback item, update the Activity Log explaining what you changed.
+
+---
+
+## Review Feedback
+
+*[If this WP was returned from review, the reviewer feedback reference appears in the Activity Log below or in the status event log.]*
+
+---
+
 
 ## Objective
 
@@ -91,7 +118,7 @@ Follow **the shared migration procedure** in [tasks.md](../tasks.md) — read it
 - **`tactic:change-apply-smallest-viable-diff`** — route the read; leave the surrounding function
   alone. `Run: spec-kitty charter context --include tactic:change-apply-smallest-viable-diff`
 - **`DIRECTIVE_041`** — classify every red **STALE / PATCHWORK / VALID**; never retry-to-green.
-  Check WP01's `.expected-reds.md` first — a red may be expected-by-design and owned elsewhere.
+  Check WP01's `research/expected-reds.md` first — a red may be expected-by-design and owned elsewhere.
   `Run: spec-kitty charter context --include directive:DIRECTIVE_041`
 - **`tactic:canonical-source-unification`** — reuse the module's existing seam import; do not add
   a per-module read helper.
@@ -111,11 +138,14 @@ artifacts. `mission_finalize.py` and `tasks_move_task.py` touch work-package tas
 downstream**, not from what is least effort. A wrong `kind` argument is **census-invisible by
 construction** — no gate catches it.
 
-**`retrospective/writer.py` — check before routing.** The predecessor mission introduced a
-dedicated home resolver for retrospective artifacts (`resolve_retrospective_home`). If that is
-the idiom for this surface, route through it rather than a bare `read_dir` — adding a second
-authority for the same question is the split-brain shape `tactic:canonical-source-unification`
-forbids. Confirm against the ledger verdict and say which you used.
+**`retrospective/writer.py` — route through `resolve_retrospective_home`.** The predecessor
+mission introduced that dedicated home resolver for retrospective artifacts, and it is the idiom
+for this surface; a bare `read_dir` here would add a second authority for the same question — the
+split-brain shape `tactic:canonical-source-unification` forbids. Note that the ledger's
+*disposition* vocabulary (`migrate-fail-loud` / `stay-lenient` / `sanction-infra`) **cannot
+express** "which authority" — so the disposition tells you *whether* to route, and this
+instruction tells you *through what*. If WP02's row contradicts this, report it as a WP02 gap
+rather than guessing.
 
 **Watch for**: `next_cmd.py`'s sites sit near the husk comment you correct in T030 — handle them
 together.
@@ -150,10 +180,12 @@ sites.
 
 - Planning/base branch: **`fix/read-side-seam-primary-primitive-closure`**
 - Final merge target: **`fix/read-side-seam-primary-primitive-closure`**
-- Worktree allocated **per computed lane** from `lanes.json` by `spec-kitty implement WP06`.
+- Claim and prepare the workspace with the canonical entry point:
+  `spec-kitty agent action implement WP06 --agent <name>`
+- Worktree allocated **per computed lane** from `lanes.json` by that command.
   Never hand-construct it; never `git stash` inside a lane worktree.
 
-## Test strategy
+## Test Strategy
 
 ```bash
 PWHEADLESS=1 SPEC_KITTY_SYNC_MINIMAL_IMPORT=1 uv run pytest \
@@ -167,13 +199,23 @@ Plus the six C-008 gates (tasks.md §5), `uv run ruff check <changed>`, and proj
 
 - All 10 sites routed per ledger verdict, each with a kind chosen from what it actually reads,
   verified per site (T029).
-- `retrospective/writer.py` routed through the correct authority, with the choice stated.
+- `retrospective/writer.py` routed through `resolve_retrospective_home`, with the choice and its
+  justification stated in the per-site kind table (above), not merely asserted.
 - The `next_cmd.py` husk comment corrected in the same commit as its call site (T030).
 - Behaviour preservation pinned red-first: identical directories for materialized missions; no
   new raises on husk / empty / deleted-coord (T031).
 - No edits under `tests/architectural/`.
+- **Per-site kind table in the Activity Log** (this is what makes Reviewer Guidance #1
+  checkable): one row per routed site — *site → kind chosen → the downstream filename that
+  justifies it*. A wrong `kind` argument is **census-invisible by construction**, so this table
+  is the only artifact a reviewer can check it against.
+- **Read-side census ratchet (zero additions)**: the bypass gate's finding set after this WP
+  equals the set recorded in `research/expected-reds.md` **minus exactly the sites this WP
+  routed** — no additions. The node stays red until WP08, so this per-site diff is the only
+  real signal available to this WP; a new finding is a regression even though the node's
+  red/green state did not change.
 - `ruff` and project-mode `mypy` clean.
-- Finish: commit, `mark-status T029 T030 T031 --status done`, then `move-task WP06 --to
+- Finish: commit, `spec-kitty agent tasks mark-status T029 T030 T031 --status done`, then `spec-kitty agent tasks move-task WP06 --to
   for_review` and **wait** for the synchronous pre-review gate.
 
 ## Risks
@@ -188,7 +230,7 @@ Plus the six C-008 gates (tasks.md §5), `uv run ruff check <changed>`, and proj
 - Foreign honest-red P0s will appear in your lane (`tests/sync/test_sync_consent_default_deny.py`,
   #3031, marked `fast`). Not yours. Do not touch (C-010).
 
-## Reviewer guidance
+## Reviewer Guidance
 
 1. For each of the 10 sites: does the declared **kind** match what the site actually reads?
 2. Was `retrospective/writer.py` routed through the dedicated home resolver where that is the
@@ -196,3 +238,12 @@ Plus the six C-008 gates (tasks.md §5), `uv run ruff check <changed>`, and proj
 3. Is the behaviour-preservation test **red-first**? Revert a routed site and confirm.
 4. Were sites verified **individually**, or batched and tested once at the end?
 5. Does the corrected `next_cmd.py` comment keep the true kind-blind warning?
+
+## Activity Log
+
+> **CRITICAL**: entries MUST be chronological — **append** new entries at the END, never
+> prepend or insert. Format: `- YYYY-MM-DDTHH:MM:SSZ – <agent_id> – <action>`, timestamp in
+> UTC (`date -u "+%Y-%m-%dT%H:%M:%SZ"`). The acceptance system reads the LAST entry as the
+> current state, so out-of-order entries fail acceptance even when the work is complete.
+
+- 2026-07-28T09:27:08Z – system – Prompt created.

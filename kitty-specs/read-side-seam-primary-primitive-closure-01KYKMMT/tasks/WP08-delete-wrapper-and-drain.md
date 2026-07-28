@@ -44,7 +44,33 @@ tracker_refs:
 # Work Package Prompt: WP08 – Delete the public wrapper; drain and privatise the canonicalizer
 
 ## ⚡ Do This First: Load Agent Profile
-Use `/ad-hoc-profile-load` to load `python-pedro` (implementer, claude).
+
+Use the `/ad-hoc-profile-load` skill to load the agent profile specified in the frontmatter, and behave according to its guidance before parsing the rest of this prompt.
+
+- **Profile**: `python-pedro`
+- **Role**: `implementer`
+- **Agent/tool**: `claude`
+
+If no profile is specified, run `spec-kitty agent profile list` and select the best match for this work package's `task_type` and `authoritative_surface`.
+
+---
+
+## ⚠️ IMPORTANT: Review Feedback
+
+**Read this first if you are implementing this task!**
+
+- **Has review feedback?**: Check the `review_ref` field in the event log (via `spec-kitty agent status` or the Activity Log below).
+- **You must address all feedback** before your work is complete. Feedback items are your implementation TODO list.
+- **Report progress**: As you address each feedback item, update the Activity Log explaining what you changed.
+
+---
+
+## Review Feedback
+
+*[If this WP was returned from review, the reviewer feedback reference appears in the Activity Log below or in the status event log.]*
+
+---
+
 
 ## Objective
 
@@ -92,6 +118,10 @@ no-overlap rule is the real guard — see [tasks.md](../tasks.md) §6):
 - `src/specify_cli/missions/_read_path_resolver.py` — WP03's owned file. You delete the wrapper
   and edit `__all__` there. This is the deliberate serial-by-phase handoff (IC-00 extract → IC-04
   wrapper body → IC-05 delete), recorded in plan.md's single-owner table.
+- `docs/development/read-side-seam-classification.md` — **the count rows only**. WP02 writes
+  post-migration end-state counts and names you as the greening owner of the resulting
+  reconciliation red; correcting those integers after the final census is yours. Do not touch
+  any other section of the ledger.
 - Any `tests/` module that imports a drained name — ~11 test modules plus 43 test files that
   reference the primitive by name. You are the WP whose diff makes those imports invalid.
 
@@ -130,8 +160,13 @@ no-overlap rule is the real guard — see [tasks.md](../tasks.md) §6):
    named foundation sites.
 2. **Delete** the public `primary_feature_dir_for_mission`. Do **not** rename it, do **not** leave
    a deprecated alias, do **not** leave a `__getattr__` shim.
-3. Drop it from `_read_path_resolver.py`'s `__all__`. Also drop `resolve_feature_dir_for_mission`
-   from `__all__` — it goes dead once its 5 importers route (Ledger M14).
+3. Drop it from `_read_path_resolver.py`'s `__all__`. Then, **conditionally**, drop
+   `resolve_feature_dir_for_mission` from `__all__` — it has **7** importers (not 5:
+   `agent_tasks_ports.py`, `decision.py`, `mission_type.py`, `context/resolver.py`,
+   `decisions/emit.py`, `lanes/recovery.py`, `widen/state.py`) and it goes dead **only if** WP02's
+   census classified every one of them `migrate-fail-loud`. WP02 T012 explicitly plans for a
+   **zero-`migrate-fail-loud`** outcome, in which case the name stays. Check the census before
+   dropping it (Ledger M14).
 4. The **private assembler stays** (C-004): it is the terminal `KITTY_SPECS_DIR` constructor the
    resolver's own PRIMARY leg is built on, and the sanctioned owner of that assembly under a
    separate gate.
@@ -146,9 +181,12 @@ structural claim of the whole mission.
 ### T036 — Drain and privatise `_canonicalize_primary_read_handle` (FR-022, SC-001)
 
 **Steps**:
-1. Census it. On this base it shows **38 sites / 22 files** — **re-derive**, since the routing WPs
-   have since drained most of them (the seam canonicalizes internally, so a routed site no longer
-   needs it).
+1. Census it. Two different metrics are in circulation and they are not interchangeable: **38
+   call sites** and **89 total references across 23 files** (imports + calls + prose). `spec.md`
+   FR-022's "86 references / 22 files" is **stale** — correct it as part of FR-016's
+   record-correction if it is still wrong when you get here. **Re-derive both** with the alias-
+   resolving recipe in [quickstart.md](../quickstart.md) §1, since the routing WPs have drained
+   most call sites (the seam canonicalizes internally, so a routed site no longer needs it).
 2. Route or remove any residual consumer sites. Do not leave one propped up by an exemption.
 3. Privatise it: no external importers, absent from `__all__`. If, after draining, it has only
    in-module callers, that is the end state — self-policing rather than floor-policed.
@@ -198,24 +236,44 @@ foundation sites remain with their rationale.
 2. Confirm **per-primitive non-vacuity** still holds: each sanctioned module carries a real
    finding **for each** censused primitive, not merely for a previously-censused one.
 3. Confirm the **staleness twin-guard** bites: an allow-list entry whose site was routed or
-   removed must **red** until deleted. Delete the stale ones.
+   removed must **red** until deleted. **Delete them at the authority, not the mirror**: the
+   entries' authority is the ledger's stay-lenient index rows
+   (`docs/development/read-side-seam-classification.md`), which is pre-authorised for you above
+   for its count rows — extend that same one-line rationale to the stale index rows.
+   `_ALLOW_LIST_SEED` in `test_no_read_side_bypass.py` is reconciled *against* the ledger by
+   set-equality, so it follows mechanically. If a seed edit is genuinely unavoidable, that is a
+   **WP02 gap** — report it rather than silently editing WP02's module, which this WP's own Risks
+   section forbids.
 4. Record the transfer in the commit body: WP01 retired floors *X → retired*, and the guarantee
    now lives in the read-side census with its own concrete floor of *N*. Cite `DIRECTIVE_043` and
    `tactic:architectural-gate-non-vacuity`. This is the closing half of WP01's adjudication —
    without it the retirement reads as an unguarded relaxation.
-5. Reconcile against WP01's `.expected-reds.md`: every entry this WP was expected to green **is**
+5. Reconcile against WP01's `research/expected-reds.md`: every entry this WP was expected to green **is**
    green, and **nothing previously green went red** (SC-020 scenario 2).
 
 **Validation**: all six C-008 gates green except any entry still legitimately owned by WP09.
+
+6. **Reconcile the UNION of `research/expected-reds.md`'s sections** (`## WP01` + `## WP02`, each
+   authored in a separate lane). Every red still standing must appear in one of them; **every
+   unlisted red is a regression**. This is the only point in the mission where the two
+   independently-authored expected-red sets are checked against one another.
+7. **Correct the stale prose references.** After the wrapper is deleted, ~10 comments and
+   docstrings in 7 modules still name it (`orchestrator_api/commands.py`,
+   `merge/bookkeeping_projection.py`, `tasks_map_requirements.py`, `mission_record_analysis.py`,
+   `merge/resolve.py`, `merge/done_bookkeeping.py`, `mission_check_prerequisites.py`). Not a
+   build break, but they cite a symbol that no longer exists — grep and correct them
+   (pre-authorised out-of-map; FR-015's "eight comments" does not cover these).
 
 ## Branch Strategy
 
 - Planning/base branch: **`fix/read-side-seam-primary-primitive-closure`**
 - Final merge target: **`fix/read-side-seam-primary-primitive-closure`**
-- Worktree allocated **per computed lane** from `lanes.json` by `spec-kitty implement WP08`.
+- Claim and prepare the workspace with the canonical entry point:
+  `spec-kitty agent action implement WP08 --agent <name>`
+- Worktree allocated **per computed lane** from `lanes.json` by that command.
   Never hand-construct it; never `git stash` inside a lane worktree.
 
-## Test strategy
+## Test Strategy
 
 ```bash
 # the structural claim
@@ -245,9 +303,9 @@ Plus the six C-008 gates (tasks.md §5), `uv run ruff check <changed>`, and proj
   the staleness twin-guard biting (T039).
 - The floor→census transfer recorded with before/after integers, the reason, and the
   `DIRECTIVE_043` citation (T039, NFR-007).
-- `.expected-reds.md` reconciled: expected greens are green; nothing previously green went red.
+- `research/expected-reds.md` reconciled: expected greens are green; nothing previously green went red.
 - `ruff` and project-mode `mypy` clean.
-- Finish: commit, `mark-status T035 T036 T037 T038 T039 --status done`, then `move-task WP08 --to
+- Finish: commit, `spec-kitty agent tasks mark-status T035 T036 T037 T038 T039 --status done`, then `spec-kitty agent tasks move-task WP08 --to
   for_review` and **wait** for the synchronous pre-review gate.
 
 ## Risks
@@ -263,7 +321,7 @@ Plus the six C-008 gates (tasks.md §5), `uv run ruff check <changed>`, and proj
 - **Do not edit `test_trio_seam_only.py` or `test_no_read_side_bypass.py`** — WP01 and WP02 own
   them. If their assertions fail after your change, that is signal.
 
-## Reviewer guidance
+## Reviewer Guidance
 
 1. Try the import yourself. Does `primary_feature_dir_for_mission` raise `ImportError`? Is there
    a shim, alias, or `__getattr__` anywhere?
@@ -274,4 +332,13 @@ Plus the six C-008 gates (tasks.md §5), `uv run ruff check <changed>`, and proj
 4. Does per-primitive non-vacuity still hold for **each** censused primitive independently?
 5. Does the commit body carry the floor→census transfer with before/after integers and the
    `DIRECTIVE_043` citation? WP01's retirement is only honest once this is recorded.
-6. Reconcile `.expected-reds.md`: did anything **previously green** go red?
+6. Reconcile `research/expected-reds.md`: did anything **previously green** go red?
+
+## Activity Log
+
+> **CRITICAL**: entries MUST be chronological — **append** new entries at the END, never
+> prepend or insert. Format: `- YYYY-MM-DDTHH:MM:SSZ – <agent_id> – <action>`, timestamp in
+> UTC (`date -u "+%Y-%m-%dT%H:%M:%SZ"`). The acceptance system reads the LAST entry as the
+> current state, so out-of-order entries fail acceptance even when the work is complete.
+
+- 2026-07-28T09:27:08Z – system – Prompt created.

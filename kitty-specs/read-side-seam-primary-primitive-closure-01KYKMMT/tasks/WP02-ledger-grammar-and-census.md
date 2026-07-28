@@ -47,7 +47,33 @@ tracker_refs:
 # Work Package Prompt: WP02 – Ledger grammar, per-site index, and the gate's terminal shape
 
 ## ⚡ Do This First: Load Agent Profile
-Use `/ad-hoc-profile-load` to load `python-pedro` (implementer, claude).
+
+Use the `/ad-hoc-profile-load` skill to load the agent profile specified in the frontmatter, and behave according to its guidance before parsing the rest of this prompt.
+
+- **Profile**: `python-pedro`
+- **Role**: `implementer`
+- **Agent/tool**: `claude`
+
+If no profile is specified, run `spec-kitty agent profile list` and select the best match for this work package's `task_type` and `authoritative_surface`.
+
+---
+
+## ⚠️ IMPORTANT: Review Feedback
+
+**Read this first if you are implementing this task!**
+
+- **Has review feedback?**: Check the `review_ref` field in the event log (via `spec-kitty agent status` or the Activity Log below).
+- **You must address all feedback** before your work is complete. Feedback items are your implementation TODO list.
+- **Report progress**: As you address each feedback item, update the Activity Log explaining what you changed.
+
+---
+
+## Review Feedback
+
+*[If this WP was returned from review, the reviewer feedback reference appears in the Activity Log below or in the status event log.]*
+
+---
+
 
 ## Objective
 
@@ -93,11 +119,14 @@ intend to delete (the allow-list is shrink-only; that would invert the ratchet).
 
 ## Doctrine for this WP
 
-- **`tactic:architectural-gate-non-vacuity`** — the four-element recipe this WP implements:
-  positive assertion, bite test, concrete floor, per-primitive non-vacuity. Its named failure
+- **`tactic:architectural-gate-non-vacuity`** — its four elements, **verbatim**: **concrete
+  floor · self-mutation test · shrink-only allowlist · routed-count floor**. Its named failure
   mode "vacuous gate" is precisely what the executed ledger restructuring produced.
   `Run: spec-kitty charter context --include tactic:architectural-gate-non-vacuity`
-  **When doing T010 and T011**, check your work against all four elements before claiming done.
+  **When doing T010 and T011**, check your work against those four **as named** — do not
+  substitute softer paraphrases. This census is where WP01's retired *routed-count floor* and
+  *shrink-only allowlist* land, so all four must be live here or WP01's retirement is an
+  unguarded relaxation.
 - **`DIRECTIVE_043`** — `enforcement: required`. A gate that trivially passes at zero relevant
   call sites is non-compliant; it must have a concrete floor.
   `Run: spec-kitty charter context --include directive:DIRECTIVE_043`
@@ -172,6 +201,13 @@ Without these, T008 is documentation.
    entirely unenforced — that is the vacuity being closed.
 3. **Counts scoping** (NFR-008) — reconciliation covers the **live residual/lenient** totals.
    Preserve the historical pre-migration figures, **labelled as an audit record**.
+   **Resolve the "live" ambiguity explicitly: the parsed count columns carry the POST-MIGRATION
+   END STATE.** "Live" is ambiguous between as-of-WP02 (≈30 unrouted primary sites) and
+   end-state (0), and the two have opposite consequences. As-of-WP02 counts go green now and red
+   the moment WP05 lands — with no owner able to fix them, since WP05–WP07 may not edit
+   `tests/architectural/` and the ledger is not in WP08's map. So write end-state counts,
+   record the resulting reconciliation red in your `## WP02` section of
+   `research/expected-reds.md`, and name **WP08** as its greening owner.
 
 **Validation**: scratch-copy mutation **per primitive**, each expected red. Confirm the
 historical figures are still present and labelled.
@@ -195,8 +231,16 @@ the retired floors.
 5. Note that `core/paths.py` and `core/git_ops.py` are **not** currently sanctioned and need
    explicit per-site allow-list entries (FR-005 / C-003). WP07 records them by name; make the
    gate able to hold them.
-6. Land the **end-state** sanction set (resolver-internal + the four named foundation sites),
-   not an in-flight one.
+6. Land the **end-state** sanction set, not an in-flight one: resolver-internal sites **plus
+   per-site descriptors for the four named FR-005 foundation sites** (`core/paths.py` ×2,
+   `core/git_ops.py`, `coordination/surface_resolver.py`). Those two `core/` modules are **not**
+   currently sanctioned, so they need explicit entries — WP07 verifies them against its census
+   and reports gaps back to you rather than editing this module.
+7. **Dump the flagged finding set** into `research/expected-reds.md` as a `## WP02` section
+   (append-only; WP01 owns the `## WP01` section in a parallel lane). Enumerate the
+   `(rel_path, qualname)` composite keys, not just the node id — the gate fails once with the
+   whole set, so an enumerated set is what lets WP04–WP07 prove *zero additions* instead of
+   staring at a red that never moves.
 
 **Validation**: planted direct call reds; planted **aliased** call reds; a prose mention stays
 green; the per-primitive non-vacuity assertion passes for the *new* primitive on its own merits.
@@ -263,11 +307,13 @@ count exactly; every site has both axes and a disposition.
 
 - Planning/base branch: **`fix/read-side-seam-primary-primitive-closure`**
 - Final merge target: **`fix/read-side-seam-primary-primitive-closure`**
-- Your execution worktree is allocated **per computed lane** from `lanes.json` by
-  `spec-kitty implement WP02`. Never hand-construct the path; never `git stash` in a lane
+- Claim and prepare the workspace with the canonical entry point:
+  `spec-kitty agent action implement WP02 --agent <name>`
+- Your execution worktree is allocated **per computed lane** from `lanes.json` by that
+  command. Never hand-construct the path; never `git stash` in a lane
   worktree.
 
-## Test strategy
+## Test Strategy
 
 The six C-008 gates (tasks.md §5), plus scratch-copy mutation runs for T010, plus:
 
@@ -289,10 +335,10 @@ PWHEADLESS=1 uv run pytest tests/architectural/test_no_legacy_terminology.py -q 
 - Honest bounds named with sizes; Known-gap text names the real gate **and axis** (T013).
 - Every count matches a fresh census; #3014 closed with the corrected finding (T014).
 - The ~34 in-flight sites are recorded as **expected red** (cross-reference WP01's
-  `.expected-reds.md`), not suppressed.
+  `research/expected-reds.md`), not suppressed.
 - `ruff`, project-mode `mypy`, and the terminology guard are clean.
 - Finish: commit, `spec-kitty agent tasks mark-status T008 T009 T010 T011 T012 T013 T014
-  --status done`, then `move-task WP02 --to for_review` and **wait** for the synchronous
+  --status done`, then `spec-kitty agent tasks move-task WP02 --to for_review` and **wait** for the synchronous
   pre-review gate.
 
 ## Risks
@@ -306,7 +352,7 @@ PWHEADLESS=1 uv run pytest tests/architectural/test_no_legacy_terminology.py -q 
 - The `#3011` rekey script is **not round-trip-safe** — WP08 hand-edits the second census
   inventory. Do not reach for it here either.
 
-## Reviewer guidance
+## Reviewer Guidance
 
 1. **Mutate, do not read.** For each of the six grammar rules, mutate a scratch copy and
    confirm the red. A documented-but-unenforced rule is the failure mode.
@@ -317,3 +363,12 @@ PWHEADLESS=1 uv run pytest tests/architectural/test_no_legacy_terminology.py -q 
 5. Do the honest bounds carry **sizes**, and does the Known-gap text name a gate **and an
    axis** rather than "policed by nothing"?
 6. Confirm the ~34 in-flight reds are recorded as expected and **not** allow-listed away.
+
+## Activity Log
+
+> **CRITICAL**: entries MUST be chronological — **append** new entries at the END, never
+> prepend or insert. Format: `- YYYY-MM-DDTHH:MM:SSZ – <agent_id> – <action>`, timestamp in
+> UTC (`date -u "+%Y-%m-%dT%H:%M:%SZ"`). The acceptance system reads the LAST entry as the
+> current state, so out-of-order entries fail acceptance even when the work is complete.
+
+- 2026-07-28T09:27:08Z – system – Prompt created.

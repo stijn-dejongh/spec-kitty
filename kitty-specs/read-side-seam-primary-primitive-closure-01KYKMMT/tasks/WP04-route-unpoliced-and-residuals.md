@@ -4,6 +4,7 @@ title: Route the topology-routed reads and close the two residuals
 dependencies:
 - WP01
 - WP02
+- WP03
 requirement_refs:
 - FR-004
 - FR-011
@@ -52,7 +53,33 @@ tracker_refs:
 # Work Package Prompt: WP04 – Route the topology-routed reads and close the two residuals
 
 ## ⚡ Do This First: Load Agent Profile
-Use `/ad-hoc-profile-load` to load `python-pedro` (implementer, claude).
+
+Use the `/ad-hoc-profile-load` skill to load the agent profile specified in the frontmatter, and behave according to its guidance before parsing the rest of this prompt.
+
+- **Profile**: `python-pedro`
+- **Role**: `implementer`
+- **Agent/tool**: `claude`
+
+If no profile is specified, run `spec-kitty agent profile list` and select the best match for this work package's `task_type` and `authoritative_surface`.
+
+---
+
+## ⚠️ IMPORTANT: Review Feedback
+
+**Read this first if you are implementing this task!**
+
+- **Has review feedback?**: Check the `review_ref` field in the event log (via `spec-kitty agent status` or the Activity Log below).
+- **You must address all feedback** before your work is complete. Feedback items are your implementation TODO list.
+- **Report progress**: As you address each feedback item, update the Activity Log explaining what you changed.
+
+---
+
+## Review Feedback
+
+*[If this WP was returned from review, the reviewer feedback reference appears in the Activity Log below or in the status event log.]*
+
+---
+
 
 ## Objective
 
@@ -106,7 +133,7 @@ pin, which is what makes T024 a red→green transition rather than a no-op.
 - **`DIRECTIVE_041`** — for any test that reds while you work: classify **STALE / PATCHWORK /
   VALID** before touching it, and never retry-to-green.
   `Run: spec-kitty charter context --include directive:DIRECTIVE_041`
-  **When a red appears**, first check WP01's `.expected-reds.md` — it may already be accounted
+  **When a red appears**, first check WP01's `research/expected-reds.md` — it may already be accounted
   for and belong to another WP.
 - **`tactic:change-apply-smallest-viable-diff`** — each routed site is a small local change; do
   not restructure the surrounding function while you are there.
@@ -143,7 +170,7 @@ record — keep it. Where the ledger says `migrate-fail-loud`, the comment is ar
 *different* resolver: correct it per FR-015 (preserve the true warning about the kind-blind
 resolver; remove the false implication about the kind-aware seam).
 
-### T023 — Route the 2 `primary_feature_dir_for_mission` sites in the same two files (FR-004)
+### T023 — Route the 3 `primary_feature_dir_for_mission` sites in the same two files (FR-004)
 
 `mission_type.py` (2 sites) and `agent_tasks_ports.py` (1 site) each carry the **primary
 primitive** as well. They are yours because they are your files — one pass per file beats two
@@ -202,10 +229,12 @@ off the coord husk. That guarantee must be **pinned**, not asserted.
 
 - Planning/base branch: **`fix/read-side-seam-primary-primitive-closure`**
 - Final merge target: **`fix/read-side-seam-primary-primitive-closure`**
-- Worktree allocated **per computed lane** from `lanes.json` by `spec-kitty implement WP04`.
+- Claim and prepare the workspace with the canonical entry point:
+  `spec-kitty agent action implement WP04 --agent <name>`
+- Worktree allocated **per computed lane** from `lanes.json` by that command.
   Never hand-construct it; never `git stash` inside a lane worktree.
 
-## Test strategy
+## Test Strategy
 
 ```bash
 PWHEADLESS=1 SPEC_KITTY_SYNC_MINIMAL_IMPORT=1 uv run pytest \
@@ -228,10 +257,19 @@ signal. Plus `uv run ruff check <changed>` and project-mode
   synthetic-site regression and a named cross-reference (T025).
 - No new raises on husk / empty / deleted-coord (NFR-002); identical directories for
   materialized missions (NFR-001).
+- **Per-site kind table in the Activity Log** (this is what makes Reviewer Guidance #1
+  checkable): one row per routed site — *site → kind chosen → the downstream filename that
+  justifies it*. A wrong `kind` argument is **census-invisible by construction**, so this table
+  is the only artifact a reviewer can check it against.
+- **Read-side census ratchet (zero additions)**: the bypass gate's finding set after this WP
+  equals the set recorded in `research/expected-reds.md` **minus exactly the sites this WP
+  routed** — no additions. The node stays red until WP08, so this per-site diff is the only
+  real signal available to this WP; a new finding is a regression even though the node's
+  red/green state did not change.
 - `ruff` and project-mode `mypy` clean.
 - Issue matrix: **#2886 closes** with this WP. #2707 recorded either way.
-- Finish: commit, `mark-status T022 T023 T024 T025 --status done`, then
-  `move-task WP04 --to for_review` and **wait** for the synchronous pre-review gate.
+- Finish: commit, `spec-kitty agent tasks mark-status T022 T023 T024 T025 --status done`, then
+  `spec-kitty agent tasks move-task WP04 --to for_review` and **wait** for the synchronous pre-review gate.
 
 ## Risks
 
@@ -244,7 +282,7 @@ signal. Plus `uv run ruff check <changed>` and project-mode
   M7 fold-set widening) rather than an NFR-001 regression. Check whether the offending
   directory came from a **STATUS-kind** read before touching product code.
 
-## Reviewer guidance
+## Reviewer Guidance
 
 1. Do **both** documentation-wiring reads route, and does the audit-metadata write resolve
    through the same authority? Read the function, do not trust the diff summary.
@@ -256,3 +294,12 @@ signal. Plus `uv run ruff check <changed>` and project-mode
    scan found nothing?
 5. Any `stay-lenient` site: does its allow-list descriptor carry the production comment as
    rationale, per-site, with no path blanket?
+
+## Activity Log
+
+> **CRITICAL**: entries MUST be chronological — **append** new entries at the END, never
+> prepend or insert. Format: `- YYYY-MM-DDTHH:MM:SSZ – <agent_id> – <action>`, timestamp in
+> UTC (`date -u "+%Y-%m-%dT%H:%M:%SZ"`). The acceptance system reads the LAST entry as the
+> current state, so out-of-order entries fail acceptance even when the work is complete.
+
+- 2026-07-28T09:27:08Z – system – Prompt created.

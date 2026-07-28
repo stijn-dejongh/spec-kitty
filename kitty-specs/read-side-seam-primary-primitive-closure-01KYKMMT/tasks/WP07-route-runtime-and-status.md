@@ -2,6 +2,7 @@
 work_package_id: WP07
 title: Route the runtime bridge and status aggregate; record the foundation sites
 dependencies:
+- WP02
 - WP03
 requirement_refs:
 - FR-001
@@ -47,7 +48,33 @@ tracker_refs: []
 # Work Package Prompt: WP07 – Route the runtime bridge and status aggregate
 
 ## ⚡ Do This First: Load Agent Profile
-Use `/ad-hoc-profile-load` to load `python-pedro` (implementer, claude).
+
+Use the `/ad-hoc-profile-load` skill to load the agent profile specified in the frontmatter, and behave according to its guidance before parsing the rest of this prompt.
+
+- **Profile**: `python-pedro`
+- **Role**: `implementer`
+- **Agent/tool**: `claude`
+
+If no profile is specified, run `spec-kitty agent profile list` and select the best match for this work package's `task_type` and `authoritative_surface`.
+
+---
+
+## ⚠️ IMPORTANT: Review Feedback
+
+**Read this first if you are implementing this task!**
+
+- **Has review feedback?**: Check the `review_ref` field in the event log (via `spec-kitty agent status` or the Activity Log below).
+- **You must address all feedback** before your work is complete. Feedback items are your implementation TODO list.
+- **Report progress**: As you address each feedback item, update the Activity Log explaining what you changed.
+
+---
+
+## Review Feedback
+
+*[If this WP was returned from review, the reviewer feedback reference appears in the Activity Log below or in the status event log.]*
+
+---
+
 
 ## Objective
 
@@ -95,7 +122,7 @@ Follow **the shared migration procedure** in [tasks.md](../tasks.md) — read it
   **When doing T033**, `_find_meta_path` holds four censused sites in one function — verify after
   each, or you will not be able to say which one moved a directory.
 - **`DIRECTIVE_041`** — classify every red **STALE / PATCHWORK / VALID**; never retry-to-green.
-  Check WP01's `.expected-reds.md` first.
+  Check WP01's `research/expected-reds.md` first.
   `Run: spec-kitty charter context --include directive:DIRECTIVE_041`
   **When a red appears in the closeout gate's no-STATUS-reroute check**, see the trap below —
   it may be a *gate* defect, not your regression.
@@ -163,16 +190,26 @@ the reads.
 
 **Steps**:
 1. Route `coordination/commit_router.py` (1 site) per verdict.
-2. **Record — do not route** the four foundation sites, by name, each with its recursion
-   rationale:
+2. **Re-point, then record — but do NOT route through the seam.** These four import the
+   **public** `primary_feature_dir_for_mission`, which WP08 **deletes**. Leaving them "unchanged"
+   would `ImportError` at import of `core/paths.py`, `core/git_ops.py` and
+   `coordination/surface_resolver.py` — the CLI would not start. So:
+   **(a)** re-point each of the four at the **module-private leaf** WP03 extracted (a sanctioned
+   cross-module import; SC-001 explicitly anticipates "in-module **and named-sanctioned**
+   callers"), and **(b)** record each by name with its recursion rationale. They keep resolving
+   exactly as they do today — this is an import-target change, not a routing change. Do **not**
+   route them through `read_dir` (that is the resolution cycle NFR-009 forbids). The four:
    - `core/paths.py` (**2 sites**) — one is consumed by the write-side composition root
      `resolve_placement_only`; routing it risks a cycle.
    - `core/git_ops.py` (1 site) — peer branch resolver, beneath the seam.
    - `coordination/surface_resolver.py` (1 site) — peer surface resolver; the sanctioned
      single-authority site.
-3. Each becomes a **per-site allow-list descriptor with individual rationale** (C-003). Note that
-   `core/paths.py` and `core/git_ops.py` are not currently sanctioned modules — they need
-   explicit entries, not an assumed blanket.
+3. **Confirm — do not author.** Each of the four needs a **per-site allow-list descriptor with
+   individual rationale** (C-003), and `core/paths.py` / `core/git_ops.py` are **not** currently
+   sanctioned modules, so an assumed blanket will not cover them. Those descriptors live in
+   `tests/architectural/test_no_read_side_bypass.py`, which is **WP02's exclusively owned file**
+   and which you are forbidden to edit. So: verify WP02's descriptors exist for all four and
+   match your census, and **report any gap as a WP02 gap** rather than editing that module.
 4. **Prove they remain unrouted and cycle-free**: run the census recipe in
    [quickstart.md](../quickstart.md) §1 and confirm the four sites are present and unchanged, and
    that no cycle exists in the `read_dir` call graph (SC-014, NFR-009).
@@ -183,10 +220,12 @@ the reads.
 
 - Planning/base branch: **`fix/read-side-seam-primary-primitive-closure`**
 - Final merge target: **`fix/read-side-seam-primary-primitive-closure`**
-- Worktree allocated **per computed lane** from `lanes.json` by `spec-kitty implement WP07`.
+- Claim and prepare the workspace with the canonical entry point:
+  `spec-kitty agent action implement WP07 --agent <name>`
+- Worktree allocated **per computed lane** from `lanes.json` by that command.
   Never hand-construct it; never `git stash` inside a lane worktree.
 
-## Test strategy
+## Test Strategy
 
 Write `tests/specify_cli/status/test_aggregate_read_seam_migration.py` covering: identical
 directory for a materialized mission per routed site (NFR-001); the `:543` backfilled-mission
@@ -214,8 +253,17 @@ Plus the six C-008 gates (tasks.md §5), `uv run ruff check <changed>`, and proj
   rationale and **still unrouted**, proven by census; no cycle (T034, SC-014, NFR-009).
 - Behaviour preservation pinned red-first; no new raises.
 - No edits under `tests/architectural/`.
+- **Per-site kind table in the Activity Log** (this is what makes Reviewer Guidance #1
+  checkable): one row per routed site — *site → kind chosen → the downstream filename that
+  justifies it*. A wrong `kind` argument is **census-invisible by construction**, so this table
+  is the only artifact a reviewer can check it against.
+- **Read-side census ratchet (zero additions)**: the bypass gate's finding set after this WP
+  equals the set recorded in `research/expected-reds.md` **minus exactly the sites this WP
+  routed** — no additions. The node stays red until WP08, so this per-site diff is the only
+  real signal available to this WP; a new finding is a regression even though the node's
+  red/green state did not change.
 - `ruff` and project-mode `mypy` clean.
-- Finish: commit, `mark-status T032 T033 T034 --status done`, then `move-task WP07 --to
+- Finish: commit, `spec-kitty agent tasks mark-status T032 T033 T034 --status done`, then `spec-kitty agent tasks move-task WP07 --to
   for_review` and **wait** for the synchronous pre-review gate.
 
 ## Risks
@@ -231,7 +279,7 @@ Plus the six C-008 gates (tasks.md §5), `uv run ruff check <changed>`, and proj
 - `src/specify_cli/next/` is a **deprecation shim**; the canonical runtime is
   `src/runtime/next/_internal_runtime/`. Do not anchor new code in the shim.
 
-## Reviewer guidance
+## Reviewer Guidance
 
 1. `:522` — plant a non-compliant read nearby yourself and confirm the fold-prescription gate
    flags it. "It routes now" is not the same as "it is checked now".
@@ -243,3 +291,12 @@ Plus the six C-008 gates (tasks.md §5), `uv run ruff check <changed>`, and proj
    rather than an assumed blanket?
 5. Any closeout-gate red: did the implementer verify the offending directory's **kind origin**
    before changing product code?
+
+## Activity Log
+
+> **CRITICAL**: entries MUST be chronological — **append** new entries at the END, never
+> prepend or insert. Format: `- YYYY-MM-DDTHH:MM:SSZ – <agent_id> – <action>`, timestamp in
+> UTC (`date -u "+%Y-%m-%dT%H:%M:%SZ"`). The acceptance system reads the LAST entry as the
+> current state, so out-of-order entries fail acceptance even when the work is complete.
+
+- 2026-07-28T09:27:08Z – system – Prompt created.

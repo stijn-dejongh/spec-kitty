@@ -18,7 +18,9 @@ spec-kitty agent tasks status --mission read-side-seam-primary-primitive-closure
 ## 1. Census (re-derive, never trust a written count)
 
 ```bash
-# how many real call sites does a primitive have? aliases resolved, definition module excluded
+# how many real call sites does a primitive have? per-file import ALIASES resolved,
+# definition module excluded. The alias pass is load-bearing: `import X as _p` + `_p(...)`
+# yields the call name `_p`, which a literal-name match silently misses.
 uv run python - <<'PY'
 import ast, pathlib
 targets = {"primary_feature_dir_for_mission", "resolve_feature_dir_for_mission",
@@ -28,10 +30,18 @@ for f in pathlib.Path("src").rglob("*.py"):
     if f.name == "_read_path_resolver.py":       # definition module
         continue
     tree = ast.parse(f.read_text(encoding="utf-8"))
+    # per-file alias map: local binding -> canonical target name
+    alias = {}
+    for n in ast.walk(tree):
+        if isinstance(n, ast.ImportFrom):
+            for a in n.names:
+                if a.name in targets:
+                    alias[a.asname or a.name] = a.name
     for n in ast.walk(tree):
         if isinstance(n, ast.Call):
             fn = n.func
-            name = fn.id if isinstance(fn, ast.Name) else getattr(fn, "attr", None)
+            local = fn.id if isinstance(fn, ast.Name) else getattr(fn, "attr", None)
+            name = alias.get(local, local if local in targets else None)
             if name in targets:
                 counts[name] += 1; files[name].add(str(f))
 for t in sorted(targets):
@@ -40,6 +50,13 @@ PY
 ```
 
 Compare against the ledger's per-primitive counts — they must agree (NFR-008, SC-007).
+
+**Authority note for WP08's irreversible delete.** This recipe is a *cross-check*, not the
+authority. Attribute-style and dynamic references still escape any single-pass AST counter, so
+for the go/no-go on deleting the public wrapper use the gate's own alias-resistant whole-tree
+scanner (`tests/architectural/_placement_whole_tree_scan.py`, consumed by
+`test_no_read_side_bypass.py`) as the authority, and treat a disagreement between the two as a
+stop rather than a rounding error.
 
 ## 2. The named gates (targeted only)
 

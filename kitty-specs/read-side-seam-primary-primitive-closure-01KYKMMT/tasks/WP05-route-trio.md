@@ -2,6 +2,7 @@
 work_package_id: WP05
 title: Route the trio and green its gate
 dependencies:
+- WP02
 - WP03
 requirement_refs:
 - FR-004
@@ -48,7 +49,33 @@ tracker_refs:
 # Work Package Prompt: WP05 – Route the trio and green its gate
 
 ## ⚡ Do This First: Load Agent Profile
-Use `/ad-hoc-profile-load` to load `python-pedro` (implementer, claude).
+
+Use the `/ad-hoc-profile-load` skill to load the agent profile specified in the frontmatter, and behave according to its guidance before parsing the rest of this prompt.
+
+- **Profile**: `python-pedro`
+- **Role**: `implementer`
+- **Agent/tool**: `claude`
+
+If no profile is specified, run `spec-kitty agent profile list` and select the best match for this work package's `task_type` and `authoritative_surface`.
+
+---
+
+## ⚠️ IMPORTANT: Review Feedback
+
+**Read this first if you are implementing this task!**
+
+- **Has review feedback?**: Check the `review_ref` field in the event log (via `spec-kitty agent status` or the Activity Log below).
+- **You must address all feedback** before your work is complete. Feedback items are your implementation TODO list.
+- **Report progress**: As you address each feedback item, update the Activity Log explaining what you changed.
+
+---
+
+## Review Feedback
+
+*[If this WP was returned from review, the reviewer feedback reference appears in the Activity Log below or in the status event log.]*
+
+---
+
 
 ## Objective
 
@@ -78,7 +105,7 @@ Follow **the shared migration procedure** in [tasks.md](../tasks.md) — read it
 - **NFR-002** — no new raises where leniency is the contract.
 - **C-007** — not a bulk edit. Each site gets an individual kind decision.
 - **WP01 already shrank the blessed set and installed a positive assertion.** That gate is
-  currently **red by design** (it is on `.expected-reds.md`). Greening it is your deliverable —
+  currently **red by design** (it is on `research/expected-reds.md`). Greening it is your deliverable —
   do **not** edit `test_trio_seam_only.py`; WP01 owns it. If you believe the assertion is wrong,
   report it rather than editing another WP's file.
 
@@ -103,7 +130,7 @@ Follow **the shared migration procedure** in [tasks.md](../tasks.md) — read it
   surrounding function.
   `Run: spec-kitty charter context --include tactic:change-apply-smallest-viable-diff`
 - **`DIRECTIVE_041`** — classify every red **STALE / PATCHWORK / VALID** before touching it;
-  never retry-to-green. Check `.expected-reds.md` first — a red may belong to another WP.
+  never retry-to-green. Check `research/expected-reds.md` first — a red may belong to another WP.
   `Run: spec-kitty charter context --include directive:DIRECTIVE_041`
   **When doing T028**, the trio gate red is expected-by-design until your routing lands.
 - **`tactic:canonical-source-unification`** — one authority per question.
@@ -164,14 +191,14 @@ corrected in a different commit from the code it annotates goes stale immediatel
 
 **Steps**:
 1. Run `uv run pytest tests/architectural/test_trio_seam_only.py -q`. It should go from red
-   (expected, on `.expected-reds.md`) to **green**.
+   (expected, on `research/expected-reds.md`) to **green**.
 2. Confirm the gate is green **because the positive assertion holds**, not because a set went
    empty. Sanity-check it by planting a leaf-primitive import in a trio file and confirming the
    gate **reds**, then reverting.
 3. Write `tests/specify_cli/acceptance/test_trio_read_seam_migration.py`: behaviour preservation
    for representative migrated sites — identical directory for a materialized mission (NFR-001),
    and no new raise on husk / empty / deleted-coord for a PRIMARY kind (NFR-002).
-4. Record the transition in your handoff: the node ids that went green and the `.expected-reds.md`
+4. Record the transition in your handoff: the node ids that went green and the `research/expected-reds.md`
    entries they discharge.
 
 **Scope check (#2465)**: that issue asks whether all four resolvers in one of these files can be
@@ -182,10 +209,12 @@ falls out of the routing naturally.
 
 - Planning/base branch: **`fix/read-side-seam-primary-primitive-closure`**
 - Final merge target: **`fix/read-side-seam-primary-primitive-closure`**
-- Worktree allocated **per computed lane** from `lanes.json` by `spec-kitty implement WP05`.
+- Claim and prepare the workspace with the canonical entry point:
+  `spec-kitty agent action implement WP05 --agent <name>`
+- Worktree allocated **per computed lane** from `lanes.json` by that command.
   Never hand-construct it; never `git stash` inside a lane worktree.
 
-## Test strategy
+## Test Strategy
 
 ```bash
 PWHEADLESS=1 SPEC_KITTY_SYNC_MINIMAL_IMPORT=1 uv run pytest \
@@ -205,10 +234,20 @@ Plus the six C-008 gates (tasks.md §5), `uv run ruff check <changed>`, and proj
 - `test_trio_seam_only.py` **green**, and demonstrably green because the positive assertion
   holds — verified by planting a leaf import and observing the red (T028).
 - Behaviour preservation pinned: identical directories for materialized missions; no new raises.
-- `.expected-reds.md` entries this WP discharges are named in the handoff.
-- #2465 assessed and reported (no closing keyword).
+- `research/expected-reds.md` entries this WP discharges are named in the handoff.
+- #2465 assessed and **reported as a comment on the issue itself** (no closing keyword) — a
+  named venue, not "reported" in the abstract.
+- **Per-site kind table in the Activity Log** (this is what makes Reviewer Guidance #1
+  checkable): one row per routed site — *site → kind chosen → the downstream filename that
+  justifies it*. A wrong `kind` argument is **census-invisible by construction**, so this table
+  is the only artifact a reviewer can check it against.
+- **Read-side census ratchet (zero additions)**: the bypass gate's finding set after this WP
+  equals the set recorded in `research/expected-reds.md` **minus exactly the sites this WP
+  routed** — no additions. The node stays red until WP08, so this per-site diff is the only
+  real signal available to this WP; a new finding is a regression even though the node's
+  red/green state did not change.
 - `ruff` and project-mode `mypy` clean.
-- Finish: commit, `mark-status T026 T027 T028 --status done`, then `move-task WP05 --to
+- Finish: commit, `spec-kitty agent tasks mark-status T026 T027 T028 --status done`, then `spec-kitty agent tasks move-task WP05 --to
   for_review` and **wait** for the synchronous pre-review gate.
 
 ## Risks
@@ -222,7 +261,7 @@ Plus the six C-008 gates (tasks.md §5), `uv run ruff check <changed>`, and proj
   widening did not cover your call shape — report it as a WP01 gap rather than adding a local
   exemption.
 
-## Reviewer guidance
+## Reviewer Guidance
 
 1. For each of the 10 sites: does the declared **kind** match what the site actually reads
    downstream? This is the error class no gate catches.
@@ -232,3 +271,12 @@ Plus the six C-008 gates (tasks.md §5), `uv run ruff check <changed>`, and proj
    and does none of them re-assert the `lanes.json`-on-COORD error (C-001)?
 4. Were sites verified **individually** (strangler-fig cadence), or batched and tested once?
 5. Was `test_trio_seam_only.py` left untouched (WP01's file)?
+
+## Activity Log
+
+> **CRITICAL**: entries MUST be chronological — **append** new entries at the END, never
+> prepend or insert. Format: `- YYYY-MM-DDTHH:MM:SSZ – <agent_id> – <action>`, timestamp in
+> UTC (`date -u "+%Y-%m-%dT%H:%M:%SZ"`). The acceptance system reads the LAST entry as the
+> current state, so out-of-order entries fail acceptance even when the work is complete.
+
+- 2026-07-28T09:27:08Z – system – Prompt created.

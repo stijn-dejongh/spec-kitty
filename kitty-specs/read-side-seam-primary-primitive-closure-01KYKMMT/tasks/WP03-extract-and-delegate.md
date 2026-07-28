@@ -49,7 +49,33 @@ tracker_refs: []
 # Work Package Prompt: WP03 – Extract the terminal assembler, then delegate the wrapper
 
 ## ⚡ Do This First: Load Agent Profile
-Use `/ad-hoc-profile-load` to load `python-pedro` (implementer, claude).
+
+Use the `/ad-hoc-profile-load` skill to load the agent profile specified in the frontmatter, and behave according to its guidance before parsing the rest of this prompt.
+
+- **Profile**: `python-pedro`
+- **Role**: `implementer`
+- **Agent/tool**: `claude`
+
+If no profile is specified, run `spec-kitty agent profile list` and select the best match for this work package's `task_type` and `authoritative_surface`.
+
+---
+
+## ⚠️ IMPORTANT: Review Feedback
+
+**Read this first if you are implementing this task!**
+
+- **Has review feedback?**: Check the `review_ref` field in the event log (via `spec-kitty agent status` or the Activity Log below).
+- **You must address all feedback** before your work is complete. Feedback items are your implementation TODO list.
+- **Report progress**: As you address each feedback item, update the Activity Log explaining what you changed.
+
+---
+
+## Review Feedback
+
+*[If this WP was returned from review, the reviewer feedback reference appears in the Activity Log below or in the status event log.]*
+
+---
+
 
 ## Objective
 
@@ -150,8 +176,14 @@ public wrapper, so the wrapper can later delegate without recursing.
    coordination probing, no topology awareness, no seam import. It is L3 assembly.
 3. Re-point the **7 in-module callers** of the primitive at the leaf (census shows 7 sites in
    `_read_path_resolver.py`).
-4. This leaf is **permanent and module-private** (C-004). It is the sanctioned owner of that
-   path assembly under a separate architectural gate — do not delete it, and do not export it.
+4. This leaf is **permanent** (C-004) and the sanctioned owner of that path assembly under a
+   separate architectural gate — never delete it.
+5. **Private by convention, not unreachable.** SC-001's end state is *"the private assembler has
+   only in-module **and named-sanctioned** callers"* — cross-module sanctioned callers are
+   anticipated. The **four FR-005 foundation sites** (`core/paths.py` ×2, `core/git_ops.py`,
+   `coordination/surface_resolver.py`) import the **public wrapper** today and WP08 deletes it,
+   so they must end up importing this leaf. WP07 T034 re-points them; keep the leaf importable
+   for exactly those four, and do **not** add it to `__all__`.
 
 **Files**: `src/specify_cli/missions/_read_path_resolver.py`.
 **Validation**: no behaviour change; the leaf has no imports from `mission_runtime`.
@@ -263,8 +295,13 @@ internally. T016 re-points that leg → **the stubs become unreached** → the c
 may pass while testing nothing. "The fixture still passes" is therefore not evidence.
 
 **Steps**:
-1. Locate the fixture (it is in the Class-C group of the patch-seam census — see
-   [plan.md](../plan.md) "Patch-seam exposure").
+1. The fixture is **`tests/specify_cli/cli/commands/test_coord_status_commit_2155.py::_install_distinguishable_topology`**
+   (~:100). It stubs five resolver names on `_read_path_resolver` — including
+   `primary_feature_dir_for_mission` and `_canonicalize_primary_read_handle` — and its own inline
+   comment says *"PRIMARY-partition leg of `resolve_planning_read_dir` composes via this
+   primitive"*. That is exactly the leg T016 re-points, so that stub becomes unreached. Its
+   docstring already names the hazard: *"A stub returning the SAME dir for both under coord
+   topology would make the convergence assertion vacuous (constant-stub rejection)."*
 2. Prove the stubs are still **reached**: assert on the stub (call count / side effect), or
    deliberately break a stub and confirm the harness reds.
 3. If they are genuinely unreached, the harness is now vacuous — **re-point it at the real
@@ -280,10 +317,12 @@ what you did about it.
 
 - Planning/base branch: **`fix/read-side-seam-primary-primitive-closure`**
 - Final merge target: **`fix/read-side-seam-primary-primitive-closure`**
-- Worktree allocated **per computed lane** from `lanes.json` by `spec-kitty implement WP03`.
+- Claim and prepare the workspace with the canonical entry point:
+  `spec-kitty agent action implement WP03 --agent <name>`
+- Worktree allocated **per computed lane** from `lanes.json` by that command.
   Never hand-construct it; never `git stash` inside a lane worktree.
 
-## Test strategy
+## Test Strategy
 
 ```bash
 # Half A, then Half B — separate commits, separate runs
@@ -308,13 +347,16 @@ Plus the six C-008 gates (tasks.md §5), `uv run ruff check <changed>`, and proj
 - Zero call-site changes; both canonicalizer counts re-derived and recorded with before/after
   (T018, SC-018, SC-003).
 - The wrapper delegates; **no `RecursionError`** anywhere (T019).
-- Every divergence attributed in writing; backfill recovery pinned **red-first** and verified
-  by reverting the product file; husk case pinned (T020).
+- Every divergence attributed in a **named artifact** — append a `## WP03` section to
+  `kitty-specs/read-side-seam-primary-primitive-closure-01KYKMMT/research/expected-reds.md`
+  listing each divergence and its cause (anchoring / backfill recovery / husk / raising).
+  "In writing" with no location is not reviewable. Backfill recovery pinned **red-first**,
+  verified by reverting the product file; husk case pinned (T020).
 - The four Class-C stubs each have a written reached / not-reached verdict and a resolution
   (T021).
 - `ruff` and project-mode `mypy` clean.
-- Finish: commit, `mark-status T015 T016 T017 T018 T019 T020 T021 --status done`, then
-  `move-task WP03 --to for_review` and **wait** for the synchronous pre-review gate.
+- Finish: commit, `spec-kitty agent tasks mark-status T015 T016 T017 T018 T019 T020 T021 --status done`, then
+  `spec-kitty agent tasks move-task WP03 --to for_review` and **wait** for the synchronous pre-review gate.
 
 ## Risks
 
@@ -329,7 +371,7 @@ Plus the six C-008 gates (tasks.md §5), `uv run ruff check <changed>`, and proj
   is evidence the decision belongs to the caller, which is a plan-level finding, not something
   to paper over with a parameter.
 
-## Reviewer guidance
+## Reviewer Guidance
 
 1. Are Half A and Half B **separate commits**, with Half A demonstrably behaviour-neutral?
 2. Is the `read_dir` → leaf trace written down, and does it actually hold when you follow it in
@@ -341,3 +383,12 @@ Plus the six C-008 gates (tasks.md §5), `uv run ruff check <changed>`, and proj
 5. Are the re-derived canonicalizer counts in the commit body, given WP01 removed the gate that
    used to assert them?
 6. Zero call-site changes outside the two resolver modules — check `git diff --stat`.
+
+## Activity Log
+
+> **CRITICAL**: entries MUST be chronological — **append** new entries at the END, never
+> prepend or insert. Format: `- YYYY-MM-DDTHH:MM:SSZ – <agent_id> – <action>`, timestamp in
+> UTC (`date -u "+%Y-%m-%dT%H:%M:%SZ"`). The acceptance system reads the LAST entry as the
+> current state, so out-of-order entries fail acceptance even when the work is complete.
+
+- 2026-07-28T09:27:08Z – system – Prompt created.

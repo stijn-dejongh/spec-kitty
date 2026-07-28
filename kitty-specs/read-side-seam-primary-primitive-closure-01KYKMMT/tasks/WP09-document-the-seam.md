@@ -51,7 +51,33 @@ tracker_refs:
 # Work Package Prompt: WP09 – Document the placement seam and disambiguate "routing"
 
 ## ⚡ Do This First: Load Agent Profile
-Use `/ad-hoc-profile-load` to load `curator-carla` (implementer, claude).
+
+Use the `/ad-hoc-profile-load` skill to load the agent profile specified in the frontmatter, and behave according to its guidance before parsing the rest of this prompt.
+
+- **Profile**: `curator-carla`
+- **Role**: `implementer`
+- **Agent/tool**: `claude`
+
+If no profile is specified, run `spec-kitty agent profile list` and select the best match for this work package's `task_type` and `authoritative_surface`.
+
+---
+
+## ⚠️ IMPORTANT: Review Feedback
+
+**Read this first if you are implementing this task!**
+
+- **Has review feedback?**: Check the `review_ref` field in the event log (via `spec-kitty agent status` or the Activity Log below).
+- **You must address all feedback** before your work is complete. Feedback items are your implementation TODO list.
+- **Report progress**: As you address each feedback item, update the Activity Log explaining what you changed.
+
+---
+
+## Review Feedback
+
+*[If this WP was returned from review, the reviewer feedback reference appears in the Activity Log below or in the status event log.]*
+
+---
+
 
 ## Objective
 
@@ -97,13 +123,38 @@ discovery at the call site — *causing* the misappropriation this page prevents
 
 - **L2 is TWO functions and the divergence is load-bearing.** `declared_read_surface` is
   materialization-blind *precisely so it can disagree with an already-resolved stamp* — and that
-  disagreement is what makes the `surface_cannot_hold` / #2906 guard possible. Describing "one
-  decision module" is a **defect**, not a simplification.
+  disagreement is what makes the `surface_cannot_hold` guard possible. Describing "one decision
+  module" is a **defect**, not a simplification. **Cite both tickets with their roles**: **#2885**
+  is the `surface_cannot_hold` failure mode (`acceptance/execution_context.py:203`); **#2906** is
+  the convergence/fold issue (`resolution.py:1552`). Attributing the guard to #2906 alone imports
+  a wrong ticket into a canonical page.
 - **L4 does NOT assemble a path.** It *selects* an already-discovered location and refuses when
   absent. **Assembly lives in L3.** Getting this wrong is what teaches the misappropriation.
 
-Also required: **both composition roots** shown as separate roots reached through **one** seam
-object — `resolve_artifact_surface` (reads) and `resolve_placement_only` (writes) (INV-4).
+Also required: **both composition roots** as separate roots — `resolve_artifact_surface` (reads)
+and `resolve_placement_only` (writes) — reached through **one** seam object (INV-4).
+
+**State that as the INTENT plus an honest bound, not as landed fact.** Measured on this base:
+**103** `placement_seam(...)` call sites, against **15** direct `resolve_placement_only(...)` and
+**6** direct `resolve_artifact_surface(...)` callers that bypass the seam object entirely — and
+those write-side direct callers also skip `assert_partition_invariant`, which fires only inside
+`placement_seam()` (`resolution.py:1849`). This WP's own dependency rationale is *"document the
+layering **as landed**, not as intended"*, so publishing "one seam object" flat would state a
+false invariant that T044 then freezes behind a green docs gate. Fold the counts into §5 Honest
+bounds — which exists for exactly this.
+
+**A third `read_dir` route must appear too.** `PlacementSeam.read_dir` short-circuits
+`MissionArtifactKind.RETROSPECTIVE` to `specify_cli.retrospective.writer:resolve_retrospective_home`
+(`resolution.py:1441-1452`) — never reaching `resolve_artifact_surface`, so **no coord probe, no
+`translate_surface`, no stamp**. A six-row table presented as total, with a structural test
+asserting completeness, that silently omits a live exception, *is* the fifth-authority failure.
+Add a row or an explicit L0 footnote, and cross-reference WP06's finding on the same resolver.
+
+**One more shape worth a sentence**: the stack is really a cycle broken by a late import —
+`_read_path_resolver.py:1419` late-imports `is_primary_artifact_kind` from `mission_runtime` and
+branches on it at `:1421`, so the partition question is asked **twice per read** (once in L3's own
+routing, once in L2a/L2b). An undocumented duplicate decision point is precisely what invites the
+next "strangle through the wrong layer".
 
 ## Context & Constraints
 
@@ -211,11 +262,14 @@ highest-collision sense in agent-authored prose), and scope routing.
 
 **Steps**:
 1. Add the page to `docs/architecture/index.md` (**mandatory**).
-2. Regenerate **both gated** registries with their tools — never by hand:
-   `docs/development/3-2-page-inventory.yaml` (via the inventory lockfile writer) and
-   `docs/development/3-2-docs-retrieval-index.yaml` (via the docs-index writer).
-3. Verify relative links resolve — adding or moving a docs page breaks `../` links; run the
-   relative-link check.
+2. Give the page the frontmatter `DIRECTIVE_042` requires — **`doc_status`** (not a bare `status`)
+   plus a `related:` list. `check_docs_freshness --ci` catches its absence, but fix it
+   deliberately rather than discovering it.
+3. Regenerate **both gated** registries with their canonical tools — never by hand:
+   `docs/development/3-2-page-inventory.yaml` via `scripts/docs/inventory_lockfile.py --write`
+   and `docs/development/3-2-docs-retrieval-index.yaml` via `scripts/docs/docs_index.py --write`.
+4. Verify relative links resolve — adding or moving a docs page breaks `../` links:
+   `scripts/docs/relative_link_fixer.py --check`.
 4. `PYTHONPATH=. uv run python scripts/docs/check_docs_freshness.py --ci` → **zero errors**.
 5. Confirm the **frozen stores are untouched-green** — that is the proof neither was edited:
    `test_glossary_pack_parity.py` and `test_glossary_pack_no_regression.py`.
@@ -241,10 +295,12 @@ sentences will fight every future edit. The **comprehension** check belongs to a
 
 - Planning/base branch: **`fix/read-side-seam-primary-primitive-closure`**
 - Final merge target: **`fix/read-side-seam-primary-primitive-closure`**
-- Worktree allocated **per computed lane** from `lanes.json` by `spec-kitty implement WP09`.
+- Claim and prepare the workspace with the canonical entry point:
+  `spec-kitty agent action implement WP09 --agent <name>`
+- Worktree allocated **per computed lane** from `lanes.json` by that command.
   Never hand-construct it; never `git stash` inside a lane worktree.
 
-## Test strategy
+## Test Strategy
 
 ```bash
 PYTHONPATH=. uv run python scripts/docs/check_docs_freshness.py --ci   # expect 0 errors
@@ -276,7 +332,7 @@ fails at CI if skipped. Run it before handing off.
 - The docs test asserts structure and citations, not prose wording (T044, SC-012).
 - Terminology guard green.
 - #2653 cross-referenced (no closing keyword).
-- Finish: commit, `mark-status T040 T041 T042 T043 T044 --status done`, then `move-task WP09 --to
+- Finish: commit, `spec-kitty agent tasks mark-status T040 T041 T042 T043 T044 --status done`, then `spec-kitty agent tasks move-task WP09 --to
   for_review` and **wait** for the synchronous pre-review gate.
 
 ## Risks
@@ -292,7 +348,7 @@ fails at CI if skipped. Run it before handing off.
 - **Adding a docs page breaks `../` links** elsewhere. Run the relative-link check.
 - **Do not name the file `*-routing.md`** — the word already carries ≥10 senses.
 
-## Reviewer guidance
+## Reviewer Guidance
 
 1. **Check L2 and L4 specifically.** Does the page show L2 as **two** functions with the
    divergence explained as load-bearing? Does it say L4 **selects** rather than assembles? These
@@ -307,3 +363,12 @@ fails at CI if skipped. Run it before handing off.
 6. **The human check**: can you, without re-reading this mission's spec, state (a) what routing
    means here vs branch-target routing, (b) which layer decides placement, (c) why a canonical
    handle is not compliance? If not, the page has not met User Story 7.
+
+## Activity Log
+
+> **CRITICAL**: entries MUST be chronological — **append** new entries at the END, never
+> prepend or insert. Format: `- YYYY-MM-DDTHH:MM:SSZ – <agent_id> – <action>`, timestamp in
+> UTC (`date -u "+%Y-%m-%dT%H:%M:%SZ"`). The acceptance system reads the LAST entry as the
+> current state, so out-of-order entries fail acceptance even when the work is complete.
+
+- 2026-07-28T09:27:08Z – system – Prompt created.

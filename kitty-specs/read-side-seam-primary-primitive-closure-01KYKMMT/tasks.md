@@ -25,7 +25,7 @@ buckets before touching anything:
 
 | Bucket | How to recognise it | What to do |
 |---|---|---|
-| **Expected-by-design** | the node is on WP01's recorded expected-red list (`.expected-reds.md`, see WP01 T007), or on your own WP's list | leave it, or green it if your WP owns it |
+| **Expected-by-design** | the node is on WP01's recorded expected-red list (`research/expected-reds.md`, see WP01 T007), or on your own WP's list | leave it, or green it if your WP owns it |
 | **Foreign honest-red P0** | red on the mission base too, on a surface this mission does not own — e.g. `tests/sync/test_sync_consent_default_deny.py` (#3031, red **by design** per ADR `2026-07-17-1`, marked `fast` so it *will* appear in your lane, on `sync/routing.py` = the **sync fan-out** sense of "routing") | **do not touch.** Do not green-wash, do not widen scope (C-010) |
 | **Load-bearing regression** | neither of the above; a resolved directory changed, a PRIMARY kind started raising, `RecursionError`, or a previously-green node went red | **fix the product** |
 
@@ -78,6 +78,12 @@ PWHEADLESS=1 SPEC_KITTY_SYNC_MINIMAL_IMPORT=1 uv run pytest \
   -q
 ```
 
+**What "zero new findings" means.** Every WP's DoD says `ruff` and project-mode `mypy` report
+**zero new** findings. The baseline is the **merge-base of your lane with
+`fix/read-side-seam-primary-primitive-closure`**, measured on the files your diff touches — not
+the whole tree, and not a lane tip. Capture the baseline before your first edit; if you cannot,
+say so and report absolute counts instead of claiming a delta.
+
 **Never run the full `tests/architectural/` suite locally** — it destabilises the session
 (C-008). CI owns the exhaustive sweep. Never pipe `pytest`/`mypy` through `| tail` — it
 masks the exit code. Inside a lane worktree always prefix `uv run` (a bare `python` imports
@@ -87,9 +93,20 @@ the *primary* checkout's `src`).
 
 `owned_files` is non-overlapping by construction — that is the real guard against parallel
 collisions. A small, well-justified edit outside your map is acceptable **with a one-line
-rationale in the commit body**. Three are pre-authorised and named in the WPs that need
-them (WP08 → `_read_path_resolver.py`, WP02 → the ledger sections other WPs' rows land in,
-WP07 → the `status/aggregate.py` fold recognition WP01 prepared).
+rationale in the commit body**.
+
+Pre-authorised out-of-map edits, stated in the direction they are actually needed:
+
+| WP | May edit outside its map | Why |
+|---|---|---|
+| **WP08** | `src/specify_cli/missions/_read_path_resolver.py` (WP03's) | it deletes the wrapper and edits `__all__` — the deliberate serial-by-phase handoff |
+| **WP08** | `docs/development/read-side-seam-classification.md` (WP02's) — **count rows and stale stay-lenient index rows only** | WP02 writes post-migration end-state counts and names WP08 the greening owner |
+| **WP08** | comments/docstrings in the 7 modules that still name the deleted symbol | grep-and-correct after the delete |
+| **WP04–WP07** | *nothing.* They **verify**, never author, in WP02's ledger and `test_no_read_side_bypass.py` | WP02 lands the terminal shape — including every per-site descriptor — so a routing WP that finds a gap **reports it as a WP02 gap** |
+
+That last row is the load-bearing one: WP02 declares itself sole owner of the ledger and the
+read-side gate *for the whole mission*, so "ensure the allow-list carries a descriptor" in the
+shared procedure below means **confirm it exists**, not write it.
 
 ---
 
@@ -105,9 +122,10 @@ Each routing WP applies the same procedure per site. It is **semantic, not mecha
    `placement_seam(repo_root, handle).read_dir(<kind>)`. The caller declares only *what* it
    reads. Reuse the existing seam import in the module; do **not** introduce a second read
    authority.
-3. **`stay-lenient`** → leave the site, and ensure the allow-list carries a per-site
-   descriptor with the production comment as its rationale of record (C-003 — no path-scoped
-   blankets).
+3. **`stay-lenient`** → leave the site, and **confirm** (do not author) that WP02's allow-list
+   carries a per-site descriptor with the production comment as its rationale of record (C-003 —
+   no path-scoped blankets). A missing descriptor is a **WP02 gap to report**, not yours to
+   write — see §6.
 4. **`sanction-infra`** → record by name with the recursion rationale; **do not route**
    (FR-005, NFR-009).
 5. **Pick the kind from what the site actually reads.** ~24 sites are unambiguous
@@ -444,18 +462,28 @@ Estimated prompt size: ~300 lines.
 ## Dependency graph and parallelisation
 
 ```text
-WP01 (suite → destination) ──> WP03 (extract → delegate) ──┬──> WP05 (trio) ─────┐
-                                                            ├──> WP06 (agent-CLI)┤
-                                                            └──> WP07 (runtime)  ┤
-WP02 (grammar + census) ──┬──> WP04 (unpoliced + residuals) ─────────────────────┤
-                          │                                                       │
-                          └───────────────────────────────────> WP08 (delete + drain) ──> WP09 (docs)
+WP01 (suite → destination) ─┐
+                            ├─> WP03 (extract → delegate) ─┬─> WP04 (unpoliced + residuals) ─┐
+WP02 (grammar + census) ────┘                              ├─> WP05 (trio) ──────────────────┤
+                                                           ├─> WP06 (agent-CLI) ─────────────┤
+                                                           └─> WP07 (runtime + status) ──────┤
+                                                                                             │
+                                          WP08 (delete wrapper + drain canonicalizer) <──────┘
+                                                              │
+                                                              └─> WP09 (docs)
 ```
 
-- **Widest parallel front**: WP05 ‖ WP06 ‖ WP07 (three routing clusters, disjoint files),
-  with WP04 able to run alongside all three.
-- **Phase 1 is fully parallel**: WP01 ‖ WP02.
-- **Critical path**: WP01 → WP03 → {WP05|WP06|WP07} → WP08 → WP09 (5 deep).
+- **Phase 1 is fully parallel**: WP01 ‖ WP02 (disjoint files, no edges).
+- **Widest parallel front**: WP04 ‖ WP05 ‖ WP06 ‖ WP07 — four routing clusters, disjoint files.
+- **Critical path**: {WP01|WP02} → WP03 → {WP04|WP05|WP06|WP07} → WP08 → WP09 (5 deep).
+
+**Why every routing WP depends on both WP02 and WP03.** WP02 is not optional context: each
+routing WP is told to *apply* the ledger's per-site verdicts and never to re-derive them, and
+those rows do not exist until WP02 lands. WP03 is the C-005 Step-1 gate: routing any call site
+before the delegation is verified destroys the equivalence evidence the delegation exists to
+produce. Accepted cost: this serialises the routing front behind Phase 1, and WP04's residuals
+half waits on WP03 it does not strictly need — a scheduling cost, not a correctness one, and the
+alternative (splitting WP04) buys earlier #2886 closure at the price of another WP boundary.
 
 ## MVP scope
 

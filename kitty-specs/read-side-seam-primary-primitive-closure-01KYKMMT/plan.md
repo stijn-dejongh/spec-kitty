@@ -369,7 +369,7 @@ IC-01 ──> IC-07 (residuals) ──> IC-06 (floors retired at START of IC-05;
 | `tests/architectural/test_no_read_side_bypass.py` | IC-02's WP | IC-05/IC-06 censused-callee + sanctions, IC-08 docstring count |
 | `tests/architectural/test_coord_read_residuals_closeout.py` | IC-06's WP | IC-07 pin removal, IC-08 recorded census |
 | `src/specify_cli/missions/_read_path_resolver.py` | serial, by phase | IC-00 extract → IC-04 wrapper body → IC-05 delete + `__all__` |
-| `tests/architectural/test_trio_seam_only.py` | the trio WP of IC-05 | — |
+| `tests/architectural/test_trio_seam_only.py` | **WP01** (the suite-expectations WP) — superseded at `/tasks`: the blessed-name shrink *is* stating the destination, so WP01 owns the file and WP05's routing greens it | — |
 
 **Doctrine-propagation recipe for `/spec-kitty.tasks` (C-011).** Doctrine reaches an
 implementer **only** through the WP task-file body, which is embedded verbatim in the
