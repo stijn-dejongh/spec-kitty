@@ -1,221 +1,231 @@
-# Mission Specification: Read-Side Seam: Honest Census and Kind-Blind Resolver Closure
+# Mission Specification: Read-Side Seam: Placement-Authority Closure
 
 **Mission Branch**: `fix/read-side-seam-primary-primitive-closure`
-**Created**: 2026-07-28 · **Re-framed**: 2026-07-28 after a two-lens post-spec squad falsified the original premise (see Provenance)
+**Created**: 2026-07-28 · **Re-framed twice** (see Provenance)
 **Status**: Draft
-**Input**: Close the residuals left by #3013 — #2886 (route `_run_documentation_wiring`, retire the `PINNED: #2214` exception) and the #2824 residual (correct two actively-wrong comments) — and discharge #3014 **honestly**: correct the false and stale claims it rests on, and police the resolver that is genuinely unpoliced (`resolve_feature_dir_for_mission`) instead of the one #3014 mis-identified.
-
-> **Note on the mission slug.** The slug `…-primary-primitive-closure-01KYKMMT` is historical: it was minted before the squad disproved #3014's premise. The mission's actual subject is the **kind-blind** resolver `resolve_feature_dir_for_mission` plus census honesty; `primary_feature_dir_for_mission` is deliberately **out of scope** (C-004). The slug is immutable identity and is not renamed.
+**Input**: Close the #3013 residuals (#2886, #2824 comment) and discharge #3014 honestly — then **move the placement decision out of the call sites and into the resolver** for the last holdout primitive, via delegate-then-remove.
 
 ## Context & Motivation
 
-Mission artifacts live on one of two partitions: **PRIMARY** (stable planning and
-metadata — `meta.json`, `spec.md`, `tasks/`) or **COORD** (lifecycle surfaces on a
-coordination branch). The **placement seam** is the single authority that maps a
-`MissionArtifactKind` to the right partition and fails loud when a COORD partition
-is gone.
+Mission artifacts live on the **PRIMARY** partition (planning/metadata) or the
+**COORD** partition (lifecycle surfaces on a coordination branch). The governing
+principle:
 
-PR #3012 routed 72 read sites onto that seam and added an AST census gate
-(`tests/architectural/test_no_read_side_bypass.py`) over **two** kind-blind
-primitives, backed by a machine-parsed ledger
-(`docs/development/read-side-seam-classification.md`). Its landing pass had to
-repair two failures that this mission must not repeat: a **vacuous** ledger
-reconciliation (two literals compared inside one test file) and **single-axis**
-classification that let a silent wrong answer through.
+> **Only the resolver decides *where* an artifact kind is routed, based on the chosen
+> topology. A caller declares only *what* it is reading (the kind).**
 
-Issue #3014 asserted that a third primitive, `primary_feature_dir_for_mission`, is
-"policed by nothing" and needs ~39 sites migrated to fail loud. **A two-lens
-post-spec squad disproved that**, and this spec is written to the corrected facts:
+`placement_seam(...).read_dir(kind)` is that resolver, and it is already the house
+style — **88 compliant call sites**. Three leaf primitives remain where the caller
+still decides *where*:
 
-1. **It is already policed.** `tests/architectural/test_resolution_authority_gates.py`
-   censuses exactly this primitive on the **anchoring axis**
-   (`CANONICALIZER_PRIMITIVE`, `CANONICALIZER_FLOOR = 44`,
-   `ROUTED_CANONICALIZER_FLOOR = 40`, plus a rationale-bearing allow-list YAML with
-   shrink-only and stale-entry tests). Live: 46 scanned / 43 routed / 3 sanctioned.
-   A raw-handle call reds today.
-2. **Its fail-loud surface is zero.** All 34 in-scope sites read a PRIMARY-partition
-   artifact off a deliberately PRIMARY anchor, and six carry explicit comments
-   stating that the topology-routed resolver would be *wrong* (it lands on the
-   STATUS-only coord husk, which has no `meta.json`). `read_dir()` only raises for a
-   COORD kind, so "migrate these to fail loud" is vacuous.
-3. **Migrating them would break two gates.** Routing ~30 sites drops the routed
-   count 43 → ~13, reding `test_canonicalizer_gate_floor`, `test_routed_count_floor`,
-   and the closeout gate's floor-honesty assertion — for no safety gain.
-4. **The real gap is a different resolver.** `resolve_feature_dir_for_mission`
-   (`src/specify_cli/missions/_read_path_resolver.py:1581`) is the same **kind-blind**
-   shape, exported in `__all__`, with **8 live sites / 7 files** — and is covered by
-   **no** census gate and **no** ledger row. Because it is kind-blind *and*
-   topology-routed, a caller reading a PRIMARY artifact through it can land on the
-   coord husk: precisely the failure those six comments describe.
+| Primitive | Shape | Live sites | Policed by |
+|---|---|---|---|
+| `primary_feature_dir_for_mission` | caller picks PRIMARY | **34 in scope** | handle-hygiene floors only |
+| `candidate_feature_dir_for_mission` / `resolve_planning_read_dir` | caller picks "whatever topology says" | censused | read-side gate |
+| `resolve_feature_dir_for_mission` | kind-blind, topology-routed | **8** | **nothing** |
 
-So the honest work is: close the two residuals, **correct the record** (the ledger's
-"unpoliced" text, a stale count that appears in two places, and an off-by-one
-census), and **police the resolver that nobody polices** — with the ledger
-grammar and index grammar fixed first, because the squad demonstrated that the
-naive extension parses **silently vacuously**.
+### What the audit established (empirical, on `e97fc6ab9`)
 
-### Two-axis classification *(load-bearing)*
+1. **`primary_feature_dir_for_mission`'s 34 sites are semi-compliant, not compliant.**
+   They pass a canonical *handle* — which is all the anchoring floors check
+   (`CanonicalizerSite.is_canonical` = "was the handle folded") — while **hardcoding
+   the partition at the call site**. Handle hygiene is not placement authority.
+2. **The seam is answer-equivalent, and strictly better on one cell.** Across eight
+   real-repo fixtures the blind composition and `read_dir(<PRIMARY kind>)` return the
+   same path for flat, coord-materialized, coord-**husk**, deleted-coord, empty-coord,
+   absent-mission and lane-worktree cases. On a **backfilled** mission (bare `<slug>`
+   primary, composed `<slug>-<mid8>` coord) the blind composition returns a path that
+   **does not exist** while the seam recovers it. Structurally guaranteed:
+   `declared_read_surface` short-circuits to PRIMARY for any primary kind *before any
+   coord probe*.
+3. **The 33 compositions are hand-inlined resolver internals.**
+   `resolve_planning_read_dir`'s PRIMARY leg *is* that composition verbatim — so the
+   sites are not choosing a different answer, they are duplicating the resolver's body
+   and keeping the decision in the caller.
+4. **The six "the coord-aware resolver lands on the husk" comments do not survive.**
+   They argue against the *kind-blind topology-routed* resolver; the fixtures show the
+   *kind-aware seam* does not have those properties. Same defect class as #2824's
+   comment: arguing against resolver A to justify not using resolver B.
+5. **The census floors are bookkeeping, with in-tree precedent.** A prior WP routed
+   exactly this composition onto `read_dir(...)` and lowered the floor 45→44, recorded
+   as *"a genuine routing shrink, not a re-pin"*; five such shrinks are on record, and
+   the doctrine is to record the honest before/after. **No test asserts the primitive
+   must keep being used.**
+6. **Two live gate holes.** `status/aggregate.py:522` passes a handle from a
+   canonicalizer absent from the gate's fold set — neither routed nor allowlisted,
+   passing by omission; and `test_gate_read_literal_ban.py`'s three allow-sets bless
+   only the *blind* primitive, so migrated sites would silently stop being checked
+   (**green-by-omission**).
 
-#3012's ledger assessed only the **exception axis** ("can this kind raise?") and
-never the **anchoring axis** ("which root does it resolve against, and is the result
-idempotent under a composed vs bare handle?"). That blind spot produced a silent
-wrong answer on a backfilled mission. Every site classified here records both.
+### Method: delegate, then remove *(operator-prescribed)*
 
-### Gate honesty *(load-bearing)*
-
-A gate must enforce what it advertises. The squad **executed** the extension shape
-this spec originally prescribed and showed the reconciliation stays *green and
-meaningless*; and it found the index grammar cannot even represent a module with
-several censused sites in one function. Both are fixed before any site is
-classified.
+- **Step 1 — delegate.** Make the kind-unaware primitive call the kind-aware seam
+  internally. Call sites are untouched, so the existing suite is the harness, the
+  floors do not move, and the *one* hidden delta (backfill recovery) surfaces at all
+  34 sites at once, attributably.
+- **Step 2 — remove.** Push the decision to whoever owns the information: the
+  **caller** declares the kind (it knows which artifact it reads), and the primitive
+  becomes **module-private** — it cannot be deleted, because it is the terminal
+  `KITTY_SPECS_DIR` constructor the resolver itself is built on. A private primitive
+  with in-module callers is self-policing; a public one with 34 external callers needs
+  two integer floors and a YAML allow-list to stay honest.
 
 ## Domain Language *(load-bearing)*
 
-| Term | Canonical sense in this mission | Do NOT confuse with |
-|------|--------------------------------|---------------------|
-| **PRIMARY partition** | Stable planning/metadata home (`meta.json`, `spec.md`, `tasks/`). | The Primary Branch (`main`). |
-| **COORD partition** | Lifecycle surfaces routed via the coordination branch. A coord worktree may be a **husk**: present but carrying no `meta.json`. | The PRIMARY partition. |
-| **Kind-blind resolver** | Maps (root, handle) → directory with **no** `MissionArtifactKind`, so it cannot distinguish per-artifact partitions: `candidate_feature_dir_for_mission`, `resolve_planning_read_dir`, and — this mission's subject — `resolve_feature_dir_for_mission`. | "Topology-blind". The two are different axes: `resolve_feature_dir_for_mission` is kind-blind but topology-**routed**, which is exactly why it can land on the husk. |
-| **Partition-aware authority** | `placement_seam(...).read_dir(kind)` / `resolve_artifact_surface`. | "Coord-aware". For a `meta.json` read the correct target is the **PRIMARY** anchor; the authority is partition-aware, not coord-preferring. |
-| **Anchoring axis** | Which root the resolution is computed against, and whether the answer is idempotent under composed (`<slug>-<mid8>`) vs bare (`<slug>`) handles. | The exception axis (can it raise). |
-| **Census** | AST-derived `ast.Call` sites of a named callee, aliases resolved. | A grep count (over-counts prose, misses aliases and wrapper laundering). |
-| **Honest bound** | A named, sized limit of what a gate enforces, recorded where the gate advertises itself. | Silence. Silence is what made #3014 wrong. |
+| Term | Canonical sense | Do NOT confuse with |
+|------|-----------------|---------------------|
+| **Placement authority** | The resolver decides the partition from the kind + topology. | Handle hygiene (was the handle canonicalized) — what the existing floors check. |
+| **Semi-compliance** | Canonical handle, caller-chosen partition: looks routed, authority still in the caller. | Compliance. |
+| **Kind-blind resolver** | No `MissionArtifactKind`, so it cannot distinguish per-artifact partitions: `candidate_feature_dir_for_mission`, `resolve_planning_read_dir`, `resolve_feature_dir_for_mission`. | "Topology-blind". `resolve_feature_dir_for_mission` is kind-blind but topology-**routed**, which is why it can land on the husk. |
+| **Husk** | A coord worktree that exists but carries no `meta.json`. | A deleted coordination branch (which raises for COORD kinds). |
+| **Tier-1 idiom** | `placement_seam(...).read_dir(kind)` / `resolve_artifact_surface(root, slug, kind)` — kind named, partition delegated, fail-loud. | `resolve_planning_read_dir(..., kind=)`, which delegates the partition but is **lenient**, and is censused as a bypass on the leniency axis. |
+| **Green-by-omission** | A migrated site that passes a gate only because the gate's allow/flag sets do not mention the new idiom. | Genuine compliance. |
+| **Foundation site** | A call site *underneath* the seam (consumed by `resolve_placement_only` / peer branch resolvers), where routing through the seam risks recursion. | An ordinary consumer site. |
 
 ## User Scenarios & Testing *(mandatory)*
 
-Primary actor: the **maintainer/agent** running mission lifecycle commands, plus
-**future contributors** adding read sites and **future planners** reading the
-tracker and the ledger to decide what is already done.
+Primary actor: the **maintainer/agent** running lifecycle commands; **future
+contributors** adding read sites; **future planners** reading the record.
 
-### User Story 1 - A PRIMARY artifact is never read off the coord husk (Priority: P1)
+### User Story 1 - The placement decision lives in one place (Priority: P1)
 
-A maintainer runs a lifecycle command on a coord-topology mission whose coordination
-worktree exists but is a husk (no `meta.json`). A caller that reaches
-`resolve_feature_dir_for_mission` — kind-blind but topology-routed — can be handed
-that husk and read a PRIMARY artifact from it, getting a wrong or missing answer with
-no partition error. After this mission, every such site that genuinely reads a
-PRIMARY artifact resolves through the partition-aware authority instead, and the
-sites that deliberately want the topology-routed answer are recorded as such.
+Today 34 call sites decide the partition themselves by naming a primary-only helper.
+After this mission each declares only its artifact kind and the resolver decides
+where, so a future change to a kind's placement propagates automatically instead of
+leaving 34 sites silently pinned to PRIMARY.
 
-**Why this priority**: This is a live silent-wrong-read path in a resolver no gate
-covers — the same bug class the programme exists to remove, on the primitive that
-was actually missed.
+**Why this priority**: This is the governing principle. Duplicated decisions are how
+placement drift returns; the 88 already-compliant sites prove the target shape works.
 
-**Independent Test**: Drive a site classified fail-loud on a mission whose coord
-worktree is a materialized husk; assert it resolves the PRIMARY anchor (or raises)
-rather than silently returning the husk. Assert a site classified deliberate-routed
-is unchanged.
+**Independent Test**: For each migrated site, assert the resolved directory is
+unchanged for a materialized mission, and that the site names a kind rather than a
+partition. Assert no call site outside the resolver module names the primitive.
 
 **Acceptance Scenarios**:
 
-1. **Given** a coord-topology mission whose coord worktree is a husk with no `meta.json`, **When** a fail-loud-classified site reads its PRIMARY artifact, **Then** it resolves the PRIMARY anchor and does not return the husk.
-2. **Given** a site whose production comment documents that the topology-routed answer is required, **When** the mission completes, **Then** its behaviour is unchanged and its rationale is recorded in the ledger.
-3. **Given** a mission whose PRIMARY dir is the bare `<slug>` form while its COORD dir is composed `<slug>-<mid8>`, **When** a migrated site resolves either handle form, **Then** the answer is correct and idempotent under the seam's own output.
-4. **Given** a flat / coord-less (`SINGLE_BRANCH` / `LANES`) mission, **When** any migrated site runs, **Then** behaviour is identical to before (no new raise).
+1. **Given** a materialized mission (flat or coord), **When** any migrated site resolves, **Then** the directory is identical to the pre-migration result.
+2. **Given** a **backfilled** mission and a composed handle, **When** a migrated site resolves, **Then** it returns the existing bare-slug directory (the blind composition returned a non-existent path).
+3. **Given** the completed migration, **When** the tree is censused, **Then** no consumer module outside the resolver/sanctioned set calls the primitive, and the primitive is absent from the module's public exports.
 
 ---
 
-### User Story 2 - A new kind-blind read cannot be introduced silently (Priority: P1)
+### User Story 2 - Step 1 surfaces the hidden decision before anything is rewritten (Priority: P1)
 
-A future contributor adds a call to `resolve_feature_dir_for_mission`. Today nothing
-objects. After this mission the read-side gate reds, names the site, and forces
-either routing or an individually-rationalised allow-list entry.
+Before touching 33 call sites, the primitive itself is made to delegate to the seam.
+The existing suite becomes the harness and every behavioural difference shows up
+attributably, at one edit's cost.
 
-**Why this priority**: Enforcement is what converts a cleanup into a durable
-invariant; without it the resolver family decays one caller at a time, which is why
-#3012 was needed.
+**Why this priority**: This is the safety property of the sequence. It converts "we
+believe these are equivalent" into observed evidence, and it isolates the single real
+delta (backfill recovery) from the 33 mechanical edits that follow.
 
-**Independent Test**: Plant a direct call in a non-sanctioned module → gate reds;
-plant it via an **aliased** import → still reds; a prose mention → green; stale
-allow-list entry → reds until deleted.
+**Independent Test**: Land the delegation alone; run the targeted suites; every
+divergence is attributed to anchoring / backfill-recovery / husk / raising, and the
+anchoring floors are confirmed unmoved because no call site changed.
 
 **Acceptance Scenarios**:
 
-1. **Given** a planted direct call in a non-sanctioned `src/` module, **When** the read-side gate runs, **Then** it fails naming file and symbol.
-2. **Given** the primitive imported under an alias and called, **When** the gate runs, **Then** it still fails.
-3. **Given** only a comment or docstring mention, **When** the gate runs, **Then** it passes.
-4. **Given** an allow-list entry whose site has been routed or deleted, **When** the gate runs, **Then** the staleness twin-guard reds until the entry is removed.
-5. **Given** a sanctioned module, **When** the non-vacuity meta-test runs, **Then** it proves that module carries a real finding **for this primitive specifically** (not merely for a previously-censused one).
+1. **Given** only the delegation change, **When** the targeted suites run, **Then** every failure is explained and attributed, with backfill recovery the only accepted behavioural delta.
+2. **Given** only the delegation change, **When** the canonicalizer censuses run, **Then** both floor counts are unchanged (call sites untouched).
+3. **Given** the delegation, **When** a PRIMARY-kind read runs against a coord mission with a husk worktree, **Then** it resolves the primary anchor and does not raise.
 
 ---
 
-### User Story 3 - The ledger is a machine-checked authority that cannot go vacuous (Priority: P1)
+### User Story 3 - A gate cannot be satisfied by omission (Priority: P1)
 
-A maintainer must be able to trust "the allow-list matches the ledger" as a fact.
+A migrated site must be *affirmatively* sanctioned, not merely unmentioned. The
+fold-prescription gate's allow/flag sets learn the tier-1 idiom, and the one site
+passing today through a fold-set gap is closed.
+
+**Why this priority**: Migrating into a gate's blind spot would trade a visible
+semi-compliance for an invisible one — the same green-but-meaningless failure this
+programme has already had to repair twice.
+
+**Independent Test**: Plant a bad read in a migrated module → still flagged. Confirm
+`status/aggregate.py:522`'s canonicalizer is recognised (or routed) so the site is no
+longer passing by omission.
+
+**Acceptance Scenarios**:
+
+1. **Given** a module whose reads now come from the seam, **When** a non-compliant read is planted there, **Then** the fold-prescription gate still flags it.
+2. **Given** `status/aggregate.py:522`, **When** the gate runs, **Then** the site is either routed through the recognised fold or its canonicalizer is in the fold set — it no longer passes unexamined.
+3. **Given** `status/aggregate.py:543`'s `.name`-derived handle, **When** a backfilled mission is resolved, **Then** the composed-name divergence cannot silently return a non-existent path.
+
+---
+
+### User Story 4 - A PRIMARY artifact is never read off the coord husk (Priority: P1)
+
+`resolve_feature_dir_for_mission` — kind-blind and topology-routed, policed by
+nothing — can hand a caller the husk. Sites that genuinely read PRIMARY artifacts
+route through the seam; sites that deliberately want the topology-routed answer are
+recorded as such and policed thereafter.
+
+**Why this priority**: This is the one genuinely unguarded silent-wrong-read path.
+
+**Independent Test**: Drive a fail-loud-classified site on a husk mission — it must
+resolve PRIMARY, not the husk. A planted call anywhere reds the read-side gate,
+including via an alias.
+
+**Acceptance Scenarios**:
+
+1. **Given** a coord mission whose worktree is a husk, **When** a fail-loud-classified site reads its PRIMARY artifact, **Then** it resolves the primary anchor.
+2. **Given** a planted direct or **aliased** call in a non-sanctioned module, **When** the read-side gate runs, **Then** it reds; a prose mention stays green.
+3. **Given** a site whose production comment documents that the topology-routed answer is required, **Then** its behaviour is unchanged and its rationale is a ledger row.
+
+---
+
+### User Story 5 - The ledger is machine-checked and cannot go vacuous (Priority: P1)
+
 The gate parses the ledger, and the parse cannot silently drop a primitive's rows.
 
-**Why this priority**: The squad executed the originally-specified extension and
-showed the second primitive's rows vanish while the reconciliation stays green — the
-exact vacuity #3012's landing pass had to repair. Fixing the grammar is a
-prerequisite for classifying anything, not a finishing touch.
+**Why this priority**: The prescribed multi-primitive restructuring was *executed* and
+shown to parse only the first sub-table while the reconciliation stayed green — the
+exact vacuity a prior landing pass had to repair. Grammar comes before rows.
 
-**Independent Test**: Mutate a row belonging to **each** primitive in a scratch copy → the gate must red for each. Assert the parsed row count equals the sum of the per-primitive censuses.
+**Independent Test**: Mutate a row for **each** primitive independently → reds each
+time. Parsed row count equals the summed per-primitive census.
 
 **Acceptance Scenarios**:
 
-1. **Given** a ledger row mutated for primitive *N*, **When** the gate runs, **Then** it reds — for every *N*, not just the first.
-2. **Given** the ledger's machine-parsed sections, **When** the gate parses them, **Then** the parsed row count equals the summed per-primitive census; a dropped table or column-shift reds loudly rather than parsing empty.
-3. **Given** a module with several censused sites inside one function, **When** its rows are recorded, **Then** the index grammar addresses each site distinctly and the uniqueness assertion holds.
+1. **Given** a mutated ledger row for primitive *N*, **When** the gate runs, **Then** it reds — for every *N*.
+2. **Given** the parsed sections, **Then** parsed row count equals the summed census; a dropped table or shifted column reds loudly rather than parsing empty.
+3. **Given** a module with several censused sites in one function, **Then** the index addresses each distinctly and its uniqueness assertion holds.
 
 ---
 
-### User Story 4 - The two coord-awareness residuals are closed and their exceptions retired (Priority: P2)
+### User Story 6 - The residuals are closed and the record stops misleading (Priority: P2)
 
-`_run_documentation_wiring`'s metadata reads — **both** of them — resolve through the
-partition-aware authority, its subsequent audit-metadata write stays coherent, and
-the `PINNED: #2214` exception plus the test that asserts that pin exists are retired
-together. The two misleading comments in `acceptance/__init__.py` are corrected.
+Both `_run_documentation_wiring` reads are routed and the `#2214` pin retires with the
+test that asserts it exists; the misleading comments in `acceptance/__init__.py` and
+the six husk-conflating comments are corrected; every count in the ledger and gate
+docstring matches a fresh census.
 
-**Why this priority**: Each is small but each is a live trap: routing only one of the
-two reads clears the pin while leaving the bug (a green-gate honesty hole), and the
-comments would lead a maintainer to move `lanes.json` onto the wrong partition.
+**Why this priority**: A wrong record manufactured #3014. Correcting it is what stops
+a third re-derivation.
 
-**Independent Test**: Route both reads; delete the pin **and** retire the
-pin-existence assertion; confirm the closeout gate's clean-scan stays green and its
-site floor still provides non-vacuity.
-
-**Acceptance Scenarios**:
-
-1. **Given** both reads in `_run_documentation_wiring` routed, **When** the `PINNED: #2214` entry and the pin-existence test are removed together, **Then** the closeout gate's unexpected/stale-pin scan is green and non-vacuity rests on the documented site floor.
-2. **Given** the audit-metadata write that follows the read, **When** it runs, **Then** the `meta.json` write resolves through the same PRIMARY authority as the read; the `gap-analysis.md` write (which has **no** `MissionArtifactKind`) anchors on that same resolved directory and is recorded as an honest bound rather than a kind claim.
-3. **Given** the corrected comments, **When** a maintainer reads them, **Then** they state that `lanes.json` is a PRIMARY artifact, that only the acceptance-matrix read is placement-resolved, and they no longer claim the shared variable is coord-resolved.
-
----
-
-### User Story 5 - The record no longer misleads a planner (Priority: P2)
-
-A planner reading the ledger, the gate docstring, or the tracker gets facts: which
-primitives are policed by which gate and on which axis, the real site counts, and a
-complete, sized list of what remains uncovered.
-
-**Why this priority**: #3014 was filed *because* the record said "tracked follow-up"
-without saying by whom or on what axis — and it then asserted "policed by nothing",
-which was false. A wrong record manufactures wrong missions.
-
-**Independent Test**: Read the corrected ledger + gate docstring; every count matches
-a fresh census, every "unpoliced" claim names the gate that does cover it, and every
-residual gap is named with its size.
+**Independent Test**: Read the corrected artifacts — every "unpoliced" claim names its
+gate and axis, every count matches a fresh census, every residual gap is named with a
+size.
 
 **Acceptance Scenarios**:
 
-1. **Given** the ledger's Known-gap section, **When** read after this mission, **Then** it states that `primary_feature_dir_for_mission` is censused on the anchoring axis by `test_resolution_authority_gates.py`, that its fail-loud surface is zero, and why read-gate inclusion is deliberately declined.
-2. **Given** any site count in the ledger or the gate docstring, **When** compared to a fresh census, **Then** they agree (the stale "40" is corrected in **both** places, and the closeout gate's off-by-one recorded census is corrected).
-3. **Given** the enumerated honest bounds, **When** compared to the live tree, **Then** they include the wrong-`kind` class, wrapper laundering, the zero-site latent sibling, the blanket-excluded seam-internal sites, and `resolve_feature_dir_for_slug` — with sizes.
+1. **Given** both reads routed, **When** the pin and its pin-existence test are removed together, **Then** the closeout gate's clean scan is green with non-vacuity from its site floor.
+2. **Given** the audit-metadata write following the read, **Then** the `meta.json` write resolves through the same authority as the read; `gap-analysis.md` (which has **no** kind) anchors on that resolved directory and is recorded as an honest bound.
+3. **Given** any count in the ledger or gate docstring, **Then** it matches a fresh census; the stale figure is corrected in both places and the closeout gate's recorded census is exact.
+4. **Given** the six husk comments, **Then** each states accurately that the *kind-blind* resolver selects the husk while the kind-aware seam does not.
 
 ---
 
 ### Edge Cases
 
-- **Coord husk** (worktree present, `meta.json` absent) — the shape six production comments already warn about; the primary failure mode for a kind-blind topology-routed read.
-- **Backfilled missions** (bare `<slug>` PRIMARY vs composed `<slug>-<mid8>` COORD) — resolution must be idempotent under the seam's own output.
-- **Multiple censused sites in one function** — e.g. `status/aggregate.py::MissionStatus._find_meta_path` carries four; the ledger index must address each.
-- **Wrapper laundering** — `resolve_subtasks_gate_dir` wraps a censused primitive with a pinned kind; its callers are invisible to a callee-name census.
-- **Aliased / re-exported imports** — must not defeat the census.
-- **Wrong-`kind` argument** to an already-routed `read_dir()` — census-invisible by construction (this was #2824's actual defect); must be named as a bound, not implied covered.
-- **Blanket-excluded seam internals** — sites under the pinned scan-scope prefix cannot be brought into scope; accountability is a per-file rationale entry plus a per-primitive non-vacuity assertion.
-- **Artifacts with no kind** — `gap-analysis.md` has no `MissionArtifactKind`; the seam cannot route it, and adding a kind is out of scope.
-- **Flat / coord-less topologies** — must see no behaviour change.
-- **Census drift** — counts are re-derived on this mission's base, never trusted from issue text.
+- **Backfilled mission + composed handle** — the one real behavioural delta; must be pinned by test, per site where it applies.
+- **Coord husk** and **deleted coord branch** — PRIMARY kinds must not raise; COORD kinds must.
+- **Foundation sites under the seam** — `core/paths.py:727` feeds `resolve_placement_only`; routing it risks recursion.
+- **Multiple censused sites in one function** — `status/aggregate.py::_find_meta_path` carries four.
+- **Wrapper laundering** — `resolve_subtasks_gate_dir` wraps a censused primitive with a pinned kind; invisible to a callee-name census.
+- **Aliased / re-exported imports**; **wrong-`kind` argument** (census-invisible by construction); **artifacts with no kind** (`gap-analysis.md`).
+- **Flat / coord-less topologies** — no behaviour change anywhere.
+- **Latent sibling** — `resolve_feature_dir_for_slug`, zero live sites; would re-open the gap the moment it is imported.
 
 ## Requirements *(mandatory)*
 
@@ -223,91 +233,100 @@ residual gap is named with its size.
 
 | ID | Title | User Story | Priority | Status |
 |----|-------|------------|----------|--------|
-| FR-001 | Route both `_run_documentation_wiring` reads | As a maintainer, I want **both** metadata reads in `_run_documentation_wiring` (the mission-type read and the `meta.json` path it derives) resolved through the partition-aware PRIMARY authority, so routing one does not leave the other reading off a coord-bound directory. | High | Open |
-| FR-002 | Retire the `#2214` pin and its pin-existence test together | As a maintainer, I want the `PINNED: #2214` allow-list entry **and** the named test asserting that pin exists retired in the same change, so the gate does not red by construction and non-vacuity falls back to its documented site floor. | High | Open |
-| FR-003 | Correct both misleading comments | As a maintainer, I want both stale comments in `acceptance/__init__.py` corrected — the T028 comment and the earlier claim that the shared read directory is coord-resolved — so no reader concludes `lanes.json` should move to COORD. | Medium | Open |
-| FR-004 | Fix the ledger's machine-parse grammar first | As a maintainer, I want the ledger's parsed sections constrained (exactly one table per parsed heading, verbatim headings, verdict/path/qualname at fixed leading column positions, any primitive discriminator appended as a trailing column) **before** any rows are added, so a multi-primitive ledger cannot parse silently-empty. | High | Open |
-| FR-005 | Give the index grammar a per-site discriminator | As a maintainer, I want the stay-lenient index able to address several censused sites inside one qualname (discriminator column or composite key) with its uniqueness assertion updated in the same change, so a module like `status/aggregate.py::_find_meta_path` is representable. | High | Open |
-| FR-006 | Census the genuinely unpoliced resolver | As a maintainer, I want an AST census (aliases resolved, definition module excluded) of `resolve_feature_dir_for_mission` on this mission's base, so its sites are known rather than estimated. | High | Open |
-| FR-007 | Classify each site on both axes | As a maintainer, I want every censused site classified with its disposition **and** both axes recorded — raise-or-degrade, anchoring root (verbatim root argument plus its semantic class with a provenance citation), handle form, target kind, and idempotence under the seam's output — so no site is migrated on a one-axis assessment. | High | Open |
-| FR-008 | Route the genuinely PRIMARY-artifact reads | As a maintainer, I want each site that reads a PRIMARY artifact through the topology-routed resolver routed onto the partition-aware authority with the correct kind, so it can no longer be handed a coord husk. | High | Open |
-| FR-009 | Preserve and justify the deliberate sites | As a maintainer, I want each site that genuinely requires the topology-routed answer left unchanged and recorded as a rationale-bearing allow-list entry (reusing its existing production comment as the rationale of record), so intent is captured rather than re-derived. | High | Open |
-| FR-010 | Police the resolver in the read-side gate | As a maintainer, I want `resolve_feature_dir_for_mission` added to the read-side gate's censused callees, with its sanctioned modules asserted **per primitive** and its residuals allow-listed shrink-only under the staleness twin-guard. | High | Open |
-| FR-011 | Correct the false and stale record | As a maintainer, I want the ledger's Known-gap text to name `test_resolution_authority_gates.py` as the anchoring-axis authority for `primary_feature_dir_for_mission` (replacing the "policed by nothing" framing), the stale site count corrected in **both** the ledger and the gate docstring, the closeout gate's off-by-one recorded census fixed, and the ledger's drifted definition line reference updated. | High | Open |
-| FR-012 | Enumerate the honest bounds | As a maintainer, I want the gate's advertised bounds to name, with sizes, everything it does **not** cover: the wrong-`kind` class, wrapper laundering, the zero-site latent sibling resolver, the blanket-excluded seam-internal sites, and the deliberate exclusion of `primary_feature_dir_for_mission` with its rationale — so no future planner repeats #3014. | High | Open |
+| FR-001 | Close the gate holes before migrating | As a maintainer, I want `status/aggregate.py:522`'s unrecognised canonicalizer closed and the fold-prescription gate's allow/flag sets widened to know the tier-1 seam idiom, so migrated sites are affirmatively checked rather than green-by-omission. | High | Open |
+| FR-002 | Step 1 — delegate the primitive to the seam | As a maintainer, I want `primary_feature_dir_for_mission` to resolve through the kind-aware seam internally, with call sites untouched, so the existing suite surfaces every behavioural delta at one edit's cost and the anchoring floors stay unmoved. | High | Open |
+| FR-003 | Attribute and pin the delegation's deltas | As a maintainer, I want each divergence Step 1 surfaces attributed (anchoring / backfill recovery / husk / raising) and the accepted one — backfill recovery — pinned by test, so the delta is documented rather than absorbed. | High | Open |
+| FR-004 | Step 2 — callers declare the kind | As a maintainer, I want each consumer site to pass its artifact kind to the seam instead of naming a primary-only helper, so the placement decision lives in the resolver. | High | Open |
+| FR-005 | Keep foundation sites out, by name | As a maintainer, I want the sites that sit *beneath* the seam (`core/paths.py:727`, `:780`, `core/git_ops.py:444`, `coordination/surface_resolver.py:739`) left unrouted and recorded as named sanctioned foundation sites with their recursion rationale, so authority tidiness does not buy a resolution cycle. | High | Open |
+| FR-006 | Privatise the primitive | As a maintainer, I want the primitive dropped from the module's public exports and renamed module-private once its consumers are routed, so the invariant is structural rather than enforced by counting its uses. | High | Open |
+| FR-007 | Retire the use-count floors and transfer the teeth | As a maintainer, I want the two canonicalizer floors retired (or honestly re-pinned with recorded before/after) and their guarantee transferred to the read-side census as a censused callee with an explicit sanctioned set, so no gate obliges the primitive to keep being used. | High | Open |
+| FR-008 | Fix the ledger's machine-parse grammar first | As a maintainer, I want the parsed sections constrained (one table per parsed heading, verbatim headings, verdict/path/qualname at fixed leading positions, any primitive discriminator appended as a trailing column) **before** rows are added, so a multi-primitive ledger cannot parse silently-empty. | High | Open |
+| FR-009 | Give the index a per-site discriminator | As a maintainer, I want the stay-lenient index able to address several censused sites in one qualname, with its uniqueness assertion updated in the same change. | High | Open |
+| FR-010 | Census and classify the unpoliced resolver | As a maintainer, I want an AST census (aliases resolved) of `resolve_feature_dir_for_mission` and every site classified with disposition **and both axes** — raise-or-degrade, anchoring root (verbatim argument plus its semantic class with provenance), handle form, target kind, idempotence under the seam's output. | High | Open |
+| FR-011 | Route its PRIMARY-artifact reads; justify the rest | As a maintainer, I want each of its sites that reads a PRIMARY artifact routed onto the seam, and each site that genuinely needs the topology-routed answer preserved as a rationale-bearing allow-list entry reusing its production comment. | High | Open |
+| FR-012 | Police it in the read-side gate | As a maintainer, I want `resolve_feature_dir_for_mission` added to the censused callees with sanctioned modules asserted **per primitive** and residuals allow-listed shrink-only under the staleness twin-guard. | High | Open |
+| FR-013 | Route both `_run_documentation_wiring` reads | As a maintainer, I want **both** metadata reads routed through the partition-aware authority, so routing one does not leave the other reading off a coord-bound directory. | Medium | Open |
+| FR-014 | Retire the `#2214` pin with its pin-existence test | As a maintainer, I want the allow-list entry **and** the test asserting that pin exists retired together, so the gate does not red by construction. | Medium | Open |
+| FR-015 | Correct every misleading comment | As a maintainer, I want the two `acceptance/__init__.py` comments **and** the six husk-conflating comments corrected, so no reader concludes the seam has the kind-blind resolver's failure modes or that `lanes.json` belongs on COORD. | Medium | Open |
+| FR-016 | Correct the false and stale record | As a maintainer, I want the ledger's Known-gap text to name the anchoring-axis authority and axis rather than claiming "policed by nothing", the stale site count corrected in **both** the ledger and the gate docstring, the closeout gate's off-by-one census fixed, and the drifted definition-line reference updated. | High | Open |
+| FR-017 | Enumerate the honest bounds | As a maintainer, I want the gate's advertised bounds to name, with sizes, what it does not cover: the wrong-`kind` class, wrapper laundering, the zero-site latent sibling, the sanctioned foundation and resolver-internal sites — so no planner repeats #3014. | High | Open |
 
 ### Non-Functional Requirements
 
 | ID | Title | Requirement | Category | Priority | Status |
 |----|-------|-------------|----------|----------|--------|
-| NFR-001 | Behaviour-preserving except one named delta | For every routed site the resolved directory in the materialized, non-backfilled case is identical to the pre-change result. The **one** permitted delta is the seam's bare-`<slug>` backfill recovery; it is named per site in the ledger and pinned by a test. | Reliability | High | Open |
-| NFR-002 | No new raises where leniency is the contract | Zero sites classified deliberate/lenient, and zero flat or coord-less executions, begin raising as a result of this mission. | Reliability | High | Open |
-| NFR-003 | Red-first evidence per behavioural change | Every behavioural change ships a test demonstrably failing before and passing after (verified by reverting the product file), including the coord-husk case and the composed-vs-bare handle case. | Safety | High | Open |
-| NFR-004 | Gate bite, per-primitive non-vacuity, authority parse | The extended gate reds on a planted direct call and on an aliased call; stays green on prose; reds when a parsed ledger row disagrees **for each primitive independently**; reds on a stale allow-list entry; proves each sanctioned module carries a real finding **for this primitive**; and asserts parsed row count equals the summed per-primitive census. | Safety | High | Open |
-| NFR-005 | Single scanner authority | The read-side gate keeps consuming the shared whole-tree scan scope (no forked walk); the write-side gate stays green. | Maintainability | High | Open |
-| NFR-006 | Census reconciliation, correctly scoped | Reconciliation covers the **live residual/lenient** totals per primitive (the figures the gate parses), not the historical pre-migration totals, which are preserved as an audit record and labelled as such. Every count that is claimed is re-derived on this base. | Maintainability | High | Open |
-| NFR-007 | No collateral floor breakage | The mission introduces no change that reds `test_resolution_authority_gates.py` or the closeout gate's floor-honesty assertions; if any floor is touched, the before/after integers are recorded honestly rather than relaxed. | Reliability | High | Open |
+| NFR-001 | Behaviour-preserving except one named delta | Every routed site resolves an identical directory for a materialized, non-backfilled mission. The **only** permitted delta is the seam's bare-`<slug>` backfill recovery, named per site and pinned by test. | Reliability | High | Open |
+| NFR-002 | No new raises where leniency is the contract | Zero deliberate/lenient sites and zero flat or coord-less executions begin raising. PRIMARY kinds must not raise on husk, empty, or deleted-coord states. | Reliability | High | Open |
+| NFR-003 | Red-first per behavioural change | Each behavioural change ships a test failing before and passing after (verified by reverting the product file), including husk and composed-vs-bare handle cases. | Safety | High | Open |
+| NFR-004 | Gate bite, per-primitive non-vacuity, authority parse | The extended gate reds on planted direct and **aliased** calls, stays green on prose, reds when a parsed ledger row disagrees **per primitive**, reds on a stale entry, proves each sanctioned module carries a real finding **for that primitive**, and asserts parsed row count equals the summed census. | Safety | High | Open |
+| NFR-005 | No green-by-omission | After migration, a non-compliant read planted in any migrated module is still flagged; the fold-prescription gate's sets recognise the tier-1 idiom affirmatively. | Safety | High | Open |
+| NFR-006 | Single scanner authority | The read-side gate keeps consuming the shared whole-tree scan scope; the write-side gate stays green. | Maintainability | High | Open |
+| NFR-007 | Honest floor accounting | Any floor that moves records its before/after integers and the reason (a routing shrink), per the floors' own doctrine; no floor is relaxed without a recorded census. | Maintainability | High | Open |
+| NFR-008 | Census reconciliation, correctly scoped | Reconciliation covers the **live residual/lenient** totals per primitive — the figures the gate parses — not the historical pre-migration totals, which are preserved and labelled as an audit record. | Maintainability | High | Open |
+| NFR-009 | No resolution cycle | No change introduces a cycle in the `read_dir` call graph; the foundation sites named in FR-005 stay outside it. | Reliability | High | Open |
 
 ### Constraints
 
 | ID | Title | Constraint | Category | Priority | Status |
 |----|-------|------------|----------|----------|--------|
-| C-001 | `LANE_STATE` stays PRIMARY | `lanes.json` is a PRIMARY artifact and `acceptance-matrix.json` is placement-resolved; the partition sets are disjoint and exhaustive, so no "covers both" kind is structurally possible. No change may move `lanes.json` to COORD. | Technical | High | Open |
+| C-001 | `LANE_STATE` stays PRIMARY | `lanes.json` is PRIMARY and `acceptance-matrix.json` is placement-resolved; the partition sets are disjoint and exhaustive, so no "covers both" kind is possible. | Technical | High | Open |
 | C-002 | One ledger, extended | The classification extends the existing machine-parsed ledger; no second authority document. | Technical | High | Open |
 | C-003 | No file-scoped blanket exemptions | Allow-list entries are per-site descriptors with individual rationale. | Technical | High | Open |
-| C-004 | `primary_feature_dir_for_mission` is OUT of scope | It is already censused on the anchoring axis by a dedicated gate; its fail-loud surface is zero (every live site is PRIMARY-by-design, several documented as requiring the blind anchor); and read-gate inclusion would red ~34 sites and collide with two census floors for no safety gain. This mission does **not** add it to the read-side census, does **not** migrate its ~33 duplicated compositions, and therefore does **not** re-pin the canonicalizer floors. The decision and its rationale are recorded (FR-011/FR-012). | Technical | High | Open |
-| C-005 | Scope boundary | Out of scope: the #2966 remainder, the #2964 terminology migration, re-fixing #2824's already-landed functional defect, adding any new `MissionArtifactKind`, and extending the pinned scan-scope prefix set. | Technical | High | Open |
-| C-006 | Not a bulk edit | Each site requires an individual semantic decision (kind + disposition + anchoring class); the machine-parsed ledger is the guardrail of record instead of an occurrence map. Operator-confirmed 2026-07-28. | Technical | Medium | Open |
-| C-007 | Targeted verification only | The exhaustive architectural sweep is CI's responsibility; local verification names its gates explicitly, including the read-side gate, the closeout gate, `test_resolution_authority_gates.py`, `test_gate_read_literal_ban.py`, and the write-side gate. | Technical | Medium | Open |
+| C-004 | The primitive is privatised, never deleted | It is the terminal `KITTY_SPECS_DIR` constructor the resolver is built on and the sanctioned owner of that assembly; the end state is module-private with in-module and named-sanctioned callers only. | Technical | High | Open |
+| C-005 | Sequence is delegate-then-remove | Step 1 (delegation) lands and is verified before any call-site rewrite; the floors move only in Step 2, deliberately. | Technical | High | Open |
+| C-006 | Scope boundary | Out of scope: the #2966 remainder, the #2964 terminology migration, re-fixing #2824's landed defect, new `MissionArtifactKind` members, extending the pinned scan-scope prefix set, and the ~14 hand-assembled `KITTY_SPECS_DIR` paths outside sanctioned constructors (tracked separately). | Technical | High | Open |
+| C-007 | Not a bulk edit | Each site needs an individual semantic decision (which kind, which disposition, which anchoring class); the machine-parsed ledger is the guardrail of record. Operator-confirmed 2026-07-28. | Technical | Medium | Open |
+| C-008 | Targeted verification only | The exhaustive architectural sweep is CI's responsibility. Locally named gates: read-side census, closeout, anchoring-authority floors, fold-prescription, trio-seam, write-side, plus the mission suites. | Technical | Medium | Open |
 
 ### Key Entities
 
-- **Classification ledger** (`docs/development/read-side-seam-classification.md`) — the machine-parsed authority; gains a constrained multi-primitive grammar, per-site rows for the newly censused resolver, and a corrected Known-gap section.
-- **Read-side census gate** (`tests/architectural/test_no_read_side_bypass.py`) — AST census, sanctioned-module assertions, shrink-only allow-list, staleness twin-guard; gains a third censused callee, per-primitive non-vacuity, and honest bounds.
-- **Anchoring-axis gate** (`tests/architectural/test_resolution_authority_gates.py`) — the pre-existing authority over `primary_feature_dir_for_mission` (floors + allow-list YAML). Named, not modified.
-- **Coord-read closeout gate** (`tests/architectural/test_coord_read_residuals_closeout.py`) — one-hop call-shape grammar; loses the `#2214` pin and its pin-existence test, keeps its site floor.
-- **Fold-prescription gate** (`tests/architectural/test_gate_read_literal_ban.py`) — blesses the primary-fold call shape; the reason C-004 matters (it *prescribes* the call another gate would forbid).
-- **Kind-blind resolvers** — `resolve_feature_dir_for_mission` (subject), the two already censused, and `resolve_feature_dir_for_slug` (zero live sites, latent).
+- **Classification ledger** — the machine-parsed authority; gains a constrained multi-primitive grammar, rows for the newly censused resolver, and a corrected Known-gap section.
+- **Read-side census gate** — gains censused callees, per-primitive non-vacuity, honest bounds, and the guarantee transferred from the retired floors.
+- **Anchoring-authority floors + allow-list YAML** — the handle-hygiene guard whose subject population this mission drains; retired or honestly re-pinned.
+- **Fold-prescription gate** — blesses the primary-fold call shape; its allow/flag sets must learn the tier-1 idiom (FR-001) or migration is green-by-omission.
+- **Coord-read closeout gate** — loses the `#2214` pin and its pin-existence test; keeps its site floor.
+- **Leaf primitives** — the privatised primary constructor, the two censused kind-blind resolvers, `resolve_feature_dir_for_mission` (newly policed), and the zero-site latent sibling.
 
 ## Success Criteria *(mandatory)*
 
-### Measurable Outcomes
-
-- **SC-001**: Every censused `resolve_feature_dir_for_mission` site is recorded in the ledger with a disposition and both axes — zero unclassified sites.
-- **SC-002**: A planted direct call in a non-sanctioned module reds the read-side gate; the same call via an aliased import also reds; a prose-only mention does not.
-- **SC-003**: For every site classified fail-loud, reading its PRIMARY artifact on a mission whose coord worktree is a husk resolves the PRIMARY anchor rather than the husk — zero husk substitutions.
-- **SC-004**: Zero deliberate/lenient sites and zero flat-topology executions change from non-raising to raising.
-- **SC-005**: The `#2214` pin and its pin-existence test are both absent, both reads in `_run_documentation_wiring` are routed, and the closeout gate is green with non-vacuity provided by its site floor.
-- **SC-006**: Mutating a ledger row for **each** primitive independently reds the gate, and parsed row count equals the summed per-primitive census.
-- **SC-007**: Every site count claimed in the ledger and the gate docstring matches a fresh census on this base; the previously stale count is corrected in both places and the closeout gate's recorded census is exact.
-- **SC-008**: The enumerated honest bounds match the live tree, each with a size, and include the deliberate exclusion of `primary_feature_dir_for_mission` with its rationale.
-- **SC-009**: The named targeted gates (read-side, closeout, anchoring-axis, fold-prescription, write-side) are green on the mission's rebased tip; `ruff` and project-mode `mypy` report zero new findings.
+- **SC-001**: Zero consumer modules outside the resolver/sanctioned set name `primary_feature_dir_for_mission`, and it is absent from the module's public exports.
+- **SC-002**: Every migrated site resolves an identical directory for a materialized mission; the only recorded behavioural delta is backfill recovery, pinned by test.
+- **SC-003**: Step 1 lands with the anchoring floor counts unchanged, and every divergence it surfaces is attributed in writing.
+- **SC-004**: A non-compliant read planted in a migrated module is still flagged, and `status/aggregate.py:522` no longer passes by omission.
+- **SC-005**: For every fail-loud-classified `resolve_feature_dir_for_mission` site, a husk mission resolves the primary anchor — zero husk substitutions; a planted direct or aliased call reds the gate.
+- **SC-006**: Mutating a ledger row for **each** primitive independently reds the gate; parsed row count equals the summed per-primitive census.
+- **SC-007**: The `#2214` pin and its pin-existence test are both absent, both `_run_documentation_wiring` reads are routed, and the closeout gate is green.
+- **SC-008**: Every count claimed in the ledger and the gate docstring matches a fresh census; the previously stale figure is corrected in both places.
+- **SC-009**: All eight misleading comments (two acceptance, six husk) state what the code does.
+- **SC-010**: Any floor that moved records its before/after integers and reason; no floor obliges the primitive to remain in use.
+- **SC-011**: The named targeted gates and mission suites are green on the rebased tip; `ruff` and project-mode `mypy` report zero new findings.
 
 ## Assumptions
 
-- The squad's corrected numbers hold and are re-derived rather than trusted: `primary_feature_dir_for_mission` = 39 consumer sites / 21 files (ledger and gate docstring both say 40 — stale by one); `resolve_feature_dir_for_mission` = 8 sites / 7 files; live routed canonicalizer count = 43 against a recorded 44.
-- #2824's functional defect is already fixed and regression-covered (independently verified); only its comments are in scope.
-- The read-side gate currently parses the ledger and resolves aliases; this mission preserves those properties.
-- `gap-analysis.md` has no `MissionArtifactKind`, and adding one is out of scope, so its write is anchored without a kind claim and recorded as a bound.
-- PR #3007 is clear of every surface this mission touches (verified at spec time by file-list comparison).
+- The audit's numbers are re-derived, not trusted: 46 total primitive sites (7 resolver-internal, 4 `resolution.py` internal, 1 sanctioned single-authority, **34 in scope**, of which 33 semi-compliant + 1 non-compliant); `resolve_feature_dir_for_mission` = 8 sites / 7 files; live canonicalizer census 46 scanned / 43 routed against recorded floors 44 / 40; the ledger and gate docstring both carry a stale 40 where the live consumer census is 39.
+- All PRIMARY kinds resolve to the same anchor, so Step 1's delegation can use a single PRIMARY kind and remain answer-equivalent.
+- ~24 sites have an unambiguous kind (`PRIMARY_METADATA`, plus `WORK_PACKAGE_TASK` and `ANALYSIS_REPORT` where named); the remainder are the foundation sites of FR-005 plus any genuinely ambiguous site, to be adjudicated in the classification WP.
+- #2824's functional defect is already fixed and regression-covered; only comments are in scope.
+- PR #3007 is clear of every surface this mission touches.
 
 ## Provenance
 
-Re-framed on 2026-07-28 after a two-lens post-spec adversarial squad
-(architect + patterns) reviewed the first draft against the live tree and returned
-**10 MAJOR findings**. The disproofs that changed the mission: `primary_feature_dir_for_mission`
-is already census-policed on the anchoring axis; its fail-loud surface is zero and
-its migration would red two floors; the prescribed per-primitive ledger tables parse
-**silently vacuously** (demonstrated by execution); the index grammar cannot
-represent a multi-site qualname; deleting the `#2214` pin reds a test by
-construction; and a **fourth** kind-blind resolver — unpoliced, un-ledgered — is the
-real gap. Issue #3014's premise ("policed by nothing", "~39 sites to migrate to fail
-loud") is superseded by this specification; the corrected findings are to be posted
-to #3014.
+Re-framed twice on 2026-07-28. The first draft inherited #3014's premise; a two-lens
+post-spec squad returned **10 MAJOR findings**, three falsifying it (the primitive is
+already policed on the anchoring axis; its fail-loud surface is zero; a *fourth*
+kind-blind resolver is the real gap) and two proving the prescribed ledger and index
+grammar would have been silently vacuous. The operator then asked whether the
+"already policed" sites route through the seam or are semi-compliance with a
+hardcoded target; a placement-authority audit established they are semi-compliant,
+that the seam is answer-equivalent (and better on backfilled missions), that the six
+justifying comments conflate two resolvers, and that the floor collision is
+bookkeeping with in-tree precedent. The operator prescribed the delegate-then-remove
+sequence and chose to carry both steps in this mission. Issue #3014's premise is
+superseded; the corrected findings are posted there.
 
 ## Out of Scope
 
-- Adding `primary_feature_dir_for_mission` to the read-side census, migrating its ~33 duplicated compositions, or re-pinning the canonicalizer floors (C-004).
-- The #2966 remainder, the #2964 terminology migration, and re-fixing #2824's landed defect.
+- The #2966 remainder, the #2964 terminology migration, re-fixing #2824's landed defect.
 - New `MissionArtifactKind` members; extending the pinned scan-scope prefix set.
-- Consolidating the resolver primitives into one parameterized authority (assessed as disproportionate for this mission).
+- The ~14 hand-assembled `KITTY_SPECS_DIR` paths outside sanctioned constructors, and the duplicated coord-dir grammar in `coordination/surface_resolver.py:528` — real findings, tracked separately.
+- Routing the named foundation sites (FR-005) or deleting the primitive (C-004).
