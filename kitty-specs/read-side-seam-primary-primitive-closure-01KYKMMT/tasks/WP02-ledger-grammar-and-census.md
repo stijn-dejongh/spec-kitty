@@ -16,6 +16,9 @@ requirement_refs:
 planning_base_branch: fix/read-side-seam-primary-primitive-closure
 merge_target_branch: fix/read-side-seam-primary-primitive-closure
 branch_strategy: Planning artifacts for this mission were generated on fix/read-side-seam-primary-primitive-closure. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into fix/read-side-seam-primary-primitive-closure unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-read-side-seam-primary-primitive-closure-01KYKMMT
+base_commit: 40fa5440891edc2957edd39e8815ab8765e1cea8
+created_at: '2026-07-28T10:23:59.818094+00:00'
 subtasks:
 - T008
 - T009
