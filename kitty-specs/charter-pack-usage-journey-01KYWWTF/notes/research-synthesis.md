@@ -147,3 +147,30 @@ M2 is sequenced AFTER M1 and its branch is BASED ON the M1 branch. Two couplings
 7. Truthful output — default `apply` names `spec-kitty charter generate`; `--compile` states it compiled.
 8. #3118 perf (advisory) — `is_charter_empty` on an unconfigured repo does ≤1 `PackContext.from_config` + 1
    `stat`, no URN load.
+
+---
+
+## OPERATOR FOLD (2026-08-01) — #3095, #3096, #3102 pulled into M2 scope
+
+Per operator direction, three adjacent charter/doctrine tooling & CI items are folded into this mission
+(now FR-010/011/012, User Story 4, SC-007). This **revises** two verdicts in the related-issues table above:
+
+- **#3095 (+ its twin #3094) — was "CONFLICT-ADJACENT boundary", now IN SCOPE (FR-010).** The advertised
+  section selectors `section:terminology-canon` / `section:code-review-checklist` (which generated prompts
+  and action-context *require*) fail with "No charter section found for selector". M2 now owns making them
+  resolve to the corresponding compiled section — OR stopping the doctrine templates/surface from
+  advertising a selector the CLI cannot resolve. IMPORTANT: this fix stays on the `charter.md`/section
+  *prose* path (`context.py:397`); it is a SEPARATE change from FR-005's presence-gate retarget, and does
+  NOT collapse the prose reader onto `charter.yaml` (C-003 still holds — the two changes touch two paths).
+  Plan-phase investigation: determine whether these sections should be produced by the charter compile
+  (provide them) or the selectors are stale in the mission-step prompts (stop advertising) — likely the
+  former for terminology-canon (maps to the glossary/terminology surface).
+- **#3096 — new fold (FR-011).** Documented `spec-kitty analyze` command is absent; only `agent mission
+  record-analysis` works. Missing-CLI-command-is-a-gap: expose a thin alias OR redirect the skill/mapping/
+  docs to the supported command. Small, self-contained CLI-surface fix.
+- **#3102 — was "SEPARATE (deferred, gated on seam work + #3101)", now IN SCOPE (FR-012).** Path-filtered
+  CI workflow for `src/doctrine/**` + `src/charter/**`. Its seam-work prerequisite is satisfied once M1
+  lands (M2 is based on M1); it does NOT require #3101 (wheel-split). New surface: `.github/workflows/`.
+
+These do not change the core bridge/predicate/resolver design; they are additive. The C-001 (M1
+precondition) and C-002 (shared resolver.py) constraints are unaffected.
