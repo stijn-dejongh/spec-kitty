@@ -229,3 +229,43 @@ repointed `resolver.py:187/:250` (distinct from M2's `:258-260`); C-004 (apply -
 #3096 (no `analyze` subcommand; only `agent mission record-analysis`), #3102 (no path-filtered
 `src/doctrine/**`+`src/charter/**` workflow; only plugin-validate/ci-quality/release). The only main
 advance beyond M1 is #3129 landing folds — **docs-only**, no code overlap with M2's surface.
+
+---
+
+## POST-PLAN SQUAD REFRESH (2026-08-02) — 3-lens adversarial review of the IC map
+
+After /plan authored the IC-01..IC-09 map, a 3-profile squad (architect-alphonso = architecture/HOLDS-WITH-FIXES;
+paula-patterns = brownfield/CLEAN-WITH-NOTES; planner-priti = decomposition/DECOMPOSABLE-WITH-FIXES) reviewed it
+read-only against the live tree. Verdict: **design HOLDS**, folded these corrections into spec.md + plan.md:
+
+**MAJOR (would ship green-but-wrong):**
+- **FR-007 fix-locus corrected (alphonso M2):** the fix is `resolver.py::_resolve_directives_selection`/
+  `resolve_project_governance` (thread `PackContext.activated_directives` as the fallback source at `:258`),
+  NOT the `DoctrineService` wrapper. All 5 consumers call `resolve_project_governance` directly and never
+  traverse the wrapper — a wrapper `directives` property would leave journey-6 RED. The earlier "structural
+  root = wrapper" claim conflated the context-bundle path (returns 5, uses wrapper) with the 29-path.
+- **FR-007 three-state guard (alphonso M3):** `activated_directives` is `None|frozenset()|{ids}`; filter ONLY
+  when `is not None`, else keep catalog default — a naive `sorted(activated or frozenset())` regresses a bare
+  project 29→0. Added a bare-project regression test to NFR-002.
+- **empty_charter.py re-anchored (alphonso M1 + paula M-3):** real path `src/specify_cli/invocation/
+  empty_charter.py` (NOT `src/charter/`). `PackContext` stays LIVE (only `charter_activated_urns` dead).
+  Consequence: it is OUTSIDE IC-08's `src/charter/**`+`src/doctrine/**` filter → IC-08 must widen `paths:` to
+  include `src/specify_cli/invocation/` or accept main-CI-only (false-green risk for the P1 fix).
+- **#2552 folded (paula M-1):** the code-review-checklist twin of #3094 — OPEN, closes for free under FR-010.
+- **FR-006 second site + contract flip (paula M-2):** 2nd present-signal site at `cli/commands/charter/
+  context.py:158` (fallback default); flipping `project_charter.present` is a `charter context --json`
+  contract change — recorded (NFR-004), cross-ref #2787.
+- **context.py dual-ownership resolved (priti M1):** IC-06's real dead-end raise is `context.py:354`; confine
+  IC-06 to `section_bodies.py` (return placeholder, never None) so `context.py` stays IC-03's exclusive file.
+
+**MINOR:** pack.py hoist is 2 sites not 4, `list_cmd` differs (paula m-4); library gates reuse
+`bundle.CHARTER_YAML:48`, layer rule forbids `src/charter`→`specify_cli` import (paula m-5); IC-05 expects
+document-as-equivalent not byte-equality, undersized→fold into IC-02 (paula m-6/priti m1); seed-stub tensions
+#2808→prefer graceful-degrade only (paula m-7); IC-07 scope-guard vs #849/#851/#853 (paula m-8); frozenset()
+opt-out pin (alphonso m6); NFR-004 enumerate ALL dropped dimensions (alphonso m5); context_json.py IC-03-owned/
+IC-04 read-only (priti m2); IC-03 near size ceiling→split-ready (priti m5).
+
+**HELD (verified live, no change):** compile-seam bridge reuse + C-004 git-agnostic default apply; C-003
+two-path split (forced by the `src/charter`→`specify_cli` layer rule, not just discipline); FR-005 load-bearing
+`_status_collectors:62`-raises-first claim; empty=bundle-absent #3064-safety; C-002 M1 strings distinct;
+FR-011 redirect; the 2-producer convergence set (no 5th producer).
