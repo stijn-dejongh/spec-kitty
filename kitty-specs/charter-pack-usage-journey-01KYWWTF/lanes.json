@@ -47,13 +47,14 @@
         "src/specify_cli/cli/commands/charter/_common.py",
         "src/specify_cli/cli/commands/charter/_status_collectors.py",
         "src/specify_cli/cli/commands/charter/context.py",
-        "tests/charter/test_presence_gate_bundle_authority.py",
+        "tests/agent/cli/commands/test_charter_cli.py",
         "tests/charter/test_context.py",
-        "tests/agent/cli/commands/test_charter_cli.py"
+        "tests/charter/test_presence_gate_bundle_authority.py"
       ],
       "predicted_surfaces": [
         "api",
         "artifact-rendering",
+        "dashboard",
         "tracker-integration"
       ],
       "depends_on_lanes": [],
@@ -144,8 +145,8 @@
       "parallel_group": 1
     }
   ],
-  "computed_at": "2026-08-01T22:56:39.594412+00:00",
+  "computed_at": "2026-08-01T23:22:44.670118+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [],
-  "planning_commit_sha": "eb768401e80208c986ad33d044e79d403dfeca18"
+  "planning_commit_sha": "e47e7462ce2fdf710d6bda897a28ead7f421085b"
 }
