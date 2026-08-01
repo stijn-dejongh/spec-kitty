@@ -74,8 +74,15 @@ journey coverage; guard against it explicitly.
 
 (6) apply-5 + compile → `resolve_project_governance().directives` == the 5 activated, `directives_source` is
 the activation source, NOT `catalog_fallback` (this is RED today — author it first). Bare-project regression:
-no pack applied → directives == catalog default (NOT 0), `directives_source` unchanged. Verify the **5
-consumers** (`prompt_builder.py:437`, `runtime/doctor.py:133`, `context_json.py:141`, `compact.py:303`,
+no pack applied → directives == catalog default (NOT 0), `directives_source` unchanged. **`frozenset()`
+opt-out pin (squad MAJOR — do NOT skip):** a project whose `activated_directives == frozenset()` (activation
+key present but empty) → `resolve_project_governance().directives == []` and `directives_source` is the
+activation source (NOT `catalog_fallback`). This is the **third** three-state case and it is the ONLY test that
+catches a later "tidy" of `if activated_directives is not None` into truthiness (`sorted(activated or
+frozenset())` / `if activated_directives:`) — under that bug, `frozenset()` is falsy and wrongly falls back to
+the 29-catalog default; the bare-project (`None`) test does NOT catch it (`None` is also falsy → still routes
+to catalog default → still green). Mirror WP01/T004c's dispatch-side `frozenset()` pin on the directives side.
+Verify the **5 consumers** (`prompt_builder.py:437`, `runtime/doctor.py:133`, `context_json.py:141`, `compact.py:303`,
 `resolver.py:415`) still behave — only the fallback *source* changed; none carry a `charter.md` pre-gate, and
 none should have depended on the 29-catalog behaviour. **Do NOT edit `context_json.py`** (WP03 owns it — you
 only read `:141`). **Do NOT revert M1's `:187`/`:250` operator strings** (C-002) — verify them against HEAD
@@ -88,11 +95,15 @@ Planning + merge target: `feat/charter-pack-usage-journey`. Worktree per `lanes.
 ## Definition of Done
 
 - Empty-selection directives come from the config-activated set; the 29-catalog fallback is retired.
-- Three-state preserved (bare project keeps catalog default, not 0). Journey 6 + bare-project regression pass.
+- Three-state preserved and **all three states pinned**: `None` → catalog default (bare project, not 0),
+  `frozenset()` → empty (opt-out), `{ids}` → the activated set. Journey 6 + bare-project + `frozenset()`
+  regressions all pass.
 - M1's `:187`/`:250` strings intact; `context_json.py` untouched. `ruff` + `mypy` zero new issues.
 
 ## Risks / Reviewer guidance (reviewer-renata)
 
 - Confirm the fix is in `resolve_project_governance`/`_resolve_directives_selection`, NOT the wrapper (a
   wrapper-only change would ship green-but-wrong — journey 6 must actually go green). Confirm the three-state
-  guard exists and the bare-project regression covers it. Confirm no revert of M1's operator strings.
+  guard exists and **all three states are pinned by tests** — bare-project (`None`) AND `frozenset()` opt-out
+  (the `frozenset()` case is the one that catches a truthiness-collapse regression; reject if it is missing).
+  Confirm no revert of M1's operator strings.

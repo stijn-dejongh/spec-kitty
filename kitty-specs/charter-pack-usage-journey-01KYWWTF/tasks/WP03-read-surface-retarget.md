@@ -5,6 +5,7 @@ dependencies: []
 requirement_refs:
 - FR-005
 - FR-006
+- NFR-004
 planning_base_branch: feat/charter-pack-usage-journey
 merge_target_branch: feat/charter-pack-usage-journey
 branch_strategy: Planning artifacts for this mission were generated on feat/charter-pack-usage-journey. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/charter-pack-usage-journey unless the human explicitly redirects the landing branch.
@@ -28,6 +29,8 @@ owned_files:
 - src/specify_cli/cli/commands/charter/_common.py
 - src/specify_cli/cli/commands/charter/_status_collectors.py
 - tests/charter/test_presence_gate_bundle_authority.py
+- tests/charter/test_context.py
+- tests/agent/cli/commands/test_charter_cli.py
 role: implementer
 tags: []
 tracker_refs:
@@ -80,16 +83,34 @@ as **primary** (`charter.md` becomes a secondary display field). Reconcile the *
 hardcoded fallback default at `src/specify_cli/cli/commands/charter/context.py:158`
 (`{"present": False, "path": ".kittify/charter/charter.md"}`) — so the two don't diverge. **This flips a
 `charter context --json` machine-output contract** (`project_charter.present` now keys on `charter.yaml`);
-record it as deliberate in the PR body, enumerate consumers of `project_charter.present`, and cross-reference
-#2787 (freeze-the-`--json`-contract appetite). SC-002 requires this so `present` survives `charter.md` delete.
+record it as deliberate in the PR body and cross-reference #2787 (freeze-the-`--json`-contract appetite).
+SC-002 requires this so `present` survives `charter.md` delete.
+
+**Consumer-reconciliation checklist (squad MAJOR — verified consumers, do these, not just a PR-body prose
+list):**
+- `tests/charter/test_context.py:604` — asserts the **exact** `project_charter` dict shape
+  (`{"present": True, "path": ".kittify/charter/charter.md", ...}`). The producer flip changes that shape, so
+  this exact-equality assertion **will break** — update it to the new charter.yaml-keyed semantics (this file
+  is now in your `owned_files`). This is the one real breaking consumer.
+- `tests/agent/cli/commands/test_charter_cli.py:488`
+  (`test_context_json_stdout_is_single_json_value_for_missing_charter`) — its scenario is a **bare repo with
+  no charter at all**, so `present` stays `False` under both keyings; verify it still passes and adjust only if
+  the surrounding shape changed (also in your `owned_files`).
+- **NOT a consumer (do not chase):** the dashboard modules (`dashboard/scanner.py`, `charter_path.py`,
+  `handlers/api.py`) reference `resolve_project_charter_path` — an independent path resolver, **not** the
+  `context --json` `project_charter.present` field. The squad's initial dashboard flag was a grep false
+  positive; no dashboard edit is needed.
 
 ### T023 — Journeys 4-5 + FR-006 JSON test
 
 (4) `charter context --action implement` after apply+compile renders the pack's activated set (not "not
 found", not the full catalog); delete `charter.md` → still renders. (5) `charter status` reports
-available/synced on `charter.yaml`, survives `charter.md` deletion. Plus a **dedicated FR-006 test**: the
-`charter context --json` `project_charter.present` block keys on `charter.yaml` and survives `charter.md`
-deletion (this surface is NOT covered by the human-facing journey 4/5).
+available/synced on `charter.yaml`, survives `charter.md` deletion. Plus a **dedicated FR-006 test** that pins the
+actual contract flip: a project with `charter.yaml` **present** and `charter.md` **absent** → `charter context
+--json` `project_charter.present` is `True` (the pre-flip producer keyed on `charter.md` and would report
+`False` here — this is the assertion that proves the flip and would fail against the old code). Also assert the
+signal survives deleting `charter.md` when `charter.yaml` remains. (This surface is NOT covered by the
+human-facing journey 4/5.) Then reconcile the two enumerated consumers above so the suite is green end-to-end.
 
 ## Branch Strategy
 
@@ -99,7 +120,14 @@ Planning + merge target: `feat/charter-pack-usage-journey`. Worktree per `lanes.
 
 - Presence gates key on `charter.yaml` (via `bundle.CHARTER_YAML` + the new CLI sibling); prose readers
   untouched (C-003). `charter.md` deletion no longer breaks context/status. Both JSON sites consistent.
-- Journeys 4-5 + FR-006 JSON test pass. `ruff` + `mypy` zero new issues. `--json` contract flip recorded.
+- Journeys 4-5 + FR-006 JSON flip test pass, and the two enumerated `--json` consumers
+  (`tests/charter/test_context.py:604`, `tests/agent/cli/commands/test_charter_cli.py:488`) are reconciled and
+  green. `ruff` + `mypy` zero new issues. `--json` contract flip recorded.
+- **Kept-whole decision (recorded):** WP03 intentionally keeps all 5 production files (+ its test surfaces) in
+  one WP rather than taking plan IC-03's pre-authorized presence-gate/status-collector split — the
+  `project_charter.present` producer (`context_json.py`) and its CLI fallback default
+  (`cli/.../context.py:158`) must stay co-edited or they diverge (FR-006 warns of exactly this), so splitting
+  would be *worse*.
 
 ## Risks / Reviewer guidance (reviewer-renata)
 

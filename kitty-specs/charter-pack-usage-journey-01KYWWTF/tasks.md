@@ -22,7 +22,7 @@ allocated per computed lane from `lanes.json` at `finalize-tasks`. Completed cha
 | T001 | Rewrite `is_charter_empty` → bundle-presence + routability split | WP01 | |
 | T002 | Update `_MATCH_REASON`; campsite-delete dead docstring + `charter_activated_urns` (keep `PackContext`) | WP01 | |
 | T003 | Journey tests 1-3: empty→net; apply-no-compile→net (#3104); apply+compile→net off (NO_MATCH honest) | WP01 | [P] |
-| T004 | Journey 4 org-pack safety + SC-005 bootstrapped-empty + `frozenset()` opt-out pins | WP01 | [P] |
+| T004 | Journey 3 org-pack safety + SC-005 bootstrapped-empty + `frozenset()` opt-out pins | WP01 | [P] |
 | T005 | NFR-001 perf spy (≤1 `PackContext.from_config` + 1 `stat`, no URN load) | WP01 | [P] |
 | T010 | Truthful default `apply` output — name `spec-kitty charter generate` | WP02 | |
 | T011 | `apply --compile` chains `charter generate --no-from-interview` (git-worktree doc) | WP02 | |

@@ -43,6 +43,12 @@ with the action-critical section scaffolds** — a two-part fix with a clear pre
    stub "Terminology Canon" and "Code Review Checklist" headings (with a one-line "author this" prompt), so
    a freshly-compiled pack's selector resolves to a real (if starter) section, not just a placeholder.
 
+   > **DEFERRED post-plan (authoritative — WP05/T040 and plan IC-06 override this):** part 2 (seed
+   > enrichment) is **out of scope** for M2 — it tensions with #2808 (do not fabricate governance content)
+   > and is deferred unless the operator reconciles it. WP05 implements **only** the primary graceful-degrade
+   > placeholder in `section_bodies.py`; do **not** edit `generate.py`'s `_CHARTER_MD_COMPANION_SEED`. This
+   > note supersedes the "AND enrich the companion seed" clause in the Decision above.
+
 **Rejected**: "stop advertising" (delete the `--include section:` calls from the prompts) — the sections are
 genuinely action-critical for implement/review; removing them loses a real governance touchpoint. Rejected
 "produce authoritative per-project content in the compile" — the terminology canon is inherently

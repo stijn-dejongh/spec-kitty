@@ -6,6 +6,7 @@ requirement_refs:
 - FR-001
 - FR-002
 - NFR-001
+- NFR-002
 - NFR-004
 planning_base_branch: feat/charter-pack-usage-journey
 merge_target_branch: feat/charter-pack-usage-journey
@@ -95,7 +96,19 @@ Drive these through the real dispatch seam (`invocation/executor.py`, `invocatio
 `resolve_generic_fallback`) with realistic activation fixtures, not by calling `is_charter_empty` in isolation
 only.
 
-### T004 — Journey 4 org-pack safety + SC-005 pins
+**Fixture-realism guard (squad — the #3104 proof depends on it):** case (2) is only a valid #3104 proof if the
+fixture reproduces the **real** `apply minimal` config — build it via the actual `charter pack apply minimal`
+path, or assert the produced `config.yaml` has **no** `activated_agent_profiles` key (confirmed absent in
+`src/charter/packs/minimal.yaml`). A hand-crafted config that writes `activated_agent_profiles: []` becomes
+`frozenset()` (not `None`) → predicate returns `False` → net disengages → #3104 is **not** actually fixed, yet
+a synthetic-config test could still go green. Track the real command, not a stand-in.
+
+### T004 — Journey 3 org-pack safety + SC-005 pins
+
+<!-- Journey numbering per notes/research-synthesis.md §"Journey acceptance tests": #3 = org-pack
+composite-safety guard (this WP), #4-5 = context/status bundle authority (WP03). Earlier drafts mislabelled
+this "Journey 4", colliding with WP03's genuine Journey 4. -->
+
 
 (4a) org-pack project (routable profiles, **no** compiled bundle) → net stays OFF (router reaches org
 profiles; no regression). (4b) SC-005: a bootstrapped-empty `charter.yaml` (bundle present, activations empty)
@@ -118,7 +131,8 @@ The execution worktree is allocated per computed lane from `lanes.json`.
 
 - `is_charter_empty` matches the behaviour matrix; #3104 test (T003 case 2) goes GREEN.
 - Dead docstring + `charter_activated_urns` removed; `PackContext` retained; `_MATCH_REASON` truthful.
-- Journeys 1-4 + SC-005 + `frozenset()` pins + NFR-001 spy pass. `ruff` + `mypy` zero new issues.
+- Journeys 1-3 (incl. org-pack safety) + the apply+compile honest-`NO_MATCH` case + SC-005 + `frozenset()`
+  pins + NFR-001 spy pass. `ruff` + `mypy` zero new issues.
 - NFR-004 note recorded in the PR body (all non-routing dimensions dropped; empty=bundle-absent).
 
 ## Risks / Reviewer guidance (reviewer-renata)

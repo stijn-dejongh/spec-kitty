@@ -58,8 +58,12 @@ Read first: `../spec.md` FR-010/C-003/SC-007; `../plan.md` IC-06; `../research.m
 
 When `_extract_section_body` finds no matching heading, return a short, honest placeholder string instead of
 `None` — e.g. `"_This charter has not yet authored a **Terminology Canon** section. Add one to
-`.kittify/charter/charter.md`._"` (parameterise on the requested heading). Because the renderer never returns
-`None`, the dead-end raise at `context.py:354` is **never reached** — so `context.py` needs no edit and stays
+`.kittify/charter/charter.md`._"` (parameterise on the requested heading). **Both `return None` sites must be
+covered** — `render_critical_section_include` has two: the `if body is None: return None` (heading matched but
+extraction empty) **and** the terminal `return None` (no slug match at all). Return the honest placeholder from
+**both** paths — the function must never return `None` on any path (do not patch only the terminal return and
+leave `body is None` dead-ending at `context.py:354`). Because the renderer never returns `None`, the dead-end
+raise at `context.py:354` is **never reached** — so `context.py` needs no edit and stays
 WP03's. This is the **#2808-safe** fix (operators still author their own content; we don't fabricate
 governance). **Do the primary graceful-degrade only.** Do **not** enrich `generate.py`'s
 `_CHARTER_MD_COMPANION_SEED` with stub headings — that secondary path tensions with #2808 and is deferred
