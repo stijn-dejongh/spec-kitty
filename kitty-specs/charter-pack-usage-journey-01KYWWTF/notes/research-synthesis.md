@@ -174,3 +174,58 @@ Per operator direction, three adjacent charter/doctrine tooling & CI items are f
 
 These do not change the core bridge/predicate/resolver design; they are additive. The C-001 (M1
 precondition) and C-002 (shared resolver.py) constraints are unaffected.
+
+---
+
+## REVISION-SQUAD REFRESH (2026-08-01) — vs LANDED main (M1 merged)
+
+Mission 1 **landed on main** (`873832aa1` seam consolidation + full `packs/built-in` relocation;
+`fd53023b6` = M1/FR-010 activation-vocab unification + `restore activated_glossary_packs`; #3116
+context.py shim removal). This mission is rebased onto that main. A 2-agent revision squad
+(reviewer-renata = ref/consistency; architect-alphonso = design re-validation + live repro) refreshed
+the spec against the post-M1 tree.
+
+**Design VERDICT: holds in full.** architect-alphonso reproduced all three root causes live on the
+current tree: empty→net fires; `apply minimal`→`is_charter_empty=False` with no bundle (#3104);
+`resolve_project_governance()`→`catalog_fallback` = **29** while the config-activated set = **5**
+(FR-007); and `PackContext.activated_directives` reads exactly 5 (M1's unified vocab feeds M2's fix).
+The compile bridge, `apply --compile` opt-in, read-surface retarget, sibling-path discipline,
+org-pack-safe predicate, and the 8 acceptance tests all stand.
+
+**File:line re-anchors (M1 shifted context.py via #3116 shim removal; prefer SYMBOLS — this file has
+drifted twice):**
+- `context.py` presence gate `:286 → :206/:233/:236` (symbol: `build_charter_context` `CHARTER_MD` gate);
+  prose body read `:333 → :280`; section-selector `:397 → :309/:344/:354` (symbol:
+  `build_charter_context_include` `kind=="section"` branch).
+- executor auto-route `:326-328 → :326/:328`; compiler `:325/:440 → :326/:441`; generate git-worktree
+  `:314 → :313`; finalize migration `:384-396 → :391/:415`; context_json `:81-93 → :83-98`.
+- EXACT (unchanged): `empty_charter.is_charter_empty:48-67`; `resolver._resolve_directives_selection:233`
+  + `catalog_fallback:258-260`; `_common._resolve_charter_path:27`; `_status_collectors:62`;
+  `pack.py apply:200-205`; the 5 `resolve_project_governance` consumers.
+
+**Structural DEEPENINGS to fold (both agents):**
+1. **FR-007 root:** the activation-aware `DoctrineService` wrapper (`resolver.py:57-139`) filters
+   paradigms/procedures/agent_profiles by `PackContext` but has **NO `directives` property** — so
+   directives alone fall through to the unfiltered catalog-fallback. FR-007 = the missing directives
+   filter: thread `PackContext.from_config(repo_root).activated_directives` into
+   `resolve_project_governance` (`:289`; builds the unfiltered catalog at `:316`, constructs no
+   `PackContext` today) and scope the `:258` fallback by it.
+2. **FR-005 `_status_collectors` nuance:** `:62` calls `_resolve_charter_path` (raises on `charter.md`
+   absent) *before* its own `charter.yaml`-aware logic (`:65-76`) runs — so that awareness is DEAD when
+   `charter.md` is absent. Confirms the sibling-`_resolve_charter_bundle_path` design (do NOT retarget
+   the shared helper in place).
+3. **FR-010 true target:** the selector engine is `section_bodies.py::render_critical_section_include`
+   (`:282`; slugifies `ACTION_CRITICAL_SECTIONS` incl. `"Terminology Canon"`/`"Code Review Checklist"`),
+   reached via `build_charter_context_include` — NOT `context.py:397`. The dead-end is a **content**
+   question (does the compiled charter contain those headings), not a resolver gap.
+4. **FR-008 narrows:** the activation-key *vocabulary* is already one authority (M1's `ACTIVATION_YAML_KEYS`,
+   which the finalize migration already derives from) — M2 asserts the **transform shape** only.
+
+**Constraints reframed:** C-001 (M1 precondition) → LANDED (`873832aa1`/`fd53023b6`); C-002 → M1 already
+repointed `resolver.py:187/:250` (distinct from M2's `:258-260`); C-004 (apply --compile opt-in) unchanged
+— it was never an M1 precondition (task grouping error).
+
+**Folded/core issues re-validated — all still OPEN + valid on main:** #3104/#3105/#3118, #3095/#3094,
+#3096 (no `analyze` subcommand; only `agent mission record-analysis`), #3102 (no path-filtered
+`src/doctrine/**`+`src/charter/**` workflow; only plugin-validate/ci-quality/release). The only main
+advance beyond M1 is #3129 landing folds — **docs-only**, no code overlap with M2's surface.
