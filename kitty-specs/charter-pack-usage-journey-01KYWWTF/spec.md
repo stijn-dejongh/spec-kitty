@@ -11,6 +11,13 @@ longer silently breaks dispatch or leaves `charter context`/`charter status` rep
 > `notes/research-synthesis.md`. This is **Mission 2 of 2**; Mission 1
 > (`doctrine-built-in-seam-consolidation`, #3119/#3106/#3116/#3120/#3090) is the sibling and a
 > hard precondition (see C-001).
+>
+> **Scope closes: #3104, #3105, #3118** (the core usage journey) **plus, folded in per operator
+> direction: #3095** (advertised charter section selectors don't resolve — and its twin **#3094**,
+> the generated-prompt side of the same root cause), **#3096** (the documented `spec-kitty analyze`
+> command is missing from the CLI), and **#3102** (a path-filtered CI workflow for
+> `src/doctrine/**` + `src/charter/**`). The last three are adjacent charter/doctrine tooling &
+> CI-hygiene items grouped here rather than left as loose follow-ups.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -80,6 +87,33 @@ a curated pack, and it is the load-bearing "no legacy resolver paths" cleanup C-
    **then** its directives are the 5 activated (from the compiled catalog / activation authority), **not**
    the 29-directive built-in catalog-fallback.
 
+### User Story 4 - Charter/doctrine tooling advertises only what it delivers (Priority: P2, folded: #3095/#3094, #3096, #3102)
+
+Three adjacent tooling gaps make the charter/doctrine surface advertise commands or selectors that do not
+resolve, and make its CI feedback slow and unfocused. An operator or agent should never be told to run a
+governance selector or command that the installed CLI rejects, and a doctrine/charter-scoped change should
+get fast, isolated CI feedback.
+
+**Why this priority**: these are correctness-of-advertised-surface + contributor-feedback items in the same
+charter/doctrine neighbourhood; grouping them here avoids leaving loose follow-ups after the bridge work
+already opens these files/areas.
+
+**Acceptance**:
+1. **Given** a generated implement prompt or action-context that requires `charter context --include
+   section:terminology-canon` / `section:code-review-checklist`, **when** that selector is run against a
+   charter surface, **then** it **resolves** to the corresponding section — or the surface no longer
+   advertises a selector it cannot resolve (no "No charter section found for selector" dead-end). Covers
+   **#3095** and its generated-prompt twin **#3094**.
+2. **Given** an operator or agent follows the documented `spec-kitty analyze` surface, **when** they invoke
+   it, **then** the command exists (an alias to the supported `agent mission record-analysis` flow) — or the
+   skill/command mapping and docs direct them *only* to the supported command, with no documented-but-absent
+   surface. Covers **#3096**.
+3. **Given** a PR that changes only `src/doctrine/**` / `src/charter/**` (or one that changes neither),
+   **when** CI runs, **then** the doctrine/charter test surface (DRG freshness/sharding, charter-context
+   resolution, the architectural/adversarial gates) runs in a dedicated **path-filtered** workflow — giving
+   the doctrine/charter change fast isolated feedback and sparing unrelated PRs that cost/noise. Covers
+   **#3102**.
+
 ### Edge Cases
 
 - **"Empty" means the compiled bundle is ABSENT**, never "bundle present but activations empty". A
@@ -108,6 +142,9 @@ a curated pack, and it is the load-bearing "no legacy resolver paths" cleanup C-
 | FR-007 | Retire the legacy catalog-fallback in `resolve_project_governance` (`_resolve_directives_selection`): when the authored governance selection is empty, source directives from the config-activated set (the compiled catalog / activation authority), never `sorted(doctrine_catalog.directives)` — so `resolve_project_governance` is not a second, divergent directive authority. | Draft |
 | FR-008 | Assert `apply --compile` and the upgrade finalize migration produce a **convergent** `charter.yaml` shape (or explicitly document the migration as the upgrade-time equivalent) — the config→bundle transform is one authority, not two. | Draft |
 | FR-009 | Fold the journey-doc portion of #3107: document the `apply` → `generate` two-step and the empty-charter dispatch behaviour in the charter journey guides. | Draft |
+| FR-010 | Make the advertised charter section selectors resolve (**#3095/#3094**): `charter context --include section:terminology-canon` and `section:code-review-checklist` (which generated prompts / action-context require) resolve to the corresponding compiled charter section — OR the doctrine templates / charter surface stop advertising selectors the CLI cannot resolve. No "No charter section found for selector" dead-end for a selector the tooling itself demands. (Fix stays on the `charter.md`/section-selector *prose* path — see C-003 — it does not fold that reader into the presence-gate retarget.) | Draft |
+| FR-011 | Reconcile the `spec-kitty analyze` command surface (**#3096**): either expose `spec-kitty analyze` as a thin alias to the supported `agent mission record-analysis` flow, or update the `spec-kitty.analyze` skill + command mapping + docs to direct users *exclusively* to the supported command — so the documented surface and the CLI agree (no documented-but-absent command). | Draft |
+| FR-012 | Add a **path-filtered CI workflow** scoped to `src/doctrine/**` + `src/charter/**` (**#3102**) that runs the doctrine/charter test surface (DRG freshness/sharding, charter-context resolution, the architectural/adversarial gates) as an isolated, fast signal — so PRs touching that layer get focused feedback and unrelated PRs do not pay/gate on it. | Draft |
 
 ### Non-Functional Requirements
 
@@ -124,7 +161,7 @@ a curated pack, and it is the load-bearing "no legacy resolver paths" cleanup C-
 |----|------------|--------|
 | C-001 | **Hard precondition — Mission 1 (`doctrine-built-in-seam-consolidation`) must complete first.** M2's branch is based on M1's; M2's resolver-fallback-from-activated-set trusts M1/FR-010 (activation-vocabulary unification + the live `activated_glossary_packs` drift fix). Do not implement M2's resolver retarget until M1's FR-010 has landed. | Active |
 | C-002 | **Shared-file coordination:** M1 WP02 owns `src/charter/resolver.py` (built-in-reader migration + the operator-string repoint at :187/:250). M2 edits the same file (`_resolve_directives_selection`, :233-260) — M2 must **not** touch M1's operator strings and must re-verify M1's resolver changes before layering the fallback retarget. | Active |
-| C-003 | **Do NOT retarget the `charter.md` prose readers.** `context.py:397` (`--include section:<id>`) and the prose body reads (`:333`) legitimately need `charter.md`; only the *presence* gates move to `charter.yaml` (the #3094/#3095 boundary). Do not collapse both onto one path constant. | Active |
+| C-003 | **Keep the presence-gate retarget (FR-005) and the section-selector fix (FR-010) as two distinct changes on two distinct paths.** The `charter.md` prose readers — `context.py:397` (`--include section:<id>`) and the prose body reads (`:333`) — legitimately need `charter.md`; the *presence* gates (FR-005) move to `charter.yaml`, but must **not** be collapsed onto the prose reader (no single shared path constant). FR-010 fixes selector *resolution* on the prose/section path itself — it does not retarget that reader to `charter.yaml`. | Active |
 | C-004 | **`apply --compile` is opt-in.** Default `apply` stays a git-agnostic pure additive merge; auto-compiling would change apply's contract (git-worktree requirement, `charter.md` seed, `library/`, gitignore, git-stage, config→pointer migration). | Active |
 | C-005 | Out of scope: #3106 (activation-vocab — M1/WP05), #3107's inert CLI-reference parity gate (docs-infra), #2831/#3092/#3045/#2992/#2213 and the other pre-existing/unrelated reds (classify vs merge-base, never green-wash). | Active |
 
@@ -152,8 +189,12 @@ a curated pack, and it is the load-bearing "no legacy resolver paths" cleanup C-
 - **SC-004**: `apply` output names the exact next command; `apply --compile` compiles the bundle in one step.
 - **SC-005**: The deliberate #3064 glossary-dimension reversal and "empty = bundle absent" are recorded, and
   a test pins the bootstrapped-empty-bundle-keeps-net-OFF behaviour.
-- **SC-006**: M2's diff does not touch M1/WP05's vocab surface, the `charter.md` prose readers, or the
-  pre-existing/unrelated reds (C-005).
+- **SC-006**: M2's diff does not touch M1/WP05's vocab surface, does not *collapse* the `charter.md` prose
+  readers into the presence gate, and does not green-wash the pre-existing/unrelated reds (C-005).
+- **SC-007** (folded): every charter selector the tooling advertises resolves (or is no longer advertised)
+  — `section:terminology-canon`/`section:code-review-checklist` no longer dead-end (#3095/#3094); the
+  documented `spec-kitty analyze` surface and the CLI agree (#3096); and a dedicated path-filtered CI
+  workflow runs the doctrine/charter test surface in isolation (#3102).
 
 ## Assumptions
 
