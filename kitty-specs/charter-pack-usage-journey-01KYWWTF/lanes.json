@@ -86,7 +86,9 @@
       ],
       "write_scope": [
         "src/charter/context_renderers/section_bodies.py",
-        "tests/charter/test_section_selector_graceful_degrade.py"
+        "tests/charter/test_section_selector_graceful_degrade.py",
+        "tests/charter/test_context_section_bodies.py",
+        "tests/charter/test_context_selection_render.py"
       ],
       "predicted_surfaces": [
         "api",
