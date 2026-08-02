@@ -52,8 +52,10 @@
         "src/specify_cli/cli/commands/charter/_status_collectors.py",
         "src/specify_cli/cli/commands/charter/context.py",
         "tests/agent/cli/commands/test_charter_cli.py",
+        "tests/agent/cli/commands/test_charter_status_cli.py",
         "tests/charter/test_context.py",
-        "tests/charter/test_presence_gate_bundle_authority.py"
+        "tests/charter/test_presence_gate_bundle_authority.py",
+        "tests/charter/fixtures/context_parity/json_corpus.golden.txt"
       ],
       "predicted_surfaces": [
         "api",

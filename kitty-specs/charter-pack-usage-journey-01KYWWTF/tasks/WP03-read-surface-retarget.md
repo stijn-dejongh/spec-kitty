@@ -31,6 +31,8 @@ owned_files:
 - tests/charter/test_presence_gate_bundle_authority.py
 - tests/charter/test_context.py
 - tests/agent/cli/commands/test_charter_cli.py
+- tests/agent/cli/commands/test_charter_status_cli.py
+- tests/charter/fixtures/context_parity/json_corpus.golden.txt
 role: implementer
 tags: []
 tracker_refs:
@@ -128,6 +130,21 @@ Planning + merge target: `feat/charter-pack-usage-journey`. Worktree per `lanes.
   `project_charter.present` producer (`context_json.py`) and its CLI fallback default
   (`cli/.../context.py:158`) must stay co-edited or they diverge (FR-006 warns of exactly this), so splitting
   would be *worse*.
+
+## Implementation decision (recorded post-implement) — OR-gate, not hard swap
+
+FR-005 literally says "retarget the presence gate onto `charter.yaml`". A **strict** charter.yaml-only gate
+regressed ~26 pre-existing tests whose fixtures seed only `charter.md` (they predate this mission). The landed
+gate (`context.py:248`) is therefore an **OR**: `mode="missing"` only when **both** `charter.yaml` AND
+`charter.md` are absent. This still satisfies every stated acceptance — SC-002 (charter.yaml present +
+charter.md deleted → renders; the missing-message names `charter.yaml`), the #3105 fix (post-apply+compile →
+renders), and journeys 4-5 — while keeping legacy charter.md-only projects working. `charter.md` remains an OR
+**presence** fallback only; the prose readers stay separately on `CHARTER_MD` (C-003 intact). The spec has no
+acceptance requiring charter.md-only → "missing", so the OR is the minimal, least-regressive realization.
+Two consequential files were also reconciled (fallout, now in owned_files): `test_charter_status_cli.py` (one
+`available` assertion that pinned the pre-fix bug for a charter.yaml-only fixture) and the regenerated
+`context_parity/json_corpus.golden.txt` (via the sanctioned `SPEC_KITTY_REGEN_CONTEXT_PARITY_GOLDEN=1` flow —
+the diff is exactly the FR-006 `project_charter` block).
 
 ## Risks / Reviewer guidance (reviewer-renata)
 
