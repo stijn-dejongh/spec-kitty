@@ -12,10 +12,12 @@
       ],
       "write_scope": [
         "src/charter/context.py",
-        "tests/charter/test_context_presence_charter_yaml_only.py"
+        "tests/charter/test_context_prose_presence_pin.py"
       ],
       "predicted_surfaces": [
-        "api"
+        "api",
+        "artifact-rendering",
+        "dashboard"
       ],
       "depends_on_lanes": [],
       "parallel_group": 0
@@ -286,10 +288,10 @@
       "parallel_group": 2
     }
   ],
-  "computed_at": "2026-08-02T09:14:59.019309+00:00",
+  "computed_at": "2026-08-02T09:32:27.225106+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP13"
   ],
-  "planning_commit_sha": "1f44410022e48ed13470aee5231813b1f36add20"
+  "planning_commit_sha": "36f2a6e47e99f734e399c1c5e27781278263fa28"
 }
