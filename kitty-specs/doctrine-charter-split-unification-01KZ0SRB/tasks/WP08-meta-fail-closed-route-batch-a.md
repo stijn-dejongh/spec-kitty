@@ -42,7 +42,8 @@ owned_files:
 - tests/specify_cli/test_meta_fail_closed_batch_a.py
 role: implementer
 tags: []
-tracker_refs: []
+tracker_refs:
+- '3140'
 ---
 
 ## ⚡ Do This First: Load Agent Profile

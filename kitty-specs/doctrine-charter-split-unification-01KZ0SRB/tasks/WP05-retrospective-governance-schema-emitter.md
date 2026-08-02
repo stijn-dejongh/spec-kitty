@@ -57,8 +57,15 @@ loop over `:360`, invoked at `:386`); `load_governance_config` at `src/charter/s
 
 Author `tests/charter/test_retrospective_governance_emit.py`: (a) a charter whose governance sets a retrospective
 policy → `charter generate` emits `governance.retrospective`; (b) a charter with **no** retrospective config →
-the emitted `charter.yaml` is **byte-identical** to today (block omitted). Case (b) fails today because the
-list-only pruner cannot drop an empty/None dict block. Commit red first.
+the emitted `charter.yaml` is **byte-identical** to today (block omitted).
+
+**Red-timing note (research.md D10 — do not conflate the two cases):**
+- Case (a) "emit `governance.retrospective`" is the **committed-first ATDD red** (no field exists today, so it
+  fails on first authoring). Commit case (a) red first.
+- Case (b) "no-config → byte-identical `charter.yaml`" is **byte-stable today** (no field emitted at all) and
+  goes **red only AFTER the T002 schema field lands** — a default `retrospective` block then leaks until the
+  T004 pruner drops it. It is the **NFR-005 pruner guard, a mid-implementation gate**, **not** a
+  committed-first red; do **not** label it as such or expect it red before the field exists.
 
 #### T002 — RetrospectiveGovernance sub-model (FR-005a)
 

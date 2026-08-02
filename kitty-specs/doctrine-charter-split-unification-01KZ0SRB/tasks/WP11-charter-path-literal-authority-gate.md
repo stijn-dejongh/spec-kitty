@@ -83,9 +83,16 @@ allocated per computed lane from `lanes.json`. **Sink ordering:** land AFTER WP0
 ## Definition of Done
 
 - ATDD red (T001) GREEN on the merged tree; gate FAILS on a re-introduced inline charter path literal
-  (self-mutation proof, NFR-004).
+  (self-mutation proof, NFR-004). The self-mutation proof MUST inject the test literal into a **NON-allowlisted**
+  module (an allowlisted target would falsely pass) (research.md D10).
+- **Allowlist non-vacuity (research.md D10):** each allowlist entry carries an **inline one-line justification**
+  — **no blanket directory globs**; entries are per-module/per-line and named. Second guard: **adding a file to
+  the allowlist must not be a way to green a real violation** (a test that adding an offending module to the
+  allowlist would still fail the gate, or an equivalent shrink-only assertion), so the allowlist cannot become a
+  growable escape hatch.
 - Detection is AST path-construction (not raw grep, D6); allowlist is frozen shrink-only, seeded from a full AST
-  census; the `src/doctrine/**` scope decision is recorded (D6).
+  census; the `src/doctrine/**` scope decision (D6) is recorded as a **bounded, justified list** (each allowlisted
+  `src/doctrine/**` path enumerated with its rationale), not a wildcard.
 - `ruff` + `mypy` zero new issues (NFR-002).
 
 ## Risks / Reviewer guidance

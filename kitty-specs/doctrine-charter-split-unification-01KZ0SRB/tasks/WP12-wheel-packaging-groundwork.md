@@ -98,6 +98,11 @@ allocated per computed lane from `lanes.json`.
   in `research.md §D7` — not just a manifest-shape test (D7).
 - **C-002 preserved:** root `pyproject.toml` `packages` still lists `src/kernel`/`src/doctrine`/`src/charter`
   (no cutover); confirmed no CI job builds/installs the nested wheel standalone this mission.
+- **D7 fallback governance (research.md D10):** invoking any D7 packs-mechanism fallback (esp. deferring the
+  functional packs-carry) is an **explicit HiC decision recorded in the issue-matrix** (DIR-012 / C-005),
+  **not** implementer-unilateral. If packs-carry is deferred: **SC-005 is re-scoped in writing**, and the closure
+  test's `packs/` assertion is **NOT silently removed** — it becomes an **explicit, documented kernel-dep-only
+  state** (the assertion is retained and marked/deferred with rationale, not deleted).
 - `ruff` + `mypy` zero new issues (NFR-002).
 
 ## Risks / Reviewer guidance

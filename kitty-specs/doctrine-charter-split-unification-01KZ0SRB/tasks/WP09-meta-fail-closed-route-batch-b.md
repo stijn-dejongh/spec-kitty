@@ -45,7 +45,8 @@ owned_files:
 - tests/specify_cli/test_meta_fail_closed_full_census_contract.py
 role: implementer
 tags: []
-tracker_refs: []
+tracker_refs:
+- '3140'
 ---
 
 ## ⚡ Do This First: Load Agent Profile
@@ -96,6 +97,12 @@ allocated per computed lane from `lanes.json`.
 - ATDD red (T001) GREEN: the **full** census set fails closed (typed / `None`); zero raw `ValueError` (NFR-003).
 - Every routed site matches the WP07 census; silent-contract callers preserved; dashboard/cli exclusions
   (charter_path.py / _status_collectors.py) respected — no collision with WP02/WP04.
+- **NFR-003 full-census contract is driven from the reconciled WP07 census** (the grep-count-reconciled row set,
+  not a hand-picked sample) and MUST **FAIL if a new unclassified `load_meta(` site appears** — a future
+  unwrapped reader added outside the census regresses the gate (research.md D10).
+- **Finalize the #3140 issue-matrix verdict + close DIR-012 here** — WP09 is where fail-closed completes, so the
+  #3140 verdict is filled in the coord worktree (C-005) and DIR-012 closed at WP09, **not** at WP07 (which held
+  the row `(pending)`); tracker comment names this mission.
 - `ruff` + `mypy` zero new issues (NFR-002).
 
 ## Risks / Reviewer guidance

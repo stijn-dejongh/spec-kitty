@@ -47,12 +47,14 @@ migration-compat shape") + C-001; `../research.md` **D2**. Ground in the live `:
 
 ## Guidance
 
-#### T001 — ATDD red (charter C-011)
+#### T001 — Characterization pin (green-first, charter C-011)
 
 Author `tests/specify_cli/cli/commands/charter/test_status_collectors_legacy_md_shape.py` seeding a
 `charter.md`-only project (present md, **absent** `charter.yaml`) and asserting the status collector resolves the
-legacy shape (backward-compat). Commit it red first — today the branch is unscoped/untested, so the shape's
-behaviour is unpinned.
+legacy shape (backward-compat). This is a **characterization pin (green-first), NOT an ATDD red** — the md-only
+shape ALREADY resolves today (`_status_collectors.py:72-87`, research.md **D10**), so the test passes on first
+authoring; do **not** commit it red first. It pins today's already-passing behaviour so the scope/document step
+(or the unsupported-shape decision) cannot silently change it.
 
 #### T002 — Scope explicitly (or remove) + document
 
@@ -68,9 +70,12 @@ allocated per computed lane from `lanes.json`.
 
 ## Definition of Done
 
-- ATDD red (T001) GREEN: the `charter.md`-only status-collector shape resolves (or errors deterministically if
-  declared unsupported) — pinned by a regression test, not a bare comment.
+- Characterization pin (T001) GREEN green-first: the `charter.md`-only status-collector shape resolves (or errors
+  deterministically if declared unsupported) — pinned by a regression test, not a bare comment.
 - The `:85-87` branch is explicitly scoped/documented; display header/listing (`:74-84`,`:103`) unchanged (C-001).
+- The "declare the `charter.md`-only shape unsupported → error deterministically" option is a **support-scope
+  product decision routed through the HiC + issue-matrix** (DIR-012 / C-005), **never** implementer-unilateral —
+  do not flip the shape to an error path without that recorded decision.
 - `ruff` + `mypy` zero new issues (NFR-002).
 
 ## Risks / Reviewer guidance

@@ -94,9 +94,16 @@ allocated per computed lane from `lanes.json`.
 - The two `TestLoadCoordUnavailableFailsClosed` reds go GREEN (C-004); the authority test (T001) passes.
 - One public `load_meta_fail_closed` in `core/paths`; import stays function-local (D4); no second authority.
 - `notes/meta-load-census.md` published with the full classified + def-disambiguated caller set (gates WP08/WP09).
+- **Grep-count census reconciliation (anti-omission guard, research.md D10):** every `load_meta(` occurrence in
+  the tree (raw grep count) is a row in `notes/meta-load-census.md` — **row-count == occurrence-count**, no
+  undercount. Each row is classified `{route-unwrapped | divergent-wrapper | deliberately-silent}` **and** tagged
+  with which of the TWO defs it targets (`mission_metadata.py:275` feature_dir vs `task_utils/support.py:599`
+  meta_path). This defeats the occurrence-map undercount trap — the NFR-003 full-census is self-referential, so a
+  silently-omitted site would leak yet pass.
 - `ruff` + `mypy` zero new issues (NFR-002).
-- Assign #3140 to the HiC on claim (DIR-012) + fill the #3140 issue-matrix row verdict in the coord worktree
-  (C-005); tracker comment names this mission.
+- Assign #3140 to the HiC on claim (DIR-012). The #3140 **issue-matrix row stays `(pending)` here** — fail-closed
+  completes on WP09, so the verdict **finalizes on WP09**, not WP07 (research.md D10); seed/hold the row in the
+  coord worktree (C-005) with a tracker comment naming this mission.
 
 ## Risks / Reviewer guidance
 

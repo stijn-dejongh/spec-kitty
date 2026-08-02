@@ -94,8 +94,13 @@ allocated per computed lane from `lanes.json`.
 
 - FR-012: `doctrine-charter-tests.yml` triggers/selects `cli/commands/charter/**` (+ its tests) — no longer
   false-green (SC-006).
-- FR-013: **both** fixtures repointed to `docs/api/`; both docs regenerated; `test_docs_cli_reference_parity`
-  **RAN GREEN** (not skipped) (SC-006).
+- FR-013: **both** `REFERENCE_PATH` **and** `AGENT_REFERENCE_PATH` repointed to `docs/api/`; **both** docs
+  (`cli-commands.md` + `agent-subcommands.md`) regenerated; `test_docs_cli_reference_parity` **RAN GREEN** (not
+  skipped) (SC-006).
+- **Mechanical not-skipped guard (research.md D10):** add a meta-assertion that `test_visible_paths_match_reference`
+  does **NOT** emit a skip — either an in-test assertion that **both** fixture paths exist (so the `_read_or_skip`
+  branch cannot trigger), or a CI `-rs` skip-report gate that fails the job if this test reports SKIPPED — so
+  "ran GREEN" is **enforced mechanically, not eyeballed**.
 - FR-014: #3102 closeout keyword recorded in the PR body.
 - FR-015: #2831/#2992 investigation timeboxed with an explicit defer-with-reason (or a proven-shared-root fold);
   no silent scope expansion (DIR-013).

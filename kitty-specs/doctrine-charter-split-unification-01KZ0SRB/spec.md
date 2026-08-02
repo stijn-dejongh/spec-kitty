@@ -74,10 +74,12 @@ resolvable.
 2. **Given** the same project, **When** the analysis report computes its charter staleness input, **Then**
    it hashes `charter.yaml` (the resolving authority), and the legacy `charter/charter.md` location
    fallback is gone.
-3. **Given** the same project, **When** `charter/context.py`'s "missing" gate runs, **Then** it passes on
-   `charter.yaml` alone (the `OR charter.md` bridge is retired, its charter.md-only fixtures migrated).
-4. **Given** a project with **both** files, **When** any presence surface runs, **Then** behaviour is
-   unchanged (no regression); `charter.md` remains readable for prose/rationale.
+3. **Given** a `charter.md`-only project (no `charter.yaml`), **When** `charter context` renders, **Then** it
+   still renders the `charter.md` prose (charter.md as readable secondary); **and given** both files exist,
+   the compiled `charter.yaml` governance takes precedence — the `context.py:249` prose-presence gate is
+   pinned, not retired (see FR-002).
+4. **Given** a project with **both** files, **When** any *authority*-presence surface (dashboard, analysis,
+   status) runs, **Then** it keys on `charter.yaml`; `charter.md` remains readable for prose/rationale.
 
 ### User Story 2 — Retrospective policy resolves from the authority, with rationale in prose (Priority: P1)
 
@@ -207,7 +209,7 @@ gate is no longer SKIPPED and runs against `docs/api/cli-commands.md`.
 | ID | Requirement | Status |
 |----|-------------|--------|
 | FR-001 | Establish **one** charter read/path authority seated in the charter layer: `charter/bundle.py` (`CHARTER_YAML`/`CHARTER_MD`, which **already exist**) + `charter/charter_yaml_io` is the single door every **presence / path** decision resolves through, keyed on `charter.yaml` (authority). This FR owns **only the shared constant home**; each per-file repoint of an inline `".kittify"/"charter"/"charter.md"` literal-builder **folds into the surface WP** that already rewrites that file (FR-002/003/004/005) — it is **not** a separate lane (avoids coord write-scope collision). The tasks phase **enumerates** the exact target set (~23 `"charter.md"` literal occurrences across ~15 files) and **excludes** `upgrade/migrations/**` (historical-path determinism) and the C-003 prose readers. `charter/context.py` already imports the `bundle` constants (pre-deduped by #3146). `charter.md` stays a **secondary** prose/rationale read point (never a resolving override). | Draft |
-| FR-002 | Retire the `charter/context.py:249` "missing" gate's `OR charter.md` test-compat bridge → key the presence gate on `charter.yaml` only; migrate the `charter.md`-only test fixtures the bridge protected so the suite seeds `charter.yaml`. Prose/body readers at `charter/context.py:300,368` are **unchanged**. | Draft |
+| FR-002 | **Scope + pin (do NOT retire) the `charter/context.py:249` prose-presence gate** as a legitimate C-003 surface. Post-#3146 it is already correct: `charter.yaml` (authority) takes precedence and renders when present; `charter.md` (readable secondary — the operator model) still renders when it is the only surface; prose graceful-degrades when `charter.md` is absent (`:300`); "missing" only when **both** are absent. Retiring the `charter.md` disjunct would demote `charter.md` from readable-secondary to invisible and regress 26 `charter.md`-only fixtures (post-tasks squad correction of an earlier misreading). WP01 **pins** the four cells (yaml-only renders; md-only renders; both-absent missing; **yaml governance takes precedence when both present**) and clarifies the inline rationale. The genuine residual *authority*-presence readers are retargeted by FR-003/004/006 — not this prose gate. | Draft |
 | FR-003 | **#3150** — Split `dashboard/charter_path.py::resolve_project_charter_path` so the **presence** probe (drives the dashboard "no charter" UI / `api.py`) keys on `charter.yaml` and survives `charter.md` deletion, while the prose **body** served (`api.py` `read_text`) still reads `charter.md` when present. | Draft |
 | FR-004 | `analysis_report.py:190-196` — key the analyzer staleness input on `charter.yaml` (the resolving authority): the resulting hash-input set contains `charter.yaml` and **removes both** `charter.md` entries — the `:191` canonical companion **and** the `:192` legacy `charter/charter.md` fallback that every other resolver refuses. Acceptance: staleness computes without error when `charter.md` is absent (SC-001). | Draft |
 | FR-005 | Migrate retrospective **policy resolution** to the `charter.yaml` authority. **This is a schema + compiler + resolver change, NOT a read swap** — `GovernanceConfig` (`src/charter/schemas.py`) has **no** `retrospective` field today and the compiled bundle carries no such block. (a) Add a `retrospective` model to `GovernanceConfig`; (b) wire the compiler/emitter so `charter generate` populates it (omit-when-empty for back-compat, `_OPTIONAL_EMPTY_OMIT_KEYS`-style); (c) change `retrospective/{policy,mode,gate}.py` to resolve **yaml-first** (authoritative, takes precedence) with `charter.md` frontmatter as an **overridden secondary** for legacy `charter.md`-only projects. Collapse the three duplicate `_CHARTER_REL` constants (`policy.py:39`/`mode.py:67`/`gate.py:116`) to one shared definition. Ship focused regression tests: yaml-wins, both-present-precedence, legacy-md-only. | Draft |
@@ -262,10 +264,11 @@ gate is no longer SKIPPED and runs against `docs/api/cli-commands.md`.
 
 ### Measurable Outcomes
 
-- **SC-001**: Every charter **presence / config** decision resolves from `charter.yaml`; a project with
-  `charter.yaml` and `charter.md` **deleted** reports the charter present / resolvable across context,
-  status, dispatch (already #3146), **dashboard (#3150)**, analysis-report, `charter/context.py` gate, and
-  retrospective policy.
+- **SC-001**: Every charter **authority-presence / config** decision resolves from `charter.yaml`; a project
+  with `charter.yaml` and `charter.md` **deleted** reports the charter present / resolvable across context,
+  status, dispatch (already #3146), **dashboard (#3150)**, analysis-report, and retrospective policy. The
+  `context.py:249` **prose**-presence gate is separately *pinned* (C-003): it renders on `charter.yaml`
+  (precedence) **or** `charter.md` (readable secondary) — it is not an authority gate and is not retired.
 - **SC-002**: `charter.yaml` **takes precedence** over `charter.md` for retrospective policy (yaml wins when
   both present); a legacy `charter.md`-only project still resolves (backward compatible).
 - **SC-003**: A corrupt / non-dict `meta.json` fails closed (typed `MissionMetaReadError` or `None`) at

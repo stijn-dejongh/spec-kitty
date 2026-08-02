@@ -103,6 +103,39 @@ the 4 IC-01 repoints, FR-008, FR-009 kernel pyproject, FR-012/FR-013 CI hygiene,
 FR-008). Critical path (depth): the IC-02 chain. Width long-pole: IC-03 routing. FR-015 is a **timeboxed
 investigation with a deferred issue-matrix verdict**, not a code WP (default defer-with-reason).
 
+## D10 — Post-tasks squad corrections (reviewer-renata + debugger-debbie)
+
+- **WP01 reclassified (blocking fix):** `context.py:249` is a **legitimate C-003 prose-presence gate**, not a
+  residual to retire. It already keys authority on `charter.yaml` (renders when present, precedence) while
+  keeping `charter.md` as a readable secondary (md-only still renders; comment `:207-220` documents a strict
+  yaml-only gate regresses **26** `-k charter` fixtures). FR-002 reframed to **scope + pin** (four-cell
+  characterization + precedence assertion + comment clarification); **no** behaviour change, **no** fixture
+  migration, **no** fake red. The genuine residual *authority*-presence readers are FR-003/004/006.
+- **WP04 is a characterization pin, not a red:** `_status_collectors.py:72-87` already resolves the md-only
+  shape today → the test is green-first (pin), not ATDD-red. The "declare unsupported → error" escape is a
+  support-scope **product decision routed through the HiC/issue-matrix**, not implementer-unilateral.
+- **WP07/09 census anti-omission:** the NFR-003 "full census" is self-referential (iterates the WP07 census),
+  so an omitted `load_meta(` site leaks yet passes. Require a **grep-count reconciliation** (row-count ==
+  every `load_meta(` occurrence; each row classified + tagged with which of the two defs it targets — D4). The
+  WP09 contract is driven from that reconciled set and fails on a new unclassified site. (Repo memory:
+  occurrence-map undercount trap.)
+- **#3140 verdict timing:** the issue-matrix verdict finalizes on **WP09** (fail-closed lands there), not WP07;
+  WP08/WP09 carry `tracker_refs: ['3140']`; WP07's row stays `(pending)` until 08/09 land.
+- **WP11 gate non-vacuity:** each allowlist entry carries an inline justification (no blanket globs); the
+  self-mutation proof injects the literal into a **non-allowlisted** module (and adding a file to the allowlist
+  must not be a way to green a real violation).
+- **WP12 D7 fallback governance:** invoking any packs-mechanism fallback (esp. deferring functional
+  packs-carry) is an **HiC decision recorded in the issue-matrix**; if deferred, SC-005 is re-scoped in writing
+  and the closure test's packs assertion is not silently dropped (it becomes an explicit kernel-dep-only state).
+- **WP13 ADR scope:** claim "zero `specify_cli` **import** entanglement, per WP10's AST gate" — not a blanket
+  "zero entanglement".
+- **WP14 not-skipped guard:** add a mechanical assertion that the parity test does **not** skip (both fixture
+  paths exist / CI `-rs` skip-report), so "ran green" is enforced, not eyeballed; FR-013 repoints **both**
+  `REFERENCE_PATH` and `AGENT_REFERENCE_PATH`.
+- **WP05 red timing:** case (a) "emit `governance.retrospective`" is the committed-first red; case (b)
+  "no-config → byte-identical `charter.yaml`" goes red only **after** the schema field lands (the NFR-005
+  pruner guard), not before.
+
 ## D9 — Tracker hygiene (DIR-012 + coord issue-matrix)
 
 Each folded issue (#3150, #3140, #3149, #3107, #3102) gets an issue-matrix row (coord worktree) **and** a

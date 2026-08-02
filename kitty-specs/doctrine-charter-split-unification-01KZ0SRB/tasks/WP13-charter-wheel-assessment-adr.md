@@ -33,7 +33,7 @@ Load your assigned profile: run `/ad-hoc-profile-load architect-alphonso` and ad
 ## Objective
 
 Record the charter-wheel **assessment + ADR draft** (FR-011, SC-007): `src/charter` is cleanly extractable **in
-principle** (zero real upward entanglement after FR-008/WP10) but transitively needs the kernel + doctrine
+principle** (zero `specify_cli` **import** entanglement, per WP10's AST gate, after FR-008/WP10) but transitively needs the kernel + doctrine
 wheels first; sequence the cutover **kernel→doctrine→charter** as an explicit **no-partial** follow-on that
 **extends** (not reinvents) the `2026-04-25-1` shared-package-boundary pattern (boundary test + pyproject-shape
 test + `clean-install-verification` job). Enumerate the deferred follow-on issue set. This is a **document
@@ -49,7 +49,9 @@ template.
 #### T001 — Draft the ADR (FR-011)
 
 Author `docs/adr/3.x/2026-08-02-1-charter-wheel-assessment.md`: (a) charter is extractable-in-principle after the
-FR-008 edge deletion (cite WP10's AST gate as the durable proof); (b) the **no-partial** cutover sequencing
+FR-008 edge deletion — scope the claim to **zero `specify_cli` import entanglement, per WP10's AST gate** (cite it
+as the durable proof); do **NOT** claim a blanket "zero entanglement" — glossary / runtime / re-export edges are
+**unproven** by the AST import gate and stay out of scope of the claim (research.md D10); (b) the **no-partial** cutover sequencing
 kernel→doctrine→charter (a partial cutover is forbidden — ADR `2026-04-25-1` C-007); (c) it **extends** the
 `2026-04-25-1` boundary pattern (boundary test + pyproject-shape test + `clean-install-verification`), not a new
 pattern; (d) enumerate the deferred follow-on issues: **#3101, #3091, #3022, #3036, #3039, #2986**.
@@ -67,12 +69,15 @@ allocated per computed lane from `lanes.json`.
 
 ## Definition of Done
 
-- ADR drafted (SC-007): extractable-in-principle claim (cites WP10 gate); kernel→doctrine→charter no-partial
-  sequencing; extends `2026-04-25-1`; deferred issue set (#3101/#3091/#3022/#3036/#3039/#2986) enumerated.
+- ADR drafted (SC-007): extractable-in-principle claim **scoped to zero `specify_cli` import entanglement (per
+  WP10's AST gate)** — NOT a blanket "zero entanglement" (glossary/runtime/re-export edges unproven, research.md
+  D10); kernel→doctrine→charter no-partial sequencing; extends `2026-04-25-1`; deferred issue set
+  (#3101/#3091/#3022/#3036/#3039/#2986) enumerated.
 - C-002 (no cutover this mission) stated explicitly. Runs `test_no_legacy_terminology` clean (doc/prose change).
 
 ## Risks / Reviewer guidance
 
 - ADR review is the acceptance (document deliverable) — verify it **extends** `2026-04-25-1` rather than
-  reinventing the boundary pattern, and that the "zero entanglement" claim is grounded in WP10's landed AST gate,
-  not asserted. Confirm no-partial-cutover sequencing is explicit.
+  reinventing the boundary pattern, and that the entanglement claim is grounded in WP10's landed AST gate and
+  **scoped to `specify_cli` import edges only** (not a blanket "zero entanglement" — glossary/runtime/re-export
+  edges are unproven, research.md D10). Confirm no-partial-cutover sequencing is explicit.
