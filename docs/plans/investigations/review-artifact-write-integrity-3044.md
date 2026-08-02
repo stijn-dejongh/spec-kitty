@@ -229,6 +229,53 @@ fast-follow) rather than assumed-included scope, since its mechanism wasn't trac
 
 ---
 
+## Addendum 2026-08-02 — post-spec squad resolved all five open questions
+
+*Mission `review-verdict-write-integrity-01KZ1CGF` opened against this research's Options A + B. A
+post-spec dialectic squad (architect-alphonso, reviewer-renata, debugger-debbie, planner-priti)
+reviewed the committed spec and resolved every open question above; the operator then decided each
+escalation. Recorded here so this doc's own open-questions section isn't left stale the way #2275's
+issue text was.*
+
+1. **#2275 annotated** — comment posted: <https://github.com/Priivacy-ai/spec-kitty/issues/2275#issuecomment-5158401081>.
+2. **#990's mechanism traced, and it collapsed into Option B, not Option C.** `debugger-debbie`
+   confirmed `create_rejected_review_cycle`'s unvalidated `feedback_source` read
+   (`src/specify_cli/review/cycle.py:287-295`) is the identical mechanism for both #2996(b) and #990 —
+   there was never a separate "cycle-generation wrapping" code path to trace. Two pre-existing tests
+   (`tests/review/test_cycle.py::test_self_referential_feedback_source_is_rejected`,
+   `::test_new_cycle_body_never_duplicates_a_prior_cycle_file`) already reproduce both as RED on
+   `main`. **Option C is retired as a distinct option** — it was Option B all along. The operator
+   folded #990 into the mission's FR-002 on this evidence.
+3. **Approved-verdict writer shape deferred to `/spec-kitty.plan`**, as this doc originally
+   recommended — still unresolved, correctly left for the plan phase.
+4. **`--skip-review-artifact-check`'s audit-evidence problem**: the operator chose to verify rather
+   than rebuild. The squad found #1817 (the issue naming this exact problem) is a stale,
+   never-cross-referenced duplicate of #1924, already fixed and closed 2026-06-14 — confirmed live in
+   `src/specify_cli/review/artifacts.py:307-376`. #1817 was closed as duplicate-of-#1924 directly on
+   the tracker; no mission scope was needed.
+5. **#2646/#2697 checked — and this doc's own §1 defect-class table needs a correction, not just an
+   answer.** A squad lens initially concluded (matching this doc's architecture-verifier reasoning)
+   that `WORK_PACKAGE_TASK`'s unconditional PRIMARY-partition classification makes the coord-duplication
+   shape #2646/#2697 describe "structurally impossible today." A second lens, reading #2646's own
+   reproduction directly, found the opposite: `_get_wp_review_verdict`'s `agent tasks status` scan
+   (`src/specify_cli/agent_utils/status.py`) does route through the same seam for its PRIMARY read, but
+   #2646's actual reported defect is that a coord-topology mission's *canonical write* lands on the
+   coordination authority while that scan only ever reads PRIMARY — the two lenses disagreed on a
+   consequential point. Adjudicating from #2646/#2697's own issue text directly (not either lens's
+   summary) confirmed the second reading: both are live, reproducible, independent of #2275/#2996/#990,
+   and **not** closed by the same fix. The operator chose to fix both for real inside the mission
+   (`FR-003`) rather than split them into a fast-follow — meaning this doc's own framing in §1/§4 ("no
+   topology-seam extension needed") held for #2275/#2996/#990 but not for #2646/#2697, which turn out to
+   be a genuine, still-open member of the read/write topology-seam defect class this doc set out to
+   investigate in the first place.
+
+**Net effect**: every #3044 native child (#2275, #2996, #990) is closed by this mission's scope.
+#1817 is closed independently. #2646/#2697 — genuine topology-seam-class members, not #3044 children —
+are fixed as bundled, efficiency-motivated scope, not epic scope. Full detail:
+`kitty-specs/review-verdict-write-integrity-01KZ1CGF/spec.md`.
+
+---
+
 ## See also
 
 - [Write-path topology: ambient-location root cause and remediation options](write-path-topology-root-cause.md) — the sibling #3129 investigation this research was asked to connect #3044 to; the write-side member of the same seam-classification style of pre-spec research.
