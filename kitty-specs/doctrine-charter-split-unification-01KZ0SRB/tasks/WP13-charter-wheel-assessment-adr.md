@@ -5,10 +5,9 @@ dependencies:
 - WP10
 requirement_refs:
 - FR-011
-- SC-007
 planning_base_branch: feat/doctrine-charter-split-unification
 merge_target_branch: feat/doctrine-charter-split-unification
-branch_strategy: Planning artifacts were generated on feat/doctrine-charter-split-unification. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/doctrine-charter-split-unification unless the human explicitly redirects the landing branch.
+branch_strategy: Planning artifacts for this mission were generated on feat/doctrine-charter-split-unification. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/doctrine-charter-split-unification unless the human explicitly redirects the landing branch.
 subtasks:
 - T001
 - T002
@@ -18,7 +17,7 @@ agent_profile: architect-alphonso
 authoritative_surface: docs/adr/3.x/2026-08-02-1-charter-wheel-assessment.md
 create_intent:
 - docs/adr/3.x/2026-08-02-1-charter-wheel-assessment.md
-execution_mode: doc_change
+execution_mode: planning_artifact
 model: claude-sonnet-4-6
 owned_files:
 - docs/adr/3.x/2026-08-02-1-charter-wheel-assessment.md
