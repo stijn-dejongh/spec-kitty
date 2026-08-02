@@ -20,7 +20,6 @@ history:
 agent_profile: python-pedro
 authoritative_surface: src/specify_cli/core/paths.py
 create_intent:
-- kitty-specs/doctrine-charter-split-unification-01KZ0SRB/notes/meta-load-census.md
 - tests/specify_cli/core/test_load_meta_fail_closed_authority.py
 execution_mode: code_change
 model: claude-sonnet-4-6
@@ -28,7 +27,6 @@ owned_files:
 - src/specify_cli/core/paths.py
 - src/specify_cli/mission_metadata.py
 - src/mission_runtime/lifecycle_phase.py
-- kitty-specs/doctrine-charter-split-unification-01KZ0SRB/notes/meta-load-census.md
 - tests/specify_cli/core/test_load_meta_fail_closed_authority.py
 - tests/unit/status/test_mission_status_aggregate.py
 role: implementer

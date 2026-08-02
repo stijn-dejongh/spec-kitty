@@ -32,7 +32,6 @@ owned_files:
 - src/doctrine/pyproject.toml
 - src/doctrine/hatch_build.py
 - tests/architectural/test_doctrine_wheel_closure.py
-- kitty-specs/doctrine-charter-split-unification-01KZ0SRB/research.md
 role: implementer
 tags: []
 tracker_refs: []
