@@ -11,6 +11,7 @@ subtasks:
 - T008
 - T009
 - T010
+agent: claude
 history:
 - at: '2026-08-02T16:42:46Z'
   actor: system
