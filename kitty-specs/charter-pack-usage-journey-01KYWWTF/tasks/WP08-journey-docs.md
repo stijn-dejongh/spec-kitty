@@ -23,6 +23,12 @@ execution_mode: code_change
 model: claude-sonnet-4-6
 owned_files:
 - docs/architecture/charter-pack-usage-journey.md
+- docs/api/charter-commands.md
+- docs/context/charter-overview.md
+- docs/context/governance-files.md
+- docs/guides/setup-governance.md
+- docs/development/3-2-page-inventory.yaml
+- docs/development/3-2-docs-retrieval-index.yaml
 role: implementer
 tags: []
 tracker_refs:
