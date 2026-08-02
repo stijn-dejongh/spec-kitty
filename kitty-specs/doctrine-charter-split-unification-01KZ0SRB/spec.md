@@ -24,6 +24,14 @@ in place so the #3101 cutover becomes a mechanical follow-on.
 > resolver catalog-fallback, and shipped a `context_schema_version` **tracking** stamp. This mission
 > extends that unification to the **residual** `charter.md` presence/config readers #3146 left behind.
 >
+> **Post-spec squad (2026-08-02) folded** — reviewer-renata (fakeable acceptance), architect-alphonso
+> (packaging/structure), debugger-debbie (live code-truth), all anchors verified: FR-005 is a
+> schema+compiler+resolver change (`GovernanceConfig` has **no** `retrospective` field today); FR-007
+> reuses the existing `core/paths` typed authority (no second home) + an enumerated caller census; FR-008
+> ships an AST-walk guard (pytestarch is green **with** the edge present); FR-010's `packs/` mechanism is
+> out-of-tree and must be `hatch build`-spiked; FR-013 repoints **both** parity fixtures; added **FR-016**
+> anti-regression durability gate; NFR-001 fixtures must delete `charter.md` (not seed both).
+>
 > **Scope closes / folds:** #3150 (dashboard presence probe, P1), #3140 (meta.json fail-closed authority,
 > P1), #3149 (CI path-filter gap), #3107 (inert CLI-reference parity gate + remainder), #3102-closeout,
 > plus the `charter/context.py` OR-gate, the `analysis_report.py` hash-input, and the retrospective-policy
@@ -58,9 +66,11 @@ analysis-report staleness, and the `charter/context.py` presence gate all report
 resolvable.
 
 **Acceptance Scenarios**:
-1. **Given** a project with `charter.yaml` and no `charter.md`, **When** the dashboard resolves the
-   project charter, **Then** it reports a charter present (not the "no charter" 404/UI) — the presence
-   probe keys on `charter.yaml`; the prose **body** it serves still reads `charter.md` when that exists.
+1. **Given** a project with `charter.yaml` and no `charter.md`, **When** the dashboard **presence probe**
+   (`resolve_project_charter_path`) resolves the project charter, **Then** it reports present (keys on
+   `charter.yaml`) — asserted at the probe-function level (dashboard UI behaviour stays covered by the
+   existing UI e2e guard, not claimed from the unit probe); the prose **body** it serves still reads
+   `charter.md` when that exists.
 2. **Given** the same project, **When** the analysis report computes its charter staleness input, **Then**
    it hashes `charter.yaml` (the resolving authority), and the legacy `charter/charter.md` location
    fallback is gone.
@@ -135,12 +145,14 @@ follow-on and closes the single genuine layer violation, but ships value even if
 `kernel` dependency or its `packs/` inclusion; `test_layer_rules` green after the edge deletion.
 
 **Acceptance Scenarios**:
-1. **Given** the layer graph, **When** `test_layer_rules` runs after this mission, **Then** it is green and
-   the `charter -> specify_cli` lazy edge in `synthesize_pipeline.py:68` is gone (`__version__` resolved via
-   `importlib.metadata` only).
+1. **Given** the layer graph, **When** the mission completes, **Then** the `charter -> specify_cli` edge in
+   `synthesize_pipeline.py:68` is gone (`__version__` via `importlib.metadata` only) **and** a non-vacuous
+   AST-walk gate FAILS if any `src/charter/**` module re-imports `specify_cli` at any scope (the pytestarch
+   layer rule alone is green with the edge present, so it is not the guard).
 2. **Given** the wheel manifests, **When** the closure test runs, **Then** `src/kernel/pyproject.toml`
    exists (`spec-kitty-kernel`, zero first-party deps), `src/doctrine/pyproject.toml` declares its `kernel`
-   dependency **and** force-includes `packs/`, and the test **fails** if either is removed.
+   dependency **and** carries `packs/` via the spike-verified out-of-tree mechanism (packs is a repo-root
+   `doctrine`-sibling, not in-tree), and the test **fails** if either is removed.
 3. **Given** the mission, **When** the root `pyproject.toml` is inspected, **Then** `src/kernel`,
    `src/doctrine`, `src/charter` are **still** in the monorepo wheel `packages` (no cutover performed —
    groundwork only; a partial cutover is forbidden).
@@ -194,30 +206,31 @@ gate is no longer SKIPPED and runs against `docs/api/cli-commands.md`.
 
 | ID | Requirement | Status |
 |----|-------------|--------|
-| FR-001 | Establish **one** charter read/path authority in the charter layer: every **presence / path** decision resolves through `charter/bundle.py` (`CHARTER_YAML`/`CHARTER_MD`) + `charter/charter_yaml_io`, keyed on `charter.yaml` (authority). De-duplicate the ~9 inline `".kittify"/"charter"/"charter.md"` literal-builders (S1192) by importing `charter.bundle.CHARTER_MD` instead of re-deriving. `charter.md` stays a **secondary** prose/rationale read point (never a resolving override). | Draft |
+| FR-001 | Establish **one** charter read/path authority seated in the charter layer: `charter/bundle.py` (`CHARTER_YAML`/`CHARTER_MD`, which **already exist**) + `charter/charter_yaml_io` is the single door every **presence / path** decision resolves through, keyed on `charter.yaml` (authority). This FR owns **only the shared constant home**; each per-file repoint of an inline `".kittify"/"charter"/"charter.md"` literal-builder **folds into the surface WP** that already rewrites that file (FR-002/003/004/005) — it is **not** a separate lane (avoids coord write-scope collision). The tasks phase **enumerates** the exact target set (~23 `"charter.md"` literal occurrences across ~15 files) and **excludes** `upgrade/migrations/**` (historical-path determinism) and the C-003 prose readers. `charter/context.py` already imports the `bundle` constants (pre-deduped by #3146). `charter.md` stays a **secondary** prose/rationale read point (never a resolving override). | Draft |
 | FR-002 | Retire the `charter/context.py:249` "missing" gate's `OR charter.md` test-compat bridge → key the presence gate on `charter.yaml` only; migrate the `charter.md`-only test fixtures the bridge protected so the suite seeds `charter.yaml`. Prose/body readers at `charter/context.py:300,368` are **unchanged**. | Draft |
 | FR-003 | **#3150** — Split `dashboard/charter_path.py::resolve_project_charter_path` so the **presence** probe (drives the dashboard "no charter" UI / `api.py`) keys on `charter.yaml` and survives `charter.md` deletion, while the prose **body** served (`api.py` `read_text`) still reads `charter.md` when present. | Draft |
-| FR-004 | `analysis_report.py:190-196` — hash `charter.yaml` (the resolving authority) as the analyzer staleness input, and **delete** the legacy `charter/charter.md` location fallback (`:192`) that every other resolver refuses. | Draft |
-| FR-005 | Migrate retrospective **policy resolution** (`retrospective/{policy,mode,gate}.py`) to read from `charter.yaml` governance (authoritative, takes precedence); keep `charter.md` frontmatter as an **overridden secondary** source (backward compatible for legacy `charter.md`-only projects). Collapse the three duplicate `_CHARTER_REL` constants to one shared definition. | Draft |
-| FR-006 | Scope the `_status_collectors.py:85-87` "legacy charter.md gate" **explicitly** (a documented pre-consolidation migration-compat branch, `charter.md` present / `charter.yaml` absent) — retire it only if that shape is declared unsupported. The staleness **display** header/listing (`:74-84,103`) is unchanged (legitimate display). | Draft |
-| FR-007 | **#3140** — Promote **one** public fail-closed reader `load_meta_fail_closed(feature_dir) -> dict | None` into `specify_cli.mission_metadata` (returns `None` on missing; raises typed `MissionMetaReadError` on corrupt/non-dict). Route the enumerated ~25 unwrapped `load_meta` callers **and** the ≥6 divergent per-module wrappers through it; keep `load_meta_or_empty` for deliberately-silent sites. The two red `test_mission_status_aggregate::TestLoadCoordUnavailableFailsClosed` tests go green via `mission_runtime/lifecycle_phase.py`. | Draft |
-| FR-008 | Delete the single real upward layer edge: `charter/synthesizer/synthesize_pipeline.py:68` lazy `import specify_cli` (used only for a `__version__` fallback) → resolve via `importlib.metadata` only, so `src/charter` imports nothing from `specify_cli`. | Draft |
+| FR-004 | `analysis_report.py:190-196` — key the analyzer staleness input on `charter.yaml` (the resolving authority): the resulting hash-input set contains `charter.yaml` and **removes both** `charter.md` entries — the `:191` canonical companion **and** the `:192` legacy `charter/charter.md` fallback that every other resolver refuses. Acceptance: staleness computes without error when `charter.md` is absent (SC-001). | Draft |
+| FR-005 | Migrate retrospective **policy resolution** to the `charter.yaml` authority. **This is a schema + compiler + resolver change, NOT a read swap** — `GovernanceConfig` (`src/charter/schemas.py`) has **no** `retrospective` field today and the compiled bundle carries no such block. (a) Add a `retrospective` model to `GovernanceConfig`; (b) wire the compiler/emitter so `charter generate` populates it (omit-when-empty for back-compat, `_OPTIONAL_EMPTY_OMIT_KEYS`-style); (c) change `retrospective/{policy,mode,gate}.py` to resolve **yaml-first** (authoritative, takes precedence) with `charter.md` frontmatter as an **overridden secondary** for legacy `charter.md`-only projects. Collapse the three duplicate `_CHARTER_REL` constants (`policy.py:39`/`mode.py:67`/`gate.py:116`) to one shared definition. Ship focused regression tests: yaml-wins, both-present-precedence, legacy-md-only. | Draft |
+| FR-006 | Scope the `_status_collectors.py:85-87` "legacy charter.md gate" **explicitly** (a documented pre-consolidation migration-compat branch, `charter.md` present / `charter.yaml` absent). **Add a backward-compat regression test** for the `charter.md`-only status-collector shape — or, if that shape is declared unsupported, remove the branch (do **not** leave it comment-scoped and untested). The staleness **display** header/listing (`:74-84,103`) is unchanged (legitimate display). | Draft |
+| FR-007 | **#3140** — Establish **one** public fail-closed `meta.json` reader with a typed contract, **reusing the existing authority**: `core/paths.py` already defines `MissionMetaReadError` (`:506`) and a private `_load_meta_fail_closed` wrapper (`:660-663`). Decide a **single home** (promote/re-home that wrapper as the public reader, or have `mission_metadata` delegate to it — **no** competing second authority). The tasks phase emits an **enumerated caller census** (all ~108 `load_meta(` call sites, each classified: raise-default-unwrapped / divergent-wrapper / deliberately-silent) as a reviewable artifact; route the unwrapped callers and the ≥6 divergent wrappers through the one reader; keep `load_meta_or_empty` for silent sites. The two red `test_mission_status_aggregate::TestLoadCoordUnavailableFailsClosed` tests go green via `mission_runtime/lifecycle_phase.py`. (Note: `_widen` is already green — fixed by #3146.) | Draft |
+| FR-008 | Delete the single real upward layer edge: `charter/synthesizer/synthesize_pipeline.py:68` lazy in-function `import specify_cli` (used only for a `__version__` fallback) → resolve via `importlib.metadata` only. **Ship a non-vacuous guard**: `test_layer_rules`/pytestarch does **not** catch this in-function import (it is green **with the edge present**), so add an AST-walk gate (mirroring `_collect_specify_cli_imports` in the `mission_runtime` boundary ledger) that FAILS if any `src/charter/**` module imports `specify_cli` at **any** scope — proven by a self-mutation check. | Draft |
 | FR-009 | Mint `src/kernel/pyproject.toml` (`spec-kitty-kernel`, zero first-party dependencies — the true root of the wheel chain), following the `2026-04-25-1` precedent shape. **Groundwork only** — not wired into the release/build path yet. | Draft |
-| FR-010 | Fix `src/doctrine/pyproject.toml` so the standalone doctrine wheel is closed: add its `kernel` dependency (via the `spec-kitty-kernel` wheel) and force-include `packs/` (so `resolve_pack_root("built-in")` resolves in a standalone install). Add a **non-vacuous** doctrine-wheel-closure test (mirroring `test_wheel_packages_include_every_imported_first_party_package`) that FAILS if the `kernel` dep or the `packs/` inclusion is removed. | Draft |
+| FR-010 | Fix `src/doctrine/pyproject.toml` so the standalone doctrine wheel is closed: add its `kernel` dependency (the `spec-kitty-kernel` wheel). **Correct the `packs/` mechanism** — `packs/built-in` is a **repo-root** tree resolved as a *site-packages sibling* of the `doctrine` package (`pack_paths.py::_resolve_built_in`, `doctrine_dir.parent/"packs"/"built-in"`), **not** in-tree under `src/doctrine/`; a naive `force-include ../../packs` is outside the project root and hatchling refuses it. The tasks phase **decides + spike-verifies with a real `hatch build`** the concrete mechanism (build-context-relative `force-include` or a build hook) that lands `packs/` as a `doctrine` sibling in the standalone wheel. Add a **non-vacuous** closure test that FAILS if the `kernel` dep or the chosen `packs/` mechanism is removed (self-mutation proof). **Groundwork only** — the nested wheel is not built by any CI job this mission. | Draft |
 | FR-011 | Record a charter-wheel **assessment + ADR draft**: `src/charter` is cleanly extractable in principle (zero real upward entanglement after FR-008) but transitively needs the kernel+doctrine wheels first; sequence the cutover **kernel→doctrine→charter** as an explicit **no-partial** follow-on that extends `2026-04-25-1` (boundary test + pyproject-shape test + `clean-install-verification` job). Enumerate the deferred follow-on issues (#3101, #3091, #3022, #3036, #3039, #2986). | Draft |
 | FR-012 | **#3149** — Add `src/specify_cli/cli/commands/charter/**` (+ `tests/specify_cli/cli/commands/charter/**` and `test_analyze_surface_agreement.py`) to the `doctrine-charter-tests.yml` trigger paths **and** pytest selection, so the charter CLI command layer is no longer false-green under that workflow. | Draft |
-| FR-013 | **#3107** — Repoint the inert CLI-reference parity gate (`tests/architectural/test_docs_cli_reference_parity.py` `REFERENCE_PATH`) from the missing `docs/reference/cli-commands.md` to the live `docs/api/cli-commands.md` so it stops SKIPPING; regenerate `docs/api/cli-commands.md` for the current `charter pack list/path/apply` surface. | Draft |
+| FR-013 | **#3107** — Un-inert the CLI-reference parity gate (`tests/architectural/test_docs_cli_reference_parity.py`). It has **two** inert fixtures via `_read_or_skip` — `REFERENCE_PATH` (→ `docs/reference/cli-commands.md`) **and** `AGENT_REFERENCE_PATH` (→ `docs/reference/agent-subcommands.md`); the load-bearing `test_visible_paths_match_reference` skips if **either** is missing. Repoint **both** to the live `docs/api/` docs and regenerate `docs/api/cli-commands.md` + `docs/api/agent-subcommands.md` for the current `charter pack list/path/apply` surface. Acceptance asserts the test **ran green** (not merely that its first fixture stopped skipping). | Draft |
 | FR-014 | **#3102 closeout** — Confirm the `doctrine-charter-tests.yml` workflow is delivered (post-FR-012) and record in the PR body the closing keyword for #3102 (fixed-but-still-open hygiene). | Draft |
-| FR-015 | Investigate #2831 (implement gate false-fails `charter_source missing` despite sync passing, P0) and #2992 (`charter sync --force` "already in sync" while `status` MISSING, P1): if either root-causes to the same charter presence/read split-brain this mission unifies, **fold** the fix; otherwise record the finding and **defer** with a stated reason (DIR-013 issue hygiene). | Draft |
+| FR-015 | Investigate #2831 (implement gate false-fails `charter_source missing` despite sync passing, P0) and #2992 (`charter sync --force` "already in sync" while `status` MISSING, P1). **Timebox** the investigation (a bounded read, not an open chase) and **default to defer-with-reason**; only **fold** the fix if the root cause is *provably* the same charter presence/read split-brain this mission unifies — never let FR-015 silently expand the WP set (DIR-013 issue hygiene). | Draft |
+| FR-016 | **Anti-regression durability gate.** Add an architectural test that FAILS if (a) a new inline `".kittify"/"charter"/"charter.{yaml,md}"` path literal is introduced outside `charter/bundle.py` (allowlisting `upgrade/migrations/**` + the C-003 prose readers), or (b) a new `charter.md`-keyed `.exists()` **presence** gate is added — so the single read authority stays durable, not a point-in-time cleanup that rots on the next PR. Non-vacuous: frozen-allowlist + self-mutation proof. | Draft |
 
 ### Non-Functional Requirements
 
 | ID | Requirement | Threshold / Measure | Status |
 |----|-------------|---------------------|--------|
-| NFR-001 | Charter presence is proven single-authority. | Every retargeted presence surface (dashboard, analysis-report, `charter/context.py` gate, retrospective) works with `charter.md` **deleted** and `charter.yaml` present — executable regression tests, one per surface. | Draft |
+| NFR-001 | Charter presence is proven single-authority. | Every retargeted presence surface (dashboard, analysis-report, `charter/context.py` gate, retrospective) works with `charter.md` **deleted** and `charter.yaml` present — executable regression tests, one per surface, and **each presence fixture DELETES/omits `charter.md`** (seeds `charter.yaml` only). A both-files seed is a separate no-regression case, **never** the presence proof (guards against the fixture-seeds-both fake-green). | Draft |
 | NFR-002 | No new lint/type regressions. | `ruff` + `mypy` zero new issues on all changed modules (no new `# noqa`/`# type: ignore`/per-file ignore). | Draft |
-| NFR-003 | meta.json fails closed with a typed contract everywhere. | A corrupt and a non-dict `meta.json` surface **zero** raw `ValueError` across the enumerated product readers; a load-counting/contract test pins the typed-exception / `None` outcome per site class. | Draft |
-| NFR-004 | The wheel-closure gate is non-vacuous. | The doctrine-wheel-closure test FAILS when the `kernel` dependency **or** the `packs/` force-include is removed from `src/doctrine/pyproject.toml` (self-mutation proof). | Draft |
+| NFR-003 | meta.json fails closed with a typed contract everywhere. | A corrupt and a non-dict `meta.json` surface **zero** raw `ValueError` across the readers; a load-counting/contract test pins the typed-exception / `None` outcome **for the full enumerated caller set (the FR-007 census)**, not a sample. | Draft |
+| NFR-004 | The mission's structural gates are non-vacuous. | Self-mutation proofs: the doctrine-wheel-closure test FAILS when the `kernel` dep **or** the chosen `packs/` mechanism is removed (FR-010); the FR-008 charter-import gate FAILS when the `specify_cli` import is re-added; the FR-016 literal gate FAILS on a re-introduced inline charter path literal. | Draft |
 | NFR-005 | Behaviour-change decisions are explicit, not slipped. | The spec/PR record: (a) the retrospective **precedence flip** (charter.yaml > charter.md frontmatter) and its backward-compat contract; (b) the `charter/context.py` OR-gate retirement; (c) that **no** wheel cutover was performed (groundwork only). CHANGELOG updated per DIR-009. | Draft |
 
 ### Constraints
@@ -225,7 +238,7 @@ gate is no longer SKIPPED and runs against `docs/api/cli-commands.md`.
 | ID | Constraint | Status |
 |----|------------|--------|
 | C-001 | **charter.yaml precedence, charter.md secondary.** `charter.yaml` is the deterministic, schema-guarded resolution authority and takes precedence for every presence/config decision; `charter.md` stays a readable secondary rationale/prose source and is **never** an override. Do **not** collapse the prose/body readers (the #3146 C-003 class: `--include section:<id>`, policy-summary, compact-governance) into the presence gate or retarget them to `charter.yaml`. | Active |
-| C-002 | **No wheel cutover in this mission.** Packaging is **groundwork only** — mint/fix the sub-wheel pyprojects + a closure test. Do **not** remove `src/kernel`/`src/doctrine`/`src/charter` from the root `pyproject.toml` `packages`, do not publish wheels, do not add a release gate. A partial cutover is forbidden (ADR `2026-04-25-1` C-007); the cutover is the sequenced follow-on. | Active |
+| C-002 | **No wheel cutover in this mission.** Packaging is **groundwork only** — mint/fix the sub-wheel pyprojects + a closure test. Do **not** remove `src/kernel`/`src/doctrine`/`src/charter` from the root `pyproject.toml` `packages`, do not publish wheels, do not add a release gate. (Already satisfied by the tree: root `packages` lists all three and `packs` is root-force-included — the mission simply must not remove them.) **Residual:** confirm **no** CI job builds/installs the nested `spec-kitty-doctrine`/`spec-kitty-kernel` wheel standalone this mission (the added `kernel` dep is unresolvable until the follow-on publishes the kernel wheel) — else "groundwork only" breaks CI. A partial cutover is forbidden (ADR `2026-04-25-1` C-007); the cutover is the sequenced follow-on. | Active |
 | C-003 | **Retrospective migration is backward compatible.** Legacy `charter.md`-only projects keep resolving their policy from frontmatter (secondary); `charter.yaml` governance wins when present. Provide the migration path; do not break existing projects. | Active |
 | C-004 | **Classify reds vs the base; never green-wash.** The two `test_mission_status_aggregate` fail-closed reds ARE this mission's to fix (FR-007). Pre-existing unrelated reds (sync/coord P0s, and any not caused by this diff) are classified against the merge-base and left honest per red-main discipline; file/annotate per DIR-013. | Active |
 | C-005 | **Coord topology hygiene.** Issue-matrix verdicts land in the coordination worktree; reviewer ≠ implementer; every folded issue gets an issue-matrix row + tracker comment naming the mission. | Active |
@@ -238,8 +251,9 @@ gate is no longer SKIPPED and runs against `docs/api/cli-commands.md`.
   readable, never a resolving override.
 - **Charter path authority** — `charter/bundle.py` constants + `charter/charter_yaml_io`; the single
   charter-layer door every presence/path read routes through.
-- **`load_meta_fail_closed`** — the one public fail-closed `meta.json` reader in `specify_cli.mission_metadata`
-  (typed `MissionMetaReadError` / `None`).
+- **`load_meta_fail_closed`** — the **one** public fail-closed `meta.json` reader (typed `MissionMetaReadError`
+  / `None`), reusing the existing `core/paths.py` authority (`MissionMetaReadError:506`, `_load_meta_fail_closed:660`)
+  — a single home, not a competing second authority.
 - **`spec-kitty-kernel` / `spec-kitty-doctrine` wheels** — packaging-closure groundwork manifests; not
   cut over from the root wheel this mission.
 - **`doctrine-charter-tests.yml`** — the path-filtered CI workflow for the doctrine/charter layer.
@@ -264,7 +278,8 @@ gate is no longer SKIPPED and runs against `docs/api/cli-commands.md`.
   **non-vacuous** closure test fails if either is removed; and **no** root-wheel cutover was performed
   (kernel/doctrine/charter still in the root `packages`).
 - **SC-006**: `doctrine-charter-tests.yml` covers `cli/commands/charter/**` (+ its tests); the CLI-reference
-  parity gate is **live** (not SKIPPED) against `docs/api/cli-commands.md`; #3102 confirmed shipped/closed.
+  parity gate **runs green** (both `REFERENCE_PATH` and `AGENT_REFERENCE_PATH` repointed to `docs/api/`, both
+  docs regenerated — not merely un-skipped); #3102 confirmed shipped/closed.
 - **SC-007**: A charter-wheel assessment + ADR draft is recorded, sequencing the #3101 kernel→doctrine→charter
   cutover as an explicit no-partial follow-on with the deferred issue set enumerated.
 
