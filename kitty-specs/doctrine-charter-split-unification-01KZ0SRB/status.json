@@ -1,7 +1,7 @@
 {
-  "event_count": 2,
-  "last_event_id": "01KZ0W1VPZ4YQFRDHPDRMWQM88",
-  "materialized_at": "2026-08-02T09:14:34.591320+00:00",
+  "event_count": 3,
+  "last_event_id": "01KZ0W1W6R3W09VVPC2DDN3QS0",
+  "materialized_at": "2026-08-02T09:14:35.096223+00:00",
   "mission_number": "",
   "mission_slug": "doctrine-charter-split-unification-01KZ0SRB",
   "mission_type": "software-dev",
@@ -14,7 +14,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 2
+    "planned": 3
   },
   "work_packages": {
     "WP01": {
@@ -30,6 +30,13 @@
       "lane": "planned",
       "last_event_id": "01KZ0W1VPZ4YQFRDHPDRMWQM88",
       "last_transition_at": "2026-08-02T09:14:34.591320+00:00"
+    },
+    "WP03": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01KZ0W1W6R3W09VVPC2DDN3QS0",
+      "last_transition_at": "2026-08-02T09:14:35.096223+00:00"
     }
   }
 }
