@@ -35,12 +35,18 @@
 
 ## Notes
 
-- All items pass on first pass. No [NEEDS CLARIFICATION] markers were needed — the four scope
-  decisions this spec depends on (#990 exclusion, override-mechanism verification vs. rebuild,
-  #2646/#2697 audit inclusion, #2275 comment) were resolved directly with the operator via
-  AskUserQuestion before this spec was written, per explicit instruction to escalate rather than
-  assume.
-- FR-002/FR-003 mention specific function/file names (`create_rejected_review_cycle`,
-  `tests/regression/test_2684_review_override_recognition.py`) in their acceptance-scenario prose,
-  not in the requirement title/description rows themselves — kept as concrete, testable detail
-  rather than abstract restatement, consistent with the pre-spec research's own code-grounded style.
+- No [NEEDS CLARIFICATION] markers were needed. Two rounds of operator decisions shaped this spec:
+  (1) pre-spec, via AskUserQuestion (#990 initial exclusion, override-mechanism verification vs.
+  rebuild, #2646/#2697 audit inclusion, #2275 comment); (2) post-spec, after a dialectic adversarial
+  squad reviewed the committed spec and found the #990 exclusion and the #2646/#2697 "already fixed"
+  assumption both needed reversing, and #1817 could be closed immediately rather than verified
+  in-mission — each was re-escalated to the operator and resolved before this revision.
+- Corrected from the first pass: the original note here misattributed a code citation
+  (`create_rejected_review_cycle`) to FR-002/FR-003 that did not actually appear in either — the
+  squad's `reviewer-renata` lens caught this. This revision's User Story 3 / FR-003 acceptance
+  scenarios do cite `agent tasks status`'s stale-verdict scan and the coord-authority write path by
+  name, kept as concrete, testable detail rather than abstract restatement — consistent with the
+  pre-spec research's own code-grounded style — and this note has been re-checked against the
+  current spec text rather than copied forward.
+- SC-002 was rewritten from an unfalsifiable universal-absence claim ("zero missions ever need the
+  flag") to a bounded, regression-suite-scoped claim, per the same lens's finding.
