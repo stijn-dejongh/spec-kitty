@@ -103,12 +103,12 @@ Read these in full before starting:
 
 - **Purpose**: Reproduce #2646's exact reported scenario against current code, using the real shipped writer, not a hand-simulated one.
 - **Steps**:
-  1. Reuse the existing `tests/integration/coord_topology_fixture.py` fixture (already used by a post-plan squad's own live reproduction during this mission's planning — do not build a new fixture from scratch).
-  2. Using that fixture, reject a WP (cycle 1, `verdict: rejected`), then approve it via `spec-kitty agent tasks move-task WP01 --to approved` (or the equivalent direct function call for a test context) — this must go through WP01's real, generalized writer, including its commit step.
+  1. Reuse the existing `tests/integration/coord_topology_fixture.py` fixture (a fixture of this shape was used during this mission's post-plan live reproduction — this is the only coord-topology fixture in the tree, so it is the right one, though the exact prior usage isn't separately archived; do not build a new fixture from scratch).
+  2. **Prefer calling `create_rejected_review_cycle` (WP01's generalized writer) directly** — once with `verdict="rejected"`, then again with `verdict="approved"` — over driving the full `spec-kitty agent tasks move-task` CLI path. A post-tasks squad found the CLI path requires the WP to already be sitting in `in_review`, which means fabricating a full `planned→claimed→in_progress→for_review→in_review` lane-transition history first — real, avoidable setup cost the direct-call path skips entirely, and it's what this mission's own earlier live reproduction (research.md R1/R3) actually used.
   3. Confirm the resulting `review-cycle-2.md` exists, has `verdict: approved`, and is committed (per WP01's own acceptance criteria) before proceeding to T009.
 - **Files**: none changed yet — this subtask is a driving/setup step for T009's assertion.
 - **Parallel?**: No — sequential with T009.
-- **Notes**: If `coord_topology_fixture.py` needs a minor extension to support this exact scenario (e.g., a helper for "reject then approve" in one call), that's acceptable — but prefer composing existing fixture primitives over adding new ones.
+- **Notes**: **Do not edit `coord_topology_fixture.py`.** A post-tasks squad found it is shared infrastructure consumed by ~26 unrelated test files across `tests/integration/`, `tests/coordination/`, `tests/specify_cli/`, and `tests/acceptance/` — none of which this WP's own regression command (`pytest tests/agent/ tests/regression/ -q`) would catch if broken. Compose only its existing entry points. If that turns out to be genuinely insufficient to drive this scenario, stop and raise it with the operator rather than extending shared, unowned test infrastructure inside this WP.
 
 ### Subtask T009 – Assert `agent tasks status` reports correctly; commit the regression test
 
@@ -117,8 +117,9 @@ Read these in full before starting:
   1. Run `agent tasks status --json` (or call `_get_wp_review_verdict`/the stale-verdict scan function directly in a test context) against the fixture from T008.
   2. Assert the WP reports as approved with **no stale-verdict warning**.
   3. Write this as a permanent, checked-in test at `tests/regression/test_2646_stale_verdict_closes_via_fr001.py`, mirroring the shape of `tests/regression/test_2684_review_override_recognition.py` (a named regression test tied to the issue number, not an ad-hoc script).
-  4. **If the assertion passes**: commit this test. `src/specify_cli/agent_utils/status.py` gets zero changes. This WP's FR-003 scope is satisfied — go to Review Guidance below and mark this WP done.
-  5. **If the assertion fails**: do not paper over it. Record the actual observed failure (what `agent tasks status` reports, and why) in the test itself (as a comment or a clearly-failing assertion with a descriptive message) and proceed to T010.
+  4. **Add an Activity Log entry recording T009's literal result before doing anything else** — `T009 result: PASS — zero status.py diff` or `T009 result: FAIL — <verbatim observed stale-verdict output>`. This is not optional bookkeeping: it is the reviewer's only auditable proof of which branch of this WP actually happened (see Review Guidance's `git log` gate).
+  5. **If the assertion passes**: commit this test. `src/specify_cli/agent_utils/status.py` gets zero changes. This WP's FR-003 scope is satisfied — go to Review Guidance below and mark this WP done.
+  6. **If the assertion fails**: do not paper over it. Record the actual observed failure (what `agent tasks status` reports, and why) in the test itself (as a comment or a clearly-failing assertion with a descriptive message) and proceed to T010.
 - **Files**: `tests/regression/test_2646_stale_verdict_closes_via_fr001.py` (new)
 - **Parallel?**: No — depends on T008.
 - **Notes**: Also confirm the flat/single-branch regression (spec.md User Story 3, Acceptance Scenario 3) — run the same fixture flow against a non-coord mission and confirm behavior is unchanged from the pre-mission baseline, so this WP doesn't accidentally alter flat-topology behavior while investigating the coord case.
@@ -149,6 +150,16 @@ Read these in full before starting:
 ## Review Guidance
 
 - **The reviewer's primary job is confirming T009 actually ran and its real result — pass or fail — determined whether T010 has any content.** A WP that "just happens" to include both a passing verification test AND a status.py fix, without a clear record of the verification having failed first, should be rejected and sent back.
+- **Concrete, checkable gate (not a trust-the-narrative check)**: before approving, run
+  `git log --oneline -- tests/regression/test_2646_stale_verdict_closes_via_fr001.py src/specify_cli/agent_utils/status.py`.
+  - If `agent_utils/status.py` has **any** diff in this WP's commits, reject unless the WP's Activity Log
+    contains an antecedent entry recording T009's literal FAIL result (the actual observed stale-verdict
+    output), timestamped before the `status.py` change. If `status.py` has a diff with no such antecedent
+    FAIL entry, or with a PASS entry instead, reject — that is exactly the fakeable-DoD shape this WP was
+    designed to prevent.
+  - If `status.py` has a diff, additionally `git stash` it locally and re-run
+    `test_2646_stale_verdict_closes_via_fr001.py` to confirm it goes red without the fix (proving T010's
+    fix is load-bearing, not decorative), then restore the stash.
 - If T009 passed (the expected, evidence-favored outcome): confirm `src/specify_cli/agent_utils/status.py` has zero diff in this WP.
 - If T010 activated: confirm the fix is scoped to the actually-observed failure, not a resurrection of the retracted `resolve_snapshot_review` design without re-justification.
 

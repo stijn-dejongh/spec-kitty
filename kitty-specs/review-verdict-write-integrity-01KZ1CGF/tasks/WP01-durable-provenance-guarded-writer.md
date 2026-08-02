@@ -105,11 +105,11 @@ code action for FR-004 in this WP; do not look for one.
   3. Do not rename the function or change its return type (`CreatedRejectedReviewCycle`) — every existing caller must compile and behave identically when `verdict` is omitted.
 - **Files**: `src/specify_cli/review/cycle.py`
 - **Parallel?**: No — T002–T005 all build on this signature.
-- **Notes**: Confirm via `grep -rn "create_rejected_review_cycle(" src/` that the one existing call site (`tasks_move_task.py`'s `_mt_finalize_plan`) is unaffected by the new default parameter before moving on.
+- **Notes**: Confirm via `grep -rn "create_rejected_review_cycle(" src/` that both existing call sites — `tasks_move_task.py`'s `_mt_finalize_plan` and `tasks_materialization.py:148`'s `_persist_review_feedback` (a post-plan squad found the plan/research docs only named one; there are two) — are unaffected by the new default parameter before moving on. Neither needs a code change; both omit `verdict`, so both keep getting `"rejected"` behavior unchanged.
 
 ### Subtask T002 – Loosen `validate_review_artifact` to accept both verdicts
 
-- **Purpose**: `validate_review_artifact` (`review/cycle.py:184-188`) currently hardcodes `if artifact.verdict != "rejected": raise ReviewCycleError(...)` — stricter than the schema it's meant to enforce (`REVIEW_ARTIFACT_VERDICTS = frozenset({"approved", "rejected"})`, `review/artifacts.py:26`). Without this fix, T001's new `verdict="approved"` path will fail its own post-construction validation.
+- **Purpose**: `validate_review_artifact` (`review/cycle.py:184-185`) currently hardcodes `if artifact.verdict != "rejected": raise ReviewCycleError(...)` — stricter than the schema it's meant to enforce (`REVIEW_ARTIFACT_VERDICTS = frozenset({"approved", "rejected"})`, `review/artifacts.py:26`). Without this fix, T001's new `verdict="approved"` path will fail its own post-construction validation.
 - **Steps**:
   1. Change the check to `if artifact.verdict not in REVIEW_ARTIFACT_VERDICTS: raise ReviewCycleError(...)` (import the frozenset from `review.artifacts` if not already imported).
   2. Keep the error message meaningful for both failure cases (an invalid verdict string, not specifically "must be rejected").
@@ -127,7 +127,8 @@ code action for FR-004 in this WP; do not look for one.
   2. Apply the guard uniformly regardless of `verdict` — a caller could in principle mis-supply a stale file for either an approval or a rejection.
 - **Files**: `src/specify_cli/review/cycle.py`
 - **Parallel?**: [P] with T002.
-- **Notes**: `tests/review/test_cycle.py::test_self_referential_feedback_source_is_rejected` and `::test_new_cycle_body_never_duplicates_a_prior_cycle_file` already exist and are RED — read them first; they define the exact fixture shapes (path case and content/rename case respectively) this guard must satisfy. Do not weaken the content check to a substring/fuzzy match — exact-match-after-normalization is the documented, testable boundary (research.md R2's "alternatives considered" explicitly rejected hashing/fuzzy matching as unnecessary complexity at this scale, not as a shortcut to skip).
+- **Notes**: `tests/review/test_cycle.py::test_self_referential_feedback_source_is_rejected` and `::test_new_cycle_body_never_duplicates_a_prior_cycle_file` already exist and are RED — read them first; they define the exact fixture shapes this guard must satisfy. Do not weaken the content check to a substring/fuzzy match — exact-match-after-normalization is the documented, testable boundary (research.md R2's "alternatives considered" explicitly rejected hashing/fuzzy matching as unnecessary complexity at this scale, not as a shortcut to skip).
+  **⚠️ Contradiction a post-tasks squad found, resolve it exactly this way**: `test_new_cycle_body_never_duplicates_a_prior_cycle_file` (as currently committed) does **not** wrap its second `create_rejected_review_cycle(...)` call in `pytest.raises` — it was written before this mission's design (raise on any content match, per spec.md Acceptance Scenario 2's "the operation is refused") was finalized, and its current form models a narrower, non-raising outcome that this mission's actual scope supersedes. **You must update this test as part of T003** (not leave it as an untouched pinned fixture): wrap its second `create_rejected_review_cycle(...)` call in `pytest.raises(ReviewCycleError, match=...)`, matching `test_self_referential_feedback_source_is_rejected`'s shape, then replace the post-call `assert cycle2.artifact.body not in prior_bodies` block with an assertion that `ReviewCycleArtifact.latest(wp_dir)` still returns cycle 1 (whose `reviewer_agent` is the real value passed at cycle-1 creation, not `"unknown"`) — i.e., the refusal means cycle 2 is never written at all, so "latest" naturally stays cycle 1. Do **not** try to satisfy the test's current (pre-mission-design) assertions by making the write succeed with a merely-different body — that path independently violates spec.md's "operation is refused" requirement even if it turns the assertion green, and a post-tasks squad specifically flagged this as a shortcut that rewards the wrong implementation. Also add one additional case to T006 (see below): a feedback file whose **path** matches (lives at a `review-cycle-N.md` path in the WP's own dir) but whose **content** has been hand-edited to differ — the two existing tests can both be satisfied by content-matching alone, so this extra case is the only thing that forces genuine path-based logic to exist too.
 
 ### Subtask T004 – Add the commit step
 
@@ -156,10 +157,11 @@ code action for FR-004 in this WP; do not look for one.
 
 - **Purpose**: Turn the two pre-existing red tests green and add direct coverage for the new approved-verdict and commit-durability behavior.
 - **Steps**:
-  1. Confirm `test_self_referential_feedback_source_is_rejected` and `test_new_cycle_body_never_duplicates_a_prior_cycle_file` pass after T003.
-  2. Add a test that calls the generalized writer with `verdict="approved"` against a WP whose latest artifact is `rejected`, and asserts the new artifact's frontmatter (`verdict: approved`, real `reviewer_agent`, correct next cycle number).
-  3. Add a test asserting the write is committed — e.g., call the writer against a real git-initialized fixture repo and assert `git status --porcelain` shows no untracked/modified marker for the new artifact file immediately after the call (mirrors quickstart.md's FR-001 commit-step verification).
-  4. Add a test confirming existing callers of `create_rejected_review_cycle` (omitting `verdict`) still produce identical `rejected` behavior — a straightforward backward-compatibility regression.
+  1. Update `test_new_cycle_body_never_duplicates_a_prior_cycle_file` per T003's note above (wrap in `pytest.raises`, assert `latest` stays cycle 1), then confirm both it and `test_self_referential_feedback_source_is_rejected` pass.
+  2. Add a path-only test: a feedback file at a `review-cycle-N.md`-shaped path inside the WP's own directory, but with hand-edited (non-duplicate) content — assert it is still refused (`pytest.raises(ReviewCycleError)`). This is the case that forces genuine path-based detection to exist, since the two pre-existing tests can both be satisfied by content-matching alone.
+  3. Add a test that calls the generalized writer with `verdict="approved"` against a WP whose latest artifact is `rejected`, and asserts the new artifact's frontmatter (`verdict: approved`, real `reviewer_agent`, correct next cycle number).
+  4. Add a test asserting the write is committed — e.g., call the writer against a real git-initialized fixture repo and assert `git status --porcelain` shows no untracked/modified marker for the new artifact file immediately after the call (mirrors quickstart.md's FR-001 commit-step verification).
+  5. Add a test confirming existing callers of `create_rejected_review_cycle` (omitting `verdict`) still produce identical `rejected` behavior — a straightforward backward-compatibility regression.
 - **Files**: `tests/review/test_cycle.py`
 - **Parallel?**: No — depends on T001-T004 all being implemented.
 - **Notes**: `tests/coordination/test_analysis_report_rehome.py` already shows the pattern for asserting commit state after a review-cycle write via `commit_for_mission(...)` — read it for the fixture idiom before writing new git-state assertions from scratch.
@@ -189,7 +191,8 @@ code action for FR-004 in this WP; do not look for one.
 ## Review Guidance
 
 - Confirm T004's commit step is real — the reviewer should independently verify (e.g., `git log` in a test fixture) that a write actually lands as a commit, not just that no exception was raised.
-- Confirm the provenance guard (T003) rejects both the exact-path and renamed-content cases from spec.md User Story 2's Acceptance Scenarios 1 and 2 — a common shortcut is to implement only the path check and call it done.
+- Confirm the provenance guard (T003) rejects the exact-path case, the renamed/duplicate-content case, AND the path-only case (T006 step 2) — a common shortcut is to implement only the path check, or only content-matching, and call it done since either alone happens to satisfy the two originally-pinned tests.
+- Confirm `test_new_cycle_body_never_duplicates_a_prior_cycle_file` was actually rewritten to `pytest.raises` (per T003's note), not left in its pre-mission-design, non-raising form with a shortcut implementation bolted on to turn it green.
 - Confirm no existing caller of `create_rejected_review_cycle` or `validate_review_artifact` needed changes to keep passing — this is the backward-compatibility bar C-002 and NFR-001 set.
 
 ## Activity Log
