@@ -5,12 +5,11 @@ dependencies:
 - WP05
 requirement_refs:
 - FR-005
-- SC-002
 - C-003
 - NFR-002
 planning_base_branch: feat/doctrine-charter-split-unification
 merge_target_branch: feat/doctrine-charter-split-unification
-branch_strategy: Planning artifacts were generated on feat/doctrine-charter-split-unification. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/doctrine-charter-split-unification unless the human explicitly redirects the landing branch.
+branch_strategy: Planning artifacts for this mission were generated on feat/doctrine-charter-split-unification. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/doctrine-charter-split-unification unless the human explicitly redirects the landing branch.
 subtasks:
 - T001
 - T002
