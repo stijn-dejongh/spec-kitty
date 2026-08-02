@@ -16,7 +16,7 @@ them, confirmed by direct file-ownership analysis (zero touched-file overlap).
 | T003 | Add feedback-source provenance guard (path-identity + content-identity) | WP01 | |
 | T004 | Add a commit step to the writer via the existing `commit_artifact` port capability | WP01 | |
 | T005 | Wire `move-task --to approved`/`--to done` to call the writer when the latest artifact is `rejected` | WP01 | |
-| T006 | Extend `tests/review/test_cycle.py`: turn the two red tests green, add approved-verdict + commit-assertion coverage | WP01 | |
+| T006 | Extend `tests/review/test_cycle.py`: rewrite one pinned test (`test_new_cycle_body_never_duplicates_a_prior_cycle_file` — its committed assertions predate this mission's design and must be updated to `pytest.raises`, not merely satisfied as-is), confirm both pinned tests pass, add a path-only case, approved-verdict coverage, and commit-assertion coverage | WP01 | |
 | T007 | Extend `tests/post_merge/test_review_artifact_consistency.py`: confirm merge gate clears after a real approval | WP01 | |
 | T008 | Drive a `lanes_with_coord` fixture through reject→approve using the shipped WP01 writer | WP02 | |
 | T009 | Assert `agent tasks status --json` reports correctly with zero changes to `agent_utils/status.py`; commit the regression test | WP02 | |

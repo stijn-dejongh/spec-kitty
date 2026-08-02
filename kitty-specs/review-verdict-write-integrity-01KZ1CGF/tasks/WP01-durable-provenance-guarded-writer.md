@@ -181,6 +181,14 @@ code action for FR-004 in this WP; do not look for one.
 - `pytest tests/review/test_cycle.py tests/post_merge/test_review_artifact_consistency.py -v`
 - `mypy --strict src/specify_cli/review/cycle.py src/specify_cli/review/artifacts.py src/specify_cli/cli/commands/agent/tasks_move_task.py`
 - Full scoped regression before marking done: `pytest tests/review/ tests/post_merge/ tests/agent/ -q` (NFR-001 — zero regressions in these packages)
+- **NFR-003 coverage** (an `/spec-kitty.analyze` gap found this was otherwise uncovered): the new work per
+  write is one filesystem write plus one `commit_artifact` call — the same shape the existing rejection
+  path already performs today. Add a simple timing assertion in `tests/review/test_cycle.py` wrapping a
+  `create_rejected_review_cycle` call (either verdict) in `time.perf_counter()` and asserting it completes
+  within a generous fixed budget (e.g., under 2 seconds on CI hardware) rather than building a full
+  before/after benchmark harness — a fixed-budget check is proportionate for a mission whose new work is
+  one additional git commit, and avoids the flakiness of comparing against a "pre-mission baseline" that
+  would need its own separate measurement run.
 
 ## Risks & Mitigations
 
