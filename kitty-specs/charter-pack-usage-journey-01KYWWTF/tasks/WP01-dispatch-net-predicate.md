@@ -32,6 +32,7 @@ owned_files:
 - tests/specify_cli/invocation/test_empty_charter_fallback.py
 - tests/specify_cli/cli/commands/charter/test_charter_pack_builtin.py
 - tests/specify_cli/invocation/cli/test_dispatch.py
+- tests/architectural/test_no_dead_symbols.py
 role: implementer
 tags: []
 tracker_refs:
@@ -153,6 +154,18 @@ behaviour and cite NFR-004/#3104; do not delete tests wholesale (charter: delete
   agent profile) so the test proves router behaviour again; update its docstring.
 
 Gate: `uv run pytest` these three node-sets green plus the WP01 test file; `ruff`/`mypy` clean.
+
+**T006b — dead-symbol gate fallout (NFR-001/#3118).** Removing the `charter_activated_urns` call from
+`empty_charter.py` (the #3118 double-config-load fold) deletes its LAST `src/` caller. `charter_activated_urns`
+stays in `charter.pack_context.__all__` (documented "single activation authority, FR-017") and is still consumed
+by the DRG reachability/extractor test suites, so it is now **genuinely-public-but-unwired forward API** →
+`tests/architectural/test_no_dead_symbols.py::test_no_public_symbol_in_all_is_unimported` FAILS. **Fix:** re-add
+a `SymbolKey("charter_activated_urns", "<body_hash>")` entry to the `_CATEGORY_C_DELIVERY_RAIL_FORWARD_API`
+frozenset (right where the existing tombstone comment for it lives, ~L1116), with a rationale comment noting
+WP01/#3118 removed its last caller and it remains public activation authority consumed by tests. Compute the
+exact `<body_hash>` via the repo's `resolve_symbol_key`/`key_tier` in `tests/architectural/_symbol_key.py` (do
+NOT guess the hash — a wrong hash fails the gate). Do NOT de-export from `__all__` (this symbol is the
+documented FR-017 authority and was historically allowlisted, not demoted). Re-run the single gate file to green.
 
 ## Branch Strategy
 

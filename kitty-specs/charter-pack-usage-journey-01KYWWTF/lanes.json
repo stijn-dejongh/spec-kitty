@@ -15,7 +15,8 @@
         "tests/specify_cli/invocation/test_is_charter_empty_bundle_predicate.py",
         "tests/specify_cli/invocation/test_empty_charter_fallback.py",
         "tests/specify_cli/cli/commands/charter/test_charter_pack_builtin.py",
-        "tests/specify_cli/invocation/cli/test_dispatch.py"
+        "tests/specify_cli/invocation/cli/test_dispatch.py",
+        "tests/architectural/test_no_dead_symbols.py"
       ],
       "predicted_surfaces": [
         "api",
