@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-08-02T14:35:22.577336Z",
+      "decision_id": "01KZ1ED8JHG7C0DKBGKZVQMA09",
+      "final_answer": "Generalize create_rejected_review_cycle with a verdict parameter (verdict=\"rejected\" default preserves existing call sites); FR-002's provenance guard protects both verdicts in the same function.",
+      "input_key": "approved_writer_shape",
+      "mission_id": "01KZ1CGFEDX50W53P19EYRCF1E",
+      "mission_slug": "review-verdict-write-integrity-01KZ1CGF",
+      "opened_by": "cli",
+      "options": [
+        "New function create_approved_review_cycle (mirrors the existing rejected-writer, minimal risk to existing callers)",
+        "Generalize create_rejected_review_cycle with a verdict parameter (single code path for both verdicts, shared validation)",
+        "Other"
+      ],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "FR-001 needs a function that persists an approved-verdict review-cycle artifact. Should it be a new function create_approved_review_cycle, or should create_rejected_review_cycle be generalized with a verdict parameter (shared with FR-002's provenance-validation guard)?",
+      "rationale": null,
+      "resolved_at": "2026-08-02T14:47:59.427721Z",
+      "resolved_by": null,
+      "slot_key": "plan.architecture.approved-writer-shape",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01KZ1CGFEDX50W53P19EYRCF1E",
+  "version": 1
+}
