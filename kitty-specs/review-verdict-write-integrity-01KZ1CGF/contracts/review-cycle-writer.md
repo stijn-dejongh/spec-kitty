@@ -37,6 +37,12 @@ def create_rejected_review_cycle(
   is, by path or by content, a prior cycle's own artifact for this WP (see `data-model.md`'s Feedback-
   source acceptance transition). Applies uniformly — an `approved` write also goes through this guard,
   since a caller could in principle mis-supply a stale file for either verdict.
+- **New commit step (both verdicts) — added post-plan, see `research.md` R1's correction**: after
+  `artifact.write(artifact_path)` succeeds, the function commits the written file via the existing
+  `commit_artifact` port capability (today called only from `tasks_mark_status.py`/
+  `tasks_map_requirements.py`; this is its first review-cycle call site). Live reproduction confirmed
+  the write was previously never committed by anything in the `move-task` pipeline — this closes that
+  gap for both verdicts, and closes #2697 as the same underlying mechanism.
 - **Unchanged**: cycle-number assignment (`ReviewCycleArtifact.next_cycle_number`), the write target
   (`_review_cycle_wp_dir`, PRIMARY-partition, `WORK_PACKAGE_TASK` kind), and `validate_review_artifact`'s
   role as a post-construction sanity check (loosened per `research.md` R4 to accept both verdicts, not
@@ -49,13 +55,16 @@ def create_rejected_review_cycle(
 the schema-level `REVIEW_ARTIFACT_VERDICTS` frozenset already in `review/artifacts.py`, no new
 vocabulary introduced (C-002).
 
-## `_get_wp_review_verdict` (agent_utils/status.py)
+## `_get_wp_review_verdict` (agent_utils/status.py) — RETRACTED redesign, verify-first instead
 
-**Before**: `wp_dir.glob("review-cycle-*.md")`, parse latest, return `verdict` field. `wp_dir` is always
-computed under a PRIMARY-only `tasks_dir`.
+**Original plan-phase design** (retracted post-plan, see `research.md` R3's correction): resolve the
+WP's event-sourced review state first via `resolve_snapshot_review(feature_dir, wp_id)`, falling back
+to the existing file-glob read only when no snapshot entry exists. **This does not work**:
+`resolve_snapshot_review` returns `ReviewOverride`, which has no `verdict` field — it cannot supply a
+review verdict, only override actor/reason. Retracted before any code was written against it.
 
-**After**: resolve the WP's event-sourced review state first via `resolve_snapshot_review(feature_dir,
-wp_id)` (topology-appropriate `feature_dir` — coord for `lanes_with_coord` missions, matching the
-resolution `_mt_resolve_targets` already uses for status events); fall back to the existing file-glob
-read only when no snapshot entry exists. Return type and call-site signature for existing callers of
-`_get_wp_review_verdict` remain unchanged (`str | None`).
+**Actual contract for this mission**: `_get_wp_review_verdict`'s signature and behavior are **UNCHANGED**
+unless FR-003's post-FR-001 verification (see `plan.md` IC-02) finds the stale-verdict warning still
+fires. If verification fails, the fix must be designed against the actual observed failure mode at that
+time — not against this retracted design — and this contract document should be updated again before
+that fix is implemented.

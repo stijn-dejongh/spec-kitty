@@ -21,6 +21,22 @@ considered but rejected as out of this mission's scope (C-001/C-003) — it is s
 infrastructure used well beyond review-cycle artifacts; changing its behavior is a separate,
 much larger-blast-radius mission if ever warranted.
 
+**Correction (post-plan adversarial squad, live reproduction)**: this R1 finding was narrowly correct
+about the branch-checkout dimension but incomplete about the commit dimension. A post-plan squad
+built a real coord-topology fixture, called the production `create_rejected_review_cycle`, and found
+via `git status`/`git log` that **the writer never commits its output at all** — the file appears as
+untracked, HEAD is unchanged, and nothing downstream in `move-task`'s pipeline sweeps it into a commit
+either (`commit_artifact` exists as a port capability but is called only from
+`tasks_mark_status.py`/`tasks_map_requirements.py`, never from `tasks_move_task.py`, despite that
+file's own top-of-module docstring claiming otherwise — a stale comment). This is corroborated
+independently by `tests/coordination/test_analysis_report_rehome.py`, whose own author already treats
+write and commit as two separate steps requiring a separate `commit_for_mission(...)` call.
+**Revised decision**: add an explicit commit step to the generalized writer using the existing
+`commit_artifact` port capability. This is not new risk invented by FR-001 — it is a pre-existing gap
+in the current rejected-writer too — but it directly serves this mission's stated purpose (durable
+persistence) and independently closes #2697 ("no single canonical committed rejection record"),
+which turns out to be the same gap, not a separate mechanism. Operator-confirmed 2026-08-02.
+
 ## R2 — IC-02: What is the exact detection rule for a fabricated/wrapped feedback source?
 
 **Decision**: Two-part guard in the generalized writer, both required:
@@ -80,6 +96,39 @@ routes both write and read per-topology was considered (this is what the pre-spe
 recommended against as unnecessary) — rejected: it would duplicate the event-sourced snapshot mechanism
 that already solves this exact class of problem for the override case, and would touch far more
 surface than reusing that existing authority.
+
+**Correction (post-plan adversarial squad, code-verified + live-reproduced) — this R3 decision is
+retracted and replaced.** Two independent lenses found the proposed mechanism does not work as
+described, and a third found live evidence the fix may be unnecessary:
+
+1. **Type-shape mismatch**: `ReviewOverride` (`status/models.py:398-423`) has exactly four fields —
+   `at`, `actor`, `wp_id`, `reason` — and **no `verdict` field**. `resolve_snapshot_review` returns
+   `ReviewOverride | None`; it cannot supply a review verdict, only override provenance.
+   `latest_review_artifact_verdict` (the pattern this R3 cited) does not get its verdict from the
+   snapshot either — it still file-globs and reads `ReviewCycleArtifact.verdict` from frontmatter;
+   `snapshot_override` there is consulted only to compute the `has_override` boolean. The snapshot
+   `review` slot is populated only on override events — a normal approve/reject never writes it — so
+   for exactly #2646's non-override scenario, `resolve_snapshot_review` would return `None` and the
+   proposed fallback collapses straight back to the same PRIMARY-only file-glob that is the bug.
+2. **Live reproduction shows #2646 is caused by FR-001's absence, not a live coord/primary split.**
+   Built a real coord-topology fixture and drove it through the actual `create_rejected_review_cycle`:
+   reject cycle 1, approve → no cycle-2 file is ever written (matching #2996(a)'s finding — no code
+   path writes an approved-verdict artifact today). `agent tasks status` correctly reports stale,
+   because cycle 1 genuinely is the latest artifact. Hand-authoring a `review-cycle-2.md` with
+   `verdict: approved` into the **same PRIMARY directory** cycle 1 already lived in (zero changes to
+   `agent_utils/status.py`) made the stale-verdict warning disappear cleanly. The write-vs-read
+   authority split #2646 originally reported appears to have already been closed by an earlier,
+   separately-merged mission (`607e561bf`/`97f24d9bf`, the placement-seam unification) — independent of
+   anything this mission does.
+3. **#2697 remains live but is a different gap than R3 assumed** — its "no single canonical committed
+   record" symptom is the same commit-gap R1's correction above closes, not a read-authority split.
+
+**Revised decision**: drop the `resolve_snapshot_review`-based redesign entirely. FR-003 becomes
+verify-first: after FR-001 ships, re-drive #2646's scenario against the real writer and confirm via a
+checked-in regression test that the stale-verdict warning is already gone with **zero changes to
+`agent_utils/status.py`**. Only if that verification fails does FR-003 include designing and building a
+targeted fix against the actual observed failure (not this retracted design). Operator-confirmed
+2026-08-02.
 
 ## R4 — Verdict-vocabulary validator change (C-002)
 

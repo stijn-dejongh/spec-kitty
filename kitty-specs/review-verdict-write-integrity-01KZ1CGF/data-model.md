@@ -25,12 +25,13 @@ gate (`move-task --to approved/--to done`, `spec-kitty merge`) treats as authori
 identity or by content identity (post-frontmatter-strip, whitespace-normalized) — a prior cycle's own
 artifact for the same WP.
 
-## ReviewOverride (existing, consumed not created by this mission)
+## ReviewOverride (existing, untouched by this mission)
 
 Event-sourced record of an operator/arbiter override, resolved via `resolve_snapshot_review(feature_dir,
-wp_id)` from the reduced status snapshot. FR-003 reuses this exact mechanism (already proven for the
-override-honoring case) to resolve the WP's authoritative review state for the stale-verdict scan,
-instead of that scan's current bare file-glob.
+wp_id)` from the reduced status snapshot. **Not consumed by this mission** — an earlier draft of FR-003
+proposed reusing it to resolve the stale-verdict scan's review state, but this entity carries only
+`at`/`actor`/`wp_id`/`reason` (override provenance), no `verdict` field, so it cannot supply what that
+scan needs. Recorded here as a documented non-solution, not a design this mission builds on.
 
 | Field | Type | Role |
 |---|---|---|
@@ -62,12 +63,21 @@ feedback_source provided
   → read body, proceed as today
 ```
 
-### Stale-verdict scan resolution (FR-003, new precedence)
+### Stale-verdict scan resolution (FR-003 — verify-first, not a redesign)
 
 ```
-_get_wp_review_verdict(wp_id)
-  → [NEW] resolve_snapshot_review(coord-or-primary feature_dir per topology, wp_id) → ReviewOverride/verdict present? use it
-  → [fallback, unchanged] file-glob review-cycle-*.md in the topology-appropriate authoritative dir → parse verdict
+[POST-PLAN CORRECTION] The resolve_snapshot_review-based redesign below was retracted: ReviewOverride
+carries no verdict field, so this reuse does not work as described (post-plan squad, code-verified).
+Live reproduction also found #2646 reproduces today only because FR-001's writer doesn't exist yet —
+once it does, agent_utils/status.py needs no change at all in the expected case. FR-003 is now:
+
+_get_wp_review_verdict(wp_id)   # UNCHANGED — no code change unless verification (below) fails
+  → file-glob review-cycle-*.md in the existing PRIMARY-only tasks_dir → parse verdict
+
+Verification task (blocks any status.py change): drive a lanes_with_coord mission's WP through
+reject→approve using the shipped FR-001 writer; assert agent tasks status reports correctly with
+zero status.py changes. Only on failure does a targeted, minimal fix get designed against the actual
+observed mechanism.
 ```
 
 ## Key Entities (from spec.md, restated with implementation shape)

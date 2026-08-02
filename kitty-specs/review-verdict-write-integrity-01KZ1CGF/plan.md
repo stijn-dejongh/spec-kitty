@@ -7,7 +7,7 @@
 
 ## Summary
 
-Approving a previously-rejected work package (WP) does not persist any artifact today — the stale `rejected` verdict remains authoritative for every terminal gate, forcing an operator override on the ordinary path. This mission generalizes the existing rejected-verdict writer (`create_rejected_review_cycle`) into a single verdict-aware writer that also handles `approved`, adds a feedback-source provenance guard that closes both the fabrication (#2996(b)) and content-wrapping (#990) defects in that same function, and fixes an independent coord-topology authority split (#2646/#2697) where a review-cycle write and at least one of its readers disagree about which worktree is canonical.
+Approving a previously-rejected work package (WP) does not persist any artifact today — the stale `rejected` verdict remains authoritative for every terminal gate, forcing an operator override on the ordinary path. This mission generalizes the existing rejected-verdict writer (`create_rejected_review_cycle`) into a single verdict-aware writer that also handles `approved`, adds a feedback-source provenance guard that closes both the fabrication (#2996(b)) and content-wrapping (#990) defects in that same function, and — a post-plan adversarial squad's live-reproduction finding, folded in after this section's first draft — adds a commit step to that same writer, since it was found to never git-commit its output under any topology (closing #2697 as the same gap). #2646 is verified against the shipped writer rather than fixed by a separately-designed coord-authority read-router: a post-plan squad found that design type-shape broken and found live evidence the issue may already be closed by the writer existing at all.
 
 ## Technical Context
 
@@ -28,7 +28,7 @@ Approving a previously-rejected work package (WP) does not persist any artifact 
 Assessed against `.kittify/charter/charter.md`'s Code Quality / Quality Gates sections:
 
 - **Required pytest surface**: `tests/review/`, `tests/post_merge/`, `tests/agent/`, `tests/regression/` (scoped — not the full suite, per this repo's own scoped-change testing convention).
-- **Type checking**: `mypy --strict` must pass on every touched module (`review/cycle.py`, `review/artifacts.py`, `tasks_move_task.py`, `agent_utils/status.py`).
+- **Type checking**: `mypy --strict` must pass on every touched module (`review/cycle.py`, `review/artifacts.py`, `tasks_move_task.py`; `agent_utils/status.py` only if FR-003's verification fails and a fix is built there).
 - **Docstrings**: the generalized writer's new `verdict` parameter and any new public/module-level function need docstrings per the Code Review Checklist.
 - **No regressions**: NFR-001 restates this explicitly as a spec-level requirement, not just a charter formality.
 - **CHANGELOG**: this is a bug fix to internal review-cycle behavior, not a breaking public-API/CLI-surface change (existing callers of `create_rejected_review_cycle` keep working via a `verdict="rejected"` default) — a CHANGELOG entry is still warranted (user-visible behavior change: approvals now persist; `--skip-review-artifact-check` no longer needed on the ordinary path) even though it isn't a breaking change requiring a migration note.
@@ -64,16 +64,20 @@ src/specify_cli/cli/commands/agent/
                              # writer on the approve/done transition when the latest artifact is rejected (FR-001)
 
 src/specify_cli/agent_utils/
-└── status.py               # _get_wp_review_verdict / stale-verdict scan re-pointed at the same
-                             # coord-authority the write lands on, for coord-topology missions (FR-003)
+└── status.py               # UNCHANGED unless FR-003's verification fails — see IC-02. Do not
+                             # modify preemptively.
 
 tests/
 ├── review/test_cycle.py                    # FR-001/FR-002 unit coverage; turns the two pre-existing
 │                                            # red tests green (test_self_referential_feedback_source_is_rejected,
-│                                            # test_new_cycle_body_never_duplicates_a_prior_cycle_file)
+│                                            # test_new_cycle_body_never_duplicates_a_prior_cycle_file);
+│                                            # plus new coverage asserting the write is git-committed
 ├── post_merge/                              # FR-001 merge-gate integration coverage (review_artifact_consistency)
-└── regression/                              # new coord-topology regression for FR-003 (#2646/#2697),
-                                              # mirroring test_2684_review_override_recognition.py's shape
+└── regression/                              # new coord-topology regression verifying #2646 closes via
+                                              # FR-001 alone (FR-003) — mirroring
+                                              # test_2684_review_override_recognition.py's shape; only
+                                              # gains an agent_utils/status.py-touching test if that
+                                              # verification fails
 ```
 
 **Structure Decision**: Single project (Option 1). This mission is entirely internal to the existing `spec-kitty` CLI package — no new top-level directories, no frontend/backend split, no new service boundary.
@@ -88,26 +92,18 @@ tests/
 > `/spec-kitty.tasks` translates these into executable WPs — one concern may become
 > multiple WPs; multiple small concerns may merge into one WP.
 
-### IC-01 — Approved-verdict writer and validator loosening
+### IC-01 — Approved-verdict writer, validator loosening, provenance guard, and commit step (merged; was IC-01+IC-02)
 
-- **Purpose**: Generalize `create_rejected_review_cycle` into a single verdict-aware writer (operator-confirmed shape: generalize, not a new sibling function), loosen `validate_review_artifact`'s hardcoded rejected-only check to accept `approved`, and wire `move-task --to approved`/`--to done` to call the writer whenever the WP's latest artifact is `rejected`.
-- **Relevant requirements**: FR-001, C-002, NFR-001, NFR-002, NFR-003
+- **Purpose**: Generalize `create_rejected_review_cycle` into a single verdict-aware writer (operator-confirmed shape: generalize, not a new sibling function); loosen `validate_review_artifact`'s hardcoded rejected-only check to accept `approved`; wire `move-task --to approved`/`--to done` to call the writer whenever the WP's latest artifact is `rejected`; add the feedback-source provenance guard (path + content identity) that closes #2996(b) and #990 in the same function; and add a commit step (via the existing `commit_artifact` port capability) so every write — both verdicts — is actually committed, not left untracked. **Merged from the original separate IC-01/IC-02 split**: a post-plan squad (planner-priti lens) found both concerns edit the same ~55-line function with a stated sequential dependency, so splitting them bought no independent-reviewability while doubling review overhead.
+- **Relevant requirements**: FR-001, FR-002, C-001, C-002, C-003, NFR-001, NFR-002, NFR-003
 - **Affected surfaces**: `src/specify_cli/review/cycle.py`, `src/specify_cli/review/artifacts.py`, `src/specify_cli/cli/commands/agent/tasks_move_task.py`
-- **Sequencing/depends-on**: none — foundational; IC-02 and IC-03 both build on the generalized writer this concern produces.
-- **Risks**: Existing callers of `create_rejected_review_cycle` must keep working unchanged — a `verdict="rejected"` default parameter preserves current call sites. The commit-target-resolution path this writer runs under (`_mt_resolve_targets` / `_ensure_target_branch_checked_out` in `tasks_move_task.py`/`tasks_shared.py`) does not check out a target branch today ("respects user's current branch" per its own docstring) — Phase 0 research must determine whether this is a pre-existing latent gap the new writer simply inherits (same as the existing rejected-writer) or something that needs hardening before FR-001 ships, and whether IC-03 needs the identical fix.
+- **Sequencing/depends-on**: none — foundational and self-contained. A post-plan squad (architect-alphonso, debugger-debbie lenses, live reproduction) confirmed the commit-target/branch-checkout path (`_ensure_target_branch_checked_out`) needs no hardening beyond adding the missing commit call itself — this concern does not depend on or share risk with IC-02 below.
+- **Risks**: Existing callers of `create_rejected_review_cycle` must keep working unchanged — a `verdict="rejected"` default parameter preserves current call sites. The commit step must use the already-existing, already-tested `commit_artifact` port capability (do not hand-roll a new commit path) — confirmed available but currently unused for this write (`tasks_mark_status.py`/`tasks_map_requirements.py` are its only current callers). Content-based (not just path-based) duplicate detection for the provenance guard must not false-positive on legitimately similar feedback text between independent reviews.
 
-### IC-02 — Feedback-source provenance guard
+### IC-02 — Verify #2646 against the shipped writer; fix only if verification fails (was IC-03; redesigned)
 
-- **Purpose**: Refuse creating a review-cycle artifact whose feedback source is itself — by exact path or by duplicated content (e.g., a renamed copy) — a prior cycle's own artifact for the same WP. Closes #2996(b) and #990 as the identical mechanism in the same function.
-- **Relevant requirements**: FR-002, NFR-001, NFR-002
-- **Affected surfaces**: `src/specify_cli/review/cycle.py` (same function IC-01 generalizes)
-- **Sequencing/depends-on**: IC-01 — shares the same function post-generalization; implement together or immediately after so the guard protects both verdict paths from the start.
-- **Risks**: Content-based (not just path-based) duplicate detection must not false-positive on legitimately similar feedback text between independent reviews — the guard's detection boundary (exact/near-exact prior-cycle content vs. merely similar prose) needs an explicit, testable rule, not a fuzzy heuristic.
-
-### IC-03 — Coord-topology review-artifact authority fix
-
-- **Purpose**: Make the `agent tasks status` stale-verdict scan (`_get_wp_review_verdict`) and the rejection-transition's write agree on one canonical authority per topology, closing #2646 (stale-read) and #2697 (write duplication/split lifecycle mutation) for real.
-- **Relevant requirements**: FR-003, C-001, C-003, NFR-001
-- **Affected surfaces**: `src/specify_cli/agent_utils/status.py`, and whatever coord-commit path in `tasks_move_task.py`/`tasks_shared.py` currently lets a canonical write land on the coordination authority while the PRIMARY-only scan never sees it
-- **Sequencing/depends-on**: IC-01 — both concerns touch commit-target/branch-authority resolution for coord-topology missions; Phase 0 research must determine whether one shared fix serves both or whether they need independently-implemented-but-coordinated fixes, per spec.md's flagged architectural dependency.
-- **Risks**: Highest architectural uncertainty of the three concerns — coord-topology-specific behavior must not regress flat/single-branch missions (spec.md User Story 3, Acceptance Scenario 3). Flagged for a dedicated Phase 0 research task rather than assumed straightforward.
+- **Purpose**: **This is not a design-and-build concern; it is a verify-first concern.** After IC-01 lands, drive a `lanes_with_coord` mission's WP through reject→approve using only the shipped writer and confirm via a checked-in regression test that `agent tasks status`'s stale-verdict scan (`_get_wp_review_verdict`, `agent_utils/status.py`) reports correctly — with zero changes to that module. A post-plan squad found live evidence that #2646's originally-reported coord/primary read-authority split already appears closed by an earlier, separately-merged mission, and that #2646 reproduces today only because IC-01's writer doesn't exist yet. The squad also found this concern's originally-planned mechanism (routing `_get_wp_review_verdict` through `resolve_snapshot_review`/`latest_review_artifact_verdict`) was type-shape broken — `ReviewOverride` carries no `verdict` field, so that reuse does not actually work as described. That design is dropped. #2697 is closed by IC-01's commit step, not by this concern.
+- **Relevant requirements**: FR-003, NFR-001
+- **Affected surfaces**: none, if verification passes (which is the expected, evidence-favored outcome). `src/specify_cli/agent_utils/status.py` plus a new `tests/regression/` fixture, only if verification fails.
+- **Sequencing/depends-on**: none — independent of IC-01's files (`agent_utils/status.py` has no call-site overlap with `review/cycle.py`/`tasks_move_task.py`), safe to implement in a parallel lane, though its regression fixture logically runs *after* IC-01's writer exists to have something real to verify against.
+- **Risks**: Low — this concern's main risk is skipping the verification step and building a fix anyway (the exact fakeable-DoD shape a post-plan squad flagged). The acceptance criterion must be a checked-in, executed regression test result, not a prose assertion that the issue "must be" fixed.

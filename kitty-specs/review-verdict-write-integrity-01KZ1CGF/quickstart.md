@@ -40,16 +40,30 @@ pytest tests/review/test_cycle.py::test_self_referential_feedback_source_is_reje
 # Expect: both PASS (they are RED on main before this mission's fix)
 ```
 
-## FR-003 — Coord-topology authority agreement
+## FR-003 — Verify #2646 closes via FR-001 alone (verify-first, not a redesign)
 
 ```bash
-# In a lanes_with_coord mission, after cycle-2 approval is committed on the coordination authority:
+# After FR-001 has landed — in a lanes_with_coord mission, reject then approve via the shipped writer:
+spec-kitty agent tasks move-task WP01 --to planned --review-feedback-file <feedback>.md --mission <coord-slug>
+spec-kitty agent tasks move-task WP01 --to approved --mission <coord-slug>
 spec-kitty agent tasks status --mission <coord-slug> --json
-# Expect: the WP reports no stale-verdict warning — the scan reads the same authority the write landed on
+# Expect: the WP reports no stale-verdict warning, with ZERO changes to src/specify_cli/agent_utils/status.py
+# This is the verification research.md R3 requires before any status.py fix is considered.
 
-# Flat/single-branch regression (must be unchanged)
+# Flat/single-branch regression (must be unchanged either way)
 spec-kitty agent tasks status --mission <flat-slug> --json
 # Expect: identical behavior to pre-mission baseline
+
+# Only if the coord-topology check above still shows a stale-verdict warning:
+# design and implement a targeted fix against the actual observed mechanism, then re-run this checklist.
+```
+
+## FR-001's commit step (added post-plan)
+
+```bash
+# Immediately after either a rejection or an approval write:
+git -C <repo_root> status --porcelain kitty-specs/<slug>/tasks/<wp-slug>/review-cycle-*.md
+# Expect: no untracked/modified marker — the file is already committed by the writer itself
 ```
 
 ## Full regression surface
