@@ -34,77 +34,95 @@ allocated per computed lane from `lanes.json` at `finalize-tasks`. Completed cha
 
 ## Work Packages
 
-### IC-01 — Charter presence single authority (WP01–WP04, parallel)
+### WP01 — Retire charter/context.py OR-gate → charter.yaml-only presence (IC-01)
 
-- **WP01** — FR-002: retire `charter/context.py:249` `OR charter.md` presence gate → `charter.yaml`-only;
-  confirm FR-001 bundle-constant home (already exists). Prose readers (`:300-302`, `:366-371`) unchanged.
-  Owns `src/charter/context.py` + new test. Deps: none.
-- **WP02** (#3150) — FR-003: split `dashboard/charter_path.py::resolve_project_charter_path` — presence keys
-  `charter.yaml` (survives md-deletion), body still reads `charter.md`. Owns `src/specify_cli/dashboard/charter_path.py`
-  + test. Deps: none.
-- **WP03** — FR-004: `analysis_report.py` hash `charter.yaml`; remove **both** `charter.md` hash entries
-  (`:191` companion + `:192` legacy). Owns `src/specify_cli/analysis_report.py` + test. Deps: none.
-- **WP04** — FR-006: scope the `_status_collectors.py:85-87` legacy `charter.md` gate explicitly + a
-  `charter.md`-only regression test (or remove if unsupported). Owns
-  `src/specify_cli/cli/commands/charter/_status_collectors.py` + test. Deps: none.
+FR-002: retire `charter/context.py:249` `OR charter.md` presence gate → `charter.yaml`-only; confirm FR-001
+bundle-constant home (already exists). Prose readers (`:300-302`, `:366-371`) unchanged.
+- **Depends on**: none. **Prompt**: [tasks/WP01-retire-context-or-gate.md](./tasks/WP01-retire-context-or-gate.md)
 
-### IC-02 — Retrospective policy → charter.yaml governance (WP05–WP06, chain)
+### WP02 — Dashboard presence-probe split (IC-01, #3150)
 
-- **WP05** — FR-005a+b: add `RetrospectiveGovernance` sub-model to `charter/schemas.py` (pure data, no
-  `specify_cli` import); wire emitter (`charter/sync.py::load_governance_config` → `compiler.py::write_compiled_charter`)
-  to populate `governance.retrospective`; **extend `_prune_optional_empties` to omit an empty/None block**
-  (NFR-005 byte-stability, research.md D3). Owns `src/charter/schemas.py`, `src/charter/compiler.py`,
-  `src/charter/sync.py` + tests. Deps: none.
-- **WP06** — FR-005c: `retrospective/{policy,mode,gate}.py` resolve **yaml-first** (precedence) with
-  `charter.md` frontmatter as overridden secondary; collapse the 3 `_CHARTER_REL` to one shared definition.
-  Owns `src/specify_cli/retrospective/{policy,mode,gate}.py` + tests. Deps: **WP05**.
+FR-003: split `dashboard/charter_path.py::resolve_project_charter_path` — presence keys `charter.yaml`
+(survives md-deletion), body still reads `charter.md`.
+- **Depends on**: none. **Prompt**: [tasks/WP02-dashboard-presence-probe-split.md](./tasks/WP02-dashboard-presence-probe-split.md)
 
-### IC-03 — meta.json fail-closed single authority (WP07–WP09; #3140)
+### WP03 — analysis_report hashes charter.yaml (IC-01)
 
-- **WP07** — FR-007: emit the **caller census** artifact (`notes/meta-load-census.md`; disambiguate the TWO
-  `load_meta` defs — `mission_metadata.py:275` vs `task_utils/support.py:599`, research.md D4); publish ONE
-  public `load_meta_fail_closed` reusing `core/paths` (import stays function-local); route the
-  `mission_runtime`/`runtime` callers so the **two red `test_mission_status_aggregate` fail-closed tests go
-  green**. Owns `src/specify_cli/core/paths.py`, `src/specify_cli/mission_metadata.py`,
-  `src/mission_runtime/lifecycle_phase.py`, `notes/meta-load-census.md` + tests. Deps: none.
-- **WP08** — FR-007: route the census's unwrapped/divergent callers, **batch A** (coordination + migration +
-  audit + status). Deps: **WP07**.
-- **WP09** — FR-007: route the census's unwrapped/divergent callers, **batch B** (merge + dashboard + cli +
-  doc_analysis + tracker + acceptance). Deps: **WP07**. NFR-003 full-census contract test lands with WP09.
+FR-004: `analysis_report.py` hash `charter.yaml`; remove **both** `charter.md` hash entries (`:191` companion
++ `:192` legacy).
+- **Depends on**: none. **Prompt**: [tasks/WP03-analysis-report-hash-yaml.md](./tasks/WP03-analysis-report-hash-yaml.md)
 
-### IC-04 — Layer edge + durability gates (WP10, WP11)
+### WP04 — Scope the status-collector legacy charter.md gate (IC-01)
 
-- **WP10** — FR-008: delete `synthesize_pipeline.py:68` `import specify_cli` (`importlib.metadata` only) + ship
-  a **non-vacuous AST-walk** charter→specify_cli import gate (pytestarch is green with the edge present;
-  self-mutation proof). Owns `src/charter/synthesizer/synthesize_pipeline.py`,
-  `tests/architectural/test_charter_no_specify_cli_import.py`. Deps: none.
-- **WP11** (SINK — LAST) — FR-016: AST path-literal authority gate banning inline
-  `.kittify/charter/charter.{yaml,md}` builders outside `charter/bundle.py` + new `charter.md` presence gates;
-  seed the **frozen shrink-only allowlist** from a full AST census (residue exists at `invocation/empty_charter.py`,
-  `charter_runtime/lint/…`, `doctrine/versioning.py`, `doctrine/spdd_reasons/activation.py` — research.md D6;
-  decide the `src/doctrine/**` scope). Owns `tests/architectural/test_charter_path_literal_authority.py` +
-  its allowlist. Deps: **WP01, WP02, WP03, WP06**.
+FR-006: scope the `_status_collectors.py:85-87` legacy `charter.md` gate explicitly + a `charter.md`-only
+regression test (or remove if unsupported).
+- **Depends on**: none. **Prompt**: [tasks/WP04-status-collector-legacy-gate-scope.md](./tasks/WP04-status-collector-legacy-gate-scope.md)
 
-### IC-05 — Wheel packaging groundwork + charter-wheel ADR (WP12, WP13)
+### WP05 — RetrospectiveGovernance schema + emitter (IC-02)
 
-- **WP12** — FR-009 + FR-010: mint `src/kernel/pyproject.toml` (`spec-kitty-kernel`, zero first-party deps);
-  fix `src/doctrine/pyproject.toml` (add `spec-kitty-kernel` dep + hatchling build-hook carrying the
-  repo-root sibling `packs/`, research.md D7); **execute a real `hatch build` and record the wheel contents**
-  in research.md §D7; ship a non-vacuous closure test. **No cutover** (C-002 — root wheel unchanged). Owns
-  `src/kernel/pyproject.toml`, `src/doctrine/pyproject.toml`, `src/doctrine/hatch_build.py`,
-  `tests/architectural/test_doctrine_wheel_closure.py`, `research.md` (spike result). Deps: none.
-- **WP13** — FR-011: charter-wheel assessment + ADR draft (extractable-in-principle; kernel→doctrine→charter
-  no-partial sequencing; extends `2026-04-25-1`; deferred-issue list). Owns `docs/adr/3.x/<new>-charter-wheel-assessment.md`.
-  Deps: **WP10** (soft — "zero entanglement" claim).
+FR-005a+b: add `RetrospectiveGovernance` sub-model to `charter/schemas.py` (pure data, no `specify_cli`
+import); wire emitter to populate `governance.retrospective`; extend `_prune_optional_empties` to omit an
+empty/None block (NFR-005 byte-stability, research.md D3).
+- **Depends on**: none. **Prompt**: [tasks/WP05-retrospective-governance-schema-emitter.md](./tasks/WP05-retrospective-governance-schema-emitter.md)
 
-### IC-06 — CI hygiene + docs + investigation (WP14)
+### WP06 — Retrospective yaml-first resolver (IC-02)
 
-- **WP14** — FR-012 (#3149 add `cli/commands/charter/**` to `doctrine-charter-tests.yml`), FR-013 (#3107
-  repoint **both** parity fixtures + regen `docs/api/{cli-commands,agent-subcommands}.md`; assert the test RAN
-  GREEN), FR-014 (#3102 closeout in PR body), FR-015 (timeboxed investigate #2831/#2992; **default
-  defer-with-reason**, fold only on proven shared root cause). Owns `.github/workflows/doctrine-charter-tests.yml`,
-  `tests/architectural/test_docs_cli_reference_parity.py`, `docs/api/cli-commands.md`,
-  `docs/api/agent-subcommands.md`. Deps: none.
+FR-005c: `retrospective/{policy,mode,gate}.py` resolve **yaml-first** (precedence) with `charter.md`
+frontmatter as overridden secondary; collapse the 3 `_CHARTER_REL` to one shared definition.
+- **Depends on**: WP05. **Prompt**: [tasks/WP06-retrospective-yaml-first-resolver.md](./tasks/WP06-retrospective-yaml-first-resolver.md)
+
+### WP07 — meta.json fail-closed authority + caller census (IC-03, #3140)
+
+FR-007: emit the caller census (`notes/meta-load-census.md`; disambiguate the TWO `load_meta` defs, D4);
+publish ONE public `load_meta_fail_closed` reusing `core/paths` (import stays function-local); route the
+`mission_runtime`/`runtime` callers so the two red `test_mission_status_aggregate` tests go green.
+- **Depends on**: none. **Prompt**: [tasks/WP07-meta-fail-closed-authority-census.md](./tasks/WP07-meta-fail-closed-authority-census.md)
+
+### WP08 — Route meta callers batch A (IC-03)
+
+FR-007: route the census's unwrapped/divergent callers, batch A (coordination + migration + audit + status).
+- **Depends on**: WP07. **Prompt**: [tasks/WP08-meta-fail-closed-route-batch-a.md](./tasks/WP08-meta-fail-closed-route-batch-a.md)
+
+### WP09 — Route meta callers batch B + full-census contract (IC-03)
+
+FR-007: route the census's unwrapped/divergent callers, batch B (merge + dashboard + cli + doc_analysis +
+tracker + acceptance); NFR-003 full-census contract test lands here.
+- **Depends on**: WP07. **Prompt**: [tasks/WP09-meta-fail-closed-route-batch-b.md](./tasks/WP09-meta-fail-closed-route-batch-b.md)
+
+### WP10 — Delete layer edge + AST charter-import gate (IC-04)
+
+FR-008: delete `synthesize_pipeline.py:68` `import specify_cli` (`importlib.metadata` only) + a non-vacuous
+AST-walk charter→specify_cli import gate (pytestarch is green with the edge present; self-mutation proof).
+- **Depends on**: none. **Prompt**: [tasks/WP10-charter-import-layer-gate.md](./tasks/WP10-charter-import-layer-gate.md)
+
+### WP11 — Charter path-literal authority gate (IC-04, SINK)
+
+FR-016: AST path-literal authority gate banning inline `.kittify/charter/charter.{yaml,md}` builders outside
+`charter/bundle.py` + new `charter.md` presence gates; seed the frozen shrink-only allowlist from a full AST
+census (residue at `invocation/empty_charter.py`, `charter_runtime/lint/…`, `doctrine/versioning.py`,
+`doctrine/spdd_reasons/activation.py`, D6; decide the `src/doctrine/**` scope). **Lands last.**
+- **Depends on**: WP01, WP02, WP03, WP06. **Prompt**: [tasks/WP11-charter-path-literal-authority-gate.md](./tasks/WP11-charter-path-literal-authority-gate.md)
+
+### WP12 — Wheel packaging groundwork (IC-05)
+
+FR-009 + FR-010: mint `src/kernel/pyproject.toml` (`spec-kitty-kernel`, zero first-party deps); fix
+`src/doctrine/pyproject.toml` (add `spec-kitty-kernel` dep + hatchling build-hook carrying the repo-root
+sibling `packs/`, D7); execute a real `hatch build` recorded in research.md §D7; non-vacuous closure test.
+**No cutover** (C-002 — root wheel unchanged).
+- **Depends on**: none. **Prompt**: [tasks/WP12-wheel-packaging-groundwork.md](./tasks/WP12-wheel-packaging-groundwork.md)
+
+### WP13 — Charter-wheel assessment + ADR (IC-05)
+
+FR-011: charter-wheel assessment + ADR draft (extractable-in-principle; kernel→doctrine→charter no-partial
+sequencing; extends `2026-04-25-1`; deferred-issue list).
+- **Depends on**: WP10 (soft). **Prompt**: [tasks/WP13-charter-wheel-assessment-adr.md](./tasks/WP13-charter-wheel-assessment-adr.md)
+
+### WP14 — CI hygiene + parity gate + docs (IC-06, #3149/#3107/#3102)
+
+FR-012 (#3149 add `cli/commands/charter/**` to `doctrine-charter-tests.yml`), FR-013 (#3107 repoint **both**
+parity fixtures + regen `docs/api/{cli-commands,agent-subcommands}.md`; assert the test RAN GREEN), FR-014
+(#3102 closeout in PR body), FR-015 (timeboxed investigate #2831/#2992; default defer-with-reason).
+- **Depends on**: none. **Prompt**: [tasks/WP14-ci-hygiene-parity-docs.md](./tasks/WP14-ci-hygiene-parity-docs.md)
 
 ## ATDD red test per WP (charter C-011 — committed failing-first)
 
