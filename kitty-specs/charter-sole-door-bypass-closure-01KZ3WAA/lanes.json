@@ -1,0 +1,202 @@
+{
+  "version": 1,
+  "mission_slug": "charter-sole-door-bypass-closure-01KZ3WAA",
+  "mission_id": "01KZ3WAAFPWQAG3R21P1RY0M6R",
+  "mission_branch": "kitty/mission-charter-sole-door-bypass-closure-01KZ3WAA",
+  "target_branch": "feat/charter-sole-door-bypass-closure",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "src/charter/doctrine_service_builder.py",
+        "src/charter/resolver.py",
+        "src/specify_cli/charter_runtime/lint/checks/org_layer.py",
+        "src/specify_cli/cli/commands/charter/generate.py",
+        "src/specify_cli/doctrine_service_factory.py",
+        "tests/charter/test_doctrine_service_builder_unification.py",
+        "tests/charter/test_doctrine_service_lineage_accessor.py"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "src/charter/profile_resolution.py",
+        "src/runtime/next/runtime_bridge_io.py",
+        "src/specify_cli/cli/commands/agent/tasks_status_cmd.py",
+        "src/specify_cli/tool_surface/profiles/projection.py",
+        "tests/perf/test_tasks_status_baseline.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "dashboard",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "src/charter/compiler.py",
+        "src/specify_cli/cli/commands/_doctrine_asset.py",
+        "src/specify_cli/cli/commands/_doctrine_collect.py",
+        "tests/charter/test_doctrine_service_unfiltered_mode.py"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-d",
+      "wp_ids": [
+        "WP04"
+      ],
+      "write_scope": [
+        "src/specify_cli/invocation/org_profiles.py",
+        "src/specify_cli/invocation/registry.py",
+        "tests/specify_cli/invocation/test_no_inner_reacharound.py"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-f",
+      "wp_ids": [
+        "WP06"
+      ],
+      "write_scope": [
+        "src/charter/mission_type_profile_repository.py",
+        "src/specify_cli/runtime/home.py",
+        "tests/charter/test_missions_root_authority.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-h",
+      "wp_ids": [
+        "WP08"
+      ],
+      "write_scope": [
+        "src/charter/mission_type_profiles.py",
+        "tests/charter/test_mission_type_activation_gating.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-planning",
+      "wp_ids": [
+        "WP10"
+      ],
+      "write_scope": [
+        "docs/plans/charter-sole-door-deferred-issues.md"
+      ],
+      "predicted_surfaces": [
+        "planning"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-e",
+      "wp_ids": [
+        "WP05"
+      ],
+      "write_scope": [
+        "src/charter/template_resolver.py",
+        "src/specify_cli/runtime/resolver.py",
+        "tests/charter/test_resolver_tier_axis_via_factory.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-g",
+      "wp_ids": [
+        "WP07"
+      ],
+      "write_scope": [
+        "tests/charter/test_resolver_activation_gating.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-e"
+      ],
+      "parallel_group": 2
+    },
+    {
+      "lane_id": "lane-i",
+      "wp_ids": [
+        "WP09"
+      ],
+      "write_scope": [
+        "tests/architectural/test_charter_sole_door_agent_profile_repository.py",
+        "tests/architectural/test_charter_sole_door_doctrine_service.py",
+        "tests/architectural/test_charter_sole_door_hardcoded_paths.py",
+        "tests/architectural/test_charter_sole_door_inner_reacharound.py",
+        "tests/architectural/test_charter_sole_door_resolver_imports.py"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [
+        "lane-a",
+        "lane-b",
+        "lane-c",
+        "lane-d",
+        "lane-e",
+        "lane-f",
+        "lane-g",
+        "lane-h"
+      ],
+      "parallel_group": 3
+    }
+  ],
+  "computed_at": "2026-08-03T14:24:21.441960+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [
+    "WP10"
+  ],
+  "planning_commit_sha": "2609079fae665270509feced07c25992998ef023"
+}
