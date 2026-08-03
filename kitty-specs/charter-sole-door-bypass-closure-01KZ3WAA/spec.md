@@ -20,6 +20,15 @@ it (a "runtime→charter→doctrine boundary ratchet"). This is the G1 done-bar 
 *through* the charter — charter as the sole door. This is a *no-bypass* condition: any path that reaches
 assets around the charter is a second seam that leaks internals and forces a *second* break later."
 
+*Revised at planning time*: a Phase 0 research pass corrected several of the pre-spec squad's counts — two
+of the originally-flagged sites turned out to access a legitimately separate, out-of-scope directory
+(`.kittify/profiles`, C-006); the "10 kinds" gating turned out to split into 9 mechanical kinds plus one
+structurally different `mission-type` token needing a different repository; the "2 hardcoded paths" turned
+out to be 3, converging on a promoted authority rather than on `pack_paths` (deferred to `#3091`); and a
+real single-canonical-authority violation (two divergent builder functions) was found and folded in as new
+scope. Each user story below states its planning-time revision inline rather than leaving the original,
+now-superseded framing standing.
+
 A pre-spec research squad enumerated the concrete bypass list (this spec's FR anchors), extracted the
 established "make X the sole door" pattern from `charter-pack-usage-journey-01KYWWTF`, extracted the
 non-vacuous-gate idiom from `doctrine-charter-split-unification-01KZ0SRB` (WP10/WP11), and assessed five
@@ -29,26 +38,45 @@ but a different code surface, violation class, or track (import-direction ratche
 shippability, doctrine-tree relocation, pack extraction) than access-path bypass closure. They stay
 deferred as their own missions (C-003).
 
-### User Story 1 — Direct repository/service construction goes through the factory, no exceptions (Priority: P1)
+### User Story 1 — Direct repository/service construction goes through the factory, no exceptions — except the legacy profiles directory (Priority: P1)
 
-Seven call sites construct `AgentProfileRepository(...)` directly, and six construct the raw
-`doctrine.service.DoctrineService(...)` directly, bypassing `charter.resolver.DoctrineService` entirely.
-Two of the `AgentProfileRepository` sites (`src/specify_cli/cli/commands/agent/tasks_status_cmd.py:712,823`,
-dashboard status icons) carry code comments explicitly justifying the bypass as avoiding a
-"runtime→charter→doctrine boundary ratchet"; `src/specify_cli/cli/commands/profiles_cmd.py:83` is documented
-as a deliberately-ungated CLI display surface. Per operator decision, this mission does **not** grandfather
-these as exceptions — it eliminates every site, which means first understanding and resolving whatever
-concern each comment names (e.g., a lazy-construction, caching, or import-timing reason), not just deleting
-the comment and routing through the factory blindly.
+Five of the seven originally-flagged `AgentProfileRepository(...)` sites, plus six raw
+`doctrine.service.DoctrineService(...)` construction sites, bypass `charter.resolver.DoctrineService`
+entirely and are eliminated by this mission. **Two of the seven are reclassified, not eliminated**, per a
+planning-phase finding: `src/specify_cli/invocation/registry.py:48` and
+`src/specify_cli/cli/commands/profiles_cmd.py:83` construct `AgentProfileRepository` against
+`.kittify/profiles` — a **local-override directory outside the doctrine activation model by design**, not a
+doctrine-asset access path. Both sites already call `charter.resolver.DoctrineService` separately, correctly,
+for their doctrine-layer data; the `.kittify/profiles` construction is a legitimately different concern
+slated for its own future rework and is explicitly **out of scope** here — do not route it through the
+factory (operator decision).
 
-**Why this priority**: this is the largest concrete bypass count (13 of ~20 sites) and the one with the most
-"this bypass exists for a stated reason" risk — get it wrong and either a regression ships (the avoided
-ratchet reappears) or the "no exceptions" decision quietly regresses into a new allowlist.
+Two of the five remaining `AgentProfileRepository` sites
+(`src/specify_cli/cli/commands/agent/tasks_status_cmd.py:712,823`, dashboard status icons) carry code
+comments explicitly justifying the bypass as avoiding a "runtime→charter→doctrine boundary ratchet". Per
+operator decision, this mission does **not** grandfather these as exceptions — it eliminates every one of
+the five, which means first understanding and resolving whatever concern each comment names (e.g., a
+lazy-construction, caching, or import-timing reason), not just deleting the comment and routing through the
+factory blindly.
+
+This user story also folds in a **planning-phase discovery**: `specify_cli.doctrine_service_factory.
+build_activation_aware_doctrine_service` and `charter.doctrine_service_builder.
+_build_activation_aware_doctrine_service` — the two functions this mission treats as the sanctioned
+construction path — are themselves **not behaviourally identical** (divergent `active_languages` handling;
+divergent `org_roots` defaulting). Left alone, "route through the factory" would still resolve to one of two
+silently-different catalogs depending on which builder a caller happens to use — a live violation of C-001
+discovered as a byproduct of this mission's own work, and domain-matched enough to fold in rather than defer.
+
+**Why this priority**: this is the largest concrete bypass count (11 of ~18 in-scope sites, after the
+`.kittify/profiles` reclassification) and carries the most "this bypass exists for a stated reason" risk —
+get it wrong and either a regression ships (the avoided ratchet reappears) or the "no exceptions" decision
+quietly regresses into a new allowlist.
 
 **Independent Test**: grep `src/` for `AgentProfileRepository(` and `DoctrineService(` outside
-`src/charter/resolver.py` and its two builder functions
-(`specify_cli.doctrine_service_factory.build_activation_aware_doctrine_service`,
-`charter.doctrine_service_builder._build_activation_aware_doctrine_service`) — zero matches.
+`src/charter/resolver.py`, its two (now-unified) builder call sites, and the two explicitly-excluded
+`.kittify/profiles` sites — zero matches. A second test constructs the unified builder twice with the same
+`repo_root` from both its old call sites and asserts identical output (proving the divergence is closed, not
+just hidden).
 
 **Acceptance Scenarios**:
 
@@ -56,12 +84,17 @@ ratchet reappears) or the "no exceptions" decision quietly regresses into a new 
    profile, **Then** it resolves through `charter.resolver.DoctrineService`, and the concern the removed
    comment named (the boundary ratchet) is proven not to reappear — either because it was never a real risk
    for this call shape, or because the underlying cause (e.g. eager construction cost) is fixed.
-2. **Given** `profiles_cmd.py`'s CLI display surface, **When** it lists agent profiles, **Then** it resolves
-   through the factory and still displays every profile a raw, ungated read would have shown (a display
-   surface must not silently narrow what it shows as a side effect of gating).
-3. **Given** `src/charter/compiler.py:802` and the four `_doctrine_collect.py` sites, **When** they read
+2. **Given** `src/charter/compiler.py:802` and the four `_doctrine_collect.py` sites, **When** they read
    `.agent_profiles` / `.glossary_packs` from a raw `DoctrineService`, **Then** they read the same data
-   through `charter.resolver.DoctrineService` instead.
+   through `charter.resolver.DoctrineService`; the four `_doctrine_collect.py` diagnostic sites use the
+   factory's explicit unfiltered mode (`pack_context=None`) so doctor/health output is not silently narrowed
+   by activation state.
+3. **Given** `registry.py:48` and `profiles_cmd.py:83`, **When** they construct `AgentProfileRepository`
+   against `.kittify/profiles`, **Then** that specific construction call is left untouched — only their
+   separate, already-correct doctrine-layer factory calls are in scope.
+4. **Given** the two divergent builder functions, **When** a caller invokes either one with the same
+   `repo_root`, **Then** both now return the same catalog (unified `active_languages` and `org_roots`
+   handling) — there is exactly one construction behaviour, not two call paths that happen to look similar.
 
 ---
 
@@ -71,13 +104,25 @@ ratchet reappears) or the "no exceptions" decision quietly regresses into a new 
 GLOBAL_MISSION, GLOBAL, PACKAGE_DEFAULT), and `resolve_mission` duplicates four of those tiers again for
 mission-type resolution. Neither routes through the charter factory; `charter.template_resolver.
 CharterTemplateResolver` calls the raw resolver directly. This axis has no activation concept at all today.
+`_resolve_asset`/`resolve_mission` **stay in `doctrine/resolver.py`** — that module deliberately lives there
+so the sanctioned `charter → doctrine` import direction can reach it; the fix adds resolution methods to
+`charter.resolver.DoctrineService` itself (mirroring `CharterTemplateResolver`'s current public surface) that
+internally call into `doctrine/resolver.py`, rather than moving the tier logic or inventing a second
+charter-layer resolver object (C-001).
+
+A planning-phase sweep for other direct `doctrine.resolver` importers found two more in-scope sites beyond
+the original FR-003 anchor, both already inside `src/charter/**` but still bypassing the to-be-added factory
+methods: `src/charter/resolution.py` (a facade re-export consumed by `specify_cli/runtime/resolver.py`) and
+`src/charter/context_renderers/template_include.py` (a lazy `ResolutionTier` import). Both fold into FR-003's
+scope. (`specify_cli/runtime/resolver.py`'s own tier-1-through-4 reimplementation is a separate semantic-drift
+risk — noted in research.md — but is not a factory bypass and is out of this mission's scope.)
 
 **Why this priority**: it is a whole resolution axis, not a single call site — every template/command
 render in the product currently bypasses the sole door.
 
-**Independent Test**: `CharterTemplateResolver` and any other consumer of `doctrine/resolver.py`'s tier
-functions reach them only via the charter factory; a direct import of `doctrine.resolver` from outside
-`src/charter/**` is the new bypass-door signature this mission eliminates.
+**Independent Test**: `CharterTemplateResolver`, `charter/resolution.py`, and `template_include.py` reach
+`doctrine/resolver.py`'s tier functions only via `charter.resolver.DoctrineService`; a direct import of
+`doctrine.resolver` from outside `src/charter/**` is the new bypass-door signature this mission eliminates.
 
 **Acceptance Scenarios**:
 
@@ -90,27 +135,38 @@ functions reach them only via the charter factory; a direct import of `doctrine.
 
 ---
 
-### User Story 3 — Hardcoded source-tree paths resolve through the canonical path authority (Priority: P1)
+### User Story 3 — Duplicate hardcoded missions-root paths consolidate onto one promoted authority (Priority: P1)
 
-Two sites hardcode a doctrine-asset root instead of using `doctrine.pack_paths.built_in_dir`:
+**Revised at planning time**: the original framing (retarget both hardcodes onto
+`doctrine.pack_paths.built_in_dir`) is **unsatisfiable as specified** — `pack_paths` has no `missions/`
+content directory at all; that only exists after the deferred `#3091` relocation (C-003). Planning research
+also found a **third** independent hardcode of the same missions-root, bringing the real count to three:
 `src/charter/mission_type_profile_repository.py:66::builtin_missions_root()`
-(`Path(__file__).resolve().parents[1]/"doctrine"/"missions"`) and
-`src/specify_cli/runtime/home.py:107-108`'s `dev_roots` fallback tuple.
+(`Path(__file__).resolve().parents[1]/"doctrine"/"missions"`), `src/specify_cli/runtime/home.py:107-108`'s
+`dev_roots` fallback tuple, and — already correctly implemented —
+`src/doctrine/missions/repository.py:98::MissionTemplateRepository.default_missions_root()`, which resolves
+the same root via `importlib.resources` (wheel-safe, with a documented fallback). This mission **promotes
+`default_missions_root()` as the one shared authority** and retargets the other two hardcodes onto it — a
+duplication fix achievable now, distinct from the `pack_paths` convergence that `#3091` will deliver later.
 
 **Why this priority**: a hardcoded path is a silent, hard-to-grep bypass that survives even after every
-repository-construction site is fixed — and it is exactly the kind of thing `#3091`'s eventual
-`missions/` → `packs/built-in` relocation would silently break if left in place.
+repository-construction site is fixed — and three independent copies of the same root is exactly the
+single-canonical-authority violation C-001 exists to close, even before `#3091` lands.
 
-**Independent Test**: neither file contains a literal `Path(__file__)`-relative doctrine-asset-root
-construction; both resolve through `doctrine.pack_paths`.
+**Independent Test**: neither `builtin_missions_root()` nor `runtime/home.py`'s `dev_roots` contains its own
+literal `Path(__file__)`-relative missions-root construction; both call
+`MissionTemplateRepository.default_missions_root()`.
 
 **Acceptance Scenarios**:
 
-1. **Given** a standard install, **When** `builtin_missions_root()` is called, **Then** it returns the same
-   path `doctrine.pack_paths.built_in_dir` would resolve, proven by an equality regression test (not just
-   "still returns a path").
-2. **Given** a dev checkout, **When** `runtime/home.py` resolves its dev-root fallback, **Then** it uses the
-   canonical resolver instead of the duplicated literal tuple.
+1. **Given** a standard install, **When** `builtin_missions_root()` is called, **Then** it returns exactly
+   `MissionTemplateRepository.default_missions_root()`'s output, proven by an equality regression test (not
+   just "still returns a path").
+2. **Given** a dev checkout, **When** `runtime/home.py` resolves its dev-root fallback, **Then** it calls the
+   same promoted authority instead of its own duplicated literal tuple.
+3. **Given** this mission's diff, **When** it is reviewed against `#3091`, **Then** the PR description states
+   explicitly that full convergence onto `doctrine.pack_paths.built_in_dir` still requires the `#3091`
+   relocation and is not claimed here (NFR-004).
 
 ---
 
@@ -123,23 +179,43 @@ Per operator decision, this mission extends activation-gating to the remaining 7
 token), so "sole door" and "gated" are not two different claims — routing every call site through the
 factory (User Stories 1-3) would otherwise still leak ungated data for 7 of 10 kinds.
 
+**Revised at planning time — two different shapes of work, not one uniform one.** Six of the seven kinds
+(`directive`, `tactic`, `styleguide`, `toolguide`, `mission_step_contract`, `glossary_pack`) are mechanical:
+`PackContext` already carries a three-state `activated_<kind>` field for each, and `doctrine.service.
+DoctrineService` already exposes a matching raw property — the fix copies the existing `paradigms`/
+`procedures`/`agent_profiles` property pattern six times. The **`mission-type` token is structurally
+different** and does not fit that pattern: its `PackContext.activated_mission_types` field is a plain
+`frozenset[str]` (never `None` — the catalog-default collapse already happens at `PackContext` construction
+time, so the three-state semantics don't apply to it), and `doctrine.service.DoctrineService` has **no
+`mission_types` property at all** — mission-type resolution lives entirely in a separate repository,
+`charter.mission_type_profile_repository.MissionTypeProfileRepository` /
+`charter.mission_type_profiles.resolve_mission_type_context()`. Per operator decision (real 10/10 coverage,
+not a 9/10 carve-out), this mission adds equivalent activation filtering **to that repository**, not to
+`charter.resolver.DoctrineService` — a genuinely different, non-mechanical change from the other 9 kinds.
+
 **Why this priority**: without this, User Stories 1-3 make the factory the sole *path* without making it a
 real *gate* for most of what travels through that path — the "3 of 10 kinds" gap is the other half of the
 G1 done-bar, not a separate concern.
 
-**Independent Test**: for each of the 7 currently-ungated kinds, a project with that pack tier deactivated
-returns a filtered (non-empty-catalog-default or explicitly-empty, per the three-state semantics below)
-result from the factory property, not the raw unfiltered catalog.
+**Independent Test**: for each of the 6 mechanical kinds, a project with that pack tier deactivated returns
+a filtered (non-empty-catalog-default or explicitly-empty, per the three-state semantics below) result from
+the factory property, not the raw unfiltered catalog. For `mission-type`, a project with a subset of
+mission-types activated returns only that subset from `MissionTypeProfileRepository`, not the full built-in
+set.
 
 **Acceptance Scenarios**:
 
 1. **Given** a bare project with no activated packs, **When** the factory resolves a previously-ungated
-   kind (e.g. `directives`), **Then** it returns the same three-state semantics already proven for
+   mechanical kind (e.g. `directives`), **Then** it returns the same three-state semantics already proven for
    `directives` resolution elsewhere in the codebase (`None` → catalog default; `frozenset()` → explicit
    opt-out, empty; `{ids}` → filtered) — not a naive `sorted(activated or frozenset())` regression that
    silently empties a bare project's default catalog.
 2. **Given** a project with a subset of `glossary_pack`s activated, **When** the factory resolves
    `glossary_packs`, **Then** only the activated subset is returned.
+3. **Given** a project with a subset of mission-types activated, **When** `MissionTypeProfileRepository`
+   resolves the available mission-type set, **Then** it returns only that subset, without regressing a bare
+   project's full built-in default (`research`, `software-dev`, `documentation`, `plan`, etc. still resolve
+   when nothing is explicitly activated).
 
 ---
 
@@ -151,9 +227,9 @@ import.py`) / WP11 (`test_charter_path_literal_authority.py`) precedent from `do
 unification-01KZ0SRB` — except here the operator has chosen a **zero-tolerance frozen baseline**, not a
 shrink-only allowlist, because User Story 1 already rejected keeping any site as a permitted exception.
 
-**Why this priority**: P2, not P1 — it is the durability guarantee on top of User Stories 1-4's actual
-closure, not the closure itself; a mission that closes the doors without a gate still delivers the SC-001
-outcome, just without the anti-regression guarantee.
+**Why this priority**: P2, not P1 — it is the durability guarantee on top of User Stories 1-4's (FR-001-006)
+actual closure, not the closure itself; a mission that closes the doors without a gate still delivers the
+SC-001 outcome, just without the anti-regression guarantee.
 
 **Independent Test**: reintroduce any one of the four closed bypass shapes (a raw `AgentProfileRepository(`
 construction, a raw `DoctrineService(` construction, a direct `doctrine.resolver` import from outside
@@ -190,47 +266,58 @@ precedent).
 
 | ID | Requirement | Status |
 |----|-------------|--------|
-| FR-001 | Eliminate the 7 direct `AgentProfileRepository(...)` construction sites outside `charter.resolver.DoctrineService` and its two builder functions: `src/specify_cli/invocation/registry.py:48`, `src/runtime/next/runtime_bridge_io.py:576`, `src/specify_cli/tool_surface/profiles/projection.py:84`, `src/specify_cli/cli/commands/profiles_cmd.py:83`, `src/specify_cli/cli/commands/agent/tasks_status_cmd.py:712` and `:823`, `src/charter/profile_resolution.py:81`. Per operator decision (no allowlist exceptions): for the two sites whose comments cite avoiding a "runtime→charter→doctrine boundary ratchet," first investigate and resolve the underlying concern (lazy construction, caching, or import-timing) so the site can route through the factory without regressing whatever it was avoiding; a site proven genuinely infeasible is a blocking finding for the operator (C-002), not a silent allowlist entry. | Draft |
-| FR-002 | Eliminate the 6 unwrapped raw `doctrine.service.DoctrineService(...)` construction sites — `src/charter/compiler.py:802`, `src/specify_cli/cli/commands/_doctrine_asset.py:75`, `src/specify_cli/cli/commands/_doctrine_collect.py:191`, `:281`, `:418`, `:826` — routing each through `charter.resolver.DoctrineService` instead of the raw inner service. | Draft |
-| FR-003 | Retarget the 5-tier template/command resolver axis (`src/doctrine/resolver.py::_resolve_asset`, tiers OVERRIDE/LEGACY/GLOBAL_MISSION/GLOBAL/PACKAGE_DEFAULT, ~lines 164-213) and its duplicated tier logic in `resolve_mission` (~lines 284-342) so `charter.template_resolver.CharterTemplateResolver` — and any other consumer — reaches these tiers only through the charter factory, never by importing `doctrine.resolver` directly from outside `src/charter/**`. | Draft |
-| FR-004 | Retarget the two hardcoded source-tree paths onto the canonical path authority: `src/charter/mission_type_profile_repository.py:66::builtin_missions_root()` (currently `Path(__file__).resolve().parents[1]/"doctrine"/"missions"`) onto `doctrine.pack_paths.built_in_dir`; `src/specify_cli/runtime/home.py:107-108`'s hardcoded `dev_roots` fallback tuple onto the same canonical resolver. Ship an equality regression test proving both now resolve identically to the canonical resolver's output, not merely "still return a path." | Draft |
-| FR-005 | Extend `charter.resolver.DoctrineService` (`src/charter/resolver.py:57-139`) to activation-gate the 7 currently-unfiltered kinds — `directive`, `tactic`, `styleguide`, `toolguide`, `mission_step_contract`, `glossary_pack`, and the `mission-type` token — replacing the `__getattr__` unfiltered passthrough (lines 136-139) for those kinds with the same three-state activation-aware filtering (`None`=catalog default / `frozenset()`=explicit empty opt-out / `{ids}`=filtered) already proven for the 3 existing gated kinds. Ship a bare-project regression test per newly-gated kind proving the default catalog is NOT silently emptied (mirrors the `charter-pack-usage-journey` bare-project pin). | Draft |
-| FR-006 | Ship non-vacuous architectural gate(s) (AST-walk or call-site-census style, self-mutation proven, per the WP10 idiom) for each of the four closed bypass categories (FR-001/002/003/004), with a frozen **zero-tolerance** baseline — no shrink-only allowlist, per the operator's "no exceptions" decision (C-002). Extend `tests/architectural/test_org_activation_seam.py` and `tests/architectural/test_layer_rules.py` where their existing coverage is adjacent; do not re-assert what they already prove. | Draft |
-| FR-007 | Record in the PR description, as explicit deferred follow-ons (not silently dropped), that #2986, #3036, #3039, #3091, and #3022 were assessed by a pre-spec research squad and confirmed adjacent-but-separate — each with its one-line reason (different pair/violation-class/track) — so a later reader does not mistake "closed the bypass doors" for "closed those issues too." | Draft |
+| FR-001 | Eliminate 5 of the 7 originally-flagged direct `AgentProfileRepository(...)` construction sites outside `charter.resolver.DoctrineService`: `src/runtime/next/runtime_bridge_io.py:576`, `src/specify_cli/tool_surface/profiles/projection.py:84`, `src/specify_cli/cli/commands/agent/tasks_status_cmd.py:712` and `:823`, `src/charter/profile_resolution.py:81`. **Excluded (planning-phase reclassification):** `src/specify_cli/invocation/registry.py:48` and `src/specify_cli/cli/commands/profiles_cmd.py:83` construct against `.kittify/profiles` (a local-override directory outside the doctrine activation model, slated for separate future rework) — leave untouched. `projection.py:84` needs a new public accessor on the factory for lineage/mutation-capable repository access (read-gated, mutation-capable) since the filtered property alone cannot support `register_overlay()`/`get_ancestors()`. For the two `tasks_status_cmd.py` sites whose comments cite avoiding a "runtime→charter→doctrine boundary ratchet": the concern is confirmed a red herring against the existing gate (`tests/architectural/test_runtime_charter_doctrine_boundary.py` only scans module-level imports; both the old and new construction are function-local) — the real, unmeasured risk is construction cost, covered by NFR-005. | Draft |
+| FR-002 | Eliminate the 6 unwrapped raw `doctrine.service.DoctrineService(...)` construction sites — `src/charter/compiler.py:802`, `src/specify_cli/cli/commands/_doctrine_asset.py:75`, `src/specify_cli/cli/commands/_doctrine_collect.py:191`, `:281`, `:418`, `:826` — routing each through `charter.resolver.DoctrineService` instead of the raw inner service. The four `_doctrine_collect.py` diagnostic sites (profile/glossary-pack health, cross-layer collision detection, provenance lookup) need the **unfiltered, all-layer** view to avoid silently narrowing doctor/health output for deactivated packs; wrap them via the factory's explicit unfiltered mode (`charter.resolver.DoctrineService(inner, pack_context=None)`) rather than the activation-filtered path — same class, same single canonical authority (C-001), documented rationale at each site. | Draft |
+| FR-003 | Retarget the 5-tier template/command resolver axis (`src/doctrine/resolver.py::_resolve_asset`, tiers OVERRIDE/LEGACY/GLOBAL_MISSION/GLOBAL/PACKAGE_DEFAULT, ~lines 164-213) and its duplicated tier logic in `resolve_mission` (~lines 284-342) by adding resolution methods to `charter.resolver.DoctrineService` (mirroring `CharterTemplateResolver`'s current public surface) that call into `doctrine/resolver.py` internally — the tier functions stay in `doctrine/resolver.py` (the sanctioned `charter → doctrine` import direction), only the entry point moves. Retarget `charter.template_resolver.CharterTemplateResolver`, `src/charter/resolution.py` (facade re-export), and `src/charter/context_renderers/template_include.py` (lazy `ResolutionTier` import) — the two additional in-charter sites found during planning — onto the new factory methods, so no consumer outside `src/charter/**` imports `doctrine.resolver` directly. | Draft |
+| FR-004 | Promote `src/doctrine/missions/repository.py:98::MissionTemplateRepository.default_missions_root()` (already correctly `importlib.resources`-based) as the single shared missions-root authority, and retarget the other two hardcodes onto it: `src/charter/mission_type_profile_repository.py:66::builtin_missions_root()` (currently `Path(__file__).resolve().parents[1]/"doctrine"/"missions"`) and `src/specify_cli/runtime/home.py:107-108`'s hardcoded `dev_roots` fallback tuple. Ship an equality regression test proving both now resolve identically to `default_missions_root()`'s output. **Revised scope**: full convergence onto `doctrine.pack_paths.built_in_dir` is deferred to `#3091` (C-003) — `pack_paths` has no `missions/` content directory today; this FR closes the 3-way duplication, not the eventual packs-relocation. | Draft |
+| FR-005 | Extend `charter.resolver.DoctrineService` (`src/charter/resolver.py:57-139`) to activation-gate the 6 mechanical currently-unfiltered kinds — `directive`, `tactic`, `styleguide`, `toolguide`, `mission_step_contract`, `glossary_pack` — replacing the `__getattr__` unfiltered passthrough (lines 136-139) for those kinds with the same three-state activation-aware filtering (`None`=catalog default / `frozenset()`=explicit empty opt-out / `{ids}`=filtered) already proven for the 3 existing gated kinds (`PackContext` already carries a matching `activated_<kind>` field for each; `doctrine.service.DoctrineService` already exposes a matching raw property — this is a mechanical copy of the existing pattern). Ship a bare-project regression test per newly-gated kind proving the default catalog is NOT silently emptied. | Draft |
+| FR-006 | Add equivalent activation filtering for the `mission-type` token to `charter.mission_type_profile_repository.MissionTypeProfileRepository` / `charter.mission_type_profiles.resolve_mission_type_context()` — **not** to `charter.resolver.DoctrineService`, since `doctrine.service.DoctrineService` has no `mission_types` property and `PackContext.activated_mission_types` is not three-state (the catalog-default collapse already happens at `PackContext` construction). This is a structurally different, non-mechanical change from FR-005's 6 kinds; ship a bare-project regression test proving the full built-in mission-type set (`research`, `software-dev`, `documentation`, `plan`, etc.) still resolves when nothing is explicitly activated. | Draft |
+| FR-007 | Ship non-vacuous architectural gate(s) (AST-walk or call-site-census style, self-mutation proven, per the WP10 idiom) for each of the four closed bypass categories (FR-001/002/003/004), with a frozen **zero-tolerance** baseline — no shrink-only allowlist, per the operator's "no exceptions" decision (C-002), and excluding the two reclassified `.kittify/profiles` sites (FR-001) by name so the gate does not falsely flag them. Extend `tests/architectural/test_org_activation_seam.py` and `tests/architectural/test_layer_rules.py` where their existing coverage is adjacent; do not re-assert what they already prove. | Draft |
+| FR-008 | Unify `specify_cli.doctrine_service_factory.build_activation_aware_doctrine_service` and `charter.doctrine_service_builder._build_activation_aware_doctrine_service` into one construction path, resolving their discovered divergence: the `charter` builder passes `active_languages=infer_repo_languages(repo_root)` into the inner service while the `specify_cli` builder omits it entirely, and the `charter` builder requires an explicit `org_roots` argument (defaulting to no org layer) while the `specify_cli` builder always self-resolves org roots. Ship a regression test constructing both former call sites' inputs through the unified path and asserting identical output. | Draft |
+| FR-009 | Record in the PR description, as explicit deferred follow-ons (not silently dropped), that #2986, #3036, #3039, #3091, and #3022 were assessed by a pre-spec research squad and confirmed adjacent-but-separate — each with its one-line reason (different pair/violation-class/track) — so a later reader does not mistake "closed the bypass doors" for "closed those issues too." | Draft |
 
 ### Non-Functional Requirements
 
 | ID | Requirement | Threshold / Measure | Status |
 |----|-------------|---------------------|--------|
-| NFR-001 | Zero raw bypass call sites remain, provably. | `grep -rn` for `AgentProfileRepository(` and `DoctrineService(` across `src/` returns zero matches outside `src/charter/resolver.py` and its two builder functions; a committed architectural test asserts this (not a one-time manual grep). | Draft |
+| NFR-001 | Zero in-scope raw bypass call sites remain, provably. | `grep -rn` for `AgentProfileRepository(` and `DoctrineService(` across `src/` returns zero matches outside `src/charter/resolver.py`, its one unified builder function (FR-008), and the two explicitly-excluded `.kittify/profiles` sites (`registry.py:48`, `profiles_cmd.py:83`, FR-001); a committed architectural test asserts this (not a one-time manual grep). | Draft |
 | NFR-002 | No new lint/type regressions. | `ruff` + `mypy --strict` zero new issues on all changed modules; no new `# noqa` / `# type: ignore` / per-file ignore additions. | Draft |
-| NFR-003 | Every new gate is non-vacuous. | Each gate shipped under FR-006 has a self-mutation test that reintroduces the exact closed bypass shape and asserts the gate fails naming the offending site — proven for all four categories, not a sample. | Draft |
-| NFR-004 | Behaviour change is explicit, not slipped. | CHANGELOG entry (per DIR-009) documents that the factory now activation-gates all 10 kinds (previously 3) — a project that activates a subset of a newly-gated kind's packs will see a narrower result than before this mission; this is named as an intentional behaviour change, not discovered later as a regression. | Draft |
+| NFR-003 | Every new gate is non-vacuous. | Each gate shipped under FR-007 has a self-mutation test that reintroduces the exact closed bypass shape and asserts the gate fails naming the offending site — proven for all four categories, not a sample. | Draft |
+| NFR-004 | Behaviour change is explicit, not slipped. | CHANGELOG entry (per DIR-009) documents: (a) the factory now activation-gates all 10 kinds (previously 3) — a project that activates a subset of a newly-gated kind's packs will see a narrower result than before this mission; (b) the two `.kittify/profiles` sites are explicitly excluded, not silently missed; (c) FR-004's missions-root consolidation does not claim convergence with `doctrine.pack_paths.built_in_dir` — that remains `#3091`'s to deliver. All three named as intentional scope, not discovered later as gaps. | Draft |
 | NFR-005 | No unmeasured performance regression on the sites the "boundary ratchet" comments were guarding. | p95 render latency for `spec-kitty agent tasks status` on a fixture project with 100+ work packages stays within 10% of the pre-mission baseline measured on the same fixture; if it regresses beyond that, the underlying cause named in FR-001 (e.g. eager construction cost) is fixed architecturally (caching, lazy init) rather than accepted. | Draft |
 
 ### Constraints
 
 | ID | Constraint | Status |
 |----|------------|--------|
-| C-001 | **One canonical factory, extended — not a second one invented.** `charter.resolver.DoctrineService` is the single canonical factory every access path in this mission routes through. Reconcile / extend it (governing principle: single canonical authority); do not introduce a parallel wrapper, adapter, or second "activation-aware" factory. | Active |
-| C-002 | **No shrink-only allowlist; zero exceptions.** Per operator decision, every identified bypass site (FR-001-004) must be eliminated outright. A site that cannot be resolved without a proven, unavoidable behaviour change (e.g. a genuine bootstrap/circularity case per the Edge Cases section) is a blocking finding surfaced to the operator during planning or implementation — never a silently added allowlist entry, and never grounds for skipping FR-006's zero-tolerance gate. | Active |
+| C-001 | **One canonical factory, extended — not a second one invented.** `charter.resolver.DoctrineService` is the single canonical factory every in-scope access path in this mission routes through, constructed by exactly one unified builder (FR-008). Reconcile / extend it (governing principle: single canonical authority); do not introduce a parallel wrapper, adapter, or second "activation-aware" factory. | Active |
+| C-002 | **No shrink-only allowlist for in-scope sites; zero exceptions.** Per operator decision, every identified in-scope bypass site (FR-001-006) must be eliminated outright. A site that cannot be resolved without a proven, unavoidable behaviour change (e.g. a genuine bootstrap/circularity case per the Edge Cases section) is a blocking finding surfaced to the operator during planning or implementation — never a silently added allowlist entry, and never grounds for skipping FR-007's zero-tolerance gate. This does not apply to the two `.kittify/profiles` sites (C-006) or the `_doctrine_collect.py` diagnostic sites' explicit unfiltered mode (FR-002) — both are named, reasoned exclusions from the *doctrine-asset* bypass count, not exceptions to it. | Active |
 | C-003 | **Out of scope — confirmed adjacent-but-separate, stays deferred.** #2986 (runtime→doctrine import-ratchet's own function-local-import blind spot, 61 sites/30 files, different pair), #3036 (a doctrine-content-shippability gate contradiction, different domain), #3039 (a test-file reorganisation unrelated to access-path enforcement), #3091 (relocate `src/doctrine/missions/` to `packs/built-in`, packaging track), and #3022 (extract built-in packs into `spec-kitty-packs-open`, packaging/distribution track) are untouched by this mission's diff. The #3101 kernel→doctrine→charter wheel-cutover track (and its ADR, `docs/adr/3.x/2026-08-02-1-charter-wheel-assessment.md`) is likewise untouched. | Active |
 | C-004 | **PRs only; operator merges; coord topology hygiene.** Every folded issue gets an issue-matrix row + tracker comment naming the mission; reviewer ≠ implementer; no direct push to `main`. | Active |
 | C-005 | **Red-main discipline.** Classify any red test against the merge-base before treating it as pre-existing; never green-wash an honest red; file per DIR-013 if a pre-existing failure is newly encountered. | Active |
+| C-006 | **`.kittify/profiles` is out of scope.** `registry.py:48` and `profiles_cmd.py:83`'s construction of `AgentProfileRepository` against `.kittify/profiles` (a local-override directory outside the doctrine activation model) is explicitly excluded per operator decision — that area is slated for separate future rework. Do not route it through the factory; do not fold its rework into this mission. | Active |
 
 ### Key Entities
 
 - **`charter.resolver.DoctrineService`** (`src/charter/resolver.py:57-139`) — the canonical, activation-aware
-  factory this mission makes the *sole* access path; currently gates 3 of 10 kinds.
+  factory this mission makes the *sole* access path for doctrine assets; currently gates 3 of 10 kinds, gains
+  6 more mechanically (FR-005) plus new resolution methods (FR-003) and an unfiltered-diagnostic mode (FR-002).
 - **`doctrine.service.DoctrineService`** — the raw inner service; must never be constructed directly outside
-  the factory and its two builder functions after this mission.
+  the factory and its one unified builder function (FR-008) after this mission.
 - **`ArtifactKind`** (`src/doctrine/artifact_kinds.py:128-139`) — the 10-kind (9 charter-activatable kinds +
-  `mission-type` token) universe the factory must fully gate.
-- **`AgentProfileRepository`** — the profile-loading repository; 7 direct construction sites eliminated.
+  `mission-type` token) universe; 9 are gated via `charter.resolver.DoctrineService`, `mission-type` is gated
+  separately via `MissionTypeProfileRepository` (FR-006).
+- **`MissionTypeProfileRepository`** (`src/charter/mission_type_profile_repository.py`) — the separate
+  repository the `mission-type` token's activation gating lands on, since it has no property on the raw
+  `DoctrineService`.
+- **`AgentProfileRepository`** — the profile-loading repository; 5 of 7 originally-flagged direct
+  construction sites eliminated; 2 (`.kittify/profiles`) explicitly excluded (C-006).
 - **`doctrine.resolver` 5-tier axis** (`_resolve_asset`, `resolve_mission`) — the template/command resolution
-  tiers (OVERRIDE, LEGACY, GLOBAL_MISSION, GLOBAL, PACKAGE_DEFAULT) retargeted through the factory.
-- **`doctrine.pack_paths.built_in_dir`** — the canonical path authority the two hardcoded source-tree paths
-  are retargeted onto.
+  tiers (OVERRIDE, LEGACY, GLOBAL_MISSION, GLOBAL, PACKAGE_DEFAULT); stay in `doctrine/resolver.py`, reached
+  only via new methods on the factory (FR-003).
+- **`MissionTemplateRepository.default_missions_root()`** (`src/doctrine/missions/repository.py:98`) — the
+  promoted single missions-root authority (FR-004); full convergence with `doctrine.pack_paths.built_in_dir`
+  awaits the deferred `#3091`.
 - **The five deferred issues** (#2986, #3036, #3039, #3091, #3022) — explicitly out of scope (C-003).
 
 ## Success Criteria *(mandatory)*
@@ -239,16 +326,23 @@ precedent).
 
 - **SC-001**: Zero unwrapped `doctrine.service.DoctrineService(...)` constructions and zero direct
   `AgentProfileRepository(...)` constructions remain anywhere in `src/` outside `charter.resolver.
-  DoctrineService` and its two builder functions — gate-enforced, not a point-in-time grep.
+  DoctrineService`, its one unified builder function, and the two explicitly-excluded `.kittify/profiles`
+  sites — gate-enforced, not a point-in-time grep.
 - **SC-002**: The 5-tier template/command resolver axis and its `resolve_mission` duplicate are reachable
-  only through the charter factory from outside `src/charter/**`; no other consumer imports
-  `doctrine.resolver` directly.
-- **SC-003**: Both previously-hardcoded source-tree paths resolve identically to `doctrine.pack_paths.
-  built_in_dir`'s output, proven by an equality regression test.
-- **SC-004**: `charter.resolver.DoctrineService` activation-gates all 10 doctrine-artifact kinds (up from 3);
-  a bare project with no activated packs still sees its full built-in default catalog for every kind (no
-  silent emptying regression).
+  only through new methods on the charter factory from outside `src/charter/**`; no other consumer imports
+  `doctrine.resolver` directly, including the two additional in-charter sites found during planning.
+- **SC-003**: The three duplicate missions-root hardcodes consolidate onto one promoted authority
+  (`MissionTemplateRepository.default_missions_root()`), proven by an equality regression test; the PR
+  description states that full convergence with `doctrine.pack_paths.built_in_dir` still awaits `#3091`.
+- **SC-004**: `charter.resolver.DoctrineService` activation-gates all 9 charter-activatable `ArtifactKind`
+  members (up from 3), and `MissionTypeProfileRepository` separately activation-gates the `mission-type`
+  token — real 10/10 coverage across two repositories, not a mechanical 9/10 shortcut; a bare project with no
+  activated packs still sees its full built-in default catalog for every kind (no silent emptying
+  regression).
 - **SC-005**: A non-vacuous, self-mutation-proven architectural gate exists for each of the four bypass
-  categories, with a frozen zero-tolerance baseline (no allowlist entries).
+  categories, with a frozen zero-tolerance baseline (no allowlist entries) that correctly excludes the two
+  `.kittify/profiles` sites and the `_doctrine_collect.py` unfiltered-mode sites by name.
 - **SC-006**: #2986, #3036, #3039, #3091, and #3022 remain untouched by this mission's diff and are named as
   explicit deferred follow-ons in the PR description, each confirmed still open at merge time.
+- **SC-007**: The two divergent builder functions are unified into one; a regression test proves both former
+  call sites' inputs now produce identical output through the single builder.
