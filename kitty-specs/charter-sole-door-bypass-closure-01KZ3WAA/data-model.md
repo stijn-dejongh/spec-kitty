@@ -53,6 +53,20 @@ The unification must pick the *more complete* behaviour on each axis (compute `a
 self-resolve `org_roots`) rather than an arbitrary pick — silently dropping either would be a regression for
 whichever call site previously got the fuller behaviour.
 
+**Sequencing note (post-plan squad)**: the regression test's assertion surface is bounded by what's gated
+when it runs. Before FR-005 lands, only 3 of 9 kinds exist on the factory — the unification proof at that
+point covers those 3 plus the builder kwargs (`active_languages`, `org_roots`). The proof is *extended* to
+all 9 kinds once FR-005's properties exist; it is not one proof written once against a 9-kind surface that
+doesn't exist yet at IC-01 time.
+
+**Also unified (post-plan squad, FR-002/FR-008)**: `org_layer.py:244,275` and `generate.py:56` each
+reimplement the same "build raw `DoctrineService`, then conditionally wrap with `charter.resolver.
+DoctrineService` if `pack_context` is given" pattern inline, rather than calling either named builder.
+`org_layer.py:252-253`'s `except ImportError: pass` silently returns the *unwrapped* `inner` on import
+failure — a fail-open bypass of the entire activation-gating mechanism. All three inline sites collapse onto
+the one unified builder; the fail-open branch becomes fail-closed (the operation fails or raises, it does not
+silently degrade to an unfiltered service).
+
 ## The unfiltered-diagnostic contract (FR-002, R4)
 
 `charter.resolver.DoctrineService(inner, pack_context=None)` is a sanctioned, explicit construction shape for

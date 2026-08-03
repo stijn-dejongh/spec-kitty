@@ -155,6 +155,39 @@ handling: catches only `FileNotFoundError` vs. `doctrine.resolver`'s `(FileNotFo
 Flagged for a future mission; not folded in here (would expand IC-02's blast radius well beyond the named
 FR-003 anchor).
 
+## Post-Plan Squad Findings
+
+A 4-lens adversarial squad (architect-alphonso, reviewer-renata, debugger-debbie, planner-priti — each
+profile-loaded, each independently reading spec.md/plan.md/research.md and, for the highest-stakes claims,
+the actual code and git history) reviewed the plan before `/spec-kitty.tasks`. All four returned **READY
+WITH FIXES**; every HIGH-severity finding was independently verified and folded into spec.md/plan.md/
+data-model.md/contracts/quickstart.md (this section records what was found and where it landed):
+
+| Finding | Lens | Verified how | Folded into |
+|---|---|---|---|
+| 3 more raw `DoctrineService(...)` sites (`org_layer.py:244,275`, `generate.py:56`), one with a fail-open `except ImportError: pass` bug | debugger-debbie | Read the actual files | FR-002, FR-008 |
+| `._inner.agent_profiles` reach-around at `registry.py:64` and `org_profiles.py:117` defeats every gate | reviewer-renata | Read the actual files | FR-010 (new), NFR-001 |
+| NFR-001's text-grep gate can't distinguish the sanctioned `pack_context=None` wrapper from the forbidden raw class (both contain the substring `DoctrineService(`) | reviewer-renata | Read spec.md's own FR-002 vs NFR-001 side by side | NFR-001 (qualname resolution, not text match) |
+| IC-01 (builder unification, FR-008) scheduled before IC-04 (FR-005's 6 new properties) means FR-008's "assert identical output across all 9 properties" can't be written yet | architect-alphonso | Read plan.md's IC-01/IC-04 dependency chain | FR-008, plan.md IC-01 (scoped to 3 kinds now, extended at IC-04) |
+| `charter/resolution.py` and `template_include.py` are type-only imports, not resolution-call bypasses; a real third tier surface (`doctrine.template_catalog`, 5 importers) was missed | architect-alphonso | Read both files' actual import statements and usage | FR-003 (corrected), plan.md IC-02 |
+| `runtime/home.py`'s retarget onto `MissionTemplateRepository` (doctrine-layer) creates the same runtime→doctrine boundary tension `#2986` already tracks | architect-alphonso | Read `test_runtime_charter_doctrine_boundary.py`'s scan scope + `home.py`'s existing import shape | FR-004 (named as an explicit residual risk, not silently different) |
+| `builtin_missions_root()` was already a promoted authority (WP06/#2668) — FR-004 needed to make it a delegate, not a second authority | architect-alphonso | Found the prior-promotion comments in `action_grain.py`/`mission_type_profiles.py` | FR-004 |
+| R5's lineage/mutation accessor left two semantic questions (mutation-leak-through-filter; lineage-crosses-deactivated-parent) unanswered | architect-alphonso | Read `resolver.py:402-413`'s existing precedent | `contracts/charter-doctrine-service-contract.md` (pinned) |
+| Bare-project / mission-type regression assertions were existence/subset checks, fakeable by a partial leak | reviewer-renata | Read the contract files' assertion language | `contracts/*.md`, `data-model.md` (equality/set-equality required) |
+| Self-mutation proofs unconstrained to function-local scope would repeat R3's exact vacuity lesson | reviewer-renata | Cross-checked against R3's own finding | FR-007, NFR-003 |
+| FR-007's "excluding by name" had no defined shape; quickstart used whole-file `grep -v` | reviewer-renata | Read quickstart.md's actual commands | FR-007 (composite-key requirement), quickstart.md |
+| NFR-005's baseline is never scheduled to be captured — "within 10%" is unfalsifiable without one | reviewer-renata + architect-alphonso (convergent) | Read plan.md's IC schedule for a baseline step (none existed) | NFR-005, plan.md IC-00 (new) |
+| quickstart.md's own verification commands already produce false positives today (before any change lands) | debugger-debbie | Ran the commands | quickstart.md |
+| FR-009 (deferred issues) only committed to PR-description prose; precedent mission already carries `issue-matrix.json` rows for 2 of these exact issues | planner-priti | Read the precedent mission's actual `issue-matrix.json` | FR-011 (renumbered, strengthened) |
+
+**Not folded in** (explicitly deferred to tasks-phase WP acceptance criteria, per reviewer-renata's own
+concession that these are appropriately WP-time decisions, not plan-blocking): the exact method names for
+FR-003's new factory methods; the exact test file names throughout (left as "assigned at tasks time" in
+quickstart.md); architect-alphonso's MEDIUM finding on whether `mission-type`'s separate-repository gating
+constitutes a "two doors" seam worth a wording amendment to SC-004 rather than a design change — SC-004
+already states "real 10/10 coverage across two repositories, not a mechanical 9/10 shortcut," which the
+squad's own alternative resolution (amend the wording rather than redesign) is satisfied by.
+
 ### R7 — `profile_resolution.py:81`'s `repo_root is None` branch is a genuine bootstrap case
 
 The module's `repo_root is None` branch is the process-wide cached built-in-only fast path used when there is

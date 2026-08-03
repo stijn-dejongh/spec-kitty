@@ -13,10 +13,12 @@ activated_mission_types` is never `None`:
 The gating point is `charter.mission_type_profile_repository.MissionTypeProfileRepository` /
 `charter.mission_type_profiles.resolve_mission_type_context()` — NOT `charter.resolver.DoctrineService` (see
 the sibling contract file's "Explicitly NOT on this class" section). A bare project (no `mission-type` key
-authored) must still resolve every built-in mission-type (`research`, `software-dev`, `documentation`,
-`plan`, at minimum) — proven by a dedicated regression test, since the default-collapse already happened
-before this repository ever sees the value and a filtering bug here has no three-state safety net to fall
-back on.
+authored) must still resolve every built-in mission-type — proven by a dedicated regression test asserting
+**set-equality against `builtin_mission_type_id_set()`**, not a fakeable subset check (post-plan squad
+correction: "`research`, `software-dev`, `documentation`, `plan`, at minimum" is satisfied even if a fifth
+built-in type silently drops out; the non-fakeable comparand already exists and must be used directly),
+since the default-collapse already happened before this repository ever sees the value and a filtering bug
+here has no three-state safety net to fall back on.
 
 ## Unified builder contract (FR-008)
 

@@ -44,8 +44,31 @@ moved, renamed, or duplicated.
 
 ## Non-regression obligations
 
-- A bare project (no activated packs) must see its full built-in default catalog on every gated property —
-  proven per-kind by a dedicated regression test (FR-005's bare-project pin).
+- A bare project (no activated packs) must see its full built-in default catalog on every gated property.
+  **Non-fakeable assertion shape** (post-plan squad correction — an existence check like `assert svc.
+  directives` is satisfied even if 3 of 40 directives silently leaked away): the test asserts
+  `wrapped.<prop> == unwrapped_inner.<prop>` for a bare `PackContext`, per kind — equality against the raw
+  unwrapped inner service's output, not merely "returns something."
 - `pack_context=None` construction must return the identical catalog a raw, unwrapped
-  `doctrine.service.DoctrineService` would have returned — proven by an equality regression test, since this
-  mode exists specifically to preserve pre-mission diagnostic behaviour.
+  `doctrine.service.DoctrineService` would have returned — proven by the same equality regression shape,
+  since this mode exists specifically to preserve pre-mission diagnostic behaviour.
+
+## Lineage/mutation accessor semantics (pinned — post-plan squad, was previously under-specified)
+
+The new public accessor `charter.resolver.DoctrineService` gains for `projection.py`/`runtime_bridge_io.py`/
+`registry.py`/`org_profiles.py` (FR-001, FR-010) has two semantic questions that do NOT have a default and
+must not be left for tasks-time improvisation:
+
+1. **Does `register_overlay()` of a non-activated profile become readable through the gated `agent_profiles`
+   property afterward?** Pinned answer: **no** — `register_overlay()` mutates the underlying repository's
+   lineage graph; the gated `agent_profiles` property still applies the same three-state activation filter
+   on every read, including reads that follow a mutation. Mutation capability and activation filtering are
+   orthogonal; the accessor does not create a way to read an unfiltered profile through the filtered surface.
+2. **Does `resolve_profile()`'s `specializes_from` traversal cross into a deactivated parent profile?**
+   Pinned answer: **yes, lineage traversal reads through the raw repository** — lineage composition is a
+   below-the-activation-grain operation (it answers "what does this profile inherit from," not "is this
+   profile enabled"), matching the existing precedent at `resolver.py:402-413`'s `resolve_governance_for_
+   profile`, which already reads the raw inner repository for exactly this reason. The accessor returns the
+   raw, lineage-capable repository object directly (not re-wrapped) — callers needing both lineage
+   composition AND activation filtering call the gated property for the filtering decision and the accessor
+   for the composition, as two separate questions, not one merged call.

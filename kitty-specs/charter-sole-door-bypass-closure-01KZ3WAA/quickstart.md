@@ -5,22 +5,39 @@ diff.
 
 ## 1. Zero raw construction outside the factory
 
+**Corrected post-plan squad**: a plain `grep` on the literal text `DoctrineService(` cannot distinguish the
+forbidden raw class from the sanctioned wrapper (`charter.resolver.DoctrineService(inner, pack_context=None)`
+shares the substring), and a whole-file `grep -v` on the two `.kittify/profiles` files would hide a
+genuinely new bypass added elsewhere in the same file. The commands below are a coarse manual sanity check
+only — the real gate (FR-007/NFR-001) resolves each site's bound import via AST, not text. Expect these
+commands to need per-run judgement, not a clean zero:
+
 ```bash
-grep -rn "AgentProfileRepository(" src/ | grep -v "src/charter/resolver.py" \
-  | grep -v "src/charter/doctrine_service_builder.py" | grep -v "src/specify_cli/doctrine_service_factory.py" \
-  | grep -v "src/specify_cli/invocation/registry.py:" | grep -v "src/specify_cli/cli/commands/profiles_cmd.py:"
-grep -rn "DoctrineService(" src/ | grep -v "src/charter/resolver.py" \
+# AgentProfileRepository: real zero-tolerance surface is 2 sites (the .kittify/profiles exclusions,
+# confirmed by reading the match, not by filename)
+grep -rn "AgentProfileRepository(" src/ --include='*.py' | grep -v "src/charter/resolver.py" \
   | grep -v "src/charter/doctrine_service_builder.py" | grep -v "src/specify_cli/doctrine_service_factory.py"
+# Manually confirm every remaining match is registry.py:48 or profiles_cmd.py:83, constructing against
+# .kittify/profiles — any other match is a real regression.
+
+# doctrine.service.DoctrineService: exclude src/doctrine/ (the raw service's own repo construction,
+# not a bypass) and the doc/skill markdown that also matches the literal string
+grep -rn "DoctrineService(" src/ --include='*.py' | grep -v "^src/doctrine/" \
+  | grep -v "src/charter/resolver.py" | grep -v "src/charter/doctrine_service_builder.py" \
+  | grep -v "src/specify_cli/doctrine_service_factory.py"
+# Manually confirm every remaining match is charter.resolver.DoctrineService(..., pack_context=None) — the
+# sanctioned unfiltered-diagnostic mode (FR-002) — not a raw doctrine.service.DoctrineService(...) call.
 ```
-Expected: no output (the two named exclusions are C-006's `.kittify/profiles` sites — confirm they still
-show `AgentProfileRepository(project_dir=repo_root / ".kittify" / "profiles")`, not a doctrine-asset read).
 
 ## 2. No direct `doctrine.resolver` imports outside `src/charter/**`
 
 ```bash
-grep -rln "doctrine\.resolver\|doctrine import resolver" src/ | grep -v "^src/charter/" | grep -v "^src/doctrine/"
+grep -rln "^\s*\(from\|import\) doctrine\.resolver" src/ --include='*.py' | grep -v "^src/charter/" | grep -v "^src/doctrine/"
 ```
-Expected: no output.
+Expected: no output. (The looser pattern used pre-review also matches
+`src/specify_cli/runtime/resolver.py`'s explanatory *comment* about `doctrine.resolver` — R6 explicitly rules
+that file's tier-1-4 reimplementation out of this mission's scope; an import-anchored pattern avoids that
+false positive.)
 
 ## 3. All 9 gated kinds resolve, bare project stays default
 
