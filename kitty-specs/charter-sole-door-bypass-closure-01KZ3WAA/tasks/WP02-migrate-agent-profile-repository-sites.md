@@ -1,7 +1,8 @@
 ---
 work_package_id: WP02
 title: Migrate AgentProfileRepository sites + NFR-005 measurement
-dependencies: []
+dependencies:
+- WP01
 requirement_refs:
 - FR-001
 - NFR-005
@@ -59,22 +60,27 @@ regression on the two sites whose removed "boundary ratchet" comment named a con
 (NFR-005).
 
 **Success criteria**:
-- `runtime_bridge_io.py:576`, `projection.py:84`, `tasks_status_cmd.py:712`, `tasks_status_cmd.py:823`,
-  `charter/profile_resolution.py:81` all route through `charter.resolver.DoctrineService` (or WP01's new
-  accessor where lineage/mutation is needed) instead of constructing `AgentProfileRepository` directly.
+- `runtime_bridge_io.py:576`, `projection.py:84`, `tasks_status_cmd.py:712`, `tasks_status_cmd.py:823` route
+  through `charter.resolver.DoctrineService` (or WP01's `agent_profile_repository` accessor where mutation
+  is needed) instead of constructing `AgentProfileRepository` directly. `charter/profile_resolution.py:81`
+  is confirmed a genuine bootstrap carve-out (T010, corrected scope) and is documented, not migrated.
 - A pre-mission p95 latency baseline for `spec-kitty agent tasks status` is captured and recorded BEFORE
   `tasks_status_cmd.py` is touched; a post-migration measurement is within 10% of it.
 
 ## Context & Constraints
 
-- **Depends on WP01** — the unified builder and the new lineage/mutation accessor must exist first.
+- **Depends on WP01** (declared in frontmatter) — the unified builder and the new
+  `agent_profile_repository` accessor (pinned in WP01's prompt) must exist first. Your worktree starts from
+  WP01's completed lane, so the accessor already exists with the exact name/shape WP01's prompt specifies —
+  use it verbatim, do not re-derive or rename.
 - Read `research.md`'s R3 and R5 sections: the "boundary ratchet" comment is confirmed a red herring against
   the existing import-scanning gate; the real, unmeasured risk is construction cost — that is what T009
   measures.
-- Two of these five sites need the accessor (lineage/mutation), not the plain gated property — check
-  `research.md`'s per-site verdict table before writing each migration:
+- Two of these five sites need the accessor (mutation), not the plain gated property — **corrected by the
+  post-tasks squad** (the original method list was wrong for one site):
   - `runtime_bridge_io.py:576` needs `resolve_profile()` (lineage composition) → use the accessor.
-  - `projection.py:84` needs `register_overlay()`/`get_ancestors()` (mutation + lineage) → use the accessor.
+  - `projection.py:84` needs `register_overlay()` only (NOT `get_ancestors()` — that method is unused by
+    this call site; do not call it speculatively) → use the accessor.
   - `tasks_status_cmd.py:712,823` and `profile_resolution.py:81` only need the gated `agent_profiles`
     property — no accessor needed.
 
@@ -94,10 +100,12 @@ regression on the two sites whose removed "boundary ratchet" comment named a con
   1. Confirm or build a fixture project with 100+ work packages (check `tests/fixtures/` for an existing
      large-mission fixture before creating a new one).
   2. On the merge-base commit (before this WP's changes), run `spec-kitty agent tasks status --feature
-     <fixture>` repeatedly (e.g. 10 runs) and record p95 wall-clock latency.
-  3. Record the number in the mission's tracer file (`tooling-friction.md` or equivalent, per Standing
-     Order #3) and in a new lightweight regression harness `tests/perf/test_tasks_status_baseline.py` that
-     stores the baseline as a committed constant for T009 to compare against.
+     <fixture>` repeatedly (e.g. 10 runs) and record the **raw timing series** (not just a derived p95
+     constant — post-tasks squad correction: a single committed number is author-written and unfalsifiable;
+     the raw pre-change and post-change series must both exist so a reviewer can recompute p95 independently,
+     and both series must come from the same session/machine, since cross-machine comparison is invalid).
+  3. Record the raw series in the mission's tracer file (`tooling-friction.md` or equivalent, per Standing
+     Order #3) and in a new lightweight regression harness `tests/perf/test_tasks_status_baseline.py`.
 - **Files**: `tests/perf/test_tasks_status_baseline.py` (new).
 - **Parallel?**: No — must run first, before T007-T009.
 - **Notes**: This is measurement, not a code change to the production surfaces. Do not skip it — it is the
@@ -107,20 +115,19 @@ regression on the two sites whose removed "boundary ratchet" comment named a con
 
 - **Purpose**: `_resolve_tech_stack_for_profile` needs `resolve_profile()` (lineage-composed), not the plain
   filtered dict.
-- **Steps**: Replace the direct `AgentProfileRepository(...)` construction with WP01's new accessor on a
-  `charter.resolver.DoctrineService` instance (built via the unified builder, `repo_root` already available
-  as a function parameter). Call `.resolve_profile(profile_id)` on the accessor's returned repository, per
-  the pattern already proven at `resolver.py:402-413`'s `resolve_governance_for_profile`.
+- **Steps**: Replace the direct `AgentProfileRepository(...)` construction with WP01's
+  `agent_profile_repository` accessor on a `charter.resolver.DoctrineService` instance (built via the
+  unified builder, `repo_root` already available as a function parameter). Call
+  `.resolve_profile(profile_id)` on the accessor's returned repository.
 - **Files**: `src/runtime/next/runtime_bridge_io.py`.
 - **Parallel?**: Yes — different file from T008-T010.
 
 ### Subtask T008 – Migrate `projection.py:84`
 
-- **Purpose**: `default_profile_repository` needs `register_overlay()`/`get_ancestors()` (mutation +
-  lineage).
-- **Steps**: Replace the direct construction with WP01's accessor. Confirm `register_overlay()` calls still
-  mutate the correct underlying repository object and that subsequent `get_ancestors()` calls still resolve
-  lineage correctly post-mutation.
+- **Purpose**: `default_profile_repository` needs `register_overlay()` (mutation) — that alone, not lineage
+  traversal (post-tasks squad correction: `get_ancestors()` is unused by this call site).
+- **Steps**: Replace the direct construction with WP01's `agent_profile_repository` accessor. Confirm
+  `register_overlay()` calls still mutate the correct underlying repository object.
 - **Files**: `src/specify_cli/tool_surface/profiles/projection.py`.
 - **Parallel?**: Yes.
 
@@ -134,20 +141,33 @@ regression on the two sites whose removed "boundary ratchet" comment named a con
   2. Remove the "boundary ratchet" comment; replace with a one-line note citing why it was a false concern
      (function-local imports aren't scanned by the existing gate — cite `research.md` R3) — do not just
      delete the comment silently.
-  3. Re-run the same p95 measurement from T006 against the migrated code, on the same fixture. If it
-     regresses beyond 10%, do NOT accept it — add caching or lazy construction to close the gap (NFR-005 is
-     explicit that the fix must be architectural, not accepted).
+  3. In the SAME session/machine as T006's baseline run, re-run the identical measurement against the
+     migrated code on the same fixture, capturing another raw timing series. Compute p95 from both series
+     and compare. If it regresses beyond 10%, do NOT accept it — add caching or lazy construction to close
+     the gap (NFR-005 is explicit that the fix must be architectural, not accepted).
 - **Files**: `src/specify_cli/cli/commands/agent/tasks_status_cmd.py`.
 - **Parallel?**: No — must run after T006.
 
-### Subtask T010 – Migrate `charter/profile_resolution.py:81`
+### Subtask T010 – Confirm `charter/profile_resolution.py:81` is a genuine bootstrap case, document, do not migrate
 
-- **Purpose**: `_default_agent_profile_repository`'s org-packs branch already has an activation-aware branch
-  elsewhere in the module — this is the one remaining raw construction to close.
-- **Steps**: Replace with the gated `agent_profiles` property. **Leave the `repo_root is None` branch
-  untouched** — that is the legitimate bootstrap edge case named in spec.md's Edge Cases section (R7), not a
-  site to migrate.
-- **Files**: `src/charter/profile_resolution.py`.
+- **Purpose corrected by the post-tasks squad**: this subtask was originally scoped as a migration, but
+  `_default_agent_profile_repository()` (`profile_resolution.py:70-82`) is a zero-argument, module-level
+  cached function that constructs `AgentProfileRepository()` with **no `repo_root` and no org-pack context
+  at all** — there is nothing to build a `charter.resolver.DoctrineService` from at this call site. This is
+  the real, literal instance of the bootstrap edge case named in spec.md's Edge Cases section (R7): the
+  "no repo context, no org packs" fast path that `_resolve_agent_profile_record` (`:142-159`) falls back to
+  when `repo_root is None` OR no org roots exist. The *other*, org-aware branch of that same function
+  (`_activation_aware_profile_map`, `:120-139`) already routes through
+  `charter.doctrine_service_builder._build_activation_aware_doctrine_service` correctly — there is nothing
+  left to migrate in this file.
+- **Steps**:
+  1. Read `profile_resolution.py` lines 60-160 in full to confirm the above structure independently.
+  2. Do **not** change `_default_agent_profile_repository()` — there is no `pack_context`/`repo_root` to
+     route through the factory.
+  3. Add a one-line comment at the function noting it's a confirmed, documented bootstrap carve-out (C-002)
+     — surfaced, not silently skipped.
+  4. Note this confirmation in the PR description alongside FR-001's scope statement.
+- **Files**: `src/charter/profile_resolution.py` (comment only, no behavioural change).
 - **Parallel?**: Yes.
 
 ## Test Strategy

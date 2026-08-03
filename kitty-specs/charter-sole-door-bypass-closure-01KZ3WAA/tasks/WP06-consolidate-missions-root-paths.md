@@ -1,9 +1,10 @@
 ---
 work_package_id: WP06
-title: Consolidate missions-root path hardcodes
+title: Consolidate missions-root path hardcodes + Gate 4 (mission-wide)
 dependencies: []
 requirement_refs:
 - FR-004
+- FR-007
 planning_base_branch: feat/charter-sole-door-bypass-closure
 merge_target_branch: feat/charter-sole-door-bypass-closure
 branch_strategy: Planning artifacts for this mission were generated on feat/charter-sole-door-bypass-closure. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/charter-sole-door-bypass-closure unless the human explicitly redirects the landing branch.
@@ -12,21 +13,27 @@ subtasks:
 - T023
 - T024
 - T025
+- T040
 phase: Phase 2 - Bypass closure
 history:
 - at: '2026-08-03T14:10:00Z'
   actor: system
   action: Prompt generated via /spec-kitty.tasks
+- at: '2026-08-03T15:00:00Z'
+  actor: system
+  action: Post-tasks squad restructure - absorbed the former WP09 Gate 4 (it only ever guarded this WP's own surface, per paula-patterns finding); noted 3 additional undiscovered missions-root duplicates found by reviewer-renata as an explicit residual, not silently fixed or hidden
 agent_profile: python-pedro
 authoritative_surface: src/charter/mission_type_profile_repository.py
 create_intent:
 - tests/charter/test_missions_root_authority.py
+- tests/architectural/test_charter_sole_door_hardcoded_paths.py
 execution_mode: code_change
 model: ''
 owned_files:
 - src/charter/mission_type_profile_repository.py
 - src/specify_cli/runtime/home.py
 - tests/charter/test_missions_root_authority.py
+- tests/architectural/test_charter_sole_door_hardcoded_paths.py
 role: implementer
 tags: []
 task_type: implement
@@ -123,9 +130,31 @@ framing changed during planning — read the Context section before starting.**
 - **Steps**: Add a paragraph to the PR description (or a dedicated section in the mission tracer file) that
   states: (a) `home.py`'s function-local doctrine import matches an existing pattern in the same file and
   shares `#2986`'s blind spot — named, not hidden; (b) full convergence onto `doctrine.pack_paths.
-  built_in_dir` is deferred to `#3091` and is NOT claimed by this WP.
+  built_in_dir` is deferred to `#3091` and is NOT claimed by this WP; (c) a post-tasks squad pass found 3
+  MORE root-relative missions-root constructions this WP does not touch —
+  `src/kernel/paths.py:89-90`, `src/doctrine/missions/template/manager.py:45,126`, and
+  `src/charter/cli/commands/charter/list_cmd.py:66` (verify exact paths/lines before citing — squad
+  citations were not independently re-verified against current code) — name these explicitly as known,
+  untouched residuals so a later reader doesn't assume this WP found everything.
 - **Files**: PR description / mission tracer file (not a source file).
 - **Parallel?**: Yes, can be drafted alongside T022-T024.
+
+### Subtask T040 – Gate 4: hardcoded missions-root path-literal, zero-tolerance, self-mutation proven
+
+- **Purpose**: Non-vacuous, durable proof the 2 hardcodes closed by T022-T023 cannot silently reopen
+  (absorbed from the former WP09 — this gate only ever guarded this WP's own surface).
+- **Steps**:
+  1. Scan `src/` for `Path(__file__)`-relative constructions of a missions-root-shaped path (containing
+     `"doctrine"` and `"missions"` as adjacent path components) outside
+     `src/doctrine/missions/repository.py` (the one promoted authority).
+  2. Zero-tolerance for the two closed sites' shape; this gate does NOT need to catch the 3 residual
+     duplicates named in T025 (they're a different literal shape — root-relative from a different anchor —
+     and closing them is out of this WP's scope, not this gate's job to enforce).
+  3. Self-mutation proof: inject such a literal at function-local scope in a scratch module; assert the
+     gate fails naming the exact line.
+- **Files**: `tests/architectural/test_charter_sole_door_hardcoded_paths.py` (new).
+- **Parallel?**: No — depends on T022-T023 landing first (writing the gate before the hardcodes close would
+  make it immediately red against legitimate pre-existing code).
 
 ## Test Strategy
 

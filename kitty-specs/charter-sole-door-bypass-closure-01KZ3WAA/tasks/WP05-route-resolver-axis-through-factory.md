@@ -1,6 +1,6 @@
 ---
 work_package_id: WP05
-title: Route the template/command resolver axis through the factory
+title: Consolidate the template/command resolver axis onto the factory
 dependencies:
 - WP01
 requirement_refs:
@@ -18,6 +18,9 @@ history:
 - at: '2026-08-03T14:10:00Z'
   actor: system
   action: Prompt generated via /spec-kitty.tasks
+- at: '2026-08-03T15:00:00Z'
+  actor: system
+  action: Post-tasks squad correction - the original framing ("stops importing doctrine.resolver directly") was factually wrong; specify_cli/runtime/resolver.py never imported doctrine.resolver — it imports the charter.resolution facade and charter.template_resolver, both already legitimately inside src/charter/** (debugger-debbie finding). Reframed as an entry-point consolidation. Fixed a method-naming collision risk (debugger-debbie finding).
 agent_profile: architect-alphonso
 authoritative_surface: src/charter/template_resolver.py
 create_intent:
@@ -34,7 +37,7 @@ task_type: implement
 tracker_refs: []
 ---
 
-# Work Package Prompt: WP05 – Route the template/command resolver axis through the factory
+# Work Package Prompt: WP05 – Consolidate the template/command resolver axis onto the factory
 
 ## ⚡ Do This First: Load Agent Profile
 
@@ -51,20 +54,23 @@ Check `review_ref` in the event log before starting. Address all feedback; log c
 
 ## Objectives & Success Criteria
 
-`CharterTemplateResolver`'s one real caller (`specify_cli/runtime/resolver.py`'s tier-5 routing) currently
-imports `doctrine.resolver` directly. Give `charter.resolver.DoctrineService` resolution methods so no
-consumer outside `src/charter/**` needs that import (FR-003).
+**Reframed by the post-tasks squad — the original premise was wrong.** This is NOT about removing a
+`doctrine.resolver` import from outside `src/charter/**` — there isn't one. Every current importer of
+`doctrine.resolver` (`charter/template_resolver.py`, `charter/resolution.py`,
+`charter/context_renderers/template_include.py`, `doctrine/template_catalog.py`) is already legitimately
+inside `src/charter/**` or `src/doctrine/**`, where `charter → doctrine` is the sanctioned direction. The
+real problem is a **two-doors-within-charter** seam: `charter.template_resolver.CharterTemplateResolver`
+is a *second* charter-layer object separate from `charter.resolver.DoctrineService` (the factory), each
+reaching `doctrine/resolver.py` independently. FR-003 closes this by consolidating the 5-tier
+template/command resolution entry point onto the factory — one charter-layer door, not two.
 
-**This WP's scope was corrected by the post-plan squad — read this before starting:**
+**This WP's scope was corrected by the post-plan squad (still true, unaffected by the reframe above):**
 - `src/charter/resolution.py` and `src/charter/context_renderers/template_include.py` are **NOT** in scope —
   both import only the `ResolutionResult`/`ResolutionTier` *types*, sanctioned by an existing facade
   contract, not resolution calls. Do not touch them.
 - `doctrine.template_catalog.resolve_template_by_id` (5 importers) and `specify_cli/runtime/resolver.py`'s
-  tier-1-4 reimplementation are explicitly **deferred debt**, named but out of this WP's blast radius. Do
-  not fold them in.
-- `doctrine/resolver.py`'s tier functions (`_resolve_asset`, `resolve_mission`) **stay where they are** —
-  moving them fights the module's own documented rationale (`charter → doctrine` is the sanctioned import
-  direction). Only the entry point moves.
+  own tier-1-4 reimplementation are explicitly **deferred debt**, named but out of this WP's blast radius.
+- `doctrine/resolver.py`'s tier functions (`_resolve_asset`, `resolve_mission`) **stay where they are**.
 
 ## Context & Constraints
 
@@ -73,13 +79,17 @@ consumer outside `src/charter/**` needs that import (FR-003).
   leave alone.
 - **Real design work required**: `CharterTemplateResolver`'s one real caller currently uses a cached
   (`lru_cache`), `missions_root`-keyed construction (`from_missions_root(...)`); the factory is built from
-  `repo_root` via the unified builder (WP01). T019 resolves this mismatch explicitly — do not improvise a fix
-  mid-implementation without documenting the chosen mapping.
+  `repo_root` via the unified builder (WP01). T019 resolves this mismatch explicitly.
+- **Naming collision to avoid** (post-tasks squad finding): `CharterTemplateResolver` already has methods
+  named `resolve_command_template` (`template_resolver.py:52`) and `resolve_content_template` (`:90`) with
+  DIFFERENT signatures than what T018 will add to the factory. Do NOT reuse these exact names for the new
+  factory methods while both objects coexist (even transiently, before T020 retires/shims the old class) —
+  pick distinct names (e.g. `resolve_command_asset`, `resolve_content_asset`, `resolve_mission_definition`)
+  so a reader is never unsure which signature applies where.
 - **Depends on WP01** (declared in frontmatter) — not just for the unified builder, but because T018 adds
-  methods to `src/charter/resolver.py`, which WP01 already owns and edits first. `src/charter/resolver.py`
-  is **not** in this WP's `owned_files` (WP01 is its sole declared owner, to avoid a real ownership overlap)
-  — T018's edit there is a small, explicitly sequenced out-of-map addition, permitted because the
-  dependency on WP01 guarantees it runs after WP01's lane, never in parallel with it.
+  methods to `src/charter/resolver.py`, which WP01 exclusively owns and edits first. `src/charter/resolver.py`
+  is **not** in this WP's `owned_files` — T018's edit there is a small, explicitly sequenced out-of-map
+  addition, safe because the dependency on WP01 guarantees this WP never runs in parallel with it.
 
 ## Branch Strategy
 
@@ -91,19 +101,19 @@ consumer outside `src/charter/**` needs that import (FR-003).
 
 ### Subtask T018 – Add resolution methods to `charter.resolver.DoctrineService`
 
-- **Purpose**: Give the factory a public surface for the 5-tier axis, mirroring `CharterTemplateResolver`'s
-  current public methods.
+- **Purpose**: Give the factory a public surface for the 5-tier axis, under NEW names distinct from
+  `CharterTemplateResolver`'s existing methods (see the naming-collision note above).
 - **Steps**:
   1. Read `doctrine/resolver.py::_resolve_asset` (5 tiers) and `resolve_mission` (4 duplicated tiers) and
-     `CharterTemplateResolver`'s current method signatures.
-  2. Add matching methods to `charter.resolver.DoctrineService` (e.g. `resolve_command_template`,
-     `resolve_content_template`, `resolve_mission_config` — name them to match `CharterTemplateResolver`'s
-     existing API so the retarget in T020 is close to 1:1) that call into `doctrine.resolver`'s functions
-     internally.
+     `CharterTemplateResolver`'s current method signatures — understand the shape, but do NOT reuse its
+     exact method names.
+  2. Add methods with distinct names (e.g. `resolve_command_asset`, `resolve_content_asset`,
+     `resolve_mission_definition`) to `charter.resolver.DoctrineService` that call into `doctrine.resolver`'s
+     functions internally.
   3. These new methods are explicitly **ungated** by design (the 5-tier axis has no activation concept
-     today, per spec.md) — do not attempt to add activation filtering here; that would conflate FR-003 with
-     FR-005's separate scope. Note this explicitly in a docstring/comment on the new methods.
-- **Files**: `src/charter/resolver.py`.
+     today) — do not add activation filtering here; that would conflate FR-003 with FR-005's separate scope.
+     Note this explicitly in a docstring/comment on the new methods.
+- **Files**: `src/charter/resolver.py` (out-of-map edit, sequenced after WP01 via the declared dependency).
 - **Parallel?**: No — T020 depends on this.
 
 ### Subtask T019 – Resolve the construction-contract mismatch
@@ -112,26 +122,26 @@ consumer outside `src/charter/**` needs that import (FR-003).
   `missions_root` string; `charter.resolver.DoctrineService` needs a `repo_root`. Design the mapping now.
 - **Steps**: Either (a) resolve `repo_root` at the same call site `missions_root` is currently resolved from
   (check what upstream context is available there), or (b) add a `repo_root`-equivalent construction path.
-  Document the chosen mapping in a comment at the call site — this is a real design decision, not a detail
-  to leave implicit.
+  Document the chosen mapping in a comment at the call site.
 - **Files**: `src/specify_cli/runtime/resolver.py`.
 - **Parallel?**: No — depends on T018's method shapes being settled.
 
 ### Subtask T020 – Retarget `CharterTemplateResolver`
 
-- **Purpose**: Make the one real caller stop importing `doctrine.resolver` directly.
-- **Steps**: Either turn `CharterTemplateResolver` into a thin delegating shim to T018's new factory methods,
-  or retire it and have `_charter_template_resolver_for()` construct `charter.resolver.DoctrineService`
-  directly (per T019's resolved mapping) and call the new methods. Pick whichever is the smaller diff given
-  T019's actual design; state which you picked and why in the Activity Log.
+- **Purpose**: Consolidate onto one charter-layer door.
+- **Steps**: Either turn `CharterTemplateResolver` into a thin delegating shim to T018's new factory methods
+  (translating its old method names/signatures to the new ones), or retire it entirely and have
+  `_charter_template_resolver_for()` construct `charter.resolver.DoctrineService` directly (per T019's
+  resolved mapping) and call the new methods. Pick whichever is the smaller diff given T019's actual design;
+  state which you picked and why in the Activity Log.
 - **Files**: `src/charter/template_resolver.py`, `src/specify_cli/runtime/resolver.py`.
 - **Parallel?**: No — depends on T018, T019.
 
 ### Subtask T021 – Regression test: tier resolution unchanged
 
-- **Purpose**: Prove the retarget didn't change resolution behaviour.
+- **Purpose**: Prove the consolidation didn't change resolution behaviour.
 - **Steps**: For each of the 5 tiers (OVERRIDE, LEGACY, GLOBAL_MISSION, GLOBAL, PACKAGE_DEFAULT), assert the
-  factory-routed resolution returns the identical result the old direct `doctrine.resolver` call would have,
+  factory-routed resolution returns the identical result the old `CharterTemplateResolver` call would have,
   on the same fixture project.
 - **Files**: `tests/charter/test_resolver_tier_axis_via_factory.py` (new).
 - **Parallel?**: No — depends on T020.
@@ -143,19 +153,22 @@ consumer outside `src/charter/**` needs that import (FR-003).
 
 ## Risks & Mitigations
 
-- **Moving `doctrine/resolver.py`'s tier functions instead of adding an entry point.** Mitigation: re-read
-  this prompt's Objectives section — this is explicitly forbidden; the tier functions stay put.
-- **Silently pulling in `template_catalog` or `runtime/resolver.py`'s tier-1-4 reimplementation.** Mitigation:
-  if fixing T019/T020 seems to require touching either, stop and report — that's scope creep beyond this
-  WP's boundary, not a natural extension.
+- **Moving `doctrine/resolver.py`'s tier functions instead of adding an entry point.** Explicitly forbidden —
+  the tier functions stay put.
+- **Reusing `CharterTemplateResolver`'s exact method names for the new factory methods.** This is the
+  naming-collision risk named above — pick distinct names.
+- **Silently pulling in `template_catalog` or `runtime/resolver.py`'s tier-1-4 reimplementation.** Stop and
+  report if T019/T020 seem to require touching either — that's scope creep beyond this WP's boundary.
 
 ## Review Guidance
 
-- Confirm no import of `doctrine.resolver` remains outside `src/charter/**` after this WP (excluding the
-  explicitly-out-of-scope `template_catalog` axis).
+- Confirm the new factory methods use names distinct from `CharterTemplateResolver`'s existing ones.
 - Confirm `doctrine/resolver.py` itself is untouched (diff should show zero changes to that file).
 - Confirm T019's chosen mapping is documented, not silently invented.
+- Confirm the PR description does NOT claim this WP removed a `doctrine.resolver` import bypass from
+  outside `src/charter/**` — there wasn't one; the claim is entry-point consolidation.
 
 ## Activity Log
 
 - 2026-08-03T14:10:00Z – system – Prompt created.
+- 2026-08-03T15:00:00Z – system – Post-tasks squad: corrected premise and naming-collision risk.

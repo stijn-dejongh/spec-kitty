@@ -1,10 +1,11 @@
 ---
 work_package_id: WP01
-title: Unify construction paths + lineage/mutation accessor
+title: Extend the charter factory - accessor, builder unification, 6 mechanical kinds
 dependencies: []
 requirement_refs:
 - C-001
 - FR-001
+- FR-005
 - FR-008
 - FR-010
 planning_base_branch: feat/charter-sole-door-bypass-closure
@@ -16,16 +17,27 @@ subtasks:
 - T003
 - T004
 - T005
-phase: Phase 1 - Foundation (construction unification)
+- T026
+- T027
+- T028
+- T029
+- T030
+- T031
+- T032
+phase: Phase 1 - Foundation (owns src/charter/resolver.py exclusively)
 history:
 - at: '2026-08-03T14:10:00Z'
   actor: system
   action: Prompt generated via /spec-kitty.tasks
+- at: '2026-08-03T15:00:00Z'
+  actor: system
+  action: Post-tasks squad restructure - merged former WP07 in (paula-patterns finding); corrected accessor method names, dropped the wrong __getattr__-removal step, softened the resolver.py:402-413 precedent claim (debugger-debbie, reviewer-renata findings)
 agent_profile: python-pedro
 authoritative_surface: src/charter/resolver.py
 create_intent:
 - tests/charter/test_doctrine_service_builder_unification.py
 - tests/charter/test_doctrine_service_lineage_accessor.py
+- tests/charter/test_resolver_activation_gating.py
 execution_mode: code_change
 model: ''
 owned_files:
@@ -36,22 +48,19 @@ owned_files:
 - src/specify_cli/cli/commands/charter/generate.py
 - tests/charter/test_doctrine_service_builder_unification.py
 - tests/charter/test_doctrine_service_lineage_accessor.py
+- tests/charter/test_resolver_activation_gating.py
 role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
 ---
 
-# Work Package Prompt: WP01 – Unify construction paths + lineage/mutation accessor
+# Work Package Prompt: WP01 – Extend the charter factory: accessor, builder unification, 6 mechanical kinds
 
 ## ⚡ Do This First: Load Agent Profile
 
-Use the `/ad-hoc-profile-load` skill to load the agent profile specified in the frontmatter, and behave
-according to its guidance before parsing the rest of this prompt.
-
-- **Profile**: `python-pedro`
-- **Role**: `implementer`
-- **Agent/tool**: `claude`
+Use the `/ad-hoc-profile-load` skill to load `python-pedro` (implementer role, claude agent) before parsing
+the rest of this prompt.
 
 If no profile is specified, run `spec-kitty agent profile list` and select the best match for this work
 package's `task_type` and `authoritative_surface`.
@@ -60,45 +69,60 @@ package's `task_type` and `authoritative_surface`.
 
 ## ⚠️ IMPORTANT: Review Feedback
 
-**Read this first if you are implementing this task!**
-
-- **Has review feedback?**: Check the `review_ref` field in the event log (via `spec-kitty agent status` or
-  the Activity Log below).
-- **You must address all feedback** before your work is complete.
-- **Report progress**: As you address each feedback item, update the Activity Log explaining what you changed.
+Check the `review_ref` field in the event log (via `spec-kitty agent status`) before starting. Address all
+feedback; log changes in the Activity Log.
 
 ---
 
 ## Objectives & Success Criteria
 
-This WP is the **foundation** every other WP in this mission builds on. Two things must exist before any
-call site can be migrated:
+**This WP was expanded by a post-tasks adversarial squad** (originally split into WP01+WP07, restructured
+because both edited `src/charter/resolver.py` and the split forced an awkward 3-lane serialization for no
+real benefit — see `research.md`'s "Post-Tasks Squad Findings" section, appended after this restructure).
+This WP is now the **sole owner** of `src/charter/resolver.py` for the whole mission, and covers three
+things:
 
-1. **One unified builder function** — `specify_cli.doctrine_service_factory.build_activation_aware_doctrine_service`,
-   `charter.doctrine_service_builder._build_activation_aware_doctrine_service`, and the inline "build raw,
-   conditionally wrap" pattern repeated in `org_layer.py:244,275` and `generate.py:56` collapse onto one
-   function.
-2. **A new public accessor** on `charter.resolver.DoctrineService` for lineage/mutation-capable
-   `AgentProfileRepository` access (`register_overlay()`, `get_ancestors()`, `resolve_profile()`) — the
-   filtered `agent_profiles` property cannot support these; four call sites across WP01-04 need it.
+1. **A new public accessor** for lineage/mutation-capable `AgentProfileRepository` access — the filtered
+   `agent_profiles` property cannot support `register_overlay()` or `get_provenance()`; WP02/WP04 need it.
+2. **One unified builder function** — the two named builders plus the inline "build raw, conditionally
+   wrap" pattern in `org_layer.py:244,275` and `generate.py:56` collapse onto one function.
+3. **Activation-gating for 6 more kinds** (`directive`, `tactic`, `styleguide`, `toolguide`,
+   `mission_step_contract`, `glossary_pack`) — confirmed mechanical, a copy of the existing `paradigms`
+   property pattern.
 
-**Success criteria** (FR-008, C-001, contracts/charter-doctrine-service-contract.md):
-- Exactly one function builds an activation-aware `DoctrineService`; `org_layer.py`/`generate.py` call it
-  instead of reimplementing the pattern inline.
-- `org_layer.py:252-253`'s `except ImportError: pass` no longer silently returns an unwrapped service.
-- The new accessor's two semantics (below) are implemented exactly as pinned — not re-derived.
-- A regression test proves the unified builder returns identical output for both former call sites' inputs.
+**Success criteria**:
+- The accessor's public method name and return shape are **pinned below, not left to implementer choice** —
+  quote it verbatim in any WP that depends on this one.
+- Exactly one function builds an activation-aware `DoctrineService`; `org_layer.py`/`generate.py` call it.
+  `org_layer.py:252-253`'s `except ImportError: pass` no longer silently returns an unwrapped service.
+- All 6 new kinds gated with the identical three-state semantics already proven for
+  `paradigms`/`procedures`/`agent_profiles`; a bare-project equality regression test per kind.
+- A single regression test proves the unified builder's output is identical across **all 9** gated
+  properties (not staged in two passes across two WPs, per the prior structure's mistake).
 
 ## Context & Constraints
 
-- Read `research.md`'s "D3" and "R5" sections and `contracts/charter-doctrine-service-contract.md`'s
-  "Lineage/mutation accessor semantics" section (pinned by the post-plan squad) — **do not re-derive these
-  semantics**, implement against the text.
+- Read `research.md`'s "D3", "R2", and "R5" sections and `contracts/charter-doctrine-service-contract.md`'s
+  "Lineage/mutation accessor semantics" and "Gated properties" sections.
 - Read `contracts/mission-type-and-builder-contracts.md`'s "Unified builder contract" section for the exact
   `active_languages`/`org_roots` resolution rule.
-- Single canonical authority (charter governing principle): do not invent a second factory or a second
-  builder — extend `charter.resolver.DoctrineService` and unify onto one builder function.
-- Supporting docs: `.kittify/charter/charter.md`, `kitty-specs/charter-sole-door-bypass-closure-01KZ3WAA/{plan.md,research.md,data-model.md,contracts/}`.
+- **Pinned accessor contract** (post-tasks squad correction — the original prompt only offered "e.g." naming,
+  which left three dependent WPs free to each invent something different):
+  ```
+  charter.resolver.DoctrineService.agent_profile_repository -> agent_profiles.repository.AgentProfileRepository
+  ```
+  A `@property` returning the raw, lineage-capable repository object directly. Dependent WPs call
+  `factory.agent_profile_repository.register_overlay(...)` or `.get_provenance(...)` — verified against the
+  actual call sites' real needs (not `get_ancestors`/`resolve_profile`, which the original prompt wrongly
+  named): `projection.py:84` needs `register_overlay()` only; `registry.py:64` and `org_profiles.py:117`
+  need `get_provenance()`. Confirm each call site's actual need against its own code before assuming this
+  list is exhaustive — it is the verified set as of this squad pass, not a guess.
+- **Softened precedent claim** (debugger-debbie finding): `resolver.py:402-413` is an `isinstance(dict)`
+  compatibility fallback for raw services/mocks, not a real lineage-traversal precedent — with the charter
+  wrapper, `agent_profiles` is a dict and `.get()` runs, so no lineage traversal actually happens there.
+  Treat the accessor's mutation/lineage semantics (below) as a fresh design decision this WP makes, not as
+  "matching existing precedent."
+- Single canonical authority: do not invent a second factory or a second builder.
 
 ## Branch Strategy
 
@@ -106,32 +130,22 @@ call site can be migrated:
 - **Planning base branch**: feat/charter-sole-door-bypass-closure
 - **Merge target branch**: feat/charter-sole-door-bypass-closure
 
-> These fields are populated automatically by `spec-kitty agent mission tasks`. Do NOT change them manually
-> unless you are certain the branch topology has changed.
-
 ## Subtasks & Detailed Guidance
 
-### Subtask T001 – Pin and implement the lineage/mutation accessor
+### Subtask T001 – Implement the pinned lineage/mutation accessor
 
-- **Purpose**: Give `projection.py:84`, `runtime_bridge_io.py:576`, `registry.py:64`, and
-  `org_profiles.py:117` (WP02/WP04) one shared, public way to reach mutation/lineage operations without
-  reaching into `._inner`.
+- **Purpose**: Give `projection.py:84`, `registry.py:64`, and `org_profiles.py:117` one shared, public way
+  to reach mutation/provenance operations without reaching into `._inner`.
 - **Steps**:
-  1. Add a public method/property to `charter.resolver.DoctrineService` (e.g. `agent_profile_repository`)
-     that returns the raw, lineage-capable `AgentProfileRepository` instance.
-  2. Implement per the two pinned semantics in `contracts/charter-doctrine-service-contract.md`:
-     - `register_overlay()` mutates the underlying repository's lineage graph; it does **not** create a way
-       to read an unfiltered profile through the gated `agent_profiles` property afterward — the property's
-       three-state filter still applies on every read.
-     - `resolve_profile()`'s `specializes_from` lineage traversal reads through the **raw** repository (not
-       re-wrapped) — matching the existing precedent at `resolver.py:402-413`'s
-       `resolve_governance_for_profile`.
-  3. The accessor returns the raw repository object directly; it is a second, explicitly-named entry point,
-     not a widening of `agent_profiles`'s return type.
+  1. Add `agent_profile_repository` as a `@property` on `charter.resolver.DoctrineService` returning the
+     raw `AgentProfileRepository` instance (the pinned contract above).
+  2. Semantics: `register_overlay()` mutates the underlying repository's lineage graph; it does **not**
+     create a way to read an unfiltered profile through the gated `agent_profiles` property afterward — that
+     property's three-state filter still applies on every read, including reads that follow a mutation.
+  3. `get_provenance()` is a read-only lookup on the raw repository — confirm its current signature/return
+     type by reading `AgentProfileRepository.get_provenance` directly (do not assume a shape).
 - **Files**: `src/charter/resolver.py`.
-- **Parallel?**: No — T002-T003 depend on this landing in the same module first.
-- **Notes**: This is the trickiest subtask in the WP because the two semantics have no default — they were
-  pinned specifically because an implementer guessing wrong here breaks WP02/WP04's migrations silently.
+- **Parallel?**: No — T002-T003 depend on this landing first.
 
 ### Subtask T002 – Unify the two named builder functions
 
@@ -139,99 +153,105 @@ call site can be migrated:
 - **Steps**:
   1. Read both `specify_cli.doctrine_service_factory.build_activation_aware_doctrine_service` and
      `charter.doctrine_service_builder._build_activation_aware_doctrine_service` in full.
-  2. Pick the *fuller* behaviour on each axis, per `contracts/mission-type-and-builder-contracts.md`:
-     - Always compute `active_languages=infer_repo_languages(repo_root)` and pass it to the inner
-       `DoctrineService` construction (the `charter` builder's behaviour — the `specify_cli` builder
-       currently omits this).
-     - Always self-resolve `org_roots` via `resolve_org_roots` (the `specify_cli` builder's behaviour — the
-       `charter` builder currently defaults to no org layer when the caller omits the argument).
-  3. Collapse to one function; make the other either delete-and-repoint-callers or a thin re-export of the
-     first — never two independent implementations.
+  2. Pick the *fuller* behaviour on each axis: always compute
+     `active_languages=infer_repo_languages(repo_root)`; always self-resolve `org_roots` via
+     `resolve_org_roots`.
+  3. Collapse to one function; make the other a thin re-export or delete-and-repoint callers.
 - **Files**: `src/charter/doctrine_service_builder.py`, `src/specify_cli/doctrine_service_factory.py`.
-- **Parallel?**: No — depends on T001 only in that both touch the factory module; can be done in the same
-  commit.
-- **Notes**: Do not guess at the "right" behaviour on either axis — the contract file states which side wins
-  and why. Grep for all existing callers of both functions before changing signatures.
+- **Parallel?**: Yes, alongside T001 (different files).
 
 ### Subtask T003 – Retarget the inline construction sites; fix the fail-open bug
 
 - **Purpose**: Close the 3 additional construction sites the post-plan squad found, and their fail-open bug.
 - **Steps**:
-  1. `org_layer.py:244-253` and `:275` (`_build_org_aware_service`, `_build_built_in_only_service`): replace
-     the inline `inner = DoctrineService(...)` + `try: ... except ImportError: pass` + `return inner` pattern
-     with a call to the unified builder from T002.
-  2. The unified builder must **fail closed** on any construction error — no branch of this WP may return a
-     silently-unwrapped raw `DoctrineService` when `pack_context is not None` was requested. Raise or
-     propagate the error instead of the current `pass`.
-  3. `generate.py:56`: replace the inline construction + wrap with a call to the unified builder.
+  1. `org_layer.py:244-253` and `:275`: replace the inline construction + `try/except ImportError: pass`
+     pattern with a call to T002's unified builder. The builder must **fail closed** — never silently return
+     an unwrapped service when `pack_context is not None` was requested.
+  2. `generate.py:56`: replace the inline construction + wrap with a call to the unified builder.
 - **Files**: `src/specify_cli/charter_runtime/lint/checks/org_layer.py`,
   `src/specify_cli/cli/commands/charter/generate.py`.
-- **Parallel?**: Yes, alongside T001 (different files) once T002's builder signature is settled.
-- **Notes**: `org_layer.py`'s two functions have subtly different signatures (`org_roots` param present in
-  one, absent in the other) — read both before assuming they retarget identically.
+- **Parallel?**: Yes, alongside T001.
 
-### Subtask T004 – Regression test: unified builder identical output (scoped to today's 3 kinds)
+### Subtask T004 – Regression test: unified builder identical output across all 9 gated properties
 
-- **Purpose**: Prove T002's unification actually closed the divergence — non-fakeable per NFR (equality, not
-  "some result returned").
+- **Purpose**: Prove T002's unification closed the divergence — non-fakeable equality, and (post-tasks
+  squad correction) written ONCE against the full 9-property surface, not staged across two WPs.
 - **Steps**:
-  1. Construct the unified builder with the same `repo_root`, once exercising each former call site's
-     original argument shape (with/without explicit `org_roots`; with/without a language-diverse project
-     fixture for `active_languages`).
-  2. Assert identical output for `paradigms`, `procedures`, `agent_profiles` (the 3 kinds gated today) AND
-     the builder's `active_languages`/`org_roots` resolution.
-  3. **Do NOT** write this assertion against all 9 gated properties — 6 of them don't exist until WP07
-     (FR-005) lands. WP07's T033 extends this exact test file to the full 9-property surface later; this
-     subtask's job is the 3-kind baseline proof only.
+  1. Construct the unified builder with the same `repo_root`, exercising each former call site's original
+     argument shape (with/without explicit `org_roots`; with/without a language-diverse fixture).
+  2. Assert identical output for all 9 gated properties that exist after this WP lands (`paradigms`,
+     `procedures`, `agent_profiles`, `directives`, `tactics`, `styleguides`, `toolguides`,
+     `mission_step_contracts`, `glossary_packs`) AND the builder's `active_languages`/`org_roots`
+     resolution.
 - **Files**: `tests/charter/test_doctrine_service_builder_unification.py` (new).
-- **Parallel?**: No — depends on T002/T003.
-- **Notes**: This is the ATDD red-first test for FR-008 — write it failing (against the pre-unification two
-  builders) before implementing T002, then watch it go green.
+- **Parallel?**: No — depends on T002, T003, T026-T030.
+- **Notes**: ATDD red-first — write failing against the pre-unification two builders, then implement T002.
 
 ### Subtask T005 – ATDD test: accessor semantics
 
-- **Purpose**: Prove T001's two pinned semantics hold, not just that the accessor exists.
+- **Purpose**: Prove T001's semantics hold, not just that the accessor exists.
 - **Steps**:
-  1. Test 1 (mutation does not leak through filter): call `register_overlay()` with a non-activated profile
-     via the accessor; assert the gated `agent_profiles` property still excludes it.
-  2. Test 2 (lineage traversal reads raw): construct a profile with `specializes_from` pointing at a
-     deactivated parent; call `resolve_profile()` via the accessor; assert it successfully composes lineage
-     from the deactivated parent (matching `resolve_governance_for_profile`'s existing precedent behaviour).
+  1. Test 1: call `register_overlay()` with a non-activated profile via the accessor; assert the gated
+     `agent_profiles` property still excludes it.
+  2. Test 2: call `get_provenance()` via the accessor for a known profile; assert it returns the expected
+     provenance data (read against the repository's actual current return shape).
 - **Files**: `tests/charter/test_doctrine_service_lineage_accessor.py` (new).
 - **Parallel?**: No — depends on T001.
-- **Notes**: Write both tests RED first (they should fail against a `charter.resolver.DoctrineService`
-  without the accessor), then implement T001 to make them pass — this is the ATDD contract (charter C-011).
+
+### Subtasks T026-T030 – Add the 6 remaining mechanical properties
+
+For `directives` (T026), `tactics` (T027), `styleguides` (T028), `toolguides` (T029),
+`mission_step_contracts` and `glossary_packs` (both covered under T030's mechanical pass, since all 6 are
+the identical copy-paste operation done together):
+
+- **Purpose**: Mechanical copy of the existing `paradigms` property pattern (`src/charter/resolver.py:96`).
+- **Steps**:
+  1. Read the exact `paradigms` property implementation (getter logic, which `PackContext.activated_*`
+     field it reads, how it applies the three-state filter to `self._inner.paradigms.list_all()`).
+  2. Add a new `@property` with the same structure, swapping in the target kind's name and `PackContext`
+     field (e.g. `directives`/`activated_directives`).
+  3. **Do not** attempt to remove anything from the `__getattr__` fallback (post-tasks squad correction —
+     the original prompt's step 3 was wrong): `resolver.py:136-140`'s `__getattr__` is a generic catch-all
+     with no per-kind list; a new `@property` shadows it automatically. There is nothing to edit there.
+- **Files**: `src/charter/resolver.py`.
+- **Parallel?**: Yes — all 6 kinds are independent property additions in the same file; write them together
+  in one pass.
+
+### Subtask T032 – Bare-project equality regression test, all 6 new kinds
+
+- **Purpose**: Non-fakeable proof — an existence check passes even if some entries silently leaked away;
+  this must be equality.
+- **Steps**: For a bare `PackContext` (no activated packs), assert `wrapped.<prop> == unwrapped_inner.<prop>`
+  for each of the 6 new properties, per `contracts/charter-doctrine-service-contract.md`'s "Non-regression
+  obligations" section.
+- **Files**: `tests/charter/test_resolver_activation_gating.py` (new).
+- **Parallel?**: No — depends on T026-T030.
+- **Notes**: Write RED first as the ATDD contract for FR-005.
 
 ## Test Strategy
 
-- Run `pytest tests/charter/ -v` after each subtask; this WP's owned test files are new, so there's no
-  pre-existing suite to regress against within `tests/charter/`.
-- Run `mypy --strict src/charter/resolver.py src/charter/doctrine_service_builder.py
-  src/specify_cli/doctrine_service_factory.py` — zero new issues (NFR-002).
-- Do NOT run the full `pytest tests/` suite for this WP — targeted surfaces only, per charter testing
-  guidance.
+- `pytest tests/charter/ -v`.
+- `mypy --strict src/charter/resolver.py src/charter/doctrine_service_builder.py
+  src/specify_cli/doctrine_service_factory.py`.
+- Do NOT run the full `pytest tests/` suite — targeted surfaces only.
 
 ## Risks & Mitigations
 
-- **Guessing the accessor semantics instead of reading the pinned contract.** Mitigation: the contract file
-  is the source of truth; if it seems ambiguous, that is itself a finding to report, not a decision to make
-  silently.
-- **Retargeting `org_layer.py`'s two functions identically when their signatures differ.** Mitigation: read
-  both call sites in full before writing the retarget; write T003's fix as two separate, reviewed diffs if
-  the signatures genuinely diverge.
-- **Writing T004 against all 9 properties instead of 3.** Mitigation: re-read this prompt's T004 section —
-  the scoping is deliberate and matches the plan's IC-01/IC-04 sequencing fix.
+- **Guessing the accessor semantics instead of the pinned contract above.** If it seems ambiguous, that is a
+  finding to report, not a decision to make silently.
+- **Writing T004 in two passes again.** The whole point of this restructure was one 9-property proof —
+  don't reintroduce the staged version.
+- **Assuming `get_provenance()`'s signature instead of reading it.** The pinned method names are verified,
+  but their exact signatures were not re-derived by this squad pass — read the actual repository code.
 
 ## Review Guidance
 
-- Confirm T004's test asserts equality (`==`), not existence, across the 3 kinds AND the builder kwargs.
-- Confirm zero remaining direct constructions of the raw `DoctrineService` at `org_layer.py`/`generate.py`
-  (grep for `doctrine.service.DoctrineService(` in both files — should be gone).
-- Confirm the `except ImportError: pass` shape no longer exists in `org_layer.py`.
-- Confirm the accessor's two semantics are tested as written in T005, not simplified.
+- Confirm the accessor is named exactly `agent_profile_repository` and returns the raw repository object.
+- Confirm T004's test asserts equality across all 9 properties in one test file, not two.
+- Confirm no attempt was made to edit `__getattr__`.
+- Confirm zero remaining direct constructions of the raw `DoctrineService` at `org_layer.py`/`generate.py`.
 
 ## Activity Log
 
-> **CRITICAL**: Activity log entries MUST be in chronological order (oldest first, newest last).
-
 - 2026-08-03T14:10:00Z – system – Prompt created.
+- 2026-08-03T15:00:00Z – system – Post-tasks squad restructure: merged former WP07 into this WP.

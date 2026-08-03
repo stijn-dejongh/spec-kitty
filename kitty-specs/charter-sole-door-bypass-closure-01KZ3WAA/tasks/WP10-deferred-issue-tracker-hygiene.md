@@ -101,13 +101,18 @@ one-line reason it's out of scope, AND an actual GitHub comment on the issue nam
   (`charter-sole-door-bypass-closure-01KZ3WAA`) and the one-line reason it stays out of scope. Confirm the
   Tracker Ticket Assignment Rule (charter, DIR-012) does NOT apply here — these issues are not being
   implemented by this mission, only referenced, so no assignment action is needed.
+  **Non-fakeable evidence requirement** (post-tasks squad correction — "a live GitHub comment" is otherwise
+  unverifiable to a reviewer with no gh-cli access): paste the output of `gh issue view <N> --comments` for
+  each of the 5 issues into this WP's Activity Log, showing the posted comment, before marking this WP
+  complete.
 - **Files**: none (GitHub API side effect only).
 - **Parallel?**: Yes, alongside T042.
 
 ## Test Strategy
 
-- No automated test — this is tracker administration. Verify manually: `gh issue view <N> --comments` for
-  each of the 5 issues shows this mission's comment.
+- No automated test — this is tracker administration. Verify via the Activity Log: `gh issue view <N>
+  --comments` output for each of the 5 issues must be pasted there (T043's non-fakeable evidence
+  requirement), not just asserted as done.
 
 ## Risks & Mitigations
 

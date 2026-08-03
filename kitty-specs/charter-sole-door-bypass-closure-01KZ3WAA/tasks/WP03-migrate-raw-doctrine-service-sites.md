@@ -1,7 +1,8 @@
 ---
 work_package_id: WP03
 title: Migrate raw DoctrineService construction sites
-dependencies: []
+dependencies:
+- WP01
 requirement_refs:
 - FR-002
 planning_base_branch: feat/charter-sole-door-bypass-closure
@@ -58,7 +59,8 @@ WP's; do not duplicate that work here.)
 **Success criteria**:
 - `charter/compiler.py:802` and `_doctrine_asset.py:75` route through `charter.resolver.DoctrineService`
   (normal activation-aware construction).
-- `_doctrine_collect.py`'s 4 diagnostic sites (`:191,281,418,826`) route through the factory's **explicit
+- `_doctrine_collect.py`'s 4 diagnostic sites (`:193,283,420,828` — corrected line numbers, post-tasks squad
+  found the original citations drifted +2 lines) route through the factory's **explicit
   unfiltered mode** (`pack_context=None`), not the activation-aware path — preserving today's doctor/health
   completeness.
 - A regression test proves the unfiltered mode's output equals the raw unwrapped service's output.
@@ -91,7 +93,7 @@ WP's; do not duplicate that work here.)
 - **Files**: `src/charter/compiler.py`.
 - **Parallel?**: Yes.
 - **Notes**: `compile_charter` does its own *separate* parallel activation filtering via `config_roots`,
-  independent of this wrapper swap — that duplication is a WP07/FR-005 concern, not this subtask's. Do not
+  independent of this wrapper swap — that duplication is a WP01/FR-005 concern, not this subtask's. Do not
   attempt to resolve it here.
 
 ### Subtask T012 – Migrate `_doctrine_asset.py:75`
@@ -108,8 +110,9 @@ WP's; do not duplicate that work here.)
 
 - **Purpose**: Preserve full diagnostic visibility while still routing through the one canonical class.
 - **Steps**:
-  1. At each of `:191` (`_collect_profile_health`), `:281` (`_collect_glossary_pack_health`), `:418`
-     (`_collect_doctrine_collisions`), `:826` (`_build_selection_block`), replace the raw
+  1. At each of `:193` (`_collect_profile_health`), `:283` (`_collect_glossary_pack_health`), `:420`
+     (`_collect_doctrine_collisions`), `:828` (`_build_selection_block`) — corrected line numbers, verify
+     against the current file before editing — replace the raw
      `doctrine.service.DoctrineService(...)` construction with
      `charter.resolver.DoctrineService(inner, pack_context=None)`.
   2. Add an inline comment at each site naming the diagnostic-completeness rationale (per the contract
