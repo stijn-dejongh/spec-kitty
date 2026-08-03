@@ -99,7 +99,7 @@ regression on the two sites whose removed "boundary ratchet" comment named a con
 - **Steps**:
   1. Confirm or build a fixture project with 100+ work packages (check `tests/fixtures/` for an existing
      large-mission fixture before creating a new one).
-  2. On the merge-base commit (before this WP's changes), run `spec-kitty agent tasks status --feature
+  2. On the merge-base commit (before this WP's changes), run `spec-kitty agent tasks status --mission
      <fixture>` repeatedly (e.g. 10 runs) and record the **raw timing series** (not just a derived p95
      constant — post-tasks squad correction: a single committed number is author-written and unfalsifiable;
      the raw pre-change and post-change series must both exist so a reviewer can recompute p95 independently,

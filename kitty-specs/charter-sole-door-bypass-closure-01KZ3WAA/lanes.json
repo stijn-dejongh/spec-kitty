@@ -67,6 +67,7 @@
         "WP10"
       ],
       "write_scope": [
+        "CHANGELOG.md",
         "docs/plans/charter-sole-door-deferred-issues.md"
       ],
       "predicted_surfaces": [
@@ -177,10 +178,10 @@
       "parallel_group": 2
     }
   ],
-  "computed_at": "2026-08-03T14:44:24.928961+00:00",
+  "computed_at": "2026-08-03T15:25:47.629045+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [
     "WP10"
   ],
-  "planning_commit_sha": "9fc0eb51fac5649f144f98219694818864915913"
+  "planning_commit_sha": "d78fbcd0704fe9e097bb3b655dd847d58dbd3381"
 }

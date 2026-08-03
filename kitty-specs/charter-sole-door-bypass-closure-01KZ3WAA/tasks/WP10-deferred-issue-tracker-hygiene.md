@@ -1,20 +1,25 @@
 ---
 work_package_id: WP10
-title: Deferred-issue tracker hygiene
+title: Deferred-issue tracker hygiene + CHANGELOG entry
 dependencies: []
 requirement_refs:
 - FR-011
+- NFR-004
 planning_base_branch: feat/charter-sole-door-bypass-closure
 merge_target_branch: feat/charter-sole-door-bypass-closure
 branch_strategy: Planning artifacts for this mission were generated on feat/charter-sole-door-bypass-closure. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into feat/charter-sole-door-bypass-closure unless the human explicitly redirects the landing branch.
 subtasks:
 - T042
 - T043
+- T044
 phase: Phase 3 - Durability
 history:
 - at: '2026-08-03T14:10:00Z'
   actor: system
   action: Prompt generated via /spec-kitty.tasks
+- at: '2026-08-03T15:30:00Z'
+  actor: system
+  action: /spec-kitty.analyze finding E1 - added T044 (CHANGELOG entry) since NFR-004 had zero task coverage across all 9 WPs
 agent_profile: planner-priti
 authoritative_surface: docs/plans/charter-sole-door-deferred-issues.md
 create_intent:
@@ -23,6 +28,7 @@ execution_mode: planning_artifact
 model: ''
 owned_files:
 - docs/plans/charter-sole-door-deferred-issues.md
+- CHANGELOG.md
 role: implementer
 tags: []
 task_type: implement
@@ -53,7 +59,10 @@ mission (`doctrine-charter-split-unification-01KZ0SRB`) already carries `issue-m
 practice for all five.
 
 **Success criteria**: each of the 5 issues has an `issue-matrix.json` row in this mission naming the
-one-line reason it's out of scope, AND an actual GitHub comment on the issue naming this mission.
+one-line reason it's out of scope, AND an actual GitHub comment on the issue naming this mission. **Also
+covers NFR-004** (`/spec-kitty.analyze` finding E1 — zero task coverage for the CHANGELOG requirement in
+the original task breakdown): a `CHANGELOG.md` entry documenting the three intentional-scope items DIR-009
+requires.
 
 ## Context & Constraints
 
@@ -108,11 +117,30 @@ one-line reason it's out of scope, AND an actual GitHub comment on the issue nam
 - **Files**: none (GitHub API side effect only).
 - **Parallel?**: Yes, alongside T042.
 
+### Subtask T044 – Add the NFR-004 CHANGELOG entry
+
+- **Purpose**: DIR-009 requires breaking/behaviour changes documented in `CHANGELOG.md`; NFR-004 names three
+  specific items this mission must not slip past silently.
+- **Steps**: Add one `CHANGELOG.md` entry (under `[Unreleased]` or the current in-progress version, matching
+  the file's existing convention) stating explicitly:
+  1. `charter.resolver.DoctrineService` now activation-gates all 9 charter-activatable `ArtifactKind`
+     members (up from 3) plus the `mission-type` token via `resolve_mission_type_context()` — a project
+     that activates a subset of a newly-gated kind's packs will see a narrower result than before this
+     mission.
+  2. `src/specify_cli/invocation/registry.py:48` and `src/specify_cli/cli/commands/profiles_cmd.py:83`'s
+     `.kittify/profiles` construction is explicitly excluded from this mission's factory-routing work — not
+     silently missed.
+  3. The missions-root path consolidation (FR-004) does not claim convergence with
+     `doctrine.pack_paths.built_in_dir` — that remains `#3091`'s to deliver.
+- **Files**: `CHANGELOG.md`.
+- **Parallel?**: Yes, alongside T042-T043.
+
 ## Test Strategy
 
 - No automated test — this is tracker administration. Verify via the Activity Log: `gh issue view <N>
   --comments` output for each of the 5 issues must be pasted there (T043's non-fakeable evidence
-  requirement), not just asserted as done.
+  requirement), not just asserted as done. Verify T044 by reading the committed `CHANGELOG.md` entry against
+  the three required items above.
 
 ## Risks & Mitigations
 
@@ -123,6 +151,7 @@ one-line reason it's out of scope, AND an actual GitHub comment on the issue nam
 
 - Confirm all 5 issues have both an `issue-matrix.json` row and a live GitHub comment.
 - Confirm the one-line reasons match spec.md's C-003 exactly (no drift in the stated rationale).
+- Confirm `CHANGELOG.md` names all three NFR-004 items, not a partial subset.
 
 ## Activity Log
 

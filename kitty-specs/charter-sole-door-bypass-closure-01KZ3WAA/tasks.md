@@ -56,6 +56,7 @@ live code.
 | T039 | Gate 3: `doctrine.resolver` direct-import forward-looking regression guard + self-mutation proof | WP09 | [P] |
 | T042 | Add `issue-matrix.json` rows + citable docs record for #2986/#3036/#3039/#3091/#3022 | WP10 | [P] |
 | T043 | Post a tracker comment on each of the 5 deferred issues; paste `gh issue view --comments` output as evidence | WP10 | [P] |
+| T044 | Add the NFR-004 `CHANGELOG.md` entry (9-kind gating, `.kittify/profiles` exclusion, deferred `pack_paths` convergence) | WP10 | [P] |
 
 ## Work Packages
 
@@ -159,15 +160,18 @@ written before the bypasses close is either vacuous or immediately red). **Estim
 assumed. Gate 3 is a forward-looking regression guard, not proof of a WP05 closure — there was no violation
 outside `src/charter/**` to close in the first place.
 
-### WP10 — Deferred-issue tracker hygiene (Priority: P2)
+### WP10 — Deferred-issue tracker hygiene + CHANGELOG entry (Priority: P2)
 
-**Goal**: Give the five confirmed-deferred issues a durable tracker trace, not just PR-description prose.
-**Requirements**: FR-011.
+**Goal**: Give the five confirmed-deferred issues a durable tracker trace, not just PR-description prose;
+add the CHANGELOG entry NFR-004 requires (added by `/spec-kitty.analyze` finding E1 — the original task
+breakdown had zero coverage for this NFR).
+**Requirements**: FR-011, NFR-004.
 **Independent test**: each of #2986/#3036/#3039/#3091/#3022 carries an `issue-matrix.json` row, a citable
 docs record, and a tracker comment naming this mission — with the comment's existence proven via pasted
-`gh issue view --comments` output (non-fakeable evidence requirement, post-tasks squad correction).
-**Subtasks**: T042-T043. **Dependencies**: none (fully independent of code; can run any time).
-**Estimated size**: ~125 lines.
+`gh issue view --comments` output (non-fakeable evidence requirement, post-tasks squad correction);
+`CHANGELOG.md` names all three NFR-004 items.
+**Subtasks**: T042-T044. **Dependencies**: none (fully independent of code; can run any time).
+**Estimated size**: ~150 lines.
 
 ## Sequencing Summary
 
