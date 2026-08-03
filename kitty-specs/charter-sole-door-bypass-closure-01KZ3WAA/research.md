@@ -155,6 +155,37 @@ handling: catches only `FileNotFoundError` vs. `doctrine.resolver`'s `(FileNotFo
 Flagged for a future mission; not folded in here (would expand IC-02's blast radius well beyond the named
 FR-003 anchor).
 
+## Post-Tasks Squad Findings
+
+A second 4-lens adversarial squad (reviewer-renata, debugger-debbie, paula-patterns, python-pedro) reviewed
+the 10 generated WP prompts before locking `finalize-tasks`. All four returned READY WITH FIXES or NOT
+READY pending fixes; every finding below was folded into the WP prompts and `tasks.md` (this section
+records what was found, not a duplicate of the WP text):
+
+| Finding | Lens | Severity | Folded into |
+|---|---|---|---|
+| WP02/WP03/WP04's `dependencies: []` frontmatter never declared WP01, despite prose saying so everywhere — found INDEPENDENTLY by 3 of 4 delegates | reviewer-renata, paula-patterns, python-pedro | CRITICAL | WP02/03/04 frontmatter fixed |
+| WP01 (accessor) and former WP07 (6 properties) both edited `src/charter/resolver.py`; the 3-way split (with WP05) forced an awkward, benefit-free serialization | paula-patterns | HIGH | WP01+WP07 merged |
+| Gate 5 (`._inner`) and Gate 4 (hardcoded paths) each only ever guarded one WP's own surface; a separate WP for them added dependency edges for no benefit | paula-patterns | HIGH | Gate 5 → WP04, Gate 4 → WP06 |
+| Accessor method name never pinned ("e.g. `agent_profile_repository`") — three dependent WPs could each invent something different | reviewer-renata, python-pedro | CRITICAL (compounding) | Pinned exact name in WP01 |
+| Accessor method-list wrong: `get_ancestors()` unused; `projection.py` needs only `register_overlay()`; `registry.py`/`org_profiles.py` need `get_provenance()`, named nowhere | debugger-debbie | MEDIUM | Corrected in WP01/WP02/WP04 |
+| `_doctrine_collect.py` line citations drifted +2 (193/283/420/828, not 191/281/418/826) after a later commit inserted 2 lines | debugger-debbie | MEDIUM | Corrected in WP03/WP09 |
+| WP05's core premise was false: `specify_cli/runtime/resolver.py` never imported `doctrine.resolver` — it imports the `charter.resolution` facade and `charter.template_resolver`, both already inside `src/charter/**` | debugger-debbie | HIGH | WP05 reframed as entry-point consolidation, not bypass removal |
+| WP05's suggested new method names collided with `CharterTemplateResolver`'s existing `resolve_command_template`/`resolve_content_template` (different signatures) | debugger-debbie | LOW | WP05 requires distinct names |
+| Gate 3 (`doctrine.resolver` import) is already green today — proves nothing about a WP05 closure, since no such violation existed outside `src/charter/**` | debugger-debbie | HIGH | WP09 T039 reframed as forward-looking guard only |
+| Gate 5's naive `._inner`-anywhere scan would false-positive on unrelated `._inner` attributes in `auth/transport.py`/`events/decision_log.py` | debugger-debbie | HIGH | WP04's gate scoped to doctrine-service-typed receivers |
+| `resolver.py:402-413` cited as lineage-traversal precedent is actually an `isinstance(dict)` compat fallback — weak/wrong precedent | debugger-debbie | MEDIUM | Softened in WP01/WP02 |
+| WP07's "remove from `__getattr__` passthrough" step was wrong — `__getattr__` is a generic catch-all a new `@property` shadows automatically; nothing to edit | debugger-debbie | MEDIUM | Step removed from WP01 |
+| `profile_resolution.py:81`'s `_default_agent_profile_repository()` is a zero-arg module-level cache with no `repo_root` — WP02's original T010 ("replace with the gated property") was a type mismatch, not implementable | reviewer-renata | HIGH | WP02 T010 reframed as confirm-and-document, not migrate |
+| NFR-005's perf DoD (a single committed p95 constant) is author-written and unfalsifiable; cross-machine comparison invalid | reviewer-renata | MEDIUM | WP02 requires raw timing series, same session |
+| FR-007's composite-key exclusions and function-local self-mutation requirement were correctly specified, but WP10's "post a GitHub comment" DoD had no non-fakeable evidence requirement | reviewer-renata | MEDIUM | WP10 requires pasted `gh issue view --comments` output |
+| A post-tasks sweep for additional missions-root hardcodes found 3 more root-relative constructions (`kernel/paths.py`, `template/manager.py`, `list_cmd.py`) beyond WP06's 2 named sites | reviewer-renata | LOW | Named as an explicit, untouched residual in WP06 (citations not independently re-verified) |
+
+**Not folded in** (explicitly deferred to implementation-time judgment, per the squad's own concession that
+these are appropriately WP-time decisions): the exact chosen names for WP05's new factory methods beyond
+"must not collide"; whether `CharterTemplateResolver` becomes a thin shim or is retired outright (WP05's
+T020 leaves this as an implementer choice, justified in the Activity Log).
+
 ## Post-Plan Squad Findings
 
 A 4-lens adversarial squad (architect-alphonso, reviewer-renata, debugger-debbie, planner-priti — each
