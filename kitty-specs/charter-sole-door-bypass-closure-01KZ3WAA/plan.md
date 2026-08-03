@@ -11,15 +11,21 @@ the operator before this plan was written; see spec.md's "Revised at planning ti
 
 Make `charter.resolver.DoctrineService` (`src/charter/resolver.py`) the sole, fully-gated access path to
 provisioned doctrine assets. The mission (a) eliminates 5 of 7 flagged direct `AgentProfileRepository`
-construction sites plus all 6 raw `DoctrineService` construction sites — excluding 2 sites that turned out
-to access a legitimately separate `.kittify/profiles` directory (C-006) — (b) adds resolution methods to the
-factory so the 5-tier template/command resolver axis and 2 additional in-charter sites stop importing
-`doctrine.resolver` directly, (c) consolidates 3 duplicate missions-root path hardcodes onto one promoted
-authority (deferring full `pack_paths` convergence to `#3091`), (d) extends factory activation-gating to 6
-mechanical kinds and separately gates the structurally-different `mission-type` token via
-`MissionTypeProfileRepository`, (e) unifies two divergent "canonical" builder functions discovered as a
-byproduct, and (f) ships non-vacuous, zero-tolerance architectural gates so none of this quietly regresses.
-Five adjacent GitHub issues (#2986, #3036, #3039, #3091, #3022) are confirmed out of scope and stay deferred.
+construction sites plus 9 raw `DoctrineService` construction sites (6 original + 3 found by a post-plan
+adversarial squad) — excluding 2 sites that turned out to access a legitimately separate `.kittify/profiles`
+directory (C-006) — (b) adds resolution methods to the factory so `CharterTemplateResolver`'s one real
+caller stops importing `doctrine.resolver` directly, (c) consolidates 3 duplicate missions-root path
+hardcodes onto one promoted authority (deferring full `pack_paths` convergence to `#3091`), (d) extends
+factory activation-gating to 6 mechanical kinds and separately gates the structurally-different
+`mission-type` token via `MissionTypeProfileRepository`, (e) unifies five divergent "canonical" construction
+paths discovered as a byproduct (2 named builders + 3 inline reimplementations) into one, (f) closes a live
+`._inner` reach-around that would otherwise defeat the whole mission, and (g) ships non-vacuous,
+zero-tolerance, qualname-resolving architectural gates so none of this quietly regresses. A pre-mission
+performance baseline is captured before any site migrates (NFR-005). Five adjacent GitHub issues (#2986,
+#3036, #3039, #3091, #3022) are confirmed out of scope, stay deferred, and each gets a durable tracker trace
+(FR-011). A 4-lens post-plan adversarial squad independently verified the Phase-0 research and found the
+additional construction sites, the `._inner` gap, an IC-sequencing bug, and several fakeable-assertion gaps
+— all folded in above rather than discovered mid-implementation.
 
 ## Technical Context
 
@@ -143,40 +149,73 @@ are deliberately left untouched in place (C-006) rather than moved.
 > Concerns are NOT work packages. `/spec-kitty.tasks` translates these into executable WPs — one concern may
 > become several WPs, and small concerns may merge.
 
-### IC-01 — Direct construction sites eliminated + builder unification
+### IC-01 — Direct construction sites eliminated + builder unification + `._inner` closure
 
-- **Purpose**: Close the 11 in-scope direct-construction bypasses (5 `AgentProfileRepository` + 6 raw
-  `DoctrineService`) and the single-canonical-authority gap between the two builder functions that construct
-  the factory itself.
-- **Relevant requirements**: FR-001, FR-002, FR-008, NFR-001, NFR-005, C-002, C-006.
+- **Purpose**: Close all in-scope direct-construction bypasses (5 `AgentProfileRepository` + 9 raw
+  `DoctrineService`, after the post-plan squad's 3 additional sites) and the single-canonical-authority gap
+  across five divergent construction paths (2 named builders + 3 inline reimplementations), plus the
+  `._inner` reach-around that would otherwise defeat every other IC's gating.
+- **Relevant requirements**: FR-001, FR-002, FR-008, FR-010, NFR-001, NFR-005, C-002, C-006.
 - **Affected surfaces**: `runtime_bridge_io.py:576`, `projection.py:84`, `tasks_status_cmd.py:712,823`,
   `charter/profile_resolution.py:81`, `charter/compiler.py:802`, `_doctrine_asset.py:75`,
-  `_doctrine_collect.py:191,281,418,826`, `charter/doctrine_service_builder.py`,
-  `specify_cli/doctrine_service_factory.py`.
-- **Sequencing/depends-on**: unify the builders (FR-008) FIRST — every other site in this concern constructs
-  through the (about-to-be-unified) builder, so fixing the divergence after routing sites through it would
-  mean touching them twice. `projection.py:84`'s new lineage accessor is a small factory addition that should
-  land alongside the builder unification, before its call site is migrated.
-- **Risks**: `projection.py:84` and `runtime_bridge_io.py:576` need capabilities (mutation, lineage
-  composition) the filtered wrapper doesn't expose today — a naive swap breaks them; the accessor design
-  needs a focused ATDD test proving lineage/mutation still works post-migration. The two
-  `tasks_status_cmd.py` sites need the NFR-005 latency measurement BEFORE claiming the fix is complete, not
-  as an afterthought. `_doctrine_collect.py`'s 4 sites must use the unfiltered mode explicitly — a plain
-  activation-aware swap there is a silent regression (narrows doctor/health output), not a fix.
+  `_doctrine_collect.py:191,281,418,826`, `charter_runtime/lint/checks/org_layer.py:244,275`,
+  `cli/commands/charter/generate.py:56`, `charter/doctrine_service_builder.py`,
+  `specify_cli/doctrine_service_factory.py`, `invocation/registry.py:64`, `invocation/org_profiles.py:117`.
+- **Sequencing, corrected (post-plan squad — the original plan had a real bug here)**: unify the builders
+  (FR-008) FIRST, but FR-008's own regression proof can only assert identical output across the **3 kinds
+  gated today** (`paradigms`/`procedures`/`agent_profiles`) plus the builder kwargs (`active_languages`,
+  `org_roots`) — it CANNOT assert "all 9 gated properties" until IC-04/FR-005 lands, because 6 of those
+  properties don't exist yet at IC-01 time. Do not write FR-008's proof against a 9-property surface that
+  doesn't exist; write it against 3, and add an IC-04-time follow-up assertion extending it to 9. The new
+  lineage/mutation accessor (pinned semantics: `contracts/charter-doctrine-service-contract.md`) should land
+  alongside the builder unification, before `projection.py:84`, `runtime_bridge_io.py:576`, `registry.py:64`,
+  and `org_profiles.py:117` are migrated onto it (all four need the same accessor — build it once).
+- **Risks**: the accessor's two semantic questions (does mutation leak through the filter; does lineage
+  traversal cross into deactivated parents) are now pinned in the contract file — implement against that
+  text, do not re-derive at tasks time. The two `tasks_status_cmd.py` sites need the NFR-005 latency
+  measurement, and that measurement needs a **pre-captured baseline** (see IC-00 below) — measuring only
+  after the change lands makes "within 10%" unfalsifiable. `_doctrine_collect.py`'s 4 sites and the
+  `org_layer.py`/`generate.py` sites must use the unfiltered mode explicitly, not a plain activation-aware
+  swap (silent doctor/health regression). `org_layer.py:252-253`'s `except ImportError: pass` must become
+  fail-closed, not merely rewrapped.
+
+### IC-00 — NFR-005 baseline capture (must precede IC-01)
+
+- **Purpose**: Make NFR-005's "within 10% of pre-mission baseline" falsifiable by actually capturing that
+  baseline before any FR-001 site changes.
+- **Relevant requirements**: NFR-005.
+- **Affected surfaces**: a new or reused 100+-WP fixture project; the mission tracer file (baseline number
+  recorded there per Standing Order #3).
+- **Sequencing/depends-on**: none — this must run before IC-01's `tasks_status_cmd.py` sites are touched, on
+  the merge-base commit.
+- **Risks**: none identified; this is measurement, not code change. Skipping it is the risk (flagged by the
+  post-plan squad as otherwise unfalsifiable).
 
 ### IC-02 — Template/command resolver axis routed through the factory
 
 - **Purpose**: Give `charter.resolver.DoctrineService` resolution methods for the 5-tier axis so
-  `CharterTemplateResolver` and the 2 additional in-charter sites found during planning stop importing
-  `doctrine.resolver` directly.
+  `CharterTemplateResolver`'s one real caller (`specify_cli/runtime/resolver.py`'s tier-5 routing) stops
+  importing `doctrine.resolver` directly.
 - **Relevant requirements**: FR-003, NFR-001, SC-002.
 - **Affected surfaces**: `charter/resolver.py` (new methods), `charter/template_resolver.py`,
-  `charter/resolution.py`, `charter/context_renderers/template_include.py`.
-- **Sequencing/depends-on**: independent of IC-01; can run in parallel.
+  `specify_cli/runtime/resolver.py` (construction-contract fix — see below).
+- **Corrected scope (post-plan squad)**: `charter/resolution.py` and `charter/context_renderers/
+  template_include.py` are dropped from this concern — both import only the `ResolutionResult`/
+  `ResolutionTier` *types*, sanctioned by an existing facade contract, not resolution calls; there is nothing
+  to retarget. `doctrine.template_catalog.resolve_template_by_id` (5 importers, including
+  `template_include.py`'s real resolution call) is a genuine third tier surface the original FR-003 anchor
+  missed entirely — it is named as explicit deferred debt (alongside `runtime/resolver.py`'s tier-1-4
+  reimplementation) and is OUT of this concern's scope; do not fold it in without a separate scope decision.
+- **Sequencing/depends-on**: independent of IC-01/IC-00; can run in parallel. Must resolve a real
+  construction-contract mismatch: `specify_cli/runtime/resolver.py`'s `_charter_template_resolver_for()`
+  helper is cached (`lru_cache`) and keyed on a `missions_root` string via `CharterTemplateResolver.
+  from_missions_root(...)`, while `charter.resolver.DoctrineService` is constructed from `repo_root` via the
+  unified builder — the WP must design this mapping explicitly (e.g. resolve `repo_root` at the same call
+  site, or add a `from_missions_root`-equivalent path to the factory), not discover it mid-implementation.
 - **Risks**: `doctrine/resolver.py`'s tier functions must NOT move — moving them fights the module's own
   documented rationale for living there (charter needs to import doctrine, not vice versa). The
-  `specify_cli/runtime/resolver.py` tier-1-4 reimplementation is a noted semantic-drift risk but is
-  explicitly OUT of this concern's scope (not a bypass; do not touch it here).
+  `specify_cli/runtime/resolver.py` tier-1-4 reimplementation and the `template_catalog` axis are both noted
+  semantic-drift/scope risks but are explicitly OUT of this concern (do not touch them here).
 
 ### IC-03 — Missions-root path consolidation
 
@@ -204,15 +243,25 @@ are deliberately left untouched in place (C-006) rather than moved.
   bare-project pin) — the classic failure mode here is a naive `sorted(activated or frozenset())` that
   silently empties a project that never activated anything.
 
-### IC-05 — Durability gates + deferred-issue documentation
+### IC-05 — Durability gates + deferred-issue tracker hygiene
 
-- **Purpose**: Ship the zero-tolerance, self-mutation-proven gates for all four bypass categories, and record
-  the five confirmed-deferred issues in the PR description.
-- **Relevant requirements**: FR-007, FR-009, NFR-003, SC-005, SC-006.
-- **Affected surfaces**: `tests/architectural/` (new gate files), PR description.
-- **Sequencing/depends-on**: MUST run AFTER IC-01/IC-02/IC-03/IC-04 land — a zero-tolerance gate written
+- **Purpose**: Ship the zero-tolerance, self-mutation-proven gates for all **five** bypass categories
+  (including FR-010's `._inner` closure), and give the five confirmed-deferred issues a durable tracker
+  trace, not just PR-description prose.
+- **Relevant requirements**: FR-007, FR-010, FR-011, NFR-003, SC-005, SC-006.
+- **Affected surfaces**: `tests/architectural/` (new gate files, qualname-resolving not text-matching, per
+  NFR-001's correction), `issue-matrix.json`, GitHub issue comments on #2986/#3036/#3039/#3091/#3022, PR
+  description.
+- **Corrected scope (post-plan squad)**: FR-011 is strengthened beyond PR-description prose — this concern
+  now includes writing an `issue-matrix.json` row and posting an actual tracker comment on each of the five
+  deferred issues (matching the precedent mission's own practice), not merely narrating the deferral in the
+  PR body.
+- **Sequencing/depends-on**: MUST run AFTER IC-00/IC-01/IC-02/IC-03/IC-04 land — a zero-tolerance gate written
   before the bypasses are closed would either be vacuous (pass despite the bypasses) or immediately red
   (fail before any fix lands); neither is useful. Land last.
 - **Risks**: the WP10 lesson applies directly — a gate that doesn't actually walk in-function/nested-scope
-  constructs is worse than no gate (manufactures false confidence). Each new gate needs its own self-mutation
-  proof, not a shared one.
+  constructs is worse than no gate (manufactures false confidence); NFR-003 now requires each self-mutation
+  to inject at function-local/nested scope specifically, not module-level. Each of the five gates needs its
+  own self-mutation proof, not a shared one. The `.kittify/profiles` and `_doctrine_collect.py` exclusions
+  must be composite-key, not whole-file (NFR-001) — a whole-file exclusion silently waives the entire module,
+  not just the named line.
