@@ -96,7 +96,9 @@ must use `pack_context=None` explicitly.
 **Goal**: `CharterTemplateResolver`'s one real caller stops importing `doctrine.resolver` directly.
 **Requirements**: FR-003.
 **Independent test**: no consumer outside `src/charter/**` imports `doctrine.resolver`; tier resolution results unchanged.
-**Subtasks**: T018-T021. **Dependencies**: none (parallel to WP01-04). **Estimated size**: ~350 lines.
+**Subtasks**: T018-T021. **Dependencies**: WP01 (T018 adds methods to `src/charter/resolver.py`, which WP01
+exclusively owns — a sequenced, dependency-gated out-of-map edit, not a declared overlap).
+**Estimated size**: ~350 lines.
 **Risks**: `doctrine/resolver.py`'s tier functions must NOT move; `doctrine.template_catalog` and
 `runtime/resolver.py`'s tier 1-4 reimplementation are explicitly OUT of scope — do not touch them.
 
@@ -115,7 +117,9 @@ must use `pack_context=None` explicitly.
 `mission_step_contract`/`glossary_pack`, mirroring the existing `paradigms` pattern exactly.
 **Requirements**: FR-005, FR-008 (proof extension).
 **Independent test**: a bare project's catalog for each of the 6 kinds equals the raw unwrapped service's output.
-**Subtasks**: T026-T033. **Dependencies**: none (parallel); T033 also touches WP01's test file.
+**Subtasks**: T026-T033. **Dependencies**: WP01, WP05 (T026-T031 edit `src/charter/resolver.py`, exclusively
+owned by WP01; sequenced after WP05 too, so this WP never runs in parallel with either — a dependency-gated
+out-of-map edit, not a declared overlap). T033 also touches WP01's test file, same rationale.
 **Estimated size**: ~450 lines.
 **Risks**: T032's assertion MUST be equality against the unwrapped service, not an existence check
 (a partial leak passes an existence check).
@@ -156,15 +160,19 @@ comment naming this mission.
 ## Sequencing Summary
 
 ```
-WP01 ─┬─> WP02 ─┐
-      ├─> WP03 ─┤
-      └─> WP04 ─┤
-WP05 ──────────┤
-WP06 ──────────┤──> WP09 (durability gates, last)
-WP07 ──────────┤
-WP08 ──────────┘
+WP01 ─┬─> WP02 ────────────────┐
+      ├─> WP03 ────────────────┤
+      ├─> WP04 ────────────────┤
+      └─> WP05 ──> WP07 ───────┤──> WP09 (durability gates, last; depends on WP01-08)
+WP06 ────────────────────────┤
+WP08 ────────────────────────┘
 WP10 (fully independent, any time)
 ```
+
+Note: `src/charter/resolver.py` is edited by WP01 (accessor), WP05 (tier-axis methods), and WP07 (6
+mechanical properties) — WP01 is its sole *declared* owner; WP05 and WP07's edits there are sequenced,
+dependency-gated out-of-map additions (WP05 depends on WP01; WP07 depends on WP01 AND WP05), never
+parallel, so no ownership conflict reaches `finalize-tasks`'s lane computation.
 
 MVP scope: WP01-04 (the direct-construction closure + accessor) delivers the largest single chunk of the
 "sole door" claim independently of WP05-08's gating/axis work.
