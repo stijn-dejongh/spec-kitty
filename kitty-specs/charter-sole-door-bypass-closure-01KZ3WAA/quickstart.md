@@ -75,7 +75,7 @@ pytest tests/architectural/ -k "charter_sole_door" -v
 
 ```bash
 # Compare against the pre-mission baseline captured in the mission's tracer file / PR description.
-spec-kitty agent tasks status --feature <fixture-project-with-100-plus-wps>
+spec-kitty agent tasks status --mission <fixture-project-with-100-plus-wps>
 ```
 Expected: p95 render latency within 10% of the recorded baseline (NFR-005); if not, the PR description
 must name the architectural fix applied (caching/lazy-init), not accept the regression.

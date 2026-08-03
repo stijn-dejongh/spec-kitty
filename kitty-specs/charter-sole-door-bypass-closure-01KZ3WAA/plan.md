@@ -233,8 +233,9 @@ are deliberately left untouched in place (C-006) rather than moved.
   structurally elsewhere.
 - **Relevant requirements**: FR-005, FR-006, NFR-004, SC-004.
 - **Affected surfaces**: `charter/resolver.py` (6 new properties, copy-paste of the `paradigms` pattern),
-  `charter/mission_type_profile_repository.py` / `charter/mission_type_profiles.py` (new, non-mechanical
-  filtering).
+  `charter/mission_type_profiles.py::resolve_mission_type_context()` ONLY (new, non-mechanical filtering —
+  post-tasks squad correction: `charter/mission_type_profile_repository.py` is a different WP's exclusive
+  ownership for an unrelated change and must not be touched here).
 - **Sequencing/depends-on**: FR-005 (mechanical) and FR-006 (mission-type) are independent of each other;
   FR-005 can run in parallel with IC-01/IC-02/IC-03. FR-006 should NOT be estimated or scheduled as if it
   were the same size as FR-005's six kinds — it is a different repository with no existing three-state

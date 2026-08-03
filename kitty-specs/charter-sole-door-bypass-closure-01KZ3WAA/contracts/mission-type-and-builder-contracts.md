@@ -1,6 +1,6 @@
 # Contracts: `mission-type` activation gating and the unified builder
 
-## `MissionTypeProfileRepository` activation contract (FR-006)
+## `resolve_mission_type_context()` activation contract (FR-006)
 
 Distinct from the three-state contract used by the other 9 kinds, because `PackContext.
 activated_mission_types` is never `None`:
@@ -10,9 +10,11 @@ activated_mission_types` is never `None`:
 | Equals `builtin_mission_type_id_set()` (the collapse default) | No selection was authored | Return the full built-in mission-type set |
 | A proper, non-default subset | A selection was authored | Return only the named mission-types |
 
-The gating point is `charter.mission_type_profile_repository.MissionTypeProfileRepository` /
-`charter.mission_type_profiles.resolve_mission_type_context()` — NOT `charter.resolver.DoctrineService` (see
-the sibling contract file's "Explicitly NOT on this class" section). A bare project (no `mission-type` key
+**The gating point is `charter.mission_type_profiles.resolve_mission_type_context()` ONLY** — NOT
+`charter.mission_type_profile_repository.MissionTypeProfileRepository`'s own file (post-tasks squad
+correction: that file is WP06's exclusive ownership for an unrelated change; implementing filtering there
+too would create a real ownership overlap), and NOT `charter.resolver.DoctrineService` (see the sibling
+contract file's "Explicitly NOT on this class" section). A bare project (no `mission-type` key
 authored) must still resolve every built-in mission-type — proven by a dedicated regression test asserting
 **set-equality against `builtin_mission_type_id_set()`**, not a fakeable subset check (post-plan squad
 correction: "`research`, `software-dev`, `documentation`, `plan`, at minimum" is satisfied even if a fifth

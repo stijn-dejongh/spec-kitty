@@ -35,12 +35,16 @@ moved, renamed, or duplicated.
 ## Explicitly NOT on this class
 
 - `mission_types` — no property exists, and none is added. The `mission-type` token is gated separately by
-  `MissionTypeProfileRepository` (see the sibling contract file). Do not add a `mission_types` property here
-  as a shortcut; that would contradict R (D4)'s finding that the token has no matching raw-service property
-  to filter.
-- Lineage/mutation operations (`register_overlay`, `get_ancestors`, `resolve_profile`) on `agent_profiles` —
-  these require the new lineage/mutation accessor named in R5, a second, explicitly-named accessor, not a
-  widening of the `agent_profiles` property's return type.
+  `charter.mission_type_profiles.resolve_mission_type_context()` (see the sibling contract file — NOT by
+  editing `MissionTypeProfileRepository`'s own file, per a post-tasks squad ownership-boundary correction).
+  Do not add a `mission_types` property here as a shortcut; that would contradict R (D4)'s finding that the
+  token has no matching raw-service property to filter.
+- Lineage/mutation operations (`register_overlay()` and `get_provenance()`) on `agent_profiles` — these
+  require the new `agent_profile_repository` accessor, a second, explicitly-named accessor, not a widening
+  of the `agent_profiles` property's return type. (Post-tasks squad correction: `get_ancestors()` and
+  `resolve_profile()` were named in earlier drafts of this contract but are not the verified surface —
+  `get_ancestors()` is unused by any real call site; `resolve_profile()` is used only by
+  `runtime_bridge_io.py`, not by the two `._inner`-reach-around sites this bullet originally described.)
 
 ## Non-regression obligations
 
