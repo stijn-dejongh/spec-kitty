@@ -4,7 +4,7 @@ artifact_type: spec-kitty.analysis-report
 command: /spec-kitty.analyze
 mission_slug: egress-single-authority-01KZN7CB
 mission_id: 01KZN7CBTA6T39KZS7A09PY384
-generated_at: '2026-08-10T08:53:35.273971+00:00'
+generated_at: '2026-08-10T09:00:22.888073+00:00'
 analyzer_agent: unknown
 input_artifacts:
   spec.md:
@@ -21,10 +21,10 @@ input_artifacts:
     sha256: b1003d05f2c4dc81836a5391c898cd1dadebb1f222bd4579d1cb0f8fc4168284
 verdict: ready
 issue_counts:
-  low: 2
   critical: 0
-  medium: 1
+  low: 2
   high: 0
+  medium: 1
   info: 0
 findings:
 - id: U1
@@ -58,7 +58,7 @@ Mission `egress-single-authority-01KZN7CB` was analyzed after three prior advers
 | FR-001 decision-carrying return | ✅ | T008, T009 | |
 | FR-002 single authority + threading | ✅ | T009, T010, T013 | |
 | FR-003 delete second evaluation | ✅ | T014 | |
-| FR-004 consumer audit/re-point | ✅ | T008, T011, T012, T017, T002 | |
+| FR-004 consumer audit/re-point | ✅ | T008, T011, T012, T017, T002, T006 | T006 = `sync doctor` renderer parity (also serves C-002 symbol-absence + SC-004/SC-005) |
 | FR-005 remedies + carve-out | ✅ | T011, T016 | C1 |
 | NFR-001 enforcement unchanged | ✅ | T001, T013 | |
 | NFR-002 hosted byte-identity | ✅ | T002 | |
