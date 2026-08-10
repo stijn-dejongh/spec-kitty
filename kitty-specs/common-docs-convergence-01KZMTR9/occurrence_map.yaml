@@ -1,0 +1,73 @@
+# Occurrence map — Common Docs Convergence (DIRECTIVE_035 bulk-edit)
+# The move spine driving scripts/docs/redirect_stub_generator.py + relative_link_fixer.py.
+# Cumulative: preserves the prior closed mission's baseline coverage (NFR-010).
+# Per-WP `moves:` entries are appended at /spec-kitty.tasks time; the classification below is complete.
+mission: common-docs-convergence-01KZMTR9
+change_mode: bulk_edit
+
+# The 8 standard categories — every one carries an explicit action.
+classification:
+  code_symbols:
+    action: none
+    rationale: No code identifiers are renamed; only docs tooling is extended, not renamed.
+  import_paths:
+    action: none
+    rationale: No Python import paths change.
+  filesystem_paths:
+    action: relocate
+    rationale: >
+      The primary edit class. Doc files/dirs move to the sanctioned section set; every move is a
+      `moves:` entry below and is routed through the redirect tooling (derived map, immutable baseline).
+  serialized_keys:
+    action: update
+    rationale: >
+      Frontmatter gains `audience:` (touched pages only; NOT added to frontmatter_required_fields).
+      `structural_lint_config.concern_bucket_to_section`/`guides_boundary` updated for audience routing.
+      toc.yml / docfx.json / llms.txt / redirect_map.yaml entries regenerated in lockstep (single-threaded, IC-11).
+  cli_commands:
+    action: none
+    rationale: No CLI command names change.
+  user_facing_strings:
+    action: rewrite
+    rationale: >
+      In-prose `[text](path)` links to moved pages are rewritten via relative_link_fixer; the 13
+      free-text `audience:` values are migrated to resolvable catalog paths.
+  tests_fixtures:
+    action: update
+    rationale: >
+      Test path literals referencing moved docs are updated; gap_analysis.py's docs/-subdir-name
+      assumptions are pinned by a test before renames (NFR-005).
+  logs_telemetry:
+    action: update
+    rationale: >
+      Runtime deprecation message in src/specify_cli/retrospective/deprecation.py references
+      docs/guides/use-retrospective-learning.md — updated if that page moves.
+
+# Initial move spine (extended per-WP at tasks time). kind: retire | rehome | fold | collapse
+moves:
+  # IC-04 single-root (root -> docs/)
+  - { from: "research/",                to: "RETIRE_OR_docs/plans/research|docs/integrations", kind: rehome }
+  - { from: "examples/",               to: "docs/guides/",        kind: rehome }
+  - { from: "contracts/batch-api-contract.md", to: "docs/api/",   kind: rehome }
+  - { from: "glossary/",               to: "docs/context/",       kind: fold }
+  - { from: "media/",                  to: "docs/assets/",        kind: rehome }
+  - { from: "spec-driven.md",          to: "docs/context/",       kind: rehome }
+  - { from: "spec-kitty-mission-workflow.md", to: "docs/guides/", kind: rehome }
+  - { from: "HOW_TO_MAINTAIN.md",      to: "docs/operations/",    kind: rehome }
+  # IC-05 non-canonical sections + architecture shadow
+  - { from: "docs/reference/",         to: "docs/api/",           kind: fold }
+  - { from: "docs/doctrine/",          to: "docs/architecture|docs/guides", kind: fold }
+  - { from: "docs/core-concepts/",     to: "NAV_ZONE",            kind: retire }
+  - { from: "docs/updates/",           to: "NAV_ZONE",            kind: retire }
+  - { from: "docs/output/",            to: "RETIRE",              kind: retire }
+  - { from: "docs/release-goals/",     to: "docs/changelog|docs/plans", kind: fold }
+  - { from: "docs/architecture/README-1.x.md", to: "docs/adr/1.x/", kind: collapse }
+  - { from: "docs/architecture/README-2.x.md", to: "docs/adr/2.x/", kind: collapse }
+  - { from: "docs/architecture/README-3.x.md", to: "docs/adr/3.x/", kind: collapse }
+  # IC-03/IC-05 loose docs/ root files -> sections
+  - { from: "docs/status-model.md",        to: "docs/architecture/", kind: rehome }
+  - { from: "docs/trail-model.md",         to: "docs/architecture/", kind: rehome }
+  - { from: "docs/host-surface-parity.md", to: "docs/architecture/", kind: rehome }
+  - { from: "docs/contextive-glossaries.md", to: "docs/context/",    kind: rehome }
+  - { from: "docs/p0-baseline-refresh.md", to: "docs/operations/",   kind: rehome }
+  # IC-06 how-to audience routing + subdivision, IC-07 kebab/index: appended at tasks time.
