@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "mission_slug": "egress-single-authority-01KZN7CB",
+  "mission_id": "01KZN7CBTA6T39KZS7A09PY384",
+  "mission_branch": "kitty/mission-egress-single-authority-01KZN7CB",
+  "target_branch": "feat/egress-single-authority",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "tests/sync/tracker/test_egress_single_authority.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "tracker-integration",
+        "workspace"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "src/specify_cli/egress.py",
+        "src/specify_cli/invocation/adapters.py",
+        "src/specify_cli/sync/__init__.py",
+        "tests/invocation/test_adapters.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tracker-integration",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-a"
+      ],
+      "parallel_group": 1
+    },
+    {
+      "lane_id": "lane-c",
+      "wp_ids": [
+        "WP03"
+      ],
+      "write_scope": [
+        "src/specify_cli/tracker/egress_verdict.py",
+        "tests/sync/tracker/test_tracker_egress_verdict_3108.py"
+      ],
+      "predicted_surfaces": [
+        "api",
+        "artifact-rendering",
+        "legacy-cleanup",
+        "tracker-integration",
+        "workspace"
+      ],
+      "depends_on_lanes": [
+        "lane-b"
+      ],
+      "parallel_group": 2
+    }
+  ],
+  "computed_at": "2026-08-10T08:27:14.500397+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "b5f4c4f9f1f3d3531612bc821434f4f74bee19d9"
+}
