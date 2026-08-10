@@ -1,4 +1,16 @@
 {
+  "acceptance_history": [
+    {
+      "acceptance_mode": "pr",
+      "accepted_at": "2026-08-10T13:15:13.067330+00:00",
+      "accepted_by": "stijn",
+      "accepted_from_commit": "a730ac543d6afbdc341e6b96f772734c72702b37"
+    }
+  ],
+  "acceptance_mode": "pr",
+  "accepted_at": "2026-08-10T13:15:13.067330+00:00",
+  "accepted_by": "stijn",
+  "accepted_from_commit": "a730ac543d6afbdc341e6b96f772734c72702b37",
   "coordination_branch": "kitty/mission-egress-single-authority-01KZN7CB",
   "created_at": "2026-08-10T06:57:21.739127+00:00",
   "flattened": false,
@@ -12,5 +24,7 @@
   "purpose_tldr": "Make the tracker-egress verdict's diagnostics come from the same single authority that enforces it, removing a duplicate consent lookup.",
   "slug": "egress-single-authority-01KZN7CB",
   "target_branch": "feat/egress-single-authority",
-  "topology": "coord"
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-08-10T11:13:01.949519+00:00"
 }
