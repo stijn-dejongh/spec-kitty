@@ -6,10 +6,10 @@ Phase 0 output. The mission is a contained refactor on a well-understood seam, s
 
 **Decision**: The one `resolve_project_consent` + one routing resolution, **and** the `ConsentDecision → EgressConsent` split-mapping, live **once, in the registered resolver** (`sync/__init__.py`'s `_egress_consent_resolver`), which now returns the decision-carrying `EgressConsent` member. `egress.py`'s `_egress_decision` obtains that member **only** through the existing `resolve_egress_consent` seam and performs **no** local consent/routing resolution — it must not import `sync.consent`/`sync.routing`. `egress_verdict._resolve_channel1` then consumes `_egress_decision`'s `(permits, refusal_message, channel1_state, generic)` from that single evaluation.
 
-**Rationale**: `egress.py`'s own load-bearing docstring (`egress.py:28-52`, C-003/C-005) forbids re-deriving the checkout→project→consent chain locally — *"the single derivation lives in `sync/__init__.py`'s `_egress_consent_resolver`."* And `propagator.py:127` calls `resolve_egress_consent` **directly**, so the resolver must return the split members regardless; if `_egress_decision` *also* mapped `ConsentDecision→member`, the split-mapping would exist in two drift-prone places (resolver-for-propagator vs decider-for-verdict) — the exact defect class FR-002 exists to kill. One mapping, in the resolver.
+**Rationale**: `egress.py`'s own load-bearing docstring (`egress.py:28-52`, C-004) forbids re-deriving the checkout→project→consent chain locally — *"the single derivation lives in `sync/__init__.py`'s `_egress_consent_resolver`."* And `propagator.py:127` calls `resolve_egress_consent` **directly**, so the resolver must return the split members regardless; if `_egress_decision` *also* mapped `ConsentDecision→member`, the split-mapping would exist in two drift-prone places (resolver-for-propagator vs decider-for-verdict) — the exact defect class FR-002 exists to kill. One mapping, in the resolver.
 
 **Alternatives rejected**:
-- *`_egress_decision` resolves consent/routing locally in `egress.py`* — violates C-003/C-005, and relocates (not removes) the two-authority split.
+- *`_egress_decision` resolves consent/routing locally in `egress.py`* — violates C-004, and relocates (not removes) the two-authority split.
 - *Change `project_egress_refusal`'s return type to carry both string and state* — hits its other consumer `saas_client/client.py:171` (wants a bare `str | None`); the thin-wrapper design (below) avoids this.
 
 ## Decision 2 — The consent authority and the enforcing-query replacement
@@ -31,7 +31,7 @@ Phase 0 output. The mission is a contained refactor on a well-understood seam, s
 
 ## Decision 4 — Rebuilding the enforcement guarantee (C-003 of the spec)
 
-**Decision**: `TestReportingSplitNeverFlipsEnforcement` is **rebuilt**, not re-pointed — once `_classify_channel1` is gone there is no second authority to force into disagreement. The replacement asserts structurally: exactly one `resolve_checkout_sync_routing_readonly` and one `resolve_project_consent` on the verdict path (NFR-004/SC-003); the `_classify_channel1` symbol-absence (SC-004); the full enforcement-equivalence matrix incl. the permit row + precedence levels (SC-001); **and a new pin that `egress.py` holds no `sync.consent`/`sync.routing` import** (the C-003/C-005 invariant that today has no test — post-plan M1).
+**Decision**: `TestReportingSplitNeverFlipsEnforcement` is **rebuilt**, not re-pointed — once `_classify_channel1` is gone there is no second authority to force into disagreement. The replacement asserts structurally: exactly one `resolve_checkout_sync_routing_readonly` and one `resolve_project_consent` on the verdict path (NFR-004/SC-003); the `_classify_channel1` symbol-absence (SC-004); the full enforcement-equivalence matrix incl. the permit row + precedence levels (SC-001); **and a new pin that `egress.py` holds no `sync.consent`/`sync.routing` import** (the C-004 invariant that today has no test — post-plan M1).
 
 ## Open clarifications
 
