@@ -14,9 +14,8 @@
   "accepted_by": "stijn",
   "accepted_from_commit": "a730ac543d6afbdc341e6b96f772734c72702b37",
   "baseline_merge_commit": "401793427e2cd33ae583158ef0ea8d160b0f357b",
-  "coordination_branch": "kitty/mission-egress-single-authority-01KZN7CB",
   "created_at": "2026-08-10T06:57:21.739127+00:00",
-  "flattened": false,
+  "flattened": true,
   "friendly_name": "Single-Authority Tracker-Egress Verdict",
   "mission_id": "01KZN7CBTA6T39KZS7A09PY384",
   "mission_number": null,
@@ -28,7 +27,6 @@
   "slug": "egress-single-authority-01KZN7CB",
   "status_phase": "1",
   "target_branch": "feat/egress-single-authority",
-  "topology": "coord",
   "vcs": "git",
   "vcs_locked_at": "2026-08-10T11:13:01.949519+00:00"
 }
