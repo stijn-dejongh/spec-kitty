@@ -1,41 +1,38 @@
 # Research: Single-Authority Tracker-Egress Verdict
 
-Phase 0 output. The mission is a contained refactor on a well-understood seam, so "research" here resolves the three design decisions the post-spec squad flagged as open, each with rationale and rejected alternatives.
+Phase 0 output. The mission is a contained refactor on a well-understood seam, so "research" here resolves the design decisions the post-spec and post-plan squads flagged, each with rationale and rejected alternatives.
 
-## Decision 1 — How the decision-carrying state reaches the verdict without a second resolution (the M2 crux)
+## Decision 1 — The single split-mapping lives in the registered resolver; `egress.py` never re-derives locally (post-plan M1)
 
-**Decision**: Introduce a single internal decider in `egress.py` — `_egress_decision(root, identifiers) -> EgressDecision(permits: bool, refusal_message: str | None, channel1_state)` — that resolves consent **once** (`resolve_project_consent`) plus routing once, and returns both the byte-identical refusal string and the diagnostic state. `project_egress_refusal` becomes a thin wrapper returning only `refusal_message` (its existing `str | None` contract, so `saas_client/client.py` and other string consumers are untouched). `egress_verdict._resolve_channel1` calls `_egress_decision` directly and reads both `permits` and `channel1_state` from that one evaluation.
+**Decision**: The one `resolve_project_consent` + one routing resolution, **and** the `ConsentDecision → EgressConsent` split-mapping, live **once, in the registered resolver** (`sync/__init__.py`'s `_egress_consent_resolver`), which now returns the decision-carrying `EgressConsent` member. `egress.py`'s `_egress_decision` obtains that member **only** through the existing `resolve_egress_consent` seam and performs **no** local consent/routing resolution — it must not import `sync.consent`/`sync.routing`. `egress_verdict._resolve_channel1` then consumes `_egress_decision`'s `(permits, refusal_message, channel1_state, generic)` from that single evaluation.
 
-**Rationale**: Satisfies FR-002 (single authority) and NFR-004 (one resolution) simultaneously, while keeping `project_egress_refusal`'s public string contract intact for the widen SaaS transport (NFR-002 for that surface). The byte-identical string and the state come from the same `ConsentDecision`, so they can never disagree.
-
-**Alternatives rejected**:
-- *Change `project_egress_refusal`'s return type to carry both* — hits its other consumer `saas_client/client.py:171`, which wants a bare `str | None`, and would ripple the contract further than needed.
-- *Have `egress_verdict` call `resolve_egress_consent` for the state and `project_egress_refusal` for the string* — resolves consent/routing **twice**, regressing NFR-004 (the mission's own second goal).
-
-## Decision 2 — The consent authority and the degraded-state mapping
-
-**Decision**: `resolve_project_consent` (returning `ConsentDecision{granted, level, project_uuid}`) is the single consent authority. The registered resolver in `sync/__init__.py` calls it **once** and maps to an `EgressConsent` member:
-- `granted` → `GRANTED`
-- not granted, `ConsentLevel.ABSENT` → `NO_RECORD`
-- not granted, a recorded refusal level → `RECORDED_REFUSAL`
-- routing has no `project_uuid` (no resolvable identity) → `NOT_CONSENTABLE`
-- resolver not registered → `NO_RESOLVER`; any unrecognized/degraded answer → `UNANSWERABLE`
-- resolver import failure (never reaches `resolve_egress_consent`) → the decider maps this to a named degraded state (**not** `undetermined`, which is reserved for `root is None`) and refuses.
-
-**Rationale**: The enforcing path already wraps `resolve_project_consent(...).granted` via `consented_project_uuids` (level-erasing). Reading the full `ConsentDecision` once recovers the three refusal reasons *and* the grant verdict from one call, so enforcement equivalence holds by construction (`consented_project_uuids.granted == decision.granted`). Every non-`GRANTED` member answers `permits_egress is False` (C-001).
+**Rationale**: `egress.py`'s own load-bearing docstring (`egress.py:28-52`, C-003/C-005) forbids re-deriving the checkout→project→consent chain locally — *"the single derivation lives in `sync/__init__.py`'s `_egress_consent_resolver`."* And `propagator.py:127` calls `resolve_egress_consent` **directly**, so the resolver must return the split members regardless; if `_egress_decision` *also* mapped `ConsentDecision→member`, the split-mapping would exist in two drift-prone places (resolver-for-propagator vs decider-for-verdict) — the exact defect class FR-002 exists to kill. One mapping, in the resolver.
 
 **Alternatives rejected**:
-- *Keep `consented_project_uuids` for enforcement and re-derive `.level` separately* — that is the current two-authority split; it is exactly what this mission deletes.
+- *`_egress_decision` resolves consent/routing locally in `egress.py`* — violates C-003/C-005, and relocates (not removes) the two-authority split.
+- *Change `project_egress_refusal`'s return type to carry both string and state* — hits its other consumer `saas_client/client.py:171` (wants a bare `str | None`); the thin-wrapper design (below) avoids this.
 
-## Decision 3 — Rebuilding the enforcement guarantee (C-003)
+## Decision 2 — The consent authority and the enforcing-query replacement
 
-**Decision**: `TestReportingSplitNeverFlipsEnforcement` (which today monkeypatches `_classify_channel1` to disagree) is **rebuilt**, not re-pointed: once `_classify_channel1` is deleted there is no second authority to force into conflict. The replacement asserts the property *structurally* — exactly one `resolve_checkout_sync_routing_readonly` and one `resolve_project_consent` on the verdict path (NFR-004/SC-003) — plus the `_classify_channel1` symbol-absence pin (SC-004), plus the full enforcement-equivalence matrix (SC-001) that includes the permit row.
+**Decision**: `resolve_project_consent` (returning `ConsentDecision{granted, level, project_uuid}`) is the single consent authority. The registered resolver calls it **once** and maps to an `EgressConsent` member:
+`granted → GRANTED`; not-granted + `ConsentLevel.ABSENT → NO_RECORD`; not-granted + a recorded-refusal level → `RECORDED_REFUSAL`; `ConsentLevel.UNDETERMINED` (record unreadable, FR-020) → `RECORDED_REFUSAL` **consciously** (matches today's behaviour, pinned in SC-005, not a silent catch-all — post-plan m2); no `project_uuid` → `NOT_CONSENTABLE`; resolver unregistered → `NO_RESOLVER`; unrecognized/malformed → `UNANSWERABLE`.
 
-**Rationale**: With a single authority the divergence-injection premise is structurally impossible, so the guard must assert single-resolution rather than agreement-under-injection. The enforcement matrix (incl. permit + precedence levels) is what actually certifies C-001 now.
+**Rationale**: Enforcement equivalence holds **by construction** — `uuid in consented_project_uuids([uuid], roots)` reduces exactly to `resolve_project_consent(uuid, roots).granted` (`consent.py:730-738`), the same call `_classify_channel1` already makes. Reading the full `ConsentDecision` once recovers both the grant verdict and the three refusal reasons. **`consented_project_uuids` is retained** — it has ~9 live sibling callers (drain/emit/commit: `delivery/selection.py`, `delivery/consent_gate.py`, `sync/emitter.py`, `sync/runtime.py`, `sync/background.py`, `sync/body_upload.py`, `sync/local_commit.py`) and is removed **only** from the egress resolver's own use (post-plan NOTE-4).
 
-**Alternatives rejected**:
-- *Keep the old test by leaving a vestigial classifier to monkeypatch* — violates C-002 (delete, not migrate) and re-introduces the second path.
+**Out of scope (siblings explicitly excluded)**: `delivery/status_report.py:865` (`build_per_project_store_report`, FR-015) is a *different* report, not the egress verdict — not folded (post-plan MINOR-2).
+
+## Decision 3 — Degraded states carry a `generic` signal so the message composer stays total (post-plan M2 — the symmetric never-raise gap)
+
+**Decision**: The degraded members (`NO_RESOLVER`, `UNANSWERABLE`, resolver-import-failure) map to a **named degraded `channel1_state`** that carries `generic = True`. The message/remedy composer (`_channel1_decided_message`, whose `_CHANNEL1_DESCRIPTIONS`/`_CHANNEL1_REMEDIES` dicts are keyed only on the three refusal states) already checks `generic` **before** indexing those dicts — so a degraded state renders generic wording and **cannot KeyError**. `_egress_decision`/`_resolve_channel1` absorb the `(state, generic)` production that `_channel1_report` did today; the generic-rendering path is **retained and re-sourced** (fed from the decider), while `_classify_channel1` (the raising *source* of the generic flag) is deleted. The import-failure branch preserves `_IMPORT_FAILURE_TEMPLATE`'s `{exc}` text as `refusal_message` (post-plan n2).
+
+**Rationale**: Deleting `_classify_channel1` deletes the `try/except` that produced `generic=True` today; without re-sourcing it, a degraded `channel1_state` at the `OUTCOME_DEFER` branch would index a dict keyed only on the three refusal states → `KeyError` → a raise out of a gate NFR-003 says never raises. Carrying `generic` through the decider closes that symmetrically with the `egress.py`-side `_UNRECOGNISED_VERDICT_TEMPLATE` fall-through.
+
+**Reported-state note (SC-005)**: today import-failure *masquerades* as `CHANNEL1_NO_RECORD` (`egress_verdict.py:424`). The new design reports it as the degraded state instead — an intended improvement (no longer a diagnostic lie), pinned with its own test row rather than under "unchanged".
+
+## Decision 4 — Rebuilding the enforcement guarantee (C-003 of the spec)
+
+**Decision**: `TestReportingSplitNeverFlipsEnforcement` is **rebuilt**, not re-pointed — once `_classify_channel1` is gone there is no second authority to force into disagreement. The replacement asserts structurally: exactly one `resolve_checkout_sync_routing_readonly` and one `resolve_project_consent` on the verdict path (NFR-004/SC-003); the `_classify_channel1` symbol-absence (SC-004); the full enforcement-equivalence matrix incl. the permit row + precedence levels (SC-001); **and a new pin that `egress.py` holds no `sync.consent`/`sync.routing` import** (the C-003/C-005 invariant that today has no test — post-plan M1).
 
 ## Open clarifications
 
-None. Both user-facing decisions (split the enum; fresh feat branch) were resolved at specify time; the three design decisions above are engineering choices resolved here and will be re-examined by the post-plan squad.
+None. The user-facing decisions (split the enum; fresh feat branch) were resolved at specify time; the design decisions above are engineering choices resolved here and hardened by the post-plan squad.

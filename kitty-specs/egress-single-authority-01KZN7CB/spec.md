@@ -71,6 +71,7 @@ An operator running a gated tracker sync wants the gate to resolve their project
 | C-001 | Seam must not widen (mechanism-pinned) | Every `EgressConsent` member except `GRANTED` answers `permits_egress is False`, certified by the iterate-all-members guard; no consumer positively grant-checks by member identity — all go through `permits_egress`. | Technical | High | Open |
 | C-002 | Delete, not migrate | `_classify_channel1` and its two non-authoritativeness pins are deleted per the module's documented retirement condition — not carried forward. | Technical | Medium | Open |
 | C-003 | Rebuild (not re-point) the enforcement guarantee | `TestReportingSplitNeverFlipsEnforcement` cannot be re-pointed — its premise (a second authority to force into disagreement) is deleted with `_classify_channel1`. It is rebuilt as the "exactly one routing/consent resolution on the verdict path" assertion (NFR-004) plus the `_classify_channel1` symbol-absence pin. | Technical | Medium | Open |
+| C-004 | Single derivation locus (no relocation) | The one consent+routing resolution and the `ConsentDecision → EgressConsent` split-mapping live **once, in the registered resolver** (`sync/__init__.py`). `egress.py` holds **no** `sync.consent`/`sync.routing` import and re-derives nothing locally (its existing FR-012/C-005 invariant, now test-pinned); `consented_project_uuids` is retained for its ~9 sibling drain/emit/commit callers and removed only from the egress resolver. | Technical | High | Open |
 
 ### Key Entities
 
@@ -91,4 +92,4 @@ An operator running a gated tracker sync wants the gate to resolve their project
 - **SC-002**: The `HOSTED_SERVICE` Channel-1 refusal message is byte-identical for all three refusal states and to the pre-change output (0-byte diff).
 - **SC-003**: A gated tracker sync verdict performs exactly one `resolve_checkout_sync_routing_readonly` and one `resolve_project_consent` (each down from two).
 - **SC-004**: `egress_verdict._classify_channel1` and its two non-authoritativeness pins no longer exist; the egress-consent boundary guard and the iterate-all-members `permits_egress` guard remain green.
-- **SC-005**: `spec-kitty sync doctor` renders the same per-destination Channel-1 state and remedy (including the degraded states) as before the change.
+- **SC-005**: `spec-kitty sync doctor` renders the same per-destination Channel-1 state and remedy for `granted` and the three refusal states. The degraded states (`no_resolver` / `unanswerable` / import-failure) are an **intended improvement** — import-failure no longer masquerades as `no_record` — pinned against the captured pre-change golden reference rather than asserted "unchanged".

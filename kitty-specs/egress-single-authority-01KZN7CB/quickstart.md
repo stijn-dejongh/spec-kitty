@@ -30,7 +30,24 @@ The iterate-all-members `permits_egress` guard (`test_adapters.py`) must stay gr
 
 ## SC-005 — `sync doctor` parity
 
-Assert `spec-kitty sync doctor` renders the same per-destination Channel-1 state and remedy — including the degraded states — as before the change.
+Assert `spec-kitty sync doctor` renders the same per-destination Channel-1 state and remedy for `granted` and the three refusal states. The **degraded** states are an intended improvement — import-failure no longer masquerades as `no_record` — so pin the pre-change degraded reported-state as the golden reference and assert the new behaviour against it explicitly (not under "unchanged").
+
+## NFR-003 — Never raises / fail-closed (post-plan M2)
+
+Enumerate each degraded resolver return — a bare `bool`, `None`, an unrecognized value, and a resolver-import-failure — and, for each, drive a verdict through the `OUTCOME_DEFER` branch: assert it **refuses**, renders **generic** wording (the `generic = True` path), and raises **nothing** at any `permits_egress` sink (including `propagator.py`). Red-first: this must fail against a build where a degraded `channel1_state` reaches the state-keyed description/remedy dicts.
+
+## FR-004 — Widen-transport refusal string unchanged (post-plan MINOR-2)
+
+Assert `saas_client/client.py`'s `SaasConsentError(project_egress_refusal(...))` refusal string is byte-identical before and after — it is **not** covered by SC-002's `HOSTED_SERVICE` pin.
+
+## C-003/C-005 — `egress.py` holds no local derivation (post-plan M1)
+
+```bash
+# egress.py must not import sync.consent / sync.routing (the single derivation stays in the resolver):
+grep -nE "import (specify_cli\.)?sync\.(consent|routing)|from (specify_cli\.)?sync\.(consent|routing)" src/specify_cli/egress.py   # expect: no matches
+```
+
+Also assert `undetermined` is still produced for `root is None` after `_classify_channel1` is deleted (post-plan NOTE-2).
 
 ## Whole-seam gates before hand-off
 
