@@ -25,7 +25,6 @@
   "purpose_context": "The tracker egress gate already enforces consent from one authority, but it re-derives the human-readable reason for a refusal from a second, independent lookup that can drift and does redundant work. This mission gives the consent resolver a richer return so diagnostics come from the enforcing evaluation, and deletes the duplicate path. It closes a documented tech-debt seam (#3287) and removes redundant git work (#3291) without changing what the gate allows or denies.",
   "purpose_tldr": "Make the tracker-egress verdict's diagnostics come from the same single authority that enforces it, removing a duplicate consent lookup.",
   "slug": "egress-single-authority-01KZN7CB",
-  "status_phase": "1",
   "target_branch": "feat/egress-single-authority",
   "topology": "coord",
   "vcs": "git",
