@@ -43,3 +43,7 @@
   plan time per DIRECTIVE_035 (path/link renames across many files).
 - Scope boundary (C-001) explicitly excludes the `docs/plans/` triage (follow-on mission), while
   still requiring inbound link-target fixes from plans pages to moved files.
+- Issue #3273 (docs-IA subdivision residual, epic #2314) is folded: its 2 code findings already
+  landed in this branch; the development/ + guides/ subdivision is added (FR-018, US4/US5, SC-009,
+  C-010) using canonical move tooling (FR-019); its 3 residual docs-tooling NOTES are recorded as
+  out-of-active-scope in Assumptions (SEO gate → #3265; required-check hazard → awareness; re-walk → opportunistic).

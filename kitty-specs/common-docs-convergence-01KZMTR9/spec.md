@@ -3,13 +3,15 @@
 **Mission Branch**: `docs/common-docs-cleanup`
 **Created**: 2026-08-10
 **Status**: Draft
-**Input**: Documentation structural cleanup / Common Docs convergence. Establish audience-metadata grounding first, then rehome, restructure, normalize, and rewrite the docs corpus onto the Common Docs standard. Excludes the `docs/plans/` backlog (follow-on mission).
+**Input**: Documentation structural cleanup / Common Docs convergence. Establish audience-metadata grounding first, then rehome, restructure, normalize, and rewrite the docs corpus onto the Common Docs standard. Folds the docs-IA subdivision residual of issue #3273 (epic #2314). Excludes the `docs/plans/` backlog (follow-on mission).
 
 ## Context
 
 Spec Kitty's documentation has grown to ~700 Markdown files across flat mega-directories, plus several stray documentation directories at the repository root (`research/`, `examples/`, `contracts/`, `glossary/`, `media/`) and loose root files. Per-page frontmatter is already clean (the mechanical structural-lint gate is green), but readers on the published DocFX site and contributors cannot reliably find or trust the right page. The activated **Common Docs** doctrine (DIRECTIVE_042, `common-docs` styleguide, `common-docs-*` tactics) defines the target: one `docs/` root of 13 sections (index, context, architecture, adr, plans, api, configuration, integrations, security, guides, operations, migrations, changelog), `doc_status` frontmatter, `related:` cross-refs, ADRs under `adr/<era>/`, delete-stale curation.
 
 This mission converges the corpus onto that standard **and** adds an `audience:` frontmatter dimension (per the activated `047-audience-oriented-writing` directive and `writing-audience-catalog` tactic) so page rewrites are grounded in a named reader. The `docs/plans/` distil-and-retire triage is deliberately **out of scope** — it is a larger, higher-judgment effort spun out as a follow-on mission. All cleanup missions run in sequence on `docs/common-docs-cleanup`; a single upstream pull request is opened only after the sequence completes.
+
+**Folded scope — issue #3273 (docs-IA subdivision residual; parent epic #2314).** The two code-actionable findings of #3273 (the Family-B non-vacuity floor dedup and the dual `parse_frontmatter` disambiguation) already landed on `main` and are present in this branch — folding #3273 lets this mission close it out. The substantive residual is the **physical subdivision of the flat `docs/development/` (22 files, 0 subdirs) and `docs/guides/` (59 files, 1 subdir) sections by concern** — originally proposed as a standalone `docs-ia-subdivision` mission. Doing it here is efficient because this mission already rehomes, re-indexes, audience-tags, and rewrites those same files; the marginal cost of subdividing while in-flight is far below a separate pass. All moves use the repository's **canonical docs-move tooling** — `scripts/docs/redirect_map.yaml` (149 entries) + `redirect_stub_generator.py` + `relative_link_fixer.py` + `related_validator.py` + `inventory_lockfile.py` (the `docs-ia-onboarding-overhaul` precedent) — rather than improvised redirects. #3273's three remaining low-leverage docs-tooling NOTES are recorded under Assumptions and are not active scope.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -61,34 +63,36 @@ A reader browsing the docs sees exactly the 13 canonical Common Docs sections �
 
 ---
 
-### User Story 4 - Each guide declares and fits one Divio type (Priority: P2)
+### User Story 4 - Guides are subdivided by Divio type and concern (Priority: P2)
 
-A reader in `guides/` can tell a learning tutorial from a task how-to by where it lives, and every guide page declares its Divio type.
+A reader in `guides/` can tell a learning tutorial from a task how-to by where it lives, every guide page declares its Divio type, and the 59 flat guide files are physically subdivided by concern (folding the `docs/guides/` half of #3273's subdivision residual).
 
-**Why this priority**: `guides/` (the largest how-to surface) mixes tutorials and how-tos flat behind multiple index files, with a third of pages untyped. Clarifying it materially improves the most-used reader surface.
+**Why this priority**: `guides/` (the largest how-to surface) mixes tutorials and how-tos flat behind multiple index files, with a third of pages untyped. Clarifying and subdividing it materially improves the most-used reader surface.
 
-**Independent Test**: Check that every `guides/**` page carries a `type:`; tutorials live under a tutorials location and how-tos under a how-to location; a single index per grouping.
+**Independent Test**: Check that every `guides/**` page carries a `type:`; tutorials live under a tutorials location and how-tos under a how-to location; flat guide files are grouped into concern subdirectories; a single index per grouping.
 
 **Acceptance Scenarios**:
 
 1. **Given** tutorials intermixed with how-tos, **When** the mission completes, **Then** tutorials are separated from how-tos and the three competing index files are collapsed into one per grouping.
 2. **Given** guide pages lacking a Divio `type:`, **When** the mission completes, **Then** every in-scope guide page declares exactly one Divio type.
+3. **Given** 59 flat guide files, **When** the mission completes, **Then** they are subdivided into concern-based subdirectories with every inbound link, `related:` reference, and redirect-map entry updated in the same change.
 
 ---
 
-### User Story 5 - Pages are consistently named, indexed, and rewritten for scanability (Priority: P2)
+### User Story 5 - Pages are consistently named, indexed, subdivided, and rewritten for scanability (Priority: P2)
 
-A reader lands on any section or content subdirectory and finds a single landing page, consistent kebab-case names, and page bodies written to be scanned — grounded in the page's declared audience.
+A reader lands on any section or content subdirectory and finds a single landing page, consistent kebab-case names, oversized flat sections broken into concern-based subdirectories, and page bodies written to be scanned — grounded in the page's declared audience.
 
-**Why this priority**: Naming inconsistency (README-vs-index ambiguity, non-kebab names) and dense prose reduce scanability across the corpus. The rewrite dimension is where the Common Docs quality goal is actually realized, page by page, for the pages this mission touches.
+**Why this priority**: Naming inconsistency (README-vs-index ambiguity, non-kebab names), oversized flat sections (`docs/development/` 22 files/0 subdirs — the second half of #3273's subdivision residual), and dense prose reduce scanability across the corpus. The rewrite dimension is where the Common Docs quality goal is actually realized, page by page, for the pages this mission touches.
 
-**Independent Test**: Every in-scope section/subdirectory has exactly one `index.md`; in-scope names are lowercase kebab-case; touched pages carry a resolvable `audience:` and a scanability pass (headings, lead summary, tables/lists over walls of prose).
+**Independent Test**: Every in-scope section/subdirectory has exactly one `index.md`; in-scope names are lowercase kebab-case; `docs/development/` is subdivided by concern; touched pages carry a resolvable `audience:` and a scanability pass (headings, lead summary, tables/lists over walls of prose).
 
 **Acceptance Scenarios**:
 
 1. **Given** directories that use `README.md` as a landing page or lack any index, **When** the mission completes, **Then** each in-scope directory presents a single `index.md` landing page.
 2. **Given** non-kebab-case file and directory names in scope, **When** the mission completes, **Then** they are renamed to lowercase kebab-case and every reference to them is updated in the same change.
 3. **Given** a page this mission moves or restructures, **When** it is finalized, **Then** its body is rewritten for scanability grounded in its declared `audience:`, without changing the underlying facts.
+4. **Given** the flat `docs/development/` section, **When** the mission completes, **Then** its files are subdivided into concern-based subdirectories with every inbound link (including `CLAUDE.md`/`AGENTS.md` references and the `CONTRIBUTING.md` symlink target), `related:` reference, and redirect-map entry updated in the same change.
 
 ---
 
@@ -114,6 +118,7 @@ A reader of the (already largely compliant) ADR corpus sees consistent era filin
 - A page whose only reasonable audience is not in the baseline catalog — a new profile is authored from the persona template, or an existing profile is cited; the page is never left with an undefined reader.
 - A redirect stub is required when an external or shipped link cannot be updated (e.g. absolute or third-party references) — leave a stub rather than break the link.
 - The DocFX theme (`templates/spec-kitty/`) resembles a docs directory but is site machinery — it must not be treated as content.
+- A moved `docs/development/**` page may be referenced by `CLAUDE.md`/`AGENTS.md` or be the target of the `CONTRIBUTING.md` symlink (`docs/development/contributing.md`) — those references and the symlink must be updated in the same change, never silently broken.
 
 ## Requirements *(mandatory)*
 
@@ -138,6 +143,8 @@ A reader of the (already largely compliant) ADR corpus sees consistent era filin
 | FR-015 | Code/test/CI reference updates | As a maintainer, I want every code, test, and CI reference to a moved documentation path updated in the same change, so nothing that reads a doc path breaks. | High | Open |
 | FR-016 | Governance path integrity | As a governance owner, I want charter authority paths preserved, or updated in the same change, and the dead `glossary/contexts/` authority path repaired. | High | Open |
 | FR-017 | Regenerate rollups | As a maintainer, I want the page-inventory and docs-retrieval-index rollups regenerated from frontmatter after changes, kept in place (not relocated). | Medium | Open |
+| FR-018 | Subdivide flat sections | As a reader, I want the oversized flat `docs/development/` and `docs/guides/` sections subdivided into concern-based subdirectories (folding #3273's docs-IA subdivision residual), each with an `index.md`. | Medium | Open |
+| FR-019 | Canonical move tooling | As a maintainer, I want every move/rename routed through the repository's canonical docs-move tooling (`redirect_map.yaml`, `redirect_stub_generator.py`, `relative_link_fixer.py`, `related_validator.py`, `inventory_lockfile.py`) rather than improvised redirects, so URL continuity and link integrity are enforced mechanically. | High | Open |
 
 ### Non-Functional Requirements
 
@@ -165,6 +172,7 @@ A reader of the (already largely compliant) ADR corpus sees consistent era filin
 | C-007 | Bulk-edit discipline | Same-path/link renames across files follow DIRECTIVE_035 occurrence-classification (an `occurrence_map.yaml` is produced at plan time). | Process | High | Open |
 | C-008 | No version numbers | No release/version numbers are assigned by this mission; the release boundary belongs to the product owner. | Business | Medium | Open |
 | C-009 | Sequenced, single PR | All cleanup missions run in sequence on `docs/common-docs-cleanup`; a single upstream pull request is opened only after the sequence completes. | Process | Medium | Open |
+| C-010 | URL-continuity coupling | Moves affecting `docs/development/**` and `docs/guides/**` have heavy inbound coupling (redirect_map.yaml, redirect_baseline_urls.json, ~62 inbound links to development/*, ~143 to guides/*, ~59 `related:` refs); every such move updates the redirect map and baseline URLs in the same change. | Technical | High | Open |
 
 ### Key Entities
 
@@ -186,6 +194,7 @@ A reader of the (already largely compliant) ADR corpus sees consistent era filin
 - **SC-006**: The published documentation site builds successfully and all pre-existing docs gates (structural-lint, freshness, terminology guard) remain green.
 - **SC-007**: Every in-scope `guides/` page is exactly one Divio type, and a reader can distinguish tutorials from how-tos by location.
 - **SC-008**: `docs/plans/` content is unchanged except for link-target fixes required by moves elsewhere (scope boundary respected).
+- **SC-009**: `docs/development/` and `docs/guides/` are subdivided into concern-based subdirectories (each with an `index.md`), with 0 broken inbound links, `related:` references, or redirect-map entries after the change — closing the docs-IA subdivision residual of #3273.
 
 ## Assumptions
 
@@ -193,3 +202,5 @@ A reader of the (already largely compliant) ADR corpus sees consistent era filin
 - The Common Docs doctrine is already activated in the charter (verified); no charter activation work is required, only same-change updates to authority-path targets if any protected path is touched.
 - "Sanctioned root allowlist" covers at least: `README.md`, `LICENSE`, `CHANGELOG.md` (symlink), `CONTRIBUTING.md` (symlink), `CLAUDE.md`/`AGENTS.md`, `CODE_OF_CONDUCT.md`, `SECURITY-POSITION.md`, `CONTRIBUTORS.md`, `RELEASE_CHECKLIST.md`; the exact list is finalized at plan time.
 - The follow-on `docs/plans/` triage mission and any full-corpus `audience:` backfill beyond touched pages are separate missions.
+- Issue #3273's two code-actionable findings already landed on `main` (present in this branch); folding #3273 closes it out via this mission.
+- #3273's three residual docs-tooling NOTES are recorded but **not active scope**: (a) the deploy-side SEO gate lacking a pre-merge analogue is tracked separately under #3265; (b) the required-check hazard if `docs-freshness` is ever promoted to a required status check is awareness-only and already documented in-code (`tests/docs/test_docs_freshness_invariant.py` + workflow comment); (c) the `_published_pages._count_raw_matches` O(globs×tree) re-walk is a low-leverage micro-optimization eligible only as an opportunistic campsite fold if that module is already being edited.
