@@ -15,6 +15,18 @@ terminal reconcile WP13. Movers emit per-WP occurrence-map ledger fragments that
 NFR-009 fidelity ledger) rather than as separate WPs — this honors "rewrite reviewed apart from move"
 while keeping `owned_files` collision-free.
 
+**Rewrite bounding (FR-014, post-tasks C1):** each mover's rewrite phase is BOUNDED — it operates only
+on pages that WP has actually moved/restructured (a subset of its own completed moves), carries a
+per-WP ceiling of **≤10 rewritten pages** (split into a follow-on if more are warranted), and every
+rewritten page gets a fidelity-ledger row (claim → code/test backing, NFR-009). The enumerated page
+list is produced by the mover from its real touched-set at implement time (the pages don't exist at
+their final paths until the move lands); the ceiling + per-page ledger are the checkable bound.
+
+**Per-section toc ownership (post-tasks ownership #3):** each mover owns its section's `toc.yml`
+(regenerated as part of its own move); WP13 is the single writer of the GLOBAL manifests only
+(`docs/toc.yml`, `docfx.json`, `llms.txt`, `redirect_map.yaml`) + `CLAUDE.md`/`AGENTS.md` + `docs/plans/**`
+link-targets. This relaxes C-011 for section-local toc while keeping the load-bearing global single-writer.
+
 ## Dependency graph
 ```
 WP01 doctrine ┐
@@ -65,7 +77,9 @@ WP08 (adr/migrations) may start after WP03 (renames need the spine)
 | T037 | Merge occurrence-map fragments; regenerate redirect_map (derived); verify coverage prior+new | WP13 | |
 | T038 | Regenerate nav manifests (toc/docfx/llms/per-section) + inventory lockfiles in place | WP13 | |
 | T039 | Fix docs/plans/** inbound link-targets; update CLAUDE.md/AGENTS.md doc refs | WP13 | |
-| T040 | Add required pre-merge docfx build workflow; flip structural invariants blocking (OB-2); final green | WP13 | |
+| T040 | Add required pre-merge docfx build workflow; flip structural invariants blocking (OB-2); FR-022 stub-prefix; final green | WP13 | |
+| T041 | Root-allowlist check (docs outside docs/ vs closed allowlist) — NFR-006/SC-002 | WP04 | |
+| T042 | Reconcile stale plans/notes terminology-guard exemption (NFR-004) before plans link-fix | WP11 | |
 
 ## Work Packages
 
@@ -88,7 +102,7 @@ Deps: none. Requirement refs: FR-021, NFR-010. owned_files: `kitty-specs/common-
 
 ### WP04 — Gate scaffolding *(foundation)*
 Goal: build the touched-set + reconciliation + extended-lint gates (advisory). Priority: P1. Independent
-test: gates run green on the current tree, red on injected violations. Subtasks: T011–T014. Deps: WP01, WP02, WP03.
+test: gates run green on the current tree, red on injected violations. Subtasks: T011–T014, T041. Deps: WP01, WP02, WP03.
 Requirement refs: FR-017, FR-018, FR-023, NFR-002, NFR-005. owned_files: `packs/built-in/assets/docs_structural_lint.py`, `scripts/docs/touched_set_gates.py`, `scripts/docs/rename_reconcile.py`, `tests/docs/test_touched_set_gates.py`, `.github/workflows/docs-freshness.yml`. create_intent: `["scripts/docs/touched_set_gates.py","scripts/docs/rename_reconcile.py","tests/docs/test_touched_set_gates.py"]`.
 
 ### WP05 — Retire & documentation-mission repoint *(mover)*
@@ -117,7 +131,7 @@ Subtasks: T029–T030. Deps: WP01, WP03, WP04. Requirement refs: FR-009, FR-010,
 
 ### WP11 — docs/context + governance paths *(mover)*
 Goal: fold glossary, rehome context explanation files, repair the 3 dead authority paths. Priority: P2.
-Subtasks: T031–T033. Deps: WP03, WP04. Requirement refs: FR-004, FR-005, FR-016, FR-019. owned_files: `docs/context/index.md`, `docs/context/execution.md`, `docs/context/orchestration.md`, `docs/context/identity.md`, `docs/context/governance.md`, `docs/context/doctrine.md`, `docs/contextive-glossaries.md`, `glossary/**`, `spec-driven.md`, `.kittify/charter/charter.yaml`, `.kittify/charter/governance.yaml`, `tests/docs/test_current_charter_paths.py`. (Excludes `docs/context/audience/**` — WP02.)
+Subtasks: T031–T033, T042. Deps: WP03, WP04. Requirement refs: FR-004, FR-005, FR-016, FR-019. owned_files: `docs/context/index.md`, `docs/context/execution.md`, `docs/context/orchestration.md`, `docs/context/identity.md`, `docs/context/governance.md`, `docs/context/doctrine.md`, `docs/contextive-glossaries.md`, `glossary/**`, `spec-driven.md`, `.kittify/charter/charter.yaml`, `.kittify/charter/governance.yaml`, `tests/docs/test_current_charter_paths.py`. (Excludes `docs/context/audience/**` — WP02.)
 
 ### WP12 — media/assets + operations/changelog *(mover)*
 Goal: move media to assets (+ README logo), rehome ops docs, fold release-goals + archive into changelog.
@@ -126,7 +140,7 @@ Priority: P2. Subtasks: T034–T036. Deps: WP03, WP04. Requirement refs: FR-004,
 ### WP13 — Terminal reconcile + gates blocking *(terminal)*
 Goal: merge fragments, regenerate all shared manifests + lockfiles, fix plans/CLAUDE refs, register the
 required pre-merge build, flip structural gates blocking, final green. Priority: P1. Subtasks: T037–T040.
-Deps: WP05, WP06, WP07, WP08, WP09, WP10, WP11, WP12. Requirement refs: FR-016, FR-020, FR-022, NFR-001, NFR-003, NFR-010. owned_files: `scripts/docs/redirect_map.yaml`, `docs/toc.yml`, `docs/docfx.json`, `docs/llms.txt`, `docs/development/3-2-page-inventory.yaml`, `docs/development/3-2-docs-retrieval-index.yaml`, `CLAUDE.md`, `AGENTS.md`, `.github/workflows/docs-build-pr.yml`. create_intent: `[".github/workflows/docs-build-pr.yml"]`. (Also applies link-target-only edits under `docs/plans/**` and per-section `toc.yml` as the single writer — recorded as bounded out-of-map edits.)
+Deps: WP05, WP06, WP07, WP08, WP09, WP10, WP11, WP12. Requirement refs: FR-016, FR-020, FR-022, NFR-001, NFR-003, NFR-010. owned_files: `scripts/docs/redirect_map.yaml`, `docs/toc.yml`, `docs/docfx.json`, `docs/llms.txt`, `docs/development/3-2-page-inventory.yaml`, `docs/development/3-2-docs-retrieval-index.yaml`, `CLAUDE.md`, `AGENTS.md`, `.github/workflows/docs-build-pr.yml`. create_intent: `[".github/workflows/docs-build-pr.yml"]`. (Also applies link-target-only edits under `docs/plans/**` as the single writer — recorded as bounded out-of-map edits. Per-section `toc.yml` is owned by each section's mover, not WP13.)
 
 ## MVP / sequencing
 Foundations WP01–WP04 are the MVP enabling everything. Movers WP05–WP12 run after WP04 (WP09/WP10 also

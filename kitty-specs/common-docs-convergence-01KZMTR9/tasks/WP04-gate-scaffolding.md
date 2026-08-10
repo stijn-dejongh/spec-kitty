@@ -19,6 +19,7 @@ subtasks:
 - T012
 - T013
 - T014
+- T041
 history:
 - at: '2026-08-10T03:30:00Z'
   actor: claude
@@ -70,8 +71,14 @@ literals. `_guards.assert_examined_floor` and `related_validator` exist to reuse
   retired root dirs) ⊆ `occurrence_map.yaml moves:`, and the existing `occurrence_map ⊆ redirect_map`
   cross-check. Fail on any rename/deletion not recorded in the spine.
 - **T014** — Wire into `.github/workflows/docs-freshness.yml`: `audience_resolver --strict`,
-  `relative_link_fixer --check`, and scope the freshness gate to changed paths / emit a baseline-diff
+  `relative_link_fixer --check`, `check_cli_reference_freshness.py` (NFR-009 — regenerated behavior-doc
+  pages can't silently drift), and scope the freshness gate to changed paths / emit a baseline-diff
   classification (#3147) so the required check reflects only mission-introduced reds.
+- **T041** — Implement the root-allowlist check (NFR-006/SC-002) in `touched_set_gates.py`: enumerate
+  documentation-bearing files outside `docs/`, diff against the closed sanctioned root allowlist (from
+  the WP01 config / spec Definitions), fail on any file not in the allowlist. Red-first test. Advisory
+  here; WP13 T040 flips it blocking. (This is the single-root assertion the structural lint — rooted at
+  `docs/` — structurally cannot see.)
 
 ## Branch Strategy
 Base/merge: `docs/common-docs-cleanup`. Worktree per `lanes.json` lane.

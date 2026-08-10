@@ -77,7 +77,9 @@ the structural gates to blocking. Runs LAST (after all movers). See [plan.md](..
 - **T040** — Add the required pre-merge DocFX build workflow `.github/workflows/docs-build-pr.yml`
   (`pull_request`: `docfx docs/docfx.json` zero-error blocks; `redirect_stub_generator coverage`;
   `seo_verify --strict` on built `_site`) per [contracts/pre-merge-build-contract.md](../contracts/pre-merge-build-contract.md), and flip the
-  WP04 structural invariants from advisory to blocking — **respecting OB-2**: enforce single-root /
+  WP04 structural invariants (incl. the T041 root-allowlist check) from advisory to blocking — verify
+  every generated redirect stub carries the `description: "Redirect stub: …"` prefix (FR-022) so
+  `shadow_tree_basename` skips it — **respecting OB-2**: enforce single-root /
   sanctioned-section as terminal verification, and only register a standing blocking single-root lint if
   #2851 is re-sanctioned (else keep it as the terminal green-check + curation). Run the full local gate
   set from [quickstart.md](../quickstart.md) and confirm green.

@@ -131,6 +131,7 @@
         "docs/trail-model.md",
         "scripts/lint_canonical_producers.py",
         "spec-kitty-mission-workflow.md",
+        "src/doctrine/templates/diagrams/README.md",
         "tests/docs/test_no_retrospect_preview.py",
         "tests/status/test_producer_conformance.py"
       ],
@@ -171,11 +172,13 @@
         "WP10"
       ],
       "write_scope": [
+        "docs/development/*.md",
         "docs/development/getting-started/**",
         "docs/development/how-to/**",
-        "docs/development/index.md",
         "docs/development/reference/**",
-        "docs/development/testing/**"
+        "docs/development/testing/**",
+        "docs/development/toc.yml",
+        "src/specify_cli/doc_analysis/gap_analysis.py"
       ],
       "predicted_surfaces": [
         "api",
@@ -196,18 +199,12 @@
       "write_scope": [
         ".kittify/charter/charter.yaml",
         ".kittify/charter/governance.yaml",
-        "docs/context/charter-overview.md",
-        "docs/context/doctrine.md",
-        "docs/context/execution.md",
-        "docs/context/governance-files.md",
-        "docs/context/governance.md",
-        "docs/context/identity-fields.md",
-        "docs/context/identity.md",
-        "docs/context/index.md",
-        "docs/context/orchestration.md",
+        "docs/context/*.md",
         "docs/contextive-glossaries.md",
         "glossary/**",
         "spec-driven.md",
+        "tests/architectural/test_no_legacy_terminology.py",
+        "tests/contract/test_terminology_guards.py",
         "tests/docs/test_current_charter_paths.py"
       ],
       "predicted_surfaces": [
@@ -297,8 +294,8 @@
       "parallel_group": 4
     }
   ],
-  "computed_at": "2026-08-10T04:18:58.046014+00:00",
+  "computed_at": "2026-08-10T04:32:52.888420+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [],
-  "planning_commit_sha": "5be650f170a42056f1eac43e30ae1e09e9c544b8"
+  "planning_commit_sha": "c290ce844be04aebead4f24dc149e9968c63fcd4"
 }

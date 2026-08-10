@@ -34,6 +34,7 @@ owned_files:
 - docs/host-surface-parity.md
 - docs/doctrine/**
 - spec-kitty-mission-workflow.md
+- src/doctrine/templates/diagrams/README.md
 - scripts/lint_canonical_producers.py
 - tests/status/test_producer_conformance.py
 - tests/docs/test_no_retrospect_preview.py
@@ -54,11 +55,12 @@ homeless explanation files + doctrine explanation, and move the canonical workfl
 code/CI refs. See [plan.md](../plan.md) IC-05, [occurrence_map.yaml](../occurrence_map.yaml), post-plan landmine C2.
 
 ## Subtasks
-- **T020** — Distil `README-1.x.md`/`README-2.x.md`/`README-3.x.md` into `adr/<era>/` and fold the living
-  design into one canonical `architecture/index.md`. **FIRST** repoint the shipped
-  `src/doctrine/templates/diagrams/README.md` anchors (`#usage-flow`, `#domain-breakdown`) that point at
-  `README-2.x.md`, then delete the era stubs. (The `adr/<era>/` structure itself is WP08's surface —
-  coordinate: WP07 produces the distilled content, WP08 places era-index; sequence WP07 before WP08.)
+- **T020** — Fold the living design into one canonical `architecture/index.md`. **FIRST** repoint the
+  shipped `src/doctrine/templates/diagrams/README.md` anchors (`#usage-flow`, `#domain-breakdown`) that
+  point at `README-2.x.md`. Produce the distilled era-history content from `README-1.x/2.x/3.x.md` as a
+  handoff artifact for **WP08** (which owns `docs/adr/**` and authors it into `adr/<era>/` — do NOT write
+  into `docs/adr/` from this WP), then delete the `architecture/README-*.x.md` source stubs. Record the
+  source deletions in this WP's fragment.
 - **T021** — Rehome `docs/status-model.md`, `docs/trail-model.md`, `docs/host-surface-parity.md` and the
   explanation half of `docs/doctrine/` (`doctrine-kinds.md`, `spdd-reasons.md`) into `architecture/`;
   update the enumerated test refs (`test_asset_howto`, `test_charter_context_spdd_reasons:290`).

@@ -1,6 +1,6 @@
 ---
 work_package_id: WP08
-title: docs/adr era-index +
+title: 'docs/adr era-index, dated-prefix (2887) + migrations delete-stale'
 dependencies:
 - WP03
 - WP04
@@ -41,7 +41,8 @@ Polish the (largely compliant) ADR corpus and curate `migrations/` by delete-sta
 reconciles #2227/#3227. See [plan.md](../plan.md) IC-05(adr)/IC-10, [occurrence_map.yaml](../occurrence_map.yaml).
 
 ## Subtasks
-- **T024** — Place the era-index (`adr/{1.x,2.x,3.x}/index.md`) — reconcile with the #2227 lint
+- **T024** — Author the distilled era-history content handed off from WP07 (from `architecture/README-1.x/2.x/3.x.md`)
+  INTO `adr/{1.x,2.x,3.x}/` (this WP owns `docs/adr/**`). Place the era-index (`adr/{1.x,2.x,3.x}/index.md`) — reconcile with the #2227 lint
   exclusion (either normalize the 3 era READMEs here AND update `structural_lint_config`
   `frontmatter_in_scope_exclusions`, or explicitly leave them to #2227 — no silent double-ownership).
   Fix the #2887 date-sequence violations (3 duplicate `-1-` dates) and the 2 non-dated 3.x ADRs with

@@ -31,11 +31,13 @@ create_intent:
 - docs/development/testing/index.md
 execution_mode: code_change
 owned_files:
+- docs/development/*.md
+- docs/development/toc.yml
 - docs/development/getting-started/**
 - docs/development/how-to/**
 - docs/development/reference/**
 - docs/development/testing/**
-- docs/development/index.md
+- src/specify_cli/doc_analysis/gap_analysis.py
 role: implementer
 tags: []
 tracker_refs: []
