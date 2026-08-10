@@ -43,7 +43,13 @@
   plan time per DIRECTIVE_035 (path/link renames across many files).
 - Scope boundary (C-001) explicitly excludes the `docs/plans/` triage (follow-on mission), while
   still requiring inbound link-target fixes from plans pages to moved files.
-- Issue #3273 (docs-IA subdivision residual, epic #2314) is folded: its 2 code findings already
-  landed in this branch; the development/ + guides/ subdivision is added (FR-018, US4/US5, SC-009,
-  C-010) using canonical move tooling (FR-019); its 3 residual docs-tooling NOTES are recorded as
-  out-of-active-scope in Assumptions (SEO gate → #3265; required-check hazard → awareness; re-walk → opportunistic).
+- Issue #3273 (docs-IA subdivision residual, epic #2314) is folded; also folds #2215 (arch
+  era-README collapse) and #2887 (ADR date-sequence); coordinates #3024, #2358, #3147.
+- Spec REVISED post-spec adversarial squad (2026-08-10, 5 lenses) — see reviews/post-spec-squad.md.
+  Material corrections: FR-001 uses the EXISTING docs/context/audience/ catalog (not copy built-in);
+  FR-002/003/004 formalize+migrate+test the existing audience field (non-vacuous); FR-009 audience-based
+  how-to routing (contributor→development/, user→guides/); FR-019 repairs all 3 dead authority paths;
+  FR-021/C-010/NFR-010 corrected redirect tooling model (derived map, immutable baseline, own cumulative
+  occurrence-map spine); FR-017 adds a pre-merge DocFX build job; FR-023 extends the lint so NFR-003 is
+  non-vacuous; FR-014/NFR-009 bound + fact-guard the rewrites; C-011 single-threads shared surfaces.
+  Sanctioned section set / root allowlist / in-scope now closed enumerations in Definitions.
