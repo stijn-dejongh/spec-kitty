@@ -73,7 +73,7 @@ Enumerate each degraded resolver return — bare `bool`, `None`, an unrecognized
 - Assert `undetermined` is produced for `root is None`.
 
 ### T006 — sync doctor parity + degraded golden + symbol-absence (SC-005 / SC-004) `[P]`
-Capture the pre-change `sync doctor` per-destination Channel-1 state/remedy as the golden for `granted` + the three refusal states, and separately capture the pre-change degraded reported-state (today import-failure masquerades as `no_record`) as an **intended-change** golden. Assert `_classify_channel1` is absent from `src/` (red now — it still exists).
+Capture the pre-change `sync doctor` per-destination Channel-1 state/remedy as the golden for `granted` + the three refusal states, and separately capture the pre-change degraded reported-state (today import-failure masquerades as `no_record`) as an **intended-change** golden. **Capture surface (U1):** snapshot the `sync doctor` **renderer** over a per-destination row (the same surface `tests/cli/commands/test_sync_doctor_tracker_egress_3108.py` drives — the verdict-reading renderer, not a full `spec-kitty` subprocess), so the golden is the rendered state/remedy string per destination. Assert `_classify_channel1` is absent from `src/` (red now — it still exists).
 
 ## Branch Strategy
 

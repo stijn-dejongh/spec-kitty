@@ -93,7 +93,8 @@ Base/merge target: `feat/egress-single-authority`. Enter the workspace `spec-kit
 
 - `DENIED` removed; the tree **imports** and `pytest tests/invocation/test_adapters.py` **plus the three re-pointed invocation suites (T017)** are green (run them — collection-passing mocks would otherwise hide an execution-time `AttributeError`); existing `tests/sync/tracker/test_tracker_egress_verdict_3108.py` still green (verdict behaviour unchanged — `_classify_channel1` still runs).
 - `egress.py` has **no** `sync.consent`/`sync.routing` import (WP01 T005 green).
-- `ruff` + `mypy --strict` clean on all four owned files.
+- **The unowned `_DENIED_TEMPLATE` behavioral dependents stay green** after the T011 re-point (a botched "all three members render `_DENIED_TEMPLATE`, no fall-through" would red them, and WP02's other DoD commands would miss it until WP03): run `tests/sync/tracker/test_saas_client_consent_gate_3030.py`, `tests/specify_cli/saas_client/test_client_consent_gate_3030.py`, `tests/specify_cli/test_egress_consolidation_3110.py`.
+- `ruff` + `mypy --strict` clean on all owned files.
 
 ## Reviewer guidance
 
