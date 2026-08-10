@@ -65,7 +65,7 @@ Assert the `HOSTED_SERVICE` Channel-1 refusal message is byte-identical across t
 Spy/patch `resolve_checkout_sync_routing_readonly` and `resolve_project_consent`; drive one gated verdict; assert **exactly one** call to each. (Red now — the current tree calls each twice.)
 
 ### T004 — NFR-003 fail-closed enumeration `[P]`
-Enumerate each degraded resolver return — bare `bool`, `None`, an unrecognized value, and a resolver-import-failure — driven through the `OUTCOME_DEFER` branch. Assert each: **refuses**, renders **generic** wording, and raises **nothing** at any `permits_egress` sink (incl. `propagator`). Red now if a degraded state would index the state-keyed description/remedy dicts.
+Enumerate each degraded resolver return — bare `bool`, `None`, an unrecognized value, and a resolver-import-failure — driven through the `OUTCOME_DEFER` branch. Assert each: **refuses**, renders **generic** wording, and raises **nothing** at any `permits_egress` sink (incl. `propagator`). Inject degraded returns via `register_egress_consent_resolver` / the `sys.modules` blocker. (Red now not because of a `KeyError` — the composer already checks `generic` first — but because today the degraded *enforcing* return does not drive `channel1_state`; the independent classifier does. Goes green when WP03 sources the state from the single authority.)
 
 ### T005 — C-004 no-local-import + C-001 members + root-is-None `[P]`
 - Assert `egress.py` contains **no** `import sync.consent`/`sync.routing` (parse imports, not substring). (Green now; guards against relocation in WP02.)
@@ -82,7 +82,9 @@ Planning/base branch: `feat/egress-single-authority`. Final merge target: `feat/
 ## Definition of Done
 
 - New file `tests/sync/tracker/test_egress_single_authority.py` with a correct `pytestmark`, joined to any completeness/marker baselines.
-- All six subtasks encoded; suite runs (collects cleanly) and is **red** on the current tree exactly where expected (T001/T003/T004/T005-members/T006 red; T002/T005-import/T005-undetermined may be green).
+- All six subtasks encoded; suite collects cleanly. Distinguish the two kinds of check:
+  - **Invariance guards — green throughout** (before AND after): T001 (enforcement unchanged vs golden), T002 (byte-identity), T005 no-local-import, T005 root-is-None. These certify nothing regressed; do not write them red-first.
+  - **Behavior-change cells — red now, green only after WP03**: T003 (one resolution — currently two), T004 (degraded state drives `channel1_state` from the single authority — currently the independent classifier does), T005 iterate-members (the split members don't exist yet), T006 (`_classify_channel1` absent; degraded reported-state improvement).
 - Golden references captured in-test (not hand-typed) so they reflect the true pre-change behaviour.
 - `ruff` clean; no product-code edits.
 

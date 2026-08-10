@@ -31,7 +31,10 @@
         "src/specify_cli/egress.py",
         "src/specify_cli/invocation/adapters.py",
         "src/specify_cli/sync/__init__.py",
-        "tests/invocation/test_adapters.py"
+        "tests/invocation/test_adapters.py",
+        "tests/specify_cli/invocation/test_doctor_ops.py",
+        "tests/specify_cli/invocation/test_invocation_e2e.py",
+        "tests/specify_cli/invocation/test_propagator_policy.py"
       ],
       "predicted_surfaces": [
         "api",
@@ -52,6 +55,7 @@
       ],
       "write_scope": [
         "src/specify_cli/tracker/egress_verdict.py",
+        "tests/sync/tracker/test_local_service.py",
         "tests/sync/tracker/test_tracker_egress_verdict_3108.py"
       ],
       "predicted_surfaces": [
@@ -67,8 +71,8 @@
       "parallel_group": 2
     }
   ],
-  "computed_at": "2026-08-10T08:27:14.500397+00:00",
+  "computed_at": "2026-08-10T08:40:57.845050+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [],
-  "planning_commit_sha": "b5f4c4f9f1f3d3531612bc821434f4f74bee19d9"
+  "planning_commit_sha": "80847f163ca2976d1d1ca69b6a73e200c7972299"
 }

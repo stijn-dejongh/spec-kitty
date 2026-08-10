@@ -23,6 +23,7 @@ Three sequenced work packages. **ATDD-first**: WP01 lands the verification harne
 | T010 | `egress._egress_decision` (obtain via `resolve_egress_consent`; no local sync import) | WP02 | |
 | T011 | Re-point `_refusal_for_verdict` DENIED branch; `project_egress_refusal` thin wrapper | WP02 | |
 | T012 | Verify `saas_client` + `propagator` unaffected | WP02 | |
+| T017 | Re-point `EgressConsent.DENIED` mocks in the 3 invocation suites (atomic with T007) | WP02 | |
 | T013 | `_resolve_channel1` consumes the decider; absorb `_channel1_report` (state, generic) | WP03 | |
 | T014 | Delete `_classify_channel1` + its two non-authoritativeness pins | WP03 | |
 | T015 | Rebuild `TestReportingSplitNeverFlipsEnforcement` (one-resolution + symbol-absence) | WP03 | |
@@ -45,9 +46,10 @@ Three sequenced work packages. **ATDD-first**: WP01 lands the verification harne
 - **Goal**: Split `EgressConsent.DENIED`, give the registered resolver the decision-carrying return (one `resolve_project_consent`), and add `egress._egress_decision` + the thin `project_egress_refusal` wrapper — all `DENIED` consumers landing together.
 - **Priority**: P1. **Independent test**: `test_adapters` (re-pointed) green; the tree imports; existing `test_tracker_egress_verdict_3108` still green (verdict unchanged — `_classify_channel1` still runs).
 - **Prompt**: [tasks/WP02-decision-carrying-contract.md](./tasks/WP02-decision-carrying-contract.md)
-- **Subtasks**: T007, T008, T009, T010, T011, T012
+- **Subtasks**: T007, T008, T009, T010, T011, T012, T017
 - **Dependencies**: WP01
-- **Risks**: the **atomic slicing constraint** — T007/T008/T011 must land in one WP so no intermediate tree references a removed `DENIED`. `egress.py` must gain **no** `sync.consent`/`sync.routing` import (C-004).
+- **Also owns** (post-tasks BLOCK fix): `tests/specify_cli/invocation/test_propagator_policy.py`, `test_invocation_e2e.py`, `test_doctor_ops.py` — their `EgressConsent.DENIED` mocks are re-pointed by T017, atomic with the `DENIED` removal.
+- **Risks**: the **atomic slicing constraint** — T007/T008/T011/T017 must land in one WP so no intermediate tree references a removed `DENIED` (incl. the invocation-suite mocks that pass collection but `AttributeError` at execution). `egress.py` must gain **no** `sync.consent`/`sync.routing` import (C-004).
 - **Est. prompt size**: ~380 lines.
 
 ### WP03 — Single-authority verdict & delete second evaluation
@@ -57,7 +59,8 @@ Three sequenced work packages. **ATDD-first**: WP01 lands the verification harne
 - **Prompt**: [tasks/WP03-single-authority-verdict.md](./tasks/WP03-single-authority-verdict.md)
 - **Subtasks**: T013, T014, T015, T016
 - **Dependencies**: WP02
-- **Risks**: the post-plan M2 never-raise gap — the degraded state must carry `generic=True` and the composer must be total, or a degraded state at `OUTCOME_DEFER` KeyErrors.
+- **Also owns** (post-tasks BLOCK fix): `tests/sync/tracker/test_local_service.py` — its `test_fr017_five_docstrings_are_not_falsified` imports `_classify_channel1`; T014 retires that pin. Retain all six `CHANNEL1_*` constants (unowned `sync.py` + `test_sync_doctor_tracker_egress_3108.py` depend on them).
+- **Risks**: the post-plan M2 never-raise gap — the degraded state must carry `generic=True` and the composer must be total, or a degraded state at `OUTCOME_DEFER` KeyErrors. `_classify_channel1` deletion invalidates ~10 references (not two) across the WP03-owned test files — retire them all (T014).
 - **Est. prompt size**: ~300 lines.
 
 ## MVP / sequencing

@@ -21,6 +21,7 @@ subtasks:
 - T010
 - T011
 - T012
+- T017
 history:
 - at: '2026-08-10T08:22:23Z'
   actor: claude
@@ -34,6 +35,9 @@ owned_files:
 - src/specify_cli/egress.py
 - src/specify_cli/sync/__init__.py
 - tests/invocation/test_adapters.py
+- tests/specify_cli/invocation/test_propagator_policy.py
+- tests/specify_cli/invocation/test_invocation_e2e.py
+- tests/specify_cli/invocation/test_doctor_ops.py
 role: implementer
 tags: []
 tracker_refs: []
@@ -72,7 +76,14 @@ Add `_egress_decision(root, identifiers) -> EgressDecision(permits, refusal_mess
 Re-point the `DENIED` branch of `_refusal_for_verdict` so `NO_RECORD`/`RECORDED_REFUSAL`/`NOT_CONSENTABLE` all render `_DENIED_TEMPLATE` (no fall-through to `_UNRECOGNISED_VERDICT_TEMPLATE`). Make `project_egress_refusal` a thin wrapper returning `_egress_decision(...).refusal_message` — its `str | None` contract unchanged.
 
 ### T012 — Verify `saas_client` + `propagator` unaffected
-`saas_client/client.py` consumes `project_egress_refusal`'s `str | None` — unchanged (WP01 T002 pins the string). `propagator.py:128` decides on `permits_egress` (unaffected); note its `:130` log token changes `denied → no_record/…` (harmless). No edits needed if verification passes; record the check.
+`saas_client/client.py` consumes `project_egress_refusal`'s `str | None` — unchanged (WP01 T002 pins the string). `src/specify_cli/invocation/propagator.py:128` decides on `permits_egress` (unaffected); note its `:130` log token changes `denied → no_record/…` (harmless). No edits needed if verification passes; record the check.
+
+### T017 — Re-point the `EgressConsent.DENIED` mocks in the invocation suites (ATOMIC with T007 — post-tasks BLOCK fix)
+Removing `EgressConsent.DENIED` (T007) breaks five `patch(..., return_value=EgressConsent.DENIED)` mock bodies that pass **collection** but `AttributeError` at execution — so they are invisible to a "tree imports" check yet red for the rest of the mission. Re-point each to a refusing member (`EgressConsent.NO_RECORD`), preserving the "project has not consented" intent:
+- `tests/specify_cli/invocation/test_propagator_policy.py:96, 281`
+- `tests/specify_cli/invocation/test_invocation_e2e.py:252, 820`
+- `tests/specify_cli/invocation/test_doctor_ops.py:192`
+These land **in this WP** so no intermediate tree references a removed member (IC-01). Run each file after re-pointing to confirm green.
 
 ## Branch Strategy
 
@@ -80,7 +91,7 @@ Base/merge target: `feat/egress-single-authority`. Enter the workspace `spec-kit
 
 ## Definition of Done
 
-- `DENIED` removed; the tree **imports** and `pytest tests/invocation/test_adapters.py` is green; existing `tests/sync/tracker/test_tracker_egress_verdict_3108.py` still green (verdict behaviour unchanged — `_classify_channel1` still runs).
+- `DENIED` removed; the tree **imports** and `pytest tests/invocation/test_adapters.py` **plus the three re-pointed invocation suites (T017)** are green (run them — collection-passing mocks would otherwise hide an execution-time `AttributeError`); existing `tests/sync/tracker/test_tracker_egress_verdict_3108.py` still green (verdict behaviour unchanged — `_classify_channel1` still runs).
 - `egress.py` has **no** `sync.consent`/`sync.routing` import (WP01 T005 green).
 - `ruff` + `mypy --strict` clean on all four owned files.
 
