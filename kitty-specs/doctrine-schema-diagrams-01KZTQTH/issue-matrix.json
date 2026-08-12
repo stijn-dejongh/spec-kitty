@@ -1,5 +1,17 @@
 {
   "rows": {
+    "#3324": {
+      "evidence_ref": "<link or commit>",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "<fill at WP-implementation time>",
+      "verdict": "unknown",
+      "wp": null
+    },
     "#3366": {
       "evidence_ref": "https://github.com/Priivacy-ai/spec-kitty/issues/3366",
       "fr": "FR-001",
