@@ -37,7 +37,8 @@ owned_files:
 role: implementer
 tags: []
 task_type: implement
-tracker_refs: []
+tracker_refs:
+- '#3366'
 ---
 
 # Work Package Prompt: WP02 – PlantUML render post-processor + workflow wiring

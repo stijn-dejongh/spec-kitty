@@ -39,7 +39,8 @@ owned_files:
 role: implementer
 tags: []
 task_type: implement
-tracker_refs: []
+tracker_refs:
+- '#3366'
 ---
 
 # Work Package Prompt: WP01 – PlantUML egress-isolation spike (BLOCKING gate)
