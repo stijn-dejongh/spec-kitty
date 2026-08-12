@@ -1,8 +1,7 @@
 ---
 work_package_id: WP04
 title: Retire shipped doctrine working-notes clusters (IC-02)
-dependencies:
-- WP01
+dependencies: []
 requirement_refs:
 - FR-001
 - NFR-002
@@ -16,7 +15,7 @@ subtasks:
 - T019
 history:
 - at: '2026-08-12'
-  note: Authored by /spec-kitty.tasks (post-plan-squad model). IC-02 doctrine fan-out; one HOLD-for-ruling item flagged.
+  note: Authored by /spec-kitty.tasks (post-plan-squad model). IC-02 doctrine fan-out; one HOLD-for-ruling item flagged. Post-tasks squad dropped the spurious WP01 dep. Cross-WP note - the durable doctrine-charter plan references 3 pages this WP retires; WP07 (owns the moved plan) reconciles those references.
 agent_profile: curator-carla
 authoritative_surface: docs/plans/doctrine/
 create_intent: []
@@ -110,7 +109,8 @@ Planning/base branch: `feat/docs-plans-tier3-closeout`. Merge target: `feat/docs
 
 ## Definition of Done
 
-- Listed clusters carry `doc_status: deprecated` + evidence banner; no deletions.
+- Listed clusters carry `doc_status: deprecated` + an evidence banner whose citation **resolves** to a real merged `kitty-specs/<mission>/` dir / PR / the AUTHORITY creed doc (not merely present); no deletions.
+- **Cross-WP hand-off recorded:** `charter-activation-reachability-assessment.md`, `runtime-charter-doctrine-boundary.md`, and `next-slice-wheel-mission-types-public-api-research.md` are retired here **and** are referenced by the durable `doctrine-charter-domain-plan.md` — note in the activity log that WP07 must reframe/drop those references so the durable throughline does not route readers into retired notes (US1 trust goal).
 - `layered-doctrine-resolution-design.md` left untouched + HOLD noted in activity log.
 - AUTHORITY docs, `charter-sole-door-deferred-issues.md`, `test_quality/`, and JSON sidecars untouched.
 - `doctrine/index.md` reconciled; docs lint + related + terminology green.

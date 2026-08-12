@@ -19,16 +19,19 @@ not checkboxes.
 ## Dependency graph
 
 ```
-WP01 ──┬── WP02 ──┐
-       ├── WP03 ──┤
-       ├── WP04 ──┼── WP07
-       ├── WP05 ──┤
-       └── WP06 ──┘
+WP01 ── WP02 ──┐
+WP03 ──────────┤
+WP04 ──────────┼── WP07
+WP05 ──────────┤
+WP06 ──────────┘
 ```
 
-WP01 lands first (any doc carrying `doc_status: durable` fails until it does). WP02–WP06 run in
-parallel after WP01. WP07 (IC-04) runs last — it needs the new plans (WP02), all retirements
-(WP03–WP06), and durable (WP01), and it owns the shared top-level `docs/plans/index.md`.
+WP02 needs WP01 (the new plans carry `doc_status: durable`). The four retire WPs (WP03–WP06)
+are **independent from t0** — the post-tasks squad dropped the spurious WP01 edge because they
+write `deprecated` (already in the enum), not `durable`, and their file scopes are disjoint from
+WP01. WP07 (IC-04) runs last — it needs the new plans (WP02→WP01), all retirements (WP03–WP06,
+so the top-level index reconciliation reflects final state), and owns the shared top-level
+`docs/plans/index.md`. Critical path: WP01 → WP02 → WP07.
 
 ## Subtask Index (reference table — `[P]` = parallel-safe)
 
@@ -86,28 +89,28 @@ parallel after WP01. WP07 (IC-04) runs last — it needs the new plans (WP02), a
 ## WP03 — Retire engineering-notes clusters (IC-02) · prompt: `tasks/WP03-retire-engineering-notes.md`
 
 - **Goal**: Retire the auto trio + evidence-gated engineering-notes clusters (`doc_status: deprecated` in place + evidence banner); reconcile `engineering-notes/index.md`.
-- **Priority**: P1 · **Requirements**: FR-001, NFR-002 · **Dependencies**: WP01 · **execution_mode**: code_change (~200 lines)
+- **Priority**: P1 · **Requirements**: FR-001, NFR-002 · **Dependencies**: none · **execution_mode**: code_change (~200 lines)
 - **Independent test**: every retired page `deprecated` with a resolvable evidence citation; zero deletions; lint + terminology green.
 - Subtasks: T010, T011, T012, T013, T014, T015.
 
 ## WP04 — Retire doctrine working-notes (IC-02) · prompt: `tasks/WP04-retire-doctrine-notes.md`
 
 - **Goal**: Retire shipped/superseded doctrine notes (creed RECORD/evidence, org-layering reviews, reachability/public-API scoping); flag `layered-doctrine-resolution-design.md` as HOLD-for-ruling.
-- **Priority**: P1 · **Requirements**: FR-001, NFR-002 · **Dependencies**: WP01 · **execution_mode**: code_change (~210 lines)
+- **Priority**: P1 · **Requirements**: FR-001, NFR-002 · **Dependencies**: none · **execution_mode**: code_change (~210 lines)
 - **Independent test**: retired pages `deprecated` with merged-mission evidence; AUTHORITY docs + `test_quality/` + HOLD item untouched; lint green.
 - Subtasks: T016, T017, T018, T019.
 
 ## WP05 — Retire investigations records (IC-02) · prompt: `tasks/WP05-retire-investigations.md`
 
 - **Goal**: Retire shipped investigations records; gate the 3 moderate-certainty items behind a `gh issue view` check; leave the live/unshipped corpus alone.
-- **Priority**: P1 · **Requirements**: FR-001, NFR-002 · **Dependencies**: WP01 · **execution_mode**: code_change (~190 lines)
+- **Priority**: P1 · **Requirements**: FR-001, NFR-002 · **Dependencies**: none · **execution_mode**: code_change (~190 lines)
 - **Independent test**: high-confidence records `deprecated`; each gated item carries a recorded gh decision; live corpus untouched; lint green.
 - Subtasks: T020, T021, T022, T023.
 
 ## WP06 — Retire refactor + reviews + 3-2-doc-publication (IC-02) · prompt: `tasks/WP06-retire-refactor-reviews-docpub.md`
 
 - **Goal**: Retire reviews/ (whole), the refactor shipped-subset, and 3-2-doc-publication notes; keep the degod roadmap/inventory live; flag `3-2-version-taxonomy.md` HOLD.
-- **Priority**: P1 · **Requirements**: FR-001, NFR-002 · **Dependencies**: WP01 · **execution_mode**: code_change (~200 lines)
+- **Priority**: P1 · **Requirements**: FR-001, NFR-002 · **Dependencies**: none · **execution_mode**: code_change (~200 lines)
 - **Independent test**: retired pages `deprecated`; refactor not bulk-flipped (roadmap/inventory active); HOLD taxonomy untouched; lint green.
 - Subtasks: T024, T025, T026, T027.
 

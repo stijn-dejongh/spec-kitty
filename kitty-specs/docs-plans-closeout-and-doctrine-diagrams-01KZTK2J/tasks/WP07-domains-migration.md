@@ -70,15 +70,21 @@ Migrate all four domain plans into `docs/plans/domains/`, flip the two moved pla
 - **`durable` requires WP01** (the moved plans get `doc_status: durable`).
 - **`gh` auth:** `unset GITHUB_TOKEN` before any `gh` command.
 
-### Subtask T028 — Move the two existing plans into domains/ (git mv) + flip to durable
+### Subtask T028 — Move the two existing plans into domains/ (git mv) + flip to durable + reconcile references
 
 1. `git mv docs/plans/saas-hosted-sync-domain-plan.md docs/plans/domains/saas-hosted-sync-domain-plan.md` and the same for `doctrine-charter-domain-plan.md`.
 2. In each moved file: set frontmatter `doc_status: active → durable`; bump `updated: '2026-08-12'`.
-3. Fix each moved file's own `related:` entries per `occurrence_map.yaml` exceptions (the `related:` sibling references move with the plan — per-entry review): sibling domain-plan paths become `docs/plans/domains/<sibling>.md`; other `related:` entries that pointed at `docs/plans/<x>` from the old location may need `../` depth review now that the file sits one level deeper.
+3. **Reconcile the moved files' `related:` correctly.** Frontmatter `related:` entries are **repo-root-relative** (e.g. `docs/plans/index.md`, `docs/adr/3.x/...`), resolved against repo_root — so **do NOT add `../` depth**. Only rewrite entries that name the *other moved sibling* (`docs/plans/saas-hosted-sync-domain-plan.md` → `docs/plans/domains/saas-hosted-sync-domain-plan.md`, and vice-versa). Leave every other repo-relative `related:` entry byte-for-byte.
+4. **Heal body inline links (the depth-sensitive class) with the tool, not by hand:** run `python scripts/docs/relative_link_fixer.py --write` — it heals move-broken bare-relative body links via the `occurrence_map.yaml` `moves:` spine (covers both relocations). Do not hand-edit body links.
+5. **Reconcile the moved `doctrine-charter-domain-plan.md`'s references to WP04-retired pages (US1 trust goal).** This durable throughline `related:`-cites and body-links `docs/plans/doctrine/charter-activation-reachability-assessment.md`, `runtime-charter-doctrine-boundary.md`, and `next-slice-wheel-mission-types-public-api-research.md` — all flipped to `deprecated` by WP04. Do NOT leave the durable plan presenting retired notes as its live design corpus: reframe those references as historical records (or drop them). `related:` resolution still passes either way; this is a curation-correctness fix, not a gate fix. (WP04's activity log flags this hand-off.)
 
 ### Subtask T029 — Author domains/index.md
 
-Create `docs/plans/domains/index.md` (frontmatter `doc_status: active`, `updated: '2026-08-12'`, resolvable `related:`) cataloguing all four throughlines (saas-hosted-sync, doctrine-charter, packs-extraction, api-dashboard) in one hop, with a one-line scope blurb each. This is the `domains/` cluster's self-catalog (US2: reachable in one hop).
+Create `docs/plans/domains/index.md` (frontmatter `doc_status: active`, `updated: '2026-08-12'`, resolvable `related:`) cataloguing all four throughlines (saas-hosted-sync, doctrine-charter, packs-extraction, api-dashboard) in one hop, with a one-line scope blurb each. This is the `domains/` cluster's self-catalog (US2: reachable in one hop). **Deliberately `doc_status: active`, NOT `durable`** — the index is a living navigation page whose contents change as throughlines are added; add a one-line comment/rationale so a later curator does not "fix" it to durable.
+
+**Reference reconciliation for WP02's plans (folded into the T028 move sweep + T031):**
+
+The `packs-extraction`/`api-dashboard` plans (authored by WP02, owned by WP02) reference `doctrine-charter-domain-plan.md` at its **pre-move** path for their §3.2/§3.6 boundary seams. After T028 moves it into `domains/`, those references break. `relative_link_fixer.py --write` (T028 step 4) heals bare-relative **body** links automatically; any **frontmatter `related:`** entry naming the old path must be repointed to `docs/plans/domains/doctrine-charter-domain-plan.md`. These two files are **not** in this WP's `owned_files` (to avoid an ownership-overlap gate failure with WP02) — editing them here is a **sanctioned out-of-owned-files bulk edit**: WP07 depends on WP02 so there is no concurrent writer (the no-overlap guard is satisfied), the change is a link-rewrite only, and it is in-scope of `occurrence_map.yaml`'s `domains/*-domain-plan.md` `related:` exception. Record the one-line rationale in the activity log.
 
 ### Subtask T030 — Top-level docs/plans/index.md: domains cluster + retire-index reconciliation (MERGED)
 
@@ -95,7 +101,7 @@ Use `occurrence_map.yaml`'s `user_facing_strings: rename_if_user_visible` as the
 ### Subtask T032 — Regenerate lockfiles + prove zero dead links
 
 1. Regenerate the docs lockfiles (do NOT hand-edit them): `python scripts/docs/docs_index.py --write` and `python scripts/docs/inventory_lockfile.py --write` (confirm exact flags via `--help`; the inventory lockfile is `docs/development/3-2-page-inventory.yaml`, the retrieval index `docs/development/3-2-docs-retrieval-index.yaml`).
-2. Run the dead-link / relative-link-fixer gate: `PWHEADLESS=1 python -m pytest tests/docs/test_relative_link_fixer.py tests/docs/test_related_validator.py tests/docs/test_docs_index.py tests/docs/test_inventory_lockfile.py tests/docs/test_docs_structural_lint.py -q` — **zero dead links**, both new plans present in the inventory, four throughlines reachable in one hop.
+2. Prove zero dead links against the **real tree**, not just fixtures: run `python scripts/docs/relative_link_fixer.py --check` (the body-link authority over `docs/**/*.md`) and `python scripts/docs/related_validator.py` (frontmatter). Then the unit gates: `PWHEADLESS=1 python -m pytest tests/docs/test_relative_link_fixer.py tests/docs/test_related_validator.py tests/docs/test_docs_index.py tests/docs/test_inventory_lockfile.py tests/docs/test_docs_structural_lint.py -q`. Confirm both new plans present in the inventory and four throughlines reachable in one hop. (Confirm exact flags via `--help`; the `--check` run over the actual moved paths is the authority — do not rely on the unit test's synthetic fixtures alone.)
 3. Full docs gate: `PWHEADLESS=1 python -m pytest tests/docs/ tests/architectural/test_no_legacy_terminology.py -q` (green) and `python scripts/docs/check_docs_freshness.py` (0 errors).
 
 ## Branch Strategy
@@ -105,7 +111,8 @@ Planning/base branch: `feat/docs-plans-tier3-closeout`. Merge target: `feat/docs
 ## Definition of Done
 
 - All four domain plans live under `docs/plans/domains/`; the two moved plans carry `doc_status: durable`; `domains/index.md` catalogs all four (one-hop reachable from the plans index).
-- Every reference to a moved plan resolves (zero dead links) — top-level index, the four `3-2-x-*` docs, and the moved plans' `related:` lists; the two `*(planned)*` slots are now live links.
+- Every reference to a moved plan resolves (zero dead links, proven by `relative_link_fixer.py --check` + `related_validator.py` over the real tree) — top-level index, the four `3-2-x-*` docs, the moved plans' `related:` lists, **and WP02's two new plans' references** (reconciled as a sanctioned out-of-owned-files edit); the two `*(planned)*` slots are now live links.
+- The durable `doctrine-charter-domain-plan.md` no longer presents the three WP04-retired pages as its live design corpus (reframed as historical or dropped).
 - Top-level `docs/plans/index.md` reflects both the domains cluster and the IC-02 retirements; the roadmap remains live (C-001).
 - Lockfiles regenerated from frontmatter (not hand-edited); `occurrence_map.yaml` kept conformant.
 - `tests/docs/` + terminology guard green; `check_docs_freshness.py` 0 errors.

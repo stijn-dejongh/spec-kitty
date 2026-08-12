@@ -86,7 +86,7 @@ Author the two remaining domain-plan throughlines — `packs-extraction` and `ap
 
 **Steps**:
 1. Run `PWHEADLESS=1 python -m pytest tests/docs/test_related_validator.py tests/docs/test_description_length_gate.py tests/docs/test_docs_structural_lint.py -q` — both new plans pass (`related:` resolves, `description` ≤180, `doc_status: durable` accepted, frontmatter contract met).
-2. Run `pytest tests/architectural/test_no_legacy_terminology.py -q` — no `feature` regression.
+2. Run `pytest tests/architectural/test_no_legacy_terminology.py -q` (must stay green) — **but note this guard does NOT scan for `feature`/`Feature:`** (it enforces `ceremony`→`status commit` and a lane-consolidation phrase only). C-003 is therefore **reviewer-verified, not gate-enforced**: when documenting the #650 UI drift, describe it as the `Feature`-labelled UI drift (never write a bare live `Feature:` token as if it were canonical), then `rg -n 'Feature:' docs/plans/domains/api-dashboard-domain-plan.md` and confirm every hit is inside a clearly-historical/quoted "the drift being killed" context.
 3. Do NOT regenerate the docs lockfiles here — that is IC-04's job (the new pages will be added to the inventory during the migration WP's regeneration).
 
 **Files**: none.
@@ -99,10 +99,11 @@ Planning/base branch: `feat/docs-plans-tier3-closeout`. Final merge target: `fea
 
 - Both plans exist under `docs/plans/domains/` with `doc_status: durable` and canonical §1–§6 structure.
 - packs-extraction carries an explicit non-goal against doctrine-charter §3.2; api-dashboard carries an explicit non-goal against §3.6 — each cross-linked and each disambiguating the shared word ("packs" / "API").
-- `related:` entries all resolve at this WP's commit; `description` ≤180; terminology guard green; no `Feature:` reintroduced.
+- `related:` entries all resolve at this WP's commit; `description` ≤180; terminology guard green; C-003 reviewer-verified — no bare live `Feature:` token used as canonical (the `rg` check recorded).
 
 ## Reviewer guidance
 
 - Verify the boundary statements are **concrete** (name the specific overlapping section and what is in/out), not a generic "see also".
 - Verify durable frontmatter (proves WP01 landed) and that the plans do not duplicate the doctrine-charter §3.2/§3.6 content — they point at it.
+- **C-003 has no automated backstop** (the terminology guard does not scan `Feature`): independently `rg -n 'Feature' docs/plans/domains/api-dashboard-domain-plan.md` and confirm no hit reads as live canonical UI language.
 - Confirm no docs-lockfile edits leaked in (that is IC-04's owned surface).

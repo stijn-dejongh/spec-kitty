@@ -1,8 +1,7 @@
 ---
 work_package_id: WP06
 title: Retire shipped refactor + reviews + 3-2-doc-publication working notes (IC-02)
-dependencies:
-- WP01
+dependencies: []
 requirement_refs:
 - FR-001
 - NFR-002
@@ -16,7 +15,7 @@ subtasks:
 - T027
 history:
 - at: '2026-08-12'
-  note: Authored by /spec-kitty.tasks (post-plan-squad model). IC-02 refactor/reviews/doc-publication fan-out; one HOLD-for-ruling item.
+  note: Authored by /spec-kitty.tasks (post-plan-squad model). IC-02 refactor/reviews/doc-publication fan-out; one HOLD-for-ruling item. Post-tasks squad dropped the spurious WP01 dep.
 agent_profile: curator-carla
 authoritative_surface: docs/plans/3-2-doc-publication/
 create_intent: []
@@ -87,7 +86,7 @@ Planning/base branch: `feat/docs-plans-tier3-closeout`. Merge target: `feat/docs
 
 ## Definition of Done
 
-- reviews/ (5), the refactor shipped-subset (5), and 3-2-doc-publication (8) flipped to `deprecated` with evidence banners; no deletions.
+- reviews/ (5), the refactor shipped-subset (5), and 3-2-doc-publication (8) flipped to `deprecated` with evidence banners whose citations **resolve** (merged mission dir / PR #2308 / #305 / 3.2.3 release — not merely present); no deletions.
 - `degod-unshim-roadmap.md` + `-inventory.md` left `active`; `3-2-version-taxonomy.md` left untouched + HOLD noted.
 - Three section indexes reconciled; docs lint + related + terminology green.
 

@@ -1,8 +1,7 @@
 ---
 work_package_id: WP05
 title: Retire shipped investigations records (evidence-gated, gh-verified) (IC-02)
-dependencies:
-- WP01
+dependencies: []
 requirement_refs:
 - FR-001
 - NFR-002
@@ -16,7 +15,7 @@ subtasks:
 - T023
 history:
 - at: '2026-08-12'
-  note: Authored by /spec-kitty.tasks (post-plan-squad model). IC-02 investigations fan-out; 3 moderate-certainty items require a gh issue view gate.
+  note: Authored by /spec-kitty.tasks (post-plan-squad model). IC-02 investigations fan-out; 3 moderate-certainty items require a gh issue view gate. Post-tasks squad dropped the spurious WP01 dep and hardened the gh gate (closed != shipped; reviewer re-runs gh).
 agent_profile: curator-carla
 authoritative_surface: docs/plans/investigations/
 create_intent: []
@@ -72,7 +71,7 @@ Flip to `deprecated` with the cited evidence:
 
 ### Subtask T022 — Moderate-certainty items — GATE on `gh issue view` first
 
-For each below, run `unset GITHUB_TOKEN && gh issue view <n> --json state,title,closedAt` (or `gh pr view`) and **only flip if the design has demonstrably shipped/closed**. If still open/unshipped, leave the page live and record `NOT-RETIREABLE (issue #<n> still open)` in the activity log:
+For each below, run `unset GITHUB_TOKEN && gh issue view <n> --json state,title,closedAt,stateReason` (or `gh pr view`) and **only flip if the design has demonstrably SHIPPED**. **Closed ≠ shipped:** an issue closed as `not planned` / wontfix / duplicate must NOT trigger a flip. Record in the activity log, per item, the observed `state` + `stateReason` **and a one-line reason why that closure implies the design shipped** (e.g. "closed by merged PR #X" / "delivered by mission Y"). If still open, or closed-but-not-shipped, leave the page live and record `NOT-RETIREABLE (issue #<n>: <state/reason>)`:
 - `issue-1040-scope-assessment.md` (draft) — verify **#1040** shipped.
 - `issue-1111-analysis.md` (draft) — verify **#1111** shipped (Epic 1111 slice-landing).
 - `loop-friction-fastfollow-spec.md` (active) — verify **#2581** (+ #2577/#2573) landed (`ec3e2c528` / `266d757f5` / `loop-reliability-…-01KXWWD6`).
@@ -92,11 +91,11 @@ Planning/base branch: `feat/docs-plans-tier3-closeout`. Merge target: `feat/docs
 ## Definition of Done
 
 - T020/T021 records flipped to `deprecated` with evidence banners; no deletions.
-- Each T022 item carries a recorded `gh issue view` gate decision (flipped only if shipped; held with reason otherwise).
+- Each T022 item carries a recorded `gh issue view` gate decision including `state`+`stateReason` **and the shipped-justification** (flipped only if demonstrably shipped, not merely closed; held with reason otherwise).
 - LIVE/unshipped corpus (write-path-topology, review-artifact-write-integrity, 2497, wp-op-schema) untouched.
 - `investigations/index.md` reconciled; docs lint + related + terminology green.
 
 ## Reviewer guidance
 
-- Verify the T022 gate was actually performed (activity log shows the observed issue state) — a flip with no gh evidence is a reject.
+- **Independently re-run** `unset GITHUB_TOKEN && gh issue view <n> --json state,closedAt,stateReason` for each T022 item (#1040, #1111, #2581); confirm the recorded state matches and that closure genuinely means *shipped* (a `not planned`/duplicate closure that was flipped is a reject). Do not trust the activity-log text alone.
 - Verify the LIVE corpus is untouched and top-level index.md was not edited.

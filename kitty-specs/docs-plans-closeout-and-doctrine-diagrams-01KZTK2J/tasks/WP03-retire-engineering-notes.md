@@ -1,8 +1,7 @@
 ---
 work_package_id: WP03
 title: Retire shipped engineering-notes clusters (auto trio + evidence-gated) (IC-02)
-dependencies:
-- WP01
+dependencies: []
 requirement_refs:
 - FR-001
 - NFR-002
@@ -18,7 +17,7 @@ subtasks:
 - T015
 history:
 - at: '2026-08-12'
-  note: Authored by /spec-kitty.tasks (post-plan-squad model). IC-02 engineering-notes fan-out; folds the auto-retire trio (shared engineering-notes/index.md owner).
+  note: Authored by /spec-kitty.tasks (post-plan-squad model). IC-02 engineering-notes fan-out; folds the auto-retire trio (shared engineering-notes/index.md owner). Post-tasks squad dropped the spurious WP01 dep (retire writes `deprecated`, already in the enum — does not consume `durable`).
 agent_profile: curator-carla
 authoritative_surface: docs/plans/engineering-notes/
 create_intent: []
@@ -111,7 +110,7 @@ Planning/base branch: `feat/docs-plans-tier3-closeout`. Final merge target: `fea
 
 ## Definition of Done
 
-- Every listed cluster's pages carry `doc_status: deprecated` + a retirement banner with the named evidence; **no content deleted**.
+- Every listed cluster's pages carry `doc_status: deprecated` + a retirement banner whose evidence citation **resolves to a real merged `kitty-specs/<mission>/` dir, merged PR, or the named open-core-plan section** (not merely present — resolvable); **no content deleted**.
 - `engineering-notes/index.md` presents retired clusters as retired, not live.
 - No NOT-RETIREABLE path touched; top-level `docs/plans/index.md` untouched (IC-04 owns it).
 - Docs structural-lint + related-validator + terminology guard green.

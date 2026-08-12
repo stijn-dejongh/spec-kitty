@@ -29,6 +29,9 @@ owned_files:
 - scripts/docs/frontmatter_backfill.py
 - packs/built-in/styleguides/common-docs.styleguide.yaml
 - packs/built-in/styleguides/docs-freshness-sla.styleguide.yaml
+- packs/built-in/tactics/common-docs-curation.tactic.yaml
+- packs/built-in/tactics/common-docs-write.tactic.yaml
+- packs/built-in/tactics/common-docs-scaffold.tactic.yaml
 - tests/docs/test_doc_status_durable.py
 role: implementer
 tags: []
@@ -62,14 +65,14 @@ Add `durable` as a **reserved, never-retire** value to the `doc_status` document
 
 **Steps**:
 1. Create `tests/docs/test_doc_status_durable.py` with the neighbour marker convention `pytestmark = pytest.mark.architectural` (matches `tests/docs/test_docs_structural_lint.py`, `test_frontmatter_backfill.py`, `test_related_validator.py`). Reuse their fixture harness: the lint asset is loaded via `importlib` from `packs/built-in/assets/docs_structural_lint.py` and configured with `load_config(STYLEGUIDE_PATH)`; the `_write(...)` helper builds a synthetic page — mirror it rather than re-inventing.
-2. Assert the four propagation guarantees (contract §Guarantees):
-   - **Directive authority**: parse `packs/built-in/directives/042-common-docs.directive.yaml` and assert its `doc_status` vocabulary line lists `durable`.
-   - **Enum mirror**: `from scripts.docs.frontmatter_backfill import DocStatus` and assert `DocStatus.DURABLE.value == "durable"` and `"durable" in {s.value for s in DocStatus}`.
-   - **Structural-lint acceptance**: build a synthetic `durable` page (frontmatter `doc_status: durable`, `updated: <date>`) placed OUTSIDE `plans/` (e.g. a temp `docs/architecture/foo.md`-shaped fixture) and run it through the structural lint (`packs/built-in/assets/docs_structural_lint.py` — mirror the fixture harness in `tests/docs/test_docs_structural_lint.py`); assert `point_in_time_placement` does **NOT** flag it and `frontmatter_contract` passes.
-   - **Never point-in-time**: assert `durable` is NOT among the styleguide's `structural_lint_config.point_in_time_markers` values.
-3. Run it and confirm RED (imports/values missing). Commit as the first WP commit.
+2. Assert these guarantees. **The load-bearing, genuinely red-first, non-tautological assertion is the directive↔enum set-equality (a) — it cross-checks two independent authority sources and is the machine-verified "042 and the enum agree" gate SC-004 claims** (there is no closed-set runtime validator to lean on, so this cross-source consistency check IS the gate):
+   - **(a) Directive↔enum agreement (RED-first, the real gate)**: parse the `doc_status` vocabulary set out of `packs/built-in/directives/042-common-docs.directive.yaml` (the `draft / active / deprecated / superseded` line) into a `set[str]`; build `{s.value for s in DocStatus}` from `scripts.docs.frontmatter_backfill`; assert the two sets are **equal** AND `"durable"` is in both. This reds on the base (durable in neither) and reds if only one of directive/enum is edited (drift), so it is not a constant-assertion — it fails unless both authority sources actually mirror.
+   - **(b) Prose propagation presence (RED-first)**: assert `"durable"` appears in the `common-docs.styleguide.yaml` vocabulary prose **and** in each of the three tactic restatements (`common-docs-curation`, `common-docs-write`, `common-docs-scaffold`). Reds on base until T004 lands.
+   - **(c) Never point-in-time (green-on-base REGRESSION GUARD)**: assert `durable` is NOT among `structural_lint_config.point_in_time_markers` values. This is green on base by design — it is a guard that reds only if someone later wrongly adds durable there. Label it as such in the test.
+   - **(d) Structural-lint acceptance (guard)**: build a synthetic `durable` page (`doc_status: durable`, `updated: <date>`) OUTSIDE `plans/` and run the real lint asset (mirror `test_docs_structural_lint.py`'s `_write`/`load_config` harness); assert `point_in_time_placement` does NOT flag it and `frontmatter_contract` passes. Also green-on-base (nothing rejects the string) — a guard, not the red signal.
+3. Run it and confirm the suite is RED on the base via (a)+(b). Commit as the first WP commit.
 
-**Files**: `tests/docs/test_doc_status_durable.py` (new, ~90 lines).
+**Files**: `tests/docs/test_doc_status_durable.py` (new, ~110 lines). **Do not** claim (c)/(d) as the red-first signal — they are green-on-base guards; (a)+(b) carry red→green.
 
 ### Subtask T002 — Edit the AUTHORITY: directive 042 vocabulary
 
@@ -78,7 +81,7 @@ Add `durable` as a **reserved, never-retire** value to the `doc_status` document
 **Steps**:
 1. In `packs/built-in/directives/042-common-docs.directive.yaml`, the doc_status vocabulary is stated at the `doc_status` bullet (currently `draft / active / deprecated / superseded`). Add `durable` to that vocabulary list, with a short reserved-never-retire gloss.
 2. **Do NOT** touch the MADR `status` lines (Proposed / Accepted / Deprecated / Superseded) — those are the ADR decision-status exception, a different vocabulary.
-3. If the directive restates the vocabulary elsewhere (integrity_rules / validation_criteria), keep them consistent — grep for `draft / active` to find every restatement.
+3. **Sweep the WHOLE pack, not just the directive**, for vocabulary restatements: `rg 'draft . active . deprecated . superseded' packs/`. Beyond the directive, this hits the styleguide (T004) and three tactics (T004) — every restatement must gain `durable` so the pack's own guidance does not contradict the authority (doctrine/doctrine drift).
 
 **Files**: `packs/built-in/directives/042-common-docs.directive.yaml`.
 
@@ -92,15 +95,16 @@ Add `durable` as a **reserved, never-retire** value to the `doc_status` document
 
 **Files**: `scripts/docs/frontmatter_backfill.py`.
 
-### Subtask T004 — Styleguide vocabulary prose + `durable ∉ point_in_time_markers`
+### Subtask T004 — Styleguide + 3 tactics vocabulary prose + `durable ∉ point_in_time_markers`
 
-**Purpose**: Reconcile the styleguide's prose vocabulary and prove durable is never point-in-time.
+**Purpose**: Reconcile every prose restatement of the vocabulary (styleguide + tactics) so the pack agrees with the authority, and prove durable is never point-in-time.
 
 **Steps**:
 1. In `packs/built-in/styleguides/common-docs.styleguide.yaml`, update the controlled-vocabulary prose (the `doc_status` line currently reading `draft | active | deprecated | superseded`) to include `durable` with the reserved-never-retire gloss.
-2. **Leave `structural_lint_config.point_in_time_markers` unchanged** — it must continue to list only `point_in_time` and `closeout`. `durable` must NOT appear there (it is the semantic opposite). The T001 test asserts this.
+2. Add `durable` (same gloss) to the three tactic restatements the sweep found: `packs/built-in/tactics/common-docs-curation.tactic.yaml` (~line 24), `common-docs-write.tactic.yaml` (~lines 43–44), `common-docs-scaffold.tactic.yaml` (~lines 37–38). These are prose guidance (no validator), but leaving them at four values ships a pack whose own tactics tell an agent `durable` is invalid.
+3. **Leave `structural_lint_config.point_in_time_markers` unchanged** — it must continue to list only `point_in_time` and `closeout`. `durable` must NOT appear there (it is the semantic opposite). The T001 test (c) asserts this.
 
-**Files**: `packs/built-in/styleguides/common-docs.styleguide.yaml`.
+**Files**: `packs/built-in/styleguides/common-docs.styleguide.yaml`, `packs/built-in/tactics/common-docs-{curation,write,scaffold}.tactic.yaml`.
 
 ### Subtask T005 — Freshness-SLA styleguide: durable is never-stale
 
@@ -117,7 +121,7 @@ Add `durable` as a **reserved, never-retire** value to the `doc_status` document
 **Purpose**: Prove red→green and zero collateral breakage.
 
 **Steps**:
-1. Run `PWHEADLESS=1 python -m pytest tests/docs/ tests/doctrine/test_schema_generation_integrity.py -q` — the new durable test is GREEN; `test_docs_structural_lint.py` (esp. the `point_in_time_markers` round-trip assertion) and `test_frontmatter_backfill.py` still pass.
+1. Run `PWHEADLESS=1 python -m pytest tests/docs/ tests/doctrine/test_schema_generation_integrity.py -q` — the new durable test is GREEN; `test_docs_structural_lint.py` (esp. the `point_in_time_markers` round-trip assertion) and `test_frontmatter_backfill.py` still pass. **Note:** `test_schema_generation_integrity.py` is run here as a *no-regression* check (the generated schema does not enum-encode the doc_status vocabulary — the `point_in_time_marker.frontmatter_value` is a free string — so this test is green→green and does NOT itself verify durable; the directive↔enum agreement is verified by T001(a), not by the schema gate).
 2. Run `pytest tests/architectural/test_no_legacy_terminology.py -q` and `python scripts/docs/check_docs_freshness.py` (0 errors).
 3. Record the red→green evidence (base SHA red, final SHA green) in the activity log.
 
@@ -129,15 +133,15 @@ Planning/base branch: `feat/docs-plans-tier3-closeout`. Final merge target: `fea
 
 ## Definition of Done
 
-- `tests/docs/test_doc_status_durable.py` was RED on the planning base and is GREEN on the final commit (red→green evidence recorded).
-- `durable` is present in: directive 042 vocabulary, `DocStatus` enum, common-docs styleguide vocabulary prose, docs-freshness-sla prose.
-- `durable` is **absent** from `point_in_time_markers`; `closeout` is **not** added to the enum.
-- `tests/docs/` + `tests/doctrine/test_schema_generation_integrity.py` + `tests/architectural/test_no_legacy_terminology.py` green; `check_docs_freshness.py` 0 errors.
+- `tests/docs/test_doc_status_durable.py` was RED on the planning base (via assertions (a) directive↔enum set-equality and (b) prose propagation) and is GREEN on the final commit (red→green evidence: base SHA red, final SHA green, recorded in the activity log).
+- `durable` is present in: directive 042 vocabulary, `DocStatus` enum, common-docs styleguide vocabulary prose, the **three** `common-docs-*` tactics, and docs-freshness-sla prose — and T001(a) proves the directive vocabulary set and the enum value set are **equal** (SC-004 agreement, machine-verified by cross-source comparison, not by the schema gate).
+- `durable` is **absent** from `point_in_time_markers`; `closeout` is **not** added to the enum; no MADR `status` line altered.
+- `tests/docs/` + `tests/doctrine/test_schema_generation_integrity.py` (no-regression) + `tests/architectural/test_no_legacy_terminology.py` green; `check_docs_freshness.py` 0 errors.
 - ruff + mypy clean on `scripts/docs/frontmatter_backfill.py` and the new test (zero suppressions).
 
 ## Reviewer guidance
 
-- Verify the directive was edited **before/with** the enum (authority-first) and the two agree (SC-004).
-- Verify the ATDD test genuinely exercises the structural lint (not a tautology asserting a constant) and was red on the base.
-- Confirm no MADR `status` line was altered and `closeout` was not added to the enum.
-- Confirm `point_in_time_markers` is byte-for-byte unchanged.
+- Verify the directive was edited **before/with** the enum (authority-first) and that T001(a) asserts directive-set == enum-set (the real red-first agreement gate) — not merely that each file contains the string "durable".
+- The red-first signal is (a)+(b) (propagation presence across the authority sites); (c) `durable ∉ point_in_time_markers` and (d) structural-lint acceptance are **green-on-base regression guards** — do NOT reject the test for "not exercising a validator red-first," because no closed-set doc_status validator exists (that enforcement is deferred to a later mission). Do confirm (a) genuinely parses two independent sources.
+- Confirm the schema-integrity test was run as a no-regression check only (it does not verify durable) and that the pack sweep caught all restatements (styleguide + 3 tactics), leaving no site at four values.
+- Confirm `point_in_time_markers` is byte-for-byte unchanged and `closeout` was not added to the enum.
