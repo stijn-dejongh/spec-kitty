@@ -65,16 +65,26 @@ Land the docsite render capability: a **host-native, stdlib-only** post-processo
 
 **Definition of Done:**
 
-1. `scripts/docs/plantuml_render.py` recovers fences, `html.unescape()`s the payload, **asserts the
-   emitted fence class** against real `_site` HTML (`language-plantuml`), renders, injects SVG + alt.
+1. `scripts/docs/plantuml_render.py` recovers fences, `html.unescape()`s the payload, renders, injects
+   SVG + alt. The recovery **matches BOTH `lang-plantuml` AND `language-plantuml`** — DocFX/markdig
+   emits `lang-plantuml` for hand-authored fences (the mission diagrams), while the custom
+   `language-*` emitter only covers kitty-specs pages; assuming only `language-plantuml` silently
+   renders nothing. The step **FAILS CLOSED on any recognized-but-unrendered `@start*` fence** (an
+   "all fences consumed" positive check), so a class mismatch reds the build instead of shipping
+   empty diagrams.
 2. Wired into `docs-build-pr.yml` AND `docs-pages.yml`, **immediately after `glossary_linker`,
-   before redirect-stub generation + `seo_verify --strict`**. Host `setup-java` dropped.
-3. `docs-pages.yml`'s enumerated `paths:` allowlist extended to include the new script(s) (it is a
-   literal list, not a glob).
+   before redirect-stub generation + `seo_verify --strict`** (verified real slots: docs-build-pr.yml
+   ~L134→L143, docs-pages.yml ~L77→L113). Do **NOT ADD** host `setup-java` — neither workflow has it
+   and java runs only in the pinned image; the risk is adding it, not removing it.
+3. `docs-pages.yml`'s **enumerated** `paths:` allowlist extended to include the new script(s) (literal
+   list, not a glob). `docs-build-pr.yml` already globs `scripts/docs/**` + `docs/**`, so it needs **no**
+   `paths:` change — a reviewer should not flag a missing edit there.
 4. Round-trip test proves fence→`_site`→recovered→SVG survives the full downstream chain; Mermaid is
    untouched; malformed fence + sha256 mismatch fail-closed.
-5. Alt-text test proves two differently-titled diagrams yield **distinct** alt equal to the derived
-   caption and NOT in the generic-fallback set `{"yaml","diagram",""}`.
+5. Alt-text test asserts each SVG's `aria-label` equals the **exact literal `title` string authored
+   in the fixture** (e.g. `"Agent Profile Schema"`) — not merely "two distinct captions not in the
+   fallback set" (which a fake `f"diagram-{i}"` derivation would pass). Distinctness + fallback-set
+   exclusion remain as secondary assertions.
 
 ## Context & Constraints
 
@@ -95,18 +105,24 @@ Land the docsite render capability: a **host-native, stdlib-only** post-processo
 
 - **Purpose**: the actual post-DocFX render/inject step.
 - **Steps**:
-  1. Walk `docs/_site/**/*.html`. For each page, find rendered ` ```plantuml ` fences. **Confirm the
-     real emitted class** by inspecting a built `_site` page first (`language-plantuml` vs `lang-…`);
-     the round-trip test (T010) is the backstop if DocFX changes it.
+  1. Walk `docs/_site/**/*.html`. Recover rendered `@start*` fences matching **BOTH** class
+     conventions — `lang-plantuml` (DocFX/markdig default, the mission diagrams) **and**
+     `language-plantuml` (the custom kitty-specs emitter). Confirm both against a real built `_site`
+     page. After processing a page, assert **zero** `@start*` fences remain unrendered (fail-closed —
+     a class mismatch must red the build, never ship empty diagrams).
   2. Recover the fence payload and `html.unescape()` it (DocFX HTML-escapes `<`, `&`, quotes).
-  3. Render via `plantuml_invoke.render_startyaml(...)` (SANDBOX, `--network=none`).
+  3. Render via `plantuml_invoke.render_startyaml(...)` (SANDBOX, `--network=none`, `-failfast2`); the
+     invoker's `svg_is_error` check (WP01) fails-closed on a PlantUML error SVG.
   4. Derive the caption: prefer the PlantUML `title …` line inside the block; else the nearest
      preceding markdown heading. Build alt/aria from it; **reject trivial captions** (empty or in
      `{"yaml","diagram"}`) by raising (fail-closed) — a diagram must carry a real title.
   5. Replace the `<pre><code …>` fence node with the `<svg>` (or `<figure><svg><figcaption>`), setting
      `role="img"` + `aria-label` + a `<title>` inside the SVG.
 - **Files**: `scripts/docs/plantuml_render.py` (~180 lines).
-- **Validation**: `ruff` + `mypy --strict` clean, zero suppressions.
+- **Validation**: `ruff` + `mypy --strict` clean, **no *unjustified* suppressions**. Mirroring the
+  canonical `glossary_linker.py` `sys.path` bootstrap requires exactly one inline-justified
+  `# noqa: E402` on the post-bootstrap sibling import (charter-sanctioned narrow suppression) — that
+  is acceptable; do not add any others.
 
 ### Subtask T008 – Wire into `docs-build-pr.yml`
 
@@ -115,39 +131,49 @@ Land the docsite render capability: a **host-native, stdlib-only** post-processo
   1. Read the current workflow; locate the `glossary_linker` step.
   2. Insert the render step **immediately after `glossary_linker`, before redirect-stub + `seo_verify
      --strict`**. Prefetch the JRE image (by digest) + download/verify the jar before it.
-  3. **Remove host `setup-java`** if present (redundant — java runs in the pinned image).
+  3. Do **NOT add** host `setup-java` (it is absent today; java runs in the pinned image).
+  4. **No `paths:` change** here — `docs-build-pr.yml` already globs `scripts/docs/**` + `docs/**`.
 - **Files**: `.github/workflows/docs-build-pr.yml`.
 
 ### Subtask T009 – Wire into `docs-pages.yml` + extend `paths:` allowlist
 
 - **Purpose**: deploy-path rendering + trigger correctness.
 - **Steps**:
-  1. Same insertion (after `glossary_linker`, before redirect-stub/`seo_verify`), same jar/image prep,
-     drop `setup-java`.
+  1. Same insertion (after `glossary_linker`, before redirect-stub/`seo_verify`), same jar/image prep;
+     do not add `setup-java`.
   2. **Extend the enumerated `paths:` allowlist** to include `scripts/docs/plantuml_render.py`,
      `scripts/docs/plantuml_invoke.py`, `scripts/docs/plantuml_pins.json` (literal entries — it is not
      a glob). Otherwise doc-only edits that touch the render script won't trigger the deploy.
+  3. After wiring, `workflow_dispatch` the **real** `docs-pages.yml` path (or a dry-run job) to confirm
+     `docker` is usable in the deploy-job context (permissions `contents: read`, Pages-deploy) — not
+     only inside WP01's standalone spike job. "Proven, not asserted."
 - **Files**: `.github/workflows/docs-pages.yml`.
 
 ### Subtask T010 – Round-trip + non-regression test
 
 - **Purpose**: prove the fence survives the whole chain and nothing else breaks.
 - **Steps**:
-  1. Build (or stub) a minimal `_site` page with a `plantuml` fence + a Mermaid block.
-  2. Run the render step, then the downstream steps that run after it (redirect-stub, `seo_verify`) over
-     the injected page — assert the SVG is present and the page still passes `seo_verify`.
+  1. Derive the fence class from a **real DocFX build** artifact in ≥1 test (not only a stub) so the
+     `lang-`/`language-` recovery is validated against reality, not a self-fulfilling stub. A stubbed
+     `_site` page may supplement but must not be the sole proof of the class.
+  2. Run the render step, then the downstream steps after it (redirect-stub, `seo_verify`) over the
+     injected page — assert the SVG is present and the page still passes `seo_verify`.
   3. Assert the Mermaid block is byte-unchanged.
-  4. Assert a **malformed** `@startyaml` fails-closed (non-zero / raised), and a **jar sha256 mismatch**
-     fails-closed **before** rendering.
+  4. Assert **all `@start*` fences are consumed** (zero unrendered fences remain) — a `lang-`/`language-`
+     class mismatch must FAIL here, not ship empty diagrams.
+  5. Assert a **malformed** `@startyaml` fails-closed (non-zero / raised); a **jar sha256 mismatch**
+     fails-closed **before** rendering; a PlantUML **error SVG** fails-closed (`svg_is_error`).
 - **Files**: `tests/docs/test_plantuml_render.py`.
 - **ATDD**: write these RED first (before T007 is complete), commit as the WP's first commit.
 
 ### Subtask T011 – Alt-text distinct-caption test
 
 - **Purpose**: NFR-005 concrete predicate (reviewer MEDIUM).
-- **Steps**: render **two differently-titled** diagrams; assert each injected SVG's `aria-label`/alt
-  equals its **derived caption**, the two are **distinct**, and neither is in `{"yaml","diagram",""}`.
-  Confirm the derivation source (PlantUML `title` vs markdown heading) is the one implemented in T007.
+- **Steps**: render **two differently-titled** diagrams; assert each injected SVG's `aria-label`
+  equals the **exact literal `title` string authored in the fixture** (e.g. `"Agent Profile Schema"`)
+  — a fake `f"diagram-{i}"` derivation would pass a mere distinct/non-fallback check, so the literal
+  equality is the forcing assertion. Keep distinctness + `{"yaml","diagram",""}` exclusion as
+  secondary. Confirm the derivation source (PlantUML `title` vs markdown heading) matches T007.
 - **Files**: `tests/docs/test_plantuml_render.py` (same module).
 
 ## Branch Strategy

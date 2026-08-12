@@ -66,9 +66,13 @@ prior missions as proof — prove it here, on the real runners.
 
 **Definition of Done (all required):**
 
-1. A **real** `@startyaml` diagram renders to a non-empty SVG via
+1. A **real** `@startyaml` diagram renders to a **valid, error-free** SVG via
    `docker run --network=none -v <tmp>:<tmp> <digest-pinned-JRE-image> java -jar plantuml.jar …`
-   under `-DPLANTUML_SECURITY_PROFILE=SANDBOX`.
+   under `-DPLANTUML_SECURITY_PROFILE=SANDBOX` **and `-failfast2`**. "Non-empty SVG" is NOT the
+   predicate — PlantUML renders font/DNS failures as a *valid non-empty* `<svg>` with an error
+   graphic at **exit 0**. The green predicate MUST be: the SVG contains expected tokens from the
+   fixture `title`/keys **AND** contains **no** PlantUML error signature (no `An error has
+   occurred`, no error-red `<rect>`/`<text>`). This is the exact failure the spike exists to catch.
 2. The spike CI job passes on **BOTH** runner labels: `ubuntu-latest` **AND**
    `blacksmith-4vcpu-ubuntu-2404` (matrix). Capture both run URLs in the Activity Log.
 3. `plantuml.jar` is pinned by **version + sha256**; the JRE image is **digest-pinned**; the
@@ -134,8 +138,10 @@ prior missions as proof — prove it here, on the real runners.
      error (fail-closed) on mismatch.
   3. Prefetch the JRE image by digest (outside isolation), then run:
      `docker run --rm --network=none -v {workdir}:{workdir} -w {workdir} <image@digest>
-     java -Djava.awt.headless=true -DPLANTUML_SECURITY_PROFILE=SANDBOX -jar {jar} -tsvg {infile}`.
-  4. Return the produced SVG bytes; raise fail-closed on non-zero exit / empty output.
+     java -Djava.awt.headless=true -DPLANTUML_SECURITY_PROFILE=SANDBOX -failfast2 -jar {jar} -tsvg {infile}`.
+  4. Return the produced SVG bytes; raise fail-closed on non-zero exit / empty output **AND** on a
+     PlantUML **error signature** in the SVG (see DoD #1 — a valid non-empty error SVG must fail-closed).
+     Expose a small `svg_is_error(svg: bytes) -> bool` helper so callers (WP03) reuse the same check.
 - **Files**: `scripts/docs/plantuml_invoke.py` (new, ~120 lines).
 - **Validation**: `ruff` + `mypy --strict` clean, zero suppressions. No third-party imports.
 - **Notes**: keep the docker argv as data so tests can assert `--network=none` and `SANDBOX` are

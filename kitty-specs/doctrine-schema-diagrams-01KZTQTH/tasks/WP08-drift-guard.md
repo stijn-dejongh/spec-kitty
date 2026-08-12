@@ -86,10 +86,16 @@ its bound model(s), with **both sides introspected/parsed — never hand-counted
 
 - **Steps**:
   1. `tests/docs/diagram_drift/binding_table.py`: an explicit registry mapping each diagram
-     (`file:anchor`) → the model class(es) it depicts (1:N). Include the WP05 overview, WP06 DRG, WP07
-     mission-type/step + action-index.
+     (`file:anchor`) → the model class(es) it depicts (1:N). Include the WP05 **cross-kind overview**,
+     the WP05 **agent-profile schema** (`AgentProfileSchema` + nested `AgentSpecialization` — T035; this
+     is the aliased+nested corpus diagram that forces the alias/recursion path), the WP06 DRG, and the
+     WP07 mission-type/step + action-index diagrams.
   2. Add a **disposition map over ALL `ArtifactKind`** members: each is `diagrammed` (bound to a diagram)
      or `consciously-omitted` (with a one-line reason). Derived key set = `list(ArtifactKind)`.
+  3. **Three-way `anti pattern` disambiguation** (do not conflate): `ArtifactKind.ANTI_PATTERN` (enum
+     member — gets its OWN disposition in the completeness map, bound to neither the class nor the DRG
+     string), `NodeKind.ANTI_PATTERN` (DRG string, no backing class), and `styleguides/models.py:AntiPattern`
+     (a real `BaseModel`). All three are distinct.
 - **Files**: `tests/docs/diagram_drift/binding_table.py`.
 
 ### Subtask T027 – The guard engine
@@ -101,15 +107,26 @@ its bound model(s), with **both sides introspected/parsed — never hand-counted
      - **Diagram-side field extraction**: parse the `@startyaml` block text, collect top-level keys,
        recurse into nested sub-maps, exclude scalar example values.
      - **Compare** and return a structured diff (missing-in-diagram / extra-in-diagram).
+     - **Patchable seams (REQUIRED for the non-fakeable tests)**: expose the kind-set and per-model
+       field-set through overridable functions — e.g. `_artifact_kind_values() -> list[str]` (returns
+       `[k.value for k in ArtifactKind]`) and the model→fields extractor — so T028/T030 can monkeypatch
+       *those* to inject a synthetic kind / nested field. **You cannot add a member to a StrEnum at
+       runtime** (subclassing a StrEnum-with-members raises `TypeError`; member assignment raises), and
+       the models are `frozen=True, extra="forbid"` — so the injection MUST go through the seam, never
+       by mutating the enum or the pydantic class.
   2. Pure stdlib + pydantic (already a dep). No new third-party deps.
 - **Files**: `tests/docs/diagram_drift/guard.py`, `tests/docs/diagram_drift/__init__.py`.
 
 ### Subtask T028 – Completeness-over-ALL-kinds test
 
 - **Steps**: derive the expected key set from `list(ArtifactKind)` + the priority-artefact list; assert
-  every member has a disposition in the binding table. **Inject a synthetic `ArtifactKind` member** (via
-  a controlled monkeypatch/extension of the enum members used by the guard) and assert the guard **FAILS**
-  until that member carries a disposition. (Not just the 4 priority kinds.)
+  every member has a disposition in the binding table. Two complementary forcing tests (neither fakeable):
+  1. **Synthetic-kind injection via the seam**: `monkeypatch` `guard._artifact_kind_values()` to return
+     the real values **plus** a synthetic string, and assert the guard **FAILS** until that string carries
+     a disposition. (Do NOT try to extend the StrEnum — infeasible; patch the seam.)
+  2. **Delete-a-disposition**: remove an existing member's entry (e.g. `anti_pattern`) from the binding
+     table and assert the guard **FAILS** — this forces the completeness derivation to actually read
+     `list(ArtifactKind)` (a stand-in key set would not catch it). Covers ALL kinds, not just the 4 priority.
 - **Files**: `tests/docs/test_diagram_drift_guard.py`.
 
 ### Subtask T029 – Omit-a-field + AntiPattern-vs-anti_pattern tests
@@ -124,9 +141,13 @@ its bound model(s), with **both sides introspected/parsed — never hand-counted
 
 ### Subtask T030 – Nested depth-2 test
 
-- **Steps**: add a field to a genuinely **nested** value-object — `AgentProfileSchema → AgentSpecialization`
-  (or `MissionStepContract → MissionStepContractStep → inputs`) — via a fixture/monkeypatch, and assert
-  the guard FAILS (proves transitive nested recursion works). **Do NOT use the DRG — it is FLAT.**
+- **Steps**: force a nested-model drift on a genuinely **nested** value-object —
+  `AgentProfileSchema → AgentSpecialization` (verified real at `schema_models.py:78,237`) or
+  `MissionStepContract → MissionStepContractStep → inputs` (depth-3) — by patching the **extracted
+  field set for the nested model via the seam** (the models are `frozen=True, extra="forbid"`, so you
+  cannot add an attribute), and assert the guard FAILS (proves transitive nested recursion runs). Because
+  WP05's shipped agent-profile diagram (T035) binds this nested model, the guard already exercises the
+  recursion on the **real corpus** — this test pins the failure direction. **Do NOT use the DRG — it is FLAT.**
 - **Files**: `tests/docs/test_diagram_drift_guard.py`.
 
 ## Branch Strategy

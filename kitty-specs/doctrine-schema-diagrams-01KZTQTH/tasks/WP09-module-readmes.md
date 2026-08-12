@@ -51,14 +51,18 @@ schema/field content. **This is the LAST, decoupled, abandonable WP** — it mus
 
 **Definition of Done:**
 
-1. Each covered `src/doctrine/**` module has a `README.md` with: a one-line description + resolving links
-   to (a) its **doctrine-kinds entry**, (b) its **schema diagram** (WP05–WP07 — in-mission targets that
-   always resolve), and (c) opportunistically the **owning domain plan** (doctrine-charter is on `main`;
-   others may not exist yet — link only if the target resolves).
+1. The **covered set is objectively defined** (not self-defining): every directory under `src/doctrine/`
+   that has an `__init__.py` **and** a bound doctrine-kinds entry / schema diagram. The lint **enumerates
+   that set itself** and fails if a member lacks a README — so "every covered module has a README" is
+   falsifiable, not circular. Each covered module's `README.md` has: a one-line description + resolving
+   links to (a) its **doctrine-kinds entry**, (b) its **schema diagram** (WP05–WP07 in-mission targets),
+   and (c) opportunistically the **owning domain plan** (link only if the target resolves now).
 2. Existing READMEs (~17) are **extended, not clobbered**.
-3. A structural lint (`tests/docs/test_module_readme_lint.py`) enforces pointer-only by machine: a length
-   cap + forbid field-table markers (e.g. schema/field pipe-tables) — so no README recreates the drift
-   surface C-005 forbids.
+3. A structural lint (`tests/docs/test_module_readme_lint.py`) machine-enforces pointer-only with a
+   **fixed cap declared here (≤ 40 lines AND ≤ 2 KB — not implementer-chosen post-hoc)**, plus: (a) NO
+   field-table markers (schema/field pipe-tables); (b) **NO fenced code block that echoes model field
+   names** (prose-bullets/code-fence evasion of the pipe-table check); (c) a **positive** check that the
+   required pointer links are present AND the non-link prose word-count is low (a pointer, not a copy).
 4. All README links resolve **in-mission** (no dependence on an external merge); lint green.
 
 ## Context & Constraints
@@ -75,9 +79,12 @@ schema/field content. **This is the LAST, decoupled, abandonable WP** — it mus
 
 ### Subtask T031 – Inventory + mapping
 
-- **Steps**: enumerate `src/doctrine/**` modules (and domain-relevant ones). For each, determine its
-  doctrine-kinds entry anchor + the schema diagram it maps to (WP05 overview / WP06 DRG / WP07
-  mission-type / per-kind), and whether an owning domain plan exists yet. Produce the module→target map.
+- **Steps**: enumerate the **covered set** by the objective predicate (dirs under `src/doctrine/` with
+  `__init__.py` + a bound kind/diagram). For each, determine its doctrine-kinds entry anchor + schema
+  diagram (WP05 overview/agent-profile / WP06 DRG / WP07 mission-type). **If WP08 has landed, consume its
+  `binding_table.py` as the single source** of the module→diagram mapping rather than re-deriving it (avoids
+  a second enumeration that can drift); the graph does not force WP08-before-WP09, so fall back to deriving
+  the map only when the binding table is absent.
 - **Files**: (working note; the map drives T032). ~17 existing READMEs are the baseline.
 
 ### Subtask T032 – Extend/create pointer-only READMEs
@@ -89,10 +96,12 @@ schema/field content. **This is the LAST, decoupled, abandonable WP** — it mus
 
 ### Subtask T033 – Structural pointer-only lint
 
-- **Steps**: `tests/docs/test_module_readme_lint.py` walks the covered READMEs and asserts: (a) length ≤
-  cap (e.g. ≤ 40 lines / ≤ 2 KB — pick a defensible cap and justify it); (b) NO field-table markers (a
-  markdown pipe-table whose header looks like a schema/field listing); (c) required links present and
-  in-mission-resolvable. ATDD RED-first for the lint rules.
+- **Steps**: `tests/docs/test_module_readme_lint.py` **enumerates the covered set itself** (objective
+  predicate above) and asserts, for each: (a) length ≤ **40 lines AND ≤ 2 KB** (fixed cap, not
+  implementer-chosen); (b) NO field-table markers (pipe-table whose header looks like a schema/field
+  listing); (c) **NO fenced code block echoing model field names**; (d) **positive**: required pointer
+  links present + non-link prose word-count below a fixed threshold; (e) every covered module HAS a README
+  (missing → FAIL). ATDD RED-first for the lint rules.
 - **Files**: `tests/docs/test_module_readme_lint.py`.
 
 ### Subtask T034 – Green + link resolution

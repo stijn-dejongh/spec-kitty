@@ -51,10 +51,13 @@ Prove **behaviorally** that no doctrine content egresses — not by flag presenc
 
 **Definition of Done:**
 
-1. **SANDBOX negative test**: a diagram containing `!includeurl <local-listener-url>` renders under
-   `-DPLANTUML_SECURITY_PROFILE=SANDBOX`, and the local listener records **zero** inbound connections
-   (or the render emits the SANDBOX-specific refusal). The test is RED (listener sees a hit) when
-   SANDBOX is removed — proving it is the control, not incidental.
+1. **SANDBOX negative test**: an **`@startuml`** diagram (which honors `!includeurl`; `@startyaml` may
+   not attempt the fetch at all, making "zero inbound" non-discriminating) containing `!includeurl
+   http://127.0.0.1:<port>/x` renders under `-DPLANTUML_SECURITY_PROFILE=SANDBOX` and the local listener
+   records **zero** inbound. The **control is a HARD assertion, not skippable**: in an egress-allowed
+   job (no `--network=none`), the same diagram WITHOUT SANDBOX **must hit** the listener — proving the
+   test discriminates. Skip the control ONLY where egress is genuinely blocked by the environment, never
+   in the primary proof job.
 2. **No-egress corpus isolation test**: the **actual authored schema-diagram corpus** (all `@startyaml`
    blocks under `docs/architecture/*.md`, discovered dynamically — NOT a hand-picked sample) renders
    under `docker run --network=none` and passes. This is the hard gate (not the ≤60s budget).
@@ -78,11 +81,13 @@ Prove **behaviorally** that no doctrine content egresses — not by flag presenc
 - **Steps**:
   1. Start a local TCP listener on `127.0.0.1:<port>` in the test (stdlib `socket`/`http.server` in a
      thread) that records any inbound connection.
-  2. Author a `@startyaml`/`@startuml` fixture with `!includeurl http://127.0.0.1:<port>/x`.
-  3. Render it under SANDBOX via the invoker. Assert the listener saw **zero** inbound (or the render
-     surfaced the SANDBOX refusal signal).
-  4. **Control**: parametrize/duplicate without SANDBOX and assert the listener WOULD be hit (xfail/skip
-     if the runner blocks even that) — this proves the test discriminates.
+  2. Author an **`@startuml`** fixture with `!includeurl http://127.0.0.1:<port>/x` (NOT `@startyaml` —
+     it may not honor `!includeurl`, so a no-op would fake-pass "zero inbound").
+  3. Render it under SANDBOX via the invoker. Assert the listener saw **zero** inbound.
+  4. **Control (HARD, not xfail)**: in an egress-allowed context (no `--network=none`), render the same
+     fixture WITHOUT SANDBOX and **assert the listener IS hit** — this proves the fetch is real and
+     SANDBOX is the control. Skip only where the environment itself blocks all egress, never in the
+     primary proof job.
 - **Files**: `tests/docs/test_plantuml_sandbox_negative.py`.
 - **ATDD**: RED-first.
 
@@ -92,7 +97,9 @@ Prove **behaviorally** that no doctrine content egresses — not by flag presenc
 - **Steps**:
   1. **Dynamically discover** every ` ```plantuml ` `@startyaml` block under `docs/architecture/*.md`
      (the WP05–WP07 diagrams). Fail if zero found (guards against a vacuous pass).
-  2. Render each under `docker run --network=none`; assert each yields a non-empty valid SVG.
+  2. Render each under `docker run --network=none`; assert each yields a valid SVG that carries the
+     diagram's title/key tokens and has **no PlantUML error signature** (reuse WP01's `svg_is_error`) —
+     a mere "non-empty SVG" would green-light a font/DNS error image, defeating the gate.
   3. Assert the set rendered equals the set discovered (no silent skips).
 - **Files**: `tests/docs/test_plantuml_no_egress_corpus.py`.
 - **Notes**: this is why WP03 depends on WP05–WP07 — the corpus must exist. Discovery-by-scan keeps it

@@ -21,6 +21,18 @@
   (WP06) are each owned by exactly one WP — both files are shared surfaces for IC-03 + IC-06.
 - **WP09 (IC-05 READMEs) is LAST, decoupled, abandonable** — never on the critical path;
   its links resolve to in-mission targets so link-resolution never reds on an external merge.
+- **WP05–WP07 hard-depend on WP01 by design (de-risk gate, not over-serialization)** — the diagram
+  *markdown* is render-independent, but gating on the spike avoids wasted authoring if WP01 fails on
+  blacksmith fonts/DNS (the whole capability would be abandoned). WP08's guard *engine* can be built
+  in parallel; only the guard *run* waits on WP05–WP07.
+- **Execution posture (topology = single_branch)** — the flatten routes lifecycle to the primary
+  partition, so the whole-file `issue-matrix.json` / `acceptance-matrix.json` are NOT coord-isolated.
+  **Integrate lanes serially** (update those matrices one lane at a time); content write-scopes are
+  disjoint and `status.events.jsonl` is append-only, so single_branch is safe + lower-overhead as long
+  as parallel worktree lanes do not write the matrices concurrently.
+- **Spike workflow fate** — `plantuml-egress-spike.yml` (WP01) is kept as a standing runner-capability
+  canary after WP03's corpus-isolation test subsumes its behavioral guarantee (a conscious keep, not an
+  orphan); revisit at WP03 review whether to retire it.
 
 ## Pre-implement gates (do before claiming any WP)
 
@@ -74,6 +86,7 @@ WP01 → {WP05|WP06|WP07} → WP08.
 | T015 | Write ADR `…-plantuml-schema-diagram-rendering.md` (cite toolguide; new genre vs C4; carve-out; tradeoff) | WP04 | [P] |
 | T016 | Amend `docs/architecture/diagrams/README.md` R-04 (generated docsite-only schema lane) | WP04 | [P] |
 | T017 | Author `@startyaml` cross-kind overview diagram (from `list(ArtifactKind)`=12) with derived title/alt | WP05 | |
+| T035 | Author `@startyaml` **agent-profile** schema diagram (`AgentProfileSchema` + nested `AgentSpecialization`, alias-normalized) — FR-003 4th artefact | WP05 | |
 | T018 | Fill `glossary-pack` kind description | WP05 | [P] |
 | T019 | Fill `anti-pattern` kind description (distinct from `styleguides` `AntiPattern`) | WP05 | [P] |
 | T020 | Sweep "## The eight doctrine artifact kinds" → 12-member reality; record `template` audit note | WP05 | |
@@ -101,8 +114,10 @@ WP01 → {WP05|WP06|WP07} → WP08.
   `docker run --network=none`, using a **version+sha256-pinned** `plantuml.jar`, with **no**
   DNS/font-driven failure, on **both** `ubuntu-latest` **and** `blacksmith-4vcpu-ubuntu-2404`.
 - **Priority**: P1 — this is the mission's de-risking spike; its green run gates render/diagram WPs.
-- **Independent test**: the spike CI job is green on both runner labels; the produced SVG is
-  a non-empty `<svg>`; the job asserts no network was available (render still succeeds).
+- **Independent test**: the spike CI job is green on both runner labels; the produced SVG is a
+  valid `<svg>` carrying the fixture's title/key tokens with **no** PlantUML error signature (a
+  mere non-empty `<svg>` is insufficient — PlantUML renders font/DNS failures as a valid error SVG
+  at exit 0); the render runs under `--network=none` (still succeeds with no network).
 - **Subtasks**: T001, T002, T003, T004, T005, T006
 - **Dependencies**: none. **Prompt**: [tasks/WP01-egress-isolation-spike.md](tasks/WP01-egress-isolation-spike.md)
 - **Est. size**: ~320 lines.
@@ -144,12 +159,14 @@ WP01 → {WP05|WP06|WP07} → WP08.
 
 ## WP05 — `doctrine-kinds.md`: cross-kind overview diagram + fill thin kinds + heading sweep
 
-- **Goal**: Author the `@startyaml` cross-kind overview (from `list(ArtifactKind)`=12), fill the
-  genuinely-thin `glossary-pack` + `anti-pattern` kinds, and sweep the stale "eight" heading to the
-  12-member reality. **Sole owner** of `doctrine-kinds.md`.
-- **Priority**: P1/P3 (mixed; overview P1, fills P3). **Independent test**: page has the overview
-  diagram; both thin kinds documented; no "eight" heading remains; `template` audit note present.
-- **Subtasks**: T017, T018, T019, T020
+- **Goal**: Author the `@startyaml` cross-kind overview (from `list(ArtifactKind)`=12) **and the
+  agent-profile schema diagram (FR-003 4th artefact, `AgentProfileSchema`+nested `AgentSpecialization`)**,
+  fill the genuinely-thin `glossary-pack` + `anti-pattern` kinds, and sweep the stale "eight" heading to
+  the 12-member reality. **Sole owner** of `doctrine-kinds.md`.
+- **Priority**: P1/P3 (mixed; overview + agent-profile P1, fills P3). **Independent test**: page has the
+  overview + agent-profile diagrams; both thin kinds documented; no "eight" heading remains; `template`
+  audit note present.
+- **Subtasks**: T017, T035, T018, T019, T020
 - **Dependencies**: WP01. **Prompt**: [tasks/WP05-doctrine-kinds-overview.md](tasks/WP05-doctrine-kinds-overview.md)
 - **Est. size**: ~300 lines.
 
@@ -206,7 +223,7 @@ WP01 → {WP05|WP06|WP07} → WP08.
 |-------------|-------|
 | FR-001 render capability | WP01, WP02 |
 | FR-002 ADR + R-04 | WP04 |
-| FR-003 schema diagrams | WP05, WP06, WP07 |
+| FR-003 schema diagrams (agent-profile=WP05/T035, overview=WP05, DRG=WP06, mission-type=WP07) | WP05, WP06, WP07 |
 | FR-004 drift guard | WP08 |
 | FR-005 module READMEs | WP09 |
 | FR-006 fill thin kinds | WP05 |
@@ -215,7 +232,7 @@ WP01 → {WP05|WP06|WP07} → WP08.
 | NFR-003 reproducible build | WP01 |
 | NFR-004 non-regression | WP02 |
 | NFR-005 accessibility | WP02, WP04 |
-| C-001 local rendering | WP01 |
+| C-001 local rendering | WP01, WP03 |
 | C-002 docsite-only | WP02 |
 | C-003 introspection not hand-counts | WP06, WP08 |
 | C-004 correct filing | WP05, WP07, WP08 |
