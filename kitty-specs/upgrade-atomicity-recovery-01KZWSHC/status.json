@@ -1,16 +1,16 @@
 {
-  "event_count": 77,
-  "last_event_id": "01KZXDZBS3YTQ1ZP7HMYHRKMNV",
-  "materialized_at": "2026-08-13T11:26:31.203946+00:00",
+  "event_count": 78,
+  "last_event_id": "01KZXDZENGMA8VPJ8KNJFM1934",
+  "materialized_at": "2026-08-13T11:26:34.160278+00:00",
   "mission_number": "",
   "mission_slug": "upgrade-atomicity-recovery-01KZWSHC",
   "mission_type": "software-dev",
   "summary": {
-    "approved": 2,
+    "approved": 1,
     "blocked": 0,
     "canceled": 1,
     "claimed": 0,
-    "done": 9,
+    "done": 10,
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
@@ -261,6 +261,9 @@
       "last_event_id": "01KZXDZBS3YTQ1ZP7HMYHRKMNV",
       "last_transition_at": "2026-08-13T11:26:31.203946+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "post-merge done | Done override: Squash-merged into spec/upgrade-atomicity-recovery via bcc0f92 (#194); lane SHA ancestry not preserved by squash, changes present."
+      ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
         "reference": "auto-approval:WP10:20260813",
@@ -281,10 +284,10 @@
       "agent": "claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
-      "force_count": 0,
-      "lane": "approved",
-      "last_event_id": "01KZX8RRR416PAM4AZ9ZPX720J",
-      "last_transition_at": "2026-08-13T09:55:32.228576+00:00",
+      "force_count": 1,
+      "lane": "done",
+      "last_event_id": "01KZXDZENGMA8VPJ8KNJFM1934",
+      "last_transition_at": "2026-08-13T11:26:34.160278+00:00",
       "model": "__resolved_model_absent__",
       "provider": "__resolved_provider_absent__",
       "review_result": {
