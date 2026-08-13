@@ -85,7 +85,7 @@
       "wp": null
     },
     "#3338": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Owned by a later WP in this mission (not FR-002/FR-012/WP01 scope); pending downstream WP resolution.",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -93,7 +93,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "Bug: diagnostic gated behind the failed migration (ungate)",
-      "verdict": "unknown",
+      "verdict": "in-mission",
       "wp": "WP02"
     },
     "#3339": {
