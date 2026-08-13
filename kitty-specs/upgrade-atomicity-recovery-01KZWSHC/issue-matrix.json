@@ -121,7 +121,7 @@
       "wp": "WP12"
     },
     "#3347": {
-      "evidence_ref": "Epic: all mandatory children fixed; SIGKILL/corpus-atomicity (FR-004/WP06) descoped to #2933; residual #3376",
+      "evidence_ref": "Epic: all mandatory children fixed; Follow-up: #3376 (worktree-path residual) + #2933 (SIGKILL/corpus-atomicity descoped)",
       "fr": null,
       "nfr": null,
       "repo": null,
