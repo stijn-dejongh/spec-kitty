@@ -149,7 +149,10 @@
       "force_count": 0,
       "lane": "canceled",
       "last_event_id": "01KZXDAE152R138VBCFNBPR2RQ",
-      "last_transition_at": "2026-08-13T11:15:05.381832+00:00"
+      "last_transition_at": "2026-08-13T11:15:05.381832+00:00",
+      "notes": [
+        "Optional/higher-risk corpus staging-promote (reworks intentional per-mission design D-03). Operator canceled: WP05 report-on-abort covers graceful aborts; SIGKILL edge deferred with ledger #2933 per spec US2 AC4."
+      ]
     },
     "WP07": {
       "actor": "user",

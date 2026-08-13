@@ -25,10 +25,10 @@ Single project: `src/specify_cli/…`, tests under `tests/…`.
 **Requirement Refs**: FR-002, FR-012, NFR-001, NFR-002
 
 ### Included Subtasks
-- [ ] T001 Author the #3334 red-first regression (`@pytest.mark.regression`, synthetic failing migration; trigger-agnostic) in `tests/upgrade/`
-- [ ] T002 Preserve/restore pre-run `schema_version` on the abort path in `src/specify_cli/upgrade/runner.py` (do NOT blanket-`finally`-stamp target)
-- [ ] T003 Ensure `ProjectMetadata.save()` no longer erases `schema_version` on the failure path (`src/specify_cli/upgrade/metadata.py`)
-- [ ] T004 [P] Assert FR-012 resumable no-op (re-run applies zero migrations)
+- [x] T001 Author the #3334 red-first regression (`@pytest.mark.regression`, synthetic failing migration; trigger-agnostic) in `tests/upgrade/`
+- [x] T002 Preserve/restore pre-run `schema_version` on the abort path in `src/specify_cli/upgrade/runner.py` (do NOT blanket-`finally`-stamp target)
+- [x] T003 Ensure `ProjectMetadata.save()` no longer erases `schema_version` on the failure path (`src/specify_cli/upgrade/metadata.py`)
+- [x] T004 [P] Assert FR-012 resumable no-op (re-run applies zero migrations)
 
 ### Dependencies
 - None (P0 core; starting package).
@@ -46,8 +46,8 @@ Single project: `src/specify_cli/…`, tests under `tests/…`.
 **Requirement Refs**: FR-003
 
 ### Included Subtasks
-- [ ] T005 Register `("migrate","backfill-runtime-state")` SAFE via a fail-closed `--dry-run` predicate in `src/specify_cli/compat/safety.py`
-- [ ] T006 [P] Test: predicate returns SAFE iff `--dry-run`; UNSAFE otherwise and on predicate exception
+- [x] T005 Register `("migrate","backfill-runtime-state")` SAFE via a fail-closed `--dry-run` predicate in `src/specify_cli/compat/safety.py`
+- [x] T006 [P] Test: predicate returns SAFE iff `--dry-run`; UNSAFE otherwise and on predicate exception
 
 ### Dependencies
 - None.
@@ -65,11 +65,11 @@ Single project: `src/specify_cli/…`, tests under `tests/…`.
 **Requirement Refs**: FR-008, NFR-002, NFR-004, C-004
 
 ### Included Subtasks
-- [ ] T007 New small module `src/specify_cli/status/dup_key_repair.py` — raw-text duplicate-key **detector** (not via `read_frontmatter`, which fails closed)
-- [ ] T008 Surface detection as a `check_*` Finding in `status/doctor.py` (thin delegation; keep god-module #1623 from growing)
-- [ ] T009 Implement **repair** by extending `src/specify_cli/migration/mission_state.py` (`repair_repo`/`RepairReport`/`FileChange`/`atomic_write`); keep-last-non-empty policy
-- [ ] T010 Wire opt-in `--fix` through `cli/commands/_mission_state_doctor.py`
-- [ ] T011 [P] Unit tests: detector, batch-atomic repair, non-destructive invariant
+- [x] T007 New small module `src/specify_cli/status/dup_key_repair.py` — raw-text duplicate-key **detector** (not via `read_frontmatter`, which fails closed)
+- [x] T008 Surface detection as a `check_*` Finding in `status/doctor.py` (thin delegation; keep god-module #1623 from growing)
+- [x] T009 Implement **repair** by extending `src/specify_cli/migration/mission_state.py` (`repair_repo`/`RepairReport`/`FileChange`/`atomic_write`); keep-last-non-empty policy
+- [x] T010 Wire opt-in `--fix` through `cli/commands/_mission_state_doctor.py`
+- [x] T011 [P] Unit tests: detector, batch-atomic repair, non-destructive invariant
 
 ### Dependencies
 - None (code); ships with the recovery bundle for heal-before-upgrade.
@@ -87,9 +87,9 @@ Single project: `src/specify_cli/…`, tests under `tests/…`.
 **Requirement Refs**: FR-001, NFR-002
 
 ### Included Subtasks
-- [ ] T012 Wire the recovery flow (no new command unless proven necessary); adopt ADR `2026-05-10-1` principles
-- [ ] T013 [P] Acceptance: SC-001 zero-git recovery
-- [ ] T014 [P] Acceptance: no-VCS wedged-project recovery (on-disk, no git checkpoint)
+- [x] T012 Wire the recovery flow (no new command unless proven necessary); adopt ADR `2026-05-10-1` principles
+- [x] T013 [P] Acceptance: SC-001 zero-git recovery
+- [x] T014 [P] Acceptance: no-VCS wedged-project recovery (on-disk, no git checkpoint)
 
 ### Dependencies
 - Depends on WP01, WP03.
@@ -107,9 +107,9 @@ Single project: `src/specify_cli/…`, tests under `tests/…`.
 **Requirement Refs**: FR-005, NFR-003
 
 ### Included Subtasks
-- [ ] T015 Stop discarding `_cutover_corpus` `results` on abort in `src/specify_cli/upgrade/migrations/m_zz_runtime_state_backfill.py::apply`
-- [ ] T016 Add a machine-readable partial-write account (extend `MigrationResult`, `upgrade/migrations/base.py`)
-- [ ] T017 [P] Test: graceful-abort enumeration matches what was written
+- [x] T015 Stop discarding `_cutover_corpus` `results` on abort in `src/specify_cli/upgrade/migrations/m_zz_runtime_state_backfill.py::apply`
+- [x] T016 Add a machine-readable partial-write account (extend `MigrationResult`, `upgrade/migrations/base.py`)
+- [x] T017 [P] Test: graceful-abort enumeration matches what was written
 
 ### Dependencies
 - None (claimable in parallel; recovery-first is priority, not an edge).
@@ -147,8 +147,8 @@ Single project: `src/specify_cli/…`, tests under `tests/…`.
 **Requirement Refs**: NFR-005
 
 ### Included Subtasks
-- [ ] T021 Half-applied-backfill fixture builder in `tests/`
-- [ ] T022 Assert reducer-determinism invariant + `event_id` de-dup + `detect()`-gating idempotency
+- [x] T021 Half-applied-backfill fixture builder in `tests/`
+- [x] T022 Assert reducer-determinism invariant + `event_id` de-dup + `detect()`-gating idempotency
 
 ### Dependencies
 - Depends on WP01, WP05.
@@ -166,8 +166,8 @@ Single project: `src/specify_cli/…`, tests under `tests/…`.
 **Requirement Refs**: FR-006
 
 ### Included Subtasks
-- [ ] T023 Retire or fail-close `set_scalar` in `src/specify_cli/task_utils/support.py`
-- [ ] T024 [P] Migrate `tests/utils.py` `set_scalar` callers to a supported writer
+- [x] T023 Retire or fail-close `set_scalar` in `src/specify_cli/task_utils/support.py`
+- [x] T024 [P] Migrate `tests/utils.py` `set_scalar` callers to a supported writer
 
 ### Dependencies
 - None.
@@ -185,8 +185,8 @@ Single project: `src/specify_cli/…`, tests under `tests/…`.
 **Requirement Refs**: FR-007, C-002
 
 ### Included Subtasks
-- [ ] T025 Explicit `except DuplicateKeyError` branch naming the key(s) before the generic handler in `src/specify_cli/frontmatter.py:122-127`
-- [ ] T026 Pin `allow_duplicate_keys=False` on the `YAML()` instance (`frontmatter.py:83`) under regression; consume WP03's raw-text detector to enumerate all duplicates
+- [x] T025 Explicit `except DuplicateKeyError` branch naming the key(s) before the generic handler in `src/specify_cli/frontmatter.py:122-127`
+- [x] T026 Pin `allow_duplicate_keys=False` on the `YAML()` instance (`frontmatter.py:83`) under regression; consume WP03's raw-text detector to enumerate all duplicates
 
 ### Dependencies
 - Depends on WP03 (shared detector).
@@ -204,8 +204,8 @@ Single project: `src/specify_cli/…`, tests under `tests/…`.
 **Requirement Refs**: FR-009
 
 ### Included Subtasks
-- [ ] T027 Route the dry-run/`--json` preview through `MigrationRegistry.get_applicable` (`upgrade/detector.py`) instead of the divergent planner path (`compat/planner.py:1027`)
-- [ ] T028 [P] Test: preview pending set == real applied set
+- [x] T027 Route the dry-run/`--json` preview through `MigrationRegistry.get_applicable` (`upgrade/detector.py`) instead of the divergent planner path (`compat/planner.py:1027`)
+- [x] T028 [P] Test: preview pending set == real applied set
 
 ### Dependencies
 - None (independent).
@@ -223,8 +223,8 @@ Single project: `src/specify_cli/…`, tests under `tests/…`.
 **Requirement Refs**: FR-010
 
 ### Included Subtasks
-- [ ] T029 Carry the remediation body on the mission-create `--json` envelope
-- [ ] T030 [P] Test: remediation body present in `--json`
+- [x] T029 Carry the remediation body on the mission-create `--json` envelope
+- [x] T030 [P] Test: remediation body present in `--json`
 
 ### Dependencies
 - None (independent).
@@ -242,8 +242,8 @@ Single project: `src/specify_cli/…`, tests under `tests/…`.
 **Requirement Refs**: FR-011
 
 ### Included Subtasks
-- [ ] T031 Restore branch/checkout on mission-create failure
-- [ ] T032 [P] Test: failed create → original branch, no orphan
+- [x] T031 Restore branch/checkout on mission-create failure
+- [x] T032 [P] Test: failed create → original branch, no orphan
 
 ### Dependencies
 - None (independent); coordinate with #3328 to avoid double-fixing.

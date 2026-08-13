@@ -10,5 +10,7 @@
   "purpose_tldr": "A failed upgrade must be atomic, self-recoverable, and honestly reported — no project left wedged with no escape.",
   "slug": "upgrade-atomicity-recovery-01KZWSHC",
   "target_branch": "spec/upgrade-atomicity-recovery",
-  "topology": "single_branch"
+  "topology": "single_branch",
+  "vcs": "git",
+  "vcs_locked_at": "2026-08-13T07:56:41.694735+00:00"
 }
