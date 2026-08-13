@@ -133,7 +133,7 @@
       "wp": null
     },
     "#3372": {
-      "evidence_ref": "Owned by a later WP in this mission (not FR-002/FR-012/WP01 scope); pending downstream WP resolution.",
+      "evidence_ref": "Merged via bcc0f92 (#194); WP03 landed + reviewed",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -141,8 +141,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
-      "wp": null
+      "verdict": "fixed",
+      "wp": "WP03"
     }
   },
   "schema_version": 1
