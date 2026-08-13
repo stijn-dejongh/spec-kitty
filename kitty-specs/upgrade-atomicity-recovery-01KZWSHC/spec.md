@@ -9,22 +9,26 @@
 
 ## Debrief — why this mission exists
 
-The cluster is dangerous because four bugs **interlock into a trap** with no self-service escape:
+The cluster is dangerous because the bugs **interlock into a trap** with no self-service escape:
 
-1. A review cycle writes the `review_feedback` key into an artifact's YAML frontmatter **twice** — first `''`, then a real path — producing a **duplicate-key, invalid-YAML** artifact (**#3372**, root trigger).
-2. `spec-kitty upgrade` later fails to parse that artifact; `runtime_state_backfill` aborts **mid-migration**, having already mutated 22 `meta.json` + 16 `status.events.jsonl`, and **says nothing** about the partial write (**#3335**, non-atomic + silent).
-3. The failed upgrade **deletes `schema_version`**, and `upgrade` — the *only* repair command — is **gated behind exactly the `schema_version` its own failure destroyed** (**#3334**, P0 release-blocker).
-4. The diagnostic the failure recommends is **itself gated behind the failed migration** (**#3338**, circular).
+1. A **legacy** write-path (now retired) once wrote the `review_feedback` key into an artifact's YAML frontmatter **twice** — first `''`, then a real path — producing a **duplicate-key, invalid-YAML** artifact that still exists on disk in affected projects (**#3372**, root trigger — see correction C below).
+2. `spec-kitty upgrade` fails to parse that artifact; `runtime_state_backfill` aborts **mid-migration**, having already mutated missions one-by-one (field report: 22 `meta.json` + 16 `status.events.jsonl`), and **says nothing** about the partial write (**#3335**, non-atomic + silent).
+3. On that failure `schema_version` is **not restored** (it is omitted on save-rewrite and only re-stamped on success), so a re-run re-detects the project as legacy and **re-hits the same failing migration** on the still-invalid artifact (**#3334**, P0 release-blocker — see correction A).
+4. The **diagnostic** the failure recommends (`spec-kitty migrate backfill-runtime-state --dry-run`) is **itself gated behind the failed migration** (hard block, exit 4) — the true "gated behind destroyed state" bug (**#3338**, circular).
 
-The governing principle is **"make failures survivable before you make them rare."** Restore the escape hatch first (recovery), then stop making it worse (atomicity), then kill the trigger (prevention), then restore trust in the preview (observability). Fixing the trigger or atomicity *first* leaves any already-wedged project stranded.
+The governing principle is **"make failures survivable before you make them rare."** Restore the escape hatch first (recovery), then stop making it worse (atomicity), then harden against the trigger (prevention), then restore trust in the preview (observability). Fixing atomicity or the guard *first* leaves any already-wedged project stranded.
 
-> ⚠️ Several code-grounded claims below (exact write-path, `schema_version` gating, dry-run serialization) are drawn from field reports on the linked issues and a first-pass code scan. A **post-spec research & corroboration squad** grounds each in the current source and architecture before planning; findings feed `research.md` and may adjust requirement wording. Requirements carrying residual uncertainty are marked `[NEEDS CORROBORATION]`.
+> ✅ **Corroborated 2026-08-13** — a post-spec research squad grounded every claim in current source (see `research.md`). It **corrected three field-report root causes**; those corrections are folded in below:
+> - **(A) `upgrade` is NOT schema-gated.** It is exempt in the CLI gate / classified SAFE. FR-001 targets *restoration + non-recurrence*, not "ungate upgrade." The `schema_version` loss is a save/stamp **ordering** bug (`upgrade/runner.py:181-190`), not a `del`.
+> - **(B) The dry-run `null` is not reproducible on current source** (it serializes `[]`). The real FR-009 defect is **two divergent pending-set computations** (preview planner vs real `MigrationRegistry.get_applicable`).
+> - **(C) The inline dual-write is legacy/unreachable.** The canonical path writes a `review-cycle://` pointer, not an inline key, and the frontmatter read boundary **already fails closed** on duplicate keys. US3 is therefore **guard-hardening + detect/repair of legacy artifacts**, not a live-writer fix.
+> Two user stories must **conform to existing ADRs**: US2 → `2026-04-17-2` (staging-promote atomicity); US1 → `2026-05-10-1` (deterministic non-destructive repair). Ledger epic **#2933** is the missing recovery substrate (FR-005/NFR-003 coupling). Ordering (C-001) is a **policy** constraint enforced by WP dependency edges, not code-forced.
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — Restore the escape hatch: a wedged project can recover (Priority: P1)
 
-An operator whose `upgrade` already failed part-way — `schema_version` gone, migration half-applied — must be able to **run a command that repairs the project**, and the diagnostic that explains the failure must be **reachable without first completing the migration that failed**. Today both the repair and the diagnostic are gated behind the destroyed/failed state, so a non-VCS or fresh-clone project has no forward path.
+An operator whose `upgrade` already failed part-way — `schema_version` unrestored, migration half-applied — must be able to **run a command that repairs the project**, and the diagnostic that explains the failure must be **reachable without first completing the migration that failed**. Corrected root cause (per `research.md`): `upgrade` itself already runs on legacy projects; the wedge is that (a) `schema_version` is not re-stamped on the failure path so a re-run re-detects legacy and **re-hits the same failing migration**, and (b) the recommended **diagnostic** is hard-blocked (exit 4) because its subcommand path is not classified SAFE. Recovery must conform to the deterministic non-destructive repair ADR (`2026-05-10-1`).
 
 **Why this priority**: This is the release-blocker (#3334 is P0, expected to red mainline per ADR 2026-07-17-1). Until recovery exists, no other fix helps a project that is *already* wedged. Ship first.
 
@@ -39,11 +43,11 @@ An operator whose `upgrade` already failed part-way — `schema_version` gone, m
 
 ### User Story 2 — Atomic, honestly-reported migration (Priority: P1)
 
-`runtime_state_backfill` (and any comparable bulk-cutover migration) must be **all-or-nothing**: either every mission verifies and the cutover commits once, or nothing is mutated and the abort **explicitly reports** the set it would have touched. An operator who trusts the step's stated atomicity must never be silently left with a partial write.
+`runtime_state_backfill` (and any comparable bulk-cutover migration) must never silently leave a partial write. Corrected framing (per `research.md`): the migration is **intentionally per-mission atomic** (research D-03: no cross-mission transaction primitive), so full corpus rollback (FR-004) would *undo a documented design decision* and is the higher-risk path. The **primary** requirement is **report-on-abort** (FR-005): the abort must enumerate every mission/file it wrote — the data is already collected and merely discarded today. Where true staging is pursued, it must **reuse the canonical staging-promote atomicity pattern** (ADR `2026-04-17-2`: stage → validate → `os.replace` promote → preserve `.failed/cause.yaml`), whose `cause.yaml` *is* the machine-readable partial-write account.
 
-**Why this priority**: Stops the migration from creating the half-migrated, silent state that makes the wedge (US1) so costly. Only fully safe *after* US1 exists, so a mid-run abort can no longer strand.
+**Why this priority**: Stops the migration from creating the half-migrated, *silent* state that makes the wedge (US1) so costly. Meaningful only *after* US1 recovery exists, so a mid-run abort no longer strands.
 
-**Independent Test**: Run the backfill over a fixture set where one mission fails verification; assert **zero** missions were mutated (staged-and-committed-once), or — if the design chooses report-on-abort — that the partial set is named explicitly in output and is rollback-recoverable.
+**Independent Test**: Run the backfill over a fixture set where one mission fails verification; assert the abort output **enumerates every mission/file already written** and is rollback-recoverable (FR-005). If corpus staging is implemented, additionally assert **zero** missions remain mutated after abort (FR-004).
 
 **Acceptance Scenarios**:
 1. **Given** N missions where mission K fails verification, **When** the backfill runs, **Then** no `meta.json`/`status.events.jsonl` is left mutated by the aborted run (atomic), **or** the abort output enumerates every file it wrote.
@@ -53,29 +57,29 @@ An operator whose `upgrade` already failed part-way — `schema_version` gone, m
 
 ### User Story 3 — Kill the trigger: no duplicate-key artifacts (Priority: P1)
 
-A review cycle must write `review_feedback` **idempotently** (set, never append), the frontmatter boundary must **fail closed** on a duplicate mapping key rather than silently taking the last value, and the toolkit must be able to **detect and repair** artifacts already carrying the malformed dual key — so a project can be healed *before* an upgrade trips over it.
+Corrected framing (per `research.md`): the inline dual-write is **legacy and already retired** — the canonical path writes a `review-cycle://` pointer, not an inline key, and the frontmatter read boundary **already fails closed** on duplicate keys (ruamel raises `DuplicateKeyError`). So US3 is **guard-hardening + detect/repair of legacy artifacts on disk**, not a live-writer fix. Three parts: (FR-006) retire/fail-close the latent append-on-miss writer (`task_utils/support.py::set_scalar`, currently zero production callers) so the bug can't be reintroduced; (FR-007) make the existing fail-closed guard **legible** (name the duplicate key), pin `allow_duplicate_keys=False` under a regression test, and add a raw-text pre-parse scan feeding detect; (FR-008) build a **net-new** doctor scan/repair over `kitty-specs/**/*.md` that heals dual-key artifacts (keep-last non-empty policy) so a project can be repaired *before* upgrade trips over it.
 
-**Why this priority**: Eliminates the root cause. The detect/repair half also directly serves US1 (heal-before-upgrade). Prevention lands after recovery + atomicity so it never masks an unrecovered project.
+**Why this priority**: Hardens against the root cause and cleans existing damage. The detect/repair half (FR-008) directly serves US1 (heal-before-upgrade) and should ship *with* the recovery bundle; the guard hardening (FR-006/007) lands after recovery + atomicity.
 
-**Independent Test**: Run two review cycles on the same WP and assert exactly one `review_feedback` key; feed a duplicate-key artifact to the frontmatter reader/writer and assert a legible fail-closed error; run the doctor scan over a fixture with malformed artifacts and assert detection + safe repair.
+**Independent Test**: Assert no code path writes an inline `review_feedback` frontmatter key and `set_scalar` cannot append it; feed a duplicate-key artifact through `read_frontmatter`/`validate_frontmatter` and assert a legible error that names the key; run the doctor scan over a fixture of malformed artifacts and assert detection + safe, batch-atomic repair to valid YAML.
 
 **Acceptance Scenarios**:
-1. **Given** a WP that already has `review_feedback`, **When** a second review cycle writes feedback, **Then** the key is updated in place (exactly one key remains).
-2. **Given** an artifact with a duplicate `review_feedback` key, **When** it passes through `write_frontmatter`/`read_frontmatter`/`validate_frontmatter`, **Then** the operation refuses/raises with a legible message rather than persisting or silently coercing.
-3. **Given** a project containing malformed artifacts, **When** the doctor scan runs, **Then** it lists them and offers a safe repair that yields valid YAML.
+1. **Given** the current code, **When** any review cycle persists feedback, **Then** no inline `review_feedback` frontmatter key is produced (pointer-based), and the latent `set_scalar` append-on-miss path is retired or fails closed.
+2. **Given** an artifact with a duplicate `review_feedback` key, **When** it passes through `read_frontmatter`/`validate_frontmatter`, **Then** it raises/reports a **legible** error naming the duplicate key (not a generic "invalid YAML"), and `allow_duplicate_keys=False` is pinned by a regression test.
+3. **Given** a project containing malformed artifacts, **When** the doctor scan runs, **Then** it lists them and offers a safe, batch-atomic repair that yields valid YAML without discarding recorded state.
 
 ---
 
 ### User Story 4 — Honest upgrade preview (Priority: P2)
 
-`spec-kitty upgrade --dry-run` must report the **real** pending set. Today it can report nothing pending while the real run applies 19 migrations (`pending_migrations` serializing as `null`), so an operator cannot see blast radius before committing.
+`spec-kitty upgrade --dry-run` must report the **real** pending set. Corrected root cause (per `research.md`): the reported `null` is not reproducible on current source (it serializes `[]`); the true defect is **two divergent computations** — the preview uses the compat-planner's `_pending_migrations_for` (gated on `BLOCK_PROJECT_MIGRATION`) while the real run selects via `MigrationRegistry.get_applicable`, and `_provision_missing_mission_type_activations` never runs in dry-run. So the preview can report `[]` while the real run applies migrations. The fix is to **drive the preview through the same planning path the real run uses**, not to patch the serializer.
 
 **Why this priority**: Not on the wedge path, but it is what lets an operator *trust the preview* after US1–US3. Restores confidence in the safe inspection step.
 
 **Independent Test**: On a project with known-pending migrations, run `--dry-run` and assert the reported pending set equals what a real run applies.
 
 **Acceptance Scenarios**:
-1. **Given** a project with M pending migrations, **When** `upgrade --dry-run` runs, **Then** it reports exactly those M (never `null`/empty when work is pending).
+1. **Given** a project with M pending migrations, **When** `upgrade --dry-run` runs, **Then** it reports exactly those M (the preview path consults the same detector the real run uses; never empty when work is pending).
 
 ---
 
@@ -104,17 +108,18 @@ Adjacent upgrade/mission-create rough edges that share the incident's surface: t
 
 | ID | Title | User Story | Priority | Status |
 |----|-------|------------|----------|--------|
-| FR-001 | Self-recoverable upgrade | As an operator, I want `upgrade` (or a repair path) to run even when `schema_version` is missing/damaged so that a failed upgrade is recoverable without manual git. `[NEEDS CORROBORATION]` exact gating point. | High | Open |
-| FR-002 | Preserve `schema_version` on failure | As an operator, I want a failed upgrade to **not** delete `schema_version` so that the repair command is never gated behind destroyed state. | High | Open |
-| FR-003 | Ungate the recommended diagnostic | As an operator, I want the failure-recommended diagnostic reachable without completing the failed migration. | High | Open |
-| FR-004 | Atomic bulk cutover | As an operator, I want `runtime_state_backfill` to commit once all missions verify, or mutate nothing on abort. | High | Open |
-| FR-005 | Honest partial-write reporting | As an operator, I want any non-atomic abort to enumerate every file it wrote. | High | Open |
-| FR-006 | Idempotent `review_feedback` write | As a reviewer, I want feedback writes to update the key in place so no duplicate key is ever produced. | High | Open |
-| FR-007 | Fail-closed duplicate-key guard | As the toolkit, I want the frontmatter boundary to reject/raise on duplicate mapping keys rather than silently coerce. | High | Open |
-| FR-008 | Detect & repair malformed artifacts | As an operator, I want a doctor-surfaced scan that finds and safely repairs duplicate-key artifacts before upgrade. | High | Open |
-| FR-009 | Truthful `--dry-run` | As an operator, I want `upgrade --dry-run` to report the real pending migration set. | Medium | Open |
+| FR-001 | Non-recurring, self-recoverable upgrade | As an operator, I want a re-run of `upgrade` after a mid-migration failure to not re-abort on the same un-fixed artifact, so the project is recoverable without manual git. (Corrected: `upgrade` is already exempt from the schema gate — target restoration+non-recurrence, not ungating. Conform to ADR `2026-05-10-1`.) | High | Open |
+| FR-002 | Preserve/re-stamp `schema_version` on failure | As an operator, I want `schema_version` re-stamped even when the migration loop aborts, so a re-run isn't re-classified legacy. (Seam: move re-stamp out of the `result.success` guard, `upgrade/runner.py:181-190`.) | High | Open |
+| FR-003 | Ungate the recommended diagnostic | As an operator, I want `migrate backfill-runtime-state --dry-run` reachable when blocked. (Seam: register the subcommand path SAFE via a `--dry-run` predicate, `compat/safety.py`.) | High | Open |
+| FR-005 | Honest partial-write reporting *(primary)* | As an operator, I want any non-atomic abort to enumerate every mission/file it wrote. (Data already collected in `_cutover_corpus` results, discarded at `apply():284-286`.) | High | Open |
+| FR-004 | Corpus-atomic cutover *(higher-risk, optional)* | As an operator, I want `runtime_state_backfill` to mutate nothing on abort — via the staging-promote pattern (ADR `2026-04-17-2`), not corpus rollback. `[NEEDS CORROBORATION]` vs the intentional per-mission design (D-03). | Medium | Open |
+| FR-006 | Retire the latent append-on-miss writer | As the toolkit, I want `set_scalar` (zero prod callers) retired or fail-closed so no path can re-append an inline `review_feedback` key. | High | Open |
+| FR-007 | Legible duplicate-key guard | As the toolkit, I want the (already fail-closed) frontmatter read boundary to raise a **legible** error naming the duplicate key, with `allow_duplicate_keys=False` pinned by a regression test. | High | Open |
+| FR-008 | Detect & repair malformed artifacts | As an operator, I want a net-new doctor-surfaced scan that finds and safely (batch-atomically) repairs duplicate-key artifacts before upgrade. Ships with the US1 recovery bundle. | High | Open |
+| FR-009 | Truthful `--dry-run` | As an operator, I want `upgrade --dry-run` to report the real pending set by driving the preview through the same detector the real run uses (`MigrationRegistry.get_applicable`), not the divergent planner path. | Medium | Open |
 | FR-010 | Remediation body survives `--json` | As an agent, I want the charter-pack-invalid remediation body present in mission-create `--json` output. | Medium | Open |
 | FR-011 | Mission-create failure restores checkout | As an operator, I want a failed mission-create to restore my branch/checkout and leave no orphan branch. | Medium | Open |
+| FR-012 | Resumable-upgrade idempotency | As an operator, I want a re-run of `upgrade` after `schema_version` restoration to be a safe no-op/resume, not a redundant re-application. | High | Open |
 
 ### Non-Functional Requirements
 
@@ -124,14 +129,16 @@ Adjacent upgrade/mission-create rough edges that share the incident's surface: t
 | NFR-002 | No data loss in recovery | The repair path must never discard recorded mission results/events; recovery is non-destructive. | Reliability | High | Open |
 | NFR-003 | Atomicity is observable | Every migration abort emits a truthful, machine-readable account of what was/wasn't written. | Reliability | High | Open |
 | NFR-004 | Repair is itself atomic | The detect/repair tool must not partially repair (no recursion of the US2 anti-pattern). | Reliability | Medium | Open |
+| NFR-005 | Event-log integrity after recovery | After any recovery/repair, `status.events.jsonl` remains append-only and reducer-deterministic (no reducer divergence from a half-applied backfill). | Reliability | High | Open |
 
 ### Constraints
 
 | ID | Title | Constraint | Category | Priority | Status |
 |----|-------|------------|----------|----------|--------|
-| C-001 | Ship recovery before prevention | Remediation lands in phase order US1 → US2 → US3 → US4 → US5; prevention must not precede recovery. | Technical | High | Open |
+| C-001 | Ship recovery before prevention | Phase order US1(+FR-008) → US2 → US3 → US4 → US5. This is a **policy** constraint (modules are disjoint / not code-forced) enforced by explicit WP dependency edges at finalize-tasks. | Technical | High | Open |
 | C-002 | Canonical frontmatter boundary | The duplicate-key guard lives in the canonical `src/specify_cli/frontmatter.py` boundary, not ad-hoc per-caller checks. | Technical | High | Open |
 | C-003 | No new legacy terminology / suppressions | New code passes ruff+mypy with zero suppressions; terminology guard green. | Technical | Medium | Open |
+| C-004 | Conform to atomicity & repair ADRs | US2 reuses the staging-promote pattern (ADR `2026-04-17-2`); US1 conforms to deterministic non-destructive repair (ADR `2026-05-10-1`); FR-005/NFR-003 reconcile with the migration-ledger intent (epic #2933) or explicitly scope-defer it. | Technical | High | Open |
 
 ### Key Entities
 
