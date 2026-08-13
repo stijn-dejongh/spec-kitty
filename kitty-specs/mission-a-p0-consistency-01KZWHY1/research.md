@@ -118,9 +118,16 @@ surface is introduced).
   behavior (including re-capture) — the documented idempotent pre-execution
   re-finalize (`mission_finalize.py` docstring ~:326-327).
 - **Signal**: the append-only status event log — the sole authority for WP lane
-  state (034+/060) — read through the canonical, coord-aware reader
-  (`status/reducer.py::materialize` / `status/lane_reader.py`, per the resolved
-  status surface). **Execution begun ⟺ any WP's current lane ∉ {`planned`}.**
+  state (034+/060) — read through the resolved, coord-aware surface. Recipe
+  (architect post-plan, HIGH — the established `implement.py:1668-1680` pattern):
+  `coordination/surface_resolver.py::resolve_status_surface_with_anchor(repo_root,
+  mission_slug).read_dir` → **read-only** `status/lane_reader.py::get_all_wp_lanes(
+  read_dir)` (or `reducer.py::materialize_snapshot`), guarded by
+  `lane_reader.has_event_log(read_dir)` (absent log ⟹ execution not begun).
+  **NEVER `reducer.materialize()`** — it writes `status.json` to disk
+  (`reducer.py:751`) and reading raw `planning_dir` is a PRIMARY-partition
+  (split-brain) read. **Execution begun ⟺ has-event-log ∧ any WP's current lane
+  ∉ {`planned`}.**
 - **Rationale**: first-time finalize **always** writes `lanes.json` and sets
   `planning_commit_sha` (`runner`/`:1251`), so a trigger keyed on file/SHA
   presence fires on every benign second finalize and would freeze/refuse a
@@ -158,4 +165,6 @@ resolved before plan readiness — none silently dropped.
 | #3320 writer return-type change has wide blast radius (renata, MED) | **accepted** (steer to read-back) | R-01, C-002 |
 | "One shared root cause" framing partially forced; #3231 is the odd member (paula, HIGH) | **accepted** | reframed to per-fix ICs; C-001 no-shared-helper non-goal |
 | Green-wash: 3 of 4 repros pin only the positive half (debbie) | **accepted** | NFR-002 mandatory guard tests in every IC |
-| #3334 durable `save()`-preserves-schema fix vs minimal runner restore | **deferred_with_rationale** | R-03 (minimal runner restore now; `save()` hardening noted as optional follow-up) |
+| #3334 durable `save()`-preserves-schema fix vs minimal runner restore | **deferred_with_rationale** | R-03 (minimal runner restore now); durable `ProjectMetadata.save()` fix + second writer `migration/runner.py:193` retargeted to tracked **Epic #3347**, plus an in-WP characterization/gate test pinning the save→re-stamp obligation (paula + architect post-plan) |
+| Guard tests fakeable as written — #3334 always-stamp-REQUIRED, #3311 always-preserve, #3231 `criterion_id` shortcut, #3320 wrong-and-equal (renata post-plan, HIGH×2/MED×2) | **changed** | strengthened non-fakeable assertions folded into IC-01/02/03/04 + contracts (STALE pre_schema equality, observable regeneration, real-`AC-001`→pending, on-disk emit spy, dry_run byte-identical) |
+| #3311 reader named `reducer.materialize()` — a disk-writing, partition-blind call (architect post-plan, HIGH) | **changed** | R-04 + IC-04 + A-04: use `resolve_status_surface_with_anchor().read_dir` → `has_event_log` guard → `get_all_wp_lanes`/`materialize_snapshot`; never `materialize()` |

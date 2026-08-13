@@ -53,7 +53,11 @@ the invariant the fix restores is below.
   str|None`.
 - **Companion authority**: the append-only status event log
   (`status.events.jsonl`, 034+ sole authority for WP lane state), read via the
-  resolved (coord-aware) status surface.
+  resolved (coord-aware) status surface — `resolve_status_surface_with_anchor(
+  repo_root, mission_slug).read_dir` → read-only `lane_reader.get_all_wp_lanes`
+  (or `reducer.materialize_snapshot`), guarded by `lane_reader.has_event_log`
+  (absent ⟹ execution not begun). Never `reducer.materialize()` (it writes
+  `status.json`).
 - **Invariant restored (FR-007/FR-008)**: once **execution has begun** (any WP
   current lane ∉ {`planned`}), a `finalize-tasks` re-run preserves
   `planning_commit_sha` (no branch-tip re-capture) or refuses before writing;

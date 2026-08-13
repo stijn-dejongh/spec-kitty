@@ -14,7 +14,10 @@ not HTTP APIs — the mission adds no endpoints.
 - **Invariant**: report ≡ event ≡ persisted file, for `--update`. `--overwrite`/
   `error`/backfill unchanged. `write_gen_record` return type unchanged.
 - **Tests**: `tests/regression/test_issue_3320_*` (JSON) → on green, relocate to
-  `tests/cli/commands/`; **+ new**: emitted-event-payload equals persisted record.
+  `tests/cli/commands/`; **+ new**: patch `emit_captured` with a **spy** and
+  assert the captured event's `findings_status`/gap-count equal the values **read
+  back from `record_path` on disk** (not the reported JSON — both could be
+  wrong-and-equal; not the repro's `emit_captured→None` patch).
 
 ## C#3231 — A scaffold placeholder cannot flip acceptance
 
@@ -28,8 +31,11 @@ not HTTP APIs — the mission adds no endpoints.
   seeded-but-unauthored requirement always blocks; an un-authored matrix never
   reads `pass`.
 - **Tests**: `tests/regression/test_issue_3231_*` (empty-placeholder+all-pass) →
-  on green relocate to `tests/acceptance/`; **+ new**: partial-authoring→pending,
-  all-scaffold→pending.
+  on green relocate to `tests/acceptance/`; **+ new (non-fakeable)**:
+  partial-authoring (9/10 FR `pending`)→pending; single-row empty-`AC-001`-only
+  →pending (the "no non-scaffold criterion" branch); **single REAL `AC-001` (real
+  `description`, `pending`, no marker)→pending** (defeats a `criterion_id=="AC-001"`
+  shortcut, pins the `description` discriminator).
 
 ## C#3334 — A failed upgrade leaves a recoverable project
 
@@ -44,9 +50,17 @@ not HTTP APIs — the mission adds no endpoints.
 - **Invariant**: a failed upgrade is non-destructive to the schema stamp; the
   genuine-pre-3.x `LEGACY` guard is unchanged; the classifier (`planner.py`,
   `safety.py`) is untouched.
-- **Tests**: **replace** `tests/regression/test_issue_3334_*` — drive real
-  `MigrationRunner.upgrade()` (stub failing migration via `MigrationRegistry`);
-  assert the three post-conditions above.
+- **Tests (non-fakeable — renata)**: **replace** `tests/regression/test_issue_3334_*`
+  (same PR as the fix; it perma-reds NFR-001 otherwise) — drive real
+  `MigrationRunner.upgrade()` (stub failing migration via `MigrationRegistry`),
+  fixture `schema_version` **present** + version behind + 3.x `success` history.
+  Assert: (1) post-failure `schema_version == the captured pre_schema`, using a
+  **non-`REQUIRED` (STALE, `< min_supported`)** fixture value — `== 3` alone is
+  faked by always-stamp-`REQUIRED`; (2) real gate no `SystemExit`; (3)
+  `upgrade(dry_run=True)` against the failing migration leaves `metadata.yaml`
+  **byte-identical**; (4) genuine pre-3.x still `LEGACY` + `SystemExit(4)`.
+  **+ gate test**: `ProjectMetadata.save()` drops `schema_version`; the failure
+  path re-stamps (pins the save→re-stamp obligation; durable fix → Epic #3347).
 
 ## C#3311 — Re-finalize after execution preserves provenance
 
@@ -57,9 +71,16 @@ not HTTP APIs — the mission adds no endpoints.
   when the current branch tip differs (non-`None`).
 - **Given** a mission with all WPs at `planned` (no execution begun), **when**
   `finalize-tasks` re-runs, **then** lanes regenerate and the run does not refuse.
-- **Invariant**: preserve/refuse triggers on execution-state (status log), never
-  on `lanes.json`/`planning_commit_sha` presence; single-write provenance freeze
-  (ADR 2026-07-29-1/FR-009) preserved.
-- **Tests**: `tests/regression/test_issue_3311_*` (None-tip) → on green relocate
-  to `tests/specify_cli/cli/commands/agent/`; **+ new**: non-`None`-tip
-  preservation, benign pre-execution re-finalize regenerates.
+- **Invariant**: preserve/refuse triggers on execution-state via the resolved
+  coord-aware surface (`resolve_status_surface_with_anchor().read_dir` →
+  `has_event_log` guard → `get_all_wp_lanes`; never `reducer.materialize()`),
+  never on `lanes.json`/`planning_commit_sha` presence; single-write provenance
+  freeze (ADR 2026-07-29-1/FR-009) preserved.
+- **Tests (non-fakeable — renata)**: `tests/regression/test_issue_3311_*`
+  (None-tip) → on green relocate to `tests/specify_cli/cli/commands/agent/`;
+  **+ new**: (a) non-`None`-tip preservation (branch-tip differs, SHA still
+  preserved); (b) **benign pre-execution re-finalize must assert regeneration
+  actually ran** — make the `owned_files` amendment observable and assert the
+  regenerated `lanes.json` reflects it (two lanes union into one) or
+  `planning_commit_sha` re-captured to the new tip; "did not refuse" alone is
+  faked by an always-preserve impl.
