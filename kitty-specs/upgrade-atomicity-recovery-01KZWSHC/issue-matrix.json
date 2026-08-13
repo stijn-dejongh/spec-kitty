@@ -61,7 +61,7 @@
       "wp": "WP05"
     },
     "#3336": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Owned by a later WP in this mission (not FR-002/FR-012/WP01 scope); pending downstream WP resolution.",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -69,7 +69,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "Bug: upgrade --dry-run under-reports pending migrations",
-      "verdict": "unknown",
+      "verdict": "in-mission",
       "wp": "WP10"
     },
     "#3337": {
