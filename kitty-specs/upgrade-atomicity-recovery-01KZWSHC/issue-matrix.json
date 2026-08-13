@@ -1,5 +1,17 @@
 {
   "rows": {
+    "#1623": {
+      "evidence_ref": "Out-of-scope cross-reference only: #1623 (doctor.py god-module split) appears in plan.md/WP03 solely as a 'do not grow this god-module' guardrail, not addressed by this mission. Tracked separately as its own issue #1623.",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
     "#2933": {
       "evidence_ref": "Owned by a later WP in this mission (not FR-002/FR-012/WP01 scope); pending downstream WP resolution.",
       "fr": null,
