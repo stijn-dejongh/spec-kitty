@@ -10,6 +10,7 @@ from pathlib import Path
 import yaml
 
 from specify_cli.core.atomic import atomic_write
+from specify_cli.migration.schema_version import get_project_schema_version
 
 _LEGACY_MIGRATION_ID_MAP: dict[str, str] = {
     "0.10.12_constitution_cleanup": "0.10.12_charter_cleanup",
@@ -29,10 +30,11 @@ def _mask_volatile_metadata(text: str) -> str:
     - ``last_upgraded_at`` — the migrations-applied upgrade path bumps it on
       every successful run, even a no-op; masking its value lets a no-op save
       compare equal and skip, keeping the on-disk timestamp stable.
-    - ``schema_version`` — ``ProjectMetadata.save`` does not emit it (it is
-      written separately by ``_stamp_schema_version``), so the on-disk file
-      carries it while freshly-rendered content does not; dropping the line
-      keeps the comparison apples-to-apples.
+    - ``schema_version`` — ``save`` re-emits the existing on-disk value to avoid
+      erasing it (FR-002), while the value the project *satisfies* only advances
+      via the separate ``_stamp_schema_version``. Dropping the line keeps the
+      comparison apples-to-apples across either writer and prevents a stamp-only
+      advance from being mistaken for a material metadata change here.
     """
     masked: list[str] = []
     for line in text.splitlines():
@@ -185,12 +187,27 @@ class ProjectMetadata:
         """
         metadata_path = kittify_dir / "metadata.yaml"
 
+        # FR-002 (#3334): preserve any existing on-disk schema_version. save()
+        # reconstructs metadata.yaml from a fixed dict; historically it omitted
+        # schema_version entirely, so a save() on the migration-failure path
+        # (_record_migration_result recording a "failed" record) rewrote the
+        # file WITHOUT schema_version -- erasing it and wedging recovery.
+        # Re-emitting the value read via the canonical reader closes that class
+        # of erasure for every save() caller (upgrade/doctor/worktree/regen).
+        # The value the project SATISFIES only ever advances via the separate
+        # _stamp_schema_version on the success path, never here.
+        existing_schema_version = get_project_schema_version(kittify_dir.parent)
+
+        spec_kitty_block: dict[str, object] = {
+            "version": self.version,
+            "initialized_at": self.initialized_at.isoformat(),
+            "last_upgraded_at": (self.last_upgraded_at.isoformat() if self.last_upgraded_at else None),
+        }
+        if existing_schema_version is not None:
+            spec_kitty_block["schema_version"] = existing_schema_version
+
         data = {
-            "spec_kitty": {
-                "version": self.version,
-                "initialized_at": self.initialized_at.isoformat(),
-                "last_upgraded_at": (self.last_upgraded_at.isoformat() if self.last_upgraded_at else None),
-            },
+            "spec_kitty": spec_kitty_block,
             "environment": {
                 "python_version": self.python_version,
                 "platform": self.platform,
