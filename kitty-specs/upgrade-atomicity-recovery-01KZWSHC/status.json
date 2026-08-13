@@ -1,7 +1,7 @@
 {
-  "event_count": 54,
-  "last_event_id": "01KZX9CXGBXJ3KG5NKVH1X47ZV",
-  "materialized_at": "2026-08-13T10:06:32.459784+00:00",
+  "event_count": 56,
+  "last_event_id": "01KZX9GFQVSTMFVM8A31QNRSJC",
+  "materialized_at": "2026-08-13T10:08:29.435214+00:00",
   "mission_number": "",
   "mission_slug": "upgrade-atomicity-recovery-01KZWSHC",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 1,
+    "in_progress": 2,
     "in_review": 0,
-    "planned": 3
+    "planned": 2
   },
   "work_packages": {
     "WP01": {
@@ -95,11 +95,14 @@
       }
     },
     "WP04": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01KZWWFXY57QWEX5WY0CRHKN3B",
-      "last_transition_at": "2026-08-13T06:20:59.717144+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01KZX9GFQVSTMFVM8A31QNRSJC",
+      "last_transition_at": "2026-08-13T10:08:29.435214+00:00",
+      "shell_pid": 2313892,
+      "shell_pid_created_at": "1786615392.09"
     },
     "WP05": {
       "actor": "user",
