@@ -24,7 +24,7 @@ Remediate the interlocking upgrade-wedge cluster (epic #3347 + root trigger #337
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 - **ATDD-first / red-first**: PASS — acceptance scenarios per US; NFR-001 mandates a red-first P0 reproduction for #3334.
-- **Architectural alignment / canonical sources**: PASS with a binding constraint — US1/US2 must **conform to existing ADRs** (`2026-05-10-1`, `2026-04-17-2`) rather than invent atomicity/repair (C-004). No new shadow paths.
+- **Architectural alignment / canonical sources**: PASS with a binding constraint — US1 **adopts the non-destructive + deterministic principles** of ADR `2026-05-10-1` and **reuses its `migration/mission_state.py` repair machinery** (`repair_repo`/`RepairReport`/`FileChange`/`atomic_write`), not a net-new repair; US2's **FR-004 only** conforms to the staging-promote ADR `2026-04-17-2` (the primary FR-005 path is honest-reporting, no staging). No new shadow paths. See §Post-Plan Adversarial Revisions.
 - **Tiered rigour (DDD)**: PASS — reliability-critical seams (migration runner, frontmatter boundary) get tests at the unit + integration tier; hygiene (US5) is lighter.
 - **Terminology canon**: PASS — "Mission" not "feature"; run `tests/architectural/test_no_legacy_terminology.py` before push.
 - **Quality gates**: PASS — zero suppressions; every new helper/branch carries focused tests (Sonar new-code coverage).
@@ -123,3 +123,38 @@ tests/
 - **Affected surfaces**: charter-pack-invalid path in mission-create `--json`; mission-create branch/checkout restore (coordinate with #3328).
 - **Sequencing/depends-on**: none — lowest blast radius, parallelizable.
 - **Risks**: FR-011 must coordinate with #3328's mission-create git-side-effect rework to avoid double-fixing.
+
+## Post-Plan Adversarial Revisions (binding)
+
+A profile-loaded squad (architect-alphonso, planner-priti, reviewer-renata) stress-tested this plan and verified every load-bearing seam. The following decisions are **binding** and supersede any conflicting IC wording above; the tasks step consumes them directly.
+
+**Correctness fixes (must-do):**
+1. **FR-002 = preserve, not re-stamp-to-target.** A literal `try/finally` re-stamp would write `REQUIRED_SCHEMA_VERSION=3` onto a *failed/legacy* project (`_stamp_schema_version` writes the target; `schema_version.py:22-27`), opening the gate on a half-backfilled corpus — the exact dishonest-state bug this mission closes. Capture the pre-run `schema_version` and restore on abort (or stop `save()` from erasing it); stamp target only on success. Invariant: **a failed migration never advances `schema_version`.**
+2. **#3334 red-first repro is trigger-agnostic.** Force the mid-loop abort with a **synthetic always-failing migration**, not a real duplicate-key artifact — otherwise the co-shipped FR-008 repair heals the trigger and the P0 test passes for the wrong reason (masking). (reviewer H3 / planner M2)
+3. **FR-008 reuses the ADR's repair framework.** Detection = a `check_*` Finding + a small extracted **raw-text duplicate-key detector module** (e.g. `status/dup_key_repair.py`, NOT grown into the `status/doctor.py` god-module, #1623). Repair = extend `migration/mission_state.py` (`repair_repo`/`RepairReport`/`FileChange`/`atomic_write`) surfaced via `cli/commands/_mission_state_doctor.py`, **opt-in `--fix`** (because `doctor` is unconditionally SAFE), non-destructive (NFR-002), batch-atomic (NFR-004). (architect HIGH-2 / reviewer M1)
+4. **FR-003 predicate fails closed.** Register `("migrate","backfill-runtime-state")` SAFE **iff** `--dry-run` present; UNSAFE otherwise and on predicate exception.
+
+**Scope / framing fixes:**
+5. **FR-001 is a composition WP** (FR-002 + FR-008 + FR-012 wiring → SC-001), depends on FR-002+FR-008 — not a parallel unknown. No net-new command unless proven necessary.
+6. **Recovery is roll-forward** (`detect()`-gated re-run), which is *why* ledger #2933 is safely deferred. NFR-003's machine-readable account is scoped to **graceful** abort; durable cross-run/SIGKILL accounting is deferred with #2933.
+7. **SIGKILL edge case is FR-004-only.** FR-005 cannot cover a process that never returns; if FR-004 is deferred, the SIGKILL edge case is explicitly out of scope.
+8. **NFR-005 gets a concrete test.** Assert `reduce()` over the recovered log == pre-abort log ∪ committed events; mechanism = `detect()`-gating + reducer `event_id` de-dup. Owned as a verification WP depending on the recovery bundle + FR-005.
+9. **Staging + append-only tension (if FR-004 ships):** `status.events.jsonl` must be staged/promoted append-preservingly (staged = prior ∪ appended, verified monotonic) so `os.replace` can't violate NFR-005.
+10. **ATDD-first applies to every FR**, not only #3334: each acceptance scenario lands as a failing test before its code.
+11. **Housekeeping:** migrate `tests/utils.py`'s `set_scalar` callers as part of FR-006 retirement; FR-007 adds an explicit `except DuplicateKeyError` branch naming the key + pins `allow_duplicate_keys=False` on the `YAML()` instance (`frontmatter.py:83`).
+
+**Ordering = priority, not blocking edges.** Recovery-first is a *scheduling* preference; encoding it as `dependencies` frontmatter would gate *claiming* and needlessly serialize disjoint modules. The **only** genuine dependency edges: WP04→{WP01,WP03}; WP06→WP05; WP07→{WP01,WP05}; WP09→WP03. Everything else is claimable in parallel.
+
+**WP-slice sketch (input to `/spec-kitty.tasks`):**
+- **WP01** — #3334 red-first (synthetic failing migration) + FR-002/FR-012 preserve-`schema_version` ordering fix. *No deps. P0 core.*
+- **WP02** — FR-003 ungate diagnostic (SAFE `--dry-run` predicate). *No deps.*
+- **WP03** — raw-text dup-key detector module + FR-008 detect/repair via `mission_state` framework, `--fix`, batch-atomic. *No code deps; riskiest mandatory WP.*
+- **WP04** — FR-001 recovery composition + SC-001 zero-git + no-VCS acceptance. *Deps: WP01, WP03.*
+- **WP05** — FR-005 report-on-abort (stop discarding `_cutover_corpus` results) + NFR-003. *Parallel.*
+- **WP06** *(optional)* — FR-004 corpus staging-promote (ADR `2026-04-17-2`, append-preserving events). *Deps: WP05.*
+- **WP07** — NFR-005 reducer-integrity verification. *Deps: WP01, WP05.*
+- **WP08** — FR-006 retire/fail-close `set_scalar` (+ migrate test callers). *Independent.*
+- **WP09** — FR-007 legible dup-key message + pin `allow_duplicate_keys=False`. *Deps: WP03 (detector).*
+- **WP10** — FR-009 unify dry-run through the real detector. *Independent.*
+- **WP11** — FR-010 remediation body survives `--json`. *Independent.*
+- **WP12** — FR-011 mission-create checkout restore (coordinate #3328). *Independent; external-coordination risk.*

@@ -37,7 +37,10 @@ An operator whose `upgrade` already failed part-way — `schema_version` unresto
 **Acceptance Scenarios**:
 1. **Given** a project whose `upgrade` aborted and deleted `schema_version`, **When** the operator invokes the repair path, **Then** the project is restored to a consistent schema state and a subsequent `upgrade` proceeds — with no manual `git` intervention required.
 2. **Given** a failed migration whose error recommends a diagnostic, **When** the operator runs that diagnostic, **Then** it executes and reports the cause **without** being gated behind the migration that failed.
-3. **Given** the fix, **When** the #3334 issue-pinned red-first reproduction test runs on the pre-fix tree, **Then** it fails (honest red); **When** it runs post-fix, **Then** it passes.
+3. **Given** the fix, **When** the #3334 issue-pinned red-first reproduction test runs on the pre-fix tree, **Then** it fails (honest red); **When** it runs post-fix, **Then** it passes. The reproduction MUST force the mid-loop abort via a **synthetic always-failing migration** (independent of the duplicate-key trigger and of FR-008 repair), so the P0 proof isolates the save/stamp ordering defect and cannot be masked by artifact healing.
+4. **Given** a **legacy / lower-schema** project (`schema_version` absent or `< REQUIRED`), **When** its migration aborts, **Then** the on-disk `schema_version` is NOT advanced to the target (invariant: a failed migration never advances schema).
+5. **Given** a wedged project **not under version control**, **When** the recovery path runs, **Then** it repairs on-disk without requiring a git checkpoint and returns the project to an upgradable state.
+6. **Given** `schema_version` restored, **When** `upgrade` is re-run (FR-012), **Then** it applies **zero** migrations (safe no-op/resume), not a redundant re-application.
 
 ---
 
@@ -50,8 +53,10 @@ An operator whose `upgrade` already failed part-way — `schema_version` unresto
 **Independent Test**: Run the backfill over a fixture set where one mission fails verification; assert the abort output **enumerates every mission/file already written** and is rollback-recoverable (FR-005). If corpus staging is implemented, additionally assert **zero** missions remain mutated after abort (FR-004).
 
 **Acceptance Scenarios**:
-1. **Given** N missions where mission K fails verification, **When** the backfill runs, **Then** no `meta.json`/`status.events.jsonl` is left mutated by the aborted run (atomic), **or** the abort output enumerates every file it wrote.
+1. **Given** N missions where mission K fails verification, **When** the backfill runs, **Then** the abort output enumerates every mission/file already written (FR-005), **or** (if FR-004 staging ships) no `meta.json`/`status.events.jsonl` is left mutated (atomic).
 2. **Given** a successful run, **When** it completes, **Then** all N missions are cut over and the result is reported truthfully (count matches reality).
+3. **(NFR-005)** **Given** a half-applied backfill that was then recovered, **When** `reduce()` runs over the recovered `status.events.jsonl`, **Then** it yields the same snapshot as (pre-abort log ∪ committed cutover events) — no reducer divergence. Idempotency is guaranteed by `detect()`/`_mission_needs_cutover` skipping already-cut-over missions plus reducer `event_id` de-duplication; the #3334 regression additionally asserts a re-run appends **no** duplicate transitions.
+4. **(SIGKILL — FR-004-only)** **Given** the backfill is killed mid-commit, **When** the process restarts, **Then** the corpus is recoverable. NOTE: this edge case is satisfied **only if FR-004 staging-promote ships**; FR-005 report-on-abort cannot cover a process that never returns. If FR-004 is deferred, durable cross-run/SIGKILL accounting is explicitly out of scope (deferred with ledger #2933). Recovery is **roll-forward** (a `detect()`-gated re-run completes remaining missions), not roll-back — which is why the #2933 ledger can be deferred.
 
 ---
 
@@ -108,8 +113,8 @@ Adjacent upgrade/mission-create rough edges that share the incident's surface: t
 
 | ID | Title | User Story | Priority | Status |
 |----|-------|------------|----------|--------|
-| FR-001 | Non-recurring, self-recoverable upgrade | As an operator, I want a re-run of `upgrade` after a mid-migration failure to not re-abort on the same un-fixed artifact, so the project is recoverable without manual git. (Corrected: `upgrade` is already exempt from the schema gate — target restoration+non-recurrence, not ungating. Conform to ADR `2026-05-10-1`.) | High | Open |
-| FR-002 | Preserve/re-stamp `schema_version` on failure | As an operator, I want `schema_version` re-stamped even when the migration loop aborts, so a re-run isn't re-classified legacy. (Seam: move re-stamp out of the `result.success` guard, `upgrade/runner.py:181-190`.) | High | Open |
+| FR-001 | Non-recurring, self-recoverable upgrade *(composition)* | As an operator, I want end-to-end recovery — no new command unless proven necessary; recovery = FR-002 preservation + FR-008 artifact repair + FR-012 resumable re-run, wired so SC-001 holds with zero manual git. Adopts the non-destructive + deterministic **principles** of ADR `2026-05-10-1` and reuses its `migration/mission_state.py` repair machinery. Depends on FR-002 + FR-008. | High | Open |
+| FR-002 | **Preserve** `schema_version` on failure | As an operator, I want `schema_version` on disk to **always reflect the schema the project actually satisfies** — a failed migration must NEVER advance it. Capture the pre-run value and restore it on abort (or prevent `_record_migration_result`→`save()` from erasing it); stamp `REQUIRED_SCHEMA_VERSION` only on success. **Do not** blanket-`finally`-stamp the target schema onto a failed/legacy project. Seam: `upgrade/runner.py:181-190,489`, `upgrade/metadata.py:188-210`. | High | Open |
 | FR-003 | Ungate the recommended diagnostic | As an operator, I want `migrate backfill-runtime-state --dry-run` reachable when blocked. (Seam: register the subcommand path SAFE via a `--dry-run` predicate, `compat/safety.py`.) | High | Open |
 | FR-005 | Honest partial-write reporting *(primary)* | As an operator, I want any non-atomic abort to enumerate every mission/file it wrote. (Data already collected in `_cutover_corpus` results, discarded at `apply():284-286`.) | High | Open |
 | FR-004 | Corpus-atomic cutover *(higher-risk, optional)* | As an operator, I want `runtime_state_backfill` to mutate nothing on abort — via the staging-promote pattern (ADR `2026-04-17-2`), not corpus rollback. `[NEEDS CORROBORATION]` vs the intentional per-mission design (D-03). | Medium | Open |
