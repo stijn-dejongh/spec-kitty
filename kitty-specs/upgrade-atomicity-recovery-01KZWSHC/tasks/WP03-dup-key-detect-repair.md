@@ -10,6 +10,9 @@ requirement_refs:
 planning_base_branch: spec/upgrade-atomicity-recovery
 merge_target_branch: spec/upgrade-atomicity-recovery
 branch_strategy: Planning artifacts for this mission were generated on spec/upgrade-atomicity-recovery. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into spec/upgrade-atomicity-recovery unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-upgrade-atomicity-recovery-01KZWSHC
+base_commit: 92053ea8bc0a05d72ba591a8af17b37b6f759172
+created_at: '2026-08-13T08:30:27.839496+00:00'
 subtasks:
 - T007
 - T008
