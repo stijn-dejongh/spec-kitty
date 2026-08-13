@@ -121,7 +121,7 @@
       "wp": "WP12"
     },
     "#3347": {
-      "evidence_ref": "Owned by a later WP in this mission (not FR-002/FR-012/WP01 scope); pending downstream WP resolution.",
+      "evidence_ref": "Epic: all mandatory children fixed; SIGKILL/corpus-atomicity (FR-004/WP06) descoped to #2933; residual #3376",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -129,7 +129,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
+      "verdict": "deferred-with-followup",
       "wp": null
     },
     "#3372": {
