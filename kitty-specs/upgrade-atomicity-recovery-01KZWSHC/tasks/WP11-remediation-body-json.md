@@ -20,7 +20,7 @@ create_intent:
 - tests/specify_cli/cli/commands/agent/test_mission_create_json_remediation.py
 execution_mode: code_change
 owned_files:
-- src/specify_cli/cli/commands/agent/mission.py
+- src/specify_cli/cli/commands/agent/mission_create.py
 - tests/specify_cli/cli/commands/agent/test_mission_create_json_remediation.py
 tags: []
 tracker_refs: []
@@ -42,7 +42,8 @@ Invalid charter pack -> --json failure envelope carries the remediation body.
 - [ ] T030 [P] Test: remediation body present in --json
 
 ## Code seams (from research.md — verify before editing)
-- mission-create --json path (charter-pack-invalid) — the remediation body is currently discarded by --json (#3337).
+- src/specify_cli/cli/commands/agent/mission_create.py:288-308 — the --json funnel's generic `except Exception -> _emit_json({'error': str(e)})` (:304) DROPS the remediation body. Add an `except CharterPackConfigError` branch that carries it. (NOT mission.py, which is a logic-free dispatch shim — paula-patterns post-tasks finding.)
+- The remediation prose is raised in core/mission_creation.py:369 (WP12-owned) — read it, do not re-raise; if it isn't already machine-readable, coordinate the structured-body attach with WP12.
 
 ## Acceptance criteria (ATDD-first — land the failing test before the code)
 1. The --json failure envelope carries the remediation body.
@@ -55,5 +56,6 @@ Good-first-issue scope (#3337); keep narrow.
 
 ## Definition of Done
 - All acceptance criteria pass; new helpers/branches carry focused tests (Sonar new-code coverage).
+- **New `test_*.py` files MUST declare a `pytestmark` marker** (marker-convention CI gate — runs only in an integration job the fast local suites skip; a missing marker reds CI).
 - `ruff` + `mypy` clean, zero suppressions; complexity <=15; terminology guard green.
 - Changes match the corrected requirement wording in `../spec.md` and the binding revisions in `../plan.md`.

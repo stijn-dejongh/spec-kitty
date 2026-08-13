@@ -59,5 +59,6 @@ Keep the guard in the canonical boundary (C-002). Depends on WP03's detector.
 
 ## Definition of Done
 - All acceptance criteria pass; new helpers/branches carry focused tests (Sonar new-code coverage).
+- **New `test_*.py` files MUST declare a `pytestmark` marker** (marker-convention CI gate — runs only in an integration job the fast local suites skip; a missing marker reds CI).
 - `ruff` + `mypy` clean, zero suppressions; complexity <=15; terminology guard green.
 - Changes match the corrected requirement wording in `../spec.md` and the binding revisions in `../plan.md`.

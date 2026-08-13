@@ -48,6 +48,30 @@
       "verdict": "unknown",
       "wp": null
     },
+    "#3335": {
+      "evidence_ref": "<link or commit>",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": "SC-005",
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "Bug: runtime_state_backfill aborts non-atomically (report-on-abort)",
+      "verdict": "unknown",
+      "wp": "WP05"
+    },
+    "#3336": {
+      "evidence_ref": "<link or commit>",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": "SC-005",
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "Bug: upgrade --dry-run under-reports pending migrations",
+      "verdict": "unknown",
+      "wp": "WP10"
+    },
     "#3337": {
       "evidence_ref": "<link or commit>",
       "fr": null,
@@ -59,6 +83,18 @@
       "title": "<fill at WP-implementation time>",
       "verdict": "unknown",
       "wp": null
+    },
+    "#3338": {
+      "evidence_ref": "<link or commit>",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": "SC-005",
+      "scope": null,
+      "source_file": "spec.md",
+      "title": "Bug: diagnostic gated behind the failed migration (ungate)",
+      "verdict": "unknown",
+      "wp": "WP02"
     },
     "#3339": {
       "evidence_ref": "<link or commit>",

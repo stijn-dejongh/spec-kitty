@@ -24,14 +24,13 @@ history:
 authoritative_surface: src/specify_cli/status/
 create_intent:
 - src/specify_cli/status/dup_key_repair.py
-- src/specify_cli/cli/commands/agent/_mission_state_doctor.py
 - tests/status/test_dup_key_repair.py
 execution_mode: code_change
 owned_files:
 - src/specify_cli/status/dup_key_repair.py
 - src/specify_cli/migration/mission_state.py
 - src/specify_cli/status/doctor.py
-- src/specify_cli/cli/commands/agent/_mission_state_doctor.py
+- src/specify_cli/cli/commands/_mission_state_doctor.py
 - tests/status/test_dup_key_repair.py
 tags: []
 tracker_refs: []
@@ -73,5 +72,6 @@ Riskiest MANDATORY WP. Reuse the ADR repair machinery; keep detection in a small
 
 ## Definition of Done
 - All acceptance criteria pass; new helpers/branches carry focused tests (Sonar new-code coverage).
+- **New `test_*.py` files MUST declare a `pytestmark` marker** (marker-convention CI gate — runs only in an integration job the fast local suites skip; a missing marker reds CI).
 - `ruff` + `mypy` clean, zero suppressions; complexity <=15; terminology guard green.
 - Changes match the corrected requirement wording in `../spec.md` and the binding revisions in `../plan.md`.

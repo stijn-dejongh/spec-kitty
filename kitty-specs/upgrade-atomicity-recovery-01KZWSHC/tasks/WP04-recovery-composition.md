@@ -19,13 +19,11 @@ history:
 - timestamp: '2026-08-13T00:00:00Z'
   agent: system
   action: Prompt generated via /spec-kitty.tasks
-authoritative_surface: src/specify_cli/upgrade/
+authoritative_surface: tests/upgrade/
 create_intent:
-- src/specify_cli/upgrade/recovery.py
 - tests/upgrade/test_recovery_composition.py
 execution_mode: code_change
 owned_files:
-- src/specify_cli/upgrade/recovery.py
 - tests/upgrade/test_recovery_composition.py
 tags: []
 tracker_refs: []
@@ -37,18 +35,18 @@ tracker_refs: []
 **Mission**: `upgrade-atomicity-recovery-01KZWSHC` — see `../spec.md`, `../plan.md` (§Post-Plan Adversarial Revisions is binding), `../research.md`.
 
 ## Goal
-Compose FR-002 + FR-008 + FR-012 so a wedged project self-recovers (SC-001), including a project not under version control.
+Prove FR-002 + FR-008 + FR-012 compose so a wedged project self-recovers (SC-001), including a project not under version control — without minting a new orchestration surface.
 
 ## Independent Test
 A wedged project (incl. one not under version control) recovers to an upgradable state with zero manual git steps.
 
 ## Subtasks
-- [ ] T012 Wire the recovery flow (no new command unless proven necessary); adopt ADR 2026-05-10-1 non-destructive+deterministic principles
-- [ ] T013 [P] Acceptance: SC-001 zero manual git recovery
+- [ ] T012 Prove recovery composes as a SEQUENCE (doctor --fix -> re-run upgrade) via acceptance tests — this is a VERIFICATION WP (like WP07), owns only its test. Mint upgrade/recovery.py ONLY if a single auto-heal invocation is proven necessary; if so, fold the hook into WP01's runner.py scope (do NOT create a 4th orchestration surface).
+- [ ] T013 [P] Acceptance: SC-001 zero manual git recovery (end-to-end sequence)
 - [ ] T014 [P] Acceptance: no-VCS wedged-project recovery (on-disk, no git checkpoint)
 
 ## Code seams (from research.md — verify before editing)
-- Composition of WP01 (schema preserve) + WP03 (artifact repair) + WP01 (FR-012 resume). No net-new command unless FR-002+FR-008+re-run is proven insufficient.
+- Composition of WP01 (schema preserve) + WP03 (doctor --fix repair) + WP01 (FR-012 resume). paula-patterns post-tasks finding: no existing recovery orchestrator and none needed — recovery is the SEQUENCE, so WP04 is a verification WP owning only its acceptance test.
 - ADR docs/adr/3.x/2026-05-10-1-deterministic-historical-mission-state-repair.md — principles + mission_state machinery.
 
 ## Acceptance criteria (ATDD-first — land the failing test before the code)
@@ -63,5 +61,6 @@ Keep FR-001 scoped as composition/wiring — not a parallel unknown. Depends on 
 
 ## Definition of Done
 - All acceptance criteria pass; new helpers/branches carry focused tests (Sonar new-code coverage).
+- **New `test_*.py` files MUST declare a `pytestmark` marker** (marker-convention CI gate — runs only in an integration job the fast local suites skip; a missing marker reds CI).
 - `ruff` + `mypy` clean, zero suppressions; complexity <=15; terminology guard green.
 - Changes match the corrected requirement wording in `../spec.md` and the binding revisions in `../plan.md`.

@@ -10,6 +10,7 @@ branch_strategy: Planning artifacts for this mission were generated on spec/upgr
 subtasks:
 - T027
 - T028
+- T028b
 phase: Phase 4 - Observability
 history:
 - timestamp: '2026-08-13T00:00:00Z'
@@ -42,7 +43,8 @@ On a project with M pending migrations, --dry-run reports exactly those M.
 
 ## Subtasks
 - [ ] T027 Route the dry-run/--json preview through MigrationRegistry.get_applicable (upgrade/detector.py) instead of the divergent planner path (compat/planner.py:1027)
-- [ ] T028 [P] Test: preview pending set == real applied set
+- [ ] T028 Also close the second divergence: _provision_missing_mission_type_activations never runs in dry-run (upgrade.py:446,480-481) — reflect its pending work in the preview (surface already owned)
+- [ ] T028b [P] Test: preview pending set == real applied set (both divergences)
 
 ## Code seams (from research.md — verify before editing)
 - src/specify_cli/cli/commands/upgrade.py:688-694,751 — dry-run/--json short-circuits into the planner; the real run uses MigrationRegistry.get_applicable.
@@ -61,5 +63,6 @@ Unify the computation without regressing the block decision.
 
 ## Definition of Done
 - All acceptance criteria pass; new helpers/branches carry focused tests (Sonar new-code coverage).
+- **New `test_*.py` files MUST declare a `pytestmark` marker** (marker-convention CI gate — runs only in an integration job the fast local suites skip; a missing marker reds CI).
 - `ruff` + `mypy` clean, zero suppressions; complexity <=15; terminology guard green.
 - Changes match the corrected requirement wording in `../spec.md` and the binding revisions in `../plan.md`.

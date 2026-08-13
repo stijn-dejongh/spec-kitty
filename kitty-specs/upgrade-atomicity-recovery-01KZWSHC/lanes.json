@@ -42,7 +42,7 @@
         "WP03"
       ],
       "write_scope": [
-        "src/specify_cli/cli/commands/agent/_mission_state_doctor.py",
+        "src/specify_cli/cli/commands/_mission_state_doctor.py",
         "src/specify_cli/migration/mission_state.py",
         "src/specify_cli/status/doctor.py",
         "src/specify_cli/status/dup_key_repair.py",
@@ -59,25 +59,32 @@
     {
       "lane_id": "lane-e",
       "wp_ids": [
-        "WP05"
+        "WP05",
+        "WP06"
       ],
       "write_scope": [
+        "src/specify_cli/migration/runtime_state_cutover.py",
         "src/specify_cli/upgrade/migrations/base.py",
         "src/specify_cli/upgrade/migrations/m_zz_runtime_state_backfill.py",
+        "src/specify_cli/upgrade/staging.py",
+        "tests/migration/test_corpus_staging.py",
         "tests/upgrade/test_backfill_report_on_abort.py"
       ],
-      "predicted_surfaces": [],
+      "predicted_surfaces": [
+        "legacy-cleanup"
+      ],
       "depends_on_lanes": [],
       "parallel_group": 0
     },
     {
-      "lane_id": "lane-h",
+      "lane_id": "lane-g",
       "wp_ids": [
         "WP08"
       ],
       "write_scope": [
         "src/specify_cli/task_utils/support.py",
-        "tests/task_utils/test_set_scalar_retired.py"
+        "tests/task_utils/test_set_scalar_retired.py",
+        "tests/utils.py"
       ],
       "predicted_surfaces": [
         "api",
@@ -87,7 +94,7 @@
       "parallel_group": 0
     },
     {
-      "lane_id": "lane-j",
+      "lane_id": "lane-i",
       "wp_ids": [
         "WP10"
       ],
@@ -106,12 +113,12 @@
       "parallel_group": 0
     },
     {
-      "lane_id": "lane-k",
+      "lane_id": "lane-j",
       "wp_ids": [
         "WP11"
       ],
       "write_scope": [
-        "src/specify_cli/cli/commands/agent/mission.py",
+        "src/specify_cli/cli/commands/agent/mission_create.py",
         "tests/specify_cli/cli/commands/agent/test_mission_create_json_remediation.py"
       ],
       "predicted_surfaces": [],
@@ -119,7 +126,7 @@
       "parallel_group": 0
     },
     {
-      "lane_id": "lane-l",
+      "lane_id": "lane-k",
       "wp_ids": [
         "WP12"
       ],
@@ -137,12 +144,9 @@
         "WP04"
       ],
       "write_scope": [
-        "src/specify_cli/upgrade/recovery.py",
         "tests/upgrade/test_recovery_composition.py"
       ],
-      "predicted_surfaces": [
-        "artifact-rendering"
-      ],
+      "predicted_surfaces": [],
       "depends_on_lanes": [
         "lane-a",
         "lane-c"
@@ -151,24 +155,6 @@
     },
     {
       "lane_id": "lane-f",
-      "wp_ids": [
-        "WP06"
-      ],
-      "write_scope": [
-        "src/specify_cli/migration/runtime_state_cutover.py",
-        "src/specify_cli/upgrade/staging.py",
-        "tests/migration/test_corpus_staging.py"
-      ],
-      "predicted_surfaces": [
-        "legacy-cleanup"
-      ],
-      "depends_on_lanes": [
-        "lane-e"
-      ],
-      "parallel_group": 1
-    },
-    {
-      "lane_id": "lane-g",
       "wp_ids": [
         "WP07"
       ],
@@ -183,7 +169,7 @@
       "parallel_group": 1
     },
     {
-      "lane_id": "lane-i",
+      "lane_id": "lane-h",
       "wp_ids": [
         "WP09"
       ],
@@ -200,8 +186,23 @@
       "parallel_group": 1
     }
   ],
-  "computed_at": "2026-08-13T06:21:07.812534+00:00",
+  "computed_at": "2026-08-13T06:31:24.601012+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [],
-  "planning_commit_sha": "8704f4aff7965e27d0fcf275a6a984a4ba88a465"
+  "planning_commit_sha": "caf1f83ad211458c21330603c3af5c67f368e599",
+  "collapse_report": {
+    "events": [
+      {
+        "wp_a": "WP05",
+        "wp_b": "WP06",
+        "rule": "write_scope_overlap",
+        "evidence": "overlapping globs: 'src/specify_cli/upgrade/migrations/m_zz_runtime_state_backfill.py' vs 'src/specify_cli/upgrade/migrations/m_zz_runtime_state_backfill.py'; WP06 depends on WP05"
+      }
+    ],
+    "total_merges": 1,
+    "independent_wps_collapsed": 0,
+    "by_rule": {
+      "write_scope_overlap": 1
+    }
+  }
 }
