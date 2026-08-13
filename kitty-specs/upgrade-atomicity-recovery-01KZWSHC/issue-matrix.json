@@ -1,7 +1,7 @@
 {
   "rows": {
     "#1623": {
-      "evidence_ref": "Out-of-scope cross-reference only: #1623 (doctor.py god-module split) appears in plan.md/WP03 solely as a 'do not grow this god-module' guardrail, not addressed by this mission. Tracked separately as its own issue #1623.",
+      "evidence_ref": "Follow-up: #1623 \u2014 doctor god-module split; WP03 kept detection thin, did not grow it",
       "fr": null,
       "nfr": null,
       "repo": null,
