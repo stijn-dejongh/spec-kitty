@@ -13,7 +13,7 @@
       "wp": null
     },
     "#2933": {
-      "evidence_ref": "Migration ledger: deferred substrate; SIGKILL durable accounting parked here",
+      "evidence_ref": "Follow-up: #2933 \u2014 migration-ledger substrate; SIGKILL durable accounting parked here (spec US2 AC4)",
       "fr": null,
       "nfr": null,
       "repo": null,
