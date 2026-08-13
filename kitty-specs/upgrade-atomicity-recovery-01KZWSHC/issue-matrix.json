@@ -49,7 +49,7 @@
       "wp": null
     },
     "#3334": {
-      "evidence_ref": "WP01 commit d03b856af: capture pre-run schema_version before migration loop; restore captured value on abort (never target), stamp REQUIRED only on success; save() re-emits on-disk schema_version. Red-first tests/upgrade/test_schema_version_recovery.py verified red pre-fix (4 fail, schema erased to None) / green post-fix (7 pass). Reviewer-confirmed.",
+      "evidence_ref": "Merged via bcc0f92 (#194); WP01 landed + reviewed",
       "fr": null,
       "nfr": null,
       "repo": null,
