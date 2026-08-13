@@ -1,0 +1,14 @@
+{
+  "created_at": "2026-08-13T05:29:21.615116+00:00",
+  "flattened": false,
+  "friendly_name": "Upgrade/migration atomicity & recoverability",
+  "mission_id": "01KZWSHCEEBBEXZNYGXBB1QFQF",
+  "mission_number": null,
+  "mission_slug": "upgrade-atomicity-recovery-01KZWSHC",
+  "mission_type": "software-dev",
+  "purpose_context": "Remediate the interlocking upgrade-wedge cluster (epic #3347 + root trigger #3372): a review cycle writes a duplicate review_feedback YAML key, which crashes runtime_state_backfill mid-migration; the failure destroys schema_version, and the only repair command is gated behind exactly that destroyed state, while the diagnostic is gated behind the failed migration. Restore the escape hatch first, then atomicity, then kill the trigger, then observability.",
+  "purpose_tldr": "A failed upgrade must be atomic, self-recoverable, and honestly reported — no project left wedged with no escape.",
+  "slug": "upgrade-atomicity-recovery-01KZWSHC",
+  "target_branch": "spec/upgrade-atomicity-recovery",
+  "topology": "single_branch"
+}
