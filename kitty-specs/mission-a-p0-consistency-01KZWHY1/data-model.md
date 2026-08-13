@@ -40,12 +40,16 @@ the invariant the fix restores is below.
 - **Reader/authority**: `get_project_schema_version()`;
   classifier `compat.planner._scan_project` maps `schema_version is None →
   LEGACY` (a faithful reader — unchanged by this mission).
-- **Invariant restored (FR-005/FR-006)**: a failed `MigrationRunner.upgrade()`
-  leaves `schema_version` at its **pre-upgrade** value (restore-on-failure), so a
-  previously-healthy project is not stripped into `LEGACY`; a genuinely pre-3.x
-  project (`schema_version` absent, no 3.x `success` history) keeps `None` and
-  stays `LEGACY`-blocked. `migrations.applied` is never used as a
-  schema-truth heuristic (no spoof surface).
+- **Invariant restored (FR-005/FR-006, C-008)**: `ProjectMetadata` round-trips
+  `spec_kitty.schema_version` through load→save (`metadata.py:126`,`:188-210`), so
+  **no `save()` caller strips it** — a failed `MigrationRunner.upgrade()` leaves
+  `schema_version` at its pre-upgrade value and a previously-healthy project is
+  not dropped into `LEGACY`. A genuinely pre-3.x project (`schema_version` absent,
+  no 3.x `success` history) has nothing to round-trip → keeps `None` → stays
+  `LEGACY`-blocked. The success path still advances the stamp to
+  `REQUIRED_SCHEMA_VERSION`; `dry_run` writes nothing; `migrations.applied` is
+  never used as a schema-truth heuristic (no spoof surface). Delivers the durable
+  fix that partially closes Epic #3347.
 
 ## A-04 — Lanes manifest (`lanes.json` / `LanesManifest`) — #3311
 

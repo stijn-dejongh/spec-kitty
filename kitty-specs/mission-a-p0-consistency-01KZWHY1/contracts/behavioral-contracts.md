@@ -4,6 +4,12 @@ Four observable contracts. Each is pinned by a red-first reproduction (existing 
 replaced) plus the mandatory green-wash guard tests. These are behavior contracts,
 not HTTP APIs — the mission adds no endpoints.
 
+**Regression-exit (NFR-005/SC-006), applies to all four:** when a reproduction
+turns green, its WP relocates it to the functional-slice home named below (or, for
+#3334, lands the replacement there), drops `@pytest.mark.regression`, adds the
+canonical `unit`/`integration` marks + a guard docstring, so that at mission
+completion `pytest tests/ -m regression` shows **none** of the four green.
+
 ## C#3320 — Retrospect `--update` agrees with disk
 
 - **Given** an on-disk retrospective record `has_findings` with 1 gap, **when**
@@ -47,9 +53,10 @@ not HTTP APIs — the mission adds no endpoints.
 - **Given** a genuinely pre-3.x project (`schema_version` absent, no 3.x `success`
   history), **when** the gate runs for an unsafe command, **then** it classifies
   `LEGACY` and raises `SystemExit(4)`.
-- **Invariant**: a failed upgrade is non-destructive to the schema stamp; the
-  genuine-pre-3.x `LEGACY` guard is unchanged; the classifier (`planner.py`,
-  `safety.py`) is untouched.
+- **Invariant**: `ProjectMetadata` round-trips `schema_version` (root fix,
+  C-008) so no `save()` caller strips it; a failed upgrade is non-destructive to
+  the stamp; the genuine-pre-3.x `LEGACY` guard is unchanged; the classifier
+  (`planner.py`, `safety.py`) is untouched.
 - **Tests (non-fakeable — renata)**: **replace** `tests/regression/test_issue_3334_*`
   (same PR as the fix; it perma-reds NFR-001 otherwise) — drive real
   `MigrationRunner.upgrade()` (stub failing migration via `MigrationRegistry`),
@@ -59,8 +66,9 @@ not HTTP APIs — the mission adds no endpoints.
   faked by always-stamp-`REQUIRED`; (2) real gate no `SystemExit`; (3)
   `upgrade(dry_run=True)` against the failing migration leaves `metadata.yaml`
   **byte-identical**; (4) genuine pre-3.x still `LEGACY` + `SystemExit(4)`.
-  **+ gate test**: `ProjectMetadata.save()` drops `schema_version`; the failure
-  path re-stamps (pins the save→re-stamp obligation; durable fix → Epic #3347).
+  **+ direct unit test**: `ProjectMetadata` round-trips `schema_version` through
+  load→save (the root-fix guard — a `save()` after load preserves the on-disk
+  value; the `_mask_volatile_metadata` change does not re-mask a real change).
 
 ## C#3311 — Re-finalize after execution preserves provenance
 
