@@ -90,7 +90,7 @@ The verdict property auto-corrects all readers — run their suites, not just th
 `gates_core.py`, `accept.py`, and **`cli/commands/agent/acceptance_verdict.py:285,350`**
 (writes the computed verdict downstream). `ruff`/`mypy` clean. Targeted run:
 `PWHEADLESS=1 .venv/bin/python -m pytest tests/acceptance/ -q` and the
-acceptance-verdict command tests. No green `regression`-marked #3231 test remains.
+acceptance-verdict command tests. **Mechanical regression-exit check** (the repro is *relocated*, so a dropped marker is the fakeable step): `pytest tests/ -m regression -k 3231` must select **nothing**.
 
 ## Branch Strategy
 

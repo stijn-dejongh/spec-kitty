@@ -79,6 +79,7 @@ freeze (one write of `lanes.json`).
 `tests/specify_cli/cli/commands/agent/test_finalize_provenance_guard.py`:
 - **execution-begun preservation against a non-`None` tip**: seed lanes + a recorded `planning_commit_sha`; simulate execution-begun via the status event log (a WP past `planned`); run finalize after an ownership-only amendment with the branch tip **differing** from the recorded SHA; assert the recorded SHA is **preserved** (not overwritten with the new tip). (The existing repro only covers the `None`-tip case, which a naive `if sha is not None` fakes.)
 - **benign pre-execution regeneration**: with no WP past `planned`, run finalize after an observable `owned_files` amendment (WP01 gains a path WP02 owns); assert regeneration **actually ran** — the amended topology is reflected (two lanes union into one) or `planning_commit_sha` is re-captured to the new tip. "Did not refuse" alone is insufficient.
+- **read-does-not-write invariant (renata — the crux hazard, pin it don't eyeball it)**: assert the execution-begun path does **not** create or modify `status.json` — snapshot the resolved status dir's file set + hashes (or mtimes) before/after the finalize call and assert unchanged, and/or spy that `reducer.materialize` is **not** called. This is what makes a lazy `reducer.materialize()` (a disk write from a "read") fail a test rather than pass reviewer-eyeball.
 
 ### T017 — Relocate the repro; canonicalize (NFR-005)
 
@@ -91,7 +92,7 @@ guard (#3311 fixed; pins provenance preservation on execution-begun re-finalize)
 
 `ruff`/`mypy` clean. Run the finalize suite (serially if it touches the status daemon):
 `PWHEADLESS=1 .venv/bin/python -m pytest tests/specify_cli/cli/commands/agent/ -q -k "finalize"`.
-No green `regression`-marked #3311 test remains.
+**Mechanical regression-exit check** (the repro is *relocated*, so a dropped marker is the fakeable step): `pytest tests/ -m regression -k 3311` must select **nothing**.
 
 ## Branch Strategy
 

@@ -7,6 +7,7 @@
   "mission_number": null,
   "mission_slug": "mission-a-p0-consistency-01KZWHY1",
   "mission_type": "software-dev",
+  "pr_bound": true,
   "purpose_context": "Four independent P0 bugs each let a downstream step trust the wrong slice of state: a scaffold placeholder poisons an acceptance verdict, a retrospective reports pre-merge counts, a failed upgrade wedges a project by stripping its schema stamp, and a finalize re-run clobbers planning provenance. Each already has a committed red-first reproduction. This mission remediates all four as independent, surgically-scoped fixes so operators can accept missions, trust retrospectives, recover broken upgrades, and re-finalize plans without silent corruption.",
   "purpose_tldr": "Fix four accepted P0 defects where a read, compute, or report step acts on a partial, pre-merge, or recompute-from-scratch view of persisted state.",
   "slug": "mission-a-p0-consistency-01KZWHY1",

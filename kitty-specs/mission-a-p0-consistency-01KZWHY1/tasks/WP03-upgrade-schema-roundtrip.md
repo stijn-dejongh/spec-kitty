@@ -74,7 +74,10 @@ Verify `MigrationRunner.upgrade()` still advances the stamp to `REQUIRED_SCHEMA_
 on success (via the existing `_stamp_schema_version`, kept consistent with the model),
 and that `dry_run` writes nothing (`_stamp_schema_version` at `runner.py:493` writes raw
 YAML — confirm it is not reached in dry_run). Verify `migration/runner.py:193`
-`_update_schema_version` stays consistent with the new round-trip semantics.
+`_update_schema_version` stays consistent with the new round-trip semantics. **Pin the
+success path** (renata): add or name a test asserting a *successful* upgrade advances
+`schema_version` to `REQUIRED_SCHEMA_VERSION` (the mask-entry drop + `save()` change could
+regress it — do not leave the success-path bump self-certified by "suite green" alone).
 
 ### T011 — Round-trip unit test [P]
 
@@ -89,8 +92,19 @@ Delete/replace `tests/regression/test_issue_3334_failed_upgrade_wedges_repair.py
 (it pins the wrong classifier contract → perma-red under this fix) with
 `tests/upgrade/test_failed_upgrade_recoverable.py` (canonical marks, guard docstring).
 Drive the **real** `MigrationRunner(project_path).upgrade(target)` (or `upgrade` via
-`CliRunner`) with a stub failing migration injected into `MigrationRegistry`. Fixture
-starts with `schema_version` **present at a STALE value (`< min_supported`, non-`REQUIRED`)**
+`CliRunner`) with a stub failing migration injected into `MigrationRegistry`.
+**Injection mechanism (feasibility — copy the sibling)**: follow
+`tests/upgrade/test_upgrade_worktree_commit.py:198-229` — `MigrationRegistry.clear()`
+then `@MigrationRegistry.register` on a `class _StubMigration(BaseMigration)` declaring
+the REQUIRED_FIELDS (`migration_id`, `description`, `target_version` — `registry.py:19`)
+with `apply(self, project_path, dry_run=False) -> MigrationResult` returning
+`MigrationResult(success=False, ...)` (`migrations/base.py`). Global `_migrations` state
+is saved/restored by the autouse fixture `tests/upgrade/conftest.py:29-36` — no manual
+teardown. **Version-window (the real trap)**: `MigrationRegistry.get_applicable` selects
+a migration only when `from_v < Version(target_version) <= to_v`, so wire the fixture's
+behind-`version` and the stub's `target_version` so the stub is actually selected — else
+the failing migration never runs and the repro is vacuous.
+Fixture starts with `schema_version` **present at a STALE value (`< min_supported`, non-`REQUIRED`)**
 + version behind + 3.x `success` history. Assert:
 1. post-failure `get_project_schema_version() == the STALE pre-value` (a hardcoded `==3`/`==REQUIRED` is fakeable — this pins "preserve", not "constant");
 2. real gate `check_schema_version(project_root, "plan")` does **not** raise `SystemExit`;
