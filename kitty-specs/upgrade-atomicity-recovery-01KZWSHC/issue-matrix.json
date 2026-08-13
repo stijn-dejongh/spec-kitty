@@ -37,7 +37,7 @@
       "wp": "WP03"
     },
     "#3328": {
-      "evidence_ref": "Owned by a later WP in this mission (not FR-002/FR-012/WP01 scope); pending downstream WP resolution.",
+      "evidence_ref": "WP12 failure-path restore coordinates with #3328 rework; not closed",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -45,8 +45,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "in-mission",
-      "wp": null
+      "verdict": "deferred-with-followup",
+      "wp": "WP12"
     },
     "#3334": {
       "evidence_ref": "Merged via bcc0f92 (#194); WP01 landed + reviewed",
