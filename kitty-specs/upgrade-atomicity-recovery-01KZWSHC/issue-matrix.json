@@ -49,7 +49,7 @@
       "wp": "WP01"
     },
     "#3335": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Owned by a later WP in this mission (not FR-002/FR-012/WP01 scope); pending downstream WP resolution.",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -57,7 +57,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "Bug: runtime_state_backfill aborts non-atomically (report-on-abort)",
-      "verdict": "unknown",
+      "verdict": "in-mission",
       "wp": "WP05"
     },
     "#3336": {
