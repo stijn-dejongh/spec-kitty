@@ -2,7 +2,7 @@
   "mission_slug": "upgrade-atomicity-recovery-01KZWSHC",
   "mission_number": "",
   "mission_type": "software-dev",
-  "overall_verdict": "pending",
+  "overall_verdict": "fail",
   "criteria": [
     {
       "criterion_id": "FR-001",
@@ -38,10 +38,10 @@
       "criterion_id": "FR-004",
       "description": "Verify FR-004 is satisfied",
       "proof_type": "automated_test",
-      "evidence": null,
-      "pass_fail": "pending",
-      "verified_by": null,
-      "verified_at": null,
+      "evidence": "DESCOPED: WP06 canceled by operator. Optional/higher-risk corpus staging-promote; FR-005 report-on-abort is shipped primary; SIGKILL edge deferred to ledger #2933 per spec US2 AC4.",
+      "pass_fail": "fail",
+      "verified_by": "claude",
+      "verified_at": "2026-08-13T11:18:12.950333+00:00",
       "notes": "TODO: replace with a real acceptance criterion"
     },
     {
