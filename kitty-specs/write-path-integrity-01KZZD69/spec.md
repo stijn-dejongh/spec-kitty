@@ -233,7 +233,7 @@ entirely (exempt *by bypass*, not by classification). The plan MUST enumerate, i
 | FR-008 | One git-topology primitive (unify four distinct probes, single canonicalization contract) | US3 | High | Open |
 | FR-009 | Centralized `read_dir_for(...)` effective-root helper | US3 | Medium | Open |
 | FR-010 | Single nested/toplevel-mismatch classifier authority | US3 | Medium | Open |
-| FR-011 | Arch gate: static call-shape + **negative** "no `lanes.json` on any coord ref" | US1 | Medium | Open |
+| FR-011 | Arch gate (static call-shape) + runtime cross-partition scan reassigned to SC-002 | US1 | Medium | Open |
 
 **FR detail (key corrections):**
 
@@ -260,10 +260,12 @@ entirely (exempt *by bypass*, not by classification). The plan MUST enumerate, i
   (`implement_cores.py:635`, `mission_record_analysis.py:125`, `suppress(Exception)` at `:347`).
   `resolve_ownership_claim` is a non-authoritative fast-path only (it classifies same-repo foreign lanes
   as OWNED, MF-8).
-- **FR-011** — A `tests/architectural/` gate asserts the **static call-shape** (no
+- **FR-011** — A `tests/architectural/` gate asserts ONLY the **static call-shape** (no coord-topology
   `_run_planning_artifact_commit` receives a `files_to_commit` not first passed through
-  `_partition_files_for_commit`) **and** the **negative** invariant "no `lanes.json` on any coord ref";
-  the runtime file-set guarantee is assigned to the SC-002 repo scan.
+  `_partition_files_for_commit`), with an explicit route-through/carve-out for the legitimate **flat/legacy
+  arm** (`implement.py:909`, which commits verbatim by design — no coord partition exists on a flat
+  mission). The **runtime** "no `lanes.json` on any coord ref" property is NOT statically detectable and
+  is assigned to the SC-002 real-git repo scan, not this gate.
 
 ### Non-Functional Requirements
 
@@ -284,7 +286,7 @@ entirely (exempt *by bypass*, not by classification). The plan MUST enumerate, i
 | C-005 | Read-from-stored, no live re-derivation | Topology read from stored `meta.json`; `planning_commit_sha` never re-derived live; `meta.json`/`target_branch` read from the repository-root checkout | Technical | High | Open |
 | C-006 | Empty-group + per-partition atomicity | Split commits skip empty groups (never an empty transaction); atomicity is per-partition; a crash between commits recovers by idempotent re-drive | Technical | High | Open |
 | C-007 | Write-intent, not action-name | Seam B keys on explicit WP-write intent, never on `ActionName` (read vehicles reuse names, R1); planning proceeds from any checkout resolving to the same `primary_root` (R3) | Technical | High | Open |
-| C-008 | One self-bookkeeping predicate | Exactly one named predicate governs `meta.json` exemption from the Seam-A refusal, the FR-001 split, and the SC-002 scan; applied before kind classification | Technical | Medium | Open |
+| C-008 | Self-bookkeeping exemption predicate | One named predicate (`is_self_bookkeeping_churn`, `coherence.py:82`) governs the Seam-A guard's `meta.json` exemption **and** the SC-002 scan count. The FR-001 split routes by residue-kind (`is_coord_residue_churn`), under which `meta.json` already resolves PRIMARY through kind classification — the split needs no separate self-bookkeeping call | Technical | Medium | Open |
 | C-009 | Project quality bars | Terminology canon (Mission not feature*); new code passes ruff + mypy zero-issue; every new branch/helper covered by focused tests same PR | Technical | Medium | Open |
 
 ### Non-Goals (explicit)
@@ -339,8 +341,9 @@ entirely (exempt *by bypass*, not by classification). The plan MUST enumerate, i
   (local-fixture test; no `spec-kitty-saas` dependency).
 - **SC-005**: The git-topology probe is unified behind one primitive (four call sites consume it); the
   full existing suite stays green.
-- **SC-006**: A static arch gate forbids an un-partitioned `_run_planning_artifact_commit` batch **and**
-  any `lanes.json` on a coord ref (the P0's Axis-B cannot silently regress).
+- **SC-006**: A static arch gate forbids an un-partitioned coord-topology `_run_planning_artifact_commit`
+  batch (flat/legacy arm carved out); the "no `lanes.json` on a coord ref" runtime property is proven by
+  the SC-002 real-git scan (the P0's Axis-B cannot silently regress via either).
 - **SC-007**: The `effective_root ? legacy : compose_meta_json_path` fork exists in exactly one
   `read_dir_for` helper (gate asserts zero others).
 - **SC-008**: One nested/toplevel classifier feeds both `is_worktree_of` and the comparator; the NESTED
