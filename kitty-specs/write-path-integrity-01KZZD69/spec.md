@@ -11,8 +11,8 @@ whack-a-field. Complete the #1878 strangler and contribute to epic #2160.
 > closed during this mission's authoring** — #3372 by the separate "upgrade-wedge cluster" mission
 > **#3383** (landed in `upstream/main`; WP03/WP04/WP09 shipped the read-boundary duplicate-key guard +
 > dup-key detect/repair + wedged-project self-recovery), and #2702's write-side confirmed closed +
-> guarded (ticket closed with evidence). **Both are OUT of this mission's scope** — building FR-006/
-> FR-007 would duplicate/collide with #3383. This mission is now purely the **coord/topology partition
+> guarded (ticket closed with evidence). **Both are OUT of this mission's scope** — building the
+> upgrade-wedge / doctor-repair requirements would duplicate/collide with #3383. This mission is now purely the **coord/topology partition
 > + checkout-identity** cluster.
 
 ## Summary & Framing
@@ -219,9 +219,10 @@ entirely (exempt *by bypass*, not by classification). The plan MUST enumerate, i
 
 ### Functional Requirements
 
-> **Withdrawn:** FR-006 (`upgrade` eligibility-probe degrade) and FR-007 (`doctor frontmatter-integrity`)
-> are **removed** — #3372 shipped by mission #3383. IDs are left as a gap (not reused) to keep FR-008..011
-> stable against the earlier drafts and the WP references.
+> **Withdrawn:** the two upgrade-wedge requirements (`upgrade` eligibility-probe degrade; `doctor
+> frontmatter-integrity`) are **removed** — #3372 shipped by mission #3383. The numeric IDs 006/007 are
+> left as a gap (not reused) to keep the 008..011 identifiers stable against the earlier drafts and the
+> WP references.
 
 | ID | Title | User Story | Priority | Status |
 |----|-------|------------|----------|--------|
