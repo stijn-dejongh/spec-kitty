@@ -1,7 +1,7 @@
 {
-  "event_count": 2,
-  "last_event_id": "01M00588PDZ7SWVKKKWCFKBGTH",
-  "materialized_at": "2026-08-14T12:51:49.069242+00:00",
+  "event_count": 3,
+  "last_event_id": "01M00589H5NBX7QXWVBVR0GGQ2",
+  "materialized_at": "2026-08-14T12:51:49.925710+00:00",
   "mission_number": "",
   "mission_slug": "write-path-integrity-01KZZD69",
   "mission_type": "software-dev",
@@ -14,7 +14,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 2
+    "planned": 3
   },
   "work_packages": {
     "WP01": {
@@ -30,6 +30,13 @@
       "lane": "planned",
       "last_event_id": "01M00588PDZ7SWVKKKWCFKBGTH",
       "last_transition_at": "2026-08-14T12:51:49.069242+00:00"
+    },
+    "WP03": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M00589H5NBX7QXWVBVR0GGQ2",
+      "last_transition_at": "2026-08-14T12:51:49.925710+00:00"
     }
   }
 }
