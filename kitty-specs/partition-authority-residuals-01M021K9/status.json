@@ -1,19 +1,19 @@
 {
-  "event_count": 43,
-  "last_event_id": "01M02DN13ZF1T5YTD44XD7EAH2",
-  "materialized_at": "2026-08-15T09:57:04.767524+00:00",
+  "event_count": 44,
+  "last_event_id": "01M02DNA7JZBQ28Z4X657AAT44",
+  "materialized_at": "2026-08-15T09:57:14.099012+00:00",
   "mission_number": "",
   "mission_slug": "partition-authority-residuals-01M021K9",
   "mission_type": "software-dev",
   "summary": {
-    "approved": 8,
+    "approved": 9,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
     "in_progress": 0,
-    "in_review": 3,
+    "in_review": 2,
     "planned": 0
   },
   "work_packages": {
@@ -191,12 +191,17 @@
       "actor": "user",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
-      "force_count": 2,
-      "lane": "in_review",
-      "last_event_id": "01M02DGKMA2JDGJCKZQH1ZK1PF",
-      "last_transition_at": "2026-08-15T09:54:39.882325+00:00",
+      "force_count": 3,
+      "lane": "approved",
+      "last_event_id": "01M02DNA7JZBQ28Z4X657AAT44",
+      "last_transition_at": "2026-08-15T09:57:14.099012+00:00",
       "model": "__resolved_model_absent__",
       "provider": "__resolved_provider_absent__",
+      "review_result": {
+        "reference": "reviewer-renata APPROVE (batch review); integrated on fix/",
+        "reviewer": "ATDD",
+        "verdict": "approved"
+      },
       "role": "reviewer"
     },
     "WP10": {
