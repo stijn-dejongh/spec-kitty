@@ -156,6 +156,9 @@
       "last_event_id": "01M02DMRAH0EQHWTE3J9EVHZEQ",
       "last_transition_at": "2026-08-15T09:56:55.761603+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "reviewer-renata APPROVE (batch review); integrated on fix/"
+      ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
         "reference": "reviewer-renata APPROVE (batch review); integrated on fix/",
