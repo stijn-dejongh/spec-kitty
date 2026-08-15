@@ -61,7 +61,7 @@
    "wp": null
   },
   "#2692": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "1e759ccea0 (implemented+reviewed APPROVE, integrated on fix/)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -69,11 +69,11 @@
    "scope": null,
    "source_file": "spec.md",
    "title": "#2692 (in-mission)",
-   "verdict": "in-mission",
+   "verdict": "fixed",
    "wp": "WP07"
   },
   "#2696": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "41f529b759 (implemented+reviewed APPROVE, integrated on fix/)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -81,11 +81,11 @@
    "scope": null,
    "source_file": "spec.md",
    "title": "#2696 (in-mission)",
-   "verdict": "in-mission",
+   "verdict": "fixed",
    "wp": "WP08"
   },
   "#2698": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "a0637f3287 (implemented+reviewed APPROVE, integrated on fix/)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -93,7 +93,7 @@
    "scope": null,
    "source_file": "spec.md",
    "title": "#2698 (in-mission)",
-   "verdict": "in-mission",
+   "verdict": "fixed",
    "wp": "WP04"
   },
   "#2704": {
@@ -109,7 +109,7 @@
    "wp": null
   },
   "#2717": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "846b05c091 (implemented+reviewed APPROVE, integrated on fix/)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -117,7 +117,7 @@
    "scope": null,
    "source_file": "spec.md",
    "title": "#2717 (in-mission)",
-   "verdict": "in-mission",
+   "verdict": "fixed",
    "wp": "WP09"
   },
   "#2720": {
@@ -157,7 +157,7 @@
    "wp": null
   },
   "#2937": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "3bdc6f0c57 (implemented+reviewed APPROVE, integrated on fix/)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -165,11 +165,11 @@
    "scope": null,
    "source_file": "spec.md",
    "title": "#2937 (in-mission)",
-   "verdict": "in-mission",
+   "verdict": "fixed",
    "wp": "WP06"
   },
   "#2939": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "impl/wp03-2939 (implemented+reviewed APPROVE, integrated on fix/)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -177,7 +177,7 @@
    "scope": null,
    "source_file": "spec.md",
    "title": "#2939 (in-mission)",
-   "verdict": "in-mission",
+   "verdict": "fixed",
    "wp": "WP03"
   },
   "#2959": {
@@ -193,7 +193,7 @@
    "wp": "WP01"
   },
   "#2960": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "impl/wp10-2960 (implemented+reviewed APPROVE, integrated on fix/)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -201,11 +201,11 @@
    "scope": null,
    "source_file": "spec.md",
    "title": "#2960 (in-mission)",
-   "verdict": "in-mission",
+   "verdict": "fixed",
    "wp": "WP10"
   },
   "#2966": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "impl/wp05-2966 (implemented+reviewed APPROVE, integrated on fix/)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -213,7 +213,7 @@
    "scope": null,
    "source_file": "spec.md",
    "title": "#2966 (in-mission)",
-   "verdict": "in-mission",
+   "verdict": "fixed",
    "wp": "WP05"
   },
   "#2973": {
@@ -229,7 +229,7 @@
    "wp": null
   },
   "#3066": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "2175ebcfaf (implemented+reviewed APPROVE, integrated on fix/)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -237,7 +237,7 @@
    "scope": null,
    "source_file": "spec.md",
    "title": "#3066 (in-mission)",
-   "verdict": "in-mission",
+   "verdict": "fixed",
    "wp": "WP11"
   },
   "#3067": {
@@ -277,7 +277,7 @@
    "wp": null
   },
   "#3439": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "53772b4564 (implemented+reviewed APPROVE, integrated on fix/)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -285,7 +285,7 @@
    "scope": null,
    "source_file": "spec.md",
    "title": "<fill at WP-implementation time>",
-   "verdict": "in-mission",
+   "verdict": "fixed",
    "wp": "WP02"
   }
  },

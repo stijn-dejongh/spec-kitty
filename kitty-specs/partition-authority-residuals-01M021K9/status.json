@@ -27,6 +27,9 @@
       "last_event_id": "01M028V5ZH7815NZ3TF55KT9EG",
       "last_transition_at": "2026-08-15T08:33:03.473671+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "reviewer-renata APPROVE (independent): FR-001+FR-002 verified, base RED/lane GREEN reproduced"
+      ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
         "reference": "reviewer-renata APPROVE (independent): FR-001+FR-002 verified, base RED/lane GREEN reproduced",
