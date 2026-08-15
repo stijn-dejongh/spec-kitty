@@ -69,6 +69,7 @@
     },
     "WP03": {
       "actor": "user",
+      "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 4,
@@ -80,12 +81,20 @@
         "reviewer-renata APPROVE (batch review); integrated on fix/"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "reference": "reviewer-renata APPROVE (batch review); integrated on fix/",
         "reviewer": "ATDD",
         "verdict": "approved"
       },
-      "role": "reviewer"
+      "role": "reviewer",
+      "shell_pid": null,
+      "shell_pid_created_at": null,
+      "subtasks": {
+        "T001": "planned",
+        "T002": "planned",
+        "T003": "planned"
+      }
     },
     "WP04": {
       "actor": "user",
