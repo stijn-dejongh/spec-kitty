@@ -17,7 +17,7 @@ authoritative_surface: ''
 execution_mode: code_change
 mission_id: 01M0287XCV1R9VDEXHSDB0RTYR
 owned_files:
-- kitty-specs/self-documenting-repo-01M0287X/migration-manifest.md
+- docs/development/agent-memory-migration-manifest.md
 - tests/docs/test_migration_manifest_complete.py
 wp_code: WP05
 ---
