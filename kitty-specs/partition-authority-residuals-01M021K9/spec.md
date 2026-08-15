@@ -55,10 +55,12 @@ approve → `merge`; assert the merge succeeds and the override is honored. Sepa
 
 **Acceptance Scenarios**:
 
-1. **Given** a coord mission whose WP recorded a review rejection then re-approval, **When** the
-   override write in `_persist_review_artifact_override` runs, **Then** it resolves the coord
-   `STATUS_STATE` surface (the same surface `review_artifact_consistency.py` reads), and `merge`
-   proceeds without a deadlock.
+1. **Given** a coord mission whose WP recorded a review rejection then re-approval, **When**
+   `_persist_review_artifact_override` runs, **Then** it is **changed at the caller** to resolve the
+   coord `STATUS_STATE` surface via `placement_seam(...).read_dir(STATUS_STATE)` and pass that dir into
+   the generic `emit_inner_state_changed` (which stays partition-agnostic — no edit to the shared
+   function), landing on the same surface `review_artifact_consistency.py` reads, and `merge` proceeds
+   without a deadlock. *(Follows the proven per-leg reroute pattern in `tasks_dependency_graph.py:120-135`.)*
 2. **Given** a coord mission the gate still refuses, **When** the operator runs
    `merge --skip-review-artifact-check --note "<reason>"`, **Then** the merge completes and the
    override/skip is recorded as evidence (parity with `move-task`).
@@ -151,7 +153,10 @@ cheap, no new behavior.
 
 1. **Given** a mission-aware safe commit, **When** `_resolve_mission_aware_target` resolves its
    target, **Then** it uses `resolve_write_target_or_degrade` (parity with
-   `status_transition.py`, `decision_log.py`, `bookkeeping_commit.py`).
+   `status_transition.py`, `decision_log.py`, `bookkeeping_commit.py`) **while preserving the existing
+   refusal contract** — `CONSOLIDATED_CONTENT_ABSENT` still raises `MissionAwareCommitRefused`, and
+   benign `FileNotFoundError`/`ValueError` still degrade to the `None` fallback (assert refusal-parity,
+   not just that the helper is called).
 
 ---
 
@@ -277,7 +282,7 @@ discovery didn't. (Scope B / epic #2720.)
 
 | ID | Title | Requirement | Category | Priority | Status |
 |----|-------|-------------|----------|----------|--------|
-| NFR-001 | Live coord e2e per fix | Each of FR-001…FR-008 carries a coord-topology end-to-end test (create→finalize→implement→review→merge as applicable) that is **red before, green after** the fix. Unit reads alone are insufficient (the #3437 straggler lesson). | Reliability | High | Open |
+| NFR-001 | Live coord e2e per fix (Scope A) | Each of FR-001…FR-008 carries a coord-topology end-to-end test (create→finalize→implement→review→merge as applicable) that is **red before, green after** the fix. Unit reads alone are insufficient (the #3437 straggler lesson). **Scope B (FR-010…FR-013) and FR-009 are intentionally OUTSIDE this coord-e2e set** — Scope B is topology-agnostic (guarded by NFR-004 instead); FR-009 is a finalize/commit-set change. This omission is deliberate, not a coverage gap. | Reliability | High | Open |
 | NFR-002 | No regression of closed arms | Placement-stability guard (#2198) and in-loop routing (#2160/#2214) stay green; zero STATUS-partition reads over-corrected to PRIMARY. | Reliability | High | Open |
 | NFR-003 | Clean static gates | New code passes `ruff` + `mypy` with zero issues; cyclomatic complexity ≤15; no new `# noqa`/`# type: ignore`/per-file ignores. | Maintainability | High | Open |
 | NFR-004 | Diagnostics sourced from canonical schema/discovery (Scope B) | FR-010/FR-011/FR-013 derive from a single canonical source (writer metadata / `kitty-specs/*` iterator), each with a regression test that goes red if the source re-drifts; no second hardcoded copy remains (the two-copy trap). | Reliability | High | Open |
@@ -290,7 +295,8 @@ discovery didn't. (Scope B / epic #2720.)
 | C-002 | Do not over-correct | STATUS-partition reads (status.events.jsonl, matrices) stay on COORD; only PRIMARY-kind reads move back to PRIMARY and mis-partitioned writes align. | Technical | High | Open |
 | C-003 | Second-order gates stay green | cutover-guard (mission `status_phase`), diff-coverage critical-paths, compat-surface superset, and completeness baselines must remain green. | Technical | High | Open |
 | C-004 | `wps.yaml` lifecycle ruling (D-001) | FR-009 needs a ruling: commit `wps.yaml` (operator-authored planning input) vs explicitly document it as non-versioned. Resolve this **within the mission** (Decision Moment D-001 during plan/tasks); it does not drop FR-009 from scope. | Business | Medium | Open |
-| C-005 | Canonical discovery/schema sources (Scope B) | Scope B fixes MUST consume the canonical mission writer schema and a single canonical `kitty-specs/*` mission-instance discovery helper — no hand-rolled key set, no ad-hoc discovery glob, no second copy. Mirrors C-001 (single SSOT) for the diagnostic surface. | Technical | High | Open |
+| C-005 | Canonical discovery/schema sources (Scope B) | Scope B fixes MUST consume the canonical mission writer schema and a single canonical `kitty-specs/*` mission-instance discovery helper — no hand-rolled key set, no ad-hoc discovery glob, no second copy. Same design PRINCIPLE as C-001 (derive from a canonical source) but applied to DIFFERENT, multiple canonical sources (mission `artifacts` metadata; `MissionMeta*` TypedDicts; a `kitty-specs/*` iterator) in DIFFERENT modules — NOT the single `mission_runtime.artifacts` SSOT, and does not share Scope A's seam. | Technical | High | Open |
+| C-007 | Scope-A/Scope-B WP separability | No single WP/lane may mix a Scope-A partition reroute with a Scope-B schema/discovery fix — disjoint modules, different canonical sources, different test families (NFR-001 coord-e2e vs NFR-004 schema-drift guards). Decompose into separate WPs. | Technical | High | Open |
 
 ### Key Entities
 
