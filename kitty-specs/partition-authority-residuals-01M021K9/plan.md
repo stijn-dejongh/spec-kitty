@@ -10,7 +10,9 @@ under coordination topology, so read and write agree per INV-5. Every partition 
 reroute to the existing `mission_runtime.artifacts` SSOT** (no predicate fork, no membership change).
 Two operator-directed scope areas: **Scope A** — partition-authority routing folds (#2959, #3439,
 #2698, #2939, #2966 p2, #2937); **Scope B** — diagnostic output fidelity via canonical writer-schema
-and canonical `kitty-specs/*` discovery (#2692, #2696, #2717). #2704 was split out.
+and canonical `kitty-specs/*` discovery, reducer/doctor slot fidelity, and migration-repair fidelity
+(#2692, #2696, #2717, #2960, #3066). #2704 and #2973 were reparented out of #2720; completing Scope B
+plus those reparents clears #2720 for close.
 
 Technical approach: for each caller, replace the mis-resolved dir/read with the kind-aware
 `placement_seam(...).read_dir(<kind>)` / `artifact_home_for(<kind>)` (Scope A) or the canonical
@@ -230,6 +232,35 @@ no new project, no new pattern, no predicate fork. Nothing to justify here.
   the specific keys/inventory, not just exit codes. Each canonical source needs a regression test that
   goes red if the writer schema/artifact set drifts again (NFR-004).
 
+### IC-08 — Reducer/doctor runtime-slot fidelity (#2960)
+
+- **Purpose**: Stop `agent: ""` silently blanking recorded attribution, and stop `status doctor`
+  reporting Healthy over the corrupt state.
+- **Relevant requirements**: FR-014.
+- **Affected surfaces**: `status/reducer.py:262-264` (replace-slot fold) + `:185` (claim arm) —
+  treat empty strings as no-op; `status/models.py:460+` (`WPInnerStateDelta`) — normalize `""`→`None`
+  at the write boundary so the log never records a blanking delta; `status/doctor.py` — new check for
+  empty-string runtime slots on non-terminal WPs.
+- **Sequencing/depends-on**: none. **Scope B (C-007): must not share a WP with any Scope-A concern.**
+- **Risks**: pick the right fix altitude — write-boundary normalization is the durable net (the emit
+  site producing `""` is unconfirmed); the reducer guard + doctor check are defense-in-depth. Regression
+  test: fold `agent:""` over `agent:"claude"` and assert survival + a non-Healthy doctor verdict.
+
+### IC-09 — Migration repair preserves legacy WPStatusChanged transitions (#3066)
+
+- **Purpose**: Stop `doctor mission-state --fix` quarantining legacy `WPStatusChanged` lane
+  transitions and regenerating a zero-WP `status.json` (a **data-destroying** repair, P1).
+- **Relevant requirements**: FR-015.
+- **Affected surfaces**: `migration/mission_state.py:1583-1667` (`_rule_reject_non_status_event` /
+  `_is_preserved_non_lane_row`). Adopt PR #3067's diff: add `_is_legacy_typed_lane_transition(row)`
+  (true when `event_type == "WPStatusChanged"` AND `wp_id`/`from_lane`/`to_lane` all present) and
+  route it via passthrough at the head of the rule, before the quarantine branches.
+- **Sequencing/depends-on**: none. **Scope B (C-007).** Reuses the existing (stale) PR #3067 diff —
+  reroll it onto current main rather than re-implementing; keep its red-first migration test.
+- **Risks**: TeamSpace envelopes (lane fields under `payload`) and `DecisionPointOpened` mirrors MUST
+  stay quarantined — only the canonical-writer `WPStatusChanged` shape passes through. The repair is
+  mutating, so the test must assert `status.json` retains the WPs after `--fix`.
+
 ### Cross-cutting notes
 
 - **Reference implementation**: `tasks_dependency_graph.py:120-135` already performs the exact per-leg
@@ -239,7 +270,7 @@ no new project, no new pattern, no predicate fork. Nothing to justify here.
 - **Scope-A / Scope-B WP separability (C-007, HIGH)**: `/spec-kitty.tasks` MUST NOT put a Scope-A
   partition reroute and a Scope-B schema/discovery fix in the same WP — disjoint modules, different
   canonical sources, different test families (NFR-001 coord-e2e vs NFR-004 schema-drift guards). IC-01…
-  IC-06 are Scope A; IC-07 is Scope B and decomposes into its own WP(s).
+  IC-06 are Scope A; IC-07/IC-08/IC-09 are Scope B and decompose into their own WP(s).
 - **`emit_inner_state_changed` (emit.py:971-1041) is a shared DEPENDENCY, not a shared edit**: IC-01 and
   IC-03 both flow through it but fix at their own callers; **neither WP edits the function**. This
   removes the apparent shared-file conflict.

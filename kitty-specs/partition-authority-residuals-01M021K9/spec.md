@@ -27,14 +27,18 @@ resolver path, no partition-membership change.
 
 - **Scope A — Partition-authority residuals (epic #2160)** — US1–US6, the out-of-loop read/write
   routing folds.
-- **Scope B — Mission-state discovery & diagnostic output fidelity (epic #2720)** — US7–US9, the
+- **Scope B — Mission-state discovery & diagnostic output fidelity (epic #2720)** — US7–US11, the
   adjacent read-surface/output-fidelity folds (false inventories, writer-schema drift, mission
-  discovery anchored on the wrong root). These share this mission's read-surface theme; the fix
-  pattern is *source diagnostics from the canonical writer schema and the canonical `kitty-specs/*`
-  mission-instance discovery*, mirroring "route reads through the canonical seam."
-**#2704** (a #2720 child) is **out of scope** — reparented out of #2720 to a program-orchestration /
-multi-repo-preparation home (tracker); it is net-new cross-repo preparation infra with no existing
-seam. Completing US7–US9 clears #2720's remaining in-repo children so the epic can close.
+  discovery anchored on the wrong root, false-Healthy over blanked slots, repair quarantining legacy
+  transitions). These share this mission's read-surface theme; the fix pattern is *source diagnostics
+  from the canonical writer schema and the canonical `kitty-specs/*` mission-instance discovery*,
+  mirroring "route reads through the canonical seam."
+
+**#2720 close-path** — completing Scope B (US7–US11: #2692, #2696, #2717, #2960, #3066) resolves all
+of #2720's in-class fidelity children. Two #2720 children are **out of scope** and reparented out:
+**#2704** (net-new cross-repo preparation infra → epic #1193) and **#2973** (net-new persisted
+fault-event stream → observability home). #2754 is already fixed/closed. Once Scope B lands and the
+two reparents are recorded, #2720 can close.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -244,6 +248,53 @@ discovery didn't. (Scope B / epic #2720.)
 
 ---
 
+### User Story 10 - status doctor must not report Healthy over blanked runtime attribution (Priority: P2) — #2960
+
+An annotation with `agent: ""` silently blanks recorded agent attribution because the reducer guards
+`is not None` rather than truthiness, so `""` clobbers a real value; `status doctor` then reports
+Healthy over the corrupt state. Operators trust a false "Healthy".
+
+**Why this priority**: A read-only diagnostic emitting a false "Healthy" over corrupt canonical state
+— #2720's exact charter. (Scope B / epic #2720.)
+
+**Independent Test**: Fold an `agent: ""` delta over `agent: "claude"`; assert the real value survives
+(write-boundary normalization) and that `status doctor` flags the empty slot rather than reporting
+Healthy.
+
+**Acceptance Scenarios**:
+
+1. **Given** an annotation carrying `agent: ""`, **When** the reducer folds it (`reducer.py:262-264`
+   replace-slot and `:185` claim arm), **Then** the empty string is treated as no-op (truthiness/
+   `""`→`None` normalization at the `WPInnerStateDelta` write boundary), so prior attribution survives.
+2. **Given** a WP with a blanked runtime slot, **When** `status doctor` runs, **Then** a check flags it
+   (no false Healthy), with a regression test pinning `agent:""`-over-`agent:"claude"` survival.
+
+---
+
+### User Story 11 - mission-state repair must not quarantine legacy WPStatusChanged transitions (Priority: P1) — #3066
+
+`doctor mission-state --fix` quarantines legacy `WPStatusChanged` lane-transition rows (the repair
+classifier's `_is_preserved_non_lane_row` omits `WPStatusChanged`, contradicting the mission's own
+`WPStatusChanged` writer), so a **mutating** repair regenerates `status.json` with zero WPs — it
+destroys runnable state.
+
+**Why this priority**: **P1 / data-destroying** — a repair that wipes lane history is more severe than
+a false read-only report. The classifier ignores the canonical mission *writer* schema (#2720's exact
+remedy pattern). An existing PR (#3067) carries the fix but is stale (462 behind, CI-red).
+
+**Independent Test**: Run the repair classifier over an event log containing a legacy
+`WPStatusChanged` row with `wp_id`/`from_lane`/`to_lane`; assert it is preserved (passthrough), not
+quarantined, and `status.json` retains the WPs.
+
+**Acceptance Scenarios**:
+
+1. **Given** a legacy `WPStatusChanged` row (with `wp_id`/`from_lane`/`to_lane`), **When**
+   `_rule_reject_non_status_event` runs, **Then** a `_is_legacy_typed_lane_transition` passthrough at
+   the head of the rule preserves it (adopting PR #3067's diff), while TeamSpace-envelope and
+   `DecisionPointOpened` rows stay quarantined. Red-first migration test included.
+
+---
+
 ### Edge Cases
 
 - **Non-coord missions** (SINGLE_BRANCH / LANES route everything to PRIMARY): every fix MUST be a
@@ -277,6 +328,8 @@ discovery didn't. (Scope B / epic #2720.)
 | FR-011 | Audit shape registry for `meta.json` derived from canonical writer schema (no drift) + regression test | US8 (#2696) | Medium | Open |
 | FR-012 | Add `--mission` selector to `doctor coordination` (resolver parity with mission-state) | US8 (#2696) | Medium | Open |
 | FR-013 | Route both diagnostic discovery sites through one canonical `kitty-specs/*` instance iterator | US9 (#2717) | Medium | Open |
+| FR-014 | Reducer treats empty-string replace-slots as no-op (`""`→`None` at write boundary) + doctor check for blanked slots | US10 (#2960) | Medium | Open |
+| FR-015 | mission-state repair passthrough for legacy `WPStatusChanged` transitions (adopt PR #3067) | US11 (#3066) | High | Open |
 
 ### Non-Functional Requirements
 
@@ -285,7 +338,7 @@ discovery didn't. (Scope B / epic #2720.)
 | NFR-001 | Live coord e2e per fix (Scope A) | Each of FR-001…FR-008 carries a coord-topology end-to-end test (create→finalize→implement→review→merge as applicable) that is **red before, green after** the fix. Unit reads alone are insufficient (the #3437 straggler lesson). **Scope B (FR-010…FR-013) and FR-009 are intentionally OUTSIDE this coord-e2e set** — Scope B is topology-agnostic (guarded by NFR-004 instead); FR-009 is a finalize/commit-set change. This omission is deliberate, not a coverage gap. | Reliability | High | Open |
 | NFR-002 | No regression of closed arms | Placement-stability guard (#2198) and in-loop routing (#2160/#2214) stay green; zero STATUS-partition reads over-corrected to PRIMARY. | Reliability | High | Open |
 | NFR-003 | Clean static gates | New code passes `ruff` + `mypy` with zero issues; cyclomatic complexity ≤15; no new `# noqa`/`# type: ignore`/per-file ignores. | Maintainability | High | Open |
-| NFR-004 | Diagnostics sourced from canonical schema/discovery (Scope B) | FR-010/FR-011/FR-013 derive from a single canonical source (writer metadata / `kitty-specs/*` iterator), each with a regression test that goes red if the source re-drifts; no second hardcoded copy remains (the two-copy trap). | Reliability | High | Open |
+| NFR-004 | Scope-B fidelity guarded by regression tests | FR-010/FR-011/FR-013 derive from a single canonical source (writer metadata / `kitty-specs/*` iterator), each with a regression test that goes red if the source re-drifts (no two-copy trap). FR-014 (`agent:""` survival) and FR-015 (legacy `WPStatusChanged` passthrough) each carry a red-first regression/migration test. Scope B is topology-agnostic — these guards, not NFR-001's coord-e2e, are its safety net. | Reliability | High | Open |
 
 ### Constraints
 
@@ -329,6 +382,12 @@ discovery didn't. (Scope B / epic #2720.)
 - **SC-007** *(Scope B)*: `retrospect summary` (and the per-mission table) find real records under
   `kitty-specs/*` and never count `.kittify` support dirs as missions; `doctor coordination` scopes to
   a single mission via `--mission`.
+- **SC-008** *(Scope B)*: an `agent: ""` annotation never blanks recorded attribution, and `status
+  doctor` flags a blanked slot instead of reporting Healthy (#2960).
+- **SC-009** *(Scope B)*: `doctor mission-state --fix` preserves legacy `WPStatusChanged` lane
+  transitions (no zero-WP `status.json` regeneration) (#3066).
+- **SC-010**: #2720 is closable — all its in-class fidelity children (#2692, #2696, #2717, #2960,
+  #3066) are resolved and its out-of-class children (#2704, #2973) are reparented out.
 
 ## Out of Scope / Deferred (with rationale)
 
@@ -345,8 +404,11 @@ discovery didn't. (Scope B / epic #2720.)
   *detector*, not a read/write seam-symmetry fix, and INV-5 already holds for the kinds involved.
   **Deferred** to keep this mission scoped to routing symmetry; recommend a follow-up if the operator
   wants the detection half (it is cheap and would reuse this mission's seam primitives).
-- **#2704** (#2720 child) — reparented out of #2720 to a program-orchestration / multi-repo-preparation
-  home (tracker task in flight); out of this mission's scope.
+- **#2704** (#2720 child) — reparented out of #2720 to epic #1193 (program-orchestration /
+  multi-repo-preparation); out of this mission's scope.
+- **#2973** (#2720 child) — reparented out of #2720 to an observability / fault-event home (net-new
+  persisted diagnostic stream, gated on an event-schema/shared-package-boundary decision); out of scope.
+- **#2754** (#2720 child) — already fixed and closed (PR #2754); no action.
 
 ## Decisions (resolve during plan/tasks)
 
@@ -370,3 +432,5 @@ discovery didn't. (Scope B / epic #2720.)
 | FR-011 | #2696 | `audit/shape_registry.py:31-47/299-314`, `audit/classifiers/meta.py:110`; schema `mission_metadata.py:47-87` |
 | FR-012 | #2696 | `cli/commands/doctor.py:1258` (`coordination_health`); pattern at `doctor.py:1022` |
 | FR-013 | #2717 | `retrospective/summary.py:296-303`, `cli/commands/retrospect.py:1003-1005` |
+| FR-014 | #2960 | `status/reducer.py:262-264/185`, `status/models.py:460+` (`WPInnerStateDelta`), `status/doctor.py` |
+| FR-015 | #3066 | `migration/mission_state.py:1583-1667` (`_rule_reject_non_status_event`); adopt PR #3067 |
