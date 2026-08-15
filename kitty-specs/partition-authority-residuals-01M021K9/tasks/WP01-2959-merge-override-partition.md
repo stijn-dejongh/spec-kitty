@@ -8,6 +8,9 @@ requirement_refs:
 planning_base_branch: fix/partition-authority-residuals
 merge_target_branch: fix/partition-authority-residuals
 branch_strategy: Planning artifacts for this mission were generated on fix/partition-authority-residuals. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into fix/partition-authority-residuals unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-partition-authority-residuals-01M021K9
+base_commit: ae488c6259eb69c372e57d321c28ac818f99479a
+created_at: '2026-08-15T07:47:46.548663+00:00'
 subtasks:
 - T001
 - T002
