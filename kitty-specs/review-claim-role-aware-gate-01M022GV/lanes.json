@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "mission_slug": "review-claim-role-aware-gate-01M022GV",
+  "mission_id": "01M022GV0EHE24HWADR7T5S8VZ",
+  "mission_branch": "kitty/mission-review-claim-role-aware-gate-01M022GV",
+  "target_branch": "fix/review-claim-role-aware-gate",
+  "lanes": [
+    {
+      "lane_id": "lane-a",
+      "wp_ids": [
+        "WP01"
+      ],
+      "write_scope": [
+        "src/specify_cli/coordination/coherence.py",
+        "src/specify_cli/coordination/status_service.py",
+        "src/specify_cli/coordination/status_transition.py",
+        "src/specify_cli/merge/done_bookkeeping.py",
+        "src/specify_cli/status/aggregate.py",
+        "src/specify_cli/status/review_claim_predicate.py",
+        "src/specify_cli/status/work_package_lifecycle.py",
+        "src/specify_cli/status/wp_state.py",
+        "tests/architectural/test_review_claim_no_frontmatter.py",
+        "tests/specify_cli/status/test_wp_state.py",
+        "tests/status/fsm_parity_baseline.jsonl",
+        "tests/status/test_review_claim_role_aware.py",
+        "tests/status/test_transitions.py",
+        "tests/status/test_work_package_lifecycle.py",
+        "tests/unit/status/test_review_claim_predicate.py",
+        "tests/unit/status/test_review_claim_transition.py"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    },
+    {
+      "lane_id": "lane-b",
+      "wp_ids": [
+        "WP02"
+      ],
+      "write_scope": [
+        "src/specify_cli/status/reducer.py",
+        "tests/status/test_reducer_blank_identity.py"
+      ],
+      "predicted_surfaces": [
+        "api"
+      ],
+      "depends_on_lanes": [],
+      "parallel_group": 0
+    }
+  ],
+  "computed_at": "2026-08-15T07:25:56.710309+00:00",
+  "computed_from": "dependency_graph+ownership",
+  "planning_artifact_wps": [],
+  "planning_commit_sha": "3d82e336e449a39e1b122e5897bb59985efdc209"
+}
