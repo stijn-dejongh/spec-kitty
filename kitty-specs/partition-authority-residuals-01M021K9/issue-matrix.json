@@ -181,7 +181,7 @@
       "wp": null
     },
     "#2959": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "886455573c",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -189,8 +189,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "fixed",
+      "wp": "WP01"
     },
     "#2960": {
       "evidence_ref": "<link or commit>",
