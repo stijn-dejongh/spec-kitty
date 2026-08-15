@@ -18,12 +18,12 @@ history:
   shell_pid: ''
   action: Prompt generated via /spec-kitty.tasks
 authoritative_surface: CLAUDE.md
-create_intent: []
 execution_mode: code_change
 mission_id: 01M0287XCV1R9VDEXHSDB0RTYR
+create_intent:
+- tests/architectural/test_claudemd_template_source.py
 owned_files:
 - CLAUDE.md
-- tests/architectural/test_claudemd_template_source.py
 tags: []
 tracker_refs: []
 wp_code: WP02

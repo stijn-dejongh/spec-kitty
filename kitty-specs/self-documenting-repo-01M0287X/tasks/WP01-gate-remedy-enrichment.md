@@ -22,15 +22,15 @@ history:
   shell_pid: ''
   action: Prompt generated via /spec-kitty.tasks
 authoritative_surface: tests/architectural/
-create_intent: []
 execution_mode: code_change
 mission_id: 01M0287XCV1R9VDEXHSDB0RTYR
+create_intent:
+- tests/architectural/test_gate_remedy_presence.py
 owned_files:
 - tests/architectural/test_no_write_side_rederivation.py
 - tests/architectural/test_no_inert_schema_slots.py
 - tests/docs/test_relative_link_fixer.py
 - tests/docs/test_related_validator.py
-- tests/architectural/test_gate_remedy_presence.py
 tags: []
 tracker_refs: []
 wp_code: WP01

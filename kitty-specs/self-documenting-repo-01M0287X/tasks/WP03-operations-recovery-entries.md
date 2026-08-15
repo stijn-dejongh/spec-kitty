@@ -24,7 +24,6 @@ history:
   shell_pid: ''
   action: Prompt generated via /spec-kitty.tasks
 authoritative_surface: docs/operations/
-create_intent: []
 execution_mode: code_change
 mission_id: 01M0287XCV1R9VDEXHSDB0RTYR
 owned_files:
