@@ -24,7 +24,7 @@ history:
   action: Prompt generated via /spec-kitty.tasks
 authoritative_surface: primary
 create_intent: []
-execution_mode: doc_change
+execution_mode: code_change
 mission_id: 01M0287XCV1R9VDEXHSDB0RTYR
 owned_files:
 - docs/development/3-2-page-inventory.yaml
