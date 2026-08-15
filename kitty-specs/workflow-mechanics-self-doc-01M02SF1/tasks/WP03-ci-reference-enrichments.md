@@ -8,16 +8,21 @@ requirement_refs:
 - C-003
 - NFR-001
 - NFR-005
+planning_base_branch: kitty/mission-workflow-self-doc
 merge_target_branch: kitty/mission-workflow-self-doc
+branch_strategy: Planning artifacts for this mission were generated on kitty/mission-workflow-self-doc. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into kitty/mission-workflow-self-doc unless the human explicitly redirects the landing branch.
 subtasks:
 - T006
 - T007
-owned_files:
-- docs/development/reference/coverage-signals.md
-- docs/development/reference/known-friction-points.md
+history: []
 authoritative_surface: docs/development/reference/
 create_intent: []
 execution_mode: code_change
+owned_files:
+- docs/development/reference/coverage-signals.md
+- docs/development/reference/known-friction-points.md
+tags: []
+tracker_refs: []
 ---
 
 ## Objective

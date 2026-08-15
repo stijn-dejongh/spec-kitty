@@ -7,20 +7,25 @@ requirement_refs:
 - FR-009
 - NFR-004
 - NFR-005
+planning_base_branch: kitty/mission-workflow-self-doc
 merge_target_branch: kitty/mission-workflow-self-doc
+branch_strategy: Planning artifacts for this mission were generated on kitty/mission-workflow-self-doc. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into kitty/mission-workflow-self-doc unless the human explicitly redirects the landing branch.
 subtasks:
 - T017
 - T018
 - T019
+history: []
+authoritative_surface: packs/built-in/
+create_intent: []
+execution_mode: code_change
 owned_files:
 - packs/built-in/toolguides/GITHUB_TRACKER.md
 - packs/built-in/toolguides/github-tracker.toolguide.yaml
 - packs/built-in/tactics/architectural-gate-non-vacuity.tactic.yaml
 - packs/built-in/tactics/reviewer-implementer-role-separation.tactic.yaml
 - packs/built-in/tactics/canonical-source-unification.tactic.yaml
-authoritative_surface: packs/built-in/
-create_intent: []
-execution_mode: code_change
+tags: []
+tracker_refs: []
 ---
 
 ## Objective
