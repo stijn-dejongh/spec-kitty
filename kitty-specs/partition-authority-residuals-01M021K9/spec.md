@@ -32,9 +32,9 @@ resolver path, no partition-membership change.
   discovery anchored on the wrong root). These share this mission's read-surface theme; the fix
   pattern is *source diagnostics from the canonical writer schema and the canonical `kitty-specs/*`
   mission-instance discovery*, mirroring "route reads through the canonical seam."
-- **#2704** (a #2720 child) reproduces but is **out-of-class** — net-new cross-repo/program-
-  orchestration preparation infrastructure with no existing seam. It is carried here per operator
-  direction but **recommended for split** (Decision D-002).
+**#2704** (a #2720 child) is **out of scope** — reparented out of #2720 to a program-orchestration /
+multi-repo-preparation home (tracker); it is net-new cross-repo preparation infra with no existing
+seam. Completing US7–US9 clears #2720's remaining in-repo children so the epic can close.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -239,17 +239,6 @@ discovery didn't. (Scope B / epic #2720.)
 
 ---
 
-### Flagged: #2704 (out-of-class — Decision D-002)
-
-Monorepo preparation does not resolve the repo set required by downstream mission-review gates
-(e.g. the Gate-3 cross-repo E2E sibling), discovering the missing sibling mid-gate. This **reproduces**
-but is net-new cross-repo preparation infrastructure with no existing seam, orthogonal to this
-mission's within-repo read-surface scope. **Recommendation: split to a program-orchestration /
-multi-repo-preparation epic.** Carried here pending operator decision D-002; if retained it becomes
-US10 (P3) and this mission's test obligations extend to a multi-repo preparation fixture.
-
----
-
 ### Edge Cases
 
 - **Non-coord missions** (SINGLE_BRANCH / LANES route everything to PRIMARY): every fix MUST be a
@@ -283,7 +272,6 @@ US10 (P3) and this mission's test obligations extend to a multi-repo preparation
 | FR-011 | Audit shape registry for `meta.json` derived from canonical writer schema (no drift) + regression test | US8 (#2696) | Medium | Open |
 | FR-012 | Add `--mission` selector to `doctor coordination` (resolver parity with mission-state) | US8 (#2696) | Medium | Open |
 | FR-013 | Route both diagnostic discovery sites through one canonical `kitty-specs/*` instance iterator | US9 (#2717) | Medium | Open |
-| FR-014 | *(conditional, D-002)* Resolve required repo set from downstream mission-review gates | #2704 | Low | Deferred (D-002) |
 
 ### Non-Functional Requirements
 
@@ -303,7 +291,6 @@ US10 (P3) and this mission's test obligations extend to a multi-repo preparation
 | C-003 | Second-order gates stay green | cutover-guard (mission `status_phase`), diff-coverage critical-paths, compat-surface superset, and completeness baselines must remain green. | Technical | High | Open |
 | C-004 | `wps.yaml` lifecycle ruling (D-001) | FR-009 needs a ruling: commit `wps.yaml` (operator-authored planning input) vs explicitly document it as non-versioned. Resolve this **within the mission** (Decision Moment D-001 during plan/tasks); it does not drop FR-009 from scope. | Business | Medium | Open |
 | C-005 | Canonical discovery/schema sources (Scope B) | Scope B fixes MUST consume the canonical mission writer schema and a single canonical `kitty-specs/*` mission-instance discovery helper — no hand-rolled key set, no ad-hoc discovery glob, no second copy. Mirrors C-001 (single SSOT) for the diagnostic surface. | Technical | High | Open |
-| C-006 | #2704 scope split (D-002) | #2704 is out-of-class (net-new multi-repo preparation infra). Decision D-002 decides split-to-epic (recommended) vs retain-as-US10. FR-014 stays Deferred until resolved. | Business | Medium | Open |
 
 ### Key Entities
 
@@ -352,16 +339,13 @@ US10 (P3) and this mission's test obligations extend to a multi-repo preparation
   *detector*, not a read/write seam-symmetry fix, and INV-5 already holds for the kinds involved.
   **Deferred** to keep this mission scoped to routing symmetry; recommend a follow-up if the operator
   wants the detection half (it is cheap and would reuse this mission's seam primitives).
-- **#2704** (#2720 child) — reproduces but out-of-class (net-new cross-repo preparation infra, no
-  seam). **Recommended split** to a program-orchestration / multi-repo-preparation epic; retained
-  under Decision D-002 pending operator ruling (FR-014 stays Deferred meanwhile).
+- **#2704** (#2720 child) — reparented out of #2720 to a program-orchestration / multi-repo-preparation
+  home (tracker task in flight); out of this mission's scope.
 
 ## Decisions (resolve during plan/tasks)
 
 - **D-001** (#2937 / C-004): Is `wps.yaml` a versioned artifact (commit it in finalize) or an
   operator-authored non-versioned input (document + skip)? Default lean: version it (FR-009 as written).
-- **D-002** (#2704 / C-006): Split #2704 to a program-orchestration epic (recommended) or retain as
-  US10 in this mission?
 
 ## Traceability
 
@@ -380,4 +364,3 @@ US10 (P3) and this mission's test obligations extend to a multi-repo preparation
 | FR-011 | #2696 | `audit/shape_registry.py:31-47/299-314`, `audit/classifiers/meta.py:110`; schema `mission_metadata.py:47-87` |
 | FR-012 | #2696 | `cli/commands/doctor.py:1258` (`coordination_health`); pattern at `doctor.py:1022` |
 | FR-013 | #2717 | `retrospective/summary.py:296-303`, `cli/commands/retrospect.py:1003-1005` |
-| FR-014 | #2704 | *(no seam — net-new; deferred D-002)* |
