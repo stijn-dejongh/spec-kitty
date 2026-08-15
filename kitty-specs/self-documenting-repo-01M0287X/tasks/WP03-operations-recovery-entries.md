@@ -2,6 +2,15 @@
 work_package_id: WP03
 title: Coord/lane recovery entries in operations (G3)
 dependencies: []
+requirement_refs:
+- FR-003
+- FR-004
+- C-001
+- C-002
+- NFR-001
+planning_base_branch: kitty/mission-self-doc-gapclose
+merge_target_branch: kitty/mission-self-doc-gapclose
+branch_strategy: Planning artifacts for this mission were generated on kitty/mission-self-doc-gapclose. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into kitty/mission-self-doc-gapclose unless the human explicitly redirects the landing branch.
 subtasks:
 - T007
 - T008
@@ -14,14 +23,17 @@ history:
   agent: system
   shell_pid: ''
   action: Prompt generated via /spec-kitty.tasks
-authoritative_surface: ''
-execution_mode: code_change
+authoritative_surface: primary
+create_intent: []
+execution_mode: doc_change
 mission_id: 01M0287XCV1R9VDEXHSDB0RTYR
 owned_files:
 - docs/operations/recovery-index.md
 - docs/operations/toc.yml
 - docs/development/3-2-page-inventory.yaml
 - docs/development/3-2-docs-retrieval-index.yaml
+tags: []
+tracker_refs: []
 wp_code: WP03
 ---
 

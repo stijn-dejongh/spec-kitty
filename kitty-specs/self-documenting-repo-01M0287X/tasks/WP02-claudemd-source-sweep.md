@@ -2,6 +2,11 @@
 work_package_id: WP02
 title: CLAUDE.md source-location sweep (G2)
 dependencies: []
+requirement_refs:
+- FR-002
+planning_base_branch: kitty/mission-self-doc-gapclose
+merge_target_branch: kitty/mission-self-doc-gapclose
+branch_strategy: Planning artifacts for this mission were generated on kitty/mission-self-doc-gapclose. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into kitty/mission-self-doc-gapclose unless the human explicitly redirects the landing branch.
 subtasks:
 - T005
 - T006
@@ -12,12 +17,15 @@ history:
   agent: system
   shell_pid: ''
   action: Prompt generated via /spec-kitty.tasks
-authoritative_surface: ''
+authoritative_surface: primary
+create_intent: []
 execution_mode: code_change
 mission_id: 01M0287XCV1R9VDEXHSDB0RTYR
 owned_files:
 - CLAUDE.md
 - tests/architectural/test_claudemd_template_source.py
+tags: []
+tracker_refs: []
 wp_code: WP02
 ---
 

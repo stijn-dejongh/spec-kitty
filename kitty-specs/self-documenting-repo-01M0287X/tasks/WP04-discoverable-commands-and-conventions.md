@@ -1,7 +1,16 @@
 ---
 work_package_id: WP04
 title: Discoverable commands + env/tracker docs (G4, G6)
-dependencies: [WP03]
+dependencies:
+- WP03
+requirement_refs:
+- FR-005
+- FR-007
+- C-003
+- NFR-001
+planning_base_branch: kitty/mission-self-doc-gapclose
+merge_target_branch: kitty/mission-self-doc-gapclose
+branch_strategy: Planning artifacts for this mission were generated on kitty/mission-self-doc-gapclose. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into kitty/mission-self-doc-gapclose unless the human explicitly redirects the landing branch.
 subtasks:
 - T011
 - T012
@@ -13,12 +22,15 @@ history:
   agent: system
   shell_pid: ''
   action: Prompt generated via /spec-kitty.tasks
-authoritative_surface: ''
-execution_mode: code_change
+authoritative_surface: primary
+create_intent: []
+execution_mode: doc_change
 mission_id: 01M0287XCV1R9VDEXHSDB0RTYR
 owned_files:
 - docs/development/3-2-page-inventory.yaml
 - docs/development/3-2-docs-retrieval-index.yaml
+tags: []
+tracker_refs: []
 wp_code: WP04
 ---
 

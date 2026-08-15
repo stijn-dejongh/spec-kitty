@@ -2,6 +2,13 @@
 work_package_id: WP01
 title: Gate-remedy enrichment (G1)
 dependencies: []
+requirement_refs:
+- FR-001
+- NFR-003
+- C-005
+planning_base_branch: kitty/mission-self-doc-gapclose
+merge_target_branch: kitty/mission-self-doc-gapclose
+branch_strategy: Planning artifacts for this mission were generated on kitty/mission-self-doc-gapclose. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into kitty/mission-self-doc-gapclose unless the human explicitly redirects the landing branch.
 subtasks:
 - T001
 - T002
@@ -14,7 +21,8 @@ history:
   agent: system
   shell_pid: ''
   action: Prompt generated via /spec-kitty.tasks
-authoritative_surface: ''
+authoritative_surface: primary
+create_intent: []
 execution_mode: code_change
 mission_id: 01M0287XCV1R9VDEXHSDB0RTYR
 owned_files:
@@ -23,6 +31,8 @@ owned_files:
 - tests/docs/test_relative_link_fixer.py
 - tests/docs/test_related_validator.py
 - tests/architectural/test_gate_remedy_presence.py
+tags: []
+tracker_refs: []
 wp_code: WP01
 ---
 
