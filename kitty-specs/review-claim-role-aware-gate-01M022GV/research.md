@@ -63,6 +63,19 @@ findings are all **accepted** and folded into spec v2 + this plan — collision 
 role-thread value object (D1), shared predicate (D2), blank-safety (D4), parity preservation
 (D5), and the C-005 sequencing risk (plan IC-01/IC-02 Risks). None deferred, none dropped.
 
+## Post-plan squad disposition (accepted)
+
+A three-lens post-plan squad (python-pedro / paula-patterns / architect-alphonso) converged
+on a simplification, all **accepted**: the `for_review` guard is hard allow-only and needs no
+role, so `current_role` is dropped from the guard input contract (D1 value object rides only
+to the single in-lock collision site `work_package_lifecycle.py:307`). Also accepted:
+enroll `coherence.py:260` + `done_bookkeeping.py:598` as value-object consumers; only
+`:307` switches to the predicate (`:180`/`:210` unchanged); IC-03 fold is `reducer.py:261-264`
+(+`:185`), scoped to identity slots only (don't break `assignee=""`/`shell_pid=0`); collision
+is best-effort (role present only with a resolved binding — graceful ALLOW accepted); IC-04
+split into red-first (before) + re-point/parity (atomic with IC-02); C-005 downgraded to a
+verification step. None deferred, none dropped.
+
 ## C-005 sequencing (open risk, resolve before implement)
 
 Two missions co-edit this fix's surface: `review-cycle-verdict-seam-rebuild-01KZ2W7W`

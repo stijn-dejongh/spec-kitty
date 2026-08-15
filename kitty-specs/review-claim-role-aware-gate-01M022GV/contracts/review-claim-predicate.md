@@ -16,12 +16,20 @@ Concrete, round-trippable examples the implementation must satisfy verbatim.
 Note: the stale-reviewer row is ALLOW at the `for_review` guard because that guard is
 allow-only by construction; the COLLISION path is reachable only at the `in_review` re-claim.
 
-## Two enforcement points
+## Enforcement (one collision site; guard is allow-only)
 
-- `for_review → in_review`: never returns a block; on a distinct reviewer it MUST allow (the
-  original bug: it returned "WP already claimed for review by <implementer>").
-- `in_review` re-claim: returns `WorkPackageClaimConflict(holder=...)` on COLLISION,
-  message names the holder.
+- `for_review → in_review` (`_check_no_review_conflict`): hard allow-only — actor-presence
+  only; MUST NOT import or evaluate the collision predicate. On a distinct reviewer it MUST
+  allow (original bug: "WP already claimed for review by <implementer>"). A reviewer-role
+  (even stale) at `for_review` still returns ALLOW.
+- `in_review` re-claim (`work_package_lifecycle.py:307`): switches from `_actors_compatible`
+  to `review_claim_decision`; returns `WorkPackageClaimConflict(holder=...)` on COLLISION,
+  message names the holder. `_actors_compatible` at `:180`/`:210` (implementer claims) is
+  unchanged.
+- **Best-effort**: collision fires only when the holder's reduced `role` slot is `reviewer`
+  (populated only when the claim carried a resolved binding). Binding-less holder →
+  `role=None` → ALLOW. The `in_review` "rejects steal" regression MUST seed the holder via
+  the binding path (`role="reviewer"`) or it will (correctly) assert ALLOW (rule 2, not rule 4).
 
 ## #2861 regression (compact actor)
 

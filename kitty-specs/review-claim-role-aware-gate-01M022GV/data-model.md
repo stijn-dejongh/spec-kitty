@@ -16,19 +16,30 @@ is already a reduced slot. This documents the in-memory shapes the fix adds/exte
 
 Genesis fallback (unseeded WP) yields `CurrentWpState(GENESIS, None, None)`.
 
-## Guard input contract extension
+**Consumers to convert (complete census — post-plan).** `read_current_wp_state_transactional`
+unpack sites: `aggregate.py:733`, `work_package_lifecycle.py:129`/`:271`,
+`merge/done_bookkeeping.py:305`. Its delegate `wp_lane_actor_from_events`
+(`coordination/status_service.py:256`) also widens and has two *direct* consumers that must
+convert or they break: `coordination/coherence.py:260` (uses positional `[...]​[0]` → becomes
+`.lane`) and `merge/done_bookkeeping.py:598` (2-tuple unpack). A frozen value object is
+non-subscriptable/non-iterable, so mypy catches both — but they must be in IC-01's scope.
 
-Add `current_role: str | None = None` to each carrier (default keeps all existing
-constructors valid):
+## Guard input contract — NO role field (post-plan simplification)
 
-- `GuardContext` (`status/models.py`)
-- `TransitionContext` (`status/transition_context.py`)
-- `TransitionInputs` protocol (`status/wp_state.py`)
+The FSM guard input carriers (`GuardContext`, `TransitionContext`, `TransitionInputs`) are
+**not** extended with `current_role`. The post-plan squad (architect + pedro + paula)
+established that role does not belong on the guard path at all:
 
-Populated at **every** guard-construction site from `CurrentWpState.role`:
-- `aggregate.py` move-task construction (`~:669`)
-- `_prepare_event` (`coordination/status_transition.py:~872`) — today builds from
-  `request.current_actor`; must also carry role or the second evaluation loses it.
+- The `for_review → in_review` FSM guard (`_check_no_review_conflict`) is made **hard
+  allow-only** — it consults actor-presence only and never evaluates a collision, so it
+  needs no role. Both move-task guard-construction sites call this one function, so the one
+  change covers them; the `emit.py:725/894` sites (coord-less topologies) call it too.
+- `request.current_actor` on `_prepare_event` is structurally always `None` (dead plumbing);
+  threading role there would encode a pre-lock TOCTOU, not a single in-transaction read.
+
+Role therefore rides **only** the `CurrentWpState` value object to the single collision
+site (below). This keeps the "one reduction, no split-brain" invariant honest — it holds at
+the in-lock re-claim read (`work_package_lifecycle.py:271`), which is the only role consumer.
 
 ## Predicate (new): `review_claim_decision`
 
@@ -52,12 +63,27 @@ Rules:
 4. `current_role` is a reviewer-role AND `current_actor != requesting_actor` → **COLLISION**
    naming the holder.
 
-Enforcement points:
-- `for_review → in_review` (`_check_no_review_conflict`): allow-only — it may call the
-  predicate but by construction `current_role` there is never a reviewer-role (or is stale),
-  so the outcome is always ALLOW. It MUST NOT block.
-- `in_review` re-claim (`work_package_lifecycle.py`): the predicate's COLLISION path is the
-  genuine reviewer-vs-reviewer gate → `WorkPackageClaimConflict`.
+Single enforcement point (the predicate is used at exactly ONE site):
+- `in_review` re-claim — the call site `work_package_lifecycle.py:307` switches from
+  `_actors_compatible` to `review_claim_decision`; its COLLISION path is the genuine
+  reviewer-vs-reviewer gate → `WorkPackageClaimConflict`. `current_role` comes from
+  `CurrentWpState.role` (the in-lock read at `:271`). **Do NOT** change `_actors_compatible`
+  itself — it is shared with the implementer-claim sites `:180`/`:210`
+  (`allow_generic_existing=True`), which are out of scope.
+- `for_review → in_review` (`_check_no_review_conflict`): **hard allow-only** — returns
+  ALLOW on actor-presence only and MUST NOT invoke the collision arm or consult a COLLISION
+  verdict. It does not import or evaluate the predicate. This is the safe resolution of the
+  stale-role hazard: even a stale `reviewer` role can never produce a block here because the
+  guard never looks at role.
+
+**Best-effort collision (design note).** The reduced `role` slot is populated at review-claim
+only when a resolved binding exists (`workflow_executor.py:1640-1642`, `role="reviewer"`
+written `if resolved_binding is not None`). A binding-less claim (bare `--agent claude`)
+leaves `current_role=None`, so rule 2 fires → ALLOW. Collision detection is therefore
+**best-effort**: it fires only when the holder claimed with a resolved binding. This is
+accepted — it degrades toward ALLOW, matching the mission's primary goal (never false-block
+cross-profile review). Re-pointed "rejects steal" tests MUST seed `role="reviewer"` via the
+binding path, or they will (correctly) assert ALLOW.
 
 ## Reviewer-role vocabulary
 

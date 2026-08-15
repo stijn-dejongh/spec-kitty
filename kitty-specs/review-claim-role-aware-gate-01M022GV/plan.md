@@ -5,15 +5,16 @@
 
 ## Summary
 
-Make the `for_review → in_review` review-claim allow-only (never block on actor/role) so a
-distinct agent profile can review another profile's work, and move the genuine
-reviewer-vs-reviewer collision to the `in_review` re-claim surface behind **one shared pure
-predicate** used by both the state-machine guard and the dedicated-review check. Thread the
-already-reduced `role` slot through the transaction-resolved read (as a small value object,
-not a widened positional tuple) to every guard-construction site, so the guard reads
-lane+actor+role from a single in-transaction reduction (no split-brain). Fold in the
-write-side blank-identity fix (#2960) and a #2861 compound-actor regression guard. Hardened,
-red-first, on the move-task path.
+Make the `for_review → in_review` review-claim guard **hard allow-only** (never block on
+actor/role) so a distinct agent profile can review another profile's work, and make the one
+genuine reviewer-vs-reviewer collision site (`in_review` re-claim, `work_package_lifecycle.py:307`)
+role-aware via a pure, unit-tested predicate. Role rides **only** the `CurrentWpState` value
+object on the transaction-resolved read (a frozen value object, not a widened tuple) to that
+single in-lock collision site — it is NOT threaded onto the guard input contract (dead
+plumbing / TOCTOU per the post-plan squad). Fold in the write-side blank-identity fix (#2960,
+identity-slot-scoped) and a #2861 compound-actor regression guard. Hardened, red-first, on
+the move-task path. Collision detection is best-effort (active only when the holder claimed
+with a resolved binding).
 
 ## Technical Context
 
@@ -62,20 +63,18 @@ kitty-specs/review-claim-role-aware-gate-01M022GV/
 ```
 src/specify_cli/
 ├── status/
-│   ├── wp_state.py                 # TransitionInputs protocol (+current_role); ForReviewState guard -> allow-only; shared predicate call
-│   ├── transition_context.py       # TransitionContext (+current_role field)
-│   ├── models.py                   # GuardContext (+current_role); actor_identity_str (unchanged; role stays a separate slot)
-│   ├── reducer.py                  # FR-008: fold identity on truthiness, not `is not None` (blank never clobbers)
-│   ├── work_package_lifecycle.py   # in_review re-claim uses the shared predicate (role-aware); start_review_status first-claim stays allow
-│   └── review_claim_predicate.py   # NEW: the single pure allow/collision predicate (both paths import it)
+│   ├── wp_state.py                 # _check_no_review_conflict -> HARD ALLOW-ONLY (actor-presence only, never consults collision). No role on TransitionInputs.
+│   ├── reducer.py                  # FR-008: identity-slot fold on truthiness (:261-264 loop scoped to actor/agent/agent_profile/role; + :185 agent fold)
+│   ├── work_package_lifecycle.py   # :307 in_review re-claim -> review_claim_decision (role from CurrentWpState.role). :180/:210 _actors_compatible UNCHANGED.
+│   └── review_claim_predicate.py   # NEW: pure collision predicate, used at the single collision site only
 └── coordination/
-    ├── status_transition.py        # read_current_wp_state_transactional -> return value object w/ role; _prepare_event guard-construction carries role
-    └── status_service.py           # wp_lane_actor_from_events -> surface the reduced role slot
+    ├── status_transition.py        # read_current_wp_state_transactional -> CurrentWpState(lane, actor, role). NO change to _prepare_event (dead current_actor plumbing).
+    └── status_service.py           # wp_lane_actor_from_events -> CurrentWpState (surface reduced role slot)
 
-# consumers to update (unpack sites):
-#   status/aggregate.py (:733, move-task guard construction :669 carries role)
-#   status/work_package_lifecycle.py (:129, :271)
-#   merge/done_bookkeeping.py (:305)
+# CurrentWpState consumers to convert:
+#   status/aggregate.py:733 · work_package_lifecycle.py:129/:271 · merge/done_bookkeeping.py:305
+#   coordination/coherence.py:260 ([0] -> .lane) · merge/done_bookkeeping.py:598 (wp_lane_actor_from_events direct consumers)
+# NOT touched: models.py GuardContext / transition_context.py TransitionContext (no current_role added)
 
 tests/
 ├── specify_cli/status/test_wp_state.py            # re-point for_review->in_review conflict cases
@@ -88,9 +87,20 @@ tests/
 ```
 
 **Structure Decision**: Single project. The change concentrates in the `status/` package
-(guard, contexts, reducer, lifecycle, new predicate) plus the two role-dropping reads in
-`coordination/`. A new small module `status/review_claim_predicate.py` holds the shared pure
-predicate so both enforcement points import one implementation (FR-003).
+(the allow-only guard, the reducer identity-fold, the lifecycle collision call site, the new
+predicate) plus the two role-carrying reads in `coordination/`. A new small module
+`status/review_claim_predicate.py` holds the pure collision predicate, used at the **single**
+collision site (`work_package_lifecycle.py:307`); the `for_review` guard is allow-only and
+does not consult it. No `current_role` is added to the guard input contract.
+
+**C-005 posture (downgraded post-plan).** Both co-editor missions
+(`review-cycle-verdict-seam-rebuild-01KZ2W7W` → `wp_state.py`;
+`verdict-seam-boundary-hardening-01KZG179` → the coordination reads) carry terminal merge/
+lane-approved events dated ~a week before this plan and have no local branch/worktree in this
+checkout (remote `moes/*review-cycle-read-authority` branches exist). They appear **already
+landed**. C-005 is therefore a **pre-implement verification step** ("confirm both are in the
+mission base; if so, no hand-coordination"), not a live-conflict budget. Verify before
+implement — a stale base resurrects the risk.
 
 ## Complexity Tracking
 
@@ -100,34 +110,49 @@ predicate so both enforcement points import one implementation (FR-003).
 
 > Concerns are NOT work packages. `/spec-kitty.tasks` translates these into WPs.
 
-### IC-01 — Role on the canonical read path (plumbing)
+> **Post-plan squad correction (3-way convergence).** Role does NOT belong on the guard
+> path. The `for_review` guard is hard allow-only (needs no role); role rides only the
+> `CurrentWpState` value object to the single collision site (`work_package_lifecycle.py:307`).
+> `current_role` is NOT added to `GuardContext`/`TransitionContext`/`TransitionInputs`, and no
+> emit/`_prepare_event`/aggregate guard threading is done. This erases the guard-construction
+> census entirely and keeps the single-reduction invariant honest.
 
-- **Purpose**: Carry the already-reduced `role` slot from the single in-transaction reduction to every guard-construction site, so the guard can be role-aware without a second read.
-- **Relevant requirements**: FR-004, FR-005, NFR-001, C-002.
-- **Affected surfaces**: `coordination/status_service.py` (`wp_lane_actor_from_events`), `coordination/status_transition.py` (`read_current_wp_state_transactional` return + `_prepare_event`), `status/models.py` (`GuardContext`), `status/transition_context.py` (`TransitionContext`), `status/wp_state.py` (`TransitionInputs` protocol); consumers `status/aggregate.py`, `status/work_package_lifecycle.py`, `merge/done_bookkeeping.py`.
+### IC-01 — Role on the in-lock re-claim read (value object)
+
+- **Purpose**: Surface the already-reduced `role` slot on the transaction-resolved read so the single collision site can be role-aware — with no second reduction and no guard-path plumbing.
+- **Relevant requirements**: FR-004 (revised), FR-005, NFR-001, C-002.
+- **Affected surfaces**: `coordination/status_service.py` (`wp_lane_actor_from_events` → return `CurrentWpState` incl. role); `coordination/status_transition.py` (`read_current_wp_state_transactional` → return `CurrentWpState`). Consumers to convert: `status/aggregate.py:733`, `status/work_package_lifecycle.py:129`/`:271`, `merge/done_bookkeeping.py:305` **and** the two direct `wp_lane_actor_from_events` consumers `coordination/coherence.py:260` (`[0]`→`.lane`) and `merge/done_bookkeeping.py:598`.
 - **Sequencing/depends-on**: none (foundation for IC-02).
-- **Risks**: Return-shape change — prefer a small **frozen value object** over a 3-tuple to avoid positional fragility across ~4 unpack sites. **Two** guard-construction sites (`aggregate.py` move-task and `_prepare_event`); role must reach both or the second silently loses it. **C-005**: `verdict-seam-boundary-hardening-01KZG179` co-edits these coordination reads — confirm its merge state first.
+- **Risks**: Return-shape change — a **frozen value object** (`CurrentWpState`) over a 3-tuple; mypy catches the `coherence.py:260` subscript + `done_bookkeeping.py:598` unpack. Do NOT thread role into any GuardContext/TransitionContext/TransitionInputs (dead plumbing / TOCTOU). C-005 (coordination reads) → see Sequencing note.
 
-### IC-02 — Shared allow/collision predicate + two enforcement points
+### IC-02 — Allow-only guard + single role-aware collision predicate
 
-- **Purpose**: One pure predicate decides allow vs genuine reviewer collision; the `for_review→in_review` guard becomes allow-only; the `in_review` re-claim becomes role-aware via the same predicate.
-- **Relevant requirements**: FR-001, FR-002, FR-003, FR-006.
-- **Affected surfaces**: NEW `status/review_claim_predicate.py`; `status/wp_state.py` (`_check_no_review_conflict` → allow-only + predicate); `status/work_package_lifecycle.py` (`_actors_compatible`/in_review re-claim → predicate).
-- **Sequencing/depends-on**: IC-01 (needs `current_role` available).
-- **Risks**: The `for_review` guard must **never** block on role (also neutralizes the stale-role hazard). Predicate must be blank-safe (FR-006) and read role from the reduced slot, never by splitting the actor (FR-005/#2861). **C-005**: `review-cycle-verdict-seam-rebuild-01KZ2W7W` is the sole other co-editor of `wp_state.py` — confirm merge state / hand-coordinate the guard hunk.
+- **Purpose**: Make `_check_no_review_conflict` hard allow-only; make the one genuine collision site role-aware via a pure, unit-tested predicate.
+- **Relevant requirements**: FR-001, FR-002, FR-003 (revised), FR-006.
+- **Affected surfaces**: `status/wp_state.py` (`_check_no_review_conflict` → **allow-only**, actor-presence only, never consults collision — one function covers the move-task and `emit.py:725/894` sites); NEW `status/review_claim_predicate.py` (pure leaf, `frozenset({"reviewer"})`); `status/work_package_lifecycle.py:307` **only** (in_review re-claim call site → `review_claim_decision`). Do NOT modify `_actors_compatible` (shared with `:180`/`:210` implementer claims).
+- **Sequencing/depends-on**: IC-01 (needs role on the value object at `:271`).
+- **Risks**: The allow-only property must be **explicit in code** (guard never evaluates a collision), not an emergent "input is never a reviewer-role" — else a stale/future reviewer role re-cements the bug. Collision is **best-effort** (fires only when a resolved binding recorded `role="reviewer"`; binding-less → ALLOW, accepted). Role from the reduced slot only, never by splitting the actor (FR-005/#2861). C-005: `review-cycle-verdict-seam-rebuild-01KZ2W7W` co-edits `wp_state.py` — see Sequencing note.
 
 ### IC-03 — Blank-identity write-side safety (folds #2960)
 
 - **Purpose**: The canonical reduction must not let a blank annotation clobber a recorded identity/role.
 - **Relevant requirements**: FR-008, NFR-005(c).
-- **Affected surfaces**: `status/reducer.py` (fold actor/agent identity on truthiness, not `is not None`).
-- **Sequencing/depends-on**: none (independent; the read-side twin FR-006 lives in IC-02).
-- **Risks**: Scope discipline — only the reducer truthiness arm; the `status doctor` empty-slot arm of #2960 is explicitly out of scope. Do not otherwise reopen `reducer.py` for role (already reduced).
+- **Affected surfaces**: `status/reducer.py:261-264` (the `_REPLACE_SLOTS` fold loop `if value is not None`) and the separate `agent` fold at `~:185` (PLANNED→CLAIMED exception).
+- **Sequencing/depends-on**: none (independent).
+- **Risks**: The `_REPLACE_SLOTS` loop folds ~9 slots; a blanket `is not None`→truthiness flip changes fold semantics for **all** (e.g. can't clear `assignee=""`; drops `shell_pid=0`). **Scope the truthiness guard to the identity slots only** (`actor`/`agent`/`agent_profile`/`role`) — split the loop or use a per-slot predicate — leaving the non-identity slots' clearing semantics intact. Add a regression proving `assignee=""` still clears. The `status doctor` empty-slot arm of #2960 stays out of scope.
 
-### IC-04 — Test hardening + wrong-model re-point + parity coverage
+### IC-04a — Red-first repros + guards (before IC-02)
 
-- **Purpose**: Make the fix falsifiable and prevent silent re-cementing of the bug or the named regressions.
-- **Relevant requirements**: NFR-001, NFR-002, NFR-003, NFR-005, SC-001..SC-005.
-- **Affected surfaces**: red-first move-task repro (NEW); re-point all four wrong-model encodings (`test_wp_state.py`, `test_transitions.py`, `fsm_parity_baseline.jsonl:1278`, `test_review_claim_transition.py`) + a grep/source guard; parity **flip 1278 AND add** a role-carrying collision row; `#2861` compound-actor + `#2960` blank-actor regressions; architectural guard test (NFR-001); predicate unit tests.
-- **Sequencing/depends-on**: repros/guards authored red-first before IC-02; re-point lands with IC-02.
-- **Risks**: A literal 1-for-1 parity flip deletes the only reject-branch coverage — the added role-carrying row is mandatory. Missing the fourth wrong-model file (`test_review_claim_transition.py`) tempts a re-assert of the block.
+- **Purpose**: Falsify the bug on the move-task path and lock the invariants before behavior changes.
+- **Relevant requirements**: NFR-001, NFR-005, SC-001, SC-003.
+- **Affected surfaces**: red-first move-task repro (NEW, exercises `validate_transition`/`move-task`, red on pre-fix); architectural guard test (NFR-001, actor/role never from frontmatter, covers the move-task + emit paths); predicate unit tests; `#2861` compact-actor + `#2960` blank regressions.
+- **Sequencing/depends-on**: authored before IC-02 (ATDD red-first).
+- **Risks**: The repro MUST exercise the move-task path (the lifecycle path is already green — SC-001). A reviewer-role-at-`for_review` test must still assert ALLOW.
+
+### IC-04b — Wrong-model re-point + parity coverage (atomic with IC-02)
+
+- **Purpose**: Re-point every test encoding the old role-free block and preserve collision coverage.
+- **Relevant requirements**: NFR-002, NFR-003, SC-002, SC-004.
+- **Affected surfaces**: re-point ALL FOUR wrong-model files (`tests/specify_cli/status/test_wp_state.py`, `tests/status/test_transitions.py`, `tests/status/fsm_parity_baseline.jsonl:1278`, `tests/unit/status/test_review_claim_transition.py`) + a grep/source guard; parity **flip 1278 AND add** a role-carrying collision row; the re-pointed "rejects steal" cases seed `role="reviewer"` via the binding path.
+- **Sequencing/depends-on**: co-committed with IC-02 (else the suite is red between WPs).
+- **Risks**: A literal 1-for-1 parity flip deletes the only reject-branch coverage — the added role-carrying row is mandatory. Missing the fourth wrong-model file tempts a re-assert of the block.
