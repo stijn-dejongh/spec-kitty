@@ -1,7 +1,7 @@
 {
-  "event_count": 25,
-  "last_event_id": "01M02DE2YYDJ4DJ192ZMSC9VAB",
-  "materialized_at": "2026-08-15T09:53:17.278875+00:00",
+  "event_count": 26,
+  "last_event_id": "01M02DEA6PB7TX8DWHWK8V3TXJ",
+  "materialized_at": "2026-08-15T09:53:24.694757+00:00",
   "mission_number": "",
   "mission_slug": "partition-authority-residuals-01M021K9",
   "mission_type": "software-dev",
@@ -11,10 +11,10 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 9,
+    "for_review": 10,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 1
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
@@ -111,11 +111,11 @@
       "last_transition_at": "2026-08-15T09:53:17.278875+00:00"
     },
     "WP11": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M0265SVYM58B66VDX3WXHVYD",
-      "last_transition_at": "2026-08-15T07:46:25.790333+00:00"
+      "actor": "user",
+      "force_count": 1,
+      "lane": "for_review",
+      "last_event_id": "01M02DEA6PB7TX8DWHWK8V3TXJ",
+      "last_transition_at": "2026-08-15T09:53:24.694757+00:00"
     }
   }
 }
