@@ -96,3 +96,26 @@ scripts/docs/                 # G4 (freshen), G1 (docs gates)
 - **Affected surfaces**: `kitty-specs/self-documenting-repo-01M0287X/migration-manifest.md`.
 - **Sequencing/depends-on**: aggregates IC-01…IC-05 outputs (last).
 - **Risks**: completeness — every audited gap-filler must appear.
+
+---
+
+## Post-plan squad reconciliation (folded)
+
+Two lenses (implementer-ivan feasibility, paula-patterns brownfield/SSOT) corrected the IC map before decomposition:
+
+- **IC-01 re-scope (MAJOR).** The "new arch test → append `_ARCH_SHARD_N_FILES`" remedy is obsolete: `tests/_arch_shard_map.py:46-63` documents the #2671 **auto-cover fallback** (`arch` group `default_fallback=True`) — a new arch file is auto-covered, so the completeness gate (`test_arch_shard_marker_completeness.py:12`, authority `tests._shard_registry`) does **not** trip on it. That memory (`reference_arch_gate_campsite_fixes`) is itself a **stale gap-filler** (C-005 failure mode); its manifest outcome is "behavior retired — delete the memory, no gate remedy." IC-01's actionable G1 remedy set is therefore smaller and must be **located in code first**: confirmed remedy-extensible gates = `test_no_write_side_rederivation.py`, `test_no_inert_schema_slots.py` (+ `golden-count` as the already-complete **model**). Reclassify/locate: `analysis-report-staleness` = `tests/specify_cli/test_analysis_report_charter_yaml_staleness.py` (narrow correctness test — likely NOT remedy-bearing); `docs-move-relative-link` = `tests/docs/test_relative_link_fixer.py` + `test_related_validator.py`; `mission-gate-artifact` = owning gate unidentified → locate or drop.
+- **IC-03 recovery-home reconciliation (MAJOR).** A **second active recovery home** exists: `docs/guides/how-to/recovery/` (crash/interrupted-merge how-tos). Reuse `docs/operations/` for the coord/lane operational recoveries (operator-grant / `doctor --fix`), but add an IA rationale + **bidirectional cross-links** between the two homes (fold, don't silently pick). Cite the existing root-cause note `docs/plans/engineering-notes/coord-splitbrain-rootcause.md` for the "why"; the six recovery *procedures* are genuinely new. Verify each `doctor <sub> --fix` name/semantics first (`workspaces --fix` → `_workspace_husk_doctor.py` husk cleanup — confirm it's the right op).
+- **Generated-yaml serialization (MAJOR).** `docs/development/3-2-page-inventory.yaml` + `3-2-docs-retrieval-index.yaml` are generated rollups behind a **global** freshness gate; every doc-adding WP regenerates them via `inventory_lockfile.py --write`. Serialize: doc WPs co-own the two yaml with a "no-parallel, serialized regen" rationale.
+- **Manifest (IC-06).** Must allow a gap-filler to map to "behavior retired — no repo home" (the MAJOR-1 case), not force every G1 entry to a live remedy — else completeness pressure re-introduces the stale guidance the mission exists to delete.
+
+### Work Package decomposition (feeds /tasks)
+
+| WP | Scope | owned_files | depends_on |
+|----|-------|-------------|-----------|
+| **WP01** | G1: locate each enumerated gate in code; add content-anchored remedies to the confirmed remedy-extensible gates (derive-from-code, trip-to-validate); a meta-test asserting each *registered* gate's assertion carries a remedy substring. | the confirmed gate test files, new `tests/architectural/test_gate_remedy_presence.py`, `tests/_shard_registry.py` (register the meta-test if needed) | none |
+| **WP02** | G2: sweep every `src/doctrine/missions/…` ref in CLAUDE.md → `packs/built-in/…`; grep-guard regression test. | `CLAUDE.md`, `tests/architectural/test_claudemd_template_source.py` | none |
+| **WP03** | G3: 6 coord/lane recovery entries in `docs/operations/` (doctor `--fix` audit first; cross-link `docs/guides/how-to/recovery/` + cite the root-cause note); register in `recovery-index.md` + `toc.yml`. | `docs/operations/<6 new>.md`, `docs/operations/recovery-index.md`, `docs/operations/toc.yml`, + the two generated yaml (serialized) | none |
+| **WP04** | G4 + G6: command discoverability (freshen, wrap-up) + env/tracker conventions in `docs/development/**`. | `docs/development/**`, + the two generated yaml (serialized) | **WP03** (serialize yaml regen) |
+| **WP05** | G5 + manifest: file the 3 quirk bugs (refs recorded); write `migration-manifest.md` mapping every G1–G6 gap-filler → repo home / issue / "retired". | `kitty-specs/self-documenting-repo-01M0287X/migration-manifest.md` | WP01–WP04 |
+
+Parallel: WP01, WP02, WP03. WP04 after WP03 (shared yaml). WP05 terminal.
