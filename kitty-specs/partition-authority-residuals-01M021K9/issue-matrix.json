@@ -1,7 +1,7 @@
 {
  "rows": {
   "#1193": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "Follow-up: #1193 (3.3.0 multi-repo workspace epic; sibling #1001)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -25,7 +25,7 @@
    "wp": null
   },
   "#2160": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "Follow-up: #2160 (parent epic; closes when all residual children land)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -97,7 +97,7 @@
    "wp": "WP04"
   },
   "#2704": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "Follow-up: #1193 (reparented out of #2720)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -121,7 +121,7 @@
    "wp": "WP09"
   },
   "#2720": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "Follow-up: #2720 (epic closes after Scope B WP07-WP11 land)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -145,7 +145,7 @@
    "wp": null
   },
   "#2766": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "Follow-up: #2698 (closed-unmerged PR superseded by WP04 in-mission fix)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -217,7 +217,7 @@
    "wp": "WP05"
   },
   "#2973": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "Follow-up: #2973 (reparented out of #2720; seed a new observability epic once event-schema decided)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -241,7 +241,7 @@
    "wp": "WP11"
   },
   "#3067": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "Follow-up: #3066 (stale PR diff adopted in-mission via WP11)",
    "fr": null,
    "nfr": null,
    "repo": null,
@@ -253,7 +253,7 @@
    "wp": null
   },
   "#3071": {
-   "evidence_ref": "<link or commit>",
+   "evidence_ref": "Follow-up: #3071 (blocked on #2160 write-authority unification; emit-port consolidated w/ #2966 part-3)",
    "fr": null,
    "nfr": null,
    "repo": null,
