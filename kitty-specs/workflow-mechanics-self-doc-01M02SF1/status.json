@@ -1,7 +1,7 @@
 {
-  "event_count": 5,
-  "last_event_id": "01M02W15NNC2XS8B4PXGWGHM86",
-  "materialized_at": "2026-08-15T14:08:22.709480+00:00",
+  "event_count": 6,
+  "last_event_id": "01M02W1709KVH718YD98B10JF9",
+  "materialized_at": "2026-08-15T14:08:24.073590+00:00",
   "mission_number": "",
   "mission_slug": "workflow-mechanics-self-doc-01M02SF1",
   "mission_type": "software-dev",
@@ -14,7 +14,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 5
+    "planned": 6
   },
   "work_packages": {
     "WP01": {
@@ -51,6 +51,13 @@
       "lane": "planned",
       "last_event_id": "01M02W15NNC2XS8B4PXGWGHM86",
       "last_transition_at": "2026-08-15T14:08:22.709480+00:00"
+    },
+    "WP06": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M02W1709KVH718YD98B10JF9",
+      "last_transition_at": "2026-08-15T14:08:24.073590+00:00"
     }
   }
 }
