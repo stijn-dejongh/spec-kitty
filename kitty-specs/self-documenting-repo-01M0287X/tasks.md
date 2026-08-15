@@ -78,5 +78,6 @@ Decomposition per the post-plan squad (implementer-ivan + paula-patterns). Paral
 
 ### Included Subtasks
 - [ ] T014 File the three behavior-quirk bugs (finalize-clobbers-matrix, review-cycle double-increment, status-daemon stale-commit); record issue refs.
-- [ ] T015 Author `migration-manifest.md` mapping each audited gap-filler → repo home / issue / "behavior retired" (e.g. shard-registration is retired by #2671 auto-cover).
-- [ ] T016 Add a manifest-completeness test over the enumerated G1–G6 set.
+- [ ] T015 Author `docs/development/agent-memory-migration-manifest.md` mapping each audited gap-filler → repo home / issue / "behavior retired" (e.g. shard-registration is retired by #2671 auto-cover).
+- [ ] T016 Add a manifest-completeness test (derives the set from the audit headers; asserts home paths exist).
+- [ ] T017 Regenerate rollups + `check_docs_freshness --ci` errors=0 (the manifest is an inventoried docs/development page).

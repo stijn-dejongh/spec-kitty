@@ -43,7 +43,7 @@ Publish six coord/lane split-brain recovery entries in the EXISTING `docs/operat
 
 ## Subtasks
 - **T007 Doctor audit.** Map each of the six classes (coord-off-main add/add; --start-branch coord divergence; stale-lane-seed; missing -coord worktree; cutover-flip-from-worktree; base-strand-after-rebase) to its `doctor` subcommand + `--fix` semantics (present/partial/absent). Verify names (`coordination`, `sparse-checkout --fix`, `workspaces`→`_workspace_husk_doctor.py`, `cutover`).
-- **T008 Author six entries** (new `docs/operations/*.md`, `divio_type: none`): lead with the shipped command; manual steps + operator-grant caveat only where no `--fix`. Cite `docs/plans/engineering-notes/coord-splitbrain-rootcause.md` for the 'why' (don't re-derive).
+- **T008 Author six entries** (new `docs/operations/*.md`, `type: none` (or omit `type`, matching existing operations runbooks — the inventory reads the `type` key)): lead with the shipped command; manual steps + operator-grant caveat only where no `--fix`. Cite `docs/plans/engineering-notes/coord-splitbrain-rootcause.md` for the 'why' (don't re-derive).
 - **T009 Register + reconcile IA.** Add each to `recovery-index.md` + `toc.yml`; add bidirectional cross-links with the second recovery home `docs/guides/how-to/recovery/` + a one-line rationale (operational-recovery vs agent-facing-crash/merge).
 - **T010 Regenerate rollups.** `inventory_lockfile.py --write`; `check_docs_freshness --ci` errors=0 (frontmatter, description 50-180, divio_type, registration).
 

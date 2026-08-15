@@ -87,7 +87,7 @@ An agent edits a mission-step prompt and must regenerate the agent command copie
 | ID | Title | Constraint | Category | Priority | Status |
 | --- | --- | --- | --- | --- | --- |
 | C-001 | Reuse the operations recovery home | Recovery content extends the existing `docs/operations/` home (registered in `recovery-index.md`) — NOT a new top-level `docs/runbooks/`, and NOT under `docs/development/guides`. (Operator's "don't overload development guides" is already met: operations/ is not under development/.) | Technical | High | Open |
-| C-002 | `divio_type` is a closed enum | A recovery entry is NOT a new Divio kind. It classifies as `divio_type: none` (matching existing operations runbooks) — do NOT add an enum member or change `_inventory.py`. | Technical | High | Open |
+| C-002 | `divio_type` is a closed enum | A recovery entry is NOT a new Divio kind. It classifies as `type: none` (or omit `type`, matching existing operations runbooks — the inventory reads the `type` key) (matching existing operations runbooks) — do NOT add an enum member or change `_inventory.py`. | Technical | High | Open |
 | C-003 | Do not duplicate #3447 | The regen automation entrypoint is owned by #3447; reference it, don't re-implement. | Technical | Medium | Open |
 | C-004 | Migration is repo-testable | Proof of migration is the committed manifest (FR-008) + filed issues; deleting private memory is out-of-repo operator hygiene. | Process | Medium | Open |
 | C-005 | Remedies derived, not transcribed | G1 remedy text is derived from the current gate logic and validated by tripping the gate — never transcribed from a private note (which may name a stale symbol). | Technical | High | Open |
@@ -95,7 +95,7 @@ An agent edits a mission-step prompt and must regenerate the agent command copie
 ### Key Entities
 
 - **Gate remedy** — the human-facing "how to satisfy me" text on an architectural/docs gate assertion.
-- **Recovery entry** — an operational recovery doc under `docs/operations/` (`divio_type: none`), registered in `recovery-index.md`.
+- **Recovery entry** — an operational recovery doc under `docs/operations/` (`type: none` (or omit `type`, matching existing operations runbooks — the inventory reads the `type` key)), registered in `recovery-index.md`.
 - **Migration manifest** — a committed file mapping each G1–G6 gap-filler to its repo home / tracking issue (`work/memory-gap-filler-analysis.md` is the source audit; the manifest is the in-repo, testable derivative).
 
 ## Success Criteria *(mandatory)*

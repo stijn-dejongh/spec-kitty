@@ -17,6 +17,7 @@ subtasks:
 - T014
 - T015
 - T016
+- T017
 phase: Phase 1
 history:
 - timestamp: '2026-08-15T08:10:00Z'
@@ -45,8 +46,9 @@ File the three behavior-quirk bugs (fixes DEFERRED), and write the committed man
 
 ## Subtasks
 - **T014 File bugs** (filing only, no fixing): finalize-tasks-clobbers-issue-matrix; move-task double-increments review-cycle counter; status-daemon auto-commits with previous message. Record issue refs.
-- **T015 Manifest.** `migration-manifest.md` maps each audited G1–G6 gap-filler (from `work/memory-gap-filler-analysis.md`) → its repo home (file/assertion), its tracking issue, OR an explicit 'behavior retired — delete memory, no repo home' (e.g. shard-registration via #2671). Deletion of the private memory is an operator checklist on #3448, out of mission scope (C-004).
-- **T016 Completeness test.** `tests/docs/test_migration_manifest_complete.py` (or an arch test) asserts every enumerated G1–G6 gap-filler appears in the manifest with a resolution.
+- **T015 Manifest.** `docs/development/agent-memory-migration-manifest.md` maps each audited G1–G6 gap-filler (from `work/memory-gap-filler-analysis.md`) → its repo home (file/assertion), its tracking issue, OR an explicit 'behavior retired — delete memory, no repo home' (e.g. shard-registration via #2671). Deletion of the private memory is an operator checklist on #3448, out of mission scope (C-004).
+- **T016 Completeness test (real resolution).** `tests/docs/test_migration_manifest_complete.py` derives the G1–G6 gap-filler set from the **section headers in `work/memory-gap-filler-analysis.md`** (not an inline literal that could be trimmed to match), asserts each appears in the manifest with a resolution, and — for `home:` resolutions — asserts the referenced path exists on disk. Structure-only presence is insufficient.
 
 ## Done
 SC-005: manifest complete; every gap-filler resolved (home / issue / retired).
+- **T017 Freshness (the manifest is an inventoried page).** `docs/development/*.md` is inventoried + DocFX-published, so after the manifest lands, regenerate both rollups (`inventory_lockfile.py --write`) and confirm `check_docs_freshness --ci` errors=0 (frontmatter, description 50–180 chars, registration). WP05 owns `docs/development/**` so it holds the authority; this runs last (after WP04's regen).
