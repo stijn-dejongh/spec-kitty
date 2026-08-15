@@ -26,7 +26,7 @@ with a resolved binding).
 **Project Type**: single project (CLI + internal packages)
 **Performance Goals**: no measurable change — one extra reduced slot carried on a read already performed; zero added reductions (C-002)
 **Constraints**: no new third-party dependency; no store/schema change; build only on the current event-log seam (C-001, not the deferred Beads backend #1168); reuse the single in-transaction reduction (C-002); compose with existing advisory independence machinery (C-003)
-**Scale/Scope**: ~5 source files (`status/wp_state.py`, `status/transition_context.py`, `status/models.py`, `status/reducer.py`, `coordination/status_transition.py`, `coordination/status_service.py`, `status/work_package_lifecycle.py`) + ~4 unpack call sites + a focused test set; single P1 bug fix with two high-ROI folds
+**Scale/Scope**: source files `status/wp_state.py`, `status/review_claim_predicate.py` (new), `status/work_package_lifecycle.py`, `status/aggregate.py`, `coordination/status_transition.py`, `coordination/status_service.py`, `coordination/coherence.py`, `merge/done_bookkeeping.py` (WP01) + `status/reducer.py` (WP02) + a focused test set. NOT touched: `status/transition_context.py`, `status/models.py` (no `current_role` on the guard contract — post-plan correction). Single P1 bug fix with two high-ROI folds.
 
 ## Charter Check
 

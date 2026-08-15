@@ -45,14 +45,25 @@ Given a reduced holder actor `{tool: "claude", model: "sonnet", profile: "review
 
 ## Wrong-model test set to re-point (complete enumeration — NFR-002)
 
-All four locations assert the old role-free distinct-actor block and MUST be re-pointed:
+**Reject coverage lives ONLY at the `:307` lifecycle predicate call.** The FSM/guard/parity
+surfaces carry no role and never invoke the predicate, so they assert **ALLOW** post-fix; do
+NOT add a role field to `GuardContext` or a role check to `_check_no_review_conflict` to make
+them reject (that reintroduces the bug).
 
-1. `tests/specify_cli/status/test_wp_state.py` — `for_review → in_review` conflict cases (seed `current_actor="reviewer-A"`).
-2. `tests/status/test_transitions.py` — the conflict / idempotent / no-prior-actor rows.
-3. `tests/status/fsm_parity_baseline.jsonl:1278` — flip reject→allow AND add a role-carrying collision row.
-4. `tests/unit/status/test_review_claim_transition.py` — the "rejects steal by second actor" cases.
+FOUR guard/FSM files → assert **ALLOW** post-fix (role seeding is inert on these surfaces):
 
-Plus: a grep/source guard asserting no test re-asserts a role-free distinct-actor block after the fix.
+1. `tests/specify_cli/status/test_wp_state.py` — `for_review → in_review` conflict cases (seed `current_actor="reviewer-A"`) → ALLOW.
+2. `tests/status/test_transitions.py` — the conflict / idempotent / no-prior-actor rows → ALLOW.
+3. `tests/status/fsm_parity_baseline.jsonl:1278` — **flip conflict→allow ONLY** (do NOT add a role row — unsatisfiable here).
+4. `tests/unit/status/test_review_claim_transition.py` — the "rejects steal by second actor" cases → ALLOW.
+
+FIFTH file (the genuine reject site — was omitted; MUST be handled):
+
+5. `tests/status/test_work_package_lifecycle.py::test_start_review_rejects_second_reviewer` (:532) + `test_start_review_noops_same_reviewer` — re-point to seed the holder's `role="reviewer"` via the annotation/binding delta so it still asserts `WorkPackageClaimConflict` at `:307`; add a binding-less (`role=None`) → ALLOW companion.
+
+Reject-branch coverage: the `:307` lifecycle test (above) + the T002 predicate row-4 unit test.
+Plus a grep/source guard: no test re-asserts a role-free distinct-actor block, and
+`_check_no_review_conflict` has no reject/`return False` branch.
 
 ## Architectural guard (NFR-001)
 

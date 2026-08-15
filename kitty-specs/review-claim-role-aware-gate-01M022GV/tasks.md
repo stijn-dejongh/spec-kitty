@@ -35,9 +35,10 @@ Completion is event-sourced: `spec-kitty agent tasks mark-status T001 --status d
   `for_review → in_review` guard is hard allow-only; the one genuine collision site
   (`in_review` re-claim) is role-aware via a pure predicate. Role rides only the
   `CurrentWpState` value object (no guard-contract plumbing).
-- **Priority**: P1 · **Requirements**: FR-001..FR-007, NFR-001, NFR-002, NFR-003, NFR-005(a,b), SC-001..SC-004
-- **Independent test**: red-first move-task repro — a distinct reviewer claims a WP whose
-  holder is the implementer → refused pre-fix, allowed post-fix.
+- **Priority**: P1 · **Requirements**: FR-001..FR-007, NFR-001, NFR-002, NFR-003, NFR-004, NFR-005(a,b), SC-001..SC-004
+- **Independent test**: red-first repro on the **`MissionStatus.transition` aggregate seam**
+  (NOT the `move-task` command, which never sets `current_actor`) — a distinct reviewer
+  claims a WP whose holder is the implementer → refused pre-fix, allowed post-fix.
 - **Subtasks**: T001, T002, T003, T004, T005, T006, T007
 - **Depends on**: none
 - **Prompt**: [tasks/WP01-role-aware-review-claim.md](./tasks/WP01-role-aware-review-claim.md) (~450 lines)

@@ -60,20 +60,27 @@ blank safety (FR-006). Independent of WP01 (different file) — runs in parallel
 ## Subtasks
 
 ### T008 — Identity-slot-scoped truthiness fold
-- Change the blank-clobber behavior so a blank/empty **identity** value never overwrites a
-  recorded one — scoped to the identity slots only: `actor`, `agent`, `agent_profile`,
-  `role`. Also cover the separate `agent` fold at `~:185`.
+- **Slot census (debbie/renata):** `_REPLACE_SLOTS` has **no `actor` member** — actor rides
+  the event, not the delta. The identity slots to guard are `agent`, `agent_profile`, `role`
+  (confirm against `_REPLACE_SLOTS` lines ~73-83; `model`/`provider`/`agent_profile_version`
+  are identity-ish but left under the existing `is not None` unless a test demands otherwise).
+- Change the blank-clobber behavior so a blank/empty value on the identity slots
+  (`agent`, `agent_profile`, `role`) never overwrites a recorded one — at the `:261-264`
+  fold loop AND the separate `agent` fold at `~:185` (PLANNED→CLAIMED claim exception).
 - **Do NOT** blanket-flip the whole `_REPLACE_SLOTS` loop: `assignee=""` must still clear
-  (it is a deliberate clear), and `shell_pid=0` must not be dropped. Split the loop, use a
-  per-slot predicate, or guard only the identity subset — whichever keeps non-identity
-  clearing semantics intact.
+  (deliberate), `shell_pid=0` must not be dropped. Split the loop / per-slot predicate /
+  guard only the identity subset — keep non-identity clearing semantics intact.
 - Keep the change minimal and idiomatic; `ruff`/`mypy` clean.
 
 ### T009 — #2960 write-side regression
-- `tests/status/test_reducer_blank_identity.py`: reduce an event/annotation stream where a
-  later annotation carries `agent: ""` (and/or blank `role`/`agent_profile`) after a
-  non-blank identity was recorded; assert the prior identity/role **survives** in the reduced
-  snapshot (not clobbered to blank).
+- `tests/status/test_reducer_blank_identity.py`: reduce a stream where a later annotation
+  carries `agent: ""` after a non-blank identity was recorded; assert the prior identity
+  **survives** (not clobbered to blank).
+- **Explicitly** assert a blank `role: ""` (and `agent_profile: ""`) does NOT clobber a
+  recorded `role="reviewer"` — this is exactly the slot WP01's best-effort collision reads, so
+  a blank clobber would silently degrade every collision to ALLOW.
+- Cover the `~:185` fold: a `CLAIMED` claim event carrying `agent: ""` after a recorded agent
+  must not blank the recorded agent.
 
 ### T010 [P] — Non-identity fold semantics preserved
 - Assert `assignee=""` still clears a previously-set assignee (non-identity slot semantics
