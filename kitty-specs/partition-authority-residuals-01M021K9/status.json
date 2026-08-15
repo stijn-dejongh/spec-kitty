@@ -220,12 +220,20 @@
         "reviewer-renata APPROVE (batch review); integrated on fix/"
       ],
       "provider": "__resolved_provider_absent__",
+      "review": null,
       "review_result": {
         "reference": "reviewer-renata APPROVE (batch review); integrated on fix/",
         "reviewer": "ATDD",
         "verdict": "approved"
       },
-      "role": "reviewer"
+      "role": "reviewer",
+      "shell_pid": 0,
+      "subtasks": {
+        "T001": "planned",
+        "T002": "planned",
+        "T003": "planned",
+        "T004": "planned"
+      }
     },
     "WP11": {
       "actor": "user",
