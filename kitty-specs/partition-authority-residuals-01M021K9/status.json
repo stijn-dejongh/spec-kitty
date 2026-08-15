@@ -1,7 +1,7 @@
 {
-  "event_count": 53,
-  "last_event_id": "01M02W0ZJ0FD2E8VQVTWFS0ZRM",
-  "materialized_at": "2026-08-15T14:08:16.448320+00:00",
+  "event_count": 54,
+  "last_event_id": "01M02W1K0KKS5JG7M6YACV2MW5",
+  "materialized_at": "2026-08-15T14:08:36.371222+00:00",
   "mission_number": "",
   "mission_slug": "partition-authority-residuals-01M021K9",
   "mission_type": "software-dev",
@@ -9,12 +9,12 @@
     "approved": 8,
     "blocked": 0,
     "canceled": 0,
-    "claimed": 0,
+    "claimed": 1,
     "done": 0,
     "for_review": 0,
     "in_progress": 2,
     "in_review": 0,
-    "planned": 1
+    "planned": 0
   },
   "work_packages": {
     "WP01": {
@@ -69,7 +69,7 @@
     },
     "WP03": {
       "actor": "claude",
-      "agent": null,
+      "agent": "claude",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 4,
@@ -117,14 +117,14 @@
       "role": "reviewer"
     },
     "WP05": {
-      "actor": "user",
+      "actor": "claude",
       "agent": null,
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 4,
-      "lane": "planned",
-      "last_event_id": "01M02TWR1DVTRQG5QQCRQK68WY",
-      "last_transition_at": "2026-08-15T13:48:29.101823+00:00",
+      "lane": "claimed",
+      "last_event_id": "01M02W1K0KKS5JG7M6YACV2MW5",
+      "last_transition_at": "2026-08-15T14:08:36.371222+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
         "reviewer-renata APPROVE (batch review); integrated on fix/"
@@ -136,7 +136,7 @@
         "reviewer": "ATDD",
         "verdict": "approved"
       },
-      "role": "reviewer",
+      "role": "implementer",
       "shell_pid": null,
       "shell_pid_created_at": null,
       "subtasks": {
