@@ -37,7 +37,7 @@
       "wp": "WP02"
     },
     "#3502": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP-lineage (parent_pack/accompanies_doctrine_pack) delivered by WP03, still planned; not in WP01 scope.",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -45,8 +45,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP03"
     },
     "#3503": {
       "evidence_ref": "<link or commit>",
