@@ -986,6 +986,12 @@
   owning_workstream: none
   current_target: true
   notes: null
+- path: docs/adr/3.x/2026-08-16-1-pack-metadata-manifest-unification.md
+  tag: current
+  divio_type: none
+  owning_workstream: none
+  current_target: true
+  notes: null
 - path: docs/adr/3.x/README.md
   tag: current
   divio_type: none
@@ -2048,6 +2054,12 @@
   owning_workstream: none
   current_target: true
   notes: null
+- path: docs/development/agent-memory-workflow-migration-manifest.md
+  tag: current
+  divio_type: reference
+  owning_workstream: none
+  current_target: true
+  notes: null
 - path: docs/development/contributing.md
   tag: current
   divio_type: how-to
@@ -2067,6 +2079,12 @@
   current_target: true
   notes: null
 - path: docs/development/getting-started/onboarding-run.md
+  tag: current
+  divio_type: how-to
+  owning_workstream: none
+  current_target: true
+  notes: null
+- path: docs/development/how-to/compress-mission-history.md
   tag: current
   divio_type: how-to
   owning_workstream: none
@@ -2997,6 +3015,12 @@
   current_target: true
   notes: null
 - path: docs/operations/sync-daemon-orphan-cleanup.md
+  tag: current
+  divio_type: none
+  owning_workstream: none
+  current_target: true
+  notes: null
+- path: docs/operations/sync-drain.md
   tag: current
   divio_type: none
   owning_workstream: none
@@ -4137,6 +4161,24 @@
   current_target: true
   notes: null
 - path: docs/plans/investigations/2026-04-14-windows-compatibility-hardening-mission-review.md
+  tag: current
+  divio_type: none
+  owning_workstream: none
+  current_target: true
+  notes: null
+- path: docs/plans/investigations/2026-08-consumer-repo-layout-portability.md
+  tag: current
+  divio_type: none
+  owning_workstream: none
+  current_target: true
+  notes: null
+- path: docs/plans/investigations/2026-08-pack-level-metadata-manifest.md
+  tag: current
+  divio_type: none
+  owning_workstream: none
+  current_target: true
+  notes: null
+- path: docs/plans/investigations/2026-08-retrospective-surface-disposition.md
   tag: current
   divio_type: none
   owning_workstream: none
