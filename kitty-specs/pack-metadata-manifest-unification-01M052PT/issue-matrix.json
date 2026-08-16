@@ -13,7 +13,7 @@
       "wp": null
     },
     "#3500": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP01 commit a7ae36a: unified pack-manifest schema + charter absorption + built-in generator (built-in manifest FRESH vs real corpus, 265 constituents/9 kinds) + derived counts. 35/35 new tests pass; ruff+mypy clean.",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -21,8 +21,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "fixed",
+      "wp": "WP01"
     },
     "#3501": {
       "evidence_ref": "<link or commit>",
