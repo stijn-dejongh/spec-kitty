@@ -1,7 +1,7 @@
 {
   "rows": {
     "#2467": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "Parent keystone: this mission delivers only the pack-manifest bullet; compound-packs slice explicitly out of scope (C-003). Remainder tracked on #2467.",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -9,7 +9,7 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
+      "verdict": "deferred-with-followup",
       "wp": null
     },
     "#3500": {
