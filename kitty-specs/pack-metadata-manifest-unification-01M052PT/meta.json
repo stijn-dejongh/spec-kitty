@@ -12,5 +12,7 @@
   "purpose_tldr": "Give every pack one verifiable manifest of its constituent parts and lineage, replacing two divergent formats.",
   "slug": "pack-metadata-manifest-unification-01M052PT",
   "target_branch": "feat/pack-metadata-manifest-unification",
-  "topology": "coord"
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-08-16T12:55:04.484584+00:00"
 }

@@ -1,6 +1,6 @@
 {
   "mission_slug": "pack-metadata-manifest-unification-01M052PT",
-  "snapshot_id": "c560c99e-9f7b-4503-be01-09860c96f7d3",
+  "snapshot_id": "b93467ce-330e-4e92-82f0-4ac490007249",
   "total_artifacts": 15,
   "required_artifacts": 4,
   "required_present": 4,
@@ -38,7 +38,7 @@
       "required_status": "optional",
       "is_present": true,
       "error_reason": null,
-      "indexed_at": "2026-08-16T13:24:47.548955+00:00",
+      "indexed_at": "2026-08-16T13:57:17.287844+00:00",
       "provenance": null
     },
     {
@@ -52,7 +52,7 @@
       "required_status": "optional",
       "is_present": true,
       "error_reason": null,
-      "indexed_at": "2026-08-16T13:24:47.548856+00:00",
+      "indexed_at": "2026-08-16T13:57:17.287754+00:00",
       "provenance": null
     },
     {
@@ -66,7 +66,7 @@
       "required_status": "optional",
       "is_present": true,
       "error_reason": null,
-      "indexed_at": "2026-08-16T13:24:47.555934+00:00",
+      "indexed_at": "2026-08-16T13:57:17.293776+00:00",
       "provenance": null
     },
     {
@@ -80,7 +80,7 @@
       "required_status": "optional",
       "is_present": true,
       "error_reason": null,
-      "indexed_at": "2026-08-16T13:24:47.549658+00:00",
+      "indexed_at": "2026-08-16T13:57:17.288493+00:00",
       "provenance": null
     },
     {
@@ -94,7 +94,7 @@
       "required_status": "optional",
       "is_present": true,
       "error_reason": null,
-      "indexed_at": "2026-08-16T13:24:47.549405+00:00",
+      "indexed_at": "2026-08-16T13:57:17.288257+00:00",
       "provenance": null
     },
     {
@@ -108,7 +108,7 @@
       "required_status": "optional",
       "is_present": true,
       "error_reason": null,
-      "indexed_at": "2026-08-16T13:24:47.549152+00:00",
+      "indexed_at": "2026-08-16T13:57:17.288014+00:00",
       "provenance": null
     },
     {
@@ -122,7 +122,7 @@
       "required_status": "optional",
       "is_present": true,
       "error_reason": null,
-      "indexed_at": "2026-08-16T13:24:47.555820+00:00",
+      "indexed_at": "2026-08-16T13:57:17.293672+00:00",
       "provenance": null
     },
     {
@@ -136,7 +136,7 @@
       "required_status": "optional",
       "is_present": true,
       "error_reason": null,
-      "indexed_at": "2026-08-16T13:24:47.558144+00:00",
+      "indexed_at": "2026-08-16T13:57:17.296032+00:00",
       "provenance": null
     },
     {
@@ -150,7 +150,7 @@
       "required_status": "optional",
       "is_present": true,
       "error_reason": null,
-      "indexed_at": "2026-08-16T13:24:47.552341+00:00",
+      "indexed_at": "2026-08-16T13:57:17.291045+00:00",
       "provenance": null
     },
     {
@@ -164,7 +164,7 @@
       "required_status": "optional",
       "is_present": true,
       "error_reason": null,
-      "indexed_at": "2026-08-16T13:24:47.560614+00:00",
+      "indexed_at": "2026-08-16T13:57:17.298357+00:00",
       "provenance": null
     },
     {
@@ -178,7 +178,7 @@
       "required_status": "required",
       "is_present": true,
       "error_reason": null,
-      "indexed_at": "2026-08-16T13:24:47.549033+00:00",
+      "indexed_at": "2026-08-16T13:57:17.287912+00:00",
       "provenance": null
     },
     {
@@ -192,7 +192,7 @@
       "required_status": "optional",
       "is_present": true,
       "error_reason": null,
-      "indexed_at": "2026-08-16T13:24:47.548707+00:00",
+      "indexed_at": "2026-08-16T13:57:17.287617+00:00",
       "provenance": null
     },
     {
@@ -206,7 +206,7 @@
       "required_status": "required",
       "is_present": true,
       "error_reason": null,
-      "indexed_at": "2026-08-16T13:24:47.549301+00:00",
+      "indexed_at": "2026-08-16T13:57:17.288156+00:00",
       "provenance": null
     },
     {
@@ -220,7 +220,7 @@
       "required_status": "required",
       "is_present": true,
       "error_reason": null,
-      "indexed_at": "2026-08-16T13:24:47.549488+00:00",
+      "indexed_at": "2026-08-16T13:57:17.288333+00:00",
       "provenance": null
     },
     {
@@ -234,9 +234,9 @@
       "required_status": "required",
       "is_present": true,
       "error_reason": null,
-      "indexed_at": "2026-08-16T13:24:47.549220+00:00",
+      "indexed_at": "2026-08-16T13:57:17.288076+00:00",
       "provenance": null
     }
   ],
-  "computed_at": "2026-08-16 13:24:47.636015+00:00"
+  "computed_at": "2026-08-16 13:57:17.349608+00:00"
 }
