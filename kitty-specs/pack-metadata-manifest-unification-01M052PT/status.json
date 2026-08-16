@@ -1,7 +1,7 @@
 {
-  "event_count": 14,
-  "last_event_id": "01M05EAG285FX1J0TPG16ZFHCF",
-  "materialized_at": "2026-08-16T14:06:31.496822+00:00",
+  "event_count": 16,
+  "last_event_id": "01M05F0GZW4Y458X9M5N1NKEMS",
+  "materialized_at": "2026-08-16T14:18:33.323432+00:00",
   "mission_number": "",
   "mission_slug": "pack-metadata-manifest-unification-01M052PT",
   "mission_type": "software-dev",
@@ -12,9 +12,9 @@
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 0,
+    "in_progress": 1,
     "in_review": 0,
-    "planned": 2
+    "planned": 1
   },
   "work_packages": {
     "WP01": {
@@ -61,7 +61,8 @@
       "last_transition_at": "2026-08-16T14:06:31.496822+00:00",
       "model": "__resolved_model_absent__",
       "notes": [
-        "WP02 lane-b 13f75d6: pack_descriptor + DRG pack_id; 22+21 tests green, ruff/mypy clean. --force: lane-hygiene kitty-specs noise is inherited planning artifacts, not WP02 code (coord/lane friction #3454/#3466)"
+        "WP02 lane-b 13f75d6: pack_descriptor + DRG pack_id; 22+21 tests green, ruff/mypy clean. --force: lane-hygiene kitty-specs noise is inherited planning artifacts, not WP02 code (coord/lane friction #3454/#3466)",
+        "Review passed: pack_id C-004 immutability + idempotent deterministic backfill independently verified; DRG boundary tests green (21/21); ruff/mypy clean on src; type:ignore[call-arg] adjudicated as narrow/justified test-only suppression. Note: staged-but-uncommitted kitty-specs/ lane-hygiene cleanup left in worktree due to commit permission denial -- known cross-mission planning-artifact noise inherited via rebase, not WP02 code."
       ],
       "provider": "__resolved_provider_absent__",
       "review_result": {
@@ -79,11 +80,19 @@
       }
     },
     "WP03": {
-      "actor": "finalize-tasks",
+      "actor": "claude",
+      "agent": "claude",
+      "agent_profile": "__resolved_profile_absent__",
+      "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M055DTETBJH1EP8B0EN1REV9",
-      "last_transition_at": "2026-08-16T11:31:03.258246+00:00"
+      "lane": "in_progress",
+      "last_event_id": "01M05F0GZW4Y458X9M5N1NKEMS",
+      "last_transition_at": "2026-08-16T14:18:33.323432+00:00",
+      "model": "__resolved_model_absent__",
+      "provider": "__resolved_provider_absent__",
+      "role": "implementer",
+      "shell_pid": 1143887,
+      "shell_pid_created_at": "1786889910.86"
     },
     "WP04": {
       "actor": "finalize-tasks",
