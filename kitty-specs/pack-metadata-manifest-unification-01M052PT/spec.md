@@ -79,7 +79,7 @@ Human-authored identity/lineage lives in files an author may edit (`pack.yaml` +
 
 | ID | Title | Requirement | Category | Priority | Status |
 |----|-------|-------------|----------|----------|--------|
-| NFR-001 | Delegated lineage resolution | Lineage order is produced exclusively by `org_extends.resolve_extends_order`; **0** new resolver/traversal implementations added (verified by the C-005 no-parallel-resolver architectural test). | Correctness | High | Open |
+| NFR-001 | Delegated lineage resolution | Lineage order is produced exclusively by `org_extends.resolve_extends_order`; **0** new resolver/traversal implementations added (verified by the no-parallel-resolver architectural test). | Correctness | High | Open |
 | NFR-002 | Zero counts-consumer regressions | 100% of existing `artifact_counts` consumers return identical values via the derived view; **0** failing existing count-dependent tests. | Compatibility | High | Open |
 | NFR-003 | Deterministic, idempotent generation | Regenerating a pack's manifest for an unchanged pack yields a byte-identical `constituents[]` and `manifest_hash` (re-run diff = **0 bytes**). | Reliability | High | Open |
 | NFR-004 | No-author-edit generated file | The generated `pack-manifest.yaml` carries **0** hand-authored fields; regeneration leaves authored `pack.yaml`/`pack.md` byte-unchanged (verified by the pack-layout contract test). | Integrity | High | Open |
@@ -89,7 +89,7 @@ Human-authored identity/lineage lives in files an author may edit (`pack.yaml` +
 | ID | Title | Constraint | Category | Priority | Status |
 |----|-------|------------|----------|----------|--------|
 | C-001 | Enumerated is canonical | `constituents[]` is the canonical inventory; `artifact_counts` must not remain stored state (derive only). | Technical | High | Open |
-| C-002 | Lineage stores edges only | `parent_pack`/`accompanies_doctrine_pack` store edges only; resolution delegates to `org_extends` — no parallel resolver (C-005 ratchet). | Technical | High | Open |
+| C-002 | Lineage stores edges only | `parent_pack`/`accompanies_doctrine_pack` store edges only; resolution delegates to `org_extends` — no parallel resolver (enforced by the no-parallel-resolver arch ratchet; distinct from spec-local C-005). | Technical | High | Open |
 | C-003 | Scope boundary | Manifest-unification slice only; #2467's compound-packs slice is out of scope for this mission. | Business | High | Open |
 | C-004 | `pack_id` immutability | Once minted, a `pack_id` is immutable (mirrors `mission_id` immutability). | Technical | Medium | Open |
 | C-005 | Authored/generated separation | Authored lineage/identity live only in `pack.yaml`; the generated manifest honors the pack-layout no-author-edit contract (`pack-layout.md:104`). | Technical | High | Open |

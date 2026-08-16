@@ -3,121 +3,130 @@
 **Branch**: `feat/pack-metadata-manifest-unification` | **Date**: 2026-08-16 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `kitty-specs/pack-metadata-manifest-unification-01M052PT/spec.md`
 
+> **Revised 2026-08-16 after the post-plan adversarial squad** (paula-patterns / reviewer-renata / planner-priti). Folds: lineage key-space/authority decision (PP-M1), full charter field-set + `provenance_path` home (PP-M2), the synthesis-manifest reader surface (PP-M3), the `pack_version` writer-leak (PP-M4), determinism vs. timestamped hash (RR-MF1), the per-kind-vs-dossier counts reconciliation (RR-MF2 / PT-S3), the DRG path correction (RR-MF3 / PT-S2), the C-002/NFR-001-vs-C-005 naming split (RR-MF4), and the WP `blocked_by` correction + IC-06 precondition (PT-M1/M2).
+
 ## Summary
 
-Unify pack metadata onto **one** canonical manifest schema for every pack type (built-in, org, fetched, charter), replacing the two divergent formats that ship today — per-kind `artifact_counts` for org packs (`src/specify_cli/doctrine/snapshot.py:157-212`) and enumerated `artifacts[]` for charter bundles (`src/charter/synthesizer/manifest.py:46-112`). The enumerated shape is promoted to the canonical `constituents[]`; identity/lineage become authored data in a `pack.yaml`/`pack.md` pair, distinct from the generated `pack-manifest.yaml`; lineage resolution delegates to the existing `org_extends` resolver. Ratified by ADR `docs/adr/3.x/2026-08-16-1-pack-metadata-manifest-unification.md`.
+Unify pack metadata onto **one** canonical manifest schema for every pack type (built-in, org, fetched, charter), replacing the two divergent formats that ship today — per-kind `artifact_counts` for org packs (`src/specify_cli/doctrine/snapshot.py:157-212`) and enumerated `artifacts[]` for charter bundles (`src/charter/synthesizer/manifest.py`). The enumerated shape is promoted to the canonical `constituents[]`; identity/lineage become authored data in a `pack.yaml`/`pack.md` pair, distinct from the generated `pack-manifest.yaml`; lineage resolution reuses the existing `org_extends` resolver via an identity-keyed edge map. Ratified by ADR `docs/adr/3.x/2026-08-16-1-pack-metadata-manifest-unification.md`.
 
 ## Technical Context
 
 **Language/Version**: Python 3.11+
-**Primary Dependencies**: internal only — `specify_cli.doctrine` (snapshot/pack config), `charter.synthesizer.manifest`, `charter.org_extends`, `doctrine.resolver`; `ruamel.yaml` for round-trip YAML; ULID minting reused from the mission-identity model.
-**Storage**: YAML files on disk — authored `pack.yaml`/`pack.md` + generated `pack-manifest.yaml` at each pack root; `packs/built-in/` for the reference pack.
-**Testing**: `pytest` (unit for schema/derivation/hashing; architectural test for the C-005 no-parallel-resolver ratchet; contract test for the pack-layout no-author-edit rule).
-**Target Platform**: Linux/macOS/Windows CLI (DIR-001 cross-platform).
+**Primary Dependencies**: internal — `specify_cli.doctrine` (snapshot/pack_assembler), **`doctrine.drg`** (org_pack_config), `charter.synthesizer.manifest`, `charter.org_extends`; `ruamel.yaml`; ULID minting reused from the mission-identity model.
+**Storage**: YAML — authored `pack.yaml`/`pack.md` + generated `pack-manifest.yaml` at each pack root; `packs/built-in/` for the reference pack.
+**Testing**: `pytest` — unit under `tests/doctrine/`; the no-parallel-resolver ratchet under `tests/architectural/`; the no-author-edit rule under `tests/architectural/` (no `tests/contracts/` dir exists).
+**Target Platform**: Linux/macOS/Windows CLI (DIR-001). **`content_hash` normalizes line endings (LF)** so hashes are cross-platform-stable (trust substrate, #2539).
 **Project Type**: single (CLI/library).
-**Performance Goals**: manifest generation is build/upgrade-time, not hot-path; determinism > speed.
-**Constraints**: deterministic/idempotent generation (0-byte re-run diff); 0 new lineage resolvers; 0 counts-consumer regressions; generated file never hand-authored.
-**Scale/Scope**: 1 built-in pack (~14 kinds), N org/fetched packs, 1 charter bundle profile; ~2–3 core surfaces + a long non-blocking tail (out of scope, deferred to #2721).
+**Performance Goals**: build/upgrade-time generation; determinism > speed.
+**Constraints**: deterministic/idempotent generation (0-byte re-run diff, provenance-timestamp excluded from the hashed/diffed content); 0 new lineage resolvers; 0 pack-counts-consumer regressions; generated file never hand-authored; **no second lineage authority**.
+**Scale/Scope**: 1 built-in pack (~14 kinds), N org/fetched packs, 1 charter bundle profile; the ~7-heuristic secondary tail is out of scope (deferred to #2721).
 
 ## Charter Check
 
-Gates in scope (software-dev-default, DIR-001…013):
-- **DIR-001 cross-platform** — YAML paths POSIX-normalized; no OS-specific manifest paths.
-- **DIR-010/011 identifier safety** — `pack_id` is ULID (ASCII); `kind`/`id` in constituents are canonical URNs.
-- **Single-canonical-authority** (charter principle) — this mission *is* that principle applied to pack metadata; the C-005 ratchet enforces the "no parallel resolver" half.
-- **DIR-018 doctrine versioning** — `schema_version` on the manifest; a version bump gates any future shape change.
-
-No charter violation; the mission removes a canonical-authority violation (two manifests) rather than introducing one.
+- **DIR-001 cross-platform** — POSIX-normalized paths; **LF-normalized `content_hash`**.
+- **DIR-010/011 identifier safety** — `pack_id` is ULID; constituent `kind`/`id` are canonical URNs.
+- **Single-canonical-authority** — the mission removes a two-manifest violation; the **no-parallel-resolver** half is enforced by the arch ratchet (tracked as **C-002 / NFR-001** — *not* the spec's local C-005, which is authored/generated separation).
+- **DIR-018 doctrine versioning** — `schema_version` gates future shape changes.
+- **Base dependency (hard):** the ratifying ADR `2026-08-16-1` and the `pack-layout.md` contract resolve only once PR #3480 (and the org-layer mission) are on base. **Implementation MUST NOT start until the ADR + pack-layout contract are on the mission's base** — otherwise the C-002/authored-generated contracts are unverifiable.
 
 ## Project Structure
 
 ### Documentation (this mission)
 ```
 kitty-specs/pack-metadata-manifest-unification-01M052PT/
-  spec.md            # done
-  plan.md            # this file
-  data-model.md      # manifest + descriptor + constituent + lineage-edge entities
-  research/          # ADR corroboration is the research (docs/adr/3.x/2026-08-16-1)
-  tasks/             # authored at /spec-kitty.tasks
+  spec.md · plan.md · data-model.md · research/ · tasks/
 ```
 
-### Source Code (repository root)
+### Source Code (repository root) — corrected package boundaries
 ```
 src/specify_cli/doctrine/
-  snapshot.py            # retire artifact_counts as stored; write enumerated constituents
-  pack_manifest.py       # NEW: the unified schema model + read/derive-counts view
-  pack_descriptor.py     # NEW: authored pack.yaml model (pack_id, pack_version, lineage edges)
+  snapshot.py            # write_pack_manifest: stop persisting artifact_counts (:176/:195) AND pack_version (:172); write constituents
+  pack_manifest.py       # NEW: unified schema model + reader + derive-per-kind-counts view
   builtin_manifest.py    # NEW: generator emitting pack-manifest.yaml from packs/built-in/*.graph.yaml
-  org_pack_config.py     # key by pack_id (not just name)
+  pack_descriptor.py     # NEW: authored pack.yaml model (pack_id, pack_version, lineage edges)
+  pack_assembler.py       # reads artifact_counts (:388) + pack_version (:390) → derived view / authored descriptor
+src/doctrine/drg/
+  org_pack_config.py      # CORRECT home of OrgPackConfig (name at :166; extends lineage); add pack_id key. DRG boundary — confirm arch-boundary tests tolerate it.
 src/charter/
-  synthesizer/manifest.py  # becomes the charter profile instance of the unified schema
-  org_extends.py           # unchanged authority; parent_pack resolution delegates here
+  synthesizer/manifest.py # becomes the charter profile instance; compute_manifest_hash (:205) / finalize_manifest (:224) reused
+  org_extends.py          # unchanged authority; parent_pack resolution feeds an identity-keyed edge map here
 packs/built-in/
-  pack.yaml                # NEW authored descriptor (pack_id, version)
-  pack-manifest.yaml       # NEW generated manifest (constituents from the *.graph.yaml nodes)
+  pack.yaml               # NEW authored descriptor
+  pack-manifest.yaml      # NEW generated manifest
 tests/
-  doctrine/test_pack_manifest_schema.py, test_builtin_manifest.py, test_counts_derivation.py
-  architectural/test_pack_lineage_no_parallel_resolver.py   # C-005 ratchet
-  contracts/test_pack_layout_no_author_edit.py
+  doctrine/test_pack_manifest_schema.py, test_builtin_manifest.py, test_counts_derivation.py, test_charter_profile_absorption.py
+  architectural/test_pack_lineage_no_parallel_resolver.py   # C-002/NFR-001 ratchet (AST import/callgraph scan for a new traversal — see IC-05)
+  architectural/test_pack_manifest_no_author_edit.py        # NFR-004 (pack-layout no-author-edit)
 ```
+
+Charter-manifest reader surface that IC-01 must keep green (PP-M3): `doctrine_synthesizer/{apply,provenance,__init__}.py`, `charter_runtime/freshness/computer.py`, `charter_runtime/preflight/runner.py`, `charter_runtime/lint/findings.py`, `cli/commands/charter_bundle.py`, `doctrine/versioning.py`, migrations `m_3_2_0rc35_charter_bundle_v2.py` / `m_3_2_0rc35_charter_manifest_defaults_repair.py`.
 
 ## Complexity Tracking
 
 | Concern | Why it exists | Why simpler is insufficient |
 |---|---|---|
-| A separate `pack.yaml` (authored) vs `pack-manifest.yaml` (generated) | The pack-layout contract forbids authors editing the generated file (`pack-layout.md:104`) | A single fenced-block file requires the generator to preserve authored regions — fragile; two files make the boundary structural. |
-| A `charter:` profile block instead of a separate charter schema | Charter bundle carries 3 extra fields | A forked charter schema re-creates the two-format split the mission exists to remove. |
+| Two files (authored `pack.yaml` vs generated `pack-manifest.yaml`) | Pack-layout forbids authoring the generated file (`pack-layout.md:104`) | A fenced-block single file needs the generator to preserve authored regions — fragile. |
+| `charter:` profile carrying the **full** SynthesisManifest field-set | The charter manifest carries load-bearing fields (`built_in_only`, `run_id`, `adapter_*`, `provenance_path`) read across freshness/preflight/lint | A 3-field profile drops a working contract; a forked charter schema re-creates the split the mission removes. |
+| Identity-keyed edge-map adapter for `org_extends` | `org_extends` is generic over `str` keys but is fed **name→name** today | Building a `pack_id`-keyed map is data-only; a second resolver would violate C-002. |
 
 ## Implementation Concern Map
 
-### IC-01 — Unified manifest schema + enumerated constituents  *(WP-core → #3500; FR-001, FR-004, FR-009; C-001)*
-- **Purpose**: define the single `pack-manifest` schema (`schema_version`, `generated_by/at`, `manifest_hash`, `constituents:[{kind,id,path,content_hash}]`, optional `charter:` profile) and its reader.
-- **Affected surfaces**: NEW `doctrine/pack_manifest.py`; adapt `charter/synthesizer/manifest.py` to emit this schema as the charter instance.
+### IC-01 — Unified schema + enumerated constituents + charter profile absorption  *(WP-core → #3500; FR-001, FR-004, FR-009; C-001)*
+- **Purpose**: define the single `pack-manifest` schema and reader; absorb `synthesis-manifest.yaml` as the charter profile **without dropping its contract**.
+- **Charter field-set (PP-M2):** `CharterProfile` carries the **full** SynthesisManifest field-set — `mission_id`, `bundle_content_hash`, `synthesizer_version`, `run_id`, `adapter_id`, `adapter_version`, `created_at`, `schema_version`, **`built_in_only`** (load-bearing). Per-constituent **`provenance_path`** gets a home on `Constituent` (optional; required for charter constituents). Nothing is dropped.
+- **Reader surface (PP-M3):** every charter-manifest reader listed above stays green — add an NFR mirroring NFR-002 for the charter side (0 charter-reader regressions), pinned by `test_charter_profile_absorption.py`.
+- **Hashing (RR-SF2):** reuse `compute_manifest_hash` (`manifest.py:205`) via `finalize_manifest` (`:224`) — the single write-time finalizer — not a second hasher; the cited `:107` is the field declaration.
+- **Determinism (RR-MF1):** the hash and the byte-diff assertion cover `constituents` + `schema_version` + authored-independent fields **only**; `generated_at`/`generated_by` are **excluded from both** (or content-derived) so a re-run is byte-identical.
 - **Sequencing/depends-on**: none (foundation).
-- **Risks**: charter profile must remain optional so non-charter packs validate; reuse `manifest_hash` logic from `manifest.py:107` rather than a second hasher.
 
-### IC-02 — Built-in pack manifest generator  *(WP-core → #3500; FR-002; SC-002)*
-- **Purpose**: emit `pack-manifest.yaml` for `packs/built-in/` from the per-kind `*.graph.yaml` `nodes:`, wired into the build/upgrade path.
-- **Affected surfaces**: NEW `doctrine/builtin_manifest.py`; hook into the build/upgrade step.
-- **Sequencing/depends-on**: IC-01.
-- **Risks**: determinism — stable ordering of constituents (sort by `kind` then `id`) so re-runs are byte-identical (NFR-003).
+### IC-02 — Built-in pack manifest generator  *(WP-core → #3500; FR-002; SC-002; NFR-003)*
+- **Purpose**: emit `pack-manifest.yaml` for `packs/built-in/` from the per-kind `*.graph.yaml` `nodes:`, wired into build/upgrade.
+- **Determinism**: constituents sorted by `(kind, id)`; `content_hash` over **LF-normalized** artifact bytes (cross-platform, DIR-001); provenance timestamp excluded from the hashed/diffed set (per IC-01).
+- **Sequencing/depends-on**: IC-01. **Writer boundary (PT-M2):** emits **only** `pack-manifest.yaml`; the authored `pack.yaml` path is reserved and never written here (this precondition is a WP-core acceptance criterion, pulled forward from IC-06).
 
-### IC-03 — Retire stored `artifact_counts`; derived-count view  *(WP-core → #3500; FR-003; NFR-002; Q1 = compat view)*
-- **Purpose**: stop persisting `artifact_counts` (`snapshot.py:195`); expose counts derived from `constituents[]` for existing callers.
-- **Affected surfaces**: `snapshot.py`; a `counts_from(constituents)` helper; existing count readers keep their interface via the derived view.
-- **Sequencing/depends-on**: IC-01.
-- **Risks**: **Q1 boundary** — this mission ships the derived view + keeps stored counts as migration input only; full reader migration is a fast-follow. Enumerate every current `artifact_counts` reader and pin them green (NFR-002).
+### IC-03 — Retire stored pack `artifact_counts`; per-kind derived view  *(WP-core → #3500, own acceptance boundary; FR-003; NFR-002; Q1)*
+- **Purpose**: stop persisting the **per-kind** pack `artifact_counts` (`snapshot.py:176/195`, shape `{kind: count}`); expose counts derived by counting `constituents[]` per kind.
+- **Scope reconciliation (RR-MF2 / PT-S3):** the pack manifest's `artifact_counts` is **per-kind** and IS derivable from `constituents[]`. The `dossier` counts `{total, required, required_present, …}` (`dossier/api.py:237`, read by the dashboard JS) are a **different domain** fed by `snapshot.total_artifacts` — **explicitly out of scope**; no frontend/Playwright work.
+- **Real pack-counts readers to pin green (NFR-002):** `pack_assembler.py:388-396`, `charter/_profile_health_render.py:111`, `_doctrine_collect.py:427`. Enumerate + test each.
+- **Transitional precedence (PP-S1):** derive-from-`constituents` when present; else fall back to stored counts (migration input) — so a pack whose generator has not yet run does not read 0.
+- **Sequencing/depends-on**: IC-01. Distinct acceptance boundary (own commit + reader-pin) within WP-core so the P1 manifest (IC-01/IC-02) can land independently of this compat work.
 
 ### IC-04 — Stable `pack_id` identity  *(WP-identity → #3501; FR-005; C-004)*
-- **Purpose**: mint a stable, immutable `pack_id` (ULID, mirroring the mission-identity model); key lineage/trust on it, not config `name` (`org_pack_config.py:166`).
-- **Affected surfaces**: NEW `doctrine/pack_descriptor.py`; `org_pack_config.py`.
-- **Sequencing/depends-on**: IC-01. **Q2 boundary** — built-in pack first; org/fetched backfill as coverage extends.
-- **Risks**: immutability — mint once, never regenerate; backfill must be idempotent.
+- **Purpose**: mint a stable, immutable ULID `pack_id` (mirroring the mission-identity model); make it the **sole runtime identity**, `name` a human handle.
+- **Path (RR-MF3 / PT-S2):** the surface is **`src/doctrine/drg/org_pack_config.py`** (`OrgPackConfig.name` at `:166`) — the DRG layer, governed by the shared-package-boundary arch tests; confirm they tolerate the change.
+- **Two-key discipline (PP-S2):** adopt the Mission-Identity contract — `pack_id` sole identity, `name` handle, resolver disambiguates with **no silent fallback**. State the interim contract for not-yet-backfilled packs.
+- **Sequencing/depends-on**: IC-01. **Q2:** built-in first; org/fetched backfill as coverage extends.
 
-### IC-05 — Lineage edges, delegated resolution  *(WP-lineage → #3502; FR-006, FR-007; NFR-001; C-002)*
-- **Purpose**: store `parent_pack` + `accompanies_doctrine_pack` edges on the authored descriptor; resolve order **only** via `org_extends.resolve_extends_order`; `accompanies_doctrine_pack` gives the pack-level charter→doctrine binding missing today (only per-activation `doctrine_pack_id`, `activations.py:241`).
-- **Affected surfaces**: `pack_descriptor.py`; a read path that calls `org_extends`; NEW architectural test asserting no second resolver.
+### IC-05 — Lineage edges + delegated resolution, authority resolved  *(WP-lineage → #3502; FR-006, FR-007; NFR-001; C-002)*
+- **Lineage-authority decision (PP-M1):** `org_extends.resolve_extends_order` is generic over `str` keys but is fed a **name→name** map from the live `extends:` field today (`org_charter.py:517,525`; `extends` = base pack **name**). Decision for this mission:
+  - **`extends:` (name-keyed) remains the single live lineage authority.** `parent_pack` is populated on the descriptor but resolution feeds `org_extends` an edge map built from **the pack's resolvable identity** — via a data-only adapter that maps `pack_id → resolvable key`; **no second walker**.
+  - For a pack whose `pack_id` is not yet backfilled (Q2), an unresolvable `parent_pack` edge **fails closed** (surfaces an error, like `org_extends`' `ExtendsBaseNotFoundError`) — it is **never a silent no-op / inert field**.
+  - Full migration to `parent_pack` as the **sole** edge source (retiring `extends:`) is **deferred until `pack_id` backfill is universal** — out of scope here, recorded so the two-key period is intentional, not accidental.
+- **`accompanies_doctrine_pack` (FR-007):** the pack-level charter→doctrine binding (replaces reliance on per-activation `doctrine_pack_id`, `activations.py:241`); fail-closed on unknown target.
+- **Ratchet (RR-SF1):** `test_pack_lineage_no_parallel_resolver.py` detects a new traversal by an **AST import/call scan** asserting lineage resolution routes only through `org_extends.resolve_extends_order` (falsifiable, not vacuous).
 - **Sequencing/depends-on**: IC-04.
-- **Risks**: the C-005 ratchet — any new traversal fails the arch test; reuse the existing cycle detection.
 
-### IC-06 — Authored/generated two-file split  *(WP-split → #3503; FR-008; NFR-004; C-005)*
-- **Purpose**: authored `pack.yaml`(+`pack.md`) holds identity/lineage; generated `pack-manifest.yaml` holds constituents/hashes; regeneration never touches the authored files.
-- **Affected surfaces**: `pack_descriptor.py` (authored read); the generators (IC-02/IC-03 write only the generated file); contract test for no-author-edit.
-- **Sequencing/depends-on**: IC-01 (schema), IC-04 (descriptor fields).
-- **Risks**: ensure every writer targets only `pack-manifest.yaml`; a byte-unchanged assertion on `pack.yaml`/`pack.md` across regeneration (NFR-004).
+### IC-06 — Authored/generated split, writer boundary closed  *(WP-split → #3503; FR-008; NFR-004; C-005)*
+- **Purpose**: authored `pack.yaml`(+`pack.md`) holds identity/lineage; generated `pack-manifest.yaml` holds constituents/hashes; regeneration never touches authored files.
+- **`pack_version` writer-leak (PP-M4):** `write_pack_manifest` writes `pack_version` into the **generated** file today (`snapshot.py:172`) and consumers read it there (`pack_assembler.py:390`, `doctor.py:1098`). This WP moves `pack_version` to the **authored** descriptor, **stops the generator emitting it**, and switches those consumers to read the authored descriptor. Genuine generated provenance (`source_url`/`source_type`/`fetched_at`/`generated_*`) stays on the generated file.
+- **Kind vocabulary (PP-S4):** the charter instance's `kind` literal (`Literal["directive","tactic","styleguide"]`) widens to the shared `ArtifactKind` (~14) so the built-in pack's kinds pass the shared model.
+- **Sequencing/depends-on**: IC-01 (schema), IC-04 (descriptor fields). The **naming/placement precondition** already landed in WP-core (IC-02); this WP adds the authored **content** + the no-author-edit **contract test**.
 
-### Concern dependency graph
+### Concern → WP mapping & dependency graph
 ```
-IC-01 (schema) ── IC-02 (built-in writer)
-              ├── IC-03 (counts derive)
-              └── IC-04 (pack_id) ── IC-05 (lineage)
-                                 └── IC-06 (two-file split)
+IC-01 (schema+charter absorption) ─┬─ IC-02 (built-in writer; reserves pack.yaml path)
+                                   └─ IC-03 (per-kind counts derive; own acceptance boundary)
+IC-01 + IC-04 (pack_id) ── IC-05 (lineage)      IC-04 ── IC-06 (two-file split)
 ```
-Maps to WPs: **WP-core = IC-01+IC-02+IC-03 (#3500)**; WP-identity = IC-04 (#3501); WP-lineage = IC-05 (#3502); WP-split = IC-06 (#3503). #3501/#3502/#3503 `blocked_by` #3500.
+- **WP-core #3500** = IC-01 + IC-02 + IC-03 (IC-03 a distinct acceptance boundary/commit).
+- **WP-identity #3501** = IC-04.  **WP-lineage #3502** = IC-05.  **WP-split #3503** = IC-06.
+- **`blocked_by` (corrected, PT-M1):** #3501←#3500; **#3502←#3500,#3501**; **#3503←#3500,#3501**. After #3501 approves, **#3502 and #3503 run in parallel** (PT-S4).
 
 ## Risks & Mitigations
 
-- **Counts-reader migration deeper than expected (Q1).** Mitigation: ship the derived view first; enumerate readers in IC-03 and pin them green; defer full reader migration if the set is large (operator-confirmed at this plan).
-- **A second lineage walker sneaks in (C-005).** Mitigation: architectural test in IC-05 fails on any new traversal; resolution routes through `org_extends` only.
-- **Non-determinism in generation.** Mitigation: stable sort + a 0-byte re-run diff test (NFR-003).
-- **ADR/docs not yet on base.** The ratifying ADR lives on PR #3480; if it merges after this mission's base is cut, the reference is by-path and resolves on merge. Non-blocking.
+- **Two lineage authorities (`extends:` name vs `parent_pack` id).** Mitigated by IC-05's decision: `extends:` stays live authority; `parent_pack` fail-closed until backfill; sole-source migration deferred — no silent inert field.
+- **Charter absorption drops a working field.** Mitigated by IC-01's full field-set + the charter-reader pin-green NFR.
+- **`pack_version`/counts two-authority window.** Mitigated by IC-06 (generator stops emitting authored fields) + IC-03 transitional precedence.
+- **Determinism break from provenance timestamp.** Mitigated by excluding `generated_at/by` from the hashed/diffed content + `(kind,id)` sort + LF-normalized `content_hash`.
+- **A second lineage walker.** Mitigated by the AST-scan arch ratchet (IC-05).
+- **ADR/contract not on base.** Implementation gated on the ADR + `pack-layout.md` being on base (Charter Check). Do **not** rebase the planning branch after finalize-tasks to acquire them (coord-divergence footgun); the ADR resolves on merge.
