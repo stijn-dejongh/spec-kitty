@@ -12,6 +12,18 @@
       "verdict": "deferred-with-followup",
       "wp": null
     },
+    "#2539": {
+      "evidence_ref": "Trust/verified-distribution epic: out of scope; WP01 schema (constituents + content_hash over LF-normalized bytes) is the substrate only. Signing/verification deferred to #2539.",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "deferred-with-followup",
+      "wp": null
+    },
     "#3500": {
       "evidence_ref": "WP01 commit a7ae36a: unified pack-manifest schema + charter absorption + built-in generator (built-in manifest FRESH vs real corpus, 265 constituents/9 kinds) + derived counts. 35/35 new tests pass; ruff+mypy clean.",
       "fr": null,
