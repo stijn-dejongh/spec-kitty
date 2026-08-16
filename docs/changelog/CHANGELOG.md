@@ -19,6 +19,31 @@ _The 3.2.6rc2 candidate cycle is open (rc1 shipped 2026-08-12). Entries land her
 
 ### ✨ Added
 
+- **An agent working the mission lifecycle — hitting a merge-gate rejection,
+  an issue-matrix verdict, or an undrained SaaS sync — previously had to
+  already know the mechanics, because they lived only in a maintainer's
+  private notes (mission `self-documenting-repo` Bucket 2; `#3464`, follows
+  `#3448`).** A second audit of that private memory routed the durable
+  workflow / CI / git / status-&-sync mechanics into the repo's canonical
+  homes: `docs/development/how-to/review-gates.md` now carries the
+  (event-sourced) review-cycle + merge-gate mechanics and the issue-matrix
+  discovery surface; a new `docs/operations/sync-drain.md` documents the real
+  3-gate drain (`saas_disabled` → `missing_auth` → `missing_team`) and the
+  `sync doctor` false-green trap; `coverage-signals.md` and
+  `known-friction-points.md` gain the critical-path-move coverage remedy and
+  the CI-label skip guard; `pr-landing.md` gains true-base/stale-stack
+  diagnostics and a new `compress-mission-history.md` how-to; the
+  architecture docs correct a **live stale-doc regression** (`AGENTS.md`
+  claimed a `lanes.json`-absent `-WP##` fallback the resolver actually raises
+  `MissingLanesError` for); three review-discipline heuristics enrich the
+  doctrine tactics, and the `gh` "Closes #A,#B links only #A" trap lands in
+  the tracker toolguide. A committed
+  `agent-memory-workflow-migration-manifest.md` (with a completeness test)
+  maps all 49 audited memories to a repo home, an already-home citation, a
+  learned-fact note, or "keep-private". Dogfooding payoff: verifying against
+  current code caught several *stale* memories — the review-gate frontmatter
+  mechanism was retired for an event-sourced one, and the drain's second gate
+  was mis-remembered as `sync migrate` (retired).
 - **An agent tripping a gate, hunting the right doctrine template source, or
   recovering a split-brain mission previously had to already know the
   answer — that knowledge lived only in a maintainer's private notes, not in
@@ -44,6 +69,34 @@ _The 3.2.6rc2 candidate cycle is open (rc1 shipped 2026-08-12). Entries land her
   repo, it does not touch anyone's private memory file. Three behaviour
   quirks found along the way were filed, not fixed (`#3450`, `#3451`,
   `#3452`).
+- **CI now builds each shippable module as its own reusable workflow, and a new
+  `spec-kitty regen` lets contributors fix generated-asset drift themselves
+  (mission `modular-per-package-ci-01M025GV`; `#3447`, closes `#3379`).** The
+  monorepo already ships separately-packaged modules (`src/kernel`,
+  `src/doctrine`, the `packs/built-in` data pack), but CI ran them as
+  path-filtered jobs inside one monolithic `ci-quality` workflow, and the
+  generated agent-command baselines + codex/vibe skill snapshots drifted
+  silently when their source prompt templates changed — a contributor's
+  one-line edit tripped a dozen parity gates a maintainer had to regenerate by
+  hand (`#3379`). Now `kernel`, `doctrine` (fast + integration legs), and
+  `packs` each build in an `on: workflow_call` module workflow invoked as a
+  `uses:` job inside `ci-quality`, so a module has its own build boundary while
+  its coverage still aggregates into the single run the Sonar reporter reads
+  (reusable workflows, not `workflow_run` — coverage never fragments across
+  runs). The architectural CI-model guards learned to resolve `uses:`
+  delegation through one seam so a reusable-workflow caller is modeled as if it
+  ran inline. `spec-kitty regen [--check]` regenerates the committed generated
+  fixtures from source, byte-identical to a `PYTEST_UPDATE_SNAPSHOTS` run, from
+  a single shared version pin; `--check` is the fork-safe freshness gate (it
+  fails with the exact command + diff, since a fork PR's read-only token cannot
+  commit back). A trust-tiered `regen-assets` workflow runs check-only on every
+  PR, auto-commits on same-repo pushes, and offers a maintainer-label
+  privileged path that ships disabled pending a security review. The 12-agent ×
+  N byte grid that caused the churn is retired for structural invariants plus
+  one canonical byte snapshot per render branch (markdown + TOML), so a
+  source-prompt edit now regenerates at most one canonical fixture instead of
+  ~14.
+
 - **An org- or project-tier doctrine pack can now contribute a mission type
   that works end to end (mission `up-mission-type-seam-01KZY1JB`; `#3424`,
   closes `#3397`).** Before, a mission type shipped by an org or project pack
@@ -139,6 +192,35 @@ _The 3.2.6rc2 candidate cycle is open (rc1 shipped 2026-08-12). Entries land her
   (R1b), so `Refs #3121` rather than `Closes`.
 
 ### 🐛 Fixed
+
+- **Machines that never ran the layout migration silently captured zero sync
+  events while reporting success — now they capture for real (`#3425`;
+  `#3497`).** Before, an un-migrated machine defaulted to a legacy capture
+  layout where live event/body writes were refused deep in the stack and
+  swallowed — a **silent zero-capture** that never surfaced to the operator. A
+  `#3293` regression compounded this by also refusing authenticated hosts
+  entirely. Now a fresh root resolves to project-only capture *before* any
+  legacy persist; a legacy-with-data root auto-migrates through the canonical
+  `migrate_journal`/`project_store_migration` engines under a deterministic,
+  crash-safe migration id (re-entry never bricks the root); the live emit path
+  completes its cutover via a resolve-before-unit-of-work seam so both emitter
+  swallow sites are observable instead of silent (never-raises contract kept
+  intact); and credential parsing is restored as a pure auth signal (never a
+  physical-store selector), so an already-authenticated host stops being
+  refused.
+
+- **A reviewer running a different agent profile than the implementer can now
+  claim a completed work package for review — the false "WP already claimed for
+  review by `<implementer>`" refusal is gone (`#3455`).** Before, claiming a WP
+  for review (`for_review → in_review`) compared the claim holder's identity,
+  which at `for_review` is structurally the *implementer* — so any cross-profile
+  reviewer (e.g. `reviewer-renata` reviewing `python-pedro`'s work) was rejected
+  as a self-review collision, and the block surfaced on the status aggregate
+  seam rather than the `move-task` command. Now the `for_review → in_review` edge
+  is allow-only, and a genuine reviewer-vs-reviewer collision is decided by a
+  single pure predicate at the `in_review` re-claim site (a real second reviewer
+  is still blocked, and the message names the holder). Role is read from the
+  reduced status slot, never by splitting the compact actor string (`#2861`).
 
 - **Coord/primary partition-authority residuals: out-of-loop callers now resolve
   the correct partition surface, so coordination-topology missions stop deadlocking
