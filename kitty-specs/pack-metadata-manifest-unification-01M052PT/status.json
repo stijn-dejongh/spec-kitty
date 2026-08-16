@@ -1,7 +1,7 @@
 {
-  "event_count": 12,
-  "last_event_id": "01M05DWT70KZ9T8XHNKV7NS5DV",
-  "materialized_at": "2026-08-16T13:59:03.136146+00:00",
+  "event_count": 13,
+  "last_event_id": "01M05DY33KWNHVQNWV63VZ7B7R",
+  "materialized_at": "2026-08-16T13:59:45.011032+00:00",
   "mission_number": "",
   "mission_slug": "pack-metadata-manifest-unification-01M052PT",
   "mission_type": "software-dev",
@@ -11,9 +11,9 @@
     "canceled": 0,
     "claimed": 0,
     "done": 0,
-    "for_review": 1,
+    "for_review": 0,
     "in_progress": 0,
-    "in_review": 0,
+    "in_review": 1,
     "planned": 2
   },
   "work_packages": {
@@ -51,19 +51,22 @@
       }
     },
     "WP02": {
-      "actor": "claude",
-      "agent": "claude",
+      "actor": "reviewer-renata",
+      "agent": "reviewer-renata",
       "agent_profile": "__resolved_profile_absent__",
       "agent_profile_version": "__resolved_profile_version_absent__",
       "force_count": 1,
-      "lane": "for_review",
-      "last_event_id": "01M05DWT70KZ9T8XHNKV7NS5DV",
-      "last_transition_at": "2026-08-16T13:59:03.136146+00:00",
+      "lane": "in_review",
+      "last_event_id": "01M05DY33KWNHVQNWV63VZ7B7R",
+      "last_transition_at": "2026-08-16T13:59:45.011032+00:00",
       "model": "__resolved_model_absent__",
+      "notes": [
+        "WP02 lane-b 13f75d6: pack_descriptor + DRG pack_id; 22+21 tests green, ruff/mypy clean. --force: lane-hygiene kitty-specs noise is inherited planning artifacts, not WP02 code (coord/lane friction #3454/#3466)"
+      ],
       "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 906764,
-      "shell_pid_created_at": "1786887728.89",
+      "role": "reviewer",
+      "shell_pid": 1130284,
+      "shell_pid_created_at": "1786888782.85",
       "subtasks": {
         "T008": "done",
         "T009": "done",
