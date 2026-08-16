@@ -7,7 +7,7 @@ Entities and fields for the unified pack-metadata design (ADR 2026-08-16-1), rev
 | Field | Type | Notes |
 |---|---|---|
 | `pack_id` | ULID (26 chars) | Stable, **immutable**, **sole runtime identity** (mirrors `mission_id`). |
-| `pack_version` | semver string | Author-managed. **Relocated here from the generated file** (was `snapshot.py:172`); the generator no longer emits it; `pack_assembler.py:390` / `doctor.py:1098` read it here. |
+| `pack_version` | semver string | Author-managed **for the built-in pack** (authored here). **Scoped, not wholesale** (post-tasks paula-MF-3): fetched/org packs keep `pack_version` as generated provenance on `snapshot.py`'s output (it is a required key of `_has_recognisable_pack_manifest`). Consumers (`_doctrine_collect.py:81` `_resolve_pack_version`, `pack_assembler.py:390`) read **authored-when-present, else generated**. |
 | `parent_pack` | ULID \| null | Edge only → parent `pack_id`. |
 | `accompanies_doctrine_pack` | ULID \| null | Charter-pack → doctrine-pack pack-level binding (was per-activation `doctrine_pack_id`). |
 | `name` | string | Human handle only. **No longer the identity key**; resolver disambiguates with no silent fallback. |

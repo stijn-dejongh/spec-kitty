@@ -40,7 +40,7 @@ kitty-specs/pack-metadata-manifest-unification-01M052PT/
 ### Source Code (repository root) — corrected package boundaries
 ```
 src/specify_cli/doctrine/
-  snapshot.py            # write_pack_manifest: stop persisting artifact_counts (:176/:195) AND pack_version (:172); write constituents
+  snapshot.py            # write_pack_manifest: retire per-kind artifact_counts (:176/:195) → derived view; KEEP pack_version (:172) as fetched/org provenance (built-in reads authored); write constituents
   pack_manifest.py       # NEW: unified schema model + reader + derive-per-kind-counts view
   builtin_manifest.py    # NEW: generator emitting pack-manifest.yaml from packs/built-in/*.graph.yaml
   pack_descriptor.py     # NEW: authored pack.yaml model (pack_id, pack_version, lineage edges)
@@ -108,7 +108,7 @@ Charter-manifest reader surface that IC-01 must keep green (PP-M3): `doctrine_sy
 
 ### IC-06 — Authored/generated split, writer boundary closed  *(WP-split → #3503; FR-008; NFR-004; C-005)*
 - **Purpose**: authored `pack.yaml`(+`pack.md`) holds identity/lineage; generated `pack-manifest.yaml` holds constituents/hashes; regeneration never touches authored files.
-- **`pack_version` writer-leak (PP-M4):** `write_pack_manifest` writes `pack_version` into the **generated** file today (`snapshot.py:172`) and consumers read it there (`pack_assembler.py:390`, `doctor.py:1098`). This WP moves `pack_version` to the **authored** descriptor, **stops the generator emitting it**, and switches those consumers to read the authored descriptor. Genuine generated provenance (`source_url`/`source_type`/`fetched_at`/`generated_*`) stays on the generated file.
+- **`pack_version` — scoped, NOT wholesale (PP-M4 + post-tasks paula-MF-3):** `pack_version` is genuine fetch-time provenance for fetched/org packs (`snapshot.py:172`, `pack_assembler.py:357`) and a **required** key of `_has_recognisable_pack_manifest` (`pack_assembler.py:377`) — stripping it wholesale breaks pack recognition. So only the **built-in** pack's `pack_version` becomes authored (`pack.yaml`); its generator (`builtin_manifest.py`) never emits it. Fetched/org packs **keep** generated `pack_version`. Consumers use **derive-else-fallback** (authored when present, else generated). The real resolver is `_doctrine_collect.py:81` (`_resolve_pack_version`, call site `:423`) — `doctor.py:1098` is a re-export shell. Genuine generated provenance (`source_url`/`source_type`/`fetched_at`) stays on the generated file.
 - **Kind vocabulary (PP-S4):** the charter instance's `kind` literal (`Literal["directive","tactic","styleguide"]`) widens to the shared `ArtifactKind` (~14) so the built-in pack's kinds pass the shared model.
 - **Sequencing/depends-on**: IC-01 (schema), IC-04 (descriptor fields). The **naming/placement precondition** already landed in WP-core (IC-02); this WP adds the authored **content** + the no-author-edit **contract test**.
 
