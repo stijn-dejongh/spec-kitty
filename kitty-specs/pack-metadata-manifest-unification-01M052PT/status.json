@@ -1,7 +1,7 @@
 {
-  "event_count": 3,
-  "last_event_id": "01M055DTETBJH1EP8B0EN1REV9",
-  "materialized_at": "2026-08-16T11:31:03.258246+00:00",
+  "event_count": 4,
+  "last_event_id": "01M055DV8YXP2XTD2Z4GEBDN3C",
+  "materialized_at": "2026-08-16T11:31:04.094769+00:00",
   "mission_number": "",
   "mission_slug": "pack-metadata-manifest-unification-01M052PT",
   "mission_type": "software-dev",
@@ -14,7 +14,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 3
+    "planned": 4
   },
   "work_packages": {
     "WP01": {
@@ -37,6 +37,13 @@
       "lane": "planned",
       "last_event_id": "01M055DTETBJH1EP8B0EN1REV9",
       "last_transition_at": "2026-08-16T11:31:03.258246+00:00"
+    },
+    "WP04": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M055DV8YXP2XTD2Z4GEBDN3C",
+      "last_transition_at": "2026-08-16T11:31:04.094769+00:00"
     }
   }
 }
