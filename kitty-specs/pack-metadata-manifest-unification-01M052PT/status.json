@@ -1,83 +1,20 @@
 {
-  "event_count": 11,
-  "last_event_id": "01M05CXY4ZH82Z9JP5AENZSNTS",
-  "materialized_at": "2026-08-16T13:42:11.343068+00:00",
+  "event_count": 0,
+  "last_event_id": null,
+  "materialized_at": "",
   "mission_number": "",
-  "mission_slug": "pack-metadata-manifest-unification-01M052PT",
+  "mission_slug": "",
   "mission_type": "software-dev",
   "summary": {
-    "approved": 1,
+    "approved": 0,
     "blocked": 0,
     "canceled": 0,
     "claimed": 0,
     "done": 0,
     "for_review": 0,
-    "in_progress": 1,
+    "in_progress": 0,
     "in_review": 0,
-    "planned": 2
+    "planned": 0
   },
-  "work_packages": {
-    "WP01": {
-      "actor": "user",
-      "agent": "reviewer-renata",
-      "agent_profile": "__resolved_profile_absent__",
-      "agent_profile_version": "__resolved_profile_version_absent__",
-      "force_count": 0,
-      "lane": "approved",
-      "last_event_id": "01M05CJA3VV4YQ36GQW24NG8KX",
-      "last_transition_at": "2026-08-16T13:35:50.395323+00:00",
-      "model": "__resolved_model_absent__",
-      "notes": [
-        "WP01 on lane-a (a7ae36a): schema+charter absorption+builtin writer+counts; 35 tests + regressions green; ruff/mypy clean",
-        "APPROVE (reviewer-renata). DoD met: unified PackManifest schema + single consolidated hasher (no 2nd impl); charter absorption carries FULL field-set incl built_in_only + provenance_path; built-in manifest generated & FRESH vs real corpus (265 constituents/9 kinds, SC-002); determinism+tamper tests pass; per-kind counts derive via resolve_counts. Gates: 35/35 new tests green, ruff+mypy clean, complexity<=15, no noqa/type:ignore in new files, terminology clean. 4 decisions ADJUDICATED ACCEPT: (1) in-memory absorption bridge (FR-004 correct under NFR-005 extra=forbid readers); (2) artifact_counts retained-but-routed via resolve_counts (spec Q1 compat scope; pack_assembler.py:388 requires the key); (3) action/mission_type excluded (not ArtifactKind, fail-closed+tested); (4) pack-root-relative path (correct for portability). Out-of-map doctrine.py edit justified+minimal. SHOULD-FIX non-blocking: Constituent.path docstring says 'repo-relative' but built-in emits pack-root-relative while charter emits repo-relative — reconcile in WP02 campsite."
-      ],
-      "provider": "__resolved_provider_absent__",
-      "review_result": {
-        "reference": "APPROVE (reviewer-renata). DoD met: unified PackManifest schema + single consolidated hasher (no 2nd impl); charter absorption carries FULL field-set incl built_in_only + provenance_path; built-in manifest generated & FRESH vs real corpus (265 constituents/9 kinds, SC-002); determinism+tamper tests pass; per-kind counts derive via resolve_counts. Gates: 35/35 new tests green, ruff+mypy clean, complexity<=15, no noqa/type:ignore in new files, terminology clean. 4 decisions ADJUDICATED ACCEPT: (1) in-memory absorption bridge (FR-004 correct under NFR-005 extra=forbid readers); (2) artifact_counts retained-but-routed via resolve_counts (spec Q1 compat scope; pack_assembler.py:388 requires the key); (3) action/mission_type excluded (not ArtifactKind, fail-closed+tested); (4) pack-root-relative path (correct for portability). Out-of-map doctrine.py edit justified+minimal. SHOULD-FIX non-blocking: Constituent.path docstring says 'repo-relative' but built-in emits pack-root-relative while charter emits repo-relative — reconcile in WP02 campsite.",
-        "reviewer": "Stijn Dejongh",
-        "verdict": "approved"
-      },
-      "role": "reviewer",
-      "shell_pid": 874823,
-      "shell_pid_created_at": "1786886886.88",
-      "subtasks": {
-        "T001": "done",
-        "T002": "done",
-        "T003": "done",
-        "T004": "done",
-        "T005": "done",
-        "T006": "done",
-        "T007": "done"
-      }
-    },
-    "WP02": {
-      "actor": "claude",
-      "agent": "claude",
-      "agent_profile": "__resolved_profile_absent__",
-      "agent_profile_version": "__resolved_profile_version_absent__",
-      "force_count": 0,
-      "lane": "in_progress",
-      "last_event_id": "01M05CXY4ZH82Z9JP5AENZSNTS",
-      "last_transition_at": "2026-08-16T13:42:11.343068+00:00",
-      "model": "__resolved_model_absent__",
-      "provider": "__resolved_provider_absent__",
-      "role": "implementer",
-      "shell_pid": 906764,
-      "shell_pid_created_at": "1786887728.89"
-    },
-    "WP03": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M055DTETBJH1EP8B0EN1REV9",
-      "last_transition_at": "2026-08-16T11:31:03.258246+00:00"
-    },
-    "WP04": {
-      "actor": "finalize-tasks",
-      "force_count": 0,
-      "lane": "planned",
-      "last_event_id": "01M055DV8YXP2XTD2Z4GEBDN3C",
-      "last_transition_at": "2026-08-16T11:31:04.094769+00:00"
-    }
-  }
+  "work_packages": {}
 }

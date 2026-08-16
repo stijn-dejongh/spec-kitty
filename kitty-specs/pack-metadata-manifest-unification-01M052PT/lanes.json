@@ -75,14 +75,15 @@
       "write_scope": [
         "packs/built-in/pack.md",
         "packs/built-in/pack.yaml",
-        "src/specify_cli/cli/commands/doctor.py",
+        "src/specify_cli/cli/commands/_doctrine_collect.py",
         "src/specify_cli/doctrine/pack_assembler.py",
         "tests/architectural/test_pack_manifest_no_author_edit.py",
         "tests/doctrine/test_pack_version_relocation.py"
       ],
       "predicted_surfaces": [
         "api",
-        "app-shell"
+        "app-shell",
+        "legacy-cleanup"
       ],
       "depends_on_lanes": [
         "lane-a",
@@ -91,8 +92,8 @@
       "parallel_group": 2
     }
   ],
-  "computed_at": "2026-08-16T11:31:04.897901+00:00",
+  "computed_at": "2026-08-16T11:40:43.548337+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [],
-  "planning_commit_sha": "7fbb8103d60f4eb931152c388be30441ac4b47d3"
+  "planning_commit_sha": "fd76ebb2e6b24e345c7c24393fd4285787587f95"
 }

@@ -47,11 +47,11 @@ Design: [plan.md](../plan.md) IC-05 (lineage-authority decision) + [data-model.m
 
 ## Subtasks
 
-### T011 — id→key adapter into `org_extends`
-Create `src/specify_cli/doctrine/pack_lineage.py`: a **data-only** adapter that builds a `{pack_id: parent_pack}` edge map, maps it to the resolver's key-space, and calls `org_extends.resolve_extends_order`. **No new traversal/walker** — resolution order comes only from `org_extends` (reuse its cycle detection). Test: `test_pack_lineage.py` (a parent chain resolves in the same order the name-keyed path would).
+### T011 — id→name adapter into `org_extends`
+Create `src/specify_cli/doctrine/pack_lineage.py`: a **data-only** adapter that builds a `{pack_id: parent_pack}` edge map and resolves each `pack_id` **to its pack `name`** — the live resolvable key `org_extends.resolve_extends_order` is fed today (name→name, `org_charter.py:517,525`) — then calls the resolver. Do **not** invent a second identity map (paula SF-2). **No new traversal/walker** — order comes only from `org_extends` (reuse its cycle detection). Test `test_pack_lineage.py` builds **in-memory `PackDescriptor` fixtures** (from WP02's model) and must **NOT** read `packs/built-in/pack.yaml` (that file is WP04-owned; reading it would serialize lane-c behind lane-d and break the WP03∥WP04 parallelism — priti SF-1). Assert a fixture parent chain resolves in the same order the name-keyed path would.
 
-### T012 — Fail-closed edges [P]
-An unresolvable `parent_pack` (e.g. a pre-backfill pack with no `pack_id`) and an unknown `accompanies_doctrine_pack` target **fail closed** — surface a structured error (mirror `org_extends`' `ExtendsBaseNotFoundError`), never a silent no-op / inert field. Test: unresolvable edge raises; does not silently return an empty order.
+### T012 — Fail-closed edges + positive read-back [P]
+An unresolvable `parent_pack` (e.g. a pre-backfill pack with no `pack_id`) and an unknown `accompanies_doctrine_pack` target **fail closed** — surface a structured error (mirror `org_extends`' `ExtendsBaseNotFoundError`), never a silent no-op / inert field. Tests (in-memory fixtures): (a) unresolvable edge raises; does not silently return an empty order; (b) **FR-007 positive read-back** — a *set* `accompanies_doctrine_pack` resolves to its doctrine pack at the pack level (US2 scenario 3), not just the error path.
 
 ### T013 — No-parallel-resolver arch ratchet [P]
 Create `tests/architectural/test_pack_lineage_no_parallel_resolver.py`: an **AST import/call scan** asserting that lineage resolution routes only through `org_extends.resolve_extends_order` and that no new order-producing traversal is introduced in the pack modules. Must be **falsifiable** — inject a fake second walker in a fixture and confirm the test fails.

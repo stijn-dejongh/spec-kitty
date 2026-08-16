@@ -83,6 +83,7 @@ Human-authored identity/lineage lives in files an author may edit (`pack.yaml` +
 | NFR-002 | Zero counts-consumer regressions | 100% of existing `artifact_counts` consumers return identical values via the derived view; **0** failing existing count-dependent tests. | Compatibility | High | Open |
 | NFR-003 | Deterministic, idempotent generation | Regenerating a pack's manifest for an unchanged pack yields a byte-identical `constituents[]` and `manifest_hash` (re-run diff = **0 bytes**). | Reliability | High | Open |
 | NFR-004 | No-author-edit generated file | The generated `pack-manifest.yaml` carries **0** hand-authored fields; regeneration leaves authored `pack.yaml`/`pack.md` byte-unchanged (verified by the pack-layout contract test). | Integrity | High | Open |
+| NFR-005 | Zero charter-reader regressions | Absorbing `synthesis-manifest.yaml` into the `charter:` profile causes **0** regressions across its ~8 readers (freshness/preflight/lint/apply/provenance/versioning/charter_bundle + the two `m_3_2_0rc35_charter_*` migrations); `built_in_only` + `provenance_path` survive absorption. | Compatibility | High | Open |
 
 ### Constraints
 
