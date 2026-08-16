@@ -25,7 +25,7 @@
       "wp": "WP01"
     },
     "#3501": {
-      "evidence_ref": "<link or commit>",
+      "evidence_ref": "WP-identity (pack_id) delivered by WP02, still planned; not in WP01 scope.",
       "fr": null,
       "nfr": null,
       "repo": null,
@@ -33,8 +33,8 @@
       "scope": null,
       "source_file": "spec.md",
       "title": "<fill at WP-implementation time>",
-      "verdict": "unknown",
-      "wp": null
+      "verdict": "in-mission",
+      "wp": "WP02"
     },
     "#3502": {
       "evidence_ref": "<link or commit>",
