@@ -115,5 +115,17 @@ Human-authored identity/lineage lives in files an author may edit (`pack.yaml` +
 
 - **Q1 (counts-migration depth):** this mission ships the **derive-and-expose compat view** for `artifact_counts` (counts computed from `constituents[]`); full migration of every stored-counts *reader* to read constituents directly is a fast-follow. Operator may elect full in-mission reader migration at plan time.
 - **Q2 (`pack_id` backfill breadth):** `pack_id` is minted for the **built-in pack first**; org/fetched pack backfill lands as identity coverage extends (WP-identity). Operator may elect full backfill at plan time.
-- **ADR/doc dependency:** the ratifying ADR `2026-08-16-1` and the disposition doc currently live on PR #3480 (not yet on the mission's base); this spec references them by path and they land when #3480 merges.
-- **Trust adjacency:** the constituent + content-hash manifest is the substrate for the pack-trust/verified-distribution epic #2539; signing/verification is out of scope here but the schema is designed to carry it.
+- **ADR/doc dependency:** the ratifying ADR `2026-08-16-1` and the disposition doc currently live on PR 3480 (not yet on the mission's base); this spec references them by path and they land when that PR merges.
+- **Trust adjacency:** the constituent + content-hash manifest is the substrate for the pack-trust/verified-distribution epic 2539; signing/verification is out of scope here but the schema is designed to carry it.
+
+## Issue Traceability
+
+This mission is the implementation vehicle for the **pack-manifest bullet of keystone #2467** (design bullet 1: "Design a pack-manifest schema at the pack-root tier"). It delivers, and its issue-matrix tracks:
+
+- **#2467** — parent keystone; this mission delivers its pack-manifest bullet (the compound-packs bullet remains a separate slice, out of scope here per C-003).
+- **#3500** — WP-core (unify schema + built-in manifest writer).
+- **#3501** — WP-identity (`pack_id`).
+- **#3502** — WP-lineage (`parent_pack` + `accompanies_doctrine_pack`).
+- **#3503** — WP-split (authored vs generated files).
+
+Context only (not delivered here): epic 2539 (trust/verified distribution — the schema carries its substrate), PR 3480 (the ratifying ADR + disposition docs).
