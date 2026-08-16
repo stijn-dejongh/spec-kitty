@@ -24,6 +24,18 @@
       "verdict": "deferred-with-followup",
       "wp": null
     },
+    "#3480": {
+      "evidence_ref": "Base dependency: ratifying ADR 2026-08-16-1 + pack-layout.md contract landed via PR #3480 merge onto the mission base (analysis-report.md). Dependency satisfied, not delivered by this mission.",
+      "fr": null,
+      "nfr": null,
+      "repo": null,
+      "sc": null,
+      "scope": null,
+      "source_file": null,
+      "title": null,
+      "verdict": "verified-already-fixed",
+      "wp": null
+    },
     "#3500": {
       "evidence_ref": "WP01 commit a7ae36a: unified pack-manifest schema + charter absorption + built-in generator (built-in manifest FRESH vs real corpus, 265 constituents/9 kinds) + derived counts. 35/35 new tests pass; ruff+mypy clean.",
       "fr": null,
