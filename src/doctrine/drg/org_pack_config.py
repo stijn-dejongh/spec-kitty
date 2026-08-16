@@ -17,12 +17,14 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 from ruamel.yaml import YAML
+from ulid import ULID
 
 __all__ = [
     "OrgPackConfig",
     "OrgPackEnvVarUnsetError",
     "OrgPackSubdirEscapeError",
     "PackRegistry",
+    "ensure_pack_identity",
     "load_pack_registry",
     "resolve_org_roots",
     "resolve_relative_path_within_root",
@@ -33,6 +35,11 @@ SourceType = Literal["git", "https", "api"]
 
 _CONFIG_REL_PATH = Path(".kittify") / "config.yaml"
 _LEGACY_DEFAULT_PACK_NAME = "default"
+
+# Stable ULID for the built-in pack (idempotent, deterministic).
+# Generated via ULID.from_timestamp() with a fixed timestamp and entropy seed.
+# This ensures the built-in pack always gets the same identity across runs.
+_BUILTIN_PACK_ID = "01ARWG13C000000000000000FG"
 
 
 class OrgPackSubdirEscapeError(ValueError):
@@ -159,11 +166,28 @@ def _yaml() -> YAML:
 
 
 class OrgPackConfig(BaseModel):
-    """Single named org doctrine pack entry."""
+    """Single named org doctrine pack entry.
+
+    Identity
+    --------
+    The ``pack_id`` (ULID) is the sole runtime identity for the pack. The ``name``
+    is a human-readable handle only (no longer used for lookups). The ``pack_id``
+    is immutable once minted and acts as the canonical key for all pack resolution
+    and lineage tracking.
+
+    The ``pack_id`` is optional during the backfill period (built-in first; Q2 org
+    backfill). When loading a pack without a ``pack_id``, the resolver will raise
+    a structured error rather than silently falling back to name-based lookup.
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=False)
 
     name: str
+    pack_id: str | None = Field(
+        default=None,
+        description="Stable ULID (26 chars); sole runtime identity. Immutable once minted. "
+        "Optional during backfill; resolver requires it.",
+    )
     local_path: Path
     subdir: str | None = None
     source_type: SourceType | None = None
@@ -189,6 +213,29 @@ class OrgPackConfig(BaseModel):
         if not value or not value.strip():
             raise ValueError("pack name must be a non-empty string")
         return value
+
+    @field_validator("pack_id")
+    @classmethod
+    def _pack_id_is_valid_ulid(cls, value: str | None) -> str | None:
+        """Validate ``pack_id`` as a valid ULID (26 chars) when provided.
+
+        Raises
+        ------
+        ValueError
+            When ``pack_id`` is provided but is not a valid ULID.
+        """
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError(f"pack_id must be a string, got {type(value).__name__}")
+        try:
+            ulid_obj = ULID.from_str(value)
+            # Return the normalized string form (consistent capitalization)
+            return str(ulid_obj)
+        except (ValueError, TypeError) as exc:
+            raise ValueError(
+                f"pack_id must be a valid 26-char ULID, got {value!r}"
+            ) from exc
 
     @field_validator("subdir", mode="before")
     @classmethod
@@ -485,6 +532,8 @@ def _pack_to_yaml_dict(pack: OrgPackConfig) -> dict[str, Any]:
         "name": pack.name,
         "local_path": str(pack.local_path),
     }
+    if pack.pack_id is not None:
+        payload["pack_id"] = pack.pack_id
     if pack.subdir is not None:
         payload["subdir"] = pack.subdir
     if pack.source_type is not None:
@@ -494,3 +543,42 @@ def _pack_to_yaml_dict(pack: OrgPackConfig) -> dict[str, Any]:
     if pack.ref is not None:
         payload["ref"] = pack.ref
     return payload
+
+
+def ensure_pack_identity(pack: OrgPackConfig) -> OrgPackConfig:
+    """Ensure a pack has a stable pack_id, backfilling if necessary.
+
+    Idempotent operation: the built-in pack gets a fixed ULID that is the same
+    across all runs. Other packs (org, fetched) backfill via later migrations.
+
+    Parameters
+    ----------
+    pack : OrgPackConfig
+        The pack to ensure has an identity.
+
+    Returns
+    -------
+    OrgPackConfig
+        The pack with ``pack_id`` set (either existing or newly minted for
+        the built-in pack).
+    """
+    if pack.pack_id is not None:
+        # Already has a pack_id; no-op
+        return pack
+
+    # Idempotent backfill for the built-in pack
+    if pack.name == _LEGACY_DEFAULT_PACK_NAME:
+        # Create a new instance with the stable built-in pack_id
+        return OrgPackConfig(
+            name=pack.name,
+            pack_id=_BUILTIN_PACK_ID,
+            local_path=pack.local_path,
+            subdir=pack.subdir,
+            source_type=pack.source_type,
+            url=pack.url,
+            ref=pack.ref,
+        )
+
+    # Other packs (org, fetched) will get their pack_id via later migrations
+    # For now, return as-is; Q2 backfill will mint them.
+    return pack
