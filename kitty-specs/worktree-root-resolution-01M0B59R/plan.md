@@ -117,20 +117,20 @@ WP-A  checkout-identity guard (owns-vs-foreign, read/write intent) + unit tests
    +-- Wave 1' — verdict seam (independent of WP-A, starts immediately):
    |     WP-H  hoist parser->status + for_review gate->lanes leaf, surface-neutral, both gate directions (#3547/#1734, FR-011)
    |     WP-I  emit --review-result-json + --help fix + in_review->approved (#3547/#1734, FR-010/012/013)  [dep WP-H]
-   |     WP-J  status_event_row register review_result + NEW artifact-scoped drift test + value-equality round-trip (#3543/#3461, FR-014/015/016)
-   |     WP-K  review/cycle write-side kind-flip + resolve_review_verdict_facts + rehome re-verify (#3563, FR-017)
-   |
-   +-- Wave 2 — WP-L coordination-key writer migration (#3461-writer, FR-018)  [dep WP-J]
+   |     WP-J  status_event_row register review_result + NEW artifact-scoped drift test + value-equality round-trip (#3543/#3461-registry, FR-014/015/016)
+   |     WP-K  review/cycle narrow kind opt-in + reader read-tolerance verification + rehome stays green (#3563 narrowed, FR-017)
 
 Integration: full-suite parallel run + architectural gates (incl. NFR-003 single-channel) + spk-analyze.
 ```
 
-**Dependency edges (squad-corrected):** WP-B…WP-G depend on WP-A (identity guard). WP-G edits `core/paths.py` (WP-A's own file) -> **hard-sequence after WP-A, not parallel**. WP-I depends on WP-H (consumes the hoisted parser/gate). WP-J gates WP-L. WP-H…WP-K are independent of WP-A. The FR-011 clone-topology half lives inside WP-H's gate hoist (self-contained; does not need WP-A).
+> **Post-tasks squad drop (2026-08-18):** the former WP-L (coordination-key writer, FR-018/#3461-writer) is **dropped** — already fixed by #2696. WP-K (#3563) is **narrowed** to the safe kind opt-in; the full write-side default flip is deferred (disclosed physical-write rework).
+
+**Dependency edges (squad-corrected):** WP-B…WP-G depend on WP-A (identity guard). WP-G edits `core/paths.py` (WP-A's own file) -> **hard-sequence after WP-A, not parallel**. WP-I depends on WP-H (consumes the hoisted parser/gate). WP-H…WP-K are independent of WP-A. The FR-011 clone-topology half lives inside WP-H's gate hoist (self-contained; does not need WP-A). WP-A's identity guard parses `.git` **directly** (not via `locate_project_root`), keeping it independent of WP-G.
 
 ### Work Distribution
 
 - **Sequential**: WP-A first (guard + must-not-flip characterization); WP-G's `core/paths.py` edit sequences after WP-A.
-- **Parallel streams**: fail-closed adopters (B–F) after WP-A; verdict-seam (H–K) immediately; WP-L trails WP-J.
+- **Parallel streams**: fail-closed adopters (B–F) after WP-A; verdict-seam (H–K) immediately.
 - **Red-first authoring starts immediately** for every slice (behavior is red on base regardless of the guard) — a pre-WP-A parallel stream.
 - **DIR-012**: each WP assigns its backing issue to the HiC at implement start.
 
