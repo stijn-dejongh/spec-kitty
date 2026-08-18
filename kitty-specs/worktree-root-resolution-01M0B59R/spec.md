@@ -1,90 +1,99 @@
 # Mission Specification: Worktree-Aware Root Resolution & Verdict Parity
 
 **Mission Branch**: `fix/worktree-root-resolution`
-**Created**: 2026-08-18
+**Created**: 2026-08-18 · **Reframed**: 2026-08-18 (post-plan adversarial squad)
 **Status**: Draft
 **Mission ID**: `01M0B59R1GMN6N33GSGJFVNBP9`
-**Base**: `upstream/main` (tip `31798b6bd9`) · **Topology**: coord
-**Input**: Mission brief `.kittify/mission-brief.md` (worktree/clone-aware root resolution + review-verdict CLI parity), operator-ratified scope Tier A+B+C (2026-08-18).
+**Base**: `upstream/main` (re-verify tip at implement time; squad ran against `30cffb08b3`) · **Topology**: coord
+**Input**: Mission brief `.kittify/mission-brief.md`, operator-ratified scope Tier A+B+C (2026-08-18), **reframed** after a post-plan adversarial squad refuted the brief's clone-re-anchor grounding (see Overview + research.md).
 
 ## Overview
 
-A family of root/workspace resolvers answers *"given this working directory, what is the primary checkout?"* by following `.git` file-pointers. Every one of them **treats a standalone clone (a `.git` directory) as its own primary** and **re-anchors a linked-worktree working directory back to the main checkout**. This single seam produces three observable harms across at least a dozen commands: silent cross-checkout writes, false-green guards, and divergent review-verdict behavior between the `agent status emit` and `orchestrator-api transition` surfaces.
+A family of commands keys off the **ambient invoking location** — `find_repo_root` / `locate_project_root` / `get_main_repo_root` and their wrappers — and, when invoked from a **linked lane worktree the command does not own**, silently acts on the **primary checkout** instead. This produces two real, decidable harms: **silent cross-checkout writes** (a `--fix`/`intake` write lands in the primary's tracked/untracked state) and **false-green guards** (a cutover/branch check reads a redirected path and reports agreement). The authoritative root-cause investigation for this class is `docs/plans/investigations/write-path-topology-root-cause.md` (spike **#3129**); its accepted remediation is a **fail-closed checkout-identity refusal** (**#3128**) — the command refuses, naming the checkout it would otherwise have acted on — **not** a checkout-local redirect.
 
-This mission fixes that shared root cause (the resolver family) and closes the review-verdict CLI-parity gaps that ride the same seam. It is a concrete fix-slice of the class captured by design spike #3129 and Epic #2624 — not a competing design.
+This mission fixes the confirmed members of that class and closes the review-verdict CLI-parity gaps that ride the same lifecycle seam.
 
-**Grounding note (already-fixed residuals — do not re-implement):** two headline defects the triggering issues described are already fixed on `upstream/main`. The `review_result` reducer projection is fixed (`407ea376c4`, `status/reducer.py:210-215`) and the `doctor mission-state --fix` verdict destruction is fixed (`bec7c25273`, `migration/mission_state.py:1879`). This mission scopes only the *live residuals* around those fixes (see Constraints C-001/C-002).
+### What this mission is NOT (grounding corrections — verified against base)
+
+A post-plan adversarial squad (2026-08-18), including an **empirical run of the resolver family**, corrected three load-bearing errors in the original brief:
+
+1. **The "standalone clone re-anchored to a primary" bug does not exist.** A standalone clone's `.git` is a directory, so every resolver already returns the clone as its own primary — the desired outcome. The clone/primary split is also **undecidable** from local git state (a fresh clone ≡ its upstream, byte-for-byte). This mission therefore targets the **linked-worktree / nested-clone invoking-location** distinction, not "clone vs primary".
+2. **The worktree→primary re-anchor is often deliberate.** `doctor mission-state --fix`'s primary anchor (`_anchor_repair_root`, per issue **#2320**) and the primary-read anchors (`get_feature_target_branch`, `resolve_merge_target_branch`, `mission_runtime/resolution.py`, per **#3328**) are **intended** and enforced by existing tests. The fix MUST preserve them. The defect is the **absence of checkout-identity awareness** (silent action from a foreign checkout), not the primary anchor itself.
+3. **Two already-fixed residuals are out of scope** (verified true in code + ancestry): the `review_result` reducer projection (`407ea376c4`, `status/reducer.py:210-215`) and repair-row preservation (`bec7c25273`, `migration/mission_state.py:1879`). This mission builds on them (C-001/C-002).
+
+### Tracker re-triage flagged by the squad (operator to action, not blocking this spec)
+
+- **#3449 `--owned-checkout`** → recommend **wontfix**: the ownership machinery (`resolve_ownership_claim` → `effective_root` → `create_time_target`) already routes create-time writes to the claimed checkout; the "unreachable" hypothesis is not borne out by the code. Dropped from scope.
+- **#3051 / #2320 contradiction** → reconciled in-mission: keep the primary status-home (#2320), add checkout-identity refusal (#3129). No tracker action required unless the operator disagrees with the reconciliation.
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Honest write target under a worktree or clone (Priority: P1)
+### User Story 1 - Fail-closed on a foreign-checkout write (Priority: P1)
 
-A maintainer runs a mission-state-writing command (e.g. `intake`, `doctor … --fix`, `migrate backfill-runtime-state`, `--owned-checkout` mission create) from inside a linked worktree or a standalone clone. Today the resolver silently re-anchors the write to the primary checkout, clobbering a shared slot or mutating the wrong repository while reporting success.
+An agent runs a state-writing/repair command (`intake`, `doctor tool-surfaces --fix`) from inside a lane worktree it does not own. Today the command silently acts on the primary checkout. After the fix it refuses, naming the checkout it would otherwise have written to (the #3128 fail-closed pattern).
 
-**Why this priority**: This is the root cause. It causes silent data loss / cross-checkout corruption and is the mechanism behind the entire issue cluster. Fixing it is the MVP that delivers the mission's core value.
+**Why this priority**: Silent cross-checkout writes are the core data-integrity harm and the confirmed root of the class (#3129 §1).
 
-**Independent Test**: From a linked worktree and from a standalone clone, invoke each in-scope writing command and assert the write lands in the invoking checkout, or the command refuses with a message that names the checkout it would otherwise have written to. No assertion depends on any other user story.
+**Independent Test**: From a lane worktree, run each in-scope writing command and assert it refuses with a message naming the target checkout, rather than mutating the primary. Independently testable through the real CLI.
 
 **Acceptance Scenarios**:
 
-1. **Given** a standalone clone (a `.git` directory, not a linked worktree), **When** a mission-state-writing command runs, **Then** the resolver classifies the clone as its own primary is prevented — the command writes into the clone itself and does not re-anchor to an unrelated checkout.
-2. **Given** a linked worktree with an untracked shared brief slot, **When** `intake` runs (with or without `--force`), **Then** the brief is written into the invoking checkout, or `intake` refuses and names the exact path it would otherwise have written to; `--force` does not overwrite a shared untracked slot without an identity check.
-3. **Given** any in-scope writing command invoked from a worktree, **When** it cannot write into the invoking checkout, **Then** its refusal message names the concrete target checkout path (actionable), rather than a generic error.
+1. **Given** a lane worktree with a drifted `.claude/commands/*` surface, **When** `doctor tool-surfaces --fix` runs, **Then** it refuses (naming the primary checkout) rather than silently repairing the primary's manifest. (#2613)
+2. **Given** a lane worktree, **When** `intake <plan>` runs and would clobber the primary's shared untracked brief slot, **Then** it refuses / performs an identity check naming the target slot; `--force` does not overwrite a slot owned by a different checkout without that check. (#3540)
+3. **Given** any in-scope command that refuses, **When** it emits the refusal, **Then** the message contains the concrete checkout path it would otherwise have acted on. (NFR-003)
 
 ---
 
 ### User Story 2 - One review-verdict path on both surfaces (Priority: P1)
 
-An agent orchestrator drives a work package from `in_progress` to `done`, including the `in_review` exit, recording a structured review verdict. Today only `orchestrator-api transition` accepts a structured `review_result`; `agent status emit` cannot exit `in_review`, its `--help` documents a non-functional path, and the `for_review` commit-gate is one surface's extra check rather than a shared invariant — and it fails a clone on topology instead of on commits.
+An orchestrator walks a WP `in_progress → done` (incl. the `in_review` exit) recording a structured verdict. Today only `orchestrator-api transition` accepts a structured `review_result`; `agent status emit` cannot exit `in_review`, its `--help` misroutes the verdict into `--evidence-json`, and the `for_review` commit-gate is one surface's extra check that fails a clone on topology instead of commits.
 
-**Why this priority**: Without verdict parity the two CLI surfaces disagree on a core lifecycle transition; the `--help` trap actively misleads operators. This is independently valuable and independently testable.
+**Why this priority**: The strongest, cleanly CLI-reproducible red-first slice; the `--help` trap actively misleads operators.
 
-**Independent Test**: Using `agent status emit` alone, walk a WP `in_progress → for_review → in_review → approved → done` with a structured `review_result`, and assert the same `for_review` commit-gate invariant fires identically on both `agent status emit` and `orchestrator-api transition`, and is topology-aware (a clone is not failed on topology).
+**Independent Test**: Using `agent status emit` alone, walk a WP to `done` with a structured verdict, and assert the `for_review` gate is identical on both surfaces and topology-aware.
 
 **Acceptance Scenarios**:
 
-1. **Given** a WP in `in_review`, **When** `agent status emit --review-result-json '<verdict>'` is invoked, **Then** the verdict is validated by the same parser both surfaces use, threaded into the transition, and the WP advances toward `approved`/`done`.
-2. **Given** either CLI surface, **When** the `for_review` commit-gate is evaluated, **Then** it enforces the same invariant, is topology-aware, and does not fail a clone on topology instead of on commit state.
-3. **Given** `agent status emit --help`, **When** an operator reads it, **Then** every documented example describes a path that actually works (the misleading `in_review` example is corrected).
+1. **Given** a WP in `in_review`, **When** `agent status emit --review-result-json '<verdict>'` runs, **Then** the verdict is validated by the same parser both surfaces use, threaded into the transition, and the WP advances toward `approved`/`done`. (#3547, #1734)
+2. **Given** either surface, **When** the `for_review` commit-gate evaluates, **Then** it enforces the same invariant, is topology-aware, and evaluates a clone on **commit state** — passing when commits are satisfied and failing when they are not. (#3547)
+3. **Given** `agent status emit --help`, **When** an operator reads it, **Then** the misleading `in_review`/`--evidence-json` verdict example is corrected to the working `--review-result-json` path. (#3547)
 
 ---
 
-### User Story 3 - Snapshots round-trip and audit clean (Priority: P2)
+### User Story 3 - No false-green guard (Priority: P1)
 
-An operator audits the status event log. Today a review-carrying event row emits `UNKNOWN_SHAPE` audit noise because `review_result` is not registered in the shape registry, and there is no guarantee that every field in a persisted snapshot survives a replay of its log.
+An operator relies on a cutover/branch guard. Today `setup-plan` reports `branch_matches_target: true` from the primary's HEAD (not the invoking checkout), and `migrate backfill-runtime-state`'s cutover guard verifies against the same redirected path it wrote — both green regardless of the invoking checkout.
 
-**Why this priority**: Integrity/observability hardening. The projection is already correct; this closes the audit-registration and round-trip-guarantee gaps and de-tautologizes the drift test.
+**Why this priority**: A false-green guard launders a redirected read into a success signal; both are confirmed defect-class members (#3129 §1).
 
-**Independent Test**: Replay an event log that carries a `review_result` and assert (a) no field present in the resulting snapshot is absent from the replay, and (b) the event row audits clean with no `UNKNOWN_SHAPE`.
+**Independent Test**: Run each guard from a lane worktree whose branch/state differs from primary and assert it does not report agreement produced by reading a redirected path.
 
 **Acceptance Scenarios**:
 
-1. **Given** a status event carrying `review_result`, **When** the audit shape registry validates the row, **Then** it recognizes `review_result` and emits no `UNKNOWN_SHAPE`.
-2. **Given** any persisted snapshot, **When** its event log is replayed, **Then** no field present in the snapshot is missing from the replay (round-trip property holds).
-3. **Given** the shape-registry drift test, **When** it runs, **Then** it makes a real assertion (not a tautology) and fails if a persisted shape is unregistered.
+1. **Given** a lane worktree on a lane branch, **When** `setup-plan` evaluates, **Then** `branch_matches_target` reflects the invoking checkout / mission `meta.json`, not the primary's HEAD. (#3124)
+2. **Given** `migrate backfill-runtime-state` invoked from a lane worktree, **When** its cutover guard runs, **Then** it does not pass merely by reading the same redirected path it wrote — it is invoking-checkout-aware (or refuses). (#3049)
 
 ---
 
-### User Story 4 - No false-green guard (Priority: P2)
+### User Story 4 - Snapshots round-trip and audit clean (Priority: P2)
 
-An operator relies on a cutover/branch guard to confirm an artifact is in the expected place. Today a guard can read a redirected (re-anchored) path and report agreement (`branch_matches_target: true`, or a cutover "pass") even though the artifact it validated is not where it actually read it.
+An operator audits the status event log. Today a review-carrying `status_event_row` emits `UNKNOWN_SHAPE` because `review_result` is unregistered, and no test guarantees a snapshot survives replay by value.
 
-**Why this priority**: A false-green guard is worse than a red one — it launders a re-anchor into a success signal. Depends conceptually on US1's resolver fix but is separately testable at the guard boundary.
-
-**Independent Test**: Run `setup-plan` and `migrate backfill-runtime-state` from a linked worktree and assert the guard reports agreement only when the validated artifact lives where it was read — no pass produced from a redirected path.
+**Independent Test**: Replay an event log carrying a `review_result` and assert (a) the replayed projection equals the persisted snapshot by value, and (b) the row audits with 0 `UNKNOWN_SHAPE`.
 
 **Acceptance Scenarios**:
 
-1. **Given** `setup-plan` invoked from a worktree whose mission `meta.json` names a branch, **When** the guard evaluates, **Then** it resolves branch from the invoking checkout / `meta.json`, not the primary, and does not report `branch_matches_target: true` from a redirected read.
-2. **Given** `migrate backfill-runtime-state`, **When** it writes runtime state, **Then** it writes into the linked worktree and its cutover guard reads the same path it wrote (no false pass).
+1. **Given** a `status_event_row` carrying `review_result`, **When** the audit shape registry validates it, **Then** `review_result` is a registered key and no `UNKNOWN_SHAPE` is emitted. (#3543)
+2. **Given** a persisted snapshot with a `review_result`, **When** its event log is replayed, **Then** the replayed projection **equals** the snapshot by value (not merely key-presence). (#3543)
+3. **Given** a new `status_event_row`-scoped registration test, **When** a persisted event shape is unregistered, **Then** the test fails (a real assertion — the existing `meta.json`-scoped drift test does not cover this artifact). (#3461-registry)
 
 ### Edge Cases
 
-- A standalone clone whose `.git` is a directory (not a worktree pointer file) must be classified as its own primary, never re-anchored.
-- A linked worktree whose ancestor chain contains an explicit containment boundary (`.kittify`) must not have discovery cross that boundary (#2610).
-- `intake --force` against a shared untracked slot already written by a *different* mission/worktree must not clobber without an identity check.
-- A WP already in a terminal or non-`in_review` lane receiving `--review-result-json` must be rejected consistently on both surfaces.
-- A review-cycle write emitting the wrong artifact kind (`WORK_PACKAGE_TASK`) must be corrected on the write side so downstream fact resolution and rehome tests stay consistent (#3563).
+- A command invoked from the **primary checkout it owns** must behave exactly as today (no new refusal) — the guard fires only for a foreign-checkout invocation.
+- Deliberate primary anchors (#2320 status-home, #3328 primary-reads) must remain green — the fix must not regress the "merge into wrong branch" protections.
+- `find_repo_root` crossing a **nested-clone** `.git`-directory boundary that lacks `.kittify` (disagreeing with `resolve_canonical_root`, which stops correctly) — align them. (#2610)
+- A WP in a terminal or non-`in_review` lane receiving `--review-result-json` must be rejected consistently on both surfaces.
+- The `for_review` gate on a clone with **unsatisfied** commits must fail identically on both surfaces (negative case).
 
 ## Requirements *(mandatory)*
 
@@ -92,73 +101,75 @@ An operator relies on a cutover/branch guard to confirm an artifact is in the ex
 
 | ID | Requirement (testable) | Related Issues | Priority | Status |
 |----|------------------------|----------------|----------|--------|
-| FR-001 | The root-resolution family (`find_repo_root`, `resolve_canonical_root`, `predict_lane_worktree`, `locate_project_root`, `_get_main_repo_root`) MUST distinguish a standalone clone (a `.git` directory) from a genuine primary checkout, and MUST NOT re-anchor a worktree/clone working directory to a different primary when resolving a write target. | root cause / #3129 | High | Open |
-| FR-002 | `intake` MUST write the brief slot into the invoking checkout, or refuse and name the target path it would otherwise write to (mirroring `is_worktree_context`); `--force` MUST NOT overwrite a shared untracked slot without an identity check. | #3540 | High | Open |
-| FR-003 | `doctor tool-surfaces --fix` MUST be worktree/clone-aware and MUST NOT silently mutate the primary checkout. | #2613 | High | Open |
-| FR-004 | `doctor mission-state --audit`/`--fix` MUST be worktree/clone-aware (same `locate_project_root`/`resolve_canonical_root` mechanism). | #3051 | High | Open |
-| FR-005 | `migrate backfill-runtime-state` MUST write runtime state into the linked worktree, and its cutover guard MUST read the same path it wrote (no false pass). | #3049 | High | Open |
-| FR-006 | `setup-plan` MUST resolve branch from the invoking checkout / mission `meta.json` (not the primary) and MUST NOT report `branch_matches_target: true` from a redirected read. | #3124 | High | Open |
-| FR-007 | `--owned-checkout` mission create MUST be reachable — its reads MUST NOT re-anchor to the primary via `.git` follow. | #3449 | Medium | Open |
-| FR-008 | cwd-ancestor `.kittify` discovery MUST NOT cross an explicit containment boundary. | #2610 | Medium | Open |
-| FR-009 | `doctor mission-state --fix` invoked in a clone MUST NOT silently rewrite the clone and report success (clone re-anchor); the repair manifest MUST enumerate every field it touches, including removed fields. | #3541 | High | Open |
-| FR-010 | `agent status emit` MUST accept `--review-result-json`, validated by the same `_parse_review_result_json` both surfaces use, with `review_result` threaded into the `TransitionRequest`; a WP MUST be walkable `in_progress → done` (including the `in_review` exit) through `agent status emit` alone. | #3547, #1734 | High | Open |
-| FR-011 | The `for_review` commit-gate MUST be one shared, topology-aware invariant enforced on both `agent status emit` and `orchestrator-api transition`, and MUST NOT fail a clone on topology instead of on commit state. | #3547 | High | Open |
-| FR-012 | `agent status emit --help` MUST document only paths that work; the misleading `in_review` example MUST be corrected. | #3547 | Medium | Open |
-| FR-013 | The `in_review → approved` guard MUST admit a `ReviewResult` path on both `agent status emit` and `orchestrator-api transition`. | #1734 | High | Open |
-| FR-014 | `review_result` MUST be registered in `audit/shape_registry.py` `status_event_row` so a review-carrying event row audits clean (no `UNKNOWN_SHAPE`). | #3543, #3461 | High | Open |
-| FR-015 | A round-trip property MUST hold and be tested: no field present in a persisted snapshot is absent from a replay of its event log. | #3543 | High | Open |
-| FR-016 | The `shape_registry` drift test MUST be de-tautologized (a real assertion that fails on an unregistered persisted shape), and the coordination-key `UNKNOWN_SHAPE` MUST be addressed on the registry side. | #3461 (registry half) | Medium | Open |
-| FR-017 | `review/cycle.py` write-side MUST emit the correct artifact kind (not `WORK_PACKAGE_TASK`); `resolve_review_verdict_facts` MUST be migrated and `test_analysis_report_rehome` re-verified. | #3563 | Medium | Open |
-| FR-018 | The coordination-key writer MUST be migrated so persisted coordination-key rows carry the registered shape (no coordination-key `UNKNOWN_SHAPE`), delivered as its own work package sized separately from the registry/drift-test half. | #3461 (writer half) | Medium | Open |
+| FR-001 | Introduce one shared **checkout-identity guard** that distinguishes an invocation from a checkout the command owns vs a foreign lane worktree; in-scope commands consult it rather than re-deriving `.git` classification. This is an **identity/ownership** guard, not a clone-vs-primary classifier. | #3129 / #3128 | High | Open |
+| FR-002 | `intake` MUST perform a fail-closed checkout-identity check before writing the shared untracked brief slot from a foreign checkout — refusing and naming the target slot; `--force` MUST NOT overwrite a slot owned by a different checkout without the identity check. | #3540 | High | Open |
+| FR-003 | `doctor tool-surfaces --fix` MUST fail closed (refuse, naming the primary checkout) when invoked from a lane worktree, rather than silently mutating the primary's per-checkout agent-surface manifest. | #2613 | High | Open |
+| FR-004 | `doctor mission-state --audit/--fix` MUST preserve the deliberate primary status-home (#2320) **and** add checkout-identity awareness so a lane invocation does not silently act as an unannounced primary canonicalization; the audit MUST NOT report a false-green from a redirected read. | #3051 | High | Open |
+| FR-005 | `migrate backfill-runtime-state`'s cutover guard MUST be invoking-checkout-aware — it MUST NOT report success merely by verifying against the same redirected primary/coord path it wrote from a lane invocation. (The write target to the coord/primary event log is deliberate per C-003; the guard false-green is the defect.) | #3049 | High | Open |
+| FR-006 | `setup-plan` MUST compute `branch_matches_target` from the invoking checkout / mission `meta.json`, not the primary's HEAD; it MUST NOT report `branch_matches_target: true` from a redirected read. (Target-branch resolution staying primary-anchored is deliberate and preserved; only the match computation is corrected.) | #3124 | High | Open |
+| FR-007 | `find_repo_root` MUST stop at a nested-clone `.git`-directory boundary consistently with `resolve_canonical_root` (which already stops correctly at rule 1 / `.kittify`), eliminating the nested-clone resolver disagreement. | #2610 | Medium | Open |
+| FR-008 | A documented **must-not-flip inventory** of deliberate primary-read anchors (`get_feature_target_branch`, `resolve_merge_target_branch`, `mission_runtime/resolution.py` closures, `merge/*`, `coordination/write_seam.py`) MUST be preserved unchanged; the checkout-identity guard MUST carry read/write **intent** so these primary reads do not flip to the invoking checkout (which would regress #3328 "merge into wrong branch"). Characterization tests pin them green. | #3328 (regression guard) | High | Open |
+| FR-009 | `doctor mission-state --fix` in-scope repair MUST make the repair manifest enumerate every field it touches, including removed fields (manifest honesty). The verdict destruction is already fixed (C-002) — no destruction fix. | #3541 | Medium | Open |
+| FR-010 | `agent status emit` MUST accept `--review-result-json`, validated by the same `_parse_review_result_json` both surfaces use, with `review_result` threaded into the `TransitionRequest`; a WP MUST be walkable `in_progress → done` (incl. the `in_review` exit) through `agent status emit` alone. | #3547, #1734 | High | Open |
+| FR-011 | The `for_review` commit-gate MUST be one shared, topology-aware invariant on both `agent status emit` and `orchestrator-api transition`; a clone MUST be evaluated on commit state — passing with satisfied commits and **failing with unsatisfied commits** (both directions asserted). | #3547 | High | Open |
+| FR-012 | `agent status emit --help` MUST document only working paths; the misleading `in_review`/`--evidence-json` verdict example MUST be corrected. | #3547 | Medium | Open |
+| FR-013 | The `in_review → approved` guard MUST admit a `ReviewResult` path on both surfaces. | #1734 | High | Open |
+| FR-014 | `review_result` MUST be registered in the `status_event_row` shape (`audit/shape_registry.py`) so a review-carrying row audits clean (0 `UNKNOWN_SHAPE`). | #3543 | High | Open |
+| FR-015 | A round-trip property MUST hold and be tested by **value equality**: replaying a persisted snapshot's event log reproduces the snapshot's projected fields by value (not key-presence); the property generator MUST be guaranteed to emit at least one `review_result`-carrying event (non-vacuous). | #3543 | High | Open |
+| FR-016 | A **new `status_event_row`-scoped** registration/drift test MUST fail when a persisted event shape is unregistered. (The existing `test_shape_registry_writer_parity.py` is `meta.json`-scoped and cannot cover this artifact — de-tautologizing it does nothing for `review_result`.) The coordination-key `UNKNOWN_SHAPE` MUST be addressed on the registry side. | #3461 (registry half) | Medium | Open |
+| FR-017 | `review/cycle.py` write-side MUST emit the correct artifact kind (not `WORK_PACKAGE_TASK`); `resolve_review_verdict_facts` (`tasks_verdict_persistence.py:404`) MUST be migrated and `test_analysis_report_rehome` re-verified green. | #3563 | Medium | Open |
+| FR-018 | The coordination-key writer MUST be migrated so persisted coordination-key rows carry the registered shape, delivered as its own work package sized separately from the registry/drift-test half. | #3461 (writer half) | Medium | Open |
 
 ### Non-Functional Requirements
 
 | ID | Title | Requirement (measurable) | Category | Priority | Status |
 |----|-------|--------------------------|----------|----------|--------|
-| NFR-001 | Red-first regressions | Each release-blocking slice lands with an issue-pinned `@pytest.mark.regression` reproduction that drives the real CLI entry point and is red on `upstream/main`, green after the fix. At least one such test per behavioral invariant (see Success Criteria SC-001…SC-006). | Reliability | High | Open |
-| NFR-002 | Zero-issue static gates | All new/changed code passes `ruff` and `mypy` with zero issues and zero warnings; `tests/architectural/` (incl. legacy-terminology guard) is green; no new blanket suppressions. | Quality | High | Open |
-| NFR-003 | Actionable refusals | 100% of write-refusal paths name the concrete checkout path they would otherwise have written to; no generic-only refusal message. | Usability | Medium | Open |
+| NFR-001 | Red-first regressions | Each release-blocking slice lands with an issue-pinned `@pytest.mark.regression` test, **authored and shown failing** on base before the fix (not a `-k` glob over non-existent tests), driving the real CLI entry point where one exists. For the fail-closed slices the assertion is **refusal / absence-of-false-green** (per #3128), not "writes into invoking checkout". FR-015/FR-016 are internal-API-level and are marked as such. | Reliability | High | Open |
+| NFR-002 | Zero-issue static gates | New/changed code passes `ruff` + `mypy` with zero issues/warnings; complexity ≤15; `tests/architectural/` (terminology + shared-package) green; no new blanket suppressions. | Quality | High | Open |
+| NFR-003 | Actionable refusals, single-channelled | 100% of write-refusals route through the one checkout-identity/`WriteTarget` seam whose refusal message names the target checkout path; enforced by an architectural test (no ad-hoc refusal strings), making "100%" an enforced invariant rather than a sampling claim. | Usability | Medium | Open |
+| NFR-004 | Preserve already-fixed behavior | The already-fixed reducer projection and repair-row preservation ship a **green sentinel** regression test each (pinning `407ea376c4` / `bec7c25273`); no WP re-implements or regresses them to manufacture a red. | Reliability | High | Open |
 
 ### Constraints
 
 | ID | Title | Constraint | Category | Priority | Status |
 |----|-------|------------|----------|----------|--------|
-| C-001 | Projection already fixed | Do NOT re-implement the `review_result` reducer projection — already fixed by `407ea376c4` (`status/reducer.py:210-215`). Scope only the shape-registry registration + round-trip test. | Technical | High | Open |
-| C-002 | Destruction already fixed | Do NOT re-add a verdict-destruction refuse/quarantine fix — already fixed by `bec7c25273` (`migration/mission_state.py:1879`). Scope only manifest honesty + the clone re-anchor. | Technical | High | Open |
-| C-003 | #3540 reframed | The `intake` fix targets the shared untracked-slot clobber after a worktree→primary re-anchor, NOT a tracked-file/branch-diff hazard — the brief slots are gitignored (`.gitignore:204-205`). | Technical | High | Open |
-| C-004 | Writer migration is its own WP | The #3461 coordination-key writer migration (FR-018) is delivered in this mission as its own work package, sized separately from the registry/drift-test half (FR-016) because it is a write-path migration with a distinct blast radius. | Technical | Medium | Open |
-| C-005 | Base & topology | Work is based on `upstream/main` (tip `31798b6bd9`), uses coord topology, and lands on `fix/worktree-root-resolution`. | Technical | High | Open |
-| C-006 | Out of scope | Keep separate (distinct mechanism): #3531 (schema-version refuse/teach), #3307/#3451/#3010, #3043/#3065/#3462 (read-seam consolidation), #2626/#2947/#3536 (lane-worktree lifecycle), #2815 (candidate regression coverage only); #3323 folds ONLY if it traces to the same resolver; #3548 is campsite-fold-only when already editing that file. | Business | Medium | Open |
+| C-001 | Projection already fixed | Do NOT re-implement the `review_result` reducer projection (`407ea376c4`, `reducer.py:210-215`) — verified true. Scope only registration + round-trip. | Technical | High | Open |
+| C-002 | Destruction already fixed | Do NOT re-add a verdict-destruction fix (`bec7c25273`, `mission_state.py:1879`) — verified true. Scope only manifest honesty. | Technical | High | Open |
+| C-003 | Remediation is fail-closed refusal, not redirect | Per the #3129 investigation, the canonical remediation for the write-path class is a fail-closed **checkout-identity refusal** (#3128), NOT a checkout-local write redirect. Commands whose canonical write target is deliberately primary/coord keep that target; the fix adds identity awareness/refusal + fixes the guards. | Technical | High | Open |
+| C-004 | Preserve deliberate primary anchors | #2320 (primary status-home) and #3328 (primary-read anchors: `get_feature_target_branch`, `resolve_merge_target_branch`, `mission_runtime/resolution.py`) MUST NOT be flipped to the invoking checkout. See FR-008. | Technical | High | Open |
+| C-005 | Clone axis is not a behavioral distinction | Do NOT ship a PRIMARY-vs-STANDALONE_CLONE classifier — the distinction is undecidable from local state and behaviorally moot (clones already resolve to self). The decidable axis is linked-worktree/nested-clone invoking-location. | Technical | High | Open |
+| C-006 | Writer migration is its own WP | The #3461 coordination-key writer migration (FR-018) is in-mission but a separately-sized WP (distinct write-path blast radius) from the registry/drift-test half (FR-014/FR-016). | Technical | Medium | Open |
+| C-007 | Base & topology | Base `upstream/main` (re-verify tip at implement time), coord topology, lands on `fix/worktree-root-resolution`. | Technical | High | Open |
+| C-008 | Out of scope | Keep separate: #3449 (dropped — already correct, recommend wontfix); #3531, #3307/#3451/#3010, #3043/#3065/#3462 (read-seam consolidation — the checkout-identity guard MUST NOT tidy read paths), #2626/#2947/#3536, #2815; #3323 folds only if same resolver; #3548 campsite-fold-only. | Business | Medium | Open |
 
-### Key Entities *(include if feature involves data)*
+### Key Entities
 
-- **Root resolver family**: The set of functions that answer "given this CWD, what is the primary checkout?" (`find_repo_root`, `resolve_canonical_root`, `predict_lane_worktree`, `locate_project_root`, `_get_main_repo_root`). The shared subject of the fix.
-- **Checkout kinds**: *Primary checkout* (the canonical main working tree), *linked worktree* (a `.git` pointer file into a primary), *standalone clone* (an independent `.git` directory that is its own primary). The mission's core distinction is clone ≠ (someone else's) primary.
-- **`review_result`**: The structured review verdict carried on a status transition event and persisted in the snapshot; must survive replay and audit registration.
-- **`for_review` commit-gate**: The invariant guarding the `for_review` transition; must be one shared, topology-aware check across both CLI surfaces.
-- **Shape registry row**: The audit descriptor for a status event row; must recognize `review_result` and coordination-key shapes.
+- **Checkout-identity guard** (new): given the invoking CWD and the command's intent, decides whether the invocation *owns* the target checkout or is acting from a *foreign* lane worktree; carries read/write intent so deliberate primary reads are not flipped.
+- **Invoking-location vs canonical target**: the mission's real distinction — where the command was invoked from vs where its canonical write/read deliberately lives. Replaces the discarded "clone vs primary" framing.
+- **`review_result`** (existing): structured verdict on a status transition; projection already correct — this mission adds entry parity + audit registration + value round-trip.
+- **`for_review` commit-gate** (existing): one shared, topology-aware invariant across both CLI surfaces (both gate directions asserted).
+- **`status_event_row` shape** (existing): must register `review_result`; needs a new artifact-scoped drift test distinct from the `meta.json` one.
 
 ## Success Criteria *(mandatory)*
 
-### Measurable Outcomes
-
-- **SC-001**: For every in-scope writing command, invocation from a linked worktree or standalone clone either writes into the invoking checkout or refuses naming the target path — 0 silent re-anchored writes across the command set (covers FR-001…FR-009).
-- **SC-002**: 0 false-green guards — no `branch_matches_target: true` or cutover "pass" is produced by reading a redirected path (covers FR-005, FR-006).
-- **SC-003**: A repair invoked in a standalone clone rewrites the clone itself (or refuses), never an unrelated primary, in 100% of tested clone scenarios (covers FR-009).
-- **SC-004**: A WP can be walked `in_progress → done` (including the `in_review` exit) with a structured verdict through `agent status emit` alone; the `for_review` commit-gate produces identical verdicts on both surfaces across the topology matrix; `--help` contains 0 non-functional example paths (covers FR-010…FR-013).
-- **SC-005**: A review-carrying event row audits clean (0 `UNKNOWN_SHAPE`), and the snapshot round-trip property holds for 100% of replayed snapshots (covers FR-014…FR-016, FR-018).
-- **SC-006**: Each release-blocking slice ships with an issue-pinned red-first regression test that is red on `upstream/main` and green after the fix (covers NFR-001).
+- **SC-001**: For every in-scope writing command, a foreign-checkout invocation refuses (fail-closed, naming the target checkout) or performs an identity check — 0 silent cross-checkout writes (covers FR-002, FR-003; owner-checkout invocations unchanged).
+- **SC-002**: 0 false-green guards — no `branch_matches_target: true` or cutover pass produced by reading a redirected path (covers FR-005, FR-006).
+- **SC-003**: Deliberate primary anchors stay green — the fix regresses neither #2320 status-home nor #3328 primary-reads; the must-not-flip inventory (FR-008) has passing characterization tests (covers FR-004, FR-008, C-004).
+- **SC-004**: A WP walks `in_progress → done` (incl. `in_review`) with a structured verdict via `agent status emit` alone; the `for_review` gate yields identical verdicts on both surfaces across the topology matrix in **both** directions; `--help` has 0 non-functional example paths (covers FR-010…FR-013).
+- **SC-005**: A review-carrying `status_event_row` audits clean (0 `UNKNOWN_SHAPE`); the value-equality round-trip holds for 100% of replayed snapshots with a non-vacuous generator (covers FR-014…FR-016, FR-018).
+- **SC-006**: Each release-blocking slice ships an issue-pinned red-first regression authored and shown failing on base; already-fixed behavior ships a green sentinel (covers NFR-001, NFR-004).
 
 ## Assumptions
 
-- "Mission type: fix" maps to the canonical `software-dev` mission type carried on the `fix/` branch prefix; there is no separate `fix` mission-type key.
-- The coordination-key writer migration (FR-018) is in-mission but delivered as a separately sized WP (operator-confirmed, 2026-08-18).
-- `#3323` (repo event-log write) and `#3548` (`_fail()` message drop) are folded only opportunistically per C-006; absent same-resolver tracing they remain out of scope.
-- Base tip `31798b6bd9` reflects the already-fixed projection and destruction residuals; re-verify at implement time before writing any regression.
+- "Mission type: fix" maps to canonical `software-dev` on the `fix/` branch.
+- The #3129 investigation (`docs/plans/investigations/write-path-topology-root-cause.md`) is the authoritative root-cause source; its #3128 fail-closed remediation is the canonical pattern for this class.
+- #3051/#2320 reconciliation (keep primary status-home + add identity refusal) is adopted; operator may override.
+- #3449 is dropped as already-correct (squad-verified); recommend tracker wontfix.
+- Base tip must be re-verified at implement time (squad ran against `30cffb08b3`; both already-fixed residuals still held).
 
 ## Lineage / References
 
-- Umbrella design spike: **#3129** ("scoped shadow workspaces"). Parent epics: **#2624** (root & worktree-path detection spine), **#3549** (event-log integrity — #3541/#3543), **#3044** (review-artifact integrity — #3547).
-- Already-fixed antecedents: `407ea376c4` (WP07 verdict projection, from mission `review-cycle-verdict-seam-rebuild-01KZ2W7W`, ADR `2026-08-03-1`), `bec7c25273` (corpus-repair allowlist fix).
-- Red-main / red-first discipline: ADR `2026-07-17-1`.
-- Operator ratified decisions (2026-08-18): Tier A+B+C scope, priority NOT P0 (P1/P2), tracker hygiene done; #3563 filed under #3044.
+- Authoritative root-cause: `docs/plans/investigations/write-path-topology-root-cause.md` (spike **#3129**), remediation **#3128** (fail-closed checkout-identity refusal). Parent epics **#2624** (spine), **#3549** (event-log integrity), **#3044** (review-artifact integrity).
+- Already-fixed antecedents (verified): `407ea376c4` (projection), `bec7c25273` (repair preservation). Deliberate anchors: **#2320** (primary status-home), **#3328** (primary-reads).
+- Post-plan adversarial squad (2026-08-18): architect + reviewer + debugger converged (incl. empirical resolver run) on the clone-phantom / deliberate-re-anchor findings that drove this reframe.
+- Red-first / red-main discipline: ADR `2026-07-17-1`.

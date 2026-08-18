@@ -1,78 +1,83 @@
-# Contracts: Resolver Seam & Verdict-CLI Parity
+# Contracts: Checkout-Identity Seam & Verdict-CLI Parity
 
-This is a CLI + internal-resolver mission; contracts are **behavioral interface contracts**, not HTTP schemas. Each contract is testable and pinned to its FR(s). "MUST" is a normative requirement.
+Behavioral interface contracts (not HTTP schemas), each testable and FR-pinned. "MUST" is normative. Reframed 2026-08-18 after the post-plan squad: the remediation is the **#3128 fail-closed refusal**, not a checkout-local redirect; there is no clone/primary classifier (C-005).
 
-## C-1 — Checkout-kind classifier (FR-001)
+## C-1 — Checkout-identity guard (FR-001, FR-008)
 
-**Interface**: a pure classifier `classify_checkout(cwd) -> CheckoutKind`.
+**Interface**: `resolve_checkout_identity(cwd, intent) -> CheckoutIdentity`.
 
-- MUST return `PRIMARY` when `cwd`'s `.git` is a directory AND the checkout is not a secondary clone of another in-scope primary.
-- MUST return `STANDALONE_CLONE` when `.git` is a directory but the checkout is an independent clone (its own primary) — and MUST set `primary_root = checkout_root` (never an unrelated path).
-- MUST return `LINKED_WORKTREE` when `.git` is a file whose `gitdir:` pointer has `.git/worktrees/<name>` topology (not submodule `.git/modules/*`, not separate-git-dir).
-- MUST NOT re-anchor: for `LINKED_WORKTREE`, `checkout_root` is the worktree; `primary_root` is the main checkout, and write-target resolution defaults to `checkout_root`.
-- The four resolver functions (`find_repo_root`, `resolve_canonical_root`, `predict_lane_worktree`, `locate_project_root`/`_get_main_repo_root`) MUST consult this classifier rather than re-deriving `.git` classification.
+- MUST decide `is_owner` from decidable local git state (worktree-pointer topology + ownership claim), NOT from a clone-vs-primary guess.
+- For `intent == PRIMARY_READ`, MUST return `canonical_target` unchanged regardless of `cwd` — preserving the deliberate anchors (`get_feature_target_branch`, `resolve_merge_target_branch`, `mission_runtime/resolution.py`). A characterization test MUST pin each anchor GREEN.
+- For `intent == WRITE` from a foreign lane worktree (`is_owner == False`), MUST signal fail-closed (see C-2).
+- MUST NOT change read-path behavior for the ~130 `get_main_repo_root` callers not in the adopter set (C-008 read-seam fence).
 
-**Contract test**: given fixtures {primary, linked-worktree, standalone-clone, submodule, separate-git-dir}, assert the returned `kind` and that no clone's `primary_root` points outside itself.
+**Contract test**: fixtures {owner-primary, foreign-lane-worktree, nested-clone} × {WRITE, PRIMARY_READ}; assert ownership and that every PRIMARY_READ anchor returns its primary target unchanged. **Red-first**: none for the classifier itself (identity is new); the red-first tests live in the adopters (C-2/C-3).
 
-## C-2 — Write-target resolution & refusal (FR-002…FR-009, NFR-003)
+## C-2 — Fail-closed write refusal (FR-002, FR-003, NFR-003)
 
-**Interface**: `resolve_write_target(command, cwd) -> WriteTarget`.
+- A foreign-checkout `WRITE` invocation MUST refuse via the single `FailClosedRefusal` seam; the message MUST contain the `refusal_path` (the checkout it would otherwise have acted on) verbatim.
+- An **owner** invocation MUST proceed exactly as today (no new refusal).
+- Per-command decisions (no blanket-REFUSE loophole):
+  - `intake` (FR-002): MUST perform the identity check before writing the shared untracked brief slot; `--force` MUST NOT overwrite a slot owned by a different checkout without it.
+  - `doctor tool-surfaces --fix` (FR-003): from a lane, MUST refuse (naming primary) rather than silently repair the primary's per-checkout agent-surface manifest.
+- Architectural test: no in-scope command emits a write-refusal outside the `FailClosedRefusal` seam (makes NFR-003's "100%" enforced, not sampled).
 
-- MUST return `WRITE_INVOKING` with `target_root == checkout_root` for a `PRIMARY` or `STANDALONE_CLONE` invocation.
-- For a `LINKED_WORKTREE`, MUST either return `WRITE_INVOKING` targeting the worktree, or `REFUSE` — never silently target `primary_root`.
-- On `REFUSE`, the emitted CLI message MUST contain the concrete `refusal_path` verbatim (the checkout it would otherwise have written to). No generic-only refusal.
-- `intake --force` MUST NOT overwrite a shared untracked slot owned by a different mission/worktree without an identity check.
+**Contract test (red-first)**: from a lane worktree, `doctor tool-surfaces --fix` and `intake` are RED on base (they silently mutate primary) and GREEN after (refuse, naming the path). Owner-checkout invocation stays green throughout.
 
-**Consumers bound by this contract**: `intake` (FR-002), `doctor tool-surfaces --fix` (FR-003), `doctor mission-state --fix` (FR-004, FR-009), `migrate backfill-runtime-state` (FR-005), `--owned-checkout` mission create (FR-007).
+## C-3 — Guard false-green fixes (FR-005, FR-006)
 
-**Contract test**: from a linked worktree and a standalone clone, each consumer either writes into the invoking checkout or refuses with a message asserting the exact `refusal_path`.
+- `setup-plan`: `branch_matches_target` MUST be computed from the invoking checkout / `meta.json`, never the primary's HEAD. (Target-branch resolution stays primary-anchored — deliberate — only the *match* is corrected.)
+- `migrate backfill-runtime-state`: the cutover guard MUST be invoking-checkout-aware; it MUST NOT pass merely by verifying against the same redirected path it wrote. (The write target to the coord/primary event log stays deliberate per C-003.)
 
-## C-3 — No false-green guard (FR-005, FR-006)
+**Contract test (red-first)**: from a lane worktree on a lane branch, `setup-plan` reports `branch_matches_target: true` on base (primary's HEAD) → RED; GREEN after it reflects the invoking checkout. `backfill` verify passes-against-redirected-path on base → RED; GREEN after it is lane-aware / refuses.
 
-- `setup-plan` MUST resolve the branch from the invoking checkout / mission `meta.json`, and MUST NOT report `branch_matches_target: true` when the value was read from a redirected (re-anchored) path.
-- `migrate backfill-runtime-state` MUST write into the linked worktree and its cutover guard MUST read the same path it wrote.
+## C-4 — mission-state reconciliation (FR-004, FR-009)
 
-**Contract test**: run from a worktree whose `meta.json` names branch X while primary is on branch Y; assert the guard reflects X (or reports honest disagreement), never a false `true` from Y.
+- `doctor mission-state --audit/--fix` MUST preserve the deliberate primary status-home (#2320) — the canonicalization target stays primary.
+- It MUST add checkout-identity awareness so a lane invocation does not act as an unannounced primary canonicalization, and its audit MUST NOT report a false-green from a redirected read.
+- The repair manifest MUST enumerate every field it touches, including removed fields (manifest honesty). Verdict destruction is already fixed (C-002) — no destruction fix.
 
-## C-4 — `.kittify` containment boundary (FR-008)
+**Contract test**: a lane invocation is surfaced (refused/announced), not silent; the manifest lists every touched field; a green sentinel pins `bec7c25273` (NFR-004).
 
-- cwd-ancestor `.kittify` discovery MUST stop at an explicit containment boundary and MUST NOT cross it to a parent checkout.
+## C-5 — find_repo_root nested-clone boundary (FR-007)
 
-**Contract test**: nested checkout with an inner `.kittify`; assert discovery resolves to the inner boundary, not the outer.
+- `find_repo_root` MUST stop at a nested-clone `.git`-directory boundary consistently with `resolve_canonical_root` (which already stops at rule 1 / `.kittify`), eliminating the resolver disagreement.
 
-## C-5 — Unified review-verdict CLI path (FR-010, FR-012, FR-013)
+**Contract test (red-first)**: a nested clone inside a primary — `find_repo_root` re-anchors to the outer primary on base (RED, disagrees with `resolve_canonical_root`); after the fix both return the nested clone.
 
-- `agent status emit` MUST accept `--review-result-json <json>`, validated by the **same** `_parse_review_result_json` used by `orchestrator-api transition`.
-- The parsed `review_result` MUST be threaded into the `TransitionRequest`.
-- A WP MUST be walkable `in_progress → for_review → in_review → approved → done` via `agent status emit` alone.
-- `agent status emit --help` MUST document only functional paths; the misleading `in_review`/`--evidence-json` verdict example MUST be corrected.
-- The `in_review → approved` guard MUST admit the `ReviewResult` path on both surfaces.
+## C-6 — Unified review-verdict CLI path (FR-010, FR-012, FR-013)
 
-**Contract test**: identical verdict JSON produces identical validation outcome on both surfaces; a full emit-only lifecycle walk reaches `done`; `--help` snapshot contains no non-functional example.
+- `agent status emit` MUST accept `--review-result-json`, validated by the same hoisted `_parse_review_result_json` as `orchestrator-api transition`; the parsed `review_result` MUST be threaded into the `TransitionRequest`.
+- A WP MUST be walkable `in_progress -> for_review -> in_review -> approved -> done` via `agent status emit` alone.
+- `--help` MUST document only working paths; the misleading `in_review`/`--evidence-json` verdict example MUST be corrected.
+- The `in_review -> approved` guard MUST admit the `ReviewResult` path on both surfaces.
 
-## C-6 — Shared, topology-aware `for_review` commit-gate (FR-011)
+**Contract test (red-first)**: identical verdict JSON → identical validation on both surfaces; an emit-only lifecycle walk reaches `done` (RED on base — no `--review-result-json` exists); `--help` snapshot contains no non-functional example.
 
-- The `for_review` commit-gate MUST be one shared implementation enforced on both `agent status emit` and `orchestrator-api transition`.
-- It MUST be topology-aware: a standalone clone is evaluated on **commit state**, not failed on topology.
+## C-7 — Shared, topology-aware `for_review` gate, both directions (FR-011)
 
-**Contract test**: the gate yields the same verdict for the same repo state on both surfaces across the topology matrix {primary, worktree, clone}; a clone with satisfied commits passes.
+- One shared gate implementation (hoisted to a `lanes`-side leaf, surface-neutral error contract) enforced on both surfaces.
+- Topology-aware: a clone with satisfied commits PASSES and a clone with **unsatisfied** commits FAILS — **both** asserted identically on both surfaces (no always-pass-for-clone fake).
 
-## C-7 — Snapshot round-trip & audit registration (FR-014, FR-015, FR-016, FR-018)
+**Contract test**: same repo state → same verdict on both surfaces across {primary, worktree, clone}; the negative case (clone, unsatisfied commits) fails on both.
 
-- Replaying any persisted snapshot's event log MUST reproduce every field present in the snapshot (round-trip property; includes `review_result`).
-- A review-carrying event row MUST audit clean — `review_result` registered in `status_event_row`; 0 `UNKNOWN_SHAPE`.
-- The shape-registry drift test MUST fail when a persisted shape is unregistered (real assertion, not a subset tautology).
+## C-8 — Snapshot value round-trip & audit registration (FR-014, FR-015, FR-016, FR-018)
+
+- Replaying a persisted snapshot's event log MUST reproduce the snapshot's projected fields **by value** (not key-presence); the property generator MUST emit ≥1 `review_result`-carrying event (non-vacuous).
+- A `status_event_row` carrying `review_result` MUST audit clean (0 `UNKNOWN_SHAPE`).
+- A **new `status_event_row`-scoped** drift test MUST fail when a persisted event shape is unregistered (the existing `meta.json`-scoped test cannot cover this artifact).
 - After the writer migration, persisted coordination-key rows MUST carry the registered shape.
 
-**Contract test**: property test over generated event logs asserting snapshot⊆replay; audit a `review_result` row and assert no `UNKNOWN_SHAPE`; add a deliberately-unregistered shape and assert the drift test goes red.
+**Contract test (red-first for the audit half)**: audit a `review_result` row → `UNKNOWN_SHAPE` on base (RED, verified absent from the `status_event_row` frozenset); GREEN after registration. Value round-trip: a snapshot with a corrupted-value replay FAILS (guards against key-only fakes).
 
-## C-8 — Review-cycle write-side kind (FR-017)
+## C-9 — Review-cycle write-side kind (FR-017)
 
-- `review/cycle.py` write-side MUST emit the correct artifact kind (not `WORK_PACKAGE_TASK`).
-- `resolve_review_verdict_facts` (`tasks_verdict_persistence.py:404`) MUST be migrated to the new kind and `test_analysis_report_rehome` re-verified green.
+- `review/cycle.py` write-side MUST emit the correct artifact kind (not `WORK_PACKAGE_TASK`); `resolve_review_verdict_facts` (`tasks_verdict_persistence.py:404`) MUST be migrated and `test_analysis_report_rehome` re-verified green.
 
 **Contract test**: a review-cycle write lands under the review-cycle kind; verdict-facts resolution reads it; the rehome test passes.
 
-## Cross-cutting: red-first (NFR-001)
+## Cross-cutting
 
-Every contract above whose FR is release-blocking MUST ship with a `@pytest.mark.regression` test, pinned to its issue, that is **red on `upstream/main`** and green after the fix, exercised through the real CLI entry point.
+- **Red-first (NFR-001)**: every release-blocking contract ships a `@pytest.mark.regression` test, issue-pinned, **authored and shown failing on base** through the real CLI where one exists (fail-closed slices assert refusal/absence-of-false-green per #3128). FR-015/FR-016 are internal-API-level and marked as such.
+- **Green sentinels (NFR-004)**: `407ea376c4` (projection) and `bec7c25273` (repair preservation) each ship a green sentinel — no WP manufactures a red by regressing them.
+- **Must-not-flip (C-004/FR-008)**: the primary-read anchors keep passing characterization tests.

@@ -1,85 +1,87 @@
 # Data Model: Worktree-Aware Root Resolution & Verdict Parity
 
-This mission is behavior-fixing, not schema-adding. The "entities" below are the value objects and invariants the fix introduces or hardens. No persistent storage schema changes; the append-only `status.events.jsonl` format is unchanged (only its audit registration and round-trip guarantee are hardened).
+Behavior-fixing mission — the "entities" are the value objects and invariants the fix introduces or hardens. No persistent schema changes; the append-only `status.events.jsonl` format is unchanged (only its audit registration and value round-trip are hardened).
+
+> **Reframe (2026-08-18):** the discarded `CheckoutKind {PRIMARY, LINKED_WORKTREE, STANDALONE_CLONE}` classifier is replaced by a **checkout-identity guard**. A post-plan squad (empirical resolver run) established that clones already resolve to self and the clone/primary split is undecidable from local state. The decidable, load-bearing distinction is **invocation ownership** (does this invocation own the target checkout, or is it a foreign lane worktree?), with **read/write intent** so deliberate primary reads are preserved.
 
 ## Entities & Value Objects
 
-### CheckoutKind (new value object)
+### CheckoutIdentity (new value object)
 
-Classifies the checkout that owns a given working directory. The single source of truth the resolver family consults.
-
-| Field | Type | Meaning |
-|-------|------|---------|
-| `kind` | enum `{ PRIMARY, LINKED_WORKTREE, STANDALONE_CLONE }` | The classification. |
-| `checkout_root` | Path | The root of the *invoking* checkout (where a write should land). |
-| `primary_root` | Path \| None | The primary checkout this worktree points into; `None` for `STANDALONE_CLONE` and `PRIMARY` (a clone/primary is its own primary). |
-| `git_dir` | Path | Resolved `.git` location (directory for primary/clone; pointer target for a linked worktree). |
-
-**Invariants**
-- INV-1: A `STANDALONE_CLONE` (`.git` is a directory, no linking pointer to another checkout) is classified `STANDALONE_CLONE`, never re-anchored to an unrelated `primary_root`. (spec FR-001, SC-003)
-- INV-2: For a `LINKED_WORKTREE`, `checkout_root` is the worktree itself; `primary_root` is the main checkout. Write-target resolution defaults to `checkout_root`, never `primary_root`. (spec FR-001)
-- INV-3: Classification is a pure function of the filesystem/git state at the invoking CWD; it performs no re-anchoring side effect.
-
-### WriteTarget (new value object)
-
-The decision a mission-state-writing command makes before touching disk.
+The single source of truth for invocation ownership. Consulted by in-scope commands; carries intent so it does not flip deliberate primary reads.
 
 | Field | Type | Meaning |
 |-------|------|---------|
-| `target_root` | Path \| None | Where the write lands; `None` when the command must refuse. |
-| `decision` | enum `{ WRITE_INVOKING, REFUSE }` | Outcome. |
-| `refusal_path` | Path \| None | On `REFUSE`, the checkout path the command *would* have written to — named in the error message. (spec FR-002, NFR-003) |
+| `invoking_root` | Path | The checkout the command was invoked from (CWD's own checkout root). |
+| `canonical_target` | Path | Where the command's canonical write/read deliberately lives (may be the primary for #2320/#3328 anchors). |
+| `is_owner` | bool | True when `invoking_root` owns/equals `canonical_target` (or a worktree it legitimately owns); False for a foreign lane worktree. |
+| `intent` | enum `{ WRITE, PRIMARY_READ }` | `WRITE` → ownership decides fail-closed vs proceed; `PRIMARY_READ` → deliberate primary anchor, never flipped to `invoking_root`. |
 
 **Invariants**
-- INV-4: `decision == REFUSE ⇒ refusal_path is not None` and the emitted message contains it verbatim. (NFR-003, 100% of refusal paths)
-- INV-5: `decision == WRITE_INVOKING ⇒ target_root == CheckoutKind.checkout_root`. No write lands outside the invoking checkout. (SC-001)
+- INV-1: For `intent == WRITE` and `is_owner == False`, the command fails closed (refuses) — it does not silently act on `canonical_target`. (spec FR-002, FR-003; SC-001)
+- INV-2: For `intent == PRIMARY_READ`, the guard returns `canonical_target` unchanged regardless of `invoking_root` — the must-not-flip anchors (#2320/#3328) are preserved. (spec FR-008; SC-003)
+- INV-3: The guard performs no re-anchoring *write* side effect; it is a decision unit.
+- INV-4: Ownership is decided from local, decidable git state (worktree pointer topology + ownership claim), **not** from an undecidable clone/primary guess. (spec C-005)
+
+### FailClosedRefusal (new value object)
+
+The #3128 remediation shape emitted when `intent == WRITE` and `is_owner == False`.
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `refusal_path` | Path | The `canonical_target` the command would otherwise have acted on — named in the message. (FR-002/003, NFR-003) |
+| `channel` | single seam | All write-refusals route through this one constructor (architectural test forbids ad-hoc refusal strings). (NFR-003) |
+
+**Invariants**
+- INV-5: Every write-refusal carries a non-empty `refusal_path` present verbatim in the message. (NFR-003)
+- INV-6: An owner invocation (primary checkout it owns) never triggers a refusal — behavior is unchanged from today. (spec Edge Cases)
+
+### GuardVerdict (guards — false-green fixes)
+
+The result of a cutover/branch guard.
+
+**Invariants**
+- INV-7: `setup-plan`'s `branch_matches_target` is computed from the invoking checkout / mission `meta.json`, never from the primary's HEAD via a redirected read. (spec FR-006; SC-002)
+- INV-8: `backfill`'s cutover guard does not report success merely by verifying against the same redirected path it wrote; it is invoking-checkout-aware. (spec FR-005; SC-002)
 
 ### ReviewResult (existing — parity hardening)
 
-The structured verdict carried on a status transition. Already projected by the reducer (`407ea376c4`); this mission does not change its projection (C-001), only its **entry parity** and **audit registration**.
-
-| Field | Type | Meaning |
-|-------|------|---------|
-| `verdict` | enum (approve/reject/…) | The review decision. |
-| `review_ref` | str \| None | Reference to the review artifact. |
-| `evidence` | str \| None | Optional evidence pointer. |
+Projection already correct (`407ea376c4`, C-001). This mission adds entry parity + audit registration + value round-trip.
 
 **Invariants**
-- INV-6: `_parse_review_result_json` is the single validator; `agent status emit --review-result-json` and `orchestrator-api transition` both route through it (identical validation). (spec FR-010)
-- INV-7: A WP can reach `done` (incl. the `in_review` exit) via `agent status emit` alone, carrying a `ReviewResult`. (spec FR-010, FR-013, SC-004)
-- INV-8: **Round-trip** — no field present in a persisted snapshot is absent from a replay of its event log. (spec FR-015, SC-005)
-- INV-9: A review-carrying event row audits clean — `review_result` is a registered shape; no `UNKNOWN_SHAPE`. (spec FR-014, SC-005)
+- INV-9: `_parse_review_result_json` (hoisted to `status`) is the single validator; both `agent status emit --review-result-json` and `orchestrator-api transition` route through it. (FR-010)
+- INV-10: A WP reaches `done` (incl. the `in_review` exit) via `agent status emit` alone, carrying a `ReviewResult`. (FR-010, FR-013; SC-004)
+- INV-11: **Value round-trip** — replaying a persisted snapshot's event log reproduces the snapshot's projected fields **by value** (not key-presence); the generator is guaranteed to emit ≥1 `review_result`-carrying event (non-vacuous). (FR-015; SC-005)
+- INV-12: A `status_event_row` carrying `review_result` audits clean — the key is registered; 0 `UNKNOWN_SHAPE`. (FR-014; SC-005)
 
-### ForReviewCommitGate (existing — unified)
+### ForReviewCommitGate (existing — unified, both directions)
 
-The invariant guarding the `for_review` transition.
-
-**Invariants**
-- INV-10: The gate is one shared implementation enforced identically on both CLI surfaces. (spec FR-011, SC-004)
-- INV-11: The gate is topology-aware — a standalone clone is evaluated on commit state, not failed on topology. (spec FR-011)
-
-### ShapeRegistry row (existing — hardened)
-
-The audit descriptor for a persisted event/coordination-key row.
+Hoisted to a `lanes`-side leaf with a **surface-neutral error contract** (returns a decision; each surface renders its own failure — the orchestrator envelope is not dragged into the CLI).
 
 **Invariants**
-- INV-12: `review_result` and the coordination-key shape are registered. (FR-014, FR-016)
-- INV-13: The drift test makes a real assertion — it fails if a persisted shape is unregistered (no tautology). (FR-016)
-- INV-14: After the writer migration, persisted coordination-key rows carry the registered shape (no `UNKNOWN_SHAPE`). (FR-018)
+- INV-13: One shared implementation enforced identically on both CLI surfaces. (FR-011; SC-004)
+- INV-14: Topology-aware: a clone is evaluated on **commit state** — passing with satisfied commits **and failing with unsatisfied commits** (both directions asserted). (FR-011)
+
+### ShapeRegistry `status_event_row` (existing — hardened)
+
+**Invariants**
+- INV-15: `review_result` and the coordination-key shape are registered in `status_event_row`. (FR-014, FR-016)
+- INV-16: A **new `status_event_row`-scoped** drift test fails when a persisted event shape is unregistered. (The existing `test_shape_registry_writer_parity.py` is `meta.json`-scoped and cannot cover this artifact.) (FR-016)
+- INV-17: After the writer migration, persisted coordination-key rows carry the registered shape. (FR-018)
 
 ## State Transitions (verdict path — unchanged machine, unified entry)
 
-The 9-lane machine is unchanged. What changes is that **both** entry surfaces can drive the `in_review → approved` edge with a `ReviewResult`:
-
 ```
-in_progress → for_review → in_review → approved → done
-                  ▲             │
-        (for_review gate,       │ (ReviewResult path,
-         shared+topology-aware) │  both surfaces — FR-013)
+in_progress -> for_review -> in_review -> approved -> done
+                   ^              |
+        (for_review gate,         | (ReviewResult path,
+         shared + topology-aware, |  both surfaces — FR-013)
+         both directions)         |
 ```
 
 ## Relationships
 
-- `WriteTarget` is derived from `CheckoutKind` (INV-5).
-- Every resolver-family function (`find_repo_root`, `resolve_canonical_root`, `predict_lane_worktree`, `locate_project_root`, `_get_main_repo_root`) consumes `CheckoutKind` rather than re-deriving `.git` classification (single canonical authority).
+- `FailClosedRefusal` is produced by `CheckoutIdentity` when `intent==WRITE ∧ ¬is_owner` (INV-1/INV-5).
+- In-scope write commands consume `CheckoutIdentity(intent=WRITE)`; deliberate primary anchors (#2320/#3328) are declared `intent=PRIMARY_READ` and appear in the FR-008 must-not-flip inventory.
 - `ForReviewCommitGate` and `_parse_review_result_json` are shared dependencies of both CLI surfaces (no per-surface copy).
+- `get_main_repo_root` (~130 callers) is unchanged as a primitive; only named commands adopt the identity guard (locality of change).

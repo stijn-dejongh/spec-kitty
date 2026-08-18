@@ -7,6 +7,7 @@
   "mission_number": null,
   "mission_slug": "worktree-root-resolution-01M0B59R",
   "mission_type": "software-dev",
+  "pr_bound": true,
   "purpose_context": "A family of root resolvers treats a standalone clone as its own primary and re-anchors worktree working directories to the main checkout, producing silent cross-checkout writes, false-green guards, and divergent review-verdict behavior across a dozen commands. This mission fixes that shared root cause and closes the review-verdict CLI-parity gaps that ride the same seam, so a command run from a worktree or clone never silently re-anchors its write, gate check, or verdict.",
   "purpose_tldr": "Make root/workspace resolution honest under linked worktrees and standalone clones, and unify the review-verdict CLI path across both surfaces.",
   "slug": "worktree-root-resolution-01M0B59R",
