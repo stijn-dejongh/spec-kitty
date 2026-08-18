@@ -7,10 +7,10 @@
 For every subcommand: exact **flags**, **exit codes**, and **`--json` envelope shape**. Specifically:
 1. `status --check --json` → single JSON, exit 0 (coherent) / exit 2 (incoherent); human block suppressed.
 2. `status` (no `--check`) full human-render (the cc-90 build path) — snapshot of the rendered table.
-3. `doctor` — the non-`--json` render AND each `--json` branch (`{available:false,…}` exit 2; `{total:0,…}`; full report).
-4. `sync_workspace` — full CLI golden (no existing coverage today; freeze before extraction).
+3. `doctor` — takes **no arguments and has no `--json`** (pedro Pd-3): freeze the Rich table + issues list, the "No issues detected. Sync is healthy." vs unhealthy summary, and the `EXIT_LOGGED_OUT_ON_CONNECTED_TEAMSPACE` (exit 4) recovery arm.
+4. `sync_workspace` — full CLI golden (no existing coverage today; freeze before extraction). Its substantive SYNCED/CONFLICTS/FAILED arms run a live `git rebase` and are non-deterministic, so the golden **stubs `sync.get_vcs` and `sync._detect_workspace_context`** to return fixed `SyncResult`s (a monkeypatch-golden, not a black-box snapshot); pin the capture encoding for the emoji glyphs.
 5. `now` — `--strict` exits, preflight exit 2, unauthenticated exit 1, `EXIT_LOGGED_OUT_ON_CONNECTED_TEAMSPACE`.
-6. `diagnose --json` — `{total,valid,invalid,results:[…]}`.
+6. `diagnose` — `--json` shapes `{available:false,…}` exit 2 / `{total:0,…}` / full `{total,valid,invalid,results:[…]}` (the full-report arm needs a fixed event fixture).
 7. The **coord exit-0 silent-skip** arm (SaaS-disabled guard: print-disabled + `return`/`Exit(0)`) — preserved exactly.
 
 ## Contract rules (given → then)

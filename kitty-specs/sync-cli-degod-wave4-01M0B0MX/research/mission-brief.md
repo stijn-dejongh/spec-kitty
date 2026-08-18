@@ -87,7 +87,7 @@ The `status --check --json` JSON contract is specified at `kitty-specs/mvp-cli-s
 ## 7. Test hazards (carry into every WP)
 
 - **Real-port/daemon tests run serially `-n0`** (ports 9400-9449 not HOME-isolated). Parallel = `--dist loadfile`, never bare `load`.
-- **`SAAS_SYNC_ENV_VAR` (`SPEC_KITTY_SAAS_SYNC`) must be `1`** to exercise the non-skip render arms (autouse `_enable_saas_flag` fixture); else you hit the exit-0 silent-skip.
+- **`SAAS_SYNC_ENV_VAR` (`SPEC_KITTY_ENABLE_SAAS_SYNC`) must be `1`** to exercise the non-skip render arms (autouse `_enable_saas_flag` fixture); else you hit the exit-0 silent-skip.
 - **`SPEC_KITTY_SYNC_DISABLE`/`SPEC_KITTY_SYNC_MINIMAL_IMPORT`** disable sync AND skip the pre-review gate — config, not code faults.
 - **`logged_out_on_connected_teamspace`** is a CI-env red, not a code red.
 - **HOME isolation mandatory** (pin `HOME`/`LOCALAPPDATA` to `tmp_path`); **subprocess strict-JSON tests need `PYTHONPATH=<worktree>/src`** (+ the shadow-venv PATH footgun — prepend `.venv/bin`).
