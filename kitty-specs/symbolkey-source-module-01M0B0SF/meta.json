@@ -7,6 +7,7 @@
   "mission_number": null,
   "mission_slug": "symbolkey-source-module-01M0B0SF",
   "mission_type": "software-dev",
+  "pr_bound": true,
   "purpose_context": "The architectural dead-symbol gate relies on free-form provenance comments to know which module a still-dead allowlisted symbol came from. That makes a load-bearing safety property depend on comment hygiene and caps the #2853 refresh helper's coverage on same-name duplicates. This mission adds a stable, non-hashing machine identity (source_module) to SymbolKey, backfills it across the allowlist, and retires the comment-parsing path — without forfeiting the relocation-tolerance the content-tier keys were designed for.",
   "purpose_tldr": "Give dead-symbol allowlist entries a stable machine identity so the refresh helper stops depending on fragile provenance-comment parsing.",
   "slug": "symbolkey-source-module-01M0B0SF",
