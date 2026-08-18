@@ -40,7 +40,11 @@ related-work). Full dossiers: `scratchpad/research-3552/`.
 
 ## Related work (nothing supersedes #3552)
 
-- #3560 (CLOSED) Finding-1 collision = this mission's acceptance anchor. #2546 (CLOSED) precursor. #2913 (OPEN) independent. #3552 parented under EPIC #1931.
+- #3560 (CLOSED) Finding-1: **corrected by the post-plan squad** — a non-comparing `source_module` cannot resolve a *live* same-name/same-body collision (it is invisible to `final_key in allowlist` and tier selection), and it must not (that would forfeit relocation-tolerance, C-002/G3). The Finding-1 `NEEDS_MODULE_PATH` escalation is *correct* and stays; it is resolved by a hand-authored collision-tier `module_path=` entry, orthogonal to this mission. The #3552 acceptance anchor is therefore **comment-independent recovery** (FR-005/SC-002), not collision exemption. The two #3558 Finding-1 tests stay green. #2546 (CLOSED) precursor. #2913 (OPEN) independent. #3552 parented under EPIC #1931.
+
+## Post-plan squad correction (Option A, operator-confirmed)
+
+- The three post-plan lenses converged: FR-005/SC-002 as originally written was unsatisfiable without forbidden auto-escalation. Operator chose **Option A (provenance-only)**: keep the non-hashing field, drop the "no `NEEDS_MODULE_PATH`" claim, re-anchor on comment-independent recovery. Also folded: merge backfill + parse-retirement into one atomic WP (E501/lineno); replace the deleted completeness gate (FR-006) and integrity cross-check (FR-007); add `test_refresh_dead_symbol_hashes.py` to the blast radius; reword (not delete) `Outcome.UNRECOVERABLE`; count allowlist-scoped, never hardcode.
 
 ## Supply-chain
 

@@ -40,8 +40,22 @@ collision-tier → `("Foo", "m", "h")`. Provenance never enters the identity tup
 still-dead symbol has `source_module is None`. Adding a provenance peer does not change
 any other key's `body_hash`.
 
-## Acceptance anchor (FR-005 / SC-002)
+## Acceptance anchor (FR-005 / SC-002) — comment-independent recovery
 
-Reproduce the #3560 Finding-1 scenario: two dead symbols sharing `bare_name` + `body_hash`
-with distinct `source_module`. A content-tier entry for one resolves via `source_module`
-and does **not** emit `NEEDS_MODULE_PATH`, while the other still-dead symbol is never admitted.
+With `source_module` set on an allowlist entry, deleting or garbling its `# module::Name`
+provenance comment does **not** change the module the helper recovers or the refresh
+decision it reaches. Red-first constructible against today's comment-parsing path (which
+*would* change the decision when the comment is broken).
+
+**Explicitly NOT the anchor (post-plan squad):** a genuine *live* same-`bare_name`+same-`body_hash`
+collision still escalates to `NEEDS_MODULE_PATH` — correct, and unchanged by this mission.
+`source_module` is `compare=False`, so it cannot enter `final_key in allowlist` and cannot
+exempt a live collision (that would forfeit relocation-tolerance, C-002/G3). Such a collision
+is resolved by a hand-authored collision-tier `module_path=` entry, orthogonal to `source_module`.
+The two #3558 Finding-1 tests (`test_decide_escalates_content_tier_entry_needing_collision_tier`,
+`..._escalates_end_to_end`) assert `NEEDS_MODULE_PATH` and **stay green**.
+
+## Completeness + integrity guards (FR-006 / FR-007)
+
+- **FR-006 completeness**: `test_every_content_tier_entry_has_source_module` — fails if any allowlist-scoped content-tier `SymbolKey(...)` call lacks a `source_module=` kwarg. Replaces the deleted parseable-comment gate so SSOT is kept as the corpus grows.
+- **FR-007 integrity**: every entry's `source_module` matches its retained `# module::Name` audit comment (and/or is a known corpus module). Replaces `_recover_provenance`'s `Name == bare_name` cross-check so provenance drift cannot silently move onto the field.

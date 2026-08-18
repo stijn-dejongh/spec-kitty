@@ -27,7 +27,8 @@ The dead-symbol identity. Frozen dataclass.
 Parsed representation of one allowlist `SymbolKey(...)` call.
 
 - `module_path` property: **before** — recovered from provenance comment when content-tier; **after** — returns `source_module` directly (comment branch retired).
-- Drops the comment-recovery code path; `Outcome.UNRECOVERABLE`'s comment-specific mode retired.
+- Drops the comment-recovery code path (`_recover_provenance`, `_comments_by_row`). `Outcome.UNRECOVERABLE` is **retained** as the generic fail-closed backstop (the guard against a future entry missing `source_module`); only its comment-specific docstring wording is updated.
+- **Blast radius**: `tests/architectural/test_refresh_dead_symbol_hashes.py` constructs `AllowlistEntry` via a local helper (`provenance_module=`/`kwarg_module_path=`) and asserts on `Outcome.UNRECOVERABLE` — its fixtures/asserts move with this change; the two #3560 Finding-1 tests stay green.
 
 ## DeadLocation (`_refresh_dead_symbol_hashes.py`) — unchanged
 
