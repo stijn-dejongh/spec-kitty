@@ -176,3 +176,7 @@ depends on WP09 (rebase on its shrunk file). Not a parallel lane.
 - **A-1**: all I/O hoisted to the top of the shell; the core is pure.
 - **INV-4 / INV-5**: seam preserved via late binding, ~60 patch-tests green; the `# noqa: C901`
   is gone and `doctor` truly measures ≤ 15.
+
+
+## Post-tasks squad corrections (BINDING)
+- **Rn-1:** the `doctor` render golden is **frozen in WP02** (`test_sync_cli_safe.py`), not here. T019 is now: **VERIFY** that golden is green before and after your restructure (do not re-freeze). Add `build_doctor_report()` unit tests in `test_sync_doctor_render.py`; the behavior-lock is the WP02 snapshot. (`doctor` has no `--json` — do not invent one.)

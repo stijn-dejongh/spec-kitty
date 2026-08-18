@@ -195,3 +195,7 @@ depends on WP08 (rebase on its shrunk file). Not a parallel lane.
 - **INV-4 (seam)**: confirm the relocation uses late-bound `sync_module.<name>` and the ~60
   patch-tests pass; confirm the render snapshot's stubs still intercept post-move.
 - **INV-5**: the `# noqa: C901` is gone and `status` truly measures ≤ 15 (not merely "tests pass").
+
+
+## Post-tasks squad corrections (BINDING)
+- **Rn-1:** the `status` full-human-render golden is **frozen in WP02** (`test_sync_cli_safe.py`), not here. T017 is now: **VERIFY** that golden is green BEFORE your restructure commit and again AFTER (do not re-freeze it). You MAY add extraction-specific assertions (e.g. `build_status_rows()`/`evaluate_boundary_coherence()` unit tests) in `test_sync_status_render.py`, but the behavior-lock is the WP02 snapshot.

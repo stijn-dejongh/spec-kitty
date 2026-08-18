@@ -140,9 +140,9 @@ husk is measured against a separate, larger LOC ceiling than the extracted `sync
 
 ### IC-06 — Husk finalize + governance closeout
 
-- **Purpose**: (husk *scaffold* — the guarded re-export block + late-bound convention — lands EARLY as a prerequisite edge, WP-translation guard #2; this concern is the husk *finalize*.) Finalize the `cli/commands/sync.py` husk (Typer `app` + guarded re-export/lazy-accessor block so `sync.<private>` seams resolve — C-005); re-pin the arch-gate baselines against `upstream/main` (dead-symbol/module, ratchet, golden-count, CLI-count, writer-census); produce `research/env-census.md` (inventory only, set-unchanged guard — FR-007); file the deferred follow-on issue(s) at merge (FR-008).
+- **Purpose**: (husk *scaffold* — the guarded re-export block + late-bound convention — lands EARLY as a prerequisite edge, WP-translation guard #2; this concern is the husk *finalize*.) Finalize the `cli/commands/sync.py` husk (Typer `app` + guarded re-export/lazy-accessor block so `sync.<private>` seams resolve — C-005); re-pin the arch-gate baselines against `upstream/main` (dead-symbol/module, ratchet, golden-count, CLI-count, writer-census); produce `docs/plans/code-quality/sync-env-census.md` (inventory only, set-unchanged guard — FR-007); file the deferred follow-on issue(s) at merge (FR-008).
 - **Relevant requirements**: FR-007, FR-008, NFR-004, C-005.
-- **Affected surfaces**: `cli/commands/sync.py` (`__init__`/husk), `tests/architectural/_baselines.yaml` + baseline artifacts, `research/env-census.md`, the tracker.
+- **Affected surfaces**: `cli/commands/sync.py` (`__init__`/husk), `tests/architectural/_baselines.yaml` + baseline artifacts, `docs/plans/code-quality/sync-env-census.md`, the tracker.
 - **Sequencing/depends-on**: last (after IC-03/04/05 land); the census can be produced any time.
 - **Risks**: re-pin against the true merge-base (`upstream/main`), not stale fork origin; if the merge-base surfaces pre-existing red, open a tracking issue per DIR-013 before treating it as baseline; the husk re-export is necessary-not-sufficient — verify the ~60 patch-tests green (NFR-001).
 
@@ -162,7 +162,7 @@ sequencing guards (full evidence: [research/squad-findings-post-plan.md](./resea
    patch-tests break mid-mission. Split "husk-scaffold" (early — right after the golden net) from
    "husk-finalize" (last — baseline re-pin + census + issue). `@app.command` shells stay in `sync.py`.
 3. **IC-05 → ≥4 WPs**: `status` (cc 90), `doctor` (cc 73), `sync_workspace` each their own WP
-   (each a gather-I/O→core→render restructure retiring one `# noqa: C901`), plus a remaining-shell-split WP.
+   (each a gather-I/O→core→render restructure retiring one `# noqa: C901`), plus a remaining-shell-split WP. *(Post-tasks note: the separate `cmd_*.py` shell-split WP is SUPERSEDED by guard #2 — `@app.command` shells stay in `sync.py`; the ~19 non-monster bodies shrink in place as their helpers extract, and WP12 asserts none exceeds complexity 15.)*
 4. **IC-03 → ~5 sequential WPs** (render, runtime/config, purge, store-report+authority, dispatch),
    chained on `sync.py`.
 5. **Only `walker.py` is genuinely pre-golden.** `sync.py` Tier-1 (esp. the `S3358` ternary

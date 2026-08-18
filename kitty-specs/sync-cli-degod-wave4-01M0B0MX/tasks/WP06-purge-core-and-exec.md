@@ -189,3 +189,7 @@ Re-grep line anchors in `$WT` (WP05 shifted them). Current anchors:
 - Diff moved bodies against pre-move: readers/executors relocate verbatim; only the
   `purge` shell is legitimately rewritten (and only into parse→exec→core→render).
 - Confirm no golden snapshot bytes changed and the census swap is 1:1.
+
+
+## Post-tasks squad corrections (BINDING)
+- **Rn-3:** if this extraction relocates a consent/grant writer, perform the 1:1 census-key swap and keep `tests/architectural/test_sync_writer_census.py` green — editing that file is an authorized **small, individually-justified out-of-map edit** (one-line rationale). It is not in `owned_files` (shared arch-gate surface).

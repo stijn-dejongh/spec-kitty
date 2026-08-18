@@ -160,3 +160,7 @@ Verify the WP-translation guards / invariants that bind this WP:
   `sync.<name>` resolvable; the ~60 patch-tests are green.
 - **A-5 (census)**: if any writer moved, confirm a 1:1 key swap, not a growth.
 - **DIRECTIVE_044**: confirm the reused `Render` port — no second render port abstraction.
+
+
+## Post-tasks squad corrections (BINDING)
+- **Rn-3:** if this extraction relocates a consent/grant writer, perform the 1:1 census-key swap and keep `tests/architectural/test_sync_writer_census.py` green — editing that file is an authorized **small, individually-justified out-of-map edit** (one-line rationale). It is not in `owned_files` (shared arch-gate surface).

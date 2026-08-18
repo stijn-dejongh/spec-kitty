@@ -39,7 +39,7 @@ Per the post-plan squad: **every degod WP edits the single `cli/commands/sync.py
 | T021 | Freeze `sync_workspace` golden (monkeypatch-golden stubbing `get_vcs`/`_detect_workspace_context`) | WP11 | |
 | T022 | Degod `sync_workspace` into a thin shell; retire its C901 (daemon read/guard relocates intact) | WP11 | |
 | T023 | Husk finalize: re-pin arch-gate baselines vs `upstream/main` (dead-symbol/module, ratchet, golden-count, CLI-count, writer-census 1:1 key swaps) | WP12 | |
-| T024 | `research/env-census.md` + an executable FR-007 env-set-unchanged guard | WP12 | |
+| T024 | `docs/plans/code-quality/sync-env-census.md` + an executable FR-007 env-set-unchanged guard | WP12 | |
 | T025 | File the deferred follow-on issue(s) (adapter-consolidation WS4/WS6-gated + env retirement-candidates) under #1797 / #1619 | WP12 | |
 
 ## Work Packages
@@ -117,7 +117,7 @@ Per the post-plan squad: **every degod WP edits the single `cli/commands/sync.py
 - **Requirements**: FR-001, FR-003, NFR-002, SC-001, C-004.
 
 ### WP12 — Husk finalize + governance closeout
-- **Goal**: Re-pin the arch-gate baselines vs `upstream/main` (with per-writer census 1:1 key swaps); produce `research/env-census.md` + an executable FR-007 env-set-unchanged guard; file the deferred follow-on issue(s).
+- **Goal**: Re-pin the arch-gate baselines vs `upstream/main` (with per-writer census 1:1 key swaps); produce `docs/plans/code-quality/sync-env-census.md` + an executable FR-007 env-set-unchanged guard; file the deferred follow-on issue(s).
 - **Priority**: P2. **Execution mode**: code_change. **Dependencies**: WP11.
 - **Independent test**: full arch-gate suite green; env-set-unchanged guard green; follow-on issue link recorded.
 - **Subtasks**: T023, T024, T025. **Prompt**: [tasks/WP12-husk-finalize-and-closeout.md](./tasks/WP12-husk-finalize-and-closeout.md) · ~220 lines.

@@ -133,10 +133,31 @@ matrix and exit-code arms, not just the success envelope.
   prints the disabled notice and `return`s / `Exit(0)`. Freeze this exact print + exit-0
   behavior so a later extraction cannot accidentally turn a silent-skip into an error.
 
+- **`diagnose` full-report is intentionally NOT frozen** here or anywhere (post-tasks squad
+  Rn-4): `diagnose` renders its full `{total,valid,invalid,results:[…]}` report **inline**
+  (`console.print` in the command body, ~L5972) and **no WP extracts that render**, so the
+  populated-queue full report is outside the decomposition's blast radius. The two cheap
+  `--json` arms above are sufficient; do not add a stub-heavy full-report fixture.
+
+- **Freeze the `status` full-human-render AND `doctor` render NOW (post-tasks squad Rn-1 — the
+  load-bearing fix).** These renders depend on the shared helpers `_render_per_project_store` /
+  `_render_consent_readability` / `_render_tracker_egress`, which **WP04 (render) and WP07
+  (store-report split) churn *before* the status/doctor extraction WPs**. If their goldens were
+  frozen only in WP09/WP10 they would lock in a WP04/WP07 regression. Freeze them here, in this
+  file, stubbing the pre-existing seams (all exist on the un-decomposed `sync.py`):
+  - `status` (no `--check`, the full cc-90 render): stub `sync.get_vcs`, `sync._check_server_connection`,
+    `sync.scan_sync_daemons` to fixed values; snapshot the full rendered table (all rows +
+    the per-project/consent/tracker blocks) + exit code.
+  - `doctor` (no args, no `--json` — Pd-3): stub the same seams; snapshot the Rich table +
+    issues list + the "No issues detected. Sync is healthy." vs unhealthy summary + the
+    `EXIT_LOGGED_OUT_ON_CONNECTED_TEAMSPACE` (exit-4) arm.
+  These snapshots are the safety net WP04/WP07 must keep byte-green; WP09/WP10 then *verify*
+  them (they do not re-freeze).
+
 **Files**: `tests/characterization/test_sync_cli_safe.py`.
 
-**Validation**: all safe-surface cases green on pre-decomposition `sync.py`; each captures an
-exit code AND an output-shape assertion.
+**Validation**: all safe-surface cases + the `status`/`doctor` full-render snapshots green on
+pre-decomposition `sync.py`; each captures an exit code AND an output-shape assertion.
 
 ### T006 — Enumerate + document the ~60 monkeypatched-callee seam set
 

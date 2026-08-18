@@ -182,3 +182,8 @@ Re-grep in `$WT` (WP07 shifted lines). Current anchors:
 - Diff moved executor bodies against pre-move — verbatim relocate; only the
   exit-code mapper and the `now` shell are legitimately restructured.
 - Confirm the `now` golden bytes are unchanged and the census swap is 1:1.
+
+
+## Post-tasks squad corrections (BINDING)
+- **Rn-2:** relocate the receiver-resolution **residual** that WP07 left behind in `sync.py` (the plumbing/exec half of `_resolve_gated_receiver`) into `sync_dispatch_exec.py`; the admission-assert wrapper stays in `sync_authority.py` (WP07), reached late-bound via `sync_module.<name>`. **DoD:** no branch dropped; `now`/dispatch golden byte-green.
+- **Rn-3:** if this extraction relocates a consent/grant writer, do the 1:1 census-key swap and keep `test_sync_writer_census.py` green — editing that file / the arch-gate baseline data is an authorized **small, individually-justified out-of-map edit** (record a one-line rationale); they are not in `owned_files` to avoid cross-mission overlap.

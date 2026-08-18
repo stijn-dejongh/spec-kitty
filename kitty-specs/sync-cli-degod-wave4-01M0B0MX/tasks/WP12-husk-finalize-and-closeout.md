@@ -206,3 +206,8 @@ and depends on WP11 (rebase on its shrunk file). Not a parallel lane.
 - **WS6 / INV-6**: confirm **zero** `SPEC_KITTY_*` var was deleted and no daemon-lifecycle behavior
   changed — retire-candidates are documented + deferred, not actioned.
 - **FR-008**: confirm the follow-on issue link(s) are in the PR body and parented under #1797.
+
+
+## Post-tasks squad corrections (BINDING)
+- **Rn-5:** add an assertion (a check or a test) that **no non-monster command body exceeds complexity 15** after all helpers extract — run `ruff --select C901` over the whole final `sync.py` and confirm ZERO `C901` findings remain (the 3 monster suppressions gone AND no other command tripped the ceiling). This verifies "absorbed, not evaporated".
+- **Rn-3/Pr-2:** the arch-gate baseline data files (`tests/architectural/_baselines.yaml`, `_golden_count_baseline.json`, `_inert_slots_baseline.yaml`, `test_sync_writer_census.py`) you re-pin are authorized **small, individually-justified out-of-map edits** (record a one-line rationale each); they are intentionally not in `owned_files` (shared arch-gate surfaces, cross-mission).

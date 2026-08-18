@@ -19,4 +19,4 @@ For every subcommand: exact **flags**, **exit codes**, and **`--json` envelope s
 3. **Seam co-gate**: the ~60 `sync`-monkeypatch tests pass green after each relocation (INV-4).
 4. **Two-authority**: `tests/architectural/test_sync_two_authority.py` asserts distinct read/write port symbols, no shared authority class (INV-2).
 5. **No ratchet mutation**: the harness does not grow the DIR-041 positional-anchor allowlists (C-003).
-6. **Env set-unchanged**: `research/env-census.md` lists every `SPEC_KITTY_*` ref on the sync surface; a guard confirms the set is unchanged by the mission (FR-007).
+6. **Env set-unchanged**: `docs/plans/code-quality/sync-env-census.md` lists every `SPEC_KITTY_*` ref on the sync surface; a guard confirms the set is unchanged by the mission (FR-007).

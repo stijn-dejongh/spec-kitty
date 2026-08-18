@@ -233,3 +233,8 @@ to its canonical implementation — **never re-implementing** (DIRECTIVE_044 / A
 - Confirm the mixed-authority flows were **not** refactored (C-007) — diff
   `opt_out` and the dispatch opener against pre-WP bodies.
 - Check the core compute functions are I/O-free (no `Console`/`print`).
+
+
+## Post-tasks squad corrections (BINDING — read before implementing)
+- **Rn-1 (freeze protection):** the `status` and `doctor` full-render goldens are now frozen in **WP02** (`test_sync_cli_safe.py`), because this WP's shared-helper compute/render split churns them. After splitting `_render_per_project_store`/`_render_consent_readability`/`_render_tracker_egress`, run the WP02 `status`/`doctor` render snapshots and confirm they stay **byte-green** — that is the safety net for this seam.
+- **Rn-2 (`_resolve_gated_receiver` L799 split boundary):** this WP wraps ONLY the delivery-**admission** assert portion (`_assert_delivery_target_matches_context` / gate-context) into `sync_authority.py`; it LEAVES the receiver-plumbing/resolution body in `sync.py` for WP08 to relocate. State explicitly in your commit what remains. **DoD:** `_resolve_gated_receiver` behavior byte-identical — the admission assert AND the receiver resolution are both reached, no branch dropped — verified against the `now`/dispatch golden.
