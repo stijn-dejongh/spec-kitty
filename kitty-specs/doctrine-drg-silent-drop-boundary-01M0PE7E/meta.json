@@ -25,6 +25,7 @@
   "purpose_context": "Several doctrine/DRG artifacts are authored, schema-validated, and reported healthy yet never take effect at runtime because the boundary between declaration and consumption is neither derived from a single source, fail-loud, nor test-pinned. This mission derives the DRG node-kind set from its canonical enum, makes profile context-sources and governance-profile selections either projected through DRG relationships or fail loud, and verifies a chain of organisation packs delivers every declared artifact kind.",
   "purpose_tldr": "Stop the doctrine/DRG system from silently dropping declared artifacts at the declaration-to-consumption boundary.",
   "slug": "doctrine-drg-silent-drop-boundary-01M0PE7E",
+  "status_phase": "1",
   "target_branch": "fix/doctrine-drg-silent-drop-boundary",
   "topology": "coord",
   "vcs": "git",
