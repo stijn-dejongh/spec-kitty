@@ -163,10 +163,11 @@ def _load_action_doctrine_bundle(
     from charter._drg_helpers import load_validated_graph
     from charter.context import _build_doctrine_service  # noqa: PLC0415
     from charter.context_renderers.delivery_table import _classify_artifact_urns
-    from charter.drg import filter_graph_by_activation
+    from charter.drg import filter_graph_by_activation, load_org_drg
     from charter.mission_type_profiles import resolve_mission_type_key
     from doctrine.drg.loader import DRGLoadError
     from doctrine.drg.query import resolve_context
+    from doctrine.drg.validator import assert_governance_scope_resolves
 
     doctrine_selection = _load_doctrine_selection(repo_root)
     resolved_type = resolve_mission_type_key(
@@ -189,7 +190,20 @@ def _load_action_doctrine_bundle(
     # DRG action resolution entirely so no doctrine is inferred (FR-003a).
     if resolved_type is not None:
         try:
-            merged = load_validated_graph(repo_root, org_root=org_root, org_roots=org_roots)
+            merged = load_validated_graph(
+                repo_root,
+                org_root=org_root,
+                org_roots=org_roots,
+                org_fragments=load_org_drg(repo_root, strict=False),
+            )
+            # #3629 / WP04: fail loud on an org-tier governance-profile
+            # ``selected_*`` selection that resolves to no node in the merged
+            # graph. Run on the complete merged graph BEFORE the activation
+            # filter narrows it, mirroring the executor caller and the built-in
+            # tier's extraction-time assertion. Raises ``ValueError`` (not
+            # ``DRGLoadError``), so it propagates past the ``DRGLoadError``
+            # handler below rather than collapsing to an empty bundle.
+            assert_governance_scope_resolves(merged)
             # FR-032, FR-035 (WP08): apply activation filter before resolving context.
             if pack_context is not None:
                 merged = filter_graph_by_activation(merged, pack_context)

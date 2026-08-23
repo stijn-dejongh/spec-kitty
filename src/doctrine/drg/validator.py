@@ -242,6 +242,98 @@ def validate_dangling_references(graph: DRGGraph) -> list[str]:
     return errors
 
 
+#: URN prefix of a governance-profile scope edge's *source*. A
+#: ``mission_type:<id> --scope--> <artifact>`` edge is the exclusive signature of
+#: a governance-profile ``selected_*`` selection (built-in extractor
+#: :func:`~doctrine.drg.migration.extractor.extract_governance_profile_scope_edges`
+#: and the org-tier :func:`~doctrine.drg.org_governance.collect_org_governance_scope_edges`
+#: are the only two passes that mint one). Action-grain scope edges carry an
+#: ``action:`` source, so this prefix isolates governance selections from them.
+_GOVERNANCE_SCOPE_SOURCE_PREFIX = "mission_type:"
+
+#: Message shape shared with the built-in tier's
+#: :func:`~doctrine.drg.migration.extractor.assert_governance_scope_edges_resolve`
+#: so an unresolved selection reads identically whichever tier authored it.
+_GOVERNANCE_SCOPE_UNRESOLVED_MESSAGE = (
+    "governance-profile.yaml selected_* entries do not resolve to an existing "
+    "node (triage required): {detail}"
+)
+
+
+def validate_governance_scope_edges(graph: DRGGraph) -> list[str]:
+    """Return ``mission_type:field=id`` tokens for unresolved governance selections.
+
+    A governance-profile ``selected_*`` selection is projected as a
+    ``mission_type:<id> --scope--> <artifact>`` edge on both tiers. The built-in
+    tier already fails loud *at extraction time*
+    (:func:`~doctrine.drg.migration.extractor.assert_governance_scope_edges_resolve`,
+    run inside ``generate_graph`` before the built-in graph is ever written), so
+    a dangling governance-scope edge surviving into a *merged* graph can only be
+    an **org-tier** selection: the org merge deliberately WARNs rather than
+    raises on a dangling endpoint (it cannot tell a typo from a reference into a
+    sibling pack it did not load -- see
+    :func:`doctrine.drg.merge._dangling_org_endpoints`), and its docstring names
+    this module as the escalation home for a caller that owns graph completeness.
+
+    This is the governance-scope companion to :func:`validate_dangling_references`
+    and obeys the same completeness predicate: run it only when the merge was of
+    the COMPLETE graph (real built-in plus every configured layer), where a
+    dangling target is a typo, not a forward reference. Ordinary org edges keep
+    merge's WARN semantics; only the governance-scope signature escalates here.
+
+    Each returned token names the authoring surface -- the mission type, the
+    ``selected_*`` field, and the id -- so an operator can locate the offending
+    line in the pack's ``governance-profile.yaml``.
+    """
+    urns = graph.node_urns()
+    unresolved: list[str] = []
+    for edge in graph.edges:
+        if edge.relation is not Relation.SCOPE:
+            continue
+        if not edge.source.startswith(_GOVERNANCE_SCOPE_SOURCE_PREFIX):
+            continue
+        if edge.target in urns:
+            continue
+        _, _, mission_type_id = edge.source.partition(":")
+        target_kind, _, target_id = edge.target.partition(":")
+        field_name = _governance_scope_field_for_kind(target_kind)
+        unresolved.append(f"{mission_type_id}:{field_name}={target_id}")
+    return unresolved
+
+
+def _governance_scope_field_for_kind(target_kind: str) -> str:
+    """Map a target URN kind back to its ``selected_*`` field name for messaging.
+
+    Deferred import: ``doctrine.drg.migration.extractor`` imports
+    :func:`assert_valid` from this module at import time, so importing its
+    ``selected_*`` field table at module scope here would be a circular import.
+    Reading the single source of truth at call time keeps the field names from
+    drifting from the extractor's without paying an import cycle (the table is
+    small and this runs only when a selection is already unresolved).
+    """
+    from doctrine.drg.migration.extractor import (  # noqa: PLC0415 — lazy: extractor imports assert_valid from this module (cycle)
+        _GOVERNANCE_SCOPE_KIND_TO_FIELD,
+    )
+
+    return _GOVERNANCE_SCOPE_KIND_TO_FIELD.get(target_kind, target_kind)
+
+
+def assert_governance_scope_resolves(graph: DRGGraph) -> None:
+    """Fail loud on any unresolved governance-profile selection in *graph* (#3629).
+
+    The one-line post-merge guard WP04 invokes at its two org-consuming callers.
+    Raises :class:`ValueError` -- matching the built-in tier's
+    :func:`~doctrine.drg.migration.extractor.assert_governance_scope_edges_resolve`
+    exception type and message so a bad selection reads identically whichever
+    tier authored it. Silent when every governance selection resolves.
+    """
+    unresolved = validate_governance_scope_edges(graph)
+    if unresolved:
+        raise ValueError(
+            _GOVERNANCE_SCOPE_UNRESOLVED_MESSAGE.format(detail=", ".join(unresolved))
+        )
+
+
 def dangling_endpoints(graph: DRGGraph) -> list[DRGEdge]:
     """Return each edge whose source and/or target is not a known node URN.
 
