@@ -94,22 +94,24 @@ returned `None`), and run a drift-guard test asserting the recognized set equals
 
 ---
 
-### User Story 2 - A mistyped governance-profile selection fails loud (Priority: P2, verify-and-close)
+### User Story 2 - A mistyped governance-profile selection fails loud, on both tiers (Priority: P2)
 
 A mission-type author writes a `governance-profile.yaml` that selects doctrine by
 bare id (e.g. `selected_directives`, `selected_tactics`). If they typo an id or
 reference a nonexistent artifact, the selection must be reported loudly rather
-than silently pruned. This behaviour **already landed on `main`** (commit
-`d8beee2761`): `assert_governance_scope_edges_resolve` raises a triage-required
-`ValueError` naming each unresolved `selected_*` entry, wired into the production
-`generate_graph` path and covered by unit tests. This mission **verifies** that
-guard (including whether the **org-tier** governance-profile path is equally
-covered — a possible gap that overlaps #3530) and, if a gap exists, closes it;
-otherwise it records the item as already-resolved and updates the ticket.
+than silently pruned — whether the profile ships in the built-in pack or an org
+pack. **Built-in tier**: this already landed on `main` (commit `d8beee2761`) —
+`assert_governance_scope_edges_resolve` raises naming each unresolved `selected_*`,
+wired into `generate_graph`; this mission adds the missing end-to-end test that
+pins that wiring (the shipped tests use synthetic edges). **Org tier** (research
+finding): there is **no governance-profile scope path at all** today — an org-tier
+`selected_*` typo is unread *and* unguarded (a total no-op). This mission
+**implements** the net-new org-tier extraction + post-merge fail-loud guard.
 
-**Why this priority**: The core fix exists, so this is verification and
-gap-closing, not new implementation. It is retained in scope because the ticket
-still lists it and the org-tier coverage question is unverified.
+**Why this priority**: The built-in half is a regression pin; the org-tier half is
+**net-new implementation** (not "verify") — the squad reclassified it (F9), and the
+operator chose to build it now rather than defer. Both halves share the mission's
+fail-loud thesis.
 
 **Independent Test**: Run the existing regression
 (`test_extractor.py:1608-1653`); additionally construct an **org-tier**
@@ -332,8 +334,14 @@ variant fails loud rather than degrading silently.
 - The `context-sources.*` direction is **resolved** (DM-01M0PEAQ5G1VDR3CSJSV51SD8Y,
   full consolidation on `*-references`) from a 3-agent research squad; findings
   recorded in `research/context-sources-drg-projection.md`.
-- #3629 part 2 (governance-profile fail-loud) is **already fixed on `main`**
-  (commit `d8beee2761`); this mission verifies + closes rather than re-implements.
+- #3629 part 2 **built-in** guard is already fixed on `main` (commit `d8beee2761`)
+  — this mission adds the end-to-end pin. The **org-tier** governance-profile
+  fail-loud path is **net-new** (built here, not verified) — the #3629 close
+  comment MUST disclose this (post-tasks G3); a follow-up issue may be filed for
+  org-tier governance ergonomics beyond parity.
+- Breaking change (context-sources removal) requires a CHANGELOG entry + version
+  bump (DIR-009) and a next-unreleased migration name (`m_3_3_1_*`, since
+  `m_3_2_6`…`m_3_3_0` already ship). Both are WP02 DoD items.
 - Per operator direction, the #3530 chain verification uses the real
   `packs/internal/` (spec-kitty-internal) org pack as its fixture. Research
   established the pack is **already structurally conformant** (plural kinds +
