@@ -38,7 +38,12 @@
 - The `context-sources.*` direction was resolved by a 3-agent research squad and
   recorded as DM-01M0PEAQ5G1VDR3CSJSV51SD8Y (full consolidation on the
   `*-references` surface); findings in `../research/context-sources-drg-projection.md`.
-- Scope correction from the squad: #3629 part 2 (governance-profile fail-loud) is
-  already fixed on `main` (commit `d8beee2761`); the mission verifies + closes it
-  rather than re-implementing. Spec carries 11 FRs across #3608, #3629 (parts 1 &
-  3 + verify part 2), and #3530 verify-and-close.
+- Scope corrections from research: (a) #3629 part 2 (governance-profile fail-loud)
+  is already fixed on `main` (commit `d8beee2761`) → verify+close, not implement;
+  (b) `packs/internal/` is already structurally conformant, but grounding it as the
+  #3530 fixture surfaced a live silent-drop at the `org_roots=` seam
+  (`_drg_helpers.py:138-182`; executor + action_doctrine_bundle callers) — folded
+  in as FR-009 (High). Spec carries 13 FRs across #3608, #3629 (parts 1 & 3 +
+  verify part 2), and #3530 (seam fix + verify-and-close on spec-kitty-internal).
+- Convention + silent-drop findings: `../research/context-sources-drg-projection.md`
+  (addendum, round 2).

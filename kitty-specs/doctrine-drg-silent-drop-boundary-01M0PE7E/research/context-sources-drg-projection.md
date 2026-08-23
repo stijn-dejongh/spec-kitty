@@ -77,3 +77,72 @@ the correct move by the user's own principle is **clean up**: remove
 `tests/doctrine/drg/migration/test_extractor.py:1608-1653`). It fails loud on any
 governance-profile `scope` edge whose target is not a minted node. The mission
 treats part 2 as **verify-and-close**, not implement.
+
+---
+
+# Addendum: org-pack conventions + the `packs/internal` silent-drop (research round 2)
+
+**Question (operator):** use `packs/internal` (spec-kitty-internal) as the #3530
+integration fixture, "first updated to match the latest structural conventions."
+
+**Finding:** the pack is **already conformant**. The actionable work is a code fix
+(a silent-drop boundary) + a README refresh — not a pack restructure.
+
+## Latest org-tier pack conventions (authority-backed)
+
+- **Required file:** `<root>/drg/fragment.yaml` (single fragment) — `OrgDRGFragment`
+  schema, `extra="forbid"` (`org_pack_loader.py:429-449,496-501`). Root per-kind
+  `*.graph.yaml` is the **built-in** shape, NOT the org convention; the validator
+  only flags a pack that has *neither* a root `*.graph.yaml` *nor* a
+  `drg/fragment.yaml` (`pack_validator.py:357-365`).
+- **Node kinds are PLURAL** (`glossary_packs`/`procedures`/`directives`) — canonical,
+  not deprecated (`org_pack_loader.py:87-124,361-377`). Edge URNs are singular
+  `<kind>:<id>` (`merge.py:445,533`). The internal pack matches both.
+- **`org-charter.yaml`** is optional, `OrgCharterPolicy` schema
+  (`org_charter.py:119-169`); internal's parses clean.
+- **`pack.yaml`/`pack.md`/`pack-manifest.yaml` NOT required** for org packs —
+  deferred per ADR `2026-08-16-1` §"Deferred" (lines 153-167); only built-in emits
+  the unified manifest. (Ties to #3511 seam 1.)
+- **Validator green:** `validate_pack(packs/internal)` → OK, 0 errors, 0 advisories;
+  `merge_three_layers` resolves both `refines` edges against the real built-in DRG.
+
+## The real defect (5g) — branch-aligned silent-drop
+
+`load_validated_graph` (`src/charter/_drg_helpers.py:60`) has two org seams:
+- **`org_fragments=`** → folded via `merge_three_layers` (`_drg_helpers.py:217-221`).
+  The ONLY seam that reads `drg/fragment.yaml`. Callers: `gate_bindings.py:308`,
+  `activate.py:303,401`, `deactivate.py:159`, `charter/lint.py:97`,
+  `_status_collectors.py:514`, `_doctrine_collect.py:691`,
+  `context_renderers/selection_block.py:655`.
+- **`org_roots=`** → loop at `_drg_helpers.py:138-182` reads only root
+  `*.graph.yaml`; does NOT read `drg/fragment.yaml`; and **suppresses the
+  "no graph" warning when `drg/fragment.yaml` exists** (`:174`). Callers that pass
+  only `org_roots` → **silently drop the fragment**:
+  `mission_step_contracts/executor.py:362`, `charter/action_doctrine_bundle.py:192`.
+
+Existing evidence: `tests/specify_cli/mission_step_contracts/test_executor.py:878-916`
+models `packs/internal`'s exact shape and asserts it "degrades with warning instead
+of crashing" — i.e. the executor/step-contract path does NOT fold internal's doctrine.
+
+**Fix (recommended, matches branch intent):** make the `org_roots` seam also load
+`drg/fragment.yaml` per root (or thread `org_fragments=load_org_drg(...)` into the
+executor + `action_doctrine_bundle`), and stop suppressing the warning. Keep the
+org-fragment shape as the canonical convention.
+
+## Concrete `packs/internal` delta
+
+| Item | Required? |
+|------|-----------|
+| plural kinds / `drg/fragment.yaml` / singular edge URNs | already correct — no change |
+| `pack.yaml`/`pack-manifest.yaml` | NOT required (deferred) — optional forward-compat only |
+| README refresh | yes — README omits the `directives/` dir + `OPERATOR_SIGNAL_CONTRACT` node now on disk |
+| org_roots-seam silent-drop fix | **yes — code fix, the mission centerpiece for this item** |
+
+## Chain note
+
+built-in (layer 0) + internal (org layer_index 1) is the ≥2-layer chain. No
+fixture currently exercises a multi-*org*-pack `extends:` chain
+(`grep extends: tests/doctrine/fixtures` → none); if the strict multi-org-pack
+merge path must be exercised, a second minimal org fixture is net-new (plan-time).
+Reusable chain tests: `tests/integration/test_three_layer_drg_end_to_end.py`,
+`test_org_pack_artifact_lifecycle.py`, `tests/doctrine/test_overlay_precedence.py`.
