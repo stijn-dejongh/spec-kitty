@@ -14,9 +14,8 @@
   "accepted_by": "stijn",
   "accepted_from_commit": "847a13b41d6955b08261a64871d83fd6889db0d7",
   "baseline_merge_commit": "f068aa189a8dd46cd8eb67144808e3575aa74be4",
-  "coordination_branch": "kitty/mission-doctrine-drg-silent-drop-boundary-01M0PE7E",
   "created_at": "2026-08-23T04:31:56.514845+00:00",
-  "flattened": false,
+  "flattened": true,
   "friendly_name": "Doctrine DRG Silent-Drop Boundary Fix",
   "mission_id": "01M0PE7E326XKYV2MCFP62X241",
   "mission_number": null,
@@ -28,7 +27,6 @@
   "slug": "doctrine-drg-silent-drop-boundary-01M0PE7E",
   "status_phase": "1",
   "target_branch": "fix/doctrine-drg-silent-drop-boundary",
-  "topology": "coord",
   "vcs": "git",
   "vcs_locked_at": "2026-08-23T06:45:54.057476+00:00"
 }
