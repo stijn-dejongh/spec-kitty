@@ -43,8 +43,14 @@ instances of that failure and pins the boundary so it cannot silently reopen.
 - **#3530** — a tracking issue whose 7 of 8 direct members are now closed and
   whose chain-merge fix landed (`merge.py:1122` iterates all fragments). Its
   closing condition (a *chain* of org packs delivers *every* declared kind, and a
-  misconfigured pack fails loud) needs execution-level verification with a real
-  multi-pack org doctrine-pack fixture before it can be closed.
+  misconfigured pack fails loud) needs execution-level verification. Per operator
+  direction the fixture is the repo's own `packs/internal/` (spec-kitty-internal)
+  org pack. Grounding that fixture surfaced a **new instance of the same family**:
+  `load_validated_graph`'s `org_roots=` seam (`_drg_helpers.py:138-182`) never
+  reads `drg/fragment.yaml` and suppresses the "no graph" warning when one exists,
+  so the executor and `action_doctrine_bundle` callers silently drop the internal
+  pack's doctrine (`test_executor.py:878-916` documents the degrade). This mission
+  fixes that seam and verifies chain delivery on the real pack.
 
 **Milestone 3.2.x (#4):** advances G1 (deepen Doctrine/Charter/DRG runtime
 impact), G2 (strangle core domains onto canonical SSOTs — no hand-copied
@@ -163,34 +169,50 @@ profile's previously-authored tactic/toolguide/styleguide intent is present on t
 
 ---
 
-### User Story 4 - A chain of org packs delivers every declared kind, verified (Priority: P2)
+### User Story 4 - The spec-kitty-internal pack's doctrine reaches every consumer seam (Priority: P1)
 
-An operator builds an organisation doctrine pack chain (packs 1..N) against
-spec-kitty. Each pack declares artifacts of several kinds. The #3530 family fixed
-the per-seam org-tier reads and the chain-merge; this story verifies the whole
-closing condition end-to-end with a real multi-pack fixture, so #3530 can be
-closed with evidence rather than by inference from its members.
+The repository's own **spec-kitty-internal** org pack (`packs/internal/`) is the
+#3530 verification fixture — the real dogfooded org pack, not a synthetic one.
+Research established the pack **already conforms** to current org-tier conventions
+(plural node kinds are canonical; `drg/fragment.yaml` is the required shape;
+`pack.yaml`/`pack-manifest.yaml` are deferred for org packs; the validator runs
+green). What "updating it to current conventions" actually surfaces is a
+**branch-aligned silent-drop bug**: `load_validated_graph`'s `org_roots=` seam
+(`src/charter/_drg_helpers.py:138-182`) reads only root `*.graph.yaml`, **never
+reads `drg/fragment.yaml`, and suppresses the "no graph" warning when a fragment
+exists** (`:174`). Two production callers pass only `org_roots=`
+(`mission_step_contracts/executor.py:362`, `charter/action_doctrine_bundle.py:192`),
+so the internal pack's entire doctrine is silently dropped on those seams — an
+existing test (`test_executor.py:878-916`) even documents the degrade. After this
+mission, every seam that consumes org doctrine folds `drg/fragment.yaml` (or the
+warning is honest), and the built-in + internal chain delivers every declared kind
+to every consumer — closing #3530 with evidence on the real pack.
 
-**Why this priority**: #3530's members are closed and the chain-merge is fixed,
-so this is verification (and closing) work, not a new fix — but the tracking
-issue explicitly closes only on a *chain* (not single-pack) delivering *every*
-kind, which no existing test proves.
+**Why this priority**: This is a live silent-drop bug on the exact family the
+mission targets (declared-and-conformant, validates green, reaches no consumer via
+the executor/action-bundle seam), it is the reason the dogfooded pack's doctrine
+does not take effect, and it is what makes the #3530 chain verification meaningful.
 
-**Independent Test**: A multi-pack org doctrine-pack fixture (≥2 packs) declaring
-every deliverable kind; assert every declared kind from every pack reaches its
-consumer (templates, mission-FSM content, step contracts, artifact manifests, DRG
-nodes and edges, cascade activation), and that a deliberately-misconfigured pack
-in the chain fails loud rather than reporting success.
+**Independent Test**: Register `packs/internal/` as an org pack over built-in and
+drive the executor / action-doctrine-bundle path; assert every kind it declares
+(glossary pack, procedure, directive, DRG nodes + `refines` edges to built-in)
+reaches that consumer (currently dropped); and that a deliberately-misconfigured
+variant fails loud rather than degrading silently.
 
 **Acceptance Scenarios**:
 
-1. **Given** a chain of ≥2 org packs each declaring artifacts across the
-   deliverable kinds, **When** doctrine is loaded/merged/activated, **Then** every
-   declared kind from *every* pack (not just pack 1) reaches its consumer.
-2. **Given** one pack in the chain is misconfigured (e.g. missing a required
-   manifest key), **When** doctrine is loaded, **Then** the misconfiguration is
-   reported loudly instead of counted as success.
-3. **Given** the verification suite passes, **When** #3530's closing condition is
+1. **Given** the internal pack registered as an org tier, **When** the executor /
+   `action_doctrine_bundle` path (`org_roots=` seam) loads doctrine, **Then** the
+   pack's `drg/fragment.yaml` nodes and edges are folded (not silently dropped),
+   or a missing fragment produces an honest warning (no false suppression).
+2. **Given** the built-in + spec-kitty-internal chain (≥2 layers), **When**
+   doctrine is loaded/merged/activated across all consumer seams, **Then** every
+   kind declared by the internal pack (not only built-in's) reaches its consumer,
+   including its DRG nodes and `refines` edges.
+3. **Given** a deliberately-misconfigured variant of the internal pack, **When**
+   doctrine is loaded, **Then** the misconfiguration is reported loudly instead of
+   counted as success.
+4. **Given** the verification suite passes, **When** #3530's closing condition is
    evaluated, **Then** it is met (leaving only the explicitly-non-child #3412
    open).
 
@@ -224,9 +246,11 @@ in the chain fails loud rather than reporting success.
 | FR-006 | Update 25 shipped profiles to the consolidated surface | As a maintainer, I want the `packs/built-in/agent_profiles/*.agent.yaml` profiles updated to carry references only on `*-references` so that shipped content matches the new schema. | High | Open |
 | FR-007 | Extractor projects agent_profile edges from `*-references` | As a doctrine consumer, I want the DRG extractor to project `agent_profile` edges from the `*-references` surface (directives now via `directive-references`, plus tactics/toolguides/styleguides) so that migrated references reach a dispatched agent. | High | Open |
 | FR-008 | Verify governance-profile fail-loud (built-in + org tier) | As a mission-type author, I want the existing `assert_governance_scope_edges_resolve` guard verified for both built-in and org-tier governance-profiles, closing any org-tier gap, so a nonexistent selection always fails loud. | Medium | Open |
-| FR-009 | Multi-pack org-pack chain delivery verification | As an operator, I want a test proving a chain of ≥2 org packs delivers every declared kind so that #3530's closing condition is evidenced. | Medium | Open |
-| FR-010 | Misconfigured-pack-in-chain fails loud | As an operator, I want a misconfigured pack in a chain to fail loud so that the chain never reports success over an inert pack. | Medium | Open |
-| FR-011 | Golden re-ledger doc-nit correction | As a maintainer, I want the extractor procedure-branch docstring wording on golden re-ledger (`extractor.py:557`) clarified so that it matches the M2 WP04 reality. | Low | Open |
+| FR-009 | Fix `org_roots=` seam silent-drop of `drg/fragment.yaml` | As a doctrine consumer, I want the `load_validated_graph` `org_roots=` seam (and the executor + `action_doctrine_bundle` callers) to fold `drg/fragment.yaml` — and stop suppressing the "no graph" warning when a fragment exists — so an org pack's doctrine is not silently dropped on those seams. | High | Open |
+| FR-010 | Refresh `packs/internal/` (README + optional forward-compat) | As a maintainer, I want the internal pack's stale README updated (it omits the on-disk `directives/` dir + `OPERATOR_SIGNAL_CONTRACT` node) and optional forward-compat metadata considered; the pack is already structurally conformant, so no restructure. | Low | Open |
+| FR-011 | Chain delivery verification via spec-kitty-internal | As an operator, I want a test proving the built-in + spec-kitty-internal chain (≥2 layers) delivers every kind the internal pack declares — across the executor / action-bundle seam — so #3530's closing condition is evidenced on the real pack. | Medium | Open |
+| FR-012 | Misconfigured-pack-in-chain fails loud | As an operator, I want a misconfigured variant of the internal pack to fail loud so that the chain never reports success over an inert pack. | Medium | Open |
+| FR-013 | Golden re-ledger doc-nit correction | As a maintainer, I want the extractor procedure-branch docstring wording on golden re-ledger (`extractor.py:557`) clarified so that it matches the M2 WP04 reality. | Low | Open |
 
 ### Non-Functional Requirements
 
@@ -263,8 +287,12 @@ in the chain fails loud rather than reporting success.
   consumer; candidate replacement for the inert context-sources fields.
 - **Governance-profile selection**: a mission-type's `selected_*` bare-id lists
   that mint `scope` edges; the fail-loud guard target.
-- **Org doctrine pack chain**: an ordered set of ≥2 organisation packs whose
-  every declared kind must reach its consumer.
+- **Org doctrine pack chain**: an ordered set of doctrine layers (here
+  `packs/built-in/` layer 0 + `packs/internal/` org layer) whose every declared
+  kind must reach its consumer; #3530's bug used to drop edges past the first.
+- **spec-kitty-internal pack** (`packs/internal/`): the repository's own dogfooded
+  org-tier pack; the #3530 verification fixture, to be updated to the latest
+  structural conventions first (FR-009).
 
 ## Success Criteria *(mandatory)*
 
@@ -284,9 +312,11 @@ in the chain fails loud rather than reporting success.
   remain simultaneously schema-legal and never-read; all 25 shipped profiles
   carry references only on the `*-references` surface; 0 authored artefact
   references lost in migration.
-- **SC-005**: A multi-pack (≥2) org-pack fixture delivers 100% of declared kinds
-  from every pack to its consumer, and a misconfigured pack in the chain fails
-  loud — satisfying #3530's stated closing condition.
+- **SC-005**: The spec-kitty-internal pack, loaded as an org tier over built-in
+  (a ≥2-layer chain), delivers 100% of the kinds it declares to their consumers —
+  **including the executor / action-doctrine-bundle seam that drops it today** —
+  and a misconfigured variant fails loud, satisfying #3530's stated closing
+  condition.
 - **SC-006**: 0 new lint/type suppressions introduced; touched functions remain
   at complexity ≤15.
 
@@ -302,4 +332,13 @@ in the chain fails loud rather than reporting success.
   recorded in `research/context-sources-drg-projection.md`.
 - #3629 part 2 (governance-profile fail-loud) is **already fixed on `main`**
   (commit `d8beee2761`); this mission verifies + closes rather than re-implements.
+- Per operator direction, the #3530 chain verification uses the real
+  `packs/internal/` (spec-kitty-internal) org pack as its fixture. Research
+  established the pack is **already structurally conformant** (plural kinds +
+  `drg/fragment.yaml` are the canonical org shape; `pack.yaml`/manifest deferred),
+  so "update to current conventions" resolves to a README refresh (FR-010) plus
+  the real code fix (FR-009, the `org_roots`-seam silent-drop). built-in + internal
+  is the ≥2-layer chain. If a strict *multi-org-pack* chain (≥2 org packs) is
+  needed to exercise the exact #3530 merge path, a second minimal org fixture may
+  be added — resolved at plan time.
 - This mission targets a draft PR to upstream; the operator merges.
