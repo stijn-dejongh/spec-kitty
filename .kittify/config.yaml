@@ -33,3 +33,5 @@ doctrine:
     packs:
     - name: internal
       local_path: packs/internal
+review:
+  test_command: 'pytest -q -p no:cacheprovider tests/architectural/test_no_legacy_terminology.py'

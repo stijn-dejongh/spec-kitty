@@ -9,6 +9,9 @@ requirement_refs:
 planning_base_branch: fix/doctrine-drg-silent-drop-boundary
 merge_target_branch: fix/doctrine-drg-silent-drop-boundary
 branch_strategy: Planning artifacts for this mission were generated on fix/doctrine-drg-silent-drop-boundary. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into fix/doctrine-drg-silent-drop-boundary unless the human explicitly redirects the landing branch.
+base_branch: kitty/mission-doctrine-drg-silent-drop-boundary-01M0PE7E
+base_commit: 91f1729f55c5b70a4c5ebd86ad5d829e2a64f2a7
+created_at: '2026-08-23T06:46:00.845111+00:00'
 subtasks:
 - T001
 - T002

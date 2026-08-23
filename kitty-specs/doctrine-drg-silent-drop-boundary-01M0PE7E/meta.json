@@ -12,5 +12,7 @@
   "purpose_tldr": "Stop the doctrine/DRG system from silently dropping declared artifacts at the declaration-to-consumption boundary.",
   "slug": "doctrine-drg-silent-drop-boundary-01M0PE7E",
   "target_branch": "fix/doctrine-drg-silent-drop-boundary",
-  "topology": "coord"
+  "topology": "coord",
+  "vcs": "git",
+  "vcs_locked_at": "2026-08-23T06:45:54.057476+00:00"
 }
