@@ -74,6 +74,14 @@ evidence pass required.
 ## Adversarial evidence
 
 Per the operator's directive, this mission runs the **brownfield point-cut review
-squad** at post-plan and post-tasks. Contested findings and their disposition
-(`accepted` / `changed` / `deferred_with_rationale`) are appended here after each
-squad pass, per `contracts/adversarial-evidence-contract.md`.
+squad** at post-plan and post-tasks.
+
+- **Post-plan squad (2026-08-23):** 4 profile-loaded delegates
+  (architect-alphonso, doctrine-daphne, debugger-debbie, reviewer-renata). Verdict
+  REQUEST-CHANGES; 15 findings, all **accepted** (2 with operator scope decisions).
+  Full record + dispositions: [`research/post-plan-brownfield-squad.md`](./research/post-plan-brownfield-squad.md).
+  Net effect on the plan: IC-4 approach inverted (F1), IC-2 re-scoped
+  (F2–F6, +golden re-ledger), IC-3 expanded to implement org-tier fail-loud (F9,
+  operator decision), IC-5 gains a 2nd org fixture (F10, operator decision),
+  IC-1 drift-guard behaviour-pinned (F7), contracts sharpened (F11).
+- **Post-tasks squad:** pending (runs after `/spec-kitty.tasks`).

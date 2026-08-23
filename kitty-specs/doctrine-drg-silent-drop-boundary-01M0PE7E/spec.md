@@ -242,14 +242,14 @@ variant fails loud rather than degrading silently.
 | FR-002 | Drift-guard test for the derived set | As a maintainer, I want a test asserting the recognized set equals `{k.value for k in NodeKind}` so that any future drift (missing or extra) fails loudly in CI. | High | Open |
 | FR-003 | `glossary_pack`/`mission_step_contract`/etc. URNs resolve | As a charter author, I want previously-dropped DRG-URN kinds recognized at the resolution tier so that legitimate selectors no longer fall through silently. | High | Open |
 | FR-004 | Remove `context-sources.*` from model + schema | As a profile author, I want the redundant `context-sources` block removed from `ContextSources`, `AgentContextSources`, and `agent-profile.schema.yaml` so that there is one canonical profile-reference surface. | High | Open |
-| FR-005 | Migrate authored `context-sources.*` onto `*-references` | As a maintainer, I want a migration that moves authored `directives`/`tactics`/`toolguides`/`styleguides` from `context-sources.*` onto the top-level `*-references` fields (dropping non-artefact `additional`/`doctrine-layers`) so that no authored intent is lost. | High | Open |
-| FR-006 | Update 25 shipped profiles to the consolidated surface | As a maintainer, I want the `packs/built-in/agent_profiles/*.agent.yaml` profiles updated to carry references only on `*-references` so that shipped content matches the new schema. | High | Open |
-| FR-007 | Extractor projects agent_profile edges from `*-references` | As a doctrine consumer, I want the DRG extractor to project `agent_profile` edges from the `*-references` surface (directives now via `directive-references`, plus tactics/toolguides/styleguides) so that migrated references reach a dispatched agent. | High | Open |
-| FR-008 | Verify governance-profile fail-loud (built-in + org tier) | As a mission-type author, I want the existing `assert_governance_scope_edges_resolve` guard verified for both built-in and org-tier governance-profiles, closing any org-tier gap, so a nonexistent selection always fails loud. | Medium | Open |
-| FR-009 | Fix `org_roots=` seam silent-drop of `drg/fragment.yaml` | As a doctrine consumer, I want the `load_validated_graph` `org_roots=` seam (and the executor + `action_doctrine_bundle` callers) to fold `drg/fragment.yaml` — and stop suppressing the "no graph" warning when a fragment exists — so an org pack's doctrine is not silently dropped on those seams. | High | Open |
-| FR-010 | Refresh `packs/internal/` (README + optional forward-compat) | As a maintainer, I want the internal pack's stale README updated (it omits the on-disk `directives/` dir + `OPERATOR_SIGNAL_CONTRACT` node) and optional forward-compat metadata considered; the pack is already structurally conformant, so no restructure. | Low | Open |
-| FR-011 | Chain delivery verification via spec-kitty-internal | As an operator, I want a test proving the built-in + spec-kitty-internal chain (≥2 layers) delivers every kind the internal pack declares — across the executor / action-bundle seam — so #3530's closing condition is evidenced on the real pack. | Medium | Open |
-| FR-012 | Misconfigured-pack-in-chain fails loud | As an operator, I want a misconfigured variant of the internal pack to fail loud so that the chain never reports success over an inert pack. | Medium | Open |
+| FR-005 | Migrate authored refs onto `*-references` (set-merge, no loss) | As a maintainer, I want a migration that set-merges (not appends) authored `directives`/`tactics`/`toolguides`/`styleguides` from `context-sources.*` onto `*-references`, and **deliberately re-homes** `additional` bindings that carry meaning (e.g. reviewer-renata's `adversarial-evidence-disposition`, pinned by a supply-chain test) rather than dropping them, so no authored intent is lost. | High | Open |
+| FR-006 | Update 25 shipped profiles + all `context-sources` consumers | As a maintainer, I want the 25 `packs/built-in/agent_profiles/*.agent.yaml` profiles migrated AND every `context-sources` consumer updated (`agent_profiles/__init__.py` `__all__`, `scripts/generate_schemas.py`, `scripts/doctrine/inline_reference_inventory.py`, and the asserting tests) so removal breaks nothing silently. | High | Open |
+| FR-007 | Extractor projects agent_profile edges from `*-references`; regenerate golden + reconcile overlay | As a doctrine consumer, I want the extractor to project `agent_profile` edges from `*-references`, the golden `agent_profile.graph.yaml` regenerated, and `hand_authored_overlay.py` reconciled (incl. the deliberate python-pedro/DIRECTIVE_034 delivery decision) with a composition-ledger entry, so migrated references reach a dispatched agent with an auditable graph. | High | Open |
+| FR-008 | Close #3629 p2 (built-in e2e) AND implement org-tier fail-loud | As a mission-type author, I want (a) an end-to-end `generate_graph` test pinning the built-in `assert_governance_scope_edges_resolve` guard, and (b) **net-new** org-tier governance-profile scope extraction + fail-loud guard + tests (no org-tier path exists today), so a nonexistent selection fails loud on both tiers. | Medium | Open |
+| FR-009 | Fix the org fragment silent-drop at the two deficient callers | As a doctrine consumer, I want `executor.py:362` and `action_doctrine_bundle.py:192` to thread `org_fragments=load_org_drg(repo_root, strict=False)` (mirroring the 4 callers that already do) so an org pack's `drg/fragment.yaml` reaches those consumers. **Fix at the callers, not the `org_roots=` seam** (a seam fix double-folds for the dual-callers and mis-tiers org content). | High | Open |
+| FR-010 | Refresh `packs/internal/` README | As a maintainer, I want the internal pack's stale README updated (it omits the on-disk `directives/` dir + `OPERATOR_SIGNAL_CONTRACT` node); the pack is already structurally conformant, so no restructure. | Low | Open |
+| FR-011 | Chain delivery verification (class-b internal + class-a 2nd fixture) | As an operator, I want tests proving (b) built-in + spec-kitty-internal delivers every kind the internal pack declares across the executor/action-bundle seam, AND (a) built-in + internal + a **2nd minimal org fixture** folds pack #2's fragment node/edge (the multi-org-pack path), so #3530 is evidenced for both classes. | Medium | Open |
+| FR-012 | Misconfigured-pack-in-chain fails loud (enumerated) | As an operator, I want enumerated misconfig cases (nonexistent refine target; missing required fragment key; declared kind with no node) each to **raise** with a target-naming message (distinct from the honest "no graph" warning) so the chain never reports success over an inert pack. | Medium | Open |
 | FR-013 | Golden re-ledger doc-nit correction | As a maintainer, I want the extractor procedure-branch docstring wording on golden re-ledger (`extractor.py:557`) clarified so that it matches the M2 WP04 reality. | Low | Open |
 
 ### Non-Functional Requirements
@@ -270,7 +270,7 @@ variant fails loud rather than degrading silently.
 | C-003 | No silent fallback | Any new resolution/validation path MUST fail closed with a structured error on ambiguity or absence — no silent fallback (repo doctrine). | Technical | High | Open |
 | C-004 | Consolidate on `*-references` | The resolved direction (DM-01M0PEAQ5G1VDR3CSJSV51SD8Y) is to remove `context-sources.*` and consolidate on the top-level `*-references` surface; no authored artefact-reference intent may be lost in migration. | Process | High | Resolved |
 | C-005 | Schema change requires migration | Removing `context-sources.*` MUST be accompanied by a migration and MUST update all 25 shipped profiles; a profile authoring the removed block MUST be rejected, not silently ignored. | Technical | High | Open |
-| C-006 | No behaviour change to delivered content | Consolidation MUST preserve what reaches a dispatched agent today (directives/tactics already delivered); it removes the inert duplicate surface, not live delivery. | Technical | High | Open |
+| C-006 | No silent behaviour change to delivered content | Consolidation MUST preserve what reaches a dispatched agent today, verified by an **empty golden `agent_profile.graph.yaml` diff** except deliberately-ledgered deltas. The one known delta — python-pedro/DIRECTIVE_034 (overlay `suggests` link suppressed once 034 becomes a requires-diamond) — MUST be resolved deliberately and ledgered, never silent. | Technical | High | Open |
 | C-007 | #3514 and #3511 out of scope | The P0 test-authority gap (#3514) and the pack-metadata integration cutover (#3511) are NOT in this mission's scope. #3412 (malformed-manifest → None) also stays out and open. | Scope | Medium | Open |
 
 ### Key Entities *(include if feature involves data)*
@@ -306,16 +306,18 @@ variant fails loud rather than degrading silently.
   `mission_step_contract`, `template`) are recognized at the resolution tier
   after the fix (measured: 6 of 6 now resolve where 0 did).
 - **SC-003**: A governance-profile selection naming a nonexistent artifact
-  produces a diagnostic naming the offending id in 100% of cases (built-in and
-  org tier); valid selections produce 0 new diagnostics (no false positives).
+  fails loud naming the offending id in 100% of cases on **both** the built-in
+  tier (end-to-end `generate_graph` test) and the newly-implemented org tier;
+  valid selections produce 0 new diagnostics (no false positives).
 - **SC-004**: `context-sources` is removed entirely — 0 profile-reference kinds
   remain simultaneously schema-legal and never-read; all 25 shipped profiles
   carry references only on the `*-references` surface; 0 authored artefact
   references lost in migration.
-- **SC-005**: The spec-kitty-internal pack, loaded as an org tier over built-in
-  (a ≥2-layer chain), delivers 100% of the kinds it declares to their consumers —
-  **including the executor / action-doctrine-bundle seam that drops it today** —
-  and a misconfigured variant fails loud, satisfying #3530's stated closing
+- **SC-005**: (class-b) The spec-kitty-internal pack, loaded as an org tier over
+  built-in, delivers 100% of the kinds it declares — **including the executor /
+  action-doctrine-bundle seam that drops it today**; (class-a) a built-in +
+  internal + 2nd-org-fixture chain folds pack #2's fragment node/edge; and
+  enumerated misconfigurations fail loud — together satisfying #3530's closing
   condition.
 - **SC-006**: 0 new lint/type suppressions introduced; touched functions remain
   at complexity ≤15.

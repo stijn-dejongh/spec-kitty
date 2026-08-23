@@ -84,21 +84,28 @@ src/
 │   └── context_renderers/profile_sections.py # IC-2: reads *-references (delivery, unchanged behaviour)
 ├── doctrine/
 │   ├── drg/models.py                         # IC-1: canonical NodeKind (source of truth; not edited)
-│   ├── drg/migration/extractor.py            # IC-2 (project from *-references), IC-3 (verify guard), IC-6 (doc-nit :557)
+│   ├── drg/migration/extractor.py            # IC-2 (project from *-references :906-942), IC-3 (built-in + NEW org-tier governance-profile guard), IC-6 (doc-nit :557)
+│   ├── drg/migration/hand_authored_overlay.py# IC-2: reconcile pedro suggests→034 vs new requires (F4)
 │   ├── agent_profiles/profile.py             # IC-2: remove ContextSources.* fields
-│   └── agent_profiles/schema_models.py       # IC-2: remove AgentContextSources.* fields
+│   ├── agent_profiles/schema_models.py       # IC-2: remove AgentContextSources.* fields
+│   └── agent_profiles/__init__.py            # IC-2: drop ContextSources from __all__ (C-007) (F2)
 ├── doctrine/schemas/agent-profile.schema.yaml# IC-2: drop context-sources block
+scripts/
+├── generate_schemas.py                       # IC-2: drop agent_context_sources annotation :485 (F2)
+└── doctrine/inline_reference_inventory.py    # IC-2: retire _collect_context_sources :166 (F2)
 ├── specify_cli/
 │   ├── mission_step_contracts/executor.py    # IC-4: caller wiring (org_fragments)
 │   └── upgrade/migrations/                    # IC-2: profile context-sources→*-references migration
 packs/
 ├── built-in/agent_profiles/*.agent.yaml      # IC-2: 25 profiles migrated to *-references
-└── internal/                                 # IC-4: README refresh; #3530 fixture
+├── built-in/agent_profile.graph.yaml         # IC-2: regenerate (regenerate-graph, not hand-edit) + ledger (F5)
+└── internal/                                 # IC-4: README refresh; #3530 class-b fixture
 tests/
-├── architectural/                            # IC-1 drift-guard
-├── doctrine/drg/migration/                   # IC-2 projection, IC-3 fail-loud
-├── charter/ or specify_cli/                  # IC-4 executor/action-bundle seam
-└── integration/                              # IC-5 chain-delivery on built-in+internal
+├── architectural/                            # IC-1 behaviour-pinned drift-guard; IC-2 golden re-ledger (test_golden_count_ban)
+├── doctrine/drg/migration/                   # IC-2 projection + divergent-profile fixture, IC-3 built-in + org-tier fail-loud
+├── doctrine/fixtures/                         # IC-5 NEW 2nd minimal org pack (class-a)
+├── charter/ or specify_cli/                  # IC-4 executor/action-bundle valid-fragment red test
+└── integration/                              # IC-5 chain-delivery: internal (class-b) + 2nd fixture (class-a)
 ```
 
 **Structure Decision**: Single-project library layout (existing). Changes are
@@ -110,36 +117,41 @@ dirs. Tests live beside the existing suites for each touched module.
 *The `/spec-kitty.tasks` command translates these concerns into work packages.
 Each concern is independently testable (red-first) and small.*
 
+*Amended after the post-plan brownfield squad (see `research/post-plan-brownfield-squad.md`; findings F1–F15).*
+
 | IC | Concern | Issue | Key files | Depends on | Risk |
 |----|---------|-------|-----------|------------|------|
-| **IC-1** | Derive `_DRG_NODE_KINDS` from `NodeKind`; drift-guard test; confirm dropped URN kinds resolve | #3608 | `topic_resolver.py`; new `tests/architectural/` (or `tests/charter/`) drift-guard | — | Low — SSOT swap; watch URN prefix vs value (edge case) |
-| **IC-2** | Remove `context-sources.*`; consolidate on `*-references`; extractor projects from `*-references`; migrate 25 profiles; upgrade migration | #3629 p1 | `profile.py`, `schema_models.py`, `agent-profile.schema.yaml`, `extractor.py`, `packs/built-in/agent_profiles/*.agent.yaml`, migration + tests | — | **High** — blast radius (25 profiles + schema + migration); must not change delivered content (C-006) |
-| **IC-3** | Verify governance-profile fail-loud guard (built-in) and cover org tier; close #3629 p2 | #3629 p2 | `extractor.py`/org loaders; `tests/doctrine/drg/migration/` | — | Low — mostly verify; org-tier may need a small guard |
-| **IC-4** | Fix `org_roots=` seam to fold `drg/fragment.yaml` + stop false warning-suppression; wire executor + `action_doctrine_bundle`; refresh `packs/internal` README | #3530 / operator | `_drg_helpers.py`, `executor.py`, `action_doctrine_bundle.py`, `packs/internal/README.md` + tests | — | Medium — shared seam; guard against double-fold with `org_fragments` callers |
-| **IC-5** | Chain-delivery verification on built-in + spec-kitty-internal via the executor/action-bundle seam; misconfigured-variant fails loud; close #3530 | #3530 | `tests/integration/` | IC-4 | Medium — build a real chain fixture; possibly a 2nd minimal org fixture |
-| **IC-6** | Golden re-ledger doc-nit | #3629 p3 | `extractor.py:557` docstring | — | Trivial — fold into IC-3 |
+| **IC-1** | Derive `_DRG_NODE_KINDS` from `NodeKind` **reusing the SSOT twin `merge.py:504` `_NODE_KIND_PREFIXES`**; drift-guard that **pins membership-gate behaviour** (monkeypatch a `NodeKind` member → recognized), not set-equality; confirm dropped URN kinds resolve | #3608 | `topic_resolver.py` (+ maybe import from `drg/models` or reuse merge twin); new behaviour test | — | Low — value==prefix structurally safe (`DRGNode._validate_urn`) [F7] |
+| **IC-2** | Remove `context-sources.*`; consolidate on `*-references`; extractor projects from `*-references`; migrate 25 profiles; **update the full ≥8 consumer set** (`agent_profiles/__init__.py` `__all__`, `generate_schemas.py:485`, `inline_reference_inventory.py`, `test_emit_delivery_bind.py`, `test_supply_chain_profile_bindings.py`, 6+ profile tests); **migrate reviewer-renata's `additional: adversarial-evidence-disposition` binding deliberately** (not drop); **set-merge migration (not append)** with dup-guard; **regenerate `agent_profile.graph.yaml` + reconcile `hand_authored_overlay.py`**; **golden re-ledger** for the pedro/034 delta | #3629 p1 | `profile.py`, `schema_models.py`, `agent-profile.schema.yaml`, `extractor.py:906-942`, `agent_profiles/__init__.py`, `scripts/generate_schemas.py`, `scripts/doctrine/inline_reference_inventory.py`, `packs/built-in/agent_profiles/*.agent.yaml`, `packs/built-in/agent_profile.graph.yaml`, `hand_authored_overlay.py`, migration + the consumer tests + a **divergent user-profile fixture** | — | **High** — blast radius; C-006 has a real pedro/034 delivery change to handle [F2–F6] |
+| **IC-3** | (a) Add end-to-end `generate_graph` raise test for built-in guard, close #3629 p2 built-in; (b) **IMPLEMENT** net-new **org-tier governance-profile scope extraction + fail-loud guard + tests** (no org-tier path exists today) | #3629 p2 | `extractor.py` (+ org loader path for governance-profiles), `tests/doctrine/drg/migration/` + org-tier test | — | **Medium/High** — org tier is net-new code, not verify [F8, F9] |
+| **IC-4** | **Option (b): thread `org_fragments=load_org_drg(repo_root, strict=False)` at `executor.py:362` + `action_doctrine_bundle.py:192` only** (mirror the 4 correct dual-callers; do NOT fix at the seam — double-fold + mis-tier); confirm delivery despite the executor pre-probe (`:347-360`); do NOT widen to the `:245` DoctrineService seam; refresh `packs/internal` README | #3530 / operator | `executor.py`, `action_doctrine_bundle.py`, `packs/internal/README.md` + a **valid-fragment** red test | — | Medium — precedented pattern; guard the pre-probe warning [F1, F11–F13] |
+| **IC-5** | Chain-delivery verification: (b) built-in + spec-kitty-internal (fragment-drop) via the executor/action-bundle seam; **(a) built-in + internal + a 2nd minimal org fixture** asserting pack #2's fragment node/edge reaches the merged graph (multi-org-pack fold); misconfigured-variant fails loud; close #3530 | #3530 | `tests/integration/` + `tests/doctrine/fixtures/` (new minimal org pack) | IC-4 | Medium — 2 fixtures; class-a + class-b [F10, F11] |
+| **IC-6** | Golden re-ledger doc-nit — **must reflect IC-2's re-ledger**; sequence **after** IC-2 | #3629 p3 | `extractor.py:557` docstring | IC-2 | Trivial [F14] |
 
 ## Parallel Work Analysis
 
 ### Dependency Graph
 
 ```
-IC-1 (SSOT + drift-guard) ─┐
-IC-2 (profile consolidation)┤ independent, parallel
-IC-3 (+IC-6) (fail-loud verify + doc-nit) ┤
-IC-4 (org_roots seam fix) ─┘
-                            │
-                            └─► IC-5 (chain-delivery verification)  [needs IC-4]
+IC-1 (SSOT + behaviour-pinned drift-guard) ─┐
+IC-4 (thread org_fragments at 2 callers) ────┤ independent, parallel
+IC-2 (profile consolidation + re-ledger) ────┤
+   └─► IC-6 (doc-nit reflects IC-2 re-ledger) │  [needs IC-2]
+IC-3 (built-in e2e test + org-tier implement)┘
+                                              │
+IC-4 ─────────────────────────────────────────► IC-5 (chain: class-b internal + class-a 2nd fixture)  [needs IC-4]
 ```
 
-- **Sequential**: IC-5 depends on IC-4 (the seam must fold fragments before the
-  chain test can assert delivery).
-- **Parallel streams**: IC-1, IC-2, IC-3(+IC-6), IC-4 touch disjoint files and
+- **Sequential**: IC-5 depends on IC-4 (fragments must reach the consumer before
+  the chain test can assert delivery). IC-6 depends on IC-2 (its docstring must
+  describe IC-2's golden re-ledger).
+- **Parallel streams**: IC-1, IC-2, IC-3, IC-4 touch largely disjoint files and
   can proceed concurrently.
-- **File-conflict avoidance**: only IC-2, IC-3, IC-6 all touch `extractor.py`.
-  Sequence within that file: IC-2 (add `*-references` projection loops) → IC-3
-  (guard verify, mostly reads) → IC-6 (docstring). If run as parallel WPs,
-  serialize the `extractor.py` edits or assign IC-2/IC-3/IC-6 to one lane.
+- **File-conflict avoidance**: IC-2 and IC-3 both touch `extractor.py` (IC-2 the
+  profile projection `:906-942`; IC-3 the governance-profile extraction + a new
+  org-tier path). Serialize the `extractor.py` edits or assign both to one lane;
+  IC-6's docstring edit lands last. IC-2 owns the `agent_profile.graph.yaml`
+  golden regen — no other IC may regenerate it concurrently.
 
 ### Coordination Points
 
@@ -152,17 +164,42 @@ IC-4 (org_roots seam fix) ─┘
 
 *No charter violations — none.*
 
-## Engineering Alignment (confirmed assumptions)
+## Engineering Alignment (confirmed — post-squad)
 
-- Tech stack fixed; no new dependencies; no user planning decisions outstanding.
-- IC-4 fix approach: **fix at the `org_roots=` seam** (`_drg_helpers.py`) so all
-  `org_roots` callers benefit from one change, AND stop the false warning
-  suppression; thread `org_fragments` at the two callers only if the seam fix is
-  insufficient. (Recorded as the default; final call at implement time with tests.)
-- IC-2 removal relies on pydantic `extra="forbid"` already rejecting unknown keys,
-  so post-removal a profile authoring `context-sources` fails loud at load — the
-  desired boundary. The migration preserves authored artefact refs by moving them
-  onto `*-references`; `additional`/`doctrine-layers` (no edge shape) are dropped.
-- #3530 chain: built-in + internal is the ≥2-layer chain; a second minimal org
-  fixture is added only if the strict multi-org-pack merge path must be exercised
-  (decided in IC-5).
+- Tech stack fixed; no new dependencies.
+- **IC-4 approach = option (b)** (squad F1, decisive): thread
+  `org_fragments=load_org_drg(repo_root, strict=False)` at `executor.py:362` and
+  `action_doctrine_bundle.py:192` only. Do **not** fix at the `org_roots=` seam —
+  it double-folds for the 4 callers that already pass both `org_roots`+`org_fragments`
+  and mis-tiers org content into the built-in precedence layer. Scope the fix to
+  the `:192` edge seam; do not widen to the `:245` DoctrineService seam.
+- **IC-2 is under-scoped in the original plan** (squad F2–F6):
+  - Consumer set is ≥8 (not 1); update `__all__`, schema-gen, inventory collector,
+    and all asserting tests in the WP.
+  - `additional` is **not** pure-drop: migrate reviewer-renata's
+    `adversarial-evidence-disposition` binding deliberately (it is pinned by
+    `test_supply_chain_profile_bindings.py:158`).
+  - **C-006 has a real delivery change**: python-pedro/DIRECTIVE_034 (overlay
+    `suggests→034` gets suppressed once 034 becomes a requires-diamond). Handle
+    deliberately + ledger it; do not let it happen silently.
+  - Migration is **set-merge (not append)** (`directive-references` already ⊇
+    `context-sources.directives` for all 25 profiles) with a dup-guard.
+  - **Regenerate `agent_profile.graph.yaml`** (`spec-kitty doctrine
+    regenerate-graph`, never hand-edit) + reconcile `hand_authored_overlay.py`;
+    add a composition-ledger row (or a walk-gate) for the pedro 9→10 delta.
+  - Because shipped profiles are green-by-construction, FR-005's migration branch
+    is proven only by a **divergent user-profile fixture** (ids not on
+    `*-references`) + a frozen pre-migration snapshot; C-006 is pinned to the
+    golden `agent_profile.graph.yaml` diff.
+- **IC-3 expanded (operator decision)**: implement net-new org-tier
+  governance-profile scope extraction + fail-loud guard + tests (no org-tier path
+  exists today); plus an end-to-end `generate_graph` raise test for the built-in
+  guard before closing #3629 p2.
+- **IC-5 (operator decision)**: keep spec-kitty-internal (class-b fragment-drop)
+  AND add a 2nd minimal org fixture to pin the multi-org-pack fold (class-a),
+  asserting pack #2's fragment reaches the merged graph. (`merge_three_layers`
+  already iterates all fragments — `merge.py:1251` — so class-a is only provable
+  with ≥2 org packs.)
+- **IC-1**: reuse the SSOT twin at `merge.py:504`; the drift-guard pins
+  membership-gate behaviour (monkeypatch a `NodeKind` member), not tautological
+  set-equality.
