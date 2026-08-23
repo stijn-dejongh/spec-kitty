@@ -102,7 +102,7 @@ Execution worktrees are allocated per computed lane from `lanes.json` at
 - `_DRG_NODE_KINDS` is enum-derived (no literal); no drift possible.
 - Behaviour test proves derivation (not tautology) and passes; all 16 `NodeKind`
   values (incl. the 6 previously-dropped) resolve at the gate.
-- `ruff` + `mypy` clean on `topic_resolver.py`; no new suppressions.
+- `ruff` + `mypy --strict` clean on `topic_resolver.py`; no new suppressions.
 - `pytest tests/architectural/test_layer_rules.py -q` green (import boundary).
 - Targeted: `pytest tests/charter/test_topic_resolver_node_kinds.py -q` green.
 

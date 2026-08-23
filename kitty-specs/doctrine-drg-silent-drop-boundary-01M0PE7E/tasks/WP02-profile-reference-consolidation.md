@@ -208,13 +208,15 @@ per computed lane from `lanes.json` at implement time.
   loss.
 - `agent_profile.graph.yaml` regenerated (not hand-edited) + ledger entry for
   pedro/034; C-006 golden diff empty except that delta.
-- `ruff` + `mypy` clean; no new suppressions. Terminology guard green.
+- `ruff` + `mypy --strict` clean; no new suppressions. Terminology guard green.
 - **DIR-009 (post-tasks G6)**: `CHANGELOG.md` carries a breaking-change entry
   (`context-sources` removed from the agent-profile schema; migration pointer), and
   `pyproject.toml` version is bumped (required for any `__init__.py`/schema change).
 - **Atomicity (G11)**: this WP's removal↔migration↔regen triad (T004/T005/T008/
   T009/T010) MUST land together — splitting leaves the 25 shipped profiles
   unloadable (`extra="forbid"`). Do not split the core.
+- Touched functions remain ≤15 cyclomatic complexity (NFR-004); extract helpers in
+  the extractor projection / migration rather than growing a branch.
 - Targeted greens: `pytest tests/doctrine/agent_profiles/ tests/doctrine/drg/migration/test_extractor.py tests/doctrine/drg/migration/test_extractor_projection.py tests/doctrine/test_profile_model.py tests/doctrine/test_shipped_profiles.py tests/charter/test_emit_delivery_bind.py tests/architectural/test_golden_count_ban.py -q`.
 
 ## Risks / reviewer guidance

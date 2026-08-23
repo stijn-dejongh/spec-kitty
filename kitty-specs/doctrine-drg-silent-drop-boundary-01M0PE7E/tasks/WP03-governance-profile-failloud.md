@@ -120,8 +120,11 @@ per computed lane from `lanes.json` at implement time.
   selections reach the DRG.
 - Org-tier fail-loud guard raises on nonexistent selection naming the id; valid
   selections pass (no false positive). Red-first tests demonstrate both.
-- `ruff` + `mypy` clean; no new suppressions. No edits to `extractor.py` (import
-  the field constant) and no edits to WP04's caller files (WP04 invokes the guard).
+- `ruff` + `mypy --strict` clean; no new suppressions; touched functions ≤15
+  complexity (NFR-004). Terminology guard green
+  (`pytest tests/architectural/test_no_legacy_terminology.py -q`, NFR-003 — this WP
+  touches `src/doctrine/`). No edits to `extractor.py` (import the field constant)
+  and no edits to WP04's caller files (WP04 invokes the guard).
 - Targeted greens: `pytest tests/doctrine/drg/migration/test_governance_scope_e2e.py tests/doctrine/drg/test_org_governance_failloud.py -q`.
 - The org-tier fail-loud test (T016) drives the guard via a constructed merged
   graph OR through the WP04-wired path once available; it must genuinely go red

@@ -120,7 +120,9 @@ per computed lane from `lanes.json` at implement time.
 - No-double-fold multiset assertion passes (dual-callers unaffected). `:245` seam
   untouched.
 - `packs/internal/README.md` matches the pack contents.
-- `ruff` + `mypy` clean; no new suppressions.
+- `ruff` + `mypy --strict` clean; no new suppressions. Terminology guard green
+  (`pytest tests/architectural/test_no_legacy_terminology.py -q`, NFR-003 — this WP
+  edits `packs/internal/README.md` prose).
 - Targeted greens: `pytest tests/specify_cli/mission_step_contracts/test_executor_org_fragment.py tests/charter/test_action_doctrine_bundle_org_fragment.py tests/specify_cli/mission_step_contracts/test_executor.py -q`.
 
 ## Risks / reviewer guidance
