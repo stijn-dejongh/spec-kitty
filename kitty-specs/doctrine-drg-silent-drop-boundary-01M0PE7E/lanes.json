@@ -27,8 +27,10 @@
         "WP02"
       ],
       "write_scope": [
+        "CHANGELOG.md",
         "packs/built-in/agent_profile.graph.yaml",
         "packs/built-in/agent_profiles/**",
+        "pyproject.toml",
         "scripts/doctrine/inline_reference_inventory.py",
         "scripts/generate_schemas.py",
         "src/doctrine/agent_profiles/__init__.py",
@@ -37,15 +39,17 @@
         "src/doctrine/drg/migration/extractor.py",
         "src/doctrine/drg/migration/hand_authored_overlay.py",
         "src/doctrine/schemas/agent-profile.schema.yaml",
-        "src/specify_cli/upgrade/migrations/m_3_2_6_context_sources_consolidation.py",
+        "src/specify_cli/upgrade/migrations/m_3_3_1_context_sources_consolidation.py",
         "tests/charter/test_emit_delivery_bind.py",
         "tests/doctrine/agent_profiles/test_context_sources_migration.py",
         "tests/doctrine/agent_profiles/test_supply_chain_profile_bindings.py",
         "tests/doctrine/drg/migration/test_extractor.py",
         "tests/doctrine/drg/migration/test_extractor_projection.py",
         "tests/doctrine/drg/test_model_strictness_roundtrip.py",
+        "tests/doctrine/fixtures/valid-profile.agent.yaml",
         "tests/doctrine/test_profile_model.py",
-        "tests/doctrine/test_shipped_profiles.py"
+        "tests/doctrine/test_shipped_profiles.py",
+        "tests/specify_cli/bulk_edit/test_occurrence_map_field_paths.py"
       ],
       "predicted_surfaces": [
         "api",
@@ -63,6 +67,7 @@
       "write_scope": [
         "src/doctrine/drg/org_governance.py",
         "src/doctrine/drg/org_pack_loader.py",
+        "src/doctrine/drg/validator.py",
         "tests/doctrine/drg/migration/test_governance_scope_e2e.py",
         "tests/doctrine/drg/test_org_governance_failloud.py"
       ],
@@ -86,10 +91,13 @@
       ],
       "predicted_surfaces": [
         "api",
-        "app-shell"
+        "app-shell",
+        "artifact-rendering"
       ],
-      "depends_on_lanes": [],
-      "parallel_group": 0
+      "depends_on_lanes": [
+        "lane-c"
+      ],
+      "parallel_group": 1
     },
     {
       "lane_id": "lane-e",
@@ -107,11 +115,11 @@
       "depends_on_lanes": [
         "lane-d"
       ],
-      "parallel_group": 1
+      "parallel_group": 2
     }
   ],
-  "computed_at": "2026-08-23T06:12:01.965638+00:00",
+  "computed_at": "2026-08-23T06:26:33.806635+00:00",
   "computed_from": "dependency_graph+ownership",
   "planning_artifact_wps": [],
-  "planning_commit_sha": "e2db0e9e6cc33ced9a85610b1b4155e985ff2044"
+  "planning_commit_sha": "e7ca9bb580a53541d5400e08d17b6020994ab49a"
 }

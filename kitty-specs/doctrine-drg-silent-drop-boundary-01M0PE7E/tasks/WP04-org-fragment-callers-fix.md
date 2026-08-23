@@ -1,7 +1,8 @@
 ---
 work_package_id: WP04
 title: Org fragment silent-drop fix at the callers (#3530)
-dependencies: []
+dependencies:
+- WP03
 requirement_refs:
 - FR-009
 - FR-010
@@ -72,16 +73,25 @@ Stop the two deficient consumer seams from silently dropping an org pack's
 ## Subtasks
 
 ### T017 — Thread `org_fragments` at the executor
-- At `executor.py:362`, pass `org_fragments=load_org_drg(repo_root, strict=False)`
-  (import from `charter.drg`, already imported at `executor.py:21`), mirroring the
-  4 correct dual-callers. Ensure the pre-probe (`:347-360`) does not defeat delivery
-  (content arrives via fragments even if a fragment-only root is excluded from the
+- At `executor.py:362`, pass `org_fragments=load_org_drg(repo_root, strict=False)`.
+  **`load_org_drg` is NOT currently imported in `executor.py`** (post-tasks G9) —
+  add it to the existing `charter.drg` import (~`executor.py:23`, the block that
+  already imports `ArtifactKind, DRGGraph, DRGLoadError, …`). Mirror the 4 correct
+  dual-callers. Ensure the pre-probe (`:347-360`) does not defeat delivery (content
+  arrives via fragments even if a fragment-only root is excluded from the
   `org_roots` health list).
+- **Invoke WP03's org-governance guard** (post-tasks G1): after the merged graph is
+  available, call WP03's `validator` governance-scope escalation
+  (`validate_*governance_scope*` from `doctrine.drg.validator`) so an org-tier
+  nonexistent `selected_*` raises here. This is the one-line wiring WP03's guard was
+  designed for; do the same at `action_doctrine_bundle.py` in T018.
 
 ### T018 — Thread `org_fragments` at action_doctrine_bundle  [P]
 - At `action_doctrine_bundle.py:192`, pass
   `org_fragments=load_org_drg(repo_root, strict=False)`. Leave the `:245`
   DoctrineService seam untouched (F13).
+- Also invoke WP03's org-governance validator here (same one-line post-merge call
+  as T017) so the org-tier fail-loud fires on this path too.
 
 ### T019 — Valid-fragment red test + no-double-fold assertion
 - New tests (`test_executor_org_fragment.py`, `test_action_doctrine_bundle_org_fragment.py`):

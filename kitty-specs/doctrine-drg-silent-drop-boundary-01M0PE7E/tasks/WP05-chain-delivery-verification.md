@@ -66,6 +66,11 @@ enumerated misconfig fail-loud. Depends on WP04 (the caller fix must land first)
   shape: plural node kinds, `body_path` where needed, singular `<kind>:<id>` edge
   URNs). Declare ≥1 distinctive node (e.g. `directives:MINIMAL_ORG_2_MARKER`) and
   optionally a `refines` edge to a real built-in target so it merges clean.
+- **G10 guard**: neither this fixture nor `packs/internal` may carry a
+  governance-profile `selected_*` selection — WP03's org-tier guard would raise on
+  an unresolved one. Keep the fixtures fragment/refines-only so class-b/class-a
+  assert delivery, not governance fail-loud (that is WP03's territory). This is why
+  WP05 depends only on WP04, not WP03.
 
 ### T022 — Class-b delivery test (built-in + internal)
 - In `tests/integration/test_org_pack_chain_delivery.py`: register `packs/internal`

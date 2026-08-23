@@ -73,14 +73,14 @@ future revert-to-copy. This is #3608 and the archetype of the whole mission.
 
 ### T002 — Behaviour-pinned drift-guard test  [P]
 - New test `tests/charter/test_topic_resolver_node_kinds.py`.
-- **Do NOT** assert only `_DRG_NODE_KINDS == {k.value for k in NodeKind}` — that
-  is a tautology once T001 lands (squad F7). Instead **pin the behaviour**:
+- **Do NOT** rely on `_DRG_NODE_KINDS == {k.value for k in NodeKind}` — that is a
+  tautology once T001 lands (squad F7, post-tasks G7). **Pin the behaviour**:
   `monkeypatch`/extend `NodeKind` (or patch the resolver's view of it) with a
   synthetic member and assert the resolver recognizes a URN with the new value at
-  the gate **without any edit** to `topic_resolver.py`. If monkeypatching a
-  `StrEnum` is impractical, assert `_DRG_NODE_KINDS is`-derived by comparing it to
-  an **independent** re-derivation from `NodeKind` computed in the test AND assert
-  the twin `merge.py` `_NODE_KIND_PREFIXES` equals it (cross-module SSOT pin).
+  the gate **without any edit** to `topic_resolver.py`.
+- Acceptance for this WP is carried by this behaviour pin **plus T003** (each
+  previously-dropped kind resolves) — NOT by a set-equality assertion. Do not add a
+  tautological equality fallback that a lazy implementation could ship green.
 
 ### T003 — Previously-dropped kinds resolve at the gate  [P]
 - In the same test file, assert that a URN for **each** of the 6 previously-missing
@@ -111,4 +111,6 @@ Execution worktrees are allocated per computed lane from `lanes.json` at
 - Import cycle risk (charter→doctrine.drg.models). Reviewer: confirm layer rules
   pass and no cycle introduced.
 - Reviewer: reject a tautological equality-only test — the pin must fail if the
-  derivation is reverted to a literal (F7).
+  derivation is reverted to a literal (F7). Note: spec FR-002's literal wording
+  ("assert equals `{k.value for k in NodeKind}`") is **superseded** here by the
+  behaviour pin (T002) + the dropped-kinds gate (T003); accept those, not equality.

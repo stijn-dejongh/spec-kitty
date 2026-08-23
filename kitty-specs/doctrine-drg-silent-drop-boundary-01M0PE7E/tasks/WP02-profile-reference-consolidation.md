@@ -28,7 +28,7 @@ history:
 agent_profile: python-pedro
 authoritative_surface: src/doctrine/agent_profiles/
 create_intent:
-- src/specify_cli/upgrade/migrations/m_3_2_6_context_sources_consolidation.py
+- src/specify_cli/upgrade/migrations/m_3_3_1_context_sources_consolidation.py
 - tests/doctrine/agent_profiles/test_context_sources_migration.py
 execution_mode: code_change
 owned_files:
@@ -42,7 +42,7 @@ owned_files:
 - scripts/doctrine/inline_reference_inventory.py
 - packs/built-in/agent_profiles/**
 - packs/built-in/agent_profile.graph.yaml
-- src/specify_cli/upgrade/migrations/m_3_2_6_context_sources_consolidation.py
+- src/specify_cli/upgrade/migrations/m_3_3_1_context_sources_consolidation.py
 - tests/doctrine/test_profile_model.py
 - tests/doctrine/test_shipped_profiles.py
 - tests/doctrine/drg/test_model_strictness_roundtrip.py
@@ -51,6 +51,10 @@ owned_files:
 - tests/doctrine/drg/migration/test_extractor.py
 - tests/doctrine/drg/migration/test_extractor_projection.py
 - tests/doctrine/agent_profiles/test_context_sources_migration.py
+- tests/doctrine/fixtures/valid-profile.agent.yaml
+- tests/specify_cli/bulk_edit/test_occurrence_map_field_paths.py
+- CHANGELOG.md
+- pyproject.toml
 role: implementer
 tags: []
 tracker_refs: []
@@ -89,8 +93,10 @@ delivery decision. This is #3629 part 1 (+ the part-3 doc-nit).
   `context-sources.additional` carries `adversarial-evidence-disposition`, the only
   place that string exists, pinned by
   `tests/doctrine/agent_profiles/test_supply_chain_profile_bindings.py:158`.
-- **C-006 delivery delta** (F4): `hand_authored_overlay.py:585` gives python-pedro
-  a `suggests→DIRECTIVE_034` link (with a `when` clause). Once T004 projects
+- **C-006 delivery delta** (F4): `hand_authored_overlay.py` gives python-pedro
+  a `suggests→DIRECTIVE_034` link with a `when` clause (locate the
+  `agent_profile:python-pedro` + `DIRECTIVE_034` SUGGESTS entry — ~L1674, NOT
+  L585 which is an unrelated DDD `requires` edge). Once T004 projects
   `directive-references→requires`, 034 (in pedro's `directive-references`) becomes a
   requires-diamond → `progressive_disclosure.py:186` suppresses the suggested link.
   This MUST be resolved deliberately and ledgered — never silent.
@@ -121,11 +127,28 @@ delivery decision. This is #3629 part 1 (+ the part-3 doc-nit).
   annotation block (else schema-regen annotates a nonexistent def).
 - `scripts/doctrine/inline_reference_inventory.py:166-193` — retire
   `_collect_context_sources()` (dead after removal).
+- **Missed consumer (post-tasks G4)**: `tests/doctrine/fixtures/valid-profile.agent.yaml`
+  authors a `context-sources` block and is loaded by
+  `test_profile_schema_validation.py` + `test_doctor_doctrine.py` — remove the
+  block from the fixture so those loaders keep passing (removal would otherwise red
+  them silently, violating FR-006).
+- **F15 doc/example hygiene**: refresh stale `context-sources.*` field-path
+  examples in `src/doctrine/schemas/occurrence-map.schema.yaml:65,71`,
+  `src/doctrine/templates/occurrence-map-template.yaml:47`,
+  `src/specify_cli/bulk_edit/diff_check.py:264`, and verify
+  `tests/specify_cli/bulk_edit/test_occurrence_map_field_paths.py:368,377` (uses
+  the path as an occurrence-map literal — confirm it does not assert profile-schema
+  validity; adjust if it does). Doc references under `docs/` may be folded here or a
+  follow-up issue filed.
 
 ### T007 — Upgrade migration
-- New `src/specify_cli/upgrade/migrations/m_3_2_6_context_sources_consolidation.py`
+- New `src/specify_cli/upgrade/migrations/m_3_3_1_context_sources_consolidation.py`
   (follow the pattern of `m_2_2_0_profile_context_deployment.py`; use
   `get_agent_dirs_for_project`-style config-aware helpers where relevant).
+  **Version note (post-tasks G5)**: `m_3_2_6`…`m_3_3_0` migrations already ship at
+  HEAD, so a `m_3_2_6_*` name would mis-order. Confirm the runner's ordering /
+  idempotency contract and name for the next **unreleased** version (`m_3_3_1_*`),
+  aligned with the version bump below.
 - **Set-merge (not append)** `context-sources.{directives,tactics,toolguides,
   styleguides}` into the matching `*-references` (they are supersets already —
   dedup by id). Add a dup-guard assertion.
@@ -186,6 +209,12 @@ per computed lane from `lanes.json` at implement time.
 - `agent_profile.graph.yaml` regenerated (not hand-edited) + ledger entry for
   pedro/034; C-006 golden diff empty except that delta.
 - `ruff` + `mypy` clean; no new suppressions. Terminology guard green.
+- **DIR-009 (post-tasks G6)**: `CHANGELOG.md` carries a breaking-change entry
+  (`context-sources` removed from the agent-profile schema; migration pointer), and
+  `pyproject.toml` version is bumped (required for any `__init__.py`/schema change).
+- **Atomicity (G11)**: this WP's removal↔migration↔regen triad (T004/T005/T008/
+  T009/T010) MUST land together — splitting leaves the 25 shipped profiles
+  unloadable (`extra="forbid"`). Do not split the core.
 - Targeted greens: `pytest tests/doctrine/agent_profiles/ tests/doctrine/drg/migration/test_extractor.py tests/doctrine/drg/migration/test_extractor_projection.py tests/doctrine/test_profile_model.py tests/doctrine/test_shipped_profiles.py tests/charter/test_emit_delivery_bind.py tests/architectural/test_golden_count_ban.py -q`.
 
 ## Risks / reviewer guidance

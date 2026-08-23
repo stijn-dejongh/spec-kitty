@@ -5,9 +5,16 @@
 **Spec**: [spec.md](./spec.md) · **Plan**: [plan.md](./plan.md) · **Contracts**: [contracts/failloud-seams.md](./contracts/failloud-seams.md)
 **Squad-amended**: [research/post-plan-brownfield-squad.md](./research/post-plan-brownfield-squad.md)
 
-5 work packages, 24 subtasks. Each WP is red-first (write the failing test, then the
-fix). Tests are targeted (never the full suite in-session). Completion is
-event-sourced: `spec-kitty agent tasks mark-status Txxx --status done`.
+5 work packages, 24 subtasks. Most WPs are red-first (write the failing test, then
+the fix); the exception is WP03 T013, a **characterization pin** for the
+already-landed built-in guard (it passes on arrival — not a bug fix). Tests are
+targeted (never the full suite in-session). Completion is event-sourced:
+`spec-kitty agent tasks mark-status Txxx --status done`.
+
+**Post-tasks squad amendments** (research/post-tasks-brownfield-squad.md): WP03's
+org-tier raise moved to `validator.py` (post-merge) with the invocation wired by
+WP04 → **WP04 now depends on WP03**; WP02 gained a missed fixture consumer +
+CHANGELOG/version + a corrected migration name (`m_3_3_1_*`, not `m_3_2_6_*`).
 
 ## Subtask Index (reference table — not a tracking surface)
 
@@ -78,7 +85,7 @@ Subtasks: T013–T016. Requirements: FR-008.
 **Goal**: Thread `org_fragments=load_org_drg(repo_root, strict=False)` at the two
 deficient callers (executor, action_doctrine_bundle) — NOT the seam — so an org
 pack's `drg/fragment.yaml` reaches those consumers; refresh the internal README.
-**Priority**: P1 · **Est.**: ~340 lines · **Depends**: none · **Prompt**: [tasks/WP04-org-fragment-callers-fix.md](./tasks/WP04-org-fragment-callers-fix.md)
+**Priority**: P1 · **Est.**: ~340 lines · **Depends**: WP03 (invokes its governance validator) · **Prompt**: [tasks/WP04-org-fragment-callers-fix.md](./tasks/WP04-org-fragment-callers-fix.md)
 **Independent test**: a valid fragment-only org pack's node reaches the merged DRG
 via the executor/action-bundle path (red before, green after); multiset count ==
 single-fold (no double-fold regression for dual-callers).
@@ -101,17 +108,21 @@ Subtasks: T021–T024. Requirements: FR-011, FR-012.
 ## Dependency graph
 
 ```
-WP01  WP02  WP03  WP04 ──► WP05
-(all independent except WP05 → WP04)
+WP01   WP02        (independent, parallel)
+WP03 ──► WP04 ──► WP05
 ```
+
+- WP04 depends on WP03 (WP04 invokes WP03's org-governance validator post-merge).
+- WP05 depends on WP04 (needs the fragment-delivery seam fixed).
+- WP01, WP02 independent — parallel with the WP03→WP04→WP05 chain.
 
 ## MVP / sequencing
 
 - **MVP = WP01** (smallest, highest-leverage SSOT fix; the mission's thesis).
-- WP01–WP04 parallelizable (disjoint files); WP05 after WP04.
 - WP02 is the heaviest (atomic consolidation) — one focused session; owns
-  `extractor.py`, so WP03 keeps its new code in `org_pack_loader.py` + new test
-  files to avoid ownership overlap.
+  `extractor.py` (imports the governance field-constant read by WP03). WP03 owns
+  `org_pack_loader.py` + `org_governance.py` + `validator.py`; WP04 owns the two
+  caller seams and invokes WP03's guard — no file overlap.
 
 ## Pre-implementation gate
 
