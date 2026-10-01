@@ -20,6 +20,26 @@ _SANCTIONED_RESOLVER_MODULE = "src/specify_cli/context/mission_resolver.py"
 # Exempt only this top-level snapshot function, never the whole creation module.
 _SCAFFOLD_SNAPSHOT_MODULE = "src/specify_cli/core/mission_creation.py"
 _SCAFFOLD_SNAPSHOT_FUNCTION = "_list_mission_scaffolds"
+# Per-function exemptions (module, function) beyond the scaffold-snapshot one
+# above -- each entry is a genuinely distinct corpus walk, not a mission
+# IDENTITY resolution MissionResolver could serve instead.
+_FUNCTION_LEVEL_EXEMPTIONS: frozenset[tuple[str, str]] = frozenset(
+    {
+        (_SCAFFOLD_SNAPSHOT_MODULE, _SCAFFOLD_SNAPSHOT_FUNCTION),
+        # coord-artifact-single-home-01M3V4BE WP07: the one-time coordination
+        # seed's stale-temp-dir sweep (contracts/seed.md) walks the coord
+        # worktree's OWN kitty-specs/ entries looking for orphaned
+        # ``.{mission_dir_name}.seed-*`` scratch dirs a previously-interrupted
+        # write_dir call left behind -- a janitorial cleanup of THIS
+        # mission's own temp artifacts by a known NAME PREFIX, never a
+        # mission-identity resolution (there is no mission handle to resolve
+        # here: the whole point is to find directories that are NOT a real
+        # mission dir at all). MissionResolver has no API for "list raw
+        # directory entries under one already-known parent", so there is no
+        # resolver call to route this through.
+        ("src/specify_cli/coordination/coord_seed.py", "_cleanup_stale_seed_temp_dirs"),
+    }
+)
 _LEGACY_WALKER_ALLOWLIST = frozenset(
     {
         "src/specify_cli/status/identity_audit.py",
@@ -122,17 +142,19 @@ def _tainted_names_in_file(tree: ast.AST) -> set[str]:
 def _find_raw_walker_calls(path: Path) -> list[tuple[int, str]]:
     tree = ast.parse(path.read_text(encoding="utf-8"))
     tainted = _tainted_names_in_file(tree)
-    parents = {child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)} if _rel(path) == _SCAFFOLD_SNAPSHOT_MODULE else {}
+    rel = _rel(path)
+    exempt_functions = {func for mod, func in _FUNCTION_LEVEL_EXEMPTIONS if mod == rel}
+    parents = {child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)} if exempt_functions else {}
 
-    def is_scaffold_snapshot(node: ast.AST) -> bool:
-        if _rel(path) != _SCAFFOLD_SNAPSHOT_MODULE:
+    def is_exempt_function(node: ast.AST) -> bool:
+        if not exempt_functions:
             return False
         scopes: list[ast.AST] = []
         while node in parents:
             node = parents[node]
             if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef | ast.Lambda):
                 scopes.append(node)
-        return len(scopes) == 1 and isinstance(scopes[0], ast.FunctionDef) and scopes[0].name == _SCAFFOLD_SNAPSHOT_FUNCTION
+        return len(scopes) == 1 and isinstance(scopes[0], ast.FunctionDef) and scopes[0].name in exempt_functions
 
     return [
         (node.lineno, node.func.attr)
@@ -141,7 +163,7 @@ def _find_raw_walker_calls(path: Path) -> list[tuple[int, str]]:
         and isinstance(node.func, ast.Attribute)
         and node.func.attr in _ENUMERATION_METHODS
         and ((isinstance(node.func.value, ast.Name) and node.func.value.id in tainted) or _references_kitty_specs(node.func.value))
-        and not is_scaffold_snapshot(node)
+        and not is_exempt_function(node)
     ]
 
 
