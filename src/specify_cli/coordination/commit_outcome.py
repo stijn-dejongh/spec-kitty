@@ -145,10 +145,15 @@ class _ResultWithSurfaces(Protocol):
     """Structural protocol: anything exposing ``surfaces`` can be rendered.
 
     So the wrapper results WP07/WP10 introduce can reuse this trio without
-    depending on the concrete ``CommitRouterResult`` type.
+    depending on the concrete ``CommitRouterResult`` type. ``surfaces`` is a
+    read-only ``@property`` (not a plain attribute) so a frozen dataclass
+    field — which mypy treats as read-only — satisfies this Protocol; a plain
+    mutable-attribute declaration would reject it (structural typing requires
+    the SAME mutability, not just the same type).
     """
 
-    surfaces: tuple[SurfaceOutcome, ...]
+    @property
+    def surfaces(self) -> tuple[SurfaceOutcome, ...]: ...
 
 
 _GLYPH_OK: Final[str] = "✓"  # "✓"

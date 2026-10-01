@@ -31,6 +31,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from mission_runtime import MissionArtifactKind
+from specify_cli.coordination.commit_outcome import PathFate
 from specify_cli.git.protection_policy import ProtectionPolicy
 
 if TYPE_CHECKING:
@@ -1352,6 +1353,17 @@ def test_classify_stage_path_skips_status_state_files(tmp_path: Path) -> None:
     assert _classify_stage_path(src, src.relative_to(repo_root), coord_worktree) is _StagePlan.SKIP_STATUS_LOG
 
 
+def test_classify_stage_path_skips_decision_log_files(tmp_path: Path) -> None:
+    """A DECISION_LOG path outside ``.worktrees/`` classifies as SKIP_DECISION_LOG (WP05 T027)."""
+    from specify_cli.coordination.commit_router import _StagePlan, _classify_stage_path
+
+    repo_root = tmp_path / "repo"
+    coord_worktree = tmp_path / "coord"
+    src = repo_root / "kitty-specs" / "001-demo" / "decisions.events.jsonl"
+
+    assert _classify_stage_path(src, src.relative_to(repo_root), coord_worktree) is _StagePlan.SKIP_DECISION_LOG
+
+
 def test_classify_stage_path_skips_the_rehomed_analysis_report(tmp_path: Path) -> None:
     """``analysis-report.md`` outside ``.worktrees/`` classifies as SKIP_ANALYSIS_REPORT (FR-003)."""
     from specify_cli.coordination.commit_router import _StagePlan, _classify_stage_path
@@ -1447,3 +1459,400 @@ def test_cleanup_staging_residue_keeps_a_diverged_created_source(tmp_path: Path)
     _cleanup_staging_residue([(src, dst)], frozenset({src}), repo_root)
 
     assert src.exists(), "a diverged primary copy must never be unlinked"
+
+
+# ---------------------------------------------------------------------------
+# WP05 T027 — owning-surface translation: logs (STATUS_STATE / DECISION_LOG)
+# always translate; the other COORD kinds translate only when a coordination
+# copy already exists; a root log is NEVER copied over the coordination one.
+# ---------------------------------------------------------------------------
+
+
+def test_mission_relative_subpath_returns_the_tail_after_the_mission_slug() -> None:
+    from specify_cli.coordination.commit_router import _mission_relative_subpath
+
+    rel = Path("kitty-specs") / "001-demo" / "tasks" / "WP01" / "review-cycle-1.md"
+
+    assert _mission_relative_subpath(rel) == Path("tasks") / "WP01" / "review-cycle-1.md"
+
+
+def test_mission_relative_subpath_none_when_no_kitty_specs_segment() -> None:
+    from specify_cli.coordination.commit_router import _mission_relative_subpath
+
+    assert _mission_relative_subpath(Path("spec.md")) is None
+
+
+def test_mission_relative_subpath_none_when_nothing_after_the_slug() -> None:
+    from specify_cli.coordination.commit_router import _mission_relative_subpath
+
+    assert _mission_relative_subpath(Path("kitty-specs") / "001-demo") is None
+
+
+def _fake_write_location(path: Path) -> object:
+    from mission_runtime import Establishment, TopologySurface, WriteLocation
+
+    return WriteLocation(
+        path=path,
+        checkout_root=path.parent,
+        surface=TopologySurface.COORD,
+        coord_state_before=None,
+        establishment=Establishment.NONE,
+    )
+
+
+def test_act_on_stage_plan_translates_a_log_without_mission_slug_preserves_legacy_skip(tmp_path: Path) -> None:
+    """No ``mission_slug`` (a legacy 3-positional caller): a log plan is bare-skipped, never copied (byte-identical to pre-WP05)."""
+    from specify_cli.coordination.commit_router import _StagePlan, _act_on_stage_plan
+
+    repo_root = tmp_path / "repo"
+    coord_worktree = tmp_path / "coord"
+    src = repo_root / "kitty-specs" / "001-demo" / "status.events.jsonl"
+
+    coord_file, staged_pair = _act_on_stage_plan(
+        _StagePlan.SKIP_STATUS_LOG, src, src.relative_to(repo_root), coord_worktree, repo_root, mission_slug=None, owned=None, write_dirs={}
+    )
+
+    assert coord_file is None
+    assert staged_pair is None
+
+
+def test_act_on_stage_plan_translates_a_log_with_mission_slug_via_write_dir(tmp_path: Path) -> None:
+    """A log plan WITH ``mission_slug`` resolves ``write_dir`` and translates, never copying."""
+    from specify_cli.coordination.commit_router import _StagePlan, _act_on_stage_plan
+
+    repo_root = tmp_path / "repo"
+    coord_worktree = tmp_path / "coord"
+    owning_dir = coord_worktree / "kitty-specs" / "001-demo"
+    src = repo_root / "kitty-specs" / "001-demo" / "decisions.events.jsonl"
+    src.parent.mkdir(parents=True)
+    src.write_text("root copy (never used)\n", encoding="utf-8")
+
+    with patch(
+        "specify_cli.coordination.commit_router._resolve_owning_write_dir",
+        return_value=_fake_write_location(owning_dir),
+    ) as resolve_write_dir:
+        coord_file, staged_pair = _act_on_stage_plan(
+            _StagePlan.SKIP_DECISION_LOG,
+            src,
+            src.relative_to(repo_root),
+            coord_worktree,
+            repo_root,
+            mission_slug="001-demo",
+            owned=None,
+            write_dirs={},
+        )
+
+    assert coord_file == owning_dir / "decisions.events.jsonl"
+    assert staged_pair is None, "a log is translated, never copied"
+    resolve_write_dir.assert_called_once()
+
+
+def test_act_on_stage_plan_translate_if_present_kind_uses_existing_owning_copy_without_copying(tmp_path: Path) -> None:
+    """An ``ISSUE_MATRIX`` whose owning (coordination) copy already exists wins -- never overwritten, no write_dir call."""
+    from specify_cli.coordination.commit_router import _StagePlan, _act_on_stage_plan
+
+    repo_root = tmp_path / "repo"
+    coord_worktree = tmp_path / "coord"
+    src = repo_root / "kitty-specs" / "001-demo" / "issue-matrix.md"
+    src.parent.mkdir(parents=True)
+    src.write_text("stale root copy\n", encoding="utf-8")
+    owning = coord_worktree / "kitty-specs" / "001-demo" / "issue-matrix.md"
+    owning.parent.mkdir(parents=True)
+    owning.write_text("authoritative coord copy\n", encoding="utf-8")
+
+    with patch("specify_cli.coordination.commit_router._resolve_owning_write_dir") as resolve_write_dir:
+        coord_file, staged_pair = _act_on_stage_plan(
+            _StagePlan.COPY, src, src.relative_to(repo_root), coord_worktree, repo_root, mission_slug="001-demo", owned=None, write_dirs={}
+        )
+
+    assert coord_file == owning
+    assert staged_pair is None
+    assert owning.read_text(encoding="utf-8") == "authoritative coord copy\n", "the owning copy must never be overwritten by the stale root copy"
+    resolve_write_dir.assert_not_called()
+
+
+def test_act_on_stage_plan_translate_if_present_kind_falls_back_to_copy_when_absent(tmp_path: Path) -> None:
+    """A ``TRACER_FILE`` whose owning copy is ABSENT falls back to the legacy ``shutil.copy2`` (unchanged behaviour)."""
+    from specify_cli.coordination.commit_router import _StagePlan, _act_on_stage_plan
+
+    repo_root = tmp_path / "repo"
+    coord_worktree = tmp_path / "coord"
+    src = repo_root / "kitty-specs" / "001-demo" / "traces" / "approach.md"
+    src.parent.mkdir(parents=True)
+    src.write_text("a finding\n", encoding="utf-8")
+
+    with patch("specify_cli.coordination.commit_router._resolve_owning_write_dir") as resolve_write_dir:
+        coord_file, staged_pair = _act_on_stage_plan(
+            _StagePlan.COPY, src, src.relative_to(repo_root), coord_worktree, repo_root, mission_slug="001-demo", owned=None, write_dirs={}
+        )
+
+    expected_dst = coord_worktree / "kitty-specs" / "001-demo" / "traces" / "approach.md"
+    assert coord_file == expected_dst
+    assert staged_pair == (src, expected_dst)
+    assert expected_dst.read_text(encoding="utf-8") == "a finding\n"
+    resolve_write_dir.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# WP05 T029 — named refusals: write_dir failures translate to a refused
+# surfaces[*] entry, never a bare/swallowed exception.
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_owning_write_dir_translates_status_lock_timeout(tmp_path: Path) -> None:
+    from specify_cli.coordination.commit_router import _OwningSurfaceRefused, _resolve_owning_write_dir
+    from specify_cli.status.locking import FeatureStatusLockTimeoutError
+
+    def _raise(*_a: object, **_kw: object) -> None:
+        raise FeatureStatusLockTimeoutError("status lock contended", lock_path=tmp_path / ".status.lock", timeout=5.0, holder=None)
+
+    with patch("mission_runtime.placement_seam") as fake_seam:
+        fake_seam.return_value.write_dir.side_effect = _raise
+        with pytest.raises(_OwningSurfaceRefused) as excinfo:
+            _resolve_owning_write_dir(
+                tmp_path, MissionArtifactKind.STATUS_STATE, mission_slug="001-demo", owned=None, rel=Path("kitty-specs/001-demo/status.events.jsonl")
+            )
+
+    assert excinfo.value.reason == "STATUS_LOCK_HELD"
+    assert excinfo.value.path == "kitty-specs/001-demo/status.events.jsonl"
+
+
+def test_resolve_owning_write_dir_translates_coordination_branch_deleted(tmp_path: Path) -> None:
+    from specify_cli.coordination.commit_router import _OwningSurfaceRefused, _resolve_owning_write_dir
+    from specify_cli.coordination.surface_resolver import CoordinationBranchDeleted
+
+    def _raise(*_a: object, **_kw: object) -> None:
+        raise CoordinationBranchDeleted(
+            repo_root=tmp_path,
+            mission_slug="001-demo",
+            mid8="01ABCDEF",
+            coordination_branch="kitty/mission-001-demo-01ABCDEF",
+            coord_candidate=tmp_path / "coord",
+            primary_candidate=tmp_path / "primary",
+        )
+
+    with patch("mission_runtime.placement_seam") as fake_seam:
+        fake_seam.return_value.write_dir.side_effect = _raise
+        with pytest.raises(_OwningSurfaceRefused) as excinfo:
+            _resolve_owning_write_dir(
+                tmp_path, MissionArtifactKind.DECISION_LOG, mission_slug="001-demo", owned=None, rel=Path("kitty-specs/001-demo/decisions.events.jsonl")
+            )
+
+    assert excinfo.value.reason == "COORDINATION_BRANCH_DELETED"
+
+
+def test_translate_to_owning_surface_refuses_an_unroutable_kind(tmp_path: Path) -> None:
+    """A path whose kind cannot be classified is PATH_UNROUTABLE, never silently coerced."""
+    from specify_cli.coordination.commit_router import _OwningSurfaceRefused, _translate_to_owning_surface
+
+    with pytest.raises(_OwningSurfaceRefused) as excinfo:
+        _translate_to_owning_surface(tmp_path, Path("kitty-specs") / "001-demo" / "some-unrecognised-file.xyz", mission_slug="001-demo", owned=None, write_dirs={})
+
+    assert excinfo.value.reason == "PATH_UNROUTABLE"
+
+
+def test_commit_partition_group_maps_owning_surface_refused_to_named_reason(tmp_path: Path) -> None:
+    """A :class:`_OwningSurfaceRefused` raised during staging becomes a named ``refused`` surfaces[*] entry (T029)."""
+    from specify_cli.coordination.commit_router import _OwningSurfaceRefused
+
+    mission_slug = "001-my-mission"
+    feature_dir = tmp_path / "kitty-specs" / mission_slug
+    feature_dir.mkdir(parents=True)
+    status_log = feature_dir / "status.events.jsonl"
+    status_log.write_text('{"row": 1}\n', encoding="utf-8")
+
+    def _raise_refused(*_a: object, **_kw: object) -> None:
+        raise _OwningSurfaceRefused(
+            path="kitty-specs/001-my-mission/status.events.jsonl", reason="STATUS_LOCK_HELD", diagnostic="status lock held by another writer"
+        )
+
+    with (
+        _patch_topology(coord=True),
+        _patch_primary_target(),
+        patch("specify_cli.coordination.commit_router.resolve_placement_only", return_value=_make_coord_target()),
+        patch("specify_cli.coordination.commit_router._materialise_coord_worktree", side_effect=_raise_refused),
+    ):
+        from specify_cli.coordination.commit_router import commit_for_mission
+
+        result = commit_for_mission(
+            repo_root=tmp_path,
+            mission_slug=mission_slug,
+            files=(status_log,),
+            message="chore(status): commit",
+            policy=_make_policy(protected=False),
+            kind=MissionArtifactKind.STATUS_STATE,
+        )
+
+    assert result.status == "error"
+    assert len(result.surfaces) == 1
+    surface = result.surfaces[0]
+    assert surface.surface == "coordination"
+    assert surface.status == "refused"
+    assert surface.refused == (PathFate(path="kitty-specs/001-my-mission/status.events.jsonl", reason="STATUS_LOCK_HELD"),)
+
+
+# ---------------------------------------------------------------------------
+# WP05 T028 — ``COORD_RECORD_IN_ROOT_CHECKOUT``: an owning-surface commit that
+# is genuinely unchanged is re-classified when the caller's OWN root-checkout
+# copy is also dirty (never silently masked as a bare no-op).
+# ---------------------------------------------------------------------------
+
+
+def _init_repo(root: Path) -> None:
+    root.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+    subprocess.run(["git", "config", "user.email", "t@example.com"], cwd=root, check=True)
+    subprocess.run(["git", "config", "user.name", "T"], cwd=root, check=True)
+
+
+def test_refine_unchanged_for_root_checkout_dirt_marks_dirty_root_copy(tmp_path: Path) -> None:
+    from mission_runtime import CommitTarget
+    from specify_cli.coordination.commit_outcome import COORD_RECORD_IN_ROOT_CHECKOUT
+    from specify_cli.coordination.commit_router import (
+        CommitRouterResult,
+        PathFate,
+        SurfaceOutcome,
+        _refine_unchanged_for_root_checkout_dirt,
+    )
+
+    repo_root = tmp_path / "repo"
+    _init_repo(repo_root)
+    root_file = repo_root / "kitty-specs" / "001-demo" / "status.events.jsonl"
+    root_file.parent.mkdir(parents=True)
+    root_file.write_text('{"committed": true}\n', encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=repo_root, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "baseline"], cwd=repo_root, check=True)
+    # Dirty the root copy AFTER the commit -- the owning (coordination) copy is
+    # unrelated and reported clean by the (already-built) ``unchanged`` result.
+    root_file.write_text('{"committed": true, "dirty_root_edit": true}\n', encoding="utf-8")
+
+    base_result = CommitRouterResult(
+        status="unchanged",
+        placement_ref="kitty/mission-001-demo-ABCDEF01",
+        reason="no_op_no_changes",
+        surfaces=(
+            SurfaceOutcome(
+                surface="coordination",
+                branch="kitty/mission-001-demo-ABCDEF01",
+                status="unchanged",
+                commit_hash=None,
+                skipped=(PathFate(path="kitty-specs/001-demo/status.events.jsonl", reason="no_op_no_changes"),),
+            ),
+        ),
+    )
+
+    refined = _refine_unchanged_for_root_checkout_dirt(
+        base_result,
+        repo_root,
+        (root_file,),
+        use_coord=True,
+        surface_name="coordination",
+        placement=CommitTarget(ref="kitty/mission-001-demo-ABCDEF01"),
+    )
+
+    assert refined.status == "unchanged"
+    assert len(refined.surfaces) == 1
+    assert refined.surfaces[0].skipped == (PathFate(path="kitty-specs/001-demo/status.events.jsonl", reason=COORD_RECORD_IN_ROOT_CHECKOUT),)
+
+
+def test_refine_unchanged_for_root_checkout_dirt_is_a_noop_when_root_is_clean(tmp_path: Path) -> None:
+    from mission_runtime import CommitTarget
+    from specify_cli.coordination.commit_router import (
+        CommitRouterResult,
+        PathFate,
+        SurfaceOutcome,
+        _refine_unchanged_for_root_checkout_dirt,
+    )
+
+    repo_root = tmp_path / "repo"
+    _init_repo(repo_root)
+    root_file = repo_root / "kitty-specs" / "001-demo" / "status.events.jsonl"
+    root_file.parent.mkdir(parents=True)
+    root_file.write_text('{"committed": true}\n', encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=repo_root, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "baseline"], cwd=repo_root, check=True)
+
+    base_result = CommitRouterResult(
+        status="unchanged",
+        placement_ref="kitty/mission-001-demo-ABCDEF01",
+        reason="no_op_no_changes",
+        surfaces=(
+            SurfaceOutcome(
+                surface="coordination",
+                branch="kitty/mission-001-demo-ABCDEF01",
+                status="unchanged",
+                commit_hash=None,
+                skipped=(PathFate(path="kitty-specs/001-demo/status.events.jsonl", reason="no_op_no_changes"),),
+            ),
+        ),
+    )
+
+    refined = _refine_unchanged_for_root_checkout_dirt(
+        base_result,
+        repo_root,
+        (root_file,),
+        use_coord=True,
+        surface_name="coordination",
+        placement=CommitTarget(ref="kitty/mission-001-demo-ABCDEF01"),
+    )
+
+    assert refined is base_result
+
+
+def test_refine_unchanged_for_root_checkout_dirt_skips_non_coord_groups(tmp_path: Path) -> None:
+    from mission_runtime import CommitTarget
+    from specify_cli.coordination.commit_router import CommitRouterResult, _refine_unchanged_for_root_checkout_dirt
+
+    repo_root = tmp_path / "repo"
+    _init_repo(repo_root)
+    base_result = CommitRouterResult(status="unchanged", placement_ref="main", reason="no_op_no_changes")
+
+    refined = _refine_unchanged_for_root_checkout_dirt(
+        base_result, repo_root, (repo_root / "spec.md",), use_coord=False, surface_name="primary", placement=CommitTarget(ref="main")
+    )
+
+    assert refined is base_result
+
+
+# ---------------------------------------------------------------------------
+# WP05 T027 — end-to-end: a DECISION_LOG root-path input commits the
+# coordination copy (real git fixture, mirrors R2's STATUS_STATE coverage).
+# ---------------------------------------------------------------------------
+
+
+def test_decision_log_root_path_input_commits_the_coordination_copy(tmp_path: Path) -> None:
+    """A real coord mission: a DECISION_LOG file passed by its root-checkout path lands on the coordination copy."""
+    from mission_runtime import placement_seam
+    from specify_cli.coordination.commit_router import commit_for_mission
+    from tests.terminus.conftest import build_coord_mission
+
+    mission = build_coord_mission(tmp_path, target_branch="feature/router-decision-log")
+    owning_dir = placement_seam(mission.repo, mission.slug).write_dir(MissionArtifactKind.DECISION_LOG).path
+    owning_log = owning_dir / "decisions.events.jsonl"
+    owning_log.parent.mkdir(parents=True, exist_ok=True)
+    owning_log.write_text('{"simulated": "decision row"}\n', encoding="utf-8")
+
+    root_log = mission.feature_dir / "decisions.events.jsonl"
+    root_log.parent.mkdir(parents=True, exist_ok=True)
+    root_log.write_text("", encoding="utf-8")
+
+    result = commit_for_mission(
+        mission.repo,
+        mission.slug,
+        (root_log,),
+        "chore(decisions): commit the decision log",
+        ProtectionPolicy.resolve(mission.repo),
+        kind=MissionArtifactKind.DECISION_LOG,
+    )
+
+    assert result.status == "committed", result
+    committed = subprocess.run(
+        ["git", "show", f"{result.placement_ref}:kitty-specs/{mission.slug}/decisions.events.jsonl"],
+        cwd=mission.repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    assert "decision row" in committed
+    # The root copy (empty) is NEVER copied over the owning (coordination) one.
+    assert owning_log.read_text(encoding="utf-8") != root_log.read_text(encoding="utf-8")
