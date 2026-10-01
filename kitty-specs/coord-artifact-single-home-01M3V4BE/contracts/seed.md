@@ -1,0 +1,49 @@
+# Contract: seed (one-time carry-over to the coordination surface)
+
+**Operation:** `seed_coord_surface(request: SeedRequest) -> SeedReport` (new, `src/specify_cli/coordination/coord_seed.py`). The only caller is `establish_coord_write_location` (see `write-location-accessor.md`). It is never called on a read path.
+**Requirements:** FR-002, FR-004, FR-004a, FR-004b, FR-003a; C-003, C-004. Decisions: `specify.design.fork-check`, `specify.design.seed-mechanism`.
+
+## Preconditions
+
+- The Mission is coordination-routed (`coord` or `lanes_with_coord`, owned or not).
+- The coordination worktree exists and the state is `EMPTY`: the worktree root exists and the Mission dir is absent.
+- The caller holds no workspace lock. It may hold the status lock, which is reentrant.
+
+## Procedure
+
+1. **Lock.** Acquire `feature_status_lock(<lock root>, <mission dir name>)`.
+2. **Re-check.** Re-probe the state. If it is `MATERIALIZED`, return an empty report: another writer seeded first, so the seed is idempotent.
+3. **Clean up.** Remove stale `kitty-specs/.<dir>.seed-*` temp dirs.
+4. **Collect.** Gather root COORD records from the repository root checkout's Mission dir. These are the files whose `kind_for_mission_file` is a COORD kind: the status log, `decisions.events.jsonl`, `traces/*.md`, `tasks/*/review-cycle-*.md`, `issue-matrix.json` and `acceptance-matrix.json`. PRIMARY files are never collected.
+5. **Read the coordination side.** If the coordination branch tip carries `kitty-specs/<dir>/`, the coordination-side content is the branch blobs (post-fix regression case). Otherwise it is empty.
+6. **Apply the prefix rule per log stream**, on event-id sequences `R` (root) and `C` (coordination):
+   - `C` empty, or `C` a proper prefix of `R`: the output is `C` + `R[len(C):]`, using the root lines.
+   - `R` a prefix of `C`, or equal: the output is `C`.
+   - Otherwise: release everything and raise `COORD_SEED_FORK_REFUSED`.
+7. **Non-log records.** Take the coordination copy if present, else the root copy. When both exist and differ, add a warning; the root copy is kept untouched.
+8. **Write.** Write the output tree into `kitty-specs/.<dir>.seed-<pid>-<ulid>/`, then `os.rename` it to `kitty-specs/<dir>/`. The rename is atomic within the worktree's filesystem.
+9. **Commit.** Commit on the coordination branch through `commit_for_mission(kind=STATUS_STATE, files=<coordination paths>)`, with the message `chore(<mission>): seed coordination surface`. Then record `coord_commit`.
+10. **Restore the root checkout.** For each carried root file: if it is tracked and dirty, run `git checkout -- <path>`; if it is untracked, remove it. Committed history is never rewritten (C-004).
+11. **Release** the lock and return the `SeedReport`.
+
+Create-time seed: steps 4-7 find nothing (the scaffold no longer writes the status log to the root checkout), so step 8 creates an empty Mission dir. Create then emits the creation events into it and commits them (IC-05).
+
+## Postconditions
+
+- The coordination Mission dir exists and holds every carried record. The state is `MATERIALIZED`.
+- In each log, no event id appears twice.
+- The coordination branch carries the seed commit, so a later fresh clone that materializes the worktree sees `MATERIALIZED` and never seeds again.
+- No PRIMARY-partition file exists in the coordination Mission dir (US1.3).
+
+## Errors
+
+| Code | Condition | State after |
+|------|-----------|-------------|
+| `COORD_SEED_FORK_REFUSED` (new) | both logs non-empty, and neither event-id sequence is a prefix of the other | unchanged. The message names both paths, both refs, the first diverging event id on each side, and the reconcile steps: inspect with `spec-kitty doctor decisions`; keep the coordination log; re-open any root-only decisions with `spec-kitty agent decision open ...`; then remove the root copy. |
+| `STATUS_LOCK_HELD` | lock timeout | unchanged |
+| commit refusal (`PROTECTED_BRANCH_REFUSED` on the coordination ref, …) | step 9 refused | Mission dir present and uncommitted (records are not lost). The next coordination commit carries them. Reported in `SeedReport.warnings`. |
+
+## Compatibility
+
+- Pre-fix Missions heal at their first COORD write. Their history on the target branch is untouched.
+- A Mission already forked and `MATERIALIZED` (the #5519 shape) never reaches the seed, so it is not locked out. `doctor decisions` reports it.
