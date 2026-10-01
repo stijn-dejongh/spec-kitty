@@ -906,7 +906,12 @@ class TestMaybeAutoCommit:
         assert capsys.readouterr().err == ""
 
     def test_auto_commit_of_file_outside_repo_root_warns_and_commits_nothing(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-        """The commit seam refuses a path outside the work tree; the helper must not raise, commit, or stay silent."""
+        """The commit seam refuses a path outside the work tree; the helper must not raise, commit, or stay silent.
+
+        WP14 (contracts/commit-outcome.md rule 6): the surface refusal renders
+        through the shared ``render_commit_outcome`` -- naming the surface and
+        the refused path -- instead of a hand-formatted diagnostic message.
+        """
         from specify_cli.cli.commands.retrospect import _maybe_auto_commit
 
         repo, head_before = self._committed_repo(tmp_path, auto_commit=True)
@@ -917,8 +922,7 @@ class TestMaybeAutoCommit:
 
         assert _git(repo, "rev-parse", "HEAD") == head_before
         warning = strip_ansi(capsys.readouterr().err)
-        assert "auto-commit failed" in warning
-        assert "refusing to mutate index" in warning
+        assert "refused" in warning
         assert str(outside) in warning
 
     def test_auto_commit_on_a_protected_target_warns_and_commits_nothing(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -1019,10 +1023,15 @@ class TestAutoCommitFailureIsSurfaced:
         ids=["commit-rejected-by-hook", "add-blocked-by-index-lock"],
     )
     def test_create_warns_on_stderr_and_keeps_json_parseable_when_auto_commit_fails(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, break_git: Any) -> None:
+        """WP14 (contracts/commit-outcome.md rule 6): the failed surface(s)
+        render through the shared ``render_commit_outcome`` -- naming each
+        surface and its refused path(s) -- instead of a hand-formatted
+        diagnostic message naming git's own raw failure text.
+        """
         repo = tmp_path / "repo"
         feature_dir = _seed_completed_mission_repo(repo)
         head_before = _git(repo, "rev-parse", "HEAD")
-        git_error = break_git(repo)
+        break_git(repo)
         monkeypatch.chdir(repo)
 
         with patch(_FANOUT_EDGE):
@@ -1033,11 +1042,10 @@ class TestAutoCommitFailureIsSurfaced:
         payload = json.loads(result.stdout)
         assert payload["result"] == "success"
         assert (feature_dir / "retrospective.yaml").is_file()
-        # ... but nothing was committed, and stderr says so, naming git's own failure.
+        # ... but nothing was committed, and stderr says so, naming the surface.
         assert _git(repo, "rev-parse", "HEAD") == head_before
         warning = strip_ansi(result.stderr)
-        assert "auto-commit failed" in warning
-        assert git_error in warning
+        assert "refused" in warning
         assert "retrospective.yaml" in warning
 
     def test_create_warns_and_exits_zero_when_the_commit_router_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

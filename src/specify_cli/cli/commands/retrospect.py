@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from mission_runtime import MissionArtifactKind, resolve_topology
 from specify_cli.coordination.coherence import is_coord_residue_churn
+from specify_cli.coordination.commit_outcome import PROTECTED_BRANCH_REFUSED, SurfaceOutcome, render_commit_outcome
 from specify_cli.coordination.commit_router import CommitRouterResult, commit_for_mission
 from specify_cli.coordination.surface_resolver import resolve_status_surface
 from specify_cli.core.constants import KITTIFY_DIR, KITTY_SPECS_DIR, RETROSPECTIVE_FILENAME
@@ -24,6 +25,7 @@ from specify_cli.missions._read_path_resolver import (
 import contextlib
 import json
 import subprocess
+from dataclasses import dataclass
 from kernel.clock import UTC, datetime, now_utc, parse_iso, parse_stamp, timedelta
 from pathlib import Path
 from typing import Annotated, Literal
@@ -76,7 +78,6 @@ app = typer.Typer(
     ),
     no_args_is_help=True,
 )
-
 
 
 # ---------------------------------------------------------------------------
@@ -135,30 +136,32 @@ def _resolve_handle(
     except MissionNotFoundError as exc:
         if json_output:
             _console.print_json(
-                json.dumps({
-                    "result": "blocked",
-                    "code": "MISSION_NOT_FOUND",
-                    "blocked_reason": f"No mission found for handle {exc.handle!r}.",
-                    "exit_code": 1,
-                })
+                json.dumps(
+                    {
+                        "result": "blocked",
+                        "code": "MISSION_NOT_FOUND",
+                        "blocked_reason": f"No mission found for handle {exc.handle!r}.",
+                        "exit_code": 1,
+                    }
+                )
             )
         else:
             _err_console.print(
-                f"[red]Error MISSION_NOT_FOUND:[/red] "
-                f"No mission found for handle {handle!r}. "
-                "Check the mission handle or run `spec-kitty agent mission list`."
+                f"[red]Error MISSION_NOT_FOUND:[/red] No mission found for handle {handle!r}. Check the mission handle or run `spec-kitty agent mission list`."
             )
         raise typer.Exit(1) from exc
     except AmbiguousHandleError as exc:
         if json_output:
             _console.print_json(
-                json.dumps({
-                    "result": "blocked",
-                    "code": "MISSION_AMBIGUOUS_SELECTOR",
-                    "blocked_reason": str(exc),
-                    "candidates": exc.to_dict().get("candidates", []),
-                    "exit_code": 2,
-                })
+                json.dumps(
+                    {
+                        "result": "blocked",
+                        "code": "MISSION_AMBIGUOUS_SELECTOR",
+                        "blocked_reason": str(exc),
+                        "candidates": exc.to_dict().get("candidates", []),
+                        "exit_code": 2,
+                    }
+                )
             )
         else:
             _err_console.print(f"[red]Error MISSION_AMBIGUOUS_SELECTOR:[/red] {exc}")
@@ -191,6 +194,7 @@ def _check_mission_completed(
 
     # Build per-WP lane snapshot from events
     from specify_cli.status import reduce as reduce_events
+
     snapshot = reduce_events(events)
 
     open_wps: list[dict[str, str]] = []
@@ -270,6 +274,45 @@ def _refused_on_protected_target(repo_root: Path, mission_slug: str, result: Com
     return result.status == "no_op_wrong_surface" and ProtectionPolicy.resolve_for_mission(repo_root, mission_slug).is_protected(result.placement_ref)
 
 
+@dataclass(frozen=True)
+class _SurfacesView:
+    """A minimal ``surfaces``-only view for :func:`render_commit_outcome` (contract's ``_ResultWithSurfaces`` Protocol)."""
+
+    surfaces: tuple[SurfaceOutcome, ...]
+
+
+def _surfaces_not_already_warned(result: CommitRouterResult, *, protected_target_warned: bool) -> tuple[SurfaceOutcome, ...]:
+    """``result.surfaces``, minus any surface the protected-target warning already named.
+
+    WP14 (contracts/commit-outcome.md rule 6): every surface not covered by a
+    dedicated warning helper renders through the shared
+    :func:`~specify_cli.coordination.commit_outcome.render_commit_outcome`. The
+    protected-target refusal keeps its own specific, remediation-bearing
+    warning (:func:`_warn_protected_target_refused`) -- rendering that SAME
+    surface a second time through the generic renderer would double-print it
+    (Binding corrections, round 3).
+    """
+    if not protected_target_warned:
+        return tuple(result.surfaces)
+    return tuple(outcome for outcome in result.surfaces if not any(fate.reason == PROTECTED_BRANCH_REFUSED for fate in outcome.refused))
+
+
+def _render_unexplained_surfaces(result: CommitRouterResult, *, protected_target_warned: bool) -> bool:
+    """Print a line for every surface research D8 says is actionable; return whether anything printed.
+
+    D8 rule: render only when some surface is neither ``committed`` nor
+    ``unchanged`` -- an all-success batch (the common case) must print
+    nothing, so a consumer command's stdout/stderr stays unchanged for every
+    Mission that never hits a refusal (C-008).
+    """
+    remaining = _surfaces_not_already_warned(result, protected_target_warned=protected_target_warned)
+    if not any(outcome.status not in ("committed", "unchanged") for outcome in remaining):
+        return False
+    for line in render_commit_outcome(_SurfacesView(remaining)):
+        _err_console.print(line, soft_wrap=True)
+    return True
+
+
 def _uncommitted_target_files(repo_root: Path, mission_slug: str, files: list[Path]) -> list[Path]:
     """The *files* bound for the mission's target branch that still differ from ``HEAD``.
 
@@ -320,11 +363,17 @@ def _maybe_auto_commit(
             ProtectionPolicy.resolve(repo_root),
             kind=MissionArtifactKind.RETROSPECTIVE,
         )
-        if _refused_on_protected_target(repo_root, mission_slug, result):
+        protected = _refused_on_protected_target(repo_root, mission_slug, result)
+        if protected:
             uncommitted = _uncommitted_target_files(repo_root, mission_slug, files)
             if uncommitted:
                 _warn_protected_target_refused(result.placement_ref, uncommitted)
-        elif result.status in ("error", "no_op_wrong_surface"):
+        # WP14 (contracts/commit-outcome.md rule 6): render every OTHER
+        # surface's outcome too -- the top-level/caller-partition status alone
+        # (checked below) masks a refused/errored surface that is not the
+        # caller's own (#5513, #5501). Falls back to the pre-WP14 generic
+        # warning only for the legacy empty-``surfaces`` shape.
+        if not _render_unexplained_surfaces(result, protected_target_warned=protected) and not protected and result.status in ("error", "no_op_wrong_surface"):
             _warn_auto_commit_failed(files, RuntimeError(result.diagnostic or result.status))
     except Exception as exc:
         # Non-fatal (the record write already succeeded), but never silent.
@@ -364,19 +413,13 @@ def create_cmd(
 ) -> None:
     """Author a retrospective for one completed mission."""
     if overwrite and update:
-        _err_console.print(
-            "[red]Error:[/red] --overwrite and --update are mutually exclusive. "
-            "Pass exactly one."
-        )
+        _err_console.print("[red]Error:[/red] --overwrite and --update are mutually exclusive. Pass exactly one.")
         raise typer.BadParameter("--overwrite and --update are mutually exclusive")
 
     # Locate project root
     repo_root = locate_project_root()
     if repo_root is None:
-        _err_console.print(
-            "[red]Error:[/red] Could not locate project root. "
-            "Ensure you are inside a spec-kitty project."
-        )
+        _err_console.print("[red]Error:[/red] Could not locate project root. Ensure you are inside a spec-kitty project.")
         raise typer.Exit(1)
 
     # Resolve mission handle
@@ -388,24 +431,21 @@ def create_cmd(
         open_str = ", ".join(f"{w['wp_id']} ({w['lane']})" for w in open_wps)
         if json_output:
             _console.print_json(
-                json.dumps({
-                    "result": "blocked",
-                    "code": "MISSION_NOT_COMPLETED",
-                    "mission_id": resolved.mission_id,
-                    "mission_slug": resolved.mission_slug,
-                    "blocked_reason": (
-                        f"Mission has WPs in non-terminal lanes: {open_str}. "
-                        "Complete the mission before authoring a retrospective."
-                    ),
-                    "open_wps": open_wps,
-                    "exit_code": 1,
-                })
+                json.dumps(
+                    {
+                        "result": "blocked",
+                        "code": "MISSION_NOT_COMPLETED",
+                        "mission_id": resolved.mission_id,
+                        "mission_slug": resolved.mission_slug,
+                        "blocked_reason": (f"Mission has WPs in non-terminal lanes: {open_str}. Complete the mission before authoring a retrospective."),
+                        "open_wps": open_wps,
+                        "exit_code": 1,
+                    }
+                )
             )
         else:
             _err_console.print(
-                f"[red]Error MISSION_NOT_COMPLETED:[/red] "
-                f"Mission has WPs in non-terminal lanes: {open_str}. "
-                "Complete the mission before authoring a retrospective."
+                f"[red]Error MISSION_NOT_COMPLETED:[/red] Mission has WPs in non-terminal lanes: {open_str}. Complete the mission before authoring a retrospective."
             )
         raise typer.Exit(1)
 
@@ -415,14 +455,16 @@ def create_cmd(
     except PolicyResolutionError as exc:
         if json_output:
             _console.print_json(
-                json.dumps({
-                    "result": "blocked",
-                    "code": "POLICY_RESOLUTION_ERROR",
-                    "mission_id": resolved.mission_id,
-                    "mission_slug": resolved.mission_slug,
-                    "blocked_reason": str(exc),
-                    "exit_code": 1,
-                })
+                json.dumps(
+                    {
+                        "result": "blocked",
+                        "code": "POLICY_RESOLUTION_ERROR",
+                        "mission_id": resolved.mission_id,
+                        "mission_slug": resolved.mission_slug,
+                        "blocked_reason": str(exc),
+                        "exit_code": 1,
+                    }
+                )
             )
         else:
             _err_console.print(f"[red]Error POLICY_RESOLUTION_ERROR:[/red] {exc}")
@@ -456,6 +498,7 @@ def create_cmd(
 
     # Override provenance with explicit_create
     import dataclasses
+
     record = dataclasses.replace(
         record,
         provenance=GenProvenance(
@@ -472,18 +515,17 @@ def create_cmd(
     except RecordExistsError as exc:
         if json_output:
             _console.print_json(
-                json.dumps({
-                    "result": "blocked",
-                    "code": "RETROSPECTIVE_RECORD_EXISTS",
-                    "mission_id": resolved.mission_id,
-                    "mission_slug": resolved.mission_slug,
-                    "record_path": str(exc.path),
-                    "blocked_reason": (
-                        "A retrospective record already exists for this mission. "
-                        "Pass --overwrite to replace it or --update to merge."
-                    ),
-                    "exit_code": 1,
-                })
+                json.dumps(
+                    {
+                        "result": "blocked",
+                        "code": "RETROSPECTIVE_RECORD_EXISTS",
+                        "mission_id": resolved.mission_id,
+                        "mission_slug": resolved.mission_slug,
+                        "record_path": str(exc.path),
+                        "blocked_reason": ("A retrospective record already exists for this mission. Pass --overwrite to replace it or --update to merge."),
+                        "exit_code": 1,
+                    }
+                )
             )
         else:
             _err_console.print(
@@ -535,24 +577,23 @@ def create_cmd(
         "proposals": len(persisted.proposals),
         "evidence_refs": len(persisted.evidence_refs),
     }
-    next_step = (
-        f"Run `spec-kitty agent retrospect synthesize --mission {resolved.mission_slug}` "
-        "to review proposals (dry-run by default; add --apply to mutate)."
-    )
+    next_step = f"Run `spec-kitty agent retrospect synthesize --mission {resolved.mission_slug}` to review proposals (dry-run by default; add --apply to mutate)."
 
     if json_output:
         _console.print_json(
-            json.dumps({
-                "result": "success",
-                "mission_id": resolved.mission_id,
-                "mission_slug": resolved.mission_slug,
-                "record_path": str(record_path),
-                "findings_status": persisted.findings_status,
-                "counts": counts,
-                "provenance_kind": "explicit_create",
-                "policy_source": policy_source_out,
-                "next_step": next_step,
-            })
+            json.dumps(
+                {
+                    "result": "success",
+                    "mission_id": resolved.mission_id,
+                    "mission_slug": resolved.mission_slug,
+                    "record_path": str(record_path),
+                    "findings_status": persisted.findings_status,
+                    "counts": counts,
+                    "provenance_kind": "explicit_create",
+                    "policy_source": policy_source_out,
+                    "next_step": next_step,
+                }
+            )
         )
     else:
         _console.print(
@@ -596,10 +637,7 @@ def _parse_iso_date_or_exit(value: str, flag_name: str) -> datetime:
         return dt
     except ValueError:
         pass
-    raise typer.BadParameter(
-        f"Invalid {flag_name} value {value!r}. "
-        "Expected ISO-8601 date (YYYY-MM-DD) or datetime."
-    )
+    raise typer.BadParameter(f"Invalid {flag_name} value {value!r}. Expected ISO-8601 date (YYYY-MM-DD) or datetime.")
 
 
 def _discover_missions_for_backfill(
@@ -634,28 +672,28 @@ def _discover_missions_for_backfill(
             continue
 
         # mission_filter: skip if filter is set and this mission doesn't match
-        if mission_filter is not None and (
-            mission_id != mission_filter
-            and not mission_id.startswith(mission_filter)
-            and mission_slug != mission_filter
-        ):
-            candidates.append({
-                "mission_id": mission_id,
-                "mission_slug": mission_slug,
-                "skip_reason": "mission_filter_excluded",
-                "meta_path": str(meta_path),
-            })
+        if mission_filter is not None and (mission_id != mission_filter and not mission_id.startswith(mission_filter) and mission_slug != mission_filter):
+            candidates.append(
+                {
+                    "mission_id": mission_id,
+                    "mission_slug": mission_slug,
+                    "skip_reason": "mission_filter_excluded",
+                    "meta_path": str(meta_path),
+                }
+            )
             continue
 
         # Get completed_at timestamp
         completed_at_str = meta.get("completed_at") or meta.get("mission_completed_at")
         if not completed_at_str:
-            candidates.append({
-                "mission_id": mission_id,
-                "mission_slug": mission_slug,
-                "skip_reason": "not_completed",
-                "meta_path": str(meta_path),
-            })
+            candidates.append(
+                {
+                    "mission_id": mission_id,
+                    "mission_slug": mission_slug,
+                    "skip_reason": "not_completed",
+                    "meta_path": str(meta_path),
+                }
+            )
             continue
 
         try:
@@ -663,31 +701,37 @@ def _discover_missions_for_backfill(
             if completed_at.tzinfo is None:
                 completed_at = completed_at.replace(tzinfo=UTC)
         except ValueError:
-            candidates.append({
-                "mission_id": mission_id,
-                "mission_slug": mission_slug,
-                "skip_reason": "not_completed",
-                "meta_path": str(meta_path),
-            })
+            candidates.append(
+                {
+                    "mission_id": mission_id,
+                    "mission_slug": mission_slug,
+                    "skip_reason": "not_completed",
+                    "meta_path": str(meta_path),
+                }
+            )
             continue
 
         # Check window
         if completed_at < since or completed_at > until:
-            candidates.append({
+            candidates.append(
+                {
+                    "mission_id": mission_id,
+                    "mission_slug": mission_slug,
+                    "completed_at": completed_at_str,
+                    "skip_reason": "out_of_window",
+                    "meta_path": str(meta_path),
+                }
+            )
+            continue
+
+        candidates.append(
+            {
                 "mission_id": mission_id,
                 "mission_slug": mission_slug,
                 "completed_at": completed_at_str,
-                "skip_reason": "out_of_window",
                 "meta_path": str(meta_path),
-            })
-            continue
-
-        candidates.append({
-            "mission_id": mission_id,
-            "mission_slug": mission_slug,
-            "completed_at": completed_at_str,
-            "meta_path": str(meta_path),
-        })
+            }
+        )
 
     return candidates
 
@@ -763,10 +807,7 @@ def backfill_cmd(  # noqa: C901
     # Locate project root
     repo_root = locate_project_root()
     if repo_root is None:
-        _err_console.print(
-            "[red]Error:[/red] Could not locate project root. "
-            "Ensure you are inside a spec-kitty project."
-        )
+        _err_console.print("[red]Error:[/red] Could not locate project root. Ensure you are inside a spec-kitty project.")
         raise typer.Exit(1)
 
     # Discover missions
@@ -808,11 +849,7 @@ def backfill_cmd(  # noqa: C901
                 "reason": c["skip_reason"],
             }
             if c.get("skip_reason") == "already_exists":
-                skip_entry["record_path"] = str(
-                    _canonical_record_path(
-                        repo_root, str(c["mission_slug"]), str(c["mission_id"])
-                    )
-                )
+                skip_entry["record_path"] = str(_canonical_record_path(repo_root, str(c["mission_slug"]), str(c["mission_id"])))
             skipped.append(skip_entry)
             _maybe_emit_skip(str(c["mission_id"]), str(c["mission_slug"]), str(c["skip_reason"]))
         else:
@@ -826,12 +863,14 @@ def backfill_cmd(  # noqa: C901
 
         # Already exists?
         if record_path.exists():
-            skipped.append({
-                "mission_id": mid,
-                "mission_slug": mslug,
-                "reason": "already_exists",
-                "record_path": str(record_path),
-            })
+            skipped.append(
+                {
+                    "mission_id": mid,
+                    "mission_slug": mslug,
+                    "reason": "already_exists",
+                    "record_path": str(record_path),
+                }
+            )
             _maybe_emit_skip(mid, mslug, "already_exists")
             return
 
@@ -851,6 +890,7 @@ def backfill_cmd(  # noqa: C901
                 policy_source=source_map,
             )
             import dataclasses
+
             record = dataclasses.replace(
                 record,
                 provenance=GenProvenance(
@@ -868,24 +908,25 @@ def backfill_cmd(  # noqa: C901
                 actor=_cli_actor(),
                 event_log_dir=_canonical_events_path(repo_root, mslug).parent,
             )
-            created.append({
-                "mission_id": mid,
-                "mission_slug": mslug,
-                "record_path": str(written_path),
-            })
+            created.append(
+                {
+                    "mission_id": mid,
+                    "mission_slug": mslug,
+                    "record_path": str(written_path),
+                }
+            )
             created_paths.append(written_path)
         except RecordExistsError as exc:
-            skipped.append({
-                "mission_id": mid,
-                "mission_slug": mslug,
-                "reason": "already_exists",
-                "record_path": str(exc.path),
-            })
-        except FileNotFoundError as exc:
-            remediation = (
-                f"Mission lacks required artifacts; rebuild via "
-                f"`spec-kitty migrate normalize-lifecycle --mission {mslug}`."
+            skipped.append(
+                {
+                    "mission_id": mid,
+                    "mission_slug": mslug,
+                    "reason": "already_exists",
+                    "record_path": str(exc.path),
+                }
             )
+        except FileNotFoundError as exc:
+            remediation = f"Mission lacks required artifacts; rebuild via `spec-kitty migrate normalize-lifecycle --mission {mslug}`."
             failed_entry: dict[str, object] = {
                 "mission_id": mid,
                 "mission_slug": mslug,
@@ -959,8 +1000,7 @@ def backfill_cmd(  # noqa: C901
     next_actions: list[str] = []
     if created and not dry_run:
         next_actions.append(
-            "Run `spec-kitty agent retrospect synthesize --mission <handle>` "
-            "on newly authored records (dry-run by default; add --apply to mutate)."
+            "Run `spec-kitty agent retrospect synthesize --mission <handle>` on newly authored records (dry-run by default; add --apply to mutate)."
         )
     if failed:
         next_actions.append(f"Inspect the {len(failed)} failed mission(s) listed above.")
@@ -986,8 +1026,7 @@ def backfill_cmd(  # noqa: C901
                 f"Scanned: {total_scanned} | "
                 f"Created: {len(created)} | "
                 f"Skipped: {len(skipped)} | "
-                f"Failed: {len(failed)}"
-                + (" [yellow](dry-run — no files written)[/yellow]" if dry_run else ""),
+                f"Failed: {len(failed)}" + (" [yellow](dry-run — no files written)[/yellow]" if dry_run else ""),
                 title="spec-kitty retrospect backfill",
                 expand=False,
             )
@@ -995,10 +1034,7 @@ def backfill_cmd(  # noqa: C901
         if failed:
             _err_console.print(f"\n[yellow]Failures ({len(failed)}):[/yellow]")
             for f_entry in failed:
-                _err_console.print(
-                    f"  [red]{f_entry['mission_slug']}[/red]: "
-                    f"{f_entry['failure_category']} — {f_entry.get('remediation_hint', '')}"
-                )
+                _err_console.print(f"  [red]{f_entry['mission_slug']}[/red]: {f_entry['failure_category']} — {f_entry.get('remediation_hint', '')}")
 
     raise typer.Exit(0)
 
@@ -1068,10 +1104,7 @@ def summary_cmd(  # noqa: C901
     has_kittify = (resolved_project / KITTIFY_DIR).exists()
     has_mission_specs = (resolved_project / KITTY_SPECS_DIR).exists()
     if not has_kittify and not has_mission_specs:
-        _err_console.print(
-            "[red]Error:[/red] Project root invalid: "
-            f"neither .kittify/ nor kitty-specs/ found in {resolved_project}"
-        )
+        _err_console.print(f"[red]Error:[/red] Project root invalid: neither .kittify/ nor kitty-specs/ found in {resolved_project}")
         raise typer.Exit(1)
 
     # Parse --since
@@ -1080,19 +1113,13 @@ def summary_cmd(  # noqa: C901
         try:
             since_date = date_type.fromisoformat(since)
         except ValueError as exc:
-            _err_console.print(
-                f"[red]Error:[/red] Invalid --since date {since!r}. "
-                "Expected ISO-8601 format (YYYY-MM-DD)."
-            )
+            _err_console.print(f"[red]Error:[/red] Invalid --since date {since!r}. Expected ISO-8601 format (YYYY-MM-DD).")
             raise typer.Exit(1) from exc
 
     # Validate --filter state
     valid_states = {"has_findings", "ran_no_findings", "missing", "failed"}
     if filter_state is not None and filter_state not in valid_states:
-        _err_console.print(
-            f"[red]Error:[/red] Invalid --filter value {filter_state!r}. "
-            f"Must be one of: {', '.join(sorted(valid_states))}"
-        )
+        _err_console.print(f"[red]Error:[/red] Invalid --filter value {filter_state!r}. Must be one of: {', '.join(sorted(valid_states))}")
         raise typer.Exit(1)
 
     try:
@@ -1193,6 +1220,7 @@ def summary_cmd(  # noqa: C901
         _base_render_rich(snapshot, include_malformed=include_malformed)
         # Show 4-state aggregate
         from rich.table import Table
+
         state_table = Table(title="Record State Summary (4-state)", show_header=True, header_style="bold cyan")
         state_table.add_column("State")
         state_table.add_column("Count", justify="right")
