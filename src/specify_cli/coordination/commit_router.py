@@ -894,8 +894,19 @@ def partition_for_mission_path(
 ) -> Literal["primary", "coordination"]:
     """The per-path partition verdict :func:`_group_files_by_partition` uses (WP05 T025, P-M5).
 
-    Public so a caller outside this module (WP16's accept dirty gate) consumes
-    the SAME grouping primitive instead of adding a second classifier —
+    Module-public (NOT in ``__all__`` — reviewer ruling B3, WP05 cycle 1): this
+    name has no cross-module ``src/`` caller yet, and the symbol-level
+    dead-code gate (``tests/architectural/test_no_dead_symbols.py``) requires a
+    caller OUTSIDE the declaring module for any ``__all__`` member — an
+    intra-module reference (:func:`_group_files_by_partition` calls this
+    function below) does not satisfy it. Per the gate's own sanctioned fix
+    option 2, this stays a plain, non-underscore, non-exported module
+    function: importable by name (``from specify_cli.coordination.
+    commit_router import partition_for_mission_path``) the moment a real
+    caller needs it (WP16's accept dirty gate), at which point that WP adds it
+    back to ``__all__`` and re-exports it. Until then it is NOT part of this
+    module's declared public surface.
+
     :func:`_group_files_by_partition` calls this function too (not a parallel
     copy); their verdicts can never drift apart.
 
@@ -1887,8 +1898,4 @@ def _is_empty_changeset_error(exc: RuntimeError) -> bool:
 __all__ = [
     "CommitRouterResult",
     "commit_for_mission",
-    # WP05 (T025, P-M5): the public per-path partition predicate, so a caller
-    # outside this module (WP16's accept dirty gate) consumes the SAME
-    # verdict _group_files_by_partition's own grouping uses.
-    "partition_for_mission_path",
 ]
