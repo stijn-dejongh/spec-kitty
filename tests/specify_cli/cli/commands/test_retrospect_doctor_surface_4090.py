@@ -67,7 +67,7 @@ from specify_cli.migration.mission_state import _anchor_repair_root
 from specify_cli.status import read_events
 from specify_cli.status import reduce as reduce_events
 from specify_cli.status.locking import feature_status_lock
-from tests._factories.coord_mission import make_coord_mission
+from tests._factories.coord_mission import CoordMission, make_coord_mission, make_prefix_coord_mission
 
 pytestmark = [pytest.mark.fast]
 
@@ -341,3 +341,71 @@ def test_retrospect_reports_each_surface(tmp_path: Path, monkeypatch: pytest.Mon
     combined = result.stdout + result.stderr
     assert "coordination" in combined, f"coordination surface's fate is not named in the CLI output: {combined!r}"
     assert "STATUS_LOCK_HELD" in combined, f"the refusal reason is not named in the CLI output: {combined!r}"
+
+
+# ---------------------------------------------------------------------------
+# WP14 / T074 (step 3) -- retrospect/agent-retrospect event appends must land
+# on the coordination WRITE surface, never the repository root checkout
+# (FR-003: event appends are a writer family, not a read-resolver fallback).
+# ---------------------------------------------------------------------------
+
+
+def test_retrospect_append_on_prefix_mission_lands_on_coordination_surface(tmp_path: Path) -> None:
+    """A pre-fix coordination Mission's event append must seed + land on the coord surface.
+
+    Fixture premise (post-tasks squad R-M4): WP02's ``make_prefix_coord_mission``
+    builds the EXPLICIT pre-fix shape -- the root checkout's ``status.events.jsonl``
+    is committed on the target branch, the coordination branch is cut BEFORE
+    that scaffold commit (so it never contains the Mission dir), and
+    ``worktree="empty"`` materializes an EMPTY coordination worktree (Mission
+    dir absent). Before asserting the fix, assert this precondition directly:
+    the coordination copy does not exist yet and the root copy does.
+
+    RED on the WP base: ``agent_retrospect._canonical_events_dir`` (the READ
+    resolver) falls back to the root checkout's ``feature_dir`` for this exact
+    shape (an empty coordination worktree), and the pre-WP14
+    ``_create_empty_retrospective_record`` wrote its ``RetrospectiveCaptured``
+    event through THAT read resolver -- landing the append on the repository
+    root checkout, never the coordination surface. GREEN once the write goes
+    through ``_canonical_events_write_dir`` (``write_dir``, which seeds the
+    coordination surface from the root copy on first write per
+    ``contracts/seed.md``) instead.
+    """
+    from unittest.mock import patch
+
+    from specify_cli.cli.commands.agent_retrospect import _create_empty_retrospective_record
+    from specify_cli.retrospective.schema import ActorRef
+
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    root_events = coord.root_mission_dir / "status.events.jsonl"
+    coord_events = coord.coord_mission_dir / "status.events.jsonl"
+
+    # --- Precondition: the real pre-fix divergence this red depends on. ---
+    assert root_events.is_file()
+    root_events_before = root_events.read_text(encoding="utf-8")
+    assert not coord_events.exists()
+
+    with patch("specify_cli.retrospective.lifecycle_events._fanout_live_work_retrospective"):
+        _create_empty_retrospective_record(
+            repo_root=coord.repo_root,
+            mission_id=_read_mission_id_for(coord),
+            mission_slug=coord.mission_dir_name,
+            feature_dir=coord.root_mission_dir,
+            actor=ActorRef(kind="agent", id="agent"),
+        )
+
+    # Load-bearing: the coordination surface gained exactly the one
+    # RetrospectiveCaptured row -- seeded from the root copy, then appended to.
+    assert coord_events.is_file(), "the coordination surface was never seeded/written -- the append landed elsewhere"
+    coord_types = [json.loads(line).get("type") for line in coord_events.read_text(encoding="utf-8").splitlines() if line.strip()]
+    assert coord_types.count("RetrospectiveCaptured") == 1
+    # The root checkout's own copy is untouched (restored/left alone) -- the
+    # append never lands in the repository root checkout for a coord Mission.
+    assert root_events.read_text(encoding="utf-8") == root_events_before
+
+
+def _read_mission_id_for(coord: CoordMission) -> str:
+    meta = json.loads((coord.root_mission_dir / "meta.json").read_text(encoding="utf-8"))
+    mission_id = meta["mission_id"]
+    assert isinstance(mission_id, str)
+    return mission_id

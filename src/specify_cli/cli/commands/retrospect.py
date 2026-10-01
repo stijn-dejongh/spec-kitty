@@ -108,13 +108,19 @@ def _canonical_record_path(repo_root: Path, mission_slug: str, mission_id: str =
 
 
 def _canonical_events_path(repo_root: Path, mission_slug: str) -> Path:
-    """Return the canonical ``status.events.jsonl`` path for *mission_slug*.
+    """Return the canonical ``status.events.jsonl`` READ path for *mission_slug*.
 
-    FR-006 (#1735/#1771): retrospect status reads/commits resolve the event log
+    FR-006 (#1735/#1771): retrospect status READS resolve the event log
     through the single canonical surface resolver (:func:`resolve_status_surface`,
     coord-topology-aware, C-005) rather than re-deriving a primary-checkout-only
     path. Falls back to the primary-checkout feature dir only when the surface
     cannot be resolved (e.g. meta.json absent for a legacy mission).
+
+    WP14 (FR-003, contracts/commit-outcome.md): kept byte-identical for reads,
+    INCLUDING the ``candidate_feature_dir_for_mission`` fallback -- every
+    append/commit caller now uses :func:`_canonical_events_write_path`
+    instead (retrospect/agent-retrospect event appends are a writer family,
+    not a read substitute).
     """
     try:
         surface: Path = resolve_status_surface(repo_root, mission_slug)
@@ -122,6 +128,23 @@ def _canonical_events_path(repo_root: Path, mission_slug: str) -> Path:
         feature_dir: Path = candidate_feature_dir_for_mission(repo_root, mission_slug)
         surface = feature_dir / "status.events.jsonl"
     return surface
+
+
+def _canonical_events_write_path(repo_root: Path, mission_slug: str) -> Path:
+    """Return the canonical ``status.events.jsonl`` WRITE path for *mission_slug*.
+
+    WP14 (FR-003, contracts/commit-outcome.md): every append/commit caller
+    writes through the write-location accessor (``write_dir``), never
+    through the read resolver's root-checkout fallback -- a coordination-
+    routed Mission's event log must never be appended to, or committed from,
+    the repository root checkout. ``write_dir`` raises its own named errors
+    (``COORDINATION_BRANCH_DELETED``, ``COORDINATION_WORKTREE_UNMATERIALIZED``,
+    ``COORD_SEED_FORK_REFUSED``) rather than falling back -- those surface as
+    the command's own actionable error (fail-closed).
+    """
+    from mission_runtime import MissionArtifactKind, placement_seam
+
+    return placement_seam(repo_root, mission_slug).write_dir(MissionArtifactKind.STATUS_STATE).path / "status.events.jsonl"
 
 
 def _resolve_handle(
@@ -551,7 +574,7 @@ def create_cmd(
 
     # FR-006 (#1735/#1771): the event is appended to, and committed from, the
     # ONE canonical status surface (coord-aware), never a primary-only copy.
-    events_path = _canonical_events_path(repo_root, persisted.mission_slug)
+    events_path = _canonical_events_write_path(repo_root, persisted.mission_slug)
 
     # Emit lifecycle event (non-fatal — record write already succeeded)
     with contextlib.suppress(Exception):
@@ -748,7 +771,7 @@ def _auto_commit_backfilled(repo_root: Path, created: list[dict[str, object]]) -
     """
     for entry in created:
         mslug = str(entry["mission_slug"])
-        events_path = _canonical_events_path(repo_root, mslug)
+        events_path = _canonical_events_write_path(repo_root, mslug)
         files = [Path(str(entry["record_path"]))]
         if events_path.exists():
             files.append(events_path)
@@ -840,7 +863,7 @@ def backfill_cmd(  # noqa: C901
                 skip_reason_source="cli_flag",
                 policy_source={},
                 actor=_cli_actor(),
-                event_log_dir=_canonical_events_path(repo_root, mission_slug).parent,
+                event_log_dir=_canonical_events_write_path(repo_root, mission_slug).parent,
             )
 
     work_candidates = []
@@ -909,7 +932,7 @@ def backfill_cmd(  # noqa: C901
                 repo_root,
                 provenance_kind="backfill",
                 actor=_cli_actor(),
-                event_log_dir=_canonical_events_path(repo_root, mslug).parent,
+                event_log_dir=_canonical_events_write_path(repo_root, mslug).parent,
             )
             created.append(
                 {
@@ -951,7 +974,7 @@ def backfill_cmd(  # noqa: C901
                         attempted_provenance_kind="backfill",
                         missing_artifacts=[str(exc)],
                         actor=_cli_actor(),
-                        event_log_dir=_canonical_events_path(repo_root, mslug).parent,
+                        event_log_dir=_canonical_events_write_path(repo_root, mslug).parent,
                     )
         except Exception as exc:
             failed_entry = {
@@ -975,7 +998,7 @@ def backfill_cmd(  # noqa: C901
                         attempted_provenance_kind="backfill",
                         missing_artifacts=None,
                         actor=_cli_actor(),
-                        event_log_dir=_canonical_events_path(repo_root, mslug).parent,
+                        event_log_dir=_canonical_events_write_path(repo_root, mslug).parent,
                     )
 
     if json_output:
