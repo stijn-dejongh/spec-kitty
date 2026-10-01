@@ -113,9 +113,7 @@ def _repo_root_coord_dir_porcelain(coord: CoordMission) -> str:
 
 
 @pytest.mark.parametrize("topology", _COORD_TOPOLOGIES)
-def test_transactional_emit_unmaterialized_local_branch_materializes_and_writes_coord(
-    tmp_path: Path, topology: MissionTopology
-) -> None:
+def test_transactional_emit_unmaterialized_local_branch_materializes_and_writes_coord(tmp_path: Path, topology: MissionTopology) -> None:
     """``make_prefix_coord_mission(worktree="absent")`` is UNMATERIALIZED with a
     never-seeded (pre-fix) coordination branch: once the worktree is
     materialized, the Mission dir is still absent from the branch (EMPTY), so
@@ -215,13 +213,7 @@ def _write_wp01_task_file(coord: CoordMission) -> None:
     tasks_dir = coord.root_mission_dir / "tasks"
     tasks_dir.mkdir(parents=True, exist_ok=True)
     (tasks_dir / "WP01-fixture.md").write_text(
-        "---\n"
-        "work_package_id: WP01\n"
-        "title: Fixture WP01\n"
-        "execution_mode: code_change\n"
-        "agent: testbot\n"
-        "subtasks: []\n"
-        "---\n\n# WP01\n\n## Activity Log\n",
+        "---\nwork_package_id: WP01\ntitle: Fixture WP01\nexecution_mode: code_change\nagent: testbot\nsubtasks: []\n---\n\n# WP01\n\n## Activity Log\n",
         encoding="utf-8",
     )
     write_lanes_json(
@@ -279,9 +271,7 @@ def _write_wp01_task_file(coord: CoordMission) -> None:
     )
 
 
-def _move_task_claimed(
-    coord: CoordMission, monkeypatch: pytest.MonkeyPatch
-) -> tuple[int, str, dict[str, object] | None]:
+def _move_task_claimed(coord: CoordMission, monkeypatch: pytest.MonkeyPatch) -> tuple[int, str, dict[str, object] | None]:
     monkeypatch.chdir(coord.repo_root)
     result = runner.invoke(
         app,
@@ -309,9 +299,7 @@ def _move_task_claimed(
     return result.exit_code, stdout, payload
 
 
-def test_move_task_remote_only_branch_refuses_before_any_write(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_move_task_remote_only_branch_refuses_before_any_write(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, remote_only=True)
     _write_wp01_task_file(coord)
     root_status_before = _repo_root_coord_dir_porcelain(coord)
@@ -329,9 +317,7 @@ def test_move_task_remote_only_branch_refuses_before_any_write(
 # ---------------------------------------------------------------------------
 
 
-def test_move_task_deleted_branch_refuses_with_recovery_hint(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_move_task_deleted_branch_refuses_with_recovery_hint(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, branch_deleted=True)
     _write_wp01_task_file(coord)
     root_status_before = _repo_root_coord_dir_porcelain(coord)
