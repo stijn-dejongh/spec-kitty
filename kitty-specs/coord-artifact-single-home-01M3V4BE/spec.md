@@ -2,37 +2,33 @@
 
 **Mission Branch**: `issue-5440-coord-artifact-single-home`
 **Created**: 2026-10-01
-**Status**: Draft
-**Input**: Operator brief for the coordination-commit cluster (#5440, #5513, #5519, #5501, #2533, #5023), grounded by a two-lens squad against `main` @ `ecb5dd914a` with real-CLI reproductions.
+**Status**: Draft (revision 2: post-spec squad folds applied; see `squad-post-spec.md`)
+**Input**: Operator brief for the coordination-commit cluster (#5440, #5513, #5519, #5501, #2533, #5023). It was grounded by a two-lens squad against `main` @ `ecb5dd914a` with real-CLI reproductions, then refined by a post-spec adversarial squad (acceptance and boundary lenses).
 
 ## Overview
 
-A coordination-routed Mission (topology `coord` or `lanes_with_coord`) keeps its lifecycle records on a separate **coordination surface**:
-- status events,
-- decision events,
-- tracer files,
-- review and acceptance bookkeeping.
+A coordination-routed Mission (topology `coord` or `lanes_with_coord`) keeps its lifecycle records on a separate **coordination surface**: the coordination branch, checked out in a coordination worktree. The records are status events, decision events, tracer files, and review and acceptance bookkeeping.
 
-That surface is the coordination branch, checked out in a coordination worktree. Today those records have no single durable home from the moment the Mission is created:
+Today those records have no single durable home from the moment the Mission is created:
 
-- **Mission create** seeds the status log in the repository root checkout and commits it to the **target branch**, while the coordination branch is cut without the Mission directory.
-- **Writes during the empty window.** While the coordination worktree has no Mission directory, every lifecycle write lands in the repository root checkout. The first write that creates the directory on the coordination surface switches the home, and nothing carries the earlier records over. The log forks and its clock restarts.
-- **Committers compensate unevenly.** Each committer handles the mismatch differently: `accept`, `spec-commit` and the commit router. Records end up on the target branch, are reported "unchanged" while uncommitted, are silently re-routed, or are dropped.
-- **The repair loses data.** `doctor decisions --repair` rebuilds the decision index from one half of a forked log and drops the other half, while `decision verify` reports clean.
+- **Mission create** seeds the status log in the repository root checkout and commits it to the **target branch**. The coordination branch is cut beforehand, without the Mission directory.
+- **While the coordination worktree has no Mission directory**, every lifecycle write lands in the repository root checkout. The first write that creates the directory on the coordination surface switches the home, and nothing carries the earlier records over, so the log forks and its logical clock restarts. Writers pick their write location from a *read* resolver, and that resolver substitutes the repository root checkout for an empty coordination surface.
+- **Each committer compensates differently.** `accept` makes a raw commit of every dirty Mission file onto the current branch. The commit router skips a status log handed in by its repository-root path and reports "unchanged". A mixed commit reports only the caller's surface, hiding a skip or re-route on the other surface. Records end up on the target branch, reported "unchanged" while uncommitted, silently re-routed, or dropped.
+- **`doctor decisions --repair`** rebuilds the decision index from one half of a forked log and drops the other half, while `decision verify` reports clean. The decision ledger is classified as a coordination record but written to and read from the repository root checkout. That split also makes `spec-commit` re-route decision files and trigger the fork.
 
-Operators lose trust because the tool commits to the wrong branch and reports success while records stay uncommitted or are lost. This Mission gives every coordination-partition record **one home and one commit branch for the Mission's whole lifetime**, and makes every command report honestly where each record went.
+Operators lose trust because the tool commits to the wrong branch and reports success while records stay uncommitted or are lost. This Mission gives every coordination-partition record **one home and one commit branch for the Mission's whole lifetime**, reached through **one write-location accessor on the existing placement seam**, and makes every command report honestly where each record went.
 
 ```mermaid
 stateDiagram-v2
     direction LR
     state "Today" as today {
-        Created --> PrimaryCopy: create seeds the root checkout\n(and commits to the target branch)
-        PrimaryCopy --> Forked: first coordination write\n(no carry-over)
+        Created --> RootCopy: create seeds the root checkout\n(and commits to the target branch)
+        RootCopy --> Forked: first coordination write\n(no carry-over, clock restarts)
     }
     state "After this Mission" as after {
         Created2: Created
-        Created2 --> CoordHome: create seeds the coordination surface
-        CoordHome --> CoordHome: every lifecycle write
+        Created2 --> CoordHome: create materializes and seeds\nthe coordination surface
+        CoordHome --> CoordHome: every lifecycle write\n(one accessor, one log)
     }
 ```
 
@@ -40,108 +36,158 @@ stateDiagram-v2
 
 | Term | Meaning in this Mission | Avoid |
 |------|-------------------------|-------|
-| **Coordination-routed Mission** | A Mission whose stored topology is `coord` or `lanes_with_coord` | "coord mission" in user-facing text without the topology |
-| **COORD-partition record** | A lifecycle record the placement taxonomy assigns to the coordination surface: status events (including decision events), tracer files, review-cycle and acceptance/issue-matrix bookkeeping | "status files" when decision or tracer records are meant too |
+| **Coordination-routed Mission** | A Mission whose stored topology is `coord` or `lanes_with_coord`, including one in an owned checkout | "coord mission" in user-facing text without the topology |
+| **COORD-partition record** | A record the placement taxonomy assigns to the coordination surface: the status log (status events, including decision events), the decision event stream (`decisions.events.jsonl`), tracer files, review-cycle records, the acceptance matrix and the issue matrix | "status files" when decision, tracer or matrix records are meant too |
+| **Decision ledger** | The per-decision record files and the decision index (`DM-*.md`, `index.json`). A **PRIMARY-partition** record after this Mission | confusing it with **decision events** |
 | **Coordination surface** | The coordination branch plus its checked-out coordination worktree | "coord dir" |
-| **Repository root checkout** | The non-worktree checkout where planning commands run (the PRIMARY partition's write location) | "main repo", "primary" without naming the sense |
-| **Target branch** | The branch the Mission's completed work lands on (`target_branch` in `meta.json`) | "main" unless the branch really is `main` |
-| **Decision ledger** | The per-decision record files and the decision index (`DM-*.md`, `index.json`) | confusing it with **decision events**, which live in the status log |
-| **Fork** | The same Mission's status log existing on two surfaces with diverging events | "duplicate" |
+| **Repository root checkout** | The non-worktree checkout where planning commands run; the write location of the PRIMARY partition | "main repo", or bare "primary" without naming the sense |
+| **Target branch** | The branch the Mission's completed work lands on (`target_branch` in `meta.json`) | "main", unless the branch really is `main` |
+| **Write-location accessor** | The single operation on the existing placement seam that answers "where does a write of record kind K for this Mission go". It owns establishing and seeding the coordination surface. | deriving a write location from a read resolver |
+| **Seed** | The one-time carry-over of a pre-fix Mission's COORD-partition records from the repository root checkout to an empty coordination surface | "migrate", "sync" |
+| **Fork** | A Mission whose status log, or decision event stream, exists on both surfaces with event-id sequences where neither is a prefix of the other | "duplicate" |
+| **Commit outcome** | What a commit request reports *per surface*: branch, commit id, and the committed, skipped and refused paths with reasons | a single success flag |
 
-"Primary" is overloaded (PRIMARY partition, primary branch, repository root checkout, target ref). Every requirement below names the sense it means.
+"Primary" is overloaded: it can mean the PRIMARY partition, the primary branch, the repository root checkout, or the target ref. Every requirement below names the sense it means.
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Creating a coordination-routed Mission leaves the target branch clean (Priority: P1)
+### User Story 1 - Creating a coordination-routed Mission keeps the target branch clean (Priority: P1)
 
-An operator creates a coordination-routed Mission on a topic branch. The creation records (Mission created, specify started) belong on the coordination surface. Today they are committed to the topic (target) branch, which later collides with the coordination copy at consolidation.
+An operator creates a coordination-routed Mission through the normal path: `agent mission create --pr-bound --start-branch <topic>` from the primary branch, or with an explicit `--topology coord` / `lanes_with_coord`. The creation records (Mission created, specify started) belong on the coordination surface. Today they are committed to the target branch, and the coordination branch is born without the Mission directory.
 
-**Why this priority**: It is the birth of the defect. Every later fork, silent skip and repair loss starts from records seeded in the wrong place (#5440, P0).
+**Why this priority**: It is the birth of the defect. Every later fork, silent skip and repair loss starts from records seeded in the wrong place (#5440, P0; #2533).
 
-**Independent Test**: Create a coordination-routed Mission in a fresh repository and inspect the target branch tree and the coordination branch tree.
+**Independent Test**: Create a coordination-routed Mission through the CLI in a fresh repository, parametrized over `coord` and `lanes_with_coord`. Then inspect the target branch's history, the coordination branch's tree, and what the read classifier reports.
 
 **Acceptance Scenarios**:
 
-1. **Given** a repository on a non-protected topic branch, **When** the operator creates a `coord` Mission, **Then** the target branch carries no COORD-partition record for that Mission, and the coordination branch carries the Mission's creation events.
-2. **Given** the same Mission, **When** the operator lists the coordination surface immediately after create, **Then** it already holds the Mission directory: the surface is never born empty for a new Mission.
-3. **Given** a `coord` Mission whose coordination branch already contains the creation records, **When** any later command passes the target branch to a commit, **Then** the target branch is never advanced onto coordination history that carries COORD-partition records.
+1. **Given** a repository on a non-protected topic branch, **When** the operator creates a coordination-routed Mission, **Then**:
+   - no commit between the creation base and the target-branch tip touches a COORD-partition record of that Mission;
+   - the target branch still receives the Mission's planning metadata (`meta.json`), as a positive control;
+   - the coordination branch's tree holds the Mission's status log with the creation events.
+2. **Given** the same Mission, **When** a read classifies the coordination surface immediately after create, **Then** it reports the surface as materialized and holding the Mission directory, never empty.
+3. **Given** the same Mission, **When** the operator inspects the coordination surface's Mission directory, **Then** it contains COORD-partition records only, never `meta.json` or other planning copies.
+4. **Given** the primary branch is protected (where the target-branch scaffold commit is suppressed by design), **When** the operator creates a coordination-routed Mission, **Then** the coordination surface is still materialized and seeded, independently of that suppression.
+5. **Given** a create that fails after the coordination surface was seeded, **When** create rolls back, **Then** the coordination seed is undone together with the rest of the create.
+6. **Given** a newly created coordination-routed Mission, **When** `doctor coordination` runs, **Then** the expected divergence between the coordination branch and the target branch is not reported as `COORDINATION_BRANCH_DIVERGED_VS_TARGET`, and re-running create in its idempotent or duplicate-allowing modes does not raise a coordination-branch-diverged error.
 
 ---
 
 ### User Story 2 - Lifecycle records never fork (Priority: P1)
 
-An operator works through specify, plan and tasks on a coordination-routed Mission, opening decisions and appending tracer entries. Every lifecycle record must land in one log, in causal order, whatever state the coordination worktree is in.
+An operator works a coordination-routed Mission through specify, plan, tasks and implement. Along the way they open decisions, append tracer entries, move work packages and record review cycles. Every COORD-partition record must land in one log, in causal order, whatever state the coordination worktree is in.
 
-**Why this priority**: Today the first coordination write silently switches the log's home. Earlier decisions become orphaned and the clock restarts (#5519, #2533, P0).
+**Why this priority**: Today the first coordination write silently switches the log's home, orphaning earlier decisions and restarting the logical clock (#5519, #2533, P0).
 
-**Independent Test**: Open a decision, then perform a write that populates the coordination surface (a tracer append or a decision-ledger commit), then open another decision. Inspect both surfaces.
+**Independent Test**: For each writer family, drive the write through its CLI entry point in each reachable coordination-surface state, and inspect both surfaces. The families are status transitions, decision events (both streams), the finalize bootstrap, tracer, review-cycle, and the issue and acceptance matrices.
 
 **Acceptance Scenarios**:
 
-1. **Given** a coordination-routed Mission, **When** a decision is opened before any other coordination write, then a tracer entry is appended, then a second decision is opened, **Then** all events are in one status log on the coordination surface, and their logical clock is strictly increasing.
-2. **Given** the same sequence, **When** `finalize-tasks` records its lifecycle events, **Then** they land in that same log.
-3. **Given** a coordination-routed Mission created before this fix (empty coordination surface, records in the repository root checkout), **When** the first coordination write happens, **Then** the existing records are carried to the coordination surface exactly once, or the command refuses with a fork diagnostic. The home never switches silently.
+1. **Given** a coordination-routed Mission, **When** a decision is opened, then a tracer entry is appended, then a second decision is opened, **Then** all events are in one status log on the coordination surface, and the logical clock continues without restarting.
+2. **Given** the same Mission, **When** `finalize-tasks` records its lifecycle events and `move-task` records a transition, **Then** they land in that same log.
+3. **Given** a coordination-routed Mission whose coordination worktree is not materialized (a fresh clone, or a removed worktree), **When** any COORD-partition write happens, **Then** the coordination surface is materialized first and the write lands there. It never lands in the repository root checkout.
+4. **Given** a Mission created before this fix (empty coordination surface, records in the repository root checkout), **When** the first coordination write happens:
+   - if the coordination log is absent, or its event-id sequence is a prefix of the root-checkout log, **Then** the missing records are carried over exactly once, the new event is appended after them, and the root-checkout copy is restored to its committed state and reported.
+   - if both logs are non-empty and neither event-id sequence is a prefix of the other, **Then** the write is refused with a fork diagnostic. The diagnostic names both locations and the reconcile steps.
+5. **Given** the carry-over in scenario 4, **When** a second coordination write happens, **Then** nothing is carried over again, and no event id appears twice.
+6. **Given** a coordination-routed Mission whose coordination surface is already materialized but forked (the #5519 shape), **When** further writes happen, **Then** they go to the coordination surface without a lockout, and the fork stays visible through `doctor decisions` (US4).
+7. **Given** a Mission created after this fix, **When** its coordination surface is ever found empty, **Then** the empty state is reported loudly for both coordination topologies, because it signals a regression.
+8. **Given** a coordination-routed Mission whose coordination branch is missing, **When** a COORD-partition write happens, **Then** it is refused loudly with a recovery hint.
 
 ---
 
-### User Story 3 - Commits report every record honestly (Priority: P1)
+### User Story 3 - Commits put every record on its surface and report it honestly (Priority: P1)
 
-An operator, or a command such as `accept`, `finalize-tasks`, `retrospect` or `spec-commit`, asks for a set of Mission files to be committed. Each file must be committed on its owning surface or explicitly reported as skipped or refused. Nothing is reported "unchanged" while it is uncommitted, and the outcome for one surface never hides the outcome for another.
+An operator, or a command such as `accept`, `finalize-tasks`, `retrospect`, `setup-plan` or `spec-commit`, asks for a set of Mission files to be committed. Each file must be committed on its owning surface. A file is refused only for a named reason, and every surface's outcome is reported.
 
 **Why this priority**: These are false successes. `accept` exits cleanly with status rows uncommitted, and `spec-commit` reports success while dropping the status log and silently re-routing decision files (#5513, P0; #5501, P1).
 
-**Independent Test**: Make a status log dirty only on the coordination surface, request a commit of it by its repository-root path, and inspect the result and both branches. Then run `spec-commit` with planning, decision, trace and status paths together.
+**Independent Test**: Make a status log dirty only on the coordination surface, request a commit of it by its repository-root path, and inspect the result and both branches. Then drive `spec-commit`, `accept`, `finalize-tasks` and `retrospect` through the CLI with mixed batches.
 
 **Acceptance Scenarios**:
 
-1. **Given** a status log modified only on the coordination surface, **When** a commit is requested for it by its repository-root path, **Then** it is committed on the coordination branch, or the request is refused with an error. It is never reported "unchanged".
-2. **Given** a mixed request spanning both partitions, **When** the commit completes, **Then** the result reports each surface's outcome (branch, commit, skipped or refused paths), and a skip or refusal on one surface is never masked by success on the other.
-3. **Given** `spec-commit` invoked with `spec.md`, decision files, trace files and the status log, **When** it runs, **Then** its output (text and JSON) names every argument it committed on another branch, skipped, or refused, together with the owning surface. It never reports success while silently ignoring an argument.
-4. **Given** `accept` on a coordination-routed Mission, **When** it commits its residual changes, **Then** no COORD-partition record is committed to the target branch, and every dirty coordination record ends up committed on the coordination branch.
+1. **Given** a status log modified only on the coordination surface, **When** a commit is requested for it by its repository-root path, **Then** it is committed on the coordination branch. It is refused only for a named reason:
+   - the coordination ref is protected;
+   - the status lock is held by another writer;
+   - the coordination branch is missing;
+   - the path cannot be routed.
+   It is never reported "unchanged" or "skipped".
+2. **Given** the same fixture but with a clean coordination copy, **When** the commit is requested, **Then** it is reported "unchanged". This is the positive control.
+3. **Given** a mixed request where one surface's group commits and the other's group is skipped or refused, **When** the commit completes, **Then** the result reports each surface's outcome separately, and the skip or refusal is visible to the caller.
+4. **Given** `spec-commit` invoked with `spec.md`, decision-ledger files, trace files and the status log, **When** it runs, **Then** text and JSON output name each argument's fate:
+   - the decision ledger is committed with `spec.md` on the target branch;
+   - traces and the status log are committed on the coordination branch, or refused with a named reason.
+   It never reports success while ignoring an argument.
+5. **Given** `accept` on a coordination-routed Mission, with a COORD-partition record dirty in the repository root checkout, **When** it commits its residual changes, **Then** that record is not committed to the target branch.
+6. **Given** `accept`, with a COORD-partition record dirty only in the coordination worktree, **When** it commits its residual changes, **Then** that record is committed on the coordination branch. Scenarios 5 and 6 are proven separately.
+7. **Given** `accept`, **When** it classifies dirty Mission files, **Then** its dirty-tree gate and its committer give the same partition answer for every path.
+8. **Given** `finalize-tasks`, **When** its lifecycle records are dirty only on the coordination surface, **Then** its pre-commit dirtiness check sees them, and they are committed on the coordination branch.
+9. **Given** `finalize-tasks` or `retrospect` commits a mixed batch, **When** one surface is skipped or refused, **Then** the command's CLI output reports it.
 
 ---
 
 ### User Story 4 - Decision records have one reconciled home and a safe repair (Priority: P2)
 
-An operator runs `doctor decisions` on a Mission. The decision ledger (record files plus index) and the decision events must be read from their declared homes, a fork must be reported precisely, and `--repair` must never lose a decision.
+An operator runs `decision verify` and `doctor decisions` on a Mission. The decision ledger is a PRIMARY-partition record and decision events are COORD-partition records. The diagnosis must read each from its declared home. A fork, or a ledger that exists only on the coordination branch (pre-fix Missions), must be reported precisely, and `--repair` must never lose a decision.
 
 **Why this priority**: The current repair destroys data while verify says clean (#5519 doctor leg, #5023).
 
-**Independent Test**: Use a Mission whose decision events are split across both surfaces. Run `decision verify`, `doctor decisions` and `doctor decisions --repair`, then compare the index before and after.
+**Independent Test**: Run `decision verify`, `doctor decisions` and `doctor decisions --repair` against the fork fixtures, and compare the index before and after each.
 
 **Acceptance Scenarios**:
 
-1. **Given** a Mission whose status log is forked across the repository root checkout and the coordination surface, **When** the operator runs `doctor decisions`, **Then** it reports the fork, naming which decisions are on which surface, and `decision verify` does not report clean.
-2. **Given** the same Mission, **When** the operator runs `doctor decisions --repair`, **Then** no index entry is removed whose events exist on either surface. The output tells the operator how to reconcile the fork, and no automatic re-sequencing is performed.
-3. **Given** any Mission, **When** decision records are written, read, committed, or checked by the accept dirty-tree gate, **Then** the decision ledger is treated as a PRIMARY-partition record everywhere (classification, writes, reads, commit placement), and decision events remain COORD-partition records in the status log.
-4. **Given** a fresh clone of a coordination-routed Mission mid-flight, **When** the operator lists or verifies decisions, **Then** every decision is found.
-5. **Given** two lanes that both add decisions, **When** their branches are integrated, **Then** the decision index merges without a conflict that loses entries.
+1. **Given** a Mission whose status log or decision event stream is forked, **When** the operator runs `doctor decisions`, **Then** it reports the fork and names which decisions are on which surface. This works from refs alone (fresh clone) and from working trees.
+2. **Given** the same Mission, **When** the operator runs `decision verify`, **Then** it does not report clean. This is proven separately from scenario 1.
+3. **Given** the same Mission, **When** the operator runs `doctor decisions --repair`, **Then** no index entry is removed whose events exist on either surface, the output prints the reconcile steps, and no automatic re-sequencing is performed.
+4. **Given** an unforked Mission with a genuine orphaned index entry, **When** `--repair` runs, **Then** that orphan is still repaired. This is the positive control.
+5. **Given** a pre-fix Mission whose decision ledger was committed only on the coordination branch, **When** the operator runs `doctor decisions`, **Then** it reports the ledger as present only on the coordination branch, and `--repair` copies it to the PRIMARY partition.
+6. **Given** a pre-fix Mission whose ledger exists only on the coordination branch, **When** consolidation or coordination teardown runs, **Then** it refuses to destroy that coordination branch and points to `doctor decisions --repair`.
+7. **Given** any Mission, **When** decision-ledger files are classified, committed, or checked by `accept`'s dirty-tree gate and the consolidation dirty gate, **Then** they are treated as PRIMARY-partition records everywhere. An uncommitted ledger in the repository root checkout is committed by `accept` on the target branch, never silently reset as coordination residue. Decision events remain COORD-partition records.
+8. **Given** a fresh clone of a Mission created after this fix, mid-flight, **When** the operator lists or verifies decisions, **Then** every decision is found.
+9. **Given** two lanes that both add decisions, **When** their branches are integrated, **Then** the decision index merges with no lost entries.
 
 ---
 
-### User Story 5 - Implement receipts name the real branch (Priority: P3)
+### User Story 5 - Finalize keeps the planning commit reference current (Priority: P3)
 
-After `implement`, the CLI prints which commits it made on which branch. Today it prints the status-transition message ("Start WP01 implementation [ok]") against the target branch, although the status record went to the coordination branch. That misleading receipt was the evidence behind #5440's "implement" claim.
+When `finalize-tasks` runs after further planning commits, the Mission's recorded `planning_commit_sha` must point at the commit that actually holds the finalized planning artefacts. That way every downstream drift and staleness check compares against the right base.
 
-**Why this priority**: A receipt that names the wrong branch erodes trust and sends investigations the wrong way, but nothing is lost.
+**Why this priority**: It was folded into #5023 from #5131. Today the refresh is an opt-in flag, so a stale reference is the default.
 
-**Independent Test**: Run `implement` on a coordination-routed Mission and compare the printed receipt with the actual commits on each branch.
+**Independent Test**: Commit a planning change after an earlier finalize, re-run `finalize-tasks`, and compare the recorded reference with the planning commit.
 
 **Acceptance Scenarios**:
 
-1. **Given** a coordination-routed Mission, **When** `implement` claims a work package, **Then** each printed receipt line names the branch that actually received that commit and describes that commit's content.
+1. **Given** a Mission whose planning artefacts changed after `planning_commit_sha` was recorded, **When** `finalize-tasks` runs without any opt-in flag, **Then** `planning_commit_sha` is refreshed to the commit holding the finalized planning artefacts.
+2. **Given** no planning change since the recorded reference, **When** `finalize-tasks` runs, **Then** the reference is unchanged. This is the positive control.
+
+---
+
+### User Story 6 - Implement receipts name the real branch (Priority: P3)
+
+After `implement`, the CLI prints which commits it made on which branch. Today it prints the status-transition message against the target branch, although the status record went to the coordination branch. That misleading receipt was the evidence behind #5440's "implement" claim.
+
+**Why this priority**: A receipt that names the wrong branch erodes trust and misdirects investigations, but nothing is lost.
+
+**Independent Test**: Run `implement` on a coordination-routed Mission and resolve every printed receipt's commit id against the branches.
+
+**Acceptance Scenarios**:
+
+1. **Given** a coordination-routed Mission, **When** `implement` claims a work package, **Then** every receipt line carries a commit id and the branch it names actually contains that commit.
+2. **Given** `implement` also commits on the target branch (work-package metadata), **When** receipts print, **Then** that line names the target branch. This is a positive control, so "always print the coordination branch" fails.
 
 ---
 
 ### Edge Cases
 
-- **Mission created before this fix with status already on the target branch.** Fix forward only: nothing rewrites existing history. New writes go to the coordination surface, and consolidation-side divergence for such Missions stays with #4955.
-- **Mission whose log is already forked.** Detect and guide (US4). No automatic merge of the two halves.
-- **Coordination worktree missing or not yet materialized at write time.** The write establishes and seeds the coordination surface first, or refuses loudly. It never writes to the repository root checkout instead.
-- **Both surfaces hold diverging copies when the first seeded write happens.** Refuse with a fork diagnostic that names both locations. Never pick one silently.
-- **Non-coordination topologies** (`lanes`, `single_branch`). Behaviour is unchanged: everything routes to the PRIMARY partition as today.
+- **Missions created before this fix with status already on the target branch.** Fix forward only. Nothing rewrites existing history; consolidation-side divergence for these Missions stays with #4955.
+- **Missions whose log is already forked and materialized.** No lockout. They are detected and guided (US2.6, US4).
+- **Owned checkouts with a coordination topology.** The same rules apply.
+- **Non-coordination topologies (`lanes`, `single_branch`).** Behaviour is unchanged; everything routes to the PRIMARY partition as today.
 - **Protected target branch.** Commits to it stay refused as today. This Mission adds no new bypass.
-- **Read-side behaviour for an empty coordination surface.** It is kept as today, falling back to the repository root checkout for reads. Retiring that fallback is a follow-up.
+- **Read-side behaviour for an empty coordination surface.** It is kept as today, falling back to the repository root checkout. For post-fix Missions the empty state is reported loudly (US2.7). Retiring the fallback is a follow-up.
+- **Seeding must be atomic.** Readers never observe a coordination Mission directory without its carried-over log. Seeding happens under the same status lock as the write, before the write validates the transition against the log's history.
+- **Transient staging.** COORD-partition records are written directly on the coordination surface through the write-location accessor. A command that stages a COORD record in the repository root checkout during the transition must remove that copy before it returns, leaving no residue.
 
 ## Requirements *(mandatory)*
 
@@ -149,43 +195,53 @@ After `implement`, the CLI prints which commits it made on which branch. Today i
 
 | ID | Title | User Story | Priority | Status | Delivery | No-op passable? |
 |----|-------|------------|----------|--------|----------|-----------------|
-| FR-001 | Create seeds the coordination surface, not the target branch | As an operator creating a coordination-routed Mission, I want its creation records committed on the coordination branch and never on the target branch, so that consolidation never meets a second copy (#5440). | High | Open | [build] | no |
-| FR-002 | Coordination surface never born empty | As an operator, I want a newly created coordination-routed Mission's coordination surface to already hold its Mission directory, so that no write window exists in which records land in the repository root checkout. | High | Open | [build] | no — paired with a `lanes` Mission fixture whose layout must stay unchanged |
-| FR-003 | One write location for every COORD-partition record | As an operator, I want every COORD-partition write (status, decision, finalize and tracer events) to target the coordination surface for the Mission's whole lifetime, independent of whether the coordination worktree is materialized or populated, so that the log never forks (#5519, #2533). | High | Open | [build] | no |
-| FR-004 | Seed on first write or refuse a fork | As an operator of a coordination-routed Mission created before this fix, I want the first coordination write to carry existing root-checkout records over to the coordination surface exactly once, or refuse with a fork diagnostic naming both locations when both copies diverge, so that history is never split or silently overwritten. | High | Open | [build] | no |
-| FR-005 | Accept never commits COORD records to the target branch | As an operator running `accept`, I want its residual commit to keep COORD-partition records off the target branch and to commit every dirty coordination record on the coordination branch, so that acceptance never leaks status or leaves it uncommitted (#5440, #5513). | High | Open | [build] | no |
-| FR-006 | Commit router never reports a dirty record as unchanged | As a command requesting a commit of a COORD-partition record by its repository-root path, I want the record committed on the coordination branch, or the request refused, whenever the coordination copy is dirty, so that "unchanged" always means unchanged (#5513). | High | Open | [build] | no — the same fixture with a clean coordination copy must still report unchanged |
-| FR-007 | Every surface's outcome is reported | As a command committing a mixed batch, I want the result to carry each surface's outcome (branch, commit, skipped and refused paths) without one surface masking another, so that `finalize-tasks`, `retrospect`, `accept` and `spec-commit` can report truthfully (#5501, #5513). | High | Open | [build] | no |
-| FR-007a | spec-commit names every argument's fate | As an operator running `spec-commit`, I want text and JSON output to name every argument that was committed on another branch, skipped or refused, with its owning surface, so that it never reports success while silently ignoring an argument (#5501). | High | Open | [build] | no |
-| FR-008 | Target branch never fast-forwarded onto coordination history | As an operator, I want no command to advance the target branch onto coordination-branch history that carries COORD-partition records, so that seeding the coordination surface at create cannot leak records to the target branch through a fast-forward. | High | Open | [build] | no — fixture where the target is an ancestor of the coordination tip |
-| FR-009 | Decision ledger is a PRIMARY-partition record | As an operator, I want the decision ledger classified, written, read, committed and dirty-checked as a PRIMARY-partition record, with decision events remaining in the COORD status log, so that its classification matches its behaviour (#5023). | Medium | Open | [build] | no |
-| FR-009a | Decision ledger survives clones and lane integration | As an operator, I want every decision found from a fresh clone mid-Mission, and the decision index to merge across lanes without losing entries, so that the reconciled ledger is durable (#5023). | Medium | Open | [build] | no |
-| FR-010 | doctor decisions detects forks | As an operator, I want `doctor decisions` to inspect both surfaces and report a forked log, naming which decisions are on which surface, and `decision verify` to stop reporting clean for a forked Mission, so that a fork is visible (#5519). | High | Open | [build] | no |
-| FR-011 | Repair never drops a decision | As an operator, I want `doctor decisions --repair` never to remove an index entry whose events exist on either surface, and to print reconciliation guidance for a fork instead of re-sequencing it, so that repair cannot lose data (#5519). | High | Open | [build] | no — paired with an unforked Mission whose genuine orphan is still repaired |
-| FR-012 | Implement receipts name the real branch | As an operator, I want each `implement` receipt line to name the branch that actually received that commit and describe its content, so that receipts never claim a status commit on the target branch. | Low | Open | [build] | no |
-| FR-013 | Non-vacuous guard against read-root write locations | As a maintainer, I want an architectural gate that fails when a COORD-partition writer derives its write location from a read-surface resolver, so that the defect class cannot return. The gate has a concrete floor of guarded writers, a self-mutation test, and a shrink-only allowlist. | High | Open | [build] | no — the self-mutation test plants a violation and expects red |
-| FR-014 | End-to-end invariant over the full coordination workflow | As a maintainer, I want one end-to-end test that drives create → decision → tracer → finalize → implement → accept → consolidate on a coordination-routed Mission and asserts the invariant, so that regressions across commands are caught. The invariant: the target branch never carries a COORD-partition record before consolidation, there is exactly one status log, every decision is present, and the logical clock is monotonic. | High | Open | [build] | no |
-| FR-015 | Existing red-first reproductions turn green | As a maintainer, I want the reproduction tests from PR #5518 (#5440) and PR #5520 (#5513), and the decomposition test that pins today's defective create tree, adopted and turned green, with transitional reproductions moved to focused homes rather than left as standing regression markers, so that the fixes are proven red-to-green. | High | Open | [ratchet] | no |
-| FR-016 | Decision records updated | As a maintainer, I want the placement decision records amended to state the single-home rule, the write side's refusal to substitute the repository root checkout, the retained read-side fallback, and the decision-ledger reclassification, so that the architecture documentation matches shipped behaviour. The records are ADR 2026-06-19-1, the empty-surface note in ADR 2026-09-24-2, and the artifact-placement seam documentation. | Medium | Open | [build] | yes — verified by review against the merged behaviour |
+| FR-001 | Create commits creation records on the coordination branch | As an operator creating a coordination-routed Mission (via `--pr-bound --start-branch`, or an explicit `coord` / `lanes_with_coord` topology), I want the creation records committed on the coordination branch, and no commit between the creation base and the target tip touching a COORD-partition record, so that consolidation never meets a second copy (#5440). | High | Open | [build] | no — `meta.json` on the target branch is the same-fixture positive control; the history probe, not the tip tree, is asserted |
+| FR-002 | Create materializes and seeds the coordination surface | As an operator, I want create to materialize the coordination worktree and seed it with the Mission's COORD-partition records only (no planning copies), so that a new Mission's coordination surface is never empty and reads immediately classify it as materialized (#2533). | High | Open | [build] | no — asserted via the coordination branch tree and the production read classifier on the same fixture |
+| FR-002a | Create seeds on a protected target and rolls back atomically | As an operator, I want seeding to happen even when the target-branch scaffold commit is suppressed (protected primary branch), and a failed create to undo the coordination seed together with the rest of create. | High | Open | [build] | no |
+| FR-002b | Coordination-vs-target relation redefined | As an operator, I want `doctor coordination` and create's coordination-branch checks to expect the by-design divergence between a seeded coordination branch and the target branch, so that every new Mission is not reported as `COORDINATION_BRANCH_DIVERGED_VS_TARGET` and create re-runs do not raise. | High | Open | [build] | no — a genuinely diverged legacy fixture must still be reported |
+| FR-003 | One write-location accessor for every COORD-partition record | As an operator, I want every COORD-partition writer to obtain its write location from one write-location accessor on the existing placement seam. The writer families are status transitions (move-task, mark-status), decision events in the status log, the decision event stream, the finalize bootstrap, tracer, review-cycle, and the issue and acceptance matrices. For a coordination-routed Mission, that location is the coordination surface in every coordination-worktree state. Then the log never forks (#5519, #2533). | High | Open | [build] | no — one test per writer family; each fails if that family still uses a read resolver |
+| FR-003a | Writes establish the coordination surface or refuse loudly | As an operator, I want the following, so that no state silently substitutes the repository root checkout:<br>- a COORD write on an unmaterialized Mission (fresh clone, removed worktree) materializes the coordination surface first;<br>- a write when the coordination branch is missing is refused with a recovery hint;<br>- a post-fix Mission found with an empty coordination surface warns loudly for both coordination topologies. | High | Open | [build] | no |
+| FR-004 | Seed-time carry-over, exactly once | As an operator of a pre-fix Mission, I want the first COORD write that finds an empty coordination surface to do all of the following, so that history continues on one surface. It carries the root-checkout records over when the coordination log is absent or a prefix of them. It appends the new event after them, with the logical clock continuing. It restores the root-checkout copy to its committed state and reports it. | High | Open | [build] | no — the logical-clock continuation and the root copy's restoration are both asserted |
+| FR-004a | Seed is idempotent and atomic | As an operator, I want later writes never to re-carry (no event id appears twice in one log), and the seed to complete atomically under the write's status lock before the write validates against the log, so that readers never see a partial seed. | High | Open | [build] | no |
+| FR-004b | Seed refuses a true fork | As an operator, I want a seed that finds both logs non-empty, with neither event-id sequence a prefix of the other, to refuse with a fork diagnostic naming both locations and the reconcile steps, so that diverged history is never overwritten. | High | Open | [build] | no — same fixture shape as FR-004 with one diverging event |
+| FR-005 | Accept routes both residual legs through the commit router | As an operator running `accept`, I want both residual legs committed through the commit router's partition grouping, with the raw commit of every dirty Mission file removed, so that COORD records never reach the target branch and accept's dirty gate and committer agree on every path's partition (#5440, #5513). The two legs are the repository-root-checkout leg and the coordination-worktree leg. | High | Open | [build] | no — two fixtures (dirty in the root checkout / dirty only in the coordination worktree); reverting either leg's fix turns its fixture red |
+| FR-006 | The commit router commits the owning-surface copy | As a command committing a COORD-partition record by its repository-root path, I want the record committed on the coordination branch whenever the coordination copy is dirty. It is refused only for a named reason: protected coordination ref, status lock held, coordination branch missing, or an unroutable path. Then "unchanged" always means unchanged (#5513). | High | Open | [build] | no — the clean-coordination-copy fixture still reports unchanged; a router that always refuses fails the commit assertion |
+| FR-007 | Per-surface commit outcomes in the shared result contract | As a command author, I want the commit result to carry each surface's outcome, rendered by one shared renderer, and every consumer to report through it rather than reading only the caller-surface fields, so that a skip or refusal on one surface is never masked (#5501, #5513). The outcome covers branch, commit id, and the committed, skipped and refused paths with reasons. The consumers are accept, finalize-tasks, retrospect, setup-plan, record-analysis, spec-commit, the report transaction, the orchestrator API and the write seam. | High | Open | [build] | no — fixture: one surface's group commits while the other's is skipped |
+| FR-007a | spec-commit names every argument's fate | As an operator running `spec-commit`, I want text and JSON output to name each argument's fate, so that it never reports success while ignoring an argument (#5501). The decision ledger is committed with planning files on the target branch. Traces and the status log are committed on the coordination branch, or refused with a named reason. | High | Open | [build] | no |
+| FR-007b | finalize-tasks sees coordination-only dirt | As an operator running `finalize-tasks`, I want its pre-commit dirtiness check to include the coordination surface, and its CLI output to report every surface's outcome, so that coordination-only records are not judged "no changes" and left uncommitted (#5513). | High | Open | [build] | no |
+| FR-008 | Target-branch advance retired for coordination-routed Missions | As an operator, I want the commit router's post-commit target-branch advance retired for coordination-routed Missions, so that seeding the coordination surface at create cannot carry COORD records onto the target branch by fast-forward. Consolidation's bookkeeping projection is explicitly excluded from this rule. | High | Open | [build] | no — fixture where the target branch is an ancestor of the coordination tip |
+| FR-009 | Decision ledger reclassified to the PRIMARY partition | As an operator, I want the decision ledger classified as a PRIMARY-partition record in the placement taxonomy and the coordination-residue mapping, so that its classification matches where it is written and read (#5023). The consequences: the commit router stops staging it to the coordination branch, and accept's dirty gate and the consolidation dirty gate treat uncommitted ledger files as real work (committed by `accept`), never as residue to reset. | Medium | Open | [build] | no — a committed-ledger fixture is the positive control for the accept gate |
+| FR-009a | Ledger writes and reads stay on the PRIMARY partition | As an operator, I want decision-ledger writes and reads to remain on the PRIMARY partition (already true since #4966), so that the reclassification is behaviour-aligned. | Medium | Open | [ratchet] | yes — pins existing behaviour; paired with FR-009's [build] rows on the same fixture |
+| FR-009b | Ledger durability: commit point, clone, lane merge | As an operator, I want new Missions' decision ledgers committed by the existing PRIMARY-partition committers (spec-commit, setup-plan, finalize-tasks, accept) with no new auto-commit, every decision found from a fresh clone mid-Mission, and the decision index merging across lanes without losing entries (#5023). | Medium | Open | [build] | no |
+| FR-009c | Pre-fix ledger fix-forward via doctor | As an operator of a pre-fix Mission whose ledger exists only on the coordination branch, I want the following, so that no decision is lost and no read fallback is added:<br>- `doctor decisions` reports that state, and `--repair` copies the ledger to the PRIMARY partition;<br>- consolidation and coordination teardown refuse to destroy such a coordination branch and point to the repair. | Medium | Open | [build] | no |
+| FR-010 | doctor decisions detects forks | As an operator, I want `doctor decisions` to inspect both surfaces (refs and working trees) for both decision-event streams and report a fork, naming which decisions are on which surface (#5519). | High | Open | [build] | no |
+| FR-010a | decision verify stops reporting clean on a fork | As an operator, I want `decision verify` to report a forked Mission as not clean, so that verification and doctor agree (#5519). | High | Open | [build] | no — proven separately from FR-010 |
+| FR-011 | Repair never drops a decision | As an operator, I want `doctor decisions --repair` never to remove an index entry whose events exist on either surface, and to print the reconcile steps instead of re-sequencing (#5519). | High | Open | [build] | no — an unforked Mission's genuine orphan is still repaired (positive control) |
+| FR-012 | finalize-tasks refreshes the planning commit reference | As an operator, I want `finalize-tasks` to refresh `planning_commit_sha` automatically when the planning artefacts changed since it was recorded, so that drift checks compare against the right base (#5023 via #5131). | Low | Open | [build] | no — the unchanged-planning fixture keeps the reference (positive control) |
+| FR-013 | Implement receipts name the real branch | As an operator, I want every `implement` receipt line to carry a commit id and the branch that actually contains it, so that receipts never claim a status commit on the target branch. | Low | Open | [build] | no — a target-branch commit by implement must be labelled with the target branch (positive control) |
+| FR-014 | Guard against read resolvers used as COORD write locations | As a maintainer, I want the existing write-side rederivation gate family extended (no new parallel gate) so that it fails when a COORD-partition writer derives its write location from a read resolver. Requirements:<br>- a concrete floor of guarded writers;<br>- shown red at the base revision on today's real offenders (the decision event writers);<br>- a self-mutation test;<br>- a shrink-only allowlist. | High | Open | [build] | no — red at base on real sites, not only on the planted mutation |
+| FR-015 | End-to-end invariant over the full coordination workflow | As a maintainer, I want one end-to-end test, parametrized over `coord` and `lanes_with_coord` through the production create path, that drives create → decision → tracer → finalize → implement → accept → consolidate. It asserts:<br>- no target-branch commit touches a COORD-partition record before consolidation;<br>- exactly one status log;<br>- every decision present;<br>- a monotonic logical clock.<br>A variant moves the merge base (the target gains an unrelated commit that the Mission absorbs) and still consolidates without a target content conflict (#5440). | High | Open | [build] | no |
+| FR-016 | Red-first reproductions for every defect | As a maintainer, I want a failing-first reproduction through the pre-existing entry point for each defect, so that every fix is proven red-to-green (ADR 2026-07-17-1):<br>- #5440 (PR #5518, adopted);<br>- #5513 (PR #5520, adopted);<br>- #5519: the repair dropping decisions, and the logical clock restarting;<br>- #5501: spec-commit dropping the status log;<br>- #2533: spec-commit's split-brain warning right after a new coordination create. The legacy-empty control still warns.<br>The decomposition test that pins today's defective create tree is re-pinned. After the fixes, the transitional reproductions move into the owning modules' test files rather than standing as regression markers. | High | Open | [build] | no |
+| FR-017 | Decision records and seam documentation updated | As a maintainer, I want the following amended to state the single-home rule, the write-location accessor, the write side's refusal to substitute the repository root checkout, the retained read-side fallback, and the decision-ledger reclassification, so that architecture documentation matches shipped behaviour:<br>- ADR 2026-06-19-1;<br>- the empty-surface note in ADR 2026-09-24-2;<br>- the artifact-placement seam documentation;<br>- the stale coordination-residue comment. | Medium | Open | [build] | yes — review-only; the PR cites the amended ADR sections as the checkable anchor |
 
 ### Non-Functional Requirements
 
 | ID | Title | Requirement | Category | Priority | Status |
 |----|-------|-------------|----------|----------|--------|
-| NFR-001 | Create stays fast | Creating a coordination-routed Mission completes in under 2 seconds on a typical project (charter standard), and adds no more than 1 second over the current create time measured on the same fixture. | Performance | High | Open |
-| NFR-002 | Zero record loss | Across the fork, repair and integration fixtures, 0 decision index entries and 0 status events are lost or duplicated by any command this Mission changes. | Reliability | High | Open |
-| NFR-003 | New-code coverage | New and changed code reaches at least 90% line coverage (diff-cover gate), and every new branch or helper has a focused test in the same work package. | Maintainability | High | Open |
-| NFR-004 | Complexity ceiling | No function touched by this Mission exceeds cyclomatic complexity 15 (ruff C901 / Sonar S3776). | Maintainability | High | Open |
+| NFR-001 | Create stays fast | On the FR-015 fixture, the median of 5 warm runs of coordination-routed Mission create stays under 2 seconds and within +1.0 second of the baseline median at `ecb5dd914a`. Measured manually and recorded in the plan and the PR; not a CI performance test. | Performance | High | Open |
+| NFR-002 | Zero record loss | Across the fork fixtures, 0 decision index entries and 0 status events are lost by any command this Mission changes, and no event id appears more than once within a single log. The fixtures are: root uncommitted + coordination untracked (#5519 shape); root committed on target + coordination committed; fresh clone; ledger only on the coordination branch. | Reliability | High | Open |
+| NFR-003 | New-code coverage | New and changed code reaches ≥ 90% line coverage (diff-cover gate), and every new branch or helper has a focused test in the same work package. | Maintainability | High | Open |
+| NFR-004 | Complexity ceiling | No function touched by this Mission exceeds cyclomatic complexity 15 (ruff C901 / Sonar S3776). Functions near the ceiling get a behaviour-preserving extraction first. | Maintainability | High | Open |
 | NFR-005 | Static gates clean | ruff, ruff format and mypy --strict report 0 issues on changed files, with no new suppressions. | Maintainability | High | Open |
 
 ### Constraints
 
 | ID | Title | Constraint | Category | Priority | Status |
 |----|-------|------------|----------|----------|--------|
-| C-001 | Reconcile existing authorities | The fix routes through the existing placement authorities: partition taxonomy, commit-placement seam, write-surface resolver, and the single coordination write precondition. No new authority, and no additional commit mechanism for status records. | Technical | High | Open |
+| C-001 | Reconcile existing authorities; one sanctioned seam extension | The fix routes through the existing placement authorities: the partition taxonomy, the commit-placement seam, the coordination write precondition, and the existing coordination commit path. The only sanctioned addition is one write-location accessor on the existing placement seam, which owns materializing and seeding. No second surface classifier, and no additional commit mechanism for status records (accept's raw commit is removed, not added to). | Technical | High | Open |
 | C-002 | Keep the read-side fallback | The read-side fallback for an empty coordination surface stays; only writes stop substituting the repository root checkout. | Technical | High | Open |
-| C-003 | No automatic log merge | Already-forked logs are detected and guided, never merged or re-sequenced automatically (the shared events reducer and #4941 stay out of scope). | Technical | High | Open |
-| C-004 | Fix forward | No command rewrites existing Mission history. Missions created before the fix are healed going forward or diagnosed. | Technical | High | Open |
+| C-003 | No automatic log merge | Already-forked logs are detected and guided, never merged or re-sequenced automatically. The shared events reducer and #4941 stay out of scope. | Technical | High | Open |
+| C-004 | Fix forward | No command rewrites existing Mission history; pre-fix Missions are healed going forward (seed at first write, ledger repair) or diagnosed. | Technical | High | Open |
 | C-005 | Red-first through existing entry points | Every defect is reproduced by a failing test through its pre-existing CLI or library entry point before its fix lands (ADR 2026-07-17-1). | Process | High | Open |
 | C-006 | No full heavy suites locally | Mission work runs targeted tests and the named architectural gate files only; full architectural, end-to-end, performance and `test-full` sweeps belong to CI. | Process | High | Open |
 | C-007 | Terminology canon | User-facing text says Mission, never feature, and names the sense of "primary" it means. | Process | High | Open |
@@ -193,27 +249,28 @@ After `implement`, the CLI prints which commits it made on which branch. Today i
 
 ### Key Entities
 
-- **Coordination-routed Mission**: a Mission whose stored topology is `coord` or `lanes_with_coord`. It owns a target branch and a coordination branch.
-- **COORD-partition record**: a lifecycle record whose single home is the coordination surface (status events including decision events, tracer files, review-cycle, acceptance and issue matrices).
-- **Decision ledger**: the per-decision record files and decision index. After this Mission it is a PRIMARY-partition record. Its events stay in the status log.
-- **Commit outcome**: what a commit request reports, per surface. It covers the branch, the commit, and the committed, skipped and refused paths.
+- **Coordination-routed Mission**: a Mission whose stored topology is `coord` or `lanes_with_coord`. It owns a target branch and a coordination branch, which diverge by design from creation onward.
+- **COORD-partition record**: a record whose single home is the coordination surface: the status log, the decision event stream, tracer files, review-cycle records, and the acceptance and issue matrices.
+- **Decision ledger**: the per-decision record files and the decision index. A PRIMARY-partition record; its events stay COORD.
+- **Write-location accessor**: the single seam operation giving a record kind's write location for a Mission. It owns materialize-and-seed.
+- **Commit outcome**: what a commit request reports, per surface: the branch, the commit, and the committed, skipped and refused paths with reasons.
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: In the end-to-end coordination workflow, the target branch carries 0 COORD-partition records before consolidation — [build] · no-op passable: no
-- **SC-002**: A coordination-routed Mission driven through decision → coordination write → decision produces exactly 1 status log, holding 100% of its decision events in strictly increasing logical-clock order — [build] · no-op passable: no
-- **SC-003**: 0 commit requests report "unchanged" while the owning surface's copy is dirty, across every command this Mission touches — [build] · no-op passable: no
-- **SC-004**: `doctor decisions --repair` removes 0 index entries whose events exist on either surface; `decision verify` reports a forked Mission as not clean in 100% of the fork fixtures — [build] · no-op passable: no
-- **SC-005**: Both pre-existing red-first reproductions (PRs #5518 and #5520) go from failing to passing, and the new architectural gate fails on its planted violation — [ratchet] · no-op passable: no
+- **SC-001**: In the end-to-end coordination workflow (both coordination topologies, linear and moved-merge-base variants), 0 commits between the creation base and the target-branch tip touch a COORD-partition record before consolidation, and consolidation succeeds — [build] · no-op passable: no
+- **SC-002**: A coordination-routed Mission driven through decision → coordination write → decision produces exactly 1 status log holding 100% of its decision events, with the logical clock never restarting — [build] · no-op passable: no
+- **SC-003**: Across accept, finalize-tasks, retrospect, setup-plan, spec-commit and the commit router, 0 commit requests report "unchanged" or "skipped" while the owning surface's copy is dirty — [build] · no-op passable: no
+- **SC-004**: Across the NFR-002 fork fixtures, `doctor decisions --repair` removes 0 index entries whose events exist on either surface, and `decision verify` reports every forked fixture as not clean — [build] · no-op passable: no
+- **SC-005**: Every red-first reproduction named in FR-016 goes from failing at `ecb5dd914a` to passing, and the extended gate (FR-014) is red at `ecb5dd914a` on real offenders and red on its planted mutation — [build] · no-op passable: no
 
 ## Assumptions
 
-- The create-time mechanism that seeds the coordination surface is decided in plan: eager coordination-worktree materialization committed through the existing coordination commit path, or a direct commit to the coordination ref. Seeding later is excluded because it leaves untracked residue in the repository root checkout.
-- The `TARGET_BRANCH_CONTENT_CONFLICT` reported in #5440 did not reproduce on a linear flow; it likely needs a moved merge-base. The end-to-end test (FR-014) covers the linear flow. Already-diverged target copies are handled by #4955.
-- The issue's "implement leaks status" evidence is the misleading receipt covered by FR-012. No status record is committed to the target branch by `implement` today.
-- The opt-in `--refresh-planning-commit` behaviour (a facet folded into #5023 from #5131) is unchanged by this Mission.
+- The `TARGET_BRANCH_CONTENT_CONFLICT` reported in #5440 did not reproduce on a linear flow. FR-015's moved-merge-base variant is the closest reproduction; already-diverged target copies of pre-fix Missions are handled by #4955.
+- #5440's "implement leaks status" evidence is the misleading receipt covered by FR-013; no status record is committed to the target branch by `implement` today.
+- #2533's implement-claim leg was reported fixed earlier (`3599c05990` / `e4644c2342`). Plan verifies this on `ecb5dd914a`, and the issue matrix records it.
+- Eager materialization at create is decided (decision `specify.design.seed-mechanism`). A direct coordination-ref commit was rejected: it leaves the Mission unmaterialized, so reads raise, and it trips the coordination write precondition.
 
 ## Out of Scope
 
@@ -222,15 +279,15 @@ After `implement`, the CLI prints which commits it made on which branch. Today i
 - #4955: consolidation-side divergence of append-only logs for Missions whose target copy already diverged.
 - Retiring the read-side fallback for an empty coordination surface (follow-up).
 - Automatic merge or re-sequencing of already-forked logs.
-- Making the `planning_commit_sha` refresh automatic (the #5131 facet of #5023).
+- A read fallback for pre-fix Missions' coordination-only ledger; that case is repaired via doctor (FR-009c).
 
 ## Issue Traceability
 
 | Issue | Covered by |
 |-------|------------|
-| #5440 | FR-001, FR-002, FR-005, FR-008, FR-012, FR-014, FR-015 |
-| #5513 | FR-005, FR-006, FR-007, FR-015 |
-| #5519 | FR-003, FR-004, FR-010, FR-011, FR-014 |
-| #2533 | FR-002, FR-003, FR-004 |
-| #5501 | FR-007, FR-007a |
-| #5023 | FR-009, FR-009a, FR-011, FR-016 |
+| #5440 | FR-001, FR-002, FR-002a, FR-005, FR-008, FR-013, FR-015, FR-016 |
+| #5513 | FR-005, FR-006, FR-007, FR-007b, FR-016 |
+| #5519 | FR-003, FR-003a, FR-004, FR-004a, FR-004b, FR-010, FR-010a, FR-011, FR-015, FR-016 |
+| #2533 | FR-002, FR-002b, FR-003, FR-004, FR-016 |
+| #5501 | FR-007, FR-007a, FR-016 |
+| #5023 | FR-009, FR-009a, FR-009b, FR-009c, FR-011, FR-012, FR-017 |
