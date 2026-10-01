@@ -28,6 +28,7 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: python-pedro
+agent: claude
 authoritative_surface: src/specify_cli/coordination/coord_seed.py
 create_intent:
 - src/mission_runtime/write_location.py

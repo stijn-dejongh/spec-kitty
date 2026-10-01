@@ -23,6 +23,7 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: python-pedro
+agent: claude
 authoritative_surface: src/specify_cli/review/cycle.py
 create_intent:
 - tests/review/test_cycle_write_dir.py

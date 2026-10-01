@@ -30,6 +30,7 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: python-pedro
+agent: claude
 authoritative_surface: src/specify_cli/decisions/fork.py
 create_intent:
 - src/specify_cli/decisions/fork.py

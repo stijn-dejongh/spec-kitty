@@ -31,6 +31,7 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: python-pedro
+agent: claude
 authoritative_surface: tests/architectural/test_no_write_side_rederivation.py
 create_intent:
 - tests/coordination/test_commit_outcome_consumer_pin.py

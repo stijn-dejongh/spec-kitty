@@ -20,6 +20,7 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: python-pedro
+agent: claude
 authoritative_surface: tests/_factories/
 create_intent:
 - tests/_factories/coord_mission.py

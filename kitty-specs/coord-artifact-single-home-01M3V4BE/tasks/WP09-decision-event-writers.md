@@ -24,6 +24,7 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: python-pedro
+agent: claude
 authoritative_surface: src/specify_cli/decisions/service.py
 create_intent:
 - tests/specify_cli/decisions/test_service_coord_single_home.py

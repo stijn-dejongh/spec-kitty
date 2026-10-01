@@ -23,6 +23,7 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: python-pedro
+agent: claude
 authoritative_surface: src/mission_runtime/artifacts.py
 create_intent:
 - tests/mission_runtime/test_decision_ledger_reader_flips.py

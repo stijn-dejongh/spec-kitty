@@ -29,6 +29,7 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: python-pedro
+agent: claude
 authoritative_surface: tests/integration/test_coord_single_home_workflow.py
 create_intent:
 - tests/integration/test_coord_single_home_workflow.py

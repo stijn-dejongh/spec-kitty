@@ -19,6 +19,7 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: curator-carla
+agent: claude
 authoritative_surface: docs/
 create_intent: []
 execution_mode: planning_artifact

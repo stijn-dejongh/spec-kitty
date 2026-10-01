@@ -18,6 +18,7 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: python-pedro
+agent: claude
 authoritative_surface: src/specify_cli/cli/commands/agent/workflow.py
 create_intent: []
 execution_mode: code_change
