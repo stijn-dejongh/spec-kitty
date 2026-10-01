@@ -25,7 +25,7 @@ from specify_cli.analysis_report import (
     report_semantics,
     write_analysis_report,
 )
-from specify_cli.coordination.commit_router import commit_for_mission
+from specify_cli.coordination.commit_router import CommitRouterResult, commit_for_mission
 from specify_cli.core.atomic import atomic_write
 from specify_cli.git.commit_helpers import preflight_commit
 from specify_cli.git.protection_policy import ProtectionPolicy
@@ -127,6 +127,59 @@ def _matching_qualified_report(root: Path, report: Path, rendered: str) -> str |
     return existing if report_semantics(existing) == report_semantics(rendered) else None
 
 
+def _guard_unchanged_inputs(
+    *,
+    repo_root: Path,
+    feature_dir: Path,
+    relative: str,
+    head: bytes,
+    index: tuple[bytes, ...],
+    working: dict[str, tuple[str, int]],
+    inputs: dict[str, object],
+) -> None:
+    """Re-check the concurrency guard right before the commit.
+
+    Raises ``ValueError`` the instant anything a prior snapshot captured has
+    moved under us, so the retained (already-written) report is flagged
+    unqualified rather than silently committed over a concurrent change.
+    """
+    if (
+        _git(repo_root, "rev-parse", "HEAD").strip() != head
+        or _index(repo_root, relative) != index
+        or _working(repo_root, relative) != working
+        or collect_material_inputs(feature_dir, repo_root) != inputs
+    ):
+        raise ValueError("Repository changed before report commit; retained report is unqualified")
+
+
+def _commit_report(
+    *,
+    repo_root: Path,
+    feature_dir: Path,
+    report: Path,
+    message: str,
+    target_branch: str,
+) -> CommitRouterResult:
+    """Commit *report* through the canonical router; raise on anything but a clean commit.
+
+    Returns the router's :class:`CommitRouterResult` so the caller can both
+    read ``commit_hash`` and render the per-surface outcome (WP14,
+    ``contracts/commit-outcome.md``).
+    """
+    outcome = commit_for_mission(
+        repo_root=repo_root,
+        mission_slug=feature_dir.name,
+        files=(report,),
+        message=message,
+        policy=ProtectionPolicy.resolve(repo_root),
+        kind=MissionArtifactKind.ANALYSIS_REPORT,
+        target_branch=target_branch,
+    )
+    if outcome.status != "committed" or outcome.commit_hash is None:
+        raise ValueError(outcome.diagnostic or f"Report commit did not complete: {outcome.status}")
+    return outcome
+
+
 def record_report_transaction(*, repo_root: Path, feature_dir: Path, body: str, analyzer_agent: str | None, target_branch: str) -> dict[str, object]:
     """Record only the report; never reset or restore concurrent operator state."""
     report = feature_dir / ANALYSIS_REPORT_FILENAME
@@ -189,24 +242,8 @@ def record_report_transaction(*, repo_root: Path, feature_dir: Path, body: str, 
         if report_hash is None or _sha256_file(report) != report_hash:
             raise ValueError("Report changed after rendering; retained report is unqualified")
         _require_idle(repo_root)
-        if (
-            _git(repo_root, "rev-parse", "HEAD").strip() != head
-            or _index(repo_root, relative) != index
-            or _working(repo_root, relative) != working
-            or collect_material_inputs(feature_dir, repo_root) != inputs
-        ):
-            raise ValueError("Repository changed before report commit; retained report is unqualified")
-        outcome = commit_for_mission(
-            repo_root=repo_root,
-            mission_slug=feature_dir.name,
-            files=(report,),
-            message=message,
-            policy=ProtectionPolicy.resolve(repo_root),
-            kind=MissionArtifactKind.ANALYSIS_REPORT,
-            target_branch=target_branch,
-        )
-        if outcome.status != "committed" or outcome.commit_hash is None:
-            raise ValueError(outcome.diagnostic or f"Report commit did not complete: {outcome.status}")
+        _guard_unchanged_inputs(repo_root=repo_root, feature_dir=feature_dir, relative=relative, head=head, index=index, working=working, inputs=inputs)
+        outcome = _commit_report(repo_root=repo_root, feature_dir=feature_dir, report=report, message=message, target_branch=target_branch)
         committed = outcome.commit_hash
         parents = _git(repo_root, "rev-list", "--parents", "-n", "1", committed).split()
         changed = _git(repo_root, "diff-tree", "--no-commit-id", "--name-only", "-z", "-r", committed).split(b"\0")

@@ -1,17 +1,20 @@
 """NUL-delimited Git boundaries used by report-only recording."""
 
+import re
 import subprocess
 from pathlib import Path
 
 import pytest
 
-from specify_cli.git.report_transaction import _dirty_paths, _index
+from specify_cli.coordination.commit_router import CommitRouterResult
+from specify_cli.git import report_transaction
+from specify_cli.git.report_transaction import _dirty_paths, _git, _index, _working
 
 pytestmark = [pytest.mark.integration, pytest.mark.git_repo]
 
 
-def test_rename_keeps_both_unusual_path_endpoints(tmp_path: Path):
-    def git(*args: str):
+def test_rename_keeps_both_unusual_path_endpoints(tmp_path: Path) -> None:
+    def git(*args: str) -> subprocess.CompletedProcess[bytes]:
         return subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True)
 
     git("init", "-q", "-b", "work")
@@ -26,3 +29,125 @@ def test_rename_keeps_both_unusual_path_endpoints(tmp_path: Path):
     entries = _index(tmp_path, "analysis-report.md")
     assert len(entries) == 1
     assert entries[0].endswith(new.encode())
+
+
+def _init_seeded_repo(tmp_path: Path) -> None:
+    def git(*args: str) -> subprocess.CompletedProcess[bytes]:
+        return subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True)
+
+    git("init", "-q", "-b", "work")
+    git("config", "user.name", "Test")
+    git("config", "user.email", "test@example.invalid")
+    (tmp_path / "seed.txt").write_text("seed\n")
+    git("add", "-A")
+    git("-c", "commit.gpgsign=false", "commit", "-qm", "seed")
+
+
+# ---------------------------------------------------------------------------
+# T003: ``_guard_unchanged_inputs`` — the concurrency re-check WP14 extracted
+# from ``record_report_transaction`` (git/report_transaction.py, C901 15->13).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_guard_unchanged_inputs_passes_when_nothing_moved(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _init_seeded_repo(tmp_path)
+    monkeypatch.setattr(report_transaction, "collect_material_inputs", lambda feature_dir, repo_root: {})
+    head = _git(tmp_path, "rev-parse", "HEAD").strip()
+    index = _index(tmp_path, "report.md")
+    working = _working(tmp_path, "report.md")
+
+    report_transaction._guard_unchanged_inputs(repo_root=tmp_path, feature_dir=tmp_path, relative="report.md", head=head, index=index, working=working, inputs={})
+
+
+@pytest.mark.unit
+def test_guard_unchanged_inputs_raises_when_head_moved(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _init_seeded_repo(tmp_path)
+    monkeypatch.setattr(report_transaction, "collect_material_inputs", lambda feature_dir, repo_root: {})
+    head = _git(tmp_path, "rev-parse", "HEAD").strip()
+    index = _index(tmp_path, "report.md")
+    working = _working(tmp_path, "report.md")
+    (tmp_path / "other.txt").write_text("extra\n")
+    subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "-c", "commit.gpgsign=false", "commit", "-qm", "extra"], cwd=tmp_path, check=True)
+
+    with pytest.raises(ValueError, match="Repository changed before report commit"):
+        report_transaction._guard_unchanged_inputs(
+            repo_root=tmp_path, feature_dir=tmp_path, relative="report.md", head=head, index=index, working=working, inputs={}
+        )
+
+
+@pytest.mark.unit
+def test_guard_unchanged_inputs_raises_when_working_tree_changed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _init_seeded_repo(tmp_path)
+    monkeypatch.setattr(report_transaction, "collect_material_inputs", lambda feature_dir, repo_root: {})
+    head = _git(tmp_path, "rev-parse", "HEAD").strip()
+    index = _index(tmp_path, "report.md")
+    working = _working(tmp_path, "report.md")
+    (tmp_path / "seed.txt").write_text("changed\n")
+
+    with pytest.raises(ValueError, match="Repository changed before report commit"):
+        report_transaction._guard_unchanged_inputs(
+            repo_root=tmp_path, feature_dir=tmp_path, relative="report.md", head=head, index=index, working=working, inputs={}
+        )
+
+
+@pytest.mark.unit
+def test_guard_unchanged_inputs_raises_when_material_inputs_changed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _init_seeded_repo(tmp_path)
+    monkeypatch.setattr(report_transaction, "collect_material_inputs", lambda feature_dir, repo_root: {"drifted": {"path": "x"}})
+    head = _git(tmp_path, "rev-parse", "HEAD").strip()
+    index = _index(tmp_path, "report.md")
+    working = _working(tmp_path, "report.md")
+
+    with pytest.raises(ValueError, match="Repository changed before report commit"):
+        report_transaction._guard_unchanged_inputs(
+            repo_root=tmp_path, feature_dir=tmp_path, relative="report.md", head=head, index=index, working=working, inputs={}
+        )
+
+
+# ---------------------------------------------------------------------------
+# T003: ``_commit_report`` — the ``commit_for_mission`` call plus outcome
+# interpretation WP14 extracted into its own helper (WP14 renders through it).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_commit_report_returns_outcome_on_committed_status(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    outcome = CommitRouterResult(status="committed", placement_ref="refs/heads/work", commit_hash="abc123")
+    monkeypatch.setattr(report_transaction, "commit_for_mission", lambda **_kwargs: outcome)
+
+    result = report_transaction._commit_report(
+        repo_root=tmp_path, feature_dir=tmp_path / "kitty-specs" / "m", report=tmp_path / "analysis-report.md", message="msg", target_branch="work"
+    )
+
+    assert result is outcome
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("outcome", "expected_message"),
+    [
+        (
+            CommitRouterResult(status="unchanged", placement_ref="refs/heads/work", reason="no_op_no_changes"),
+            "Report commit did not complete: unchanged",
+        ),
+        (
+            CommitRouterResult(status="no_op_wrong_surface", placement_ref="refs/heads/work"),
+            "Report commit did not complete: no_op_wrong_surface",
+        ),
+        (CommitRouterResult(status="error", placement_ref="refs/heads/work", diagnostic="boom"), "boom"),
+        (
+            CommitRouterResult(status="committed", placement_ref="refs/heads/work", commit_hash=None),
+            "Report commit did not complete: committed",
+        ),
+    ],
+    ids=["unchanged", "no_op_wrong_surface", "error", "committed_without_hash"],
+)
+def test_commit_report_raises_unless_cleanly_committed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, outcome: CommitRouterResult, expected_message: str) -> None:
+    monkeypatch.setattr(report_transaction, "commit_for_mission", lambda **_kwargs: outcome)
+
+    with pytest.raises(ValueError, match=re.escape(expected_message)):
+        report_transaction._commit_report(
+            repo_root=tmp_path, feature_dir=tmp_path / "kitty-specs" / "m", report=tmp_path / "analysis-report.md", message="msg", target_branch="work"
+        )
