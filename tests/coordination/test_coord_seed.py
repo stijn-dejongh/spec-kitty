@@ -752,6 +752,71 @@ def test_owned_arm_translates_workspace_failure(tmp_path: Path, monkeypatch: pyt
     assert excinfo.value.code == "OWNED_COORDINATION_WORKSPACE_UNAVAILABLE"
 
 
+def test_owned_empty_pre_fix_seed_restores_against_owned_root_not_repository_root(tmp_path: Path) -> None:
+    """WP04-review binding first step (WP07 prompt, coord-artifact-single-home-01M3V4BE):
+    ``_restore_root_files`` / ``_to_repo_relpath`` (``coord_seed.py``) ran git
+    against ``request.repo_root`` unconditionally, but for an owned checkout the
+    root Mission dir lives under ``owned.owned_root`` -- a directory that is
+    NEVER a subpath of the repository-root checkout (``OwnedCheckout``'s own
+    invariant). Before the fix, ``Path.relative_to`` raises ``ValueError`` as
+    soon as a pre-fix EMPTY seed actually carries a root record (this test's
+    shape), instead of silently no-op'ing -- still a defect, just a loud one.
+
+    Forward guard (owned+coordination is not yet reachable through a real CLI
+    flow, T019 note in ``test_placement_seam_write_dir.py``): it becomes
+    reachable as soon as an owned-capable writer migrates onto a coordination
+    topology, so the seam's unconditional ``owned`` threading is pinned now.
+
+    ``owned_root`` is a REAL second git worktree of the SAME repository
+    (sharing one ``.git``, the production shape the owned-checkout docs
+    describe -- see ``tests/_owned_fixtures.py``'s ``RSnapshotter``
+    docstring), checked out onto the mission's own target branch, so the
+    pre-fix root ``status.events.jsonl`` the fixture committed there is
+    present, tracked and clean under ``owned_root`` -- never under
+    ``coord.repo_root``.
+    """
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    owned_root = tmp_path / "owned-checkout"
+    # Free ``coord.target_branch`` from the main worktree so it can be
+    # checked out a second time at ``owned_root`` (git refuses the same
+    # branch checked out in two worktrees at once).
+    subprocess.run(["git", "-C", str(coord.repo_root), "checkout", "--detach", "-q"], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(coord.repo_root), "worktree", "add", "-q", str(owned_root), coord.target_branch], check=True, capture_output=True)
+    owned = mint_test_fact(
+        repository_root=coord.repo_root,
+        owned_root=owned_root,
+        mission_dir=owned_root / "kitty-specs" / coord.mission_dir_name,
+        mission_slug=coord.mission_dir_name,
+        write_branch=coord.target_branch,
+        topology=MissionTopology.COORD,
+    )
+    root_ids_before = event_ids(owned.mission_dir / _STATUS_LOG)
+    assert root_ids_before  # the pre-fix root log genuinely carries records to restore/no-op over
+
+    location = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=owned)
+
+    assert location.establishment is Establishment.SEEDED
+    assert location.seed is not None
+    assert location.seed.carried  # non-empty: _restore_root_files actually iterates
+    assert event_ids(location.path / _STATUS_LOG) == root_ids_before
+    # the owned checkout's committed root copy is untouched (clean -> C-004 no-op),
+    # and git never ran against the bare repository-root checkout for this path.
+    owned_status = subprocess.run(
+        ["git", "-C", str(owned_root), "status", "--porcelain", "--", "kitty-specs"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    assert owned_status == ""
+    repo_root_status = subprocess.run(
+        ["git", "-C", str(coord.repo_root), "status", "--porcelain", "--", "kitty-specs"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    assert repo_root_status == ""
+
+
 # ---------------------------------------------------------------------------
 # B4-8 / B5: NFR-002 across fork-fixture shapes (b)/(c)/(d); shape (a) is
 # covered by ``test_fork_refuses_and_writes_nothing`` above.
