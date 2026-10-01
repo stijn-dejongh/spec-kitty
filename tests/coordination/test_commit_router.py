@@ -2474,3 +2474,98 @@ def test_porcelain_entry_path_unquotes_and_splits_renames() -> None:
     assert _porcelain_entry_path('"old name.txt" -> "new name.txt"') == "new name.txt"
     assert _porcelain_entry_path('"old name.txt" -> plain.txt') == "plain.txt"
     assert _porcelain_entry_path("plain.txt") == "plain.txt"
+
+
+# ---------------------------------------------------------------------------
+# Review cycle 2 R2: a C-quoted path that ITSELF contains " (" (git quotes it
+# for the space, same as any other space) was cut mid-quote by the cycle-1
+# "split at the first ' ('" parsing, landing inside the quotes and leaving an
+# unparseable, unclosed-quote remainder that matched nothing -- a false
+# "clean" regression against base for this shape.
+# ---------------------------------------------------------------------------
+
+
+def test_dirty_paths_in_checkout_matches_an_untracked_path_containing_parenthesis(tmp_path: Path) -> None:
+    from specify_cli.coordination.commit_router import _dirty_paths_in_checkout
+
+    repo_root = tmp_path / "repo"
+    _init_repo(repo_root)
+    # Commit an unrelated sibling first so ``kitty-specs/`` is itself a
+    # TRACKED directory -- otherwise the new file's own ``?? "Copy (1).md"``
+    # entry collapses into a whole-directory ``?? kitty-specs/`` entry
+    # instead, which matches via the directory-prefix path regardless of the
+    # specific filename and would mask this regression.
+    sibling = repo_root / "kitty-specs" / "sibling.txt"
+    sibling.parent.mkdir(parents=True)
+    sibling.write_text("sibling\n", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=repo_root, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "baseline"], cwd=repo_root, check=True)
+    quoted_file = repo_root / "kitty-specs" / "Copy (1).md"
+    quoted_file.write_text("x\n", encoding="utf-8")
+
+    dirty = _dirty_paths_in_checkout(repo_root, (quoted_file,))
+
+    assert dirty == (quoted_file,)
+
+
+def test_dirty_paths_in_checkout_matches_a_tracked_modified_path_containing_parenthesis(tmp_path: Path) -> None:
+    from specify_cli.coordination.commit_router import _dirty_paths_in_checkout
+
+    repo_root = tmp_path / "repo"
+    _init_repo(repo_root)
+    quoted_file = repo_root / "kitty-specs" / "tracked (2).md"
+    quoted_file.parent.mkdir(parents=True)
+    quoted_file.write_text("committed content\n", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=repo_root, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "baseline"], cwd=repo_root, check=True)
+    quoted_file.write_text("modified content\n", encoding="utf-8")
+
+    dirty = _dirty_paths_in_checkout(repo_root, (quoted_file,))
+
+    assert dirty == (quoted_file,)
+
+
+def test_porcelain_entry_path_handles_a_quoted_path_containing_parenthesis() -> None:
+    from specify_cli.coordination.commit_router import _porcelain_entry_path
+
+    assert _porcelain_entry_path('"Copy (1).md"') == "Copy (1).md"
+    assert _porcelain_entry_path('"tracked (2).md"') == "tracked (2).md"
+
+
+def test_strip_dirty_entry_suffix_only_strips_the_exact_known_suffix() -> None:
+    from specify_cli.coordination.commit_router import _strip_dirty_entry_suffix
+
+    # Untracked, with the treat_untracked_as_dirty suffix: stripped.
+    assert (
+        _strip_dirty_entry_suffix(
+            '?? "Copy (1).md" (untracked local file would be discarded by worktree removal)',
+            new_sha="HEAD",
+        )
+        == '?? "Copy (1).md"'
+    )
+    # Tracked-modified: never carries either suffix, returned unchanged even
+    # though it contains a literal " (" inside the quoted path.
+    tracked_entry = ' M "tracked (2).md"'
+    assert _strip_dirty_entry_suffix(tracked_entry, new_sha="HEAD") == tracked_entry
+    # Untracked with no suffix at all (treat_untracked_as_dirty=False shape):
+    # returned unchanged.
+    bare_untracked = '?? "Copy (1).md"'
+    assert _strip_dirty_entry_suffix(bare_untracked, new_sha="HEAD") == bare_untracked
+
+
+def test_c_unquote_git_path_handles_escape_and_decode_edge_cases() -> None:
+    from specify_cli.coordination.commit_router import _c_unquote_git_path
+
+    # Simple-escape arms: backslash, double-quote, tab, newline, CR.
+    assert _c_unquote_git_path('"back\\\\slash.txt"') == "back\\slash.txt"
+    assert _c_unquote_git_path('"quo\\"te.txt"') == 'quo"te.txt'
+    assert _c_unquote_git_path('"tab\\tchar.txt"') == "tab\tchar.txt"
+    assert _c_unquote_git_path('"new\\nline.txt"') == "new\nline.txt"
+    assert _c_unquote_git_path('"cr\\rchar.txt"') == "cr\rchar.txt"
+    # Unrecognized escape: the backslash is kept literally, not dropped.
+    assert _c_unquote_git_path('"weird\\zthing.txt"') == "weird\\zthing.txt"
+    # A bare (unquoted) field is returned unchanged.
+    assert _c_unquote_git_path("plain.txt") == "plain.txt"
+    # A lone double quote (too short to be a real quoted field) is returned
+    # unchanged rather than indexing out of range.
+    assert _c_unquote_git_path('"') == '"'
