@@ -1013,6 +1013,72 @@ def test_router_commits_a_status_row_when_its_own_thread_already_holds_the_statu
 
 
 # ---------------------------------------------------------------------------
+# R12 (#5440, FR-008): the router no longer fast-forwards the TARGET branch to
+# the coordination tip after a coordination commit. After WP06, ``create``
+# seeds the coordination branch from the target, so the target is an ancestor
+# of the coordination tip -- the former best-effort ``_try_advance_ref`` would
+# then silently carry every coordination (STATUS/bookkeeping) commit onto the
+# target, re-mixing the two surfaces the partition exists to keep apart.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.git_repo
+def test_no_target_advance_for_coordination_routed_mission(tmp_path: Path) -> None:
+    """A coordination commit never advances the target branch, even when it is a clean ancestor.
+
+    Non-vacuity precondition (post-tasks squad R-M8): first prove the fixture's
+    target branch IS a clean ancestor of the coordination tip -- i.e. that a
+    base-shaped fast-forward WOULD move it if the router still performed one --
+    so the "target unchanged" assertion below cannot pass vacuously.
+    """
+    from specify_cli.coordination.commit_router import commit_for_mission
+    from specify_cli.coordination.surface_resolver import resolve_status_surface
+    from specify_cli.coordination.workspace import CoordinationWorkspace
+    from tests.terminus.conftest import build_coord_mission
+
+    mission = build_coord_mission(tmp_path, target_branch="feature/router-r12")
+    coord = CoordinationWorkspace.worktree_path(mission.repo, mission.slug, mission.mid8)
+    coord_log = resolve_status_surface(mission.repo, mission.slug)
+    target_sha_before = mission.rev(mission.target_branch)
+
+    # Baseline: the coordination branch must genuinely DIVERGE ahead of the
+    # target before this test's own commit, so the non-vacuity precondition
+    # below is real rather than a same-SHA coincidence.
+    coord_rel = coord_log.relative_to(coord)
+    with coord_log.open("a", encoding="utf-8") as fh:
+        fh.write('{"simulated": "R12 baseline advance row"}\n')
+    subprocess.run(["git", "add", "--", str(coord_rel)], cwd=coord, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-q", "-m", "baseline coord advance"], cwd=coord, check=True, capture_output=True)
+    coord_sha_before = _coord_head(coord)
+
+    # Non-vacuity: the target IS a clean ancestor of the coordination tip, and
+    # the two differ -- a base-shaped advance would genuinely move it.
+    assert target_sha_before != coord_sha_before
+    subprocess.run(
+        ["git", "merge-base", "--is-ancestor", target_sha_before, coord_sha_before],
+        cwd=mission.repo,
+        check=True,
+    )
+
+    with coord_log.open("a", encoding="utf-8") as fh:
+        fh.write('{"simulated": "R12 coord-only row"}\n')
+
+    result = commit_for_mission(
+        mission.repo,
+        mission.slug,
+        (coord_log,),
+        "chore(status): commit the mission status log (R12)",
+        ProtectionPolicy.resolve(mission.repo),
+        kind=MissionArtifactKind.STATUS_STATE,
+        target_branch=mission.target_branch,
+    )
+
+    assert result.status == "committed"
+    assert mission.rev(mission.target_branch) == target_sha_before, "the target branch must NOT advance on a coordination commit (FR-008)"
+    assert _coord_head(coord) != coord_sha_before, "the coordination branch must still advance"
+
+
+# ---------------------------------------------------------------------------
 # Owned arm (owned-checkout-lifecycle-authority WP09, review cycle 1 issue 3b):
 # ``_resolve_group_placement`` must use ``owned.topology`` directly when a fact
 # is present, never calling ``resolve_topology`` (which walks
