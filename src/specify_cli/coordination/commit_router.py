@@ -29,6 +29,7 @@ import subprocess
 from collections.abc import Iterator, Mapping
 from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, replace
+from enum import Enum
 from pathlib import Path
 from typing import Final, Literal, Protocol, runtime_checkable
 
@@ -988,6 +989,132 @@ def _is_directly_in_worktree(path: Path, worktree: Path) -> bool:
     return not is_under_worktrees_segment(rel)
 
 
+class _StagePlan(Enum):
+    """Per-path staging disposition for :func:`_stage_artifacts_in_coord_worktree`.
+
+    Five outcomes (binding correction, brownfield scout round 3 — the prompt's
+    original four-outcome sketch missed one):
+
+    - ``IN_PLACE``: the path already lives directly in THIS coordination
+      worktree; it is committed where it sits, never copied.
+    - ``SKIP_STATUS_LOG``: a ``MissionArtifactKind.STATUS_STATE`` path outside
+      ``.worktrees/`` — never copied from a (possibly stale) primary (#1589).
+    - ``SKIP_ANALYSIS_REPORT``: the re-homed ``analysis-report.md`` (FR-003) —
+      never a second copy on the coordination worktree.
+    - ``DROP_FOREIGN_WORKTREE``: a path under ``.worktrees/`` that is NOT
+      directly in this worktree (a sibling mission's coord worktree, a worktree
+      nested inside this one, or an ``analysis-report.md`` anywhere under
+      ``.worktrees/``) — dropped entirely. Kept distinct from the two SKIP
+      members on purpose: a SKIP is a copy-destination-aware decision a future
+      caller (WP05) may translate into a different action, while a foreign
+      worktree path has no copy destination to translate.
+    - ``COPY``: staged into the coordination worktree at the mirrored relative
+      path (the only outcome the caller still derives ``dst`` for).
+    """
+
+    IN_PLACE = "in_place"
+    SKIP_STATUS_LOG = "skip_status_log"
+    SKIP_ANALYSIS_REPORT = "skip_analysis_report"
+    DROP_FOREIGN_WORKTREE = "drop_foreign_worktree"
+    COPY = "copy"
+
+
+_STAGE_PLAN_NO_COPY: Final = frozenset({_StagePlan.DROP_FOREIGN_WORKTREE, _StagePlan.SKIP_STATUS_LOG, _StagePlan.SKIP_ANALYSIS_REPORT})
+
+
+def _classify_stage_path(src: Path, rel: Path, coord_worktree: Path) -> _StagePlan:
+    """Classify how *src* (relative path *rel* under ``repo_root``) must be staged.
+
+    Pure per-path decision extracted from :func:`_stage_artifacts_in_coord_worktree`
+    (T005, campsite-clean WP01) — behaviour-preserving, verbatim rationale kept
+    inline. The only I/O is ``_is_directly_in_worktree``'s ``.resolve()`` (the
+    symlinked-``repo_root`` pin depends on it staying there).
+    """
+    from specify_cli.coordination.surface_resolver import is_under_worktrees_segment
+
+    # A path under ``.worktrees/`` is never copied: it is committed in place when
+    # it lives in THIS coordination worktree, and dropped otherwise. This runs
+    # before the STATUS_STATE skip below, whose purpose is to never copy a stale
+    # PRIMARY status log over the coord one; a log already authored in the coord
+    # worktree needs no copy, and dropping it reported ``no_op_already_committed``
+    # while the log stayed uncommitted there (#5353). An ``analysis-report.md``
+    # found under ``.worktrees/`` (this worktree's own, or a foreign one) is
+    # always dropped here, never committed in place — its only legitimate home
+    # is the primary re-home skip below (FR-003).
+    if is_under_worktrees_segment(rel):
+        if src.name != _ANALYSIS_REPORT_FILENAME and _is_directly_in_worktree(src, coord_worktree):
+            return _StagePlan.IN_PLACE
+        return _StagePlan.DROP_FOREIGN_WORKTREE
+    # WP13 (IC-07c): single-source through the canonical file→kind classifier
+    # instead of a locally-duplicated ``{"status.events.jsonl", "status.json"}``
+    # literal. Narrow ON PURPOSE (STATUS_STATE only, not the full
+    # ``is_coord_residue_churn`` union): ``acceptance-matrix.json`` /
+    # ``issue-matrix.md`` (``ACCEPTANCE_MATRIX`` / ``ISSUE_MATRIX``) STAY COORD
+    # and must continue to be staged below — only the status log/snapshot are
+    # authored directly in the coord worktree and must never be copied from a
+    # stale primary.
+    if kind_for_mission_file(rel) is MissionArtifactKind.STATUS_STATE:
+        return _StagePlan.SKIP_STATUS_LOG
+    # FR-003 (coord-commit-integrity): ``analysis-report.md`` was re-homed
+    # COORD→PRIMARY — it lands on the primary ``target_branch`` and is NEVER
+    # a second copy on the coordination worktree. Skip its copy2 staging path
+    # (mirroring the STATUS_STATE skip above) so a coord commit that
+    # happens to sweep it makes no coord residue. ``acceptance-matrix.json`` /
+    # ``issue-matrix.md`` STAY COORD and continue to be staged below.
+    #
+    # NOTE (coord-commit-integrity SURFACE A #2, DEFERRED): the operator asked
+    # to generalise this to a by-construction
+    # ``is_primary_artifact_kind(kind_for_mission_file(src))`` skip. That is
+    # UNSAFE as specified: this helper legitimately stages OTHER PRIMARY-kind
+    # planning artifacts (``tasks.md`` / ``lanes.json``) into the coord worktree
+    # for a combined commit — a pinned contract
+    # (``test_finalize_coord_staging.py`` / ``test_finalize_clobber_e2e.py``).
+    # There is no partition-derived distinction between ``analysis-report.md``
+    # (must-skip, re-homed) and ``tasks.md`` (must-stage), so a blanket
+    # primary-kind skip regresses those tests. Closing the "next re-home
+    # silently regresses" class requires first retiring the tasks.md/lanes.json
+    # → coord staging (a separate finalize-flow change); until then this stays
+    # the narrow, behaviour-correct analysis-report skip.
+    if src.name == _ANALYSIS_REPORT_FILENAME:
+        return _StagePlan.SKIP_ANALYSIS_REPORT
+    return _StagePlan.COPY
+
+
+def _cleanup_staging_residue(
+    staged_sources: list[tuple[Path, Path]],
+    primary_paths_created_this_invocation: frozenset[Path] | None,
+    repo_root: Path,
+) -> None:
+    """Delete a this-invocation-created primary source once its coord copy is
+    confirmed byte-identical (R6 / #1814 residue cleanup).
+
+    Extracted verbatim from :func:`_stage_artifacts_in_coord_worktree` (T005,
+    campsite-clean WP01); the byte-compare guard and both log messages are
+    unchanged.
+    """
+    if not primary_paths_created_this_invocation:
+        return
+    for src, dst in staged_sources:
+        if src not in primary_paths_created_this_invocation:
+            continue
+        if not src.exists() or not dst.exists():
+            continue
+        try:
+            if src.read_bytes() != dst.read_bytes():
+                logger.warning(
+                    "commit_router: residue cleanup skipped %s: primary copy diverged",
+                    src.relative_to(repo_root),
+                )
+                continue
+            src.unlink()
+        except OSError as exc:
+            logger.warning(
+                "commit_router: residue cleanup failed for %s: %s",
+                src.relative_to(repo_root),
+                exc,
+            )
+
+
 def _stage_artifacts_in_coord_worktree(
     files: list[Path],
     coord_worktree: Path,
@@ -1005,60 +1132,29 @@ def _stage_artifacts_in_coord_worktree(
       ``COORD_OWNED_STATUS_FILES`` frozenset onto this single-source kind check) —
       STATUS-partition files authored directly in the coord worktree, never copied
       from a stale primary (#1589).
-    - Skipping the re-homed ``analysis-report.md`` (FR-003) — see the loop body.
+    - Skipping the re-homed ``analysis-report.md`` (FR-003) — see
+      :func:`_classify_stage_path`.
     - Skipping worktrees-nested paths (#FR-035).
     - Residue cleanup for ``primary_paths_created_this_invocation`` (R6 / #1814).
-    """
-    from specify_cli.coordination.surface_resolver import is_under_worktrees_segment
 
+    The per-path decision lives in :func:`_classify_stage_path` (T005,
+    campsite-clean WP01); this loop only classifies then acts, so a later WP
+    can change the per-path decision in one place.
+    """
     coord_files: list[Path] = []
     staged_sources: list[tuple[Path, Path]] = []
 
     for src in files:
         rel = src.relative_to(repo_root)
-        # A path under ``.worktrees/`` is never copied: it is committed in place when
-        # it lives in THIS coordination worktree, and dropped otherwise. This runs
-        # before the STATUS_STATE skip below, whose purpose is to never copy a stale
-        # PRIMARY status log over the coord one; a log already authored in the coord
-        # worktree needs no copy, and dropping it reported ``no_op_already_committed``
-        # while the log stayed uncommitted there (#5353). The re-homed
-        # ``analysis-report.md`` stays skipped (FR-003, below).
-        if is_under_worktrees_segment(rel):
-            if src.name != _ANALYSIS_REPORT_FILENAME and _is_directly_in_worktree(src, coord_worktree):
-                coord_files.append(src)
+        plan = _classify_stage_path(src, rel, coord_worktree)
+        if plan is _StagePlan.IN_PLACE:
+            coord_files.append(src)
             continue
-        # WP13 (IC-07c): single-source through the canonical file→kind classifier
-        # instead of a locally-duplicated ``{"status.events.jsonl", "status.json"}``
-        # literal. Narrow ON PURPOSE (STATUS_STATE only, not the full
-        # ``is_coord_residue_churn`` union): ``acceptance-matrix.json`` /
-        # ``issue-matrix.md`` (``ACCEPTANCE_MATRIX`` / ``ISSUE_MATRIX``) STAY COORD
-        # and must continue to be staged below — only the status log/snapshot are
-        # authored directly in the coord worktree and must never be copied from a
-        # stale primary.
-        if kind_for_mission_file(rel) is MissionArtifactKind.STATUS_STATE:
+        if plan in _STAGE_PLAN_NO_COPY:
             continue
-        # FR-003 (coord-commit-integrity): ``analysis-report.md`` was re-homed
-        # COORD→PRIMARY — it lands on the primary ``target_branch`` and is NEVER
-        # a second copy on the coordination worktree. Skip its copy2 staging path
-        # (mirroring the STATUS_STATE skip above) so a coord commit that
-        # happens to sweep it makes no coord residue. ``acceptance-matrix.json`` /
-        # ``issue-matrix.md`` STAY COORD and continue to be staged below.
-        #
-        # NOTE (coord-commit-integrity SURFACE A #2, DEFERRED): the operator asked
-        # to generalise this to a by-construction
-        # ``is_primary_artifact_kind(kind_for_mission_file(src))`` skip. That is
-        # UNSAFE as specified: this helper legitimately stages OTHER PRIMARY-kind
-        # planning artifacts (``tasks.md`` / ``lanes.json``) into the coord worktree
-        # for a combined commit — a pinned contract
-        # (``test_finalize_coord_staging.py`` / ``test_finalize_clobber_e2e.py``).
-        # There is no partition-derived distinction between ``analysis-report.md``
-        # (must-skip, re-homed) and ``tasks.md`` (must-stage), so a blanket
-        # primary-kind skip regresses those tests. Closing the "next re-home
-        # silently regresses" class requires first retiring the tasks.md/lanes.json
-        # → coord staging (a separate finalize-flow change); until then this stays
-        # the narrow, behaviour-correct analysis-report skip.
-        if src.name == _ANALYSIS_REPORT_FILENAME:
-            continue
+        # _StagePlan.COPY: ``dst`` is appended even when ``src`` is absent (no
+        # copy occurs, it is still listed) — only the copied pairs go into
+        # ``staged_sources`` (COPY-semantics hazard, brownfield scout round 3).
         dst = coord_worktree / rel
         if src.exists():
             dst.parent.mkdir(parents=True, exist_ok=True)
@@ -1066,27 +1162,7 @@ def _stage_artifacts_in_coord_worktree(
             staged_sources.append((src, dst))
         coord_files.append(dst)
 
-    if primary_paths_created_this_invocation:
-        for src, dst in staged_sources:
-            if src not in primary_paths_created_this_invocation:
-                continue
-            if not src.exists() or not dst.exists():
-                continue
-            try:
-                if src.read_bytes() != dst.read_bytes():
-                    logger.warning(
-                        "commit_router: residue cleanup skipped %s: primary copy diverged",
-                        src.relative_to(repo_root),
-                    )
-                    continue
-                src.unlink()
-            except OSError as exc:
-                logger.warning(
-                    "commit_router: residue cleanup failed for %s: %s",
-                    src.relative_to(repo_root),
-                    exc,
-                )
-
+    _cleanup_staging_residue(staged_sources, primary_paths_created_this_invocation, repo_root)
     return coord_files
 
 

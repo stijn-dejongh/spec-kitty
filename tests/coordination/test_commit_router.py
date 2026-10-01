@@ -1105,3 +1105,132 @@ def test_coord_status_dirs_names_only_status_files_inside_the_commit_worktree(tm
     )
 
     assert _coord_status_dirs(worktree, paths) == [a_dir, b_dir]
+
+
+# ---------------------------------------------------------------------------
+# T005 (campsite-clean WP01): focused tests for the extracted per-path
+# classifier and residue-cleanup helpers. The pre-existing
+# ``test_coord_staging_*`` tests above already pin the end-to-end behaviour of
+# ``_stage_artifacts_in_coord_worktree``; these tests pin the five-outcome
+# classification decision directly, one outcome per test.
+# ---------------------------------------------------------------------------
+
+
+def test_classify_stage_path_copies_a_plain_primary_artifact(tmp_path: Path) -> None:
+    """A path outside ``.worktrees/`` that is neither STATUS_STATE nor the
+    re-homed analysis report classifies as COPY (a "trace file" style artifact)."""
+    from specify_cli.coordination.commit_router import _StagePlan, _classify_stage_path
+
+    repo_root = tmp_path / "repo"
+    coord_worktree = tmp_path / "coord"
+    src = repo_root / "kitty-specs" / "001-demo" / "traces" / "approach.md"
+
+    assert _classify_stage_path(src, src.relative_to(repo_root), coord_worktree) is _StagePlan.COPY
+
+
+def test_classify_stage_path_skips_status_state_files(tmp_path: Path) -> None:
+    """A STATUS_STATE path outside ``.worktrees/`` classifies as SKIP_STATUS_LOG."""
+    from specify_cli.coordination.commit_router import _StagePlan, _classify_stage_path
+
+    repo_root = tmp_path / "repo"
+    coord_worktree = tmp_path / "coord"
+    src = repo_root / "kitty-specs" / "001-demo" / "status.events.jsonl"
+
+    assert _classify_stage_path(src, src.relative_to(repo_root), coord_worktree) is _StagePlan.SKIP_STATUS_LOG
+
+
+def test_classify_stage_path_skips_the_rehomed_analysis_report(tmp_path: Path) -> None:
+    """``analysis-report.md`` outside ``.worktrees/`` classifies as SKIP_ANALYSIS_REPORT (FR-003)."""
+    from specify_cli.coordination.commit_router import _StagePlan, _classify_stage_path
+
+    repo_root = tmp_path / "repo"
+    coord_worktree = tmp_path / "coord"
+    src = repo_root / "kitty-specs" / "001-demo" / "analysis-report.md"
+
+    assert _classify_stage_path(src, src.relative_to(repo_root), coord_worktree) is _StagePlan.SKIP_ANALYSIS_REPORT
+
+
+def test_classify_stage_path_keeps_a_path_already_in_this_worktree(tmp_path: Path) -> None:
+    """A path directly inside THIS coordination worktree classifies as IN_PLACE."""
+    from specify_cli.coordination.commit_router import _StagePlan, _classify_stage_path
+
+    repo_root = tmp_path / "repo"
+    coord_worktree = repo_root / ".worktrees" / "001-demo-coord"
+    src = coord_worktree / "kitty-specs" / "001-demo" / "status.events.jsonl"
+
+    assert _classify_stage_path(src, src.relative_to(repo_root), coord_worktree) is _StagePlan.IN_PLACE
+
+
+def test_classify_stage_path_drops_a_foreign_worktree_path(tmp_path: Path) -> None:
+    """A path under ``.worktrees/`` but NOT directly in this coordination worktree
+    (a sibling mission's coord worktree) classifies as DROP_FOREIGN_WORKTREE."""
+    from specify_cli.coordination.commit_router import _StagePlan, _classify_stage_path
+
+    repo_root = tmp_path / "repo"
+    coord_worktree = repo_root / ".worktrees" / "001-demo-coord"
+    src = repo_root / ".worktrees" / "002-other-coord" / "kitty-specs" / "002-other" / "status.events.jsonl"
+
+    assert _classify_stage_path(src, src.relative_to(repo_root), coord_worktree) is _StagePlan.DROP_FOREIGN_WORKTREE
+
+
+def test_classify_stage_path_drops_an_analysis_report_inside_this_worktree(tmp_path: Path) -> None:
+    """An ``analysis-report.md`` under ``.worktrees/`` is dropped even when it
+    lives directly in THIS coordination worktree — its only legitimate home is
+    the non-worktrees-segment SKIP_ANALYSIS_REPORT arm (FR-003)."""
+    from specify_cli.coordination.commit_router import _StagePlan, _classify_stage_path
+
+    repo_root = tmp_path / "repo"
+    coord_worktree = repo_root / ".worktrees" / "001-demo-coord"
+    src = coord_worktree / "kitty-specs" / "001-demo" / "analysis-report.md"
+
+    assert _classify_stage_path(src, src.relative_to(repo_root), coord_worktree) is _StagePlan.DROP_FOREIGN_WORKTREE
+
+
+def test_cleanup_staging_residue_does_nothing_when_no_paths_created_this_invocation(tmp_path: Path) -> None:
+    from specify_cli.coordination.commit_router import _cleanup_staging_residue
+
+    repo_root = tmp_path / "repo"
+    src = repo_root / "kitty-specs" / "001-demo" / "tasks.md"
+    src.parent.mkdir(parents=True)
+    src.write_text("x", encoding="utf-8")
+    dst = tmp_path / "coord" / "tasks.md"
+    dst.parent.mkdir(parents=True)
+    dst.write_text("x", encoding="utf-8")
+
+    _cleanup_staging_residue([(src, dst)], None, repo_root)
+
+    assert src.exists(), "nothing should be unlinked when primary_paths_created_this_invocation is falsy"
+
+
+def test_cleanup_staging_residue_unlinks_an_identical_created_source(tmp_path: Path) -> None:
+    """A primary source this invocation created IS unlinked once the coord copy matches."""
+    from specify_cli.coordination.commit_router import _cleanup_staging_residue
+
+    repo_root = tmp_path / "repo"
+    src = repo_root / "kitty-specs" / "001-demo" / "tasks.md"
+    src.parent.mkdir(parents=True)
+    src.write_text("same bytes", encoding="utf-8")
+    dst = tmp_path / "coord" / "tasks.md"
+    dst.parent.mkdir(parents=True)
+    dst.write_text("same bytes", encoding="utf-8")
+
+    _cleanup_staging_residue([(src, dst)], frozenset({src}), repo_root)
+
+    assert not src.exists()
+
+
+def test_cleanup_staging_residue_keeps_a_diverged_created_source(tmp_path: Path) -> None:
+    """A primary source whose coord copy has DIVERGED is kept, not unlinked."""
+    from specify_cli.coordination.commit_router import _cleanup_staging_residue
+
+    repo_root = tmp_path / "repo"
+    src = repo_root / "kitty-specs" / "001-demo" / "tasks.md"
+    src.parent.mkdir(parents=True)
+    src.write_text("primary bytes", encoding="utf-8")
+    dst = tmp_path / "coord" / "tasks.md"
+    dst.parent.mkdir(parents=True)
+    dst.write_text("different bytes", encoding="utf-8")
+
+    _cleanup_staging_residue([(src, dst)], frozenset({src}), repo_root)
+
+    assert src.exists(), "a diverged primary copy must never be unlinked"
