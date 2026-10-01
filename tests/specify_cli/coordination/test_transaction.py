@@ -1201,5 +1201,3 @@ def test_legacy_head_override_block_is_byte_unchanged() -> None:
         "charter directive; any change must go through an explicit, reviewed "
         "decision, not an incidental refactor."
     )
-
-

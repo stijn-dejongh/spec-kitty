@@ -45,7 +45,7 @@ from specify_cli.coordination.types import (
     Refused,
 )
 from specify_cli.coordination.workspace import CoordinationWorkspace
-from mission_runtime import CommitTarget, MissionArtifactKind, OwnedCheckout, placement_seam
+from mission_runtime import CommitTarget, Establishment, MissionArtifactKind, OwnedCheckout, placement_seam
 from specify_cli.core.commit_guard import GuardCapability
 from specify_cli.coordination.coord_seed import CoordSeedForkRefused
 from specify_cli.coordination.surface_resolver import (
@@ -170,7 +170,7 @@ def _resolve_coord_worktree_root_for_transaction(
     mission_slug: str,
     mid8: str,
     owned: OwnedCheckout | None,
-) -> Path:
+) -> tuple[Path, bool]:
     """Materialize/seed the coordination write location for the coordination arm.
 
     coord-artifact-single-home-01M3V4BE WP07 (T039): replaces the bare
@@ -208,6 +208,16 @@ def _resolve_coord_worktree_root_for_transaction(
     these types must keep catching them. Only a genuinely unexpected
     materialization failure is wrapped into :class:`BookkeepingWorktreeMissing`,
     matching the exception this call site always raised for that case.
+
+    coord-artifact-single-home-01M3V4BE WP07 (review cycle 2 R1): also
+    returns whether THIS call's own ``write_dir`` resolution just seeded or
+    restored a genuinely ``EMPTY`` coordination surface
+    (``establishment in (SEEDED, RESTORED_FROM_BRANCH)``) -- the caller
+    (``_acquire_locked``) threads this onto the transaction as
+    ``seed_committed_this_txn`` so :meth:`BookkeepingTransaction.
+    commit_idempotent` can tell "this transaction's OWN seed just committed
+    content I never staged" apart from "this Mission merely has pre-existing
+    history" (``events_path.exists()`` alone cannot -- it is true for both).
     """
     seam_repo_root = owned.repository_root if owned is not None else repo_root
     canonical_mission_slug = _canonical_coord_mission_slug(seam_repo_root, mission_slug, mid8, owned=owned)
@@ -232,7 +242,8 @@ def _resolve_coord_worktree_root_for_transaction(
         raise BookkeepingWorktreeMissing(
             f"Failed to resolve coordination worktree for {identity}: {exc}"
         ) from exc
-    return location.checkout_root
+    seed_committed_this_txn = location.establishment in (Establishment.SEEDED, Establishment.RESTORED_FROM_BRANCH)
+    return location.checkout_root, seed_committed_this_txn
 
 
 def _write_confined_artifact_bytes(
@@ -307,6 +318,7 @@ class BookkeepingTransaction(AbstractContextManager["BookkeepingTransaction"]):
         pre_emit_size: int,
         pre_emit_events_existed: bool,
         lock_cm: AbstractContextManager[Path],
+        seed_committed_this_txn: bool = False,
     ) -> None:
         # Note: most attributes are public-but-immutable-by-convention.
         # ``mypy --strict`` is satisfied because we do not annotate them
@@ -324,6 +336,7 @@ class BookkeepingTransaction(AbstractContextManager["BookkeepingTransaction"]):
         self._snapshot_path = snapshot_path
         self._pre_emit_size = pre_emit_size
         self._pre_emit_events_existed = pre_emit_events_existed
+        self._seed_committed_this_txn = seed_committed_this_txn
         self._lock_cm = lock_cm
 
         # Per-transaction mutable state.
@@ -453,6 +466,11 @@ class BookkeepingTransaction(AbstractContextManager["BookkeepingTransaction"]):
         safe_mid8 = _validate_safe_segment("mid8", mid8)
         effective_destination_ref = destination_ref
         effective_normalized_ref = normalised_ref
+        # Review cycle 2 R1: only the coordination arm below can ever set this
+        # True (it is the one arm that calls write_dir); every other arm
+        # (legacy, commit_to_primary_target) never seeds a coordination
+        # surface, so it stays False for them.
+        seed_committed_this_txn = False
 
         # Resolve the worktree.  Two paths exist (WP08 T035–T036, SC-11):
         #
@@ -584,7 +602,7 @@ class BookkeepingTransaction(AbstractContextManager["BookkeepingTransaction"]):
                 # location on first call (WP07 T039: the single write-location
                 # accessor, not a bare ``CoordinationWorkspace.resolve`` blind
                 # to ``EMPTY``).
-                worktree_root = _resolve_coord_worktree_root_for_transaction(
+                worktree_root, seed_committed_this_txn = _resolve_coord_worktree_root_for_transaction(
                     repo_root=repo_root,
                     mission_slug=safe_mission_slug,
                     mid8=safe_mid8,
@@ -661,6 +679,7 @@ class BookkeepingTransaction(AbstractContextManager["BookkeepingTransaction"]):
             snapshot_path=snapshot_path,
             pre_emit_size=pre_emit_size,
             pre_emit_events_existed=pre_emit_events_existed,
+            seed_committed_this_txn=seed_committed_this_txn,
             lock_cm=lock_cm,
         )
         txn._capability = capability
@@ -913,26 +932,37 @@ class BookkeepingTransaction(AbstractContextManager["BookkeepingTransaction"]):
         commit and by adversarial rollback callers), which must still surface an
         empty/failed changeset as :class:`BookkeepingCommitFailed`.
 
-        coord-artifact-single-home-01M3V4BE WP07 (review cycle 1 N1,
-        narrowed): the no-op guard no longer requires ``self._staged_paths``
-        to be non-empty -- but ONLY when the write location already carried
-        SOMETHING before this transaction (``self._pre_emit_events_existed``,
-        computed from ``events_path.exists()`` at acquire time, AFTER the
-        single write-location accessor's one-time seed had its chance to
-        materialize/restore the events file). That covers the genuine new
-        case this widening targets: the seed committed the caller's intended
-        content onto the coordination branch as a side effect of resolving
-        WHERE to write, before the caller ever decided whether it still
-        needed to ``write_artifact`` at all -- exactly as idempotent-safe as
-        a caller whose staged paths already match HEAD.
+        coord-artifact-single-home-01M3V4BE WP07 (review cycle 2 R1,
+        corrected): the no-op guard no longer requires ``self._staged_paths``
+        to be non-empty -- but ONLY when THIS transaction's OWN acquire just
+        seeded or restored a genuinely ``EMPTY`` coordination surface
+        (``self._seed_committed_this_txn``, set from the ``Establishment``
+        ``write_dir`` returned at acquire time -- ``SEEDED`` or
+        ``RESTORED_FROM_BRANCH``). Cycle 1's first attempt used
+        ``self._pre_emit_events_existed`` (``events_path.exists()`` at
+        acquire) instead, which is true for ANY Mission with existing status
+        history -- not only one whose SEED just committed content THIS
+        transaction never staged -- so it kept masking a genuinely empty
+        changeset against an existing-log Mission (review cycle 2 R1: the
+        reviewer's own probe, pinned by
+        ``test_commit_idempotent_still_raises_when_an_existing_log_mission_stages_nothing_new``).
+        ``seed_committed_this_txn`` answers the narrower, correct question:
+        did resolving WHERE to write, for THIS acquire, already commit the
+        caller's intended content onto the coordination branch before the
+        caller ever decided whether it still needed to ``write_artifact`` at
+        all -- exactly as idempotent-safe as a caller whose staged paths
+        already match HEAD.
 
         It does NOT cover a caller whose ``_staged_paths`` is empty because
-        nothing was ever written AND nothing pre-existed either (e.g.
-        ``implement.py``'s planning-artifact commit skips every requested
-        source that does not exist on disk, per its own ``continue``) --
+        nothing was ever written AND this acquire's own write_dir resolution
+        did not seed anything either (e.g. ``implement.py``'s planning-
+        artifact commit skips every requested source that does not exist on
+        disk, per its own ``continue``, against a Mission whose coordination
+        surface was already ``MATERIALIZED`` with no pending seed -- or
+        whose log already exists from an EARLIER, unrelated transaction) --
         that remains a genuine empty changeset and still falls through to
         :meth:`commit`, which raises :class:`BookkeepingCommitFailed` for it,
-        unchanged from before this WP.
+        unchanged from base.
         """
         if self._committed:
             if self._explicit_commit_receipt is None:
@@ -941,10 +971,11 @@ class BookkeepingTransaction(AbstractContextManager["BookkeepingTransaction"]):
                     "commit receipt was recorded"
                 )
             return self._explicit_commit_receipt
-        if not self._staged_paths and not self._pre_emit_events_existed:
-            # Genuinely nothing was ever written and nothing pre-existed at
-            # the write location either -- delegate to the strict path so an
-            # empty changeset still raises BookkeepingCommitFailed.
+        if not self._staged_paths and not self._seed_committed_this_txn:
+            # Genuinely nothing was ever written AND this transaction's own
+            # acquire did not seed anything either -- delegate to the strict
+            # path so an empty changeset still raises BookkeepingCommitFailed,
+            # regardless of whether the Mission has UNRELATED prior history.
             return self.commit(message)
         if not self._worktree_has_pending_changes():
             receipt = self._noop_commit_receipt()
