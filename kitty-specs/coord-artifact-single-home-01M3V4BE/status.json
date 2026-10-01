@@ -1,7 +1,7 @@
 {
-  "event_count": 4,
-  "last_event_id": "01M3VBZYXSKNY9WS61TZFWFYDY",
-  "materialized_at": "2026-10-01T09:16:12.089929+00:00",
+  "event_count": 5,
+  "last_event_id": "01M3VBZZZ7SJB43889515P9T9Z",
+  "materialized_at": "2026-10-01T09:16:13.159746+00:00",
   "mission_number": "",
   "mission_slug": "coord-artifact-single-home-01M3V4BE",
   "mission_type": "software-dev",
@@ -15,7 +15,7 @@
     "for_review": 0,
     "in_progress": 0,
     "in_review": 0,
-    "planned": 4
+    "planned": 5
   },
   "work_packages": {
     "WP01": {
@@ -45,6 +45,13 @@
       "lane": "planned",
       "last_event_id": "01M3VBZYXSKNY9WS61TZFWFYDY",
       "last_transition_at": "2026-10-01T09:16:12.089929+00:00"
+    },
+    "WP05": {
+      "actor": "finalize-tasks",
+      "force_count": 0,
+      "lane": "planned",
+      "last_event_id": "01M3VBZZZ7SJB43889515P9T9Z",
+      "last_transition_at": "2026-10-01T09:16:13.159746+00:00"
     }
   }
 }
