@@ -1249,13 +1249,32 @@ class _StagePlan(Enum):
       step may translate into a different action, while a foreign worktree
       path has no copy destination to translate.
     - ``COPY``: staged into the coordination worktree at the mirrored relative
-      path (the only outcome the caller still derives ``dst`` for). WP05 T027
-      (P-M2): for the remaining COORD kinds (``TRACER_FILE`` / ``REVIEW_CYCLE``
-      / ``ISSUE_MATRIX`` / ``ACCEPTANCE_MATRIX``) the act step first checks
-      whether the owning (coordination) copy already exists and, if so, uses
-      it in place of a fresh copy (the owning copy wins and is never
-      overwritten) — the legacy ``shutil.copy2`` only remains the fallback
-      while that owning copy is absent.
+      path (the only outcome the caller still derives ``dst`` for) — the
+      LEGACY ``shutil.copy2``, unconditional, for every non-log COORD kind
+      (``TRACER_FILE`` / ``REVIEW_CYCLE`` / ``ISSUE_MATRIX`` / ``ACCEPTANCE_
+      MATRIX``) as well as every PRIMARY-kind artifact this helper legitimately
+      stages into a combined commit (``tasks.md`` / ``lanes.json``).
+
+      **Reviewer ruling (WP05 cycle 1, B1, DECISION plan.design.translate-if-
+      present-kinds):** an earlier revision of this WP made the act step prefer
+      an EXISTING owning (coordination) copy over a fresh one for these four
+      kinds ("the owning copy wins"). That silently dropped every writer's
+      update for a kind whose writer still writes the ROOT copy (none of
+      TRACER_FILE/REVIEW_CYCLE/ISSUE_MATRIX/ACCEPTANCE_MATRIX has migrated to
+      ``write_dir`` yet — WP08 migrates REVIEW_CYCLE, WP10 migrates TRACER_FILE
+      and ISSUE_MATRIX, WP15 migrates ACCEPTANCE_MATRIX) — a real data-loss
+      regression (four integration guards went red:
+      ``test_accept_matrix_coord_partition.py``,
+      ``test_issue_verdict_coord_legacy_md_preservation.py`` (both),
+      ``test_issue_verdict_selfmat_hardening.py::test_materialized_coord_
+      verdicts_succeed``). REVERTED: these four kinds keep the unconditional
+      legacy overwrite (root always wins, exactly pre-WP05) until each kind's
+      writer is migrated to ``write_dir`` in its own WP, which is also where
+      the "owning copy wins" switch is re-introduced, one kind at a time.
+      STATUS_STATE / DECISION_LOG are UNAFFECTED by this reversion — they are
+      genuinely append-only logs with no legacy root writer at all, so T027's
+      owning-surface translation (never a copy, see the two SKIP members
+      above) is the correct behaviour for them from day one.
     """
 
     IN_PLACE = "in_place"
@@ -1270,19 +1289,6 @@ class _StagePlan(Enum):
 #: (never falls back to a copy, with or without ``mission_slug``).
 _STAGE_PLAN_LOGS: Final = frozenset({_StagePlan.SKIP_STATUS_LOG, _StagePlan.SKIP_DECISION_LOG})
 _STAGE_PLAN_NO_COPY: Final = frozenset({_StagePlan.DROP_FOREIGN_WORKTREE, _StagePlan.SKIP_ANALYSIS_REPORT})
-
-#: WP05 T027 (P-M2): the COORD kinds whose owning copy, once present, wins
-#: over a fresh copy -- ``shutil.copy2`` stays the fallback only while the
-#: owning copy is absent. Logs (``STATUS_STATE`` / ``DECISION_LOG``) are NOT
-#: here: they are handled unconditionally via :data:`_STAGE_PLAN_LOGS` above.
-_TRANSLATE_IF_PRESENT_KINDS: Final[frozenset[MissionArtifactKind]] = frozenset(
-    {
-        MissionArtifactKind.TRACER_FILE,
-        MissionArtifactKind.REVIEW_CYCLE,
-        MissionArtifactKind.ISSUE_MATRIX,
-        MissionArtifactKind.ACCEPTANCE_MATRIX,
-    }
-)
 
 
 def _classify_stage_path(src: Path, rel: Path, coord_worktree: Path) -> _StagePlan:
@@ -1518,24 +1524,14 @@ def _act_on_stage_plan(
         return translated, None
     if plan in _STAGE_PLAN_NO_COPY:
         return None, None
-    # plan is COPY: a plain primary artifact, OR one of the "translate if
-    # present" COORD kinds (P-M2) — the owning copy, once present, wins over a
-    # fresh copy; the legacy copy2 stays the fallback only while it is absent.
-    #
-    # Deliberately NOT routed through ``write_dir`` (unlike the two log plans
-    # above): ``_materialise_coord_worktree`` already resolved *coord_worktree*
-    # on disk before staging ever runs, so the mirrored
-    # ``coord_worktree / rel`` path IS this kind's owning path (identical to
-    # the legacy copy2 destination these kinds have always used) -- a
-    # side-effect-free existence PEEK. Calling ``write_dir`` here instead would
-    # eagerly MATERIALIZE/SEED the coordination surface merely to check
-    # presence (write_dir's seed itself commits), turning a would-be
-    # "committed" outcome into a spurious "unchanged" one for a kind that
-    # never had the #5513 skip-and-lose-it bug in the first place.
-    if mission_slug is not None and kind_for_mission_file(rel) in _TRANSLATE_IF_PRESENT_KINDS:
-        owning = coord_worktree / rel
-        if owning.exists():
-            return owning, None
+    # plan is COPY: a plain primary artifact, OR one of the four non-log COORD
+    # kinds (TRACER_FILE / REVIEW_CYCLE / ISSUE_MATRIX / ACCEPTANCE_MATRIX) --
+    # the UNCONDITIONAL legacy ``shutil.copy2`` overwrite, exactly pre-WP05
+    # (reviewer ruling B1 / DECISION plan.design.translate-if-present-kinds:
+    # see the _StagePlan.COPY docstring for why "owning copy wins" was
+    # reverted for these four kinds -- none of their writers has migrated to
+    # write_dir yet, so preferring an existing coordination copy silently
+    # drops the writer's root-copy update).
     return _copy_into(src, coord_worktree / rel)
 
 
@@ -1602,9 +1598,14 @@ def _stage_artifacts_in_coord_worktree(
       owning (coordination) copy instead of skipping it (WP05 T027, D7) — ONLY
       when ``mission_slug`` is given; a 3-positional caller with no ``meta.json``
       fixture keeps the historical bare skip (#1589).
-    - For ``TRACER_FILE`` / ``REVIEW_CYCLE`` / ``ISSUE_MATRIX`` / ``ACCEPTANCE_MATRIX``,
-      preferring an EXISTING owning copy over a fresh ``shutil.copy2`` (P-M2);
-      the legacy copy stays the fallback only while that owning copy is absent.
+    - ``TRACER_FILE`` / ``REVIEW_CYCLE`` / ``ISSUE_MATRIX`` / ``ACCEPTANCE_MATRIX``
+      keep the UNCONDITIONAL legacy ``shutil.copy2`` overwrite (reviewer ruling
+      B1 / DECISION plan.design.translate-if-present-kinds, WP05 cycle 1): none
+      of their writers has migrated to ``write_dir`` yet, so "prefer the
+      existing coordination copy" would silently drop every writer's root-copy
+      update. The "owning copy wins" switch moves to the WP that migrates each
+      kind's writer (WP08: review-cycle; WP10: tracer, issue-matrix; WP15:
+      finalize, acceptance-matrix), one kind at a time.
     - Skipping the re-homed ``analysis-report.md`` (FR-003) — see
       :func:`_classify_stage_path`.
     - Skipping worktrees-nested paths (#FR-035).

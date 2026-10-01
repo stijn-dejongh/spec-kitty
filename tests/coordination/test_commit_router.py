@@ -1553,18 +1553,25 @@ def test_act_on_stage_plan_translates_a_log_with_mission_slug_via_write_dir(tmp_
     resolve_write_dir.assert_called_once()
 
 
-def test_act_on_stage_plan_translate_if_present_kind_uses_existing_owning_copy_without_copying(tmp_path: Path) -> None:
-    """An ``ISSUE_MATRIX`` whose owning (coordination) copy already exists wins -- never overwritten, no write_dir call."""
+def test_act_on_stage_plan_non_log_coord_kind_unconditionally_overwrites_the_owning_copy(tmp_path: Path) -> None:
+    """Reviewer ruling B1 (WP05 cycle 1, DECISION plan.design.translate-if-present-kinds).
+
+    An ``ISSUE_MATRIX`` root copy ALWAYS overwrites an existing coordination
+    copy -- the legacy behaviour, unconditional, exactly pre-WP05. No writer
+    for this kind has migrated to ``write_dir`` yet (WP10 does), so preferring
+    the existing coordination copy would silently drop the writer's update;
+    ``_resolve_owning_write_dir`` (``write_dir``) is never called for this plan.
+    """
     from specify_cli.coordination.commit_router import _StagePlan, _act_on_stage_plan
 
     repo_root = tmp_path / "repo"
     coord_worktree = tmp_path / "coord"
     src = repo_root / "kitty-specs" / "001-demo" / "issue-matrix.md"
     src.parent.mkdir(parents=True)
-    src.write_text("stale root copy\n", encoding="utf-8")
+    src.write_text("fresh root copy\n", encoding="utf-8")
     owning = coord_worktree / "kitty-specs" / "001-demo" / "issue-matrix.md"
     owning.parent.mkdir(parents=True)
-    owning.write_text("authoritative coord copy\n", encoding="utf-8")
+    owning.write_text("stale coord copy\n", encoding="utf-8")
 
     with patch("specify_cli.coordination.commit_router._resolve_owning_write_dir") as resolve_write_dir:
         coord_file, staged_pair = _act_on_stage_plan(
@@ -1572,13 +1579,13 @@ def test_act_on_stage_plan_translate_if_present_kind_uses_existing_owning_copy_w
         )
 
     assert coord_file == owning
-    assert staged_pair is None
-    assert owning.read_text(encoding="utf-8") == "authoritative coord copy\n", "the owning copy must never be overwritten by the stale root copy"
+    assert staged_pair == (src, owning)
+    assert owning.read_text(encoding="utf-8") == "fresh root copy\n", "the legacy writer's root copy must overwrite the coordination copy (B1 revert)"
     resolve_write_dir.assert_not_called()
 
 
-def test_act_on_stage_plan_translate_if_present_kind_falls_back_to_copy_when_absent(tmp_path: Path) -> None:
-    """A ``TRACER_FILE`` whose owning copy is ABSENT falls back to the legacy ``shutil.copy2`` (unchanged behaviour)."""
+def test_act_on_stage_plan_non_log_coord_kind_copies_when_owning_is_absent(tmp_path: Path) -> None:
+    """A ``TRACER_FILE`` whose owning copy is ABSENT is copied there (legacy ``shutil.copy2``, unchanged behaviour)."""
     from specify_cli.coordination.commit_router import _StagePlan, _act_on_stage_plan
 
     repo_root = tmp_path / "repo"
