@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from specify_cli.coordination.commit_outcome import PathFate, SurfaceOutcome
 from specify_cli.coordination.commit_router import CommitRouterResult
 from specify_cli.git import report_transaction
 from specify_cli.git.report_transaction import _dirty_paths, _git, _index, _working
@@ -148,6 +149,43 @@ def test_commit_report_raises_unless_cleanly_committed(tmp_path: Path, monkeypat
     monkeypatch.setattr(report_transaction, "commit_for_mission", lambda **_kwargs: outcome)
 
     with pytest.raises(ValueError, match=re.escape(expected_message)):
+        report_transaction._commit_report(
+            repo_root=tmp_path, feature_dir=tmp_path / "kitty-specs" / "m", report=tmp_path / "analysis-report.md", message="msg", target_branch="work"
+        )
+
+
+@pytest.mark.unit
+def test_commit_report_raises_when_a_non_caller_surface_is_refused_despite_committed_status(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """WP14 review correction (round 2, binding): the legacy top-level ``status``
+
+    is only the CALLER-partition projection (contract rule 4) -- a
+    ``"committed"`` top-level status must never be trusted alone when a SPLIT
+    batch's OTHER surface was refused. ``_commit_report`` must cross-check
+    ``commit_outcome_exit_code`` against every surface, not just inspect
+    ``outcome.status``.
+
+    Mutation-sensitive: deleting the ``commit_outcome_exit_code(outcome) != 0``
+    clause from ``_commit_report`` (leaving only the ``status`` / ``commit_hash``
+    checks) makes this test fail, because ``status`` here IS ``"committed"``.
+    """
+    mixed = CommitRouterResult(
+        status="committed",
+        placement_ref="refs/heads/work",
+        commit_hash="abc1234567890",
+        surfaces=(
+            SurfaceOutcome(surface="primary", branch="refs/heads/work", status="committed", commit_hash="abc1234567890", committed=("report.md",)),
+            SurfaceOutcome(
+                surface="coordination",
+                branch="kitty/mission-m-01ABCDEF",
+                status="refused",
+                commit_hash=None,
+                refused=(PathFate(path="kitty-specs/m/status.events.jsonl", reason="STATUS_LOCK_HELD"),),
+            ),
+        ),
+    )
+    monkeypatch.setattr(report_transaction, "commit_for_mission", lambda **_kwargs: mixed)
+
+    with pytest.raises(ValueError, match=re.escape("Report commit did not complete: committed")):
         report_transaction._commit_report(
             repo_root=tmp_path, feature_dir=tmp_path / "kitty-specs" / "m", report=tmp_path / "analysis-report.md", message="msg", target_branch="work"
         )

@@ -309,7 +309,10 @@ def _render_unexplained_surfaces(result: CommitRouterResult, *, protected_target
     if not any(outcome.status not in ("committed", "unchanged") for outcome in remaining):
         return False
     for line in render_commit_outcome(_SurfacesView(remaining)):
-        _err_console.print(line, soft_wrap=True)
+        # WP14 review correction (round 2 / WP13 precedent): a branch name,
+        # path or diagnostic can carry literal `[...]` -- render as plain
+        # text, never Rich markup.
+        _err_console.print(line, soft_wrap=True, markup=False)
     return True
 
 

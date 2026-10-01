@@ -18,7 +18,7 @@ from __future__ import annotations
 from pathlib import Path
 import subprocess
 import sys
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Literal, cast
 
 if TYPE_CHECKING:
     from specify_cli.coordination.commit_router import CommitRouterResult
@@ -238,7 +238,85 @@ def _warn_on_incomplete_surfaces(result: CommitRouterResult, *, json_output: boo
     if not any(outcome.status not in ("committed", "unchanged") for outcome in result.surfaces):
         return
     for line in render_commit_outcome(result):
-        console.print(line)
+        # WP14 review correction (round 2 / WP13 precedent): a branch name,
+        # path or diagnostic can carry literal `[...]` -- render as plain
+        # text, never Rich markup, so it is never mis-parsed or dropped.
+        console.print(line, markup=False)
+
+
+def _print_report_transaction_payload(payload: dict[str, object]) -> None:
+    """Render ``record_report_transaction``'s payload for text mode.
+
+    WP14 (contracts/commit-outcome.md rule 6): when the payload carries the
+    additive ``surfaces`` key (populated on the successful-commit path), the
+    per-surface outcome renders through the shared ``render_commit_outcome``
+    -- reconstructing the exact typed ``SurfaceOutcome``/``PathFate`` objects
+    ``commit_outcome_payload`` serialized them from (never re-deriving text
+    from the dict by hand) -- instead of printing the raw payload dict.
+    Every other shape (the dirty-input short-circuit, the unchanged no-op,
+    and the exception-handler's error dict) never carried router output at
+    all, so it keeps the pre-existing raw-dict print.
+    """
+    surfaces_payload = payload.get("surfaces")
+    if not isinstance(surfaces_payload, list) or not surfaces_payload:
+        console.print(payload)
+        return
+
+    from specify_cli.coordination.commit_outcome import PathFate, SurfaceOutcome, render_commit_outcome
+
+    def _str(mapping: dict[str, object], key: str) -> str:
+        value = mapping[key]
+        if not isinstance(value, str):
+            raise TypeError(f"expected a string for {key!r}, got {type(value).__name__}")
+        return value
+
+    def _str_or_none(mapping: dict[str, object], key: str) -> str | None:
+        value = mapping.get(key)
+        return value if isinstance(value, str) else None
+
+    def _fates(entries: object) -> tuple[PathFate, ...]:
+        if not isinstance(entries, list):
+            return ()
+        fates: list[PathFate] = []
+        for raw in entries:
+            if not isinstance(raw, dict):
+                continue
+            fates.append(PathFate(path=_str(raw, "path"), reason=_str(raw, "reason"), owning_path=_str_or_none(raw, "owning_path")))
+        return tuple(fates)
+
+    surfaces: list[SurfaceOutcome] = []
+    for raw_entry in surfaces_payload:
+        if not isinstance(raw_entry, dict):
+            continue
+        surface_name = _str(raw_entry, "surface")
+        status = _str(raw_entry, "status")
+        if surface_name not in ("primary", "coordination") or status not in ("committed", "unchanged", "refused", "error"):
+            continue
+        committed_raw = raw_entry.get("committed")
+        committed = tuple(item for item in committed_raw if isinstance(item, str)) if isinstance(committed_raw, list) else ()
+        surfaces.append(
+            SurfaceOutcome(
+                surface=cast(Literal["primary", "coordination"], surface_name),
+                branch=_str(raw_entry, "branch"),
+                status=cast(Literal["committed", "unchanged", "refused", "error"], status),
+                commit_hash=_str_or_none(raw_entry, "commit_hash"),
+                committed=committed,
+                skipped=_fates(raw_entry.get("skipped")),
+                refused=_fates(raw_entry.get("refused")),
+                diagnostic=_str_or_none(raw_entry, "diagnostic"),
+            )
+        )
+    for line in render_commit_outcome(_SurfacesOnly(tuple(surfaces))):
+        # WP14 review correction (round 2): a branch name, path or diagnostic
+        # can carry literal `[...]` -- render as plain text, never Rich markup.
+        console.print(line, markup=False)
+
+
+class _SurfacesOnly:
+    """A minimal ``surfaces``-only view for :func:`render_commit_outcome`."""
+
+    def __init__(self, surfaces: tuple[object, ...]) -> None:
+        self.surfaces = surfaces
 
 
 def _commit_analysis_report(
@@ -395,7 +473,7 @@ def record_analysis(
             if json_output:
                 _emit_json(payload)
             else:
-                console.print(payload)
+                _print_report_transaction_payload(payload)
             if not payload["success"]:
                 raise typer.Exit(1)
             return

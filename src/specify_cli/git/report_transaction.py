@@ -25,6 +25,7 @@ from specify_cli.analysis_report import (
     report_semantics,
     write_analysis_report,
 )
+from specify_cli.coordination.commit_outcome import commit_outcome_exit_code, commit_outcome_payload
 from specify_cli.coordination.commit_router import CommitRouterResult, commit_for_mission
 from specify_cli.core.atomic import atomic_write
 from specify_cli.git.commit_helpers import preflight_commit
@@ -175,7 +176,14 @@ def _commit_report(
         kind=MissionArtifactKind.ANALYSIS_REPORT,
         target_branch=target_branch,
     )
-    if outcome.status != "committed" or outcome.commit_hash is None:
+    # WP14 review correction (round 2, binding -- the WP13 precedent this
+    # mission's spec_commit_cmd.py consumer was rejected over): the legacy
+    # top-level ``status`` is only the CALLER-partition projection
+    # (contract rule 4) -- a ``"committed"`` top-level status can still hide
+    # a refused/errored OTHER surface in a split batch. Never derive
+    # success/failure from ``status`` alone; always cross-check
+    # ``commit_outcome_exit_code`` (contract rule 5) against every surface.
+    if outcome.status != "committed" or outcome.commit_hash is None or commit_outcome_exit_code(outcome) != 0:
         raise ValueError(outcome.diagnostic or f"Report commit did not complete: {outcome.status}")
     return outcome
 
@@ -259,7 +267,7 @@ def record_report_transaction(*, repo_root: Path, feature_dir: Path, body: str, 
         ):
             raise ValueError("Post-commit verification failed; retained commit requires recovery")
         atomic_write(receipt_path, json.dumps({"state": "qualified", "report": relative, "sha256": report_hash, "commit": committed}))
-        return {**result.to_dict(), "success": True, "commit_status": "committed", "commit_hash": committed}
+        return {**result.to_dict(), "success": True, "commit_status": "committed", "commit_hash": committed, **commit_outcome_payload(outcome)}
     except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as exc:
         if wrote and committed is None and head is not None:
             # A failing post-commit hook/router can throw after Git advanced.

@@ -135,7 +135,10 @@ def _warn_on_incomplete_surfaces(result: CommitRouterResult, *, json_output: boo
     if not any(outcome.status not in ("committed", "unchanged") for outcome in result.surfaces):
         return
     for line in render_commit_outcome(result):
-        console.print(line)
+        # WP14 review correction (round 2 / WP13 precedent): a branch name,
+        # path or diagnostic can carry literal `[...]` -- render as plain
+        # text, never Rich markup.
+        console.print(line, markup=False)
 
 
 def _warn_commit_failed(
@@ -269,6 +272,17 @@ def _commit_to_branch(
         target_branch=_target_branch,
         owned=owned,
     )
+
+    # WP14 review correction (round 2, binding -- the WP13 precedent this
+    # mission's spec_commit_cmd.py consumer was rejected over): render EVERY
+    # surface through the shared render_commit_outcome on every outcome arm
+    # (committed, unchanged, no_op_wrong_surface, error) when the router
+    # populated any, so a split batch's non-caller surface is never hidden
+    # behind this arm's own caller-surface-only message. Additive, ahead of
+    # each arm's existing (and still-firing) actionable line/behaviour.
+    if not json_output and router_result.surfaces:
+        for line in render_commit_outcome(router_result):
+            console.print(line, markup=False)
 
     if router_result.status == "committed":
         if not json_output:
