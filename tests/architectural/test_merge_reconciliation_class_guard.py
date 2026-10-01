@@ -76,9 +76,7 @@ _AUTHORITATIVE_ARTIFACT_TOKENS: tuple[str, ...] = ("events", "meta", "trace")
 
 # A write argument that is one of these is a raw *foreign* read passed straight
 # through to the target (a blind copy), rather than a reconciled value.
-_RAW_READ_CALLEES: frozenset[str] = frozenset(
-    {"_read_optional_bytes", "read_bytes", "read_text"}
-)
+_RAW_READ_CALLEES: frozenset[str] = frozenset({"_read_optional_bytes", "read_bytes", "read_text"})
 
 
 # ---------------------------------------------------------------------------
@@ -142,9 +140,7 @@ def test_no_blind_copy_of_foreign_source_onto_authoritative_target() -> None:
         offenders.extend(
             f"{source.relative_to(SRC_ROOT)}:{node.lineno}"
             for node in ast.walk(tree)
-            if isinstance(node, ast.Call)
-            and _is_authoritative_target_write(node)
-            and _arg_is_raw_foreign_read(node)
+            if isinstance(node, ast.Call) and _is_authoritative_target_write(node) and _arg_is_raw_foreign_read(node)
         )
     assert not offenders, (
         "Blind copy of a foreign source onto an authoritative both-sides-divergent "
@@ -182,25 +178,14 @@ def test_declared_merge_drivers_are_registered_in_gitattributes() -> None:
     registered = _gitattributes_merge_drivers()
     declared = {driver.pattern: driver.config_key for driver in _MERGE_DRIVERS}
 
-    unregistered = [
-        f"{pattern} merge={key}"
-        for pattern, key in declared.items()
-        if registered.get(pattern) != key
-    ]
+    unregistered = [f"{pattern} merge={key}" for pattern, key in declared.items() if registered.get(pattern) != key]
     assert not unregistered, (
         "Merge driver declared in specify_cli.lanes.consolidation._MERGE_DRIVERS but not "
         f"registered in root .gitattributes (#2709 re-inheritance risk): {unregistered}"
     )
 
-    orphaned = [
-        f"{pattern} merge={key}"
-        for pattern, key in registered.items()
-        if key.startswith("spec-kitty-") and declared.get(pattern) != key
-    ]
-    assert not orphaned, (
-        "Spec Kitty merge driver registered in .gitattributes with no matching "
-        f"_MERGE_DRIVERS declaration (drift): {orphaned}"
-    )
+    orphaned = [f"{pattern} merge={key}" for pattern, key in registered.items() if key.startswith("spec-kitty-") and declared.get(pattern) != key]
+    assert not orphaned, f"Spec Kitty merge driver registered in .gitattributes with no matching _MERGE_DRIVERS declaration (drift): {orphaned}"
 
 
 # Canonical artifacts the mission classifies as NOT both-sides-divergent, so a
@@ -254,10 +239,7 @@ def _canonical_artifact_file_globs() -> dict[str, MissionArtifactKind]:
     completeness lint below (non-tautology). Directory kinds (``tasks/``,
     ``checklists/`` — human-authored planning collections) are handled separately.
     """
-    return {
-        f"kitty-specs/**/{filename}": kind
-        for filename, kind in _MISSION_FILE_KIND_BY_BASENAME.items()
-    }
+    return {f"kitty-specs/**/{filename}": kind for filename, kind in _MISSION_FILE_KIND_BY_BASENAME.items()}
 
 
 # Directory-kind coordination residues that are human-authored planning
@@ -317,18 +299,23 @@ _NON_DIVERGENT_COORD_RESIDUE_DIRS: frozenset[str] = frozenset(
     {
         "tasks",
         "checklists",
-        # #3928: the Decision Moment ledger directory (``decisions/index.json``
-        # + ``decisions/DM-<ulid>.md``, ``decisions/store.py``) -- SINGLE-WRITER
-        # coordination bookkeeping, not both-sides-divergent: Decision Moments
-        # are opened/resolved only by the decisions service during the
-        # charter/specify/plan interview flows (``OriginFlow`` has no implement
-        # lane), the manual ``spec-kitty decision`` command, and Slack-extraction
-        # resolve in ``widen/review.py`` -- one writer path, never independent
-        # target-side appends like ``traces/``. Each ``DM-<ulid>.md`` is a
-        # one-shot write under a ULID-unique name (no filename collision to
-        # union), and ``index.json`` is an atomic single-writer rewrite -- the
-        # ``issue-matrix.md`` single-writer coordination class, not the #2709
-        # ``traces`` append class.
+        # coord-artifact-single-home-01M3V4BE WP12 (FR-009/FR-009b, #5023): the
+        # Decision Moment ledger directory (``decisions/index.json`` +
+        # ``decisions/DM-<ulid>.md``, ``decisions/store.py``) is now a
+        # PRIMARY-partition kind (``DECISION_LEDGER``, re-homed from COORD) --
+        # it is no longer coordination-residue bookkeeping at all. It STAYS in
+        # this (non-divergent) set rather than moving to the divergent one:
+        # this guard hard-asserts ``divergent_dirs == {"traces"}`` and requires
+        # a ``kitty-specs/**/<dir>/*.md`` driver per divergent dir, but
+        # ``DM-<ulid>.md`` files are ULID-unique one-shot writes with no
+        # filename collision to union, so no ``decisions/*.md`` driver exists
+        # or is needed. ``index.json`` IS concurrently writable across lane
+        # branches now that it travels as a PRIMARY artifact, so it carries
+        # WP11's ``spec-kitty-decision-index`` union-merge driver (verified
+        # registered below, via the ``_MERGE_DRIVERS`` registry rather than a
+        # literal). The directory-kind classifier
+        # (``_COORD_RESIDUE_DIRS["decisions"]``) still maps this dir to the
+        # ``DECISION_LEDGER`` kind -- only the kind's PARTITION moved.
         "decisions",
     }
 )
@@ -383,6 +370,33 @@ def test_both_sides_divergent_canonical_artifacts_carry_merge_driver() -> None:
         "-X theirs`. Register a reconcile driver (C-006) or, if genuinely "
         "single-writer/derived/human-source, classify in "
         f"_NON_DIVERGENT_CANONICAL_ARTIFACTS: {uncovered}"
+    )
+
+
+def test_decision_ledger_index_driver_is_registered() -> None:
+    """WP12 (FR-009b, ``plan.design.merge-class-guard-set``): the decision-index driver.
+
+    ``decisions`` stays in ``_NON_DIVERGENT_COORD_RESIDUE_DIRS`` (see its
+    comment above), but ``index.json`` is concurrently writable across lane
+    branches now that the ledger is a PRIMARY-partition artifact -- WP11's
+    ``spec-kitty-decision-index`` merge driver MUST be registered for it.
+    Resolved through the ``_MERGE_DRIVERS`` registry's ``config_key``, never a
+    literal driver name, so a future rename cannot silently desync this
+    assertion from the real registration.
+    """
+    registered_patterns = _gitattributes_merge_drivers()
+    decision_index_driver = next(
+        (driver for driver in _MERGE_DRIVERS if driver.pattern.endswith("decisions/index.json")),
+        None,
+    )
+    assert decision_index_driver is not None, (
+        "no _MERGE_DRIVERS entry covers decisions/index.json -- WP11's "
+        "spec-kitty-decision-index driver must be registered before the "
+        "ledger travels with lane branches as a PRIMARY-partition artifact "
+        "(FR-009b)"
+    )
+    assert registered_patterns.get(decision_index_driver.pattern) == decision_index_driver.config_key, (
+        f"decisions/index.json merge driver {decision_index_driver.config_key!r} is declared in _MERGE_DRIVERS but not registered in root .gitattributes"
     )
 
 
@@ -549,11 +563,7 @@ def _init_seed_attribute_lines() -> set[str]:
     constant), NOT a hardcoded list — a NEW driver constant is picked up
     automatically, and a registry driver with NO init constant trips the lint.
     """
-    return {
-        value
-        for value in vars(_init_command).values()
-        if isinstance(value, str) and _MERGE_ATTRIBUTES_LINE.match(value)
-    }
+    return {value for value in vars(_init_command).values() if isinstance(value, str) and _MERGE_ATTRIBUTES_LINE.match(value)}
 
 
 def _migration_seed_attribute_lines() -> set[str]:
