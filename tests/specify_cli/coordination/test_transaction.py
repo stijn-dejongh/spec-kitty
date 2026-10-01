@@ -1037,14 +1037,13 @@ def test_commit_idempotent_raises_if_committed_without_receipt(repo: Path) -> No
             txn.commit_idempotent("status: should not happen")
 
 
-def test_commit_idempotent_still_raises_when_every_requested_path_is_missing(repo: Path) -> None:
-    """Review cycle 1 N1: a caller whose ``_staged_paths`` is empty because
-    nothing was ever written AND nothing pre-existed at the write location
-    either (a genuine empty changeset -- e.g. ``implement.py``'s planning-
-    artifact commit, which skips every requested source that does not exist
-    on disk) must still raise :class:`BookkeepingCommitFailed`, not silently
-    no-op. This fixture's fresh coord worktree has no pre-fix root content to
-    seed, so ``_pre_emit_events_existed`` is ``False``."""
+def test_commit_idempotent_still_raises_on_a_fresh_worktree_with_no_log_at_all(repo: Path) -> None:
+    """Review cycle 1 N1 (renamed in cycle 2 -- the original name overclaimed,
+    per the reviewer's cycle-2 finding: this pins only the NO-LOG shape, not
+    every genuinely-empty-changeset shape). A caller whose ``_staged_paths``
+    is empty on a fresh coord worktree that has never had ANY status log at
+    all (no pre-fix root content to seed) must still raise
+    :class:`BookkeepingCommitFailed`, not silently no-op."""
     with BookkeepingTransaction.acquire(
         repo_root=repo,
         mission_id=MISSION_ID,
@@ -1054,9 +1053,44 @@ def test_commit_idempotent_still_raises_when_every_requested_path_is_missing(rep
         operation="commit_idempotent_genuinely_empty",
     ) as txn:
         assert not txn._staged_paths
-        assert not txn._pre_emit_events_existed
         with pytest.raises(BookkeepingCommitFailed, match="no events or artifacts"):
             txn.commit_idempotent("status: should not happen")
+
+
+def test_commit_idempotent_still_raises_when_an_existing_log_mission_stages_nothing_new(repo: Path) -> None:
+    """Review cycle 2 R1 (reviewer's own probe): ``_pre_emit_events_existed``
+    (``events_path.exists()`` at acquire) is True for ANY Mission with
+    existing status history -- not only one whose SEED just committed
+    content this transaction never staged. A second transaction against a
+    Mission whose coordination log already exists (from an EARLIER,
+    unrelated transaction, not this one's own seed) and which stages
+    nothing new (the ``implement.py:1014`` all-sources-missing shape) must
+    still raise :class:`BookkeepingCommitFailed`, exactly as base
+    ``e7b085d26c`` does -- never a silent no-op receipt."""
+    _write_modern_meta(repo)
+    with BookkeepingTransaction.acquire(
+        repo_root=repo,
+        mission_id=MISSION_ID,
+        mission_slug=MISSION_SLUG,
+        mid8=MID8,
+        destination_ref=COORD_BRANCH,
+        operation="seed_an_existing_log",
+    ) as txn1:
+        txn1.append_event(_make_event())
+        txn1.commit("status: seed an existing log")
+
+    with BookkeepingTransaction.acquire(
+        repo_root=repo,
+        mission_id=MISSION_ID,
+        mission_slug=MISSION_SLUG,
+        mid8=MID8,
+        destination_ref=COORD_BRANCH,
+        operation="stage_nothing_new",
+    ) as txn2:
+        assert not txn2._staged_paths
+        assert txn2._pre_emit_events_existed  # true for ANY mission with history
+        with pytest.raises(BookkeepingCommitFailed, match="no events or artifacts"):
+            txn2.commit_idempotent("status: should not happen")
 
 
 def test_nested_lock_attempt_times_out_from_other_thread(repo: Path) -> None:
