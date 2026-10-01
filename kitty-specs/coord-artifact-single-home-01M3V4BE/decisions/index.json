@@ -1,0 +1,54 @@
+{
+  "entries": [
+    {
+      "created_at": "2026-10-01T07:02:55.233476Z",
+      "decision_id": "01M3V4BXG1EP7JX83TM5K6WSJ8",
+      "final_answer": "Classify as PRIMARY: DECISION_LEDGER (DM-*.md + index.json) moves to the PRIMARY partition, matching where it is read and written today; decision events stay in the COORD status log; doctor joins the two through the seam; ADR amendment records the reversal of the #3928 intent.",
+      "input_key": "decision_ledger_partition",
+      "mission_id": "01M3V4BEWYPR3TP9N6A95A44KN",
+      "mission_slug": "coord-artifact-single-home-01M3V4BE",
+      "opened_by": "cli",
+      "options": [
+        "Classify as PRIMARY",
+        "Move reads/writes to COORD",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "#5023: reconcile the decision ledger (DM-*.md, index.json) by moving its classification to PRIMARY (matching where it is read and written today), or by moving its reads and writes to the coordination surface (matching its current COORD classification)?",
+      "rationale": null,
+      "resolved_at": "2026-10-01T07:06:41.648010Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.decision-ledger-partition",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    },
+    {
+      "created_at": "2026-10-01T07:02:57.143492Z",
+      "decision_id": "01M3V4BZBQBA8RGHDJ7T3XSKCH",
+      "final_answer": "Detect + guide, no auto-merge: doctor reports an already-forked log precisely, --repair never drops data, and the output tells the operator how to reconcile; automatic Lamport re-sequencing is out of scope (#4941).",
+      "input_key": "forked_log_recovery",
+      "mission_id": "01M3V4BEWYPR3TP9N6A95A44KN",
+      "mission_slug": "coord-artifact-single-home-01M3V4BE",
+      "opened_by": "cli",
+      "options": [
+        "Detect + guide, no auto-merge",
+        "Auto-merge forked logs",
+        "Other"
+      ],
+      "origin_flow": "specify",
+      "other_answer": false,
+      "question": "For coordination missions whose status/decision log is ALREADY forked across primary and coordination: is detection plus operator guidance enough (doctor reports the fork, repair never drops data), or must the mission also merge the forked logs automatically?",
+      "rationale": null,
+      "resolved_at": "2026-10-01T07:06:43.550193Z",
+      "resolved_by": null,
+      "slot_key": "specify.scope.forked-log-recovery",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
+    }
+  ],
+  "mission_id": "01M3V4BEWYPR3TP9N6A95A44KN",
+  "version": 1
+}
