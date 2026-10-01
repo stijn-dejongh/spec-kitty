@@ -617,13 +617,23 @@ def _commit_partition_group(
 
     if use_coord:
         try:
-            # NOTE: ``owned`` is NOT threaded into this call. Owned Missions
-            # cannot be coordination-routed today (``LIFECYCLE_OWNED_TOPOLOGIES
-            # == {SINGLE_BRANCH}``, brownfield scout round 3 CORRECTION), so
-            # ``owned`` is always ``None`` here in practice; several existing
-            # unit fixtures (outside this WP's ownership) stub
+            # NOTE (reviewer ruling L1, WP05 cycle 1): ``owned`` is NOT
+            # threaded into this call. The real guarantee this arm can never
+            # see ``owned is not None`` is ``use_coord = owned is None and
+            # routes_through_coordination(topology)`` in
+            # ``_resolve_group_placement`` ABOVE -- a gate owned entirely by
+            # THIS module, true regardless of which owned topologies a
+            # caller is later allowed to request. (``core.owned_mission.
+            # LIFECYCLE_OWNED_TOPOLOGIES`` happens to be ``{SINGLE_BRANCH}``
+            # today, but that fact lives upstream and already has a wider
+            # sibling, ``NEXT_OWNED_TOPOLOGIES`` — including
+            # ``LANES_WITH_COORD`` — staged for a future command; citing it
+            # here would go stale the day that fact changes, while this
+            # module's own gate would not.) Several existing unit fixtures
+            # (outside this WP's ownership) stub
             # ``_materialise_coord_worktree`` without an ``owned`` kwarg, so
-            # omitting it here (its default stays ``None``) keeps them green.
+            # omitting it here (its default stays ``None``) keeps them green
+            # — a convenience this gate also happens to provide.
             worktree_root, commit_paths = _materialise_coord_worktree(
                 repo_root,
                 mission_slug,
@@ -1136,14 +1146,22 @@ def _materialise_coord_worktree(
                       WP02/WP03 removed the planning→coord route. Reaching here with
                       a primary kind raises :class:`PrimaryKindReachedCoordStagingError`.
         primary_paths_created_this_invocation: Eligible residue paths (R6).
-        owned: WP05 forward guard (brownfield scout round 3 CORRECTION): the
-            partition split only runs when ``owned is None`` (an owned mission
-            cannot be coordination-routed today, ``LIFECYCLE_OWNED_TOPOLOGIES
-            == {SINGLE_BRANCH}``), so this helper is never actually reached
-            with ``owned is not None`` in practice. Accepted and threaded
-            through to :func:`_stage_artifacts_in_coord_worktree`'s own
-            ``owned`` purely for interface symmetry / forward-compat, never
-            exercised by a live caller.
+        owned: WP05 forward guard (brownfield scout round 3 CORRECTION;
+            reviewer ruling L1, WP05 cycle 1): this helper is reached only
+            when ``use_coord`` is ``True`` in :func:`_commit_partition_group`,
+            and ``use_coord = owned is None and
+            routes_through_coordination(topology)`` there — a gate owned
+            entirely by THIS module — so it is never actually reached with
+            ``owned is not None`` in practice, regardless of which owned
+            topologies a caller is allowed to request upstream (see the
+            longer note at the ``_materialise_coord_worktree`` call site in
+            :func:`_commit_partition_group` for why this cites that gate
+            rather than ``core.owned_mission.LIFECYCLE_OWNED_TOPOLOGIES`` —
+            that fact already has a wider sibling, ``NEXT_OWNED_TOPOLOGIES``,
+            staged for a future command). Accepted and threaded through to
+            :func:`_stage_artifacts_in_coord_worktree`'s own ``owned`` purely
+            for interface symmetry / forward-compat, never exercised by a
+            live caller.
 
     Returns:
         ``(coord_worktree, coord_paths)`` on success.
