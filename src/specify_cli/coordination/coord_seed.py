@@ -412,12 +412,27 @@ def _write_merge_files(target_dir: Path, merge: _MergeResult) -> None:
         path.write_bytes(content)
 
 
+# Review cycle 1 N2: the scratch dir for the temp-rename write lives OUTSIDE
+# ``kitty-specs/`` entirely -- a sibling of it directly under the coord
+# worktree root, same filesystem (``os.rename`` below stays atomic), so
+# neither this cleanup sweep nor the write below ever enumerates raw
+# kitty-specs/ entries. That removes the need for the walker gate's
+# (``tests/architectural/test_mission_resolver_walker_gate.py``)
+# function-level exemption this scratch dir used to require when it lived
+# under ``kitty-specs/``.
+_SEED_TEMP_DIR_NAME = ".spec-kitty-seed-tmp"
+
+
+def _seed_temp_root(coord_worktree: Path) -> Path:
+    return coord_worktree / _SEED_TEMP_DIR_NAME
+
+
 def _cleanup_stale_seed_temp_dirs(request: _SeedRequest) -> None:
-    specs_dir = request.coord_worktree / KITTY_SPECS_DIR
-    if not specs_dir.exists():
+    temp_root = _seed_temp_root(request.coord_worktree)
+    if not temp_root.exists():
         return
-    stale_prefix = f".{request.mission_dir_name}.seed-"
-    for candidate in specs_dir.iterdir():
+    stale_prefix = f"{request.mission_dir_name}.seed-"
+    for candidate in temp_root.iterdir():
         if candidate.is_dir() and candidate.name.startswith(stale_prefix):
             _remove_tree(candidate)
 
@@ -435,7 +450,9 @@ def _write_merge_via_temp_rename(request: _SeedRequest, merge: _MergeResult) -> 
     specs_dir: Path = request.coord_worktree / KITTY_SPECS_DIR
     specs_dir.mkdir(parents=True, exist_ok=True)
     final_dir: Path = specs_dir / request.mission_dir_name
-    temp_dir: Path = specs_dir / f".{request.mission_dir_name}.seed-{os.getpid()}-{uuid.uuid4().hex[:12]}"
+    temp_root = _seed_temp_root(request.coord_worktree)
+    temp_root.mkdir(parents=True, exist_ok=True)
+    temp_dir: Path = temp_root / f"{request.mission_dir_name}.seed-{os.getpid()}-{uuid.uuid4().hex[:12]}"
     temp_dir.mkdir(parents=True)
     _write_merge_files(temp_dir, merge)
     try:
