@@ -491,22 +491,35 @@ def _git_path_status(repo_root: Path, repo_relpath: str) -> Literal["dirty", "un
 
 
 def _restore_root_files(request: _SeedRequest, carried: tuple[str, ...]) -> tuple[str, ...]:
+    """Restore the root-checkout copies of *carried* COORD records (I-SEED-8).
+
+    WP04-review binding first step (coord-artifact-single-home-01M3V4BE
+    WP07): anchored on :func:`_lock_root` -- ``owned.owned_root`` for an
+    owned checkout, else ``request.repo_root`` -- never on the bare
+    ``request.repo_root`` unconditionally. ``request.root_mission_dir``
+    itself already lives under that same root (the placement seam resolves
+    it there), so a hand composition onto ``request.repo_root`` for an
+    owned checkout is not merely the wrong git repo to probe/restore
+    against: the path is not even a subpath of it, so
+    ``Path.relative_to`` previously raised ``ValueError`` outright.
+    """
     restored: list[str] = []
+    root = _lock_root(request)
     for relpath in carried:
         root_path = request.root_mission_dir / relpath
         if not root_path.exists():
             continue
-        repo_relpath = _to_repo_relpath(request.repo_root, root_path)
-        status = _git_path_status(request.repo_root, repo_relpath)
+        repo_relpath = _to_repo_relpath(root, root_path)
+        status = _git_path_status(root, repo_relpath)
         if status == "untracked":
             root_path.unlink()
             restored.append(repo_relpath)
         elif status == "staged_new":
-            subprocess.run(["git", "-C", str(request.repo_root), "restore", "--staged", "--", repo_relpath], check=True, capture_output=True)
+            subprocess.run(["git", "-C", str(root), "restore", "--staged", "--", repo_relpath], check=True, capture_output=True)
             root_path.unlink()
             restored.append(repo_relpath)
         elif status == "dirty":
-            subprocess.run(["git", "-C", str(request.repo_root), "checkout", "--", repo_relpath], check=True, capture_output=True)
+            subprocess.run(["git", "-C", str(root), "checkout", "--", repo_relpath], check=True, capture_output=True)
             restored.append(repo_relpath)
         # "clean": pre-fix history stays untouched (C-004).
     return tuple(restored)

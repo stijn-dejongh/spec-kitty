@@ -792,6 +792,17 @@ def test_owned_empty_pre_fix_seed_restores_against_owned_root_not_repository_roo
     )
     root_ids_before = event_ids(owned.mission_dir / _STATUS_LOG)
     assert root_ids_before  # the pre-fix root log genuinely carries records to restore/no-op over
+    # Baseline snapshots, taken BEFORE the write: ``coord.repo_root``'s
+    # ``kitty-specs`` tree already carries pre-existing fixture residue
+    # unrelated to this seed (e.g. an uncommitted ``spec.md``), so the
+    # control below asserts no NEW change rather than an absolute-empty
+    # status.
+    repo_root_status_before = subprocess.run(
+        ["git", "-C", str(coord.repo_root), "status", "--porcelain", "--", "kitty-specs"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
 
     location = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=owned)
 
@@ -808,13 +819,13 @@ def test_owned_empty_pre_fix_seed_restores_against_owned_root_not_repository_roo
         check=True,
     ).stdout
     assert owned_status == ""
-    repo_root_status = subprocess.run(
+    repo_root_status_after = subprocess.run(
         ["git", "-C", str(coord.repo_root), "status", "--porcelain", "--", "kitty-specs"],
         capture_output=True,
         text=True,
         check=True,
     ).stdout
-    assert repo_root_status == ""
+    assert repo_root_status_after == repo_root_status_before
 
 
 # ---------------------------------------------------------------------------
