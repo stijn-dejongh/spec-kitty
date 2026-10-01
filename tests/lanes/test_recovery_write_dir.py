@@ -142,3 +142,59 @@ def test_reconcile_status_on_lanes_topology_targets_the_same_root(tmp_path: Path
 
     assert emitted > 0
     assert (feature_dir / _STATUS_LOG).exists()
+
+
+def test_reconcile_status_logs_a_warning_and_stops_on_an_unexpected_emit_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Review cycle 1 B3: recovery is best-effort -- an unexpected failure
+    from the transactional emit (never one this WP's write-side fix governs)
+    is logged with a WARNING naming the WP/mission/target lane and the
+    exception, then the catch-up loop stops rather than propagating or
+    silently swallowing it."""
+    import logging
+
+    import specify_cli.coordination.status_transition as status_transition_module
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "-C", str(repo), "init", "-q", "-b", "main"], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.email", "t@example.com"], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "config", "user.name", "Test"], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "config", "commit.gpgsign", "false"], check=True, capture_output=True)
+    (repo / ".kittify").mkdir()
+    feature_dir = repo / "kitty-specs" / "flat-demo"
+    feature_dir.mkdir(parents=True)
+    import json
+
+    (feature_dir / "meta.json").write_text(
+        json.dumps(
+            {
+                "mission_id": "01FLATDEMO0000000000000000",
+                "mission_slug": "flat-demo",
+                "mission_type": "software-dev",
+                "target_branch": "main",
+                "friendly_name": "flat demo",
+                "topology": MissionTopology.LANES.value,
+            }
+        ),
+        encoding="utf-8",
+    )
+    subprocess.run(["git", "-C", str(repo), "add", "."], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-q", "-m", "init"], check=True, capture_output=True)
+    _seed_planned(feature_dir, "flat-demo")
+
+    def _boom(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("unexpected emit failure")
+
+    monkeypatch.setattr(status_transition_module, "emit_status_transition_transactional", _boom)
+
+    with caplog.at_level(logging.WARNING):
+        emitted = reconcile_status(repo, "flat-demo", _recovery_state())
+
+    assert emitted == 0
+    matching = [r for r in caplog.records if "stopped emitting catch-up transitions" in r.message]
+    assert matching, caplog.records
+    assert "WP01" in matching[0].message
+    assert "flat-demo" in matching[0].message
+    assert "RuntimeError" in matching[0].message

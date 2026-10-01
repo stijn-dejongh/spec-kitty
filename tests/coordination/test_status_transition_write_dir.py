@@ -550,3 +550,130 @@ def test_seed_lock_contention_from_a_different_holder_refuses_status_lock_held(t
     # root checkout carries no new residue from the refused attempt.
     assert not coord.coord_mission_dir.exists()
     assert _repo_root_coord_dir_porcelain(coord) == root_status_before
+
+
+# ---------------------------------------------------------------------------
+# Review cycle 1 B3 (diff coverage): the two ``_canonical_coord_mission_slug``
+# fallback branches no existing fixture's mission-slug shape ever reaches --
+# every ``make_prefix_coord_mission``/``make_fork_fixture`` mission dir name
+# is ALREADY the canonical ``<slug>-<mid8>`` form, so the literal
+# ``read_primary_meta`` probe always declares on the first try and neither
+# the owned short-circuit nor the degenerate "composing changes nothing"
+# fallback is ever exercised through those fixtures. Pinned here directly
+# against both sibling copies (``status_transition.py`` and
+# ``transaction.py``) with a unit-level construction instead.
+# ---------------------------------------------------------------------------
+
+
+def test_status_transition_canonical_coord_mission_slug_owned_short_circuits(tmp_path: Path) -> None:
+    """``identity.owned is not None`` returns ``owned.mission_slug`` with zero
+    I/O -- ``seam_repo_root`` is never touched, so a nonexistent path proves
+    no filesystem read happened."""
+    from tests._owned_fixtures import mint_test_fact
+
+    from specify_cli.coordination.status_transition import _canonical_coord_mission_slug, _TransactionIdentity
+
+    owned = mint_test_fact(
+        repository_root=tmp_path / "does-not-exist-repo",
+        owned_root=tmp_path / "does-not-exist-owned",
+        mission_dir=tmp_path / "does-not-exist-owned" / "kitty-specs" / "demo-01ABCDEF",
+        mission_slug="demo-01ABCDEF",
+        write_branch="main",
+        topology=MissionTopology.COORD,
+    )
+    identity = _TransactionIdentity(
+        repo_root=tmp_path / "does-not-exist-repo",
+        feature_dir=tmp_path / "does-not-exist-repo" / "kitty-specs" / "demo-01ABCDEF",
+        mission_id=None,
+        mid8="01ABCDEF",
+        destination_ref="main",
+        meta_exists=False,
+        coordination_branch=None,
+        transaction_meta_exists=False,
+        owned=owned,
+    )
+
+    assert _canonical_coord_mission_slug(identity, "whatever-caller-passed") == "demo-01ABCDEF"
+
+
+def test_status_transition_canonical_coord_mission_slug_degenerate_composition(tmp_path: Path) -> None:
+    """A literal ``mission_slug`` that already embeds ``mid8`` but whose
+    ``meta.json`` does not declare coordination (no meta.json at all here):
+    composing is a no-op (``composed == mission_slug``), so the function
+    gives up and returns the literal rather than attempting a second,
+    identical read."""
+    from specify_cli.coordination.status_transition import _canonical_coord_mission_slug, _TransactionIdentity
+
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    identity = _TransactionIdentity(
+        repo_root=repo_root,
+        feature_dir=repo_root / "kitty-specs" / "demo-01ABCDEF",
+        mission_id=None,
+        mid8="01ABCDEF",
+        destination_ref="main",
+        meta_exists=False,
+        coordination_branch=None,
+        transaction_meta_exists=False,
+        owned=None,
+    )
+
+    assert _canonical_coord_mission_slug(identity, "demo-01ABCDEF") == "demo-01ABCDEF"
+
+
+def test_transaction_canonical_coord_mission_slug_owned_short_circuits(tmp_path: Path) -> None:
+    from tests._owned_fixtures import mint_test_fact
+
+    from specify_cli.coordination.transaction import _canonical_coord_mission_slug
+
+    owned = mint_test_fact(
+        repository_root=tmp_path / "does-not-exist-repo",
+        owned_root=tmp_path / "does-not-exist-owned",
+        mission_dir=tmp_path / "does-not-exist-owned" / "kitty-specs" / "demo-01ABCDEF",
+        mission_slug="demo-01ABCDEF",
+        write_branch="main",
+        topology=MissionTopology.COORD,
+    )
+
+    result = _canonical_coord_mission_slug(tmp_path / "does-not-exist-repo", "whatever-caller-passed", "01ABCDEF", owned=owned)
+
+    assert result == "demo-01ABCDEF"
+
+
+def test_transaction_canonical_coord_mission_slug_degenerate_composition(tmp_path: Path) -> None:
+    from specify_cli.coordination.transaction import _canonical_coord_mission_slug
+
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+
+    result = _canonical_coord_mission_slug(repo_root, "demo-01ABCDEF", "01ABCDEF", owned=None)
+
+    assert result == "demo-01ABCDEF"
+
+
+def test_transaction_resolve_coord_worktree_root_wraps_unexpected_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A genuinely unexpected ``write_dir`` failure (not one of the four typed
+    coordination refusals) becomes :class:`BookkeepingWorktreeMissing`,
+    naming the coordination identity and wrapping the original cause --
+    never an unclassified exception reaching a caller that only expects this
+    module's own error hierarchy."""
+    import specify_cli.coordination.transaction as transaction_module
+    from specify_cli.coordination.transaction import (
+        BookkeepingWorktreeMissing,
+        _resolve_coord_worktree_root_for_transaction,
+    )
+
+    def _boom(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("placement seam exploded")
+
+    monkeypatch.setattr(transaction_module, "placement_seam", _boom)
+
+    with pytest.raises(BookkeepingWorktreeMissing) as excinfo:
+        _resolve_coord_worktree_root_for_transaction(
+            repo_root=tmp_path,
+            mission_slug="demo-01ABCDEF",
+            mid8="01ABCDEF",
+            owned=None,
+        )
+    assert "demo-01ABCDEF" in str(excinfo.value)
+    assert "placement seam exploded" in str(excinfo.value)

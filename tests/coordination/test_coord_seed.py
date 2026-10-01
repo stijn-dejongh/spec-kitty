@@ -828,6 +828,81 @@ def test_owned_empty_pre_fix_seed_restores_against_owned_root_not_repository_roo
     assert repo_root_status_after == repo_root_status_before
 
 
+def test_owned_empty_pre_fix_seed_restores_dirty_root_copy_against_owned_root(tmp_path: Path) -> None:
+    """Review cycle 1 N4: the sibling clean-root test above never actually
+    exercises ``_restore_root_files``'s ``git checkout --`` branch (the
+    "dirty" status arm) -- a clean root copy takes the no-op "clean" arm
+    instead. This variant makes the owned root copy of the carried status
+    log TRACKED and MODIFIED (uncommitted), so ``_git_path_status`` resolves
+    it to ``"dirty"`` and the restore genuinely runs ``git checkout -- <path>``
+    against ``owned_root`` -- never against ``coord.repo_root`` (same B4
+    anchor-on-owned-root fix, now proven against the genuinely-dirty arm).
+    """
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    owned_root = tmp_path / "owned-checkout"
+    subprocess.run(["git", "-C", str(coord.repo_root), "checkout", "--detach", "-q"], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(coord.repo_root), "worktree", "add", "-q", str(owned_root), coord.target_branch], check=True, capture_output=True)
+    owned = mint_test_fact(
+        repository_root=coord.repo_root,
+        owned_root=owned_root,
+        mission_dir=owned_root / "kitty-specs" / coord.mission_dir_name,
+        mission_slug=coord.mission_dir_name,
+        write_branch=coord.target_branch,
+        topology=MissionTopology.COORD,
+    )
+    root_log = owned.mission_dir / _STATUS_LOG
+    committed_text = root_log.read_text(encoding="utf-8")
+    root_ids_before = event_ids(root_log)
+    assert root_ids_before
+
+    # Dirty the tracked root copy (uncommitted local edit) under owned_root.
+    with root_log.open("a", encoding="utf-8") as handle:
+        handle.write('{"event_id": "01OWNEDDIRTYLOCALEDIT0000"}\n')
+    owned_status_before = subprocess.run(
+        ["git", "-C", str(owned_root), "status", "--porcelain", "--", "kitty-specs"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    assert " M " in owned_status_before or owned_status_before.strip().startswith("M"), owned_status_before
+    repo_root_status_before = subprocess.run(
+        ["git", "-C", str(coord.repo_root), "status", "--porcelain", "--", "kitty-specs"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+
+    location = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=owned)
+
+    assert location.establishment is Establishment.SEEDED
+    assert location.seed is not None
+    assert location.seed.carried
+    # The carry step reads the root copy's CURRENT on-disk content (the
+    # dirty, uncommitted edit included) before the restore step reverts it
+    # -- so the dirty line is carried too, same as the pre-existing
+    # committed rows.
+    assert set(root_ids_before) < set(event_ids(location.path / _STATUS_LOG))
+    assert "01OWNEDDIRTYLOCALEDIT0000" in event_ids(location.path / _STATUS_LOG)
+    # The dirty local edit under owned_root was discarded by `git checkout
+    # --` (restored to the committed HEAD content), proving the checkout ran
+    # against owned_root, not the bare repository-root checkout.
+    assert root_log.read_text(encoding="utf-8") == committed_text
+    owned_status_after = subprocess.run(
+        ["git", "-C", str(owned_root), "status", "--porcelain", "--", "kitty-specs"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    assert owned_status_after == ""
+    repo_root_status_after = subprocess.run(
+        ["git", "-C", str(coord.repo_root), "status", "--porcelain", "--", "kitty-specs"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    assert repo_root_status_after == repo_root_status_before
+
+
 # ---------------------------------------------------------------------------
 # B4-8 / B5: NFR-002 across fork-fixture shapes (b)/(c)/(d); shape (a) is
 # covered by ``test_fork_refuses_and_writes_nothing`` above.
