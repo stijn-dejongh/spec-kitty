@@ -885,6 +885,37 @@ def _representative_kind_for_bucket(
     return fallback
 
 
+def partition_for_mission_path(
+    repo_root: Path,
+    mission_slug: str,
+    path: Path,
+    *,
+    owned: OwnedCheckout | None = None,
+) -> Literal["primary", "coordination"]:
+    """The per-path partition verdict :func:`_group_files_by_partition` uses (WP05 T025, P-M5).
+
+    Public so a caller outside this module (WP16's accept dirty gate) consumes
+    the SAME grouping primitive instead of adding a second classifier —
+    :func:`_group_files_by_partition` calls this function too (not a parallel
+    copy); their verdicts can never drift apart.
+
+    ``repo_root`` / ``owned`` are accepted for interface symmetry with this
+    module's other kind-aware public helpers, but are not consulted: the
+    underlying residue classifier,
+    :func:`~specify_cli.coordination.coherence.is_coord_residue_churn`, is
+    deliberately called the SAME topology-blind way
+    :func:`_group_files_by_partition` has always called it (no ``topology``
+    argument) — passing one here would risk a verdict that disagrees with the
+    router's own grouping, the exact drift this predicate exists to prevent.
+    A caller that needs a topology-aware (e.g. destructive dirty-gate) verdict
+    calls :func:`~specify_cli.coordination.coherence.is_coord_residue_churn`
+    directly with its own resolved topology, per that function's own
+    documented requirement.
+    """
+    del repo_root, owned  # interface symmetry only (see docstring)
+    return "coordination" if is_coord_residue_churn(path, mission_slug=mission_slug) else "primary"
+
+
 def _group_files_by_partition(
     repo_root: Path,
     files: tuple[Path, ...],
@@ -950,7 +981,7 @@ def _group_files_by_partition(
     primary_files: list[Path] = []
     coord_files: list[Path] = []
     for file in files:
-        if is_coord_residue_churn(file, mission_slug=mission_slug):
+        if partition_for_mission_path(repo_root, mission_slug, file) == "coordination":
             coord_files.append(file)
         else:
             primary_files.append(file)
@@ -1855,4 +1886,8 @@ def _is_empty_changeset_error(exc: RuntimeError) -> bool:
 __all__ = [
     "CommitRouterResult",
     "commit_for_mission",
+    # WP05 (T025, P-M5): the public per-path partition predicate, so a caller
+    # outside this module (WP16's accept dirty gate) consumes the SAME
+    # verdict _group_files_by_partition's own grouping uses.
+    "partition_for_mission_path",
 ]

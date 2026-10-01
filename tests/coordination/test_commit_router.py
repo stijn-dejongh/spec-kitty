@@ -30,7 +30,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from mission_runtime import MissionArtifactKind
+from mission_runtime import MissionArtifactKind, is_primary_artifact_kind
 from specify_cli.coordination.commit_outcome import (
     COORDINATION_BRANCH_DELETED,
     PATH_UNROUTABLE,
@@ -2006,3 +2006,44 @@ def test_clean_coordination_copy_reports_unchanged(tmp_path: Path) -> None:
     assert result.status == "unchanged", f"a clean coordination copy must report unchanged, got {result!r}"
     assert _coord_head(coord) == coord_head_before, "a genuine no-op must not advance the coordination branch"
     assert _r2_porcelain(coord, coord_rel) == "", "the coordination copy must stay clean"
+
+
+# ---------------------------------------------------------------------------
+# WP05 T025 (P-M5) — the public per-path partition predicate agrees with
+# _group_files_by_partition's own grouping (same function, not a copy).
+# ---------------------------------------------------------------------------
+
+
+def test_partition_for_mission_path_matches_group_files_by_partition(tmp_path: Path) -> None:
+    """The public predicate names the SAME verdict ``_group_files_by_partition`` groups by (P-M5)."""
+    from specify_cli.coordination.commit_router import (
+        _group_files_by_partition,
+        partition_for_mission_path,
+    )
+
+    mission_slug = "001-demo"
+    feature_dir = tmp_path / "kitty-specs" / mission_slug
+    feature_dir.mkdir(parents=True)
+    tasks_file = feature_dir / "tasks.md"
+    tasks_file.write_text("# Tasks\n", encoding="utf-8")
+    matrix_file = feature_dir / "acceptance-matrix.json"
+    matrix_file.write_text("{}", encoding="utf-8")
+
+    assert partition_for_mission_path(tmp_path, mission_slug, tasks_file) == "primary"
+    assert partition_for_mission_path(tmp_path, mission_slug, matrix_file) == "coordination"
+
+    with patch(
+        "specify_cli.coordination.commit_router.resolve_placement_only",
+        side_effect=_fake_resolve_placement_only_by_partition,
+    ):
+        groups = _group_files_by_partition(tmp_path, (tasks_file, matrix_file), mission_slug, kind=MissionArtifactKind.TASKS_INDEX)
+
+    # Exactly the two files, split into their own groups -- and each group's
+    # own files agree with the public predicate's verdict for them.
+    assert {file for _kind, files in groups for file in files} == {tasks_file, matrix_file}
+    primary_group_files = next(files for kind, files in groups if is_primary_artifact_kind(kind))
+    coord_group_files = next(files for kind, files in groups if not is_primary_artifact_kind(kind))
+    for file in primary_group_files:
+        assert partition_for_mission_path(tmp_path, mission_slug, file) == "primary"
+    for file in coord_group_files:
+        assert partition_for_mission_path(tmp_path, mission_slug, file) == "coordination"
