@@ -50,10 +50,8 @@ from pathlib import Path
 import pytest
 
 from mission_runtime import (
-    ActionContextError,
     MissionArtifactKind,
     MissionTopology,
-    OwnedRefusalCode,
     ReadDegradeStrategy,
     resolve_read_dir_or_degrade,
 )
@@ -268,31 +266,43 @@ def test_agent_tasks_ports_feature_write_dir_owned_fails_closed_on_unmaterialize
     legacy bare-root arm's "PREDICTED coordination worktree path" answer for an
     UNMATERIALIZED coordination worktree.
 
-    WP18 retired the bare-root arm. The owned arm reads the fact and FAILS
-    CLOSED on a coordination-routing topology whose coordination worktree is not
-    materialised (``OWNED_COORDINATION_WORKSPACE_UNAVAILABLE``, WP04 F2): it is
-    never the repository-ROOT / primary mission dir (never a silent wrong-data
-    substitution) and never a predicted path that does not exist on disk.
+    WP18 retired the bare-root arm, and the owned arm then FAILED CLOSED on a
+    coordination-routing topology whose coordination worktree was not
+    materialised (``OWNED_COORDINATION_WORKSPACE_UNAVAILABLE``, WP04 F2).
 
-    The default (no fact, both real callers' non-owned case) arm is UNCHANGED --
-    it calls ``resolve_feature_dir_for_mission`` -> ``resolve_action_context`` --
-    a DIFFERENT, untouched resolver that always resolves to the PRIMARY dir
-    regardless of coord materialization."""
+    coord-artifact-single-home-01M3V4BE WP07 (T040) re-pin (post-tasks squad
+    P-M1, L259 -- WP07's own re-pin; L198's sibling decision test is WP09's,
+    per the binding correction): BOTH arms of ``feature_write_dir`` now
+    resolve through the single write-location accessor
+    (``placement_seam(...).write_dir``), never ``resolve_feature_dir_for_
+    mission`` (removed) nor a bare ``read_dir``. For this mission's
+    UNMATERIALIZED, never-seeded (pre-fix) coordination branch, ``write_dir``
+    now MATERIALIZES the coordination workspace, discovers the Mission dir is
+    EMPTY there, and SEEDS it (contracts/seed.md) -- succeeding, not failing
+    closed. It no longer raises ``OWNED_COORDINATION_WORKSPACE_UNAVAILABLE``
+    for this shape (that code is still reachable when the owned coordination
+    workspace genuinely cannot be established at all, covered directly by
+    ``tests/mission_runtime/test_placement_seam_write_dir.py::test_write_dir_
+    owned_coordination_workspace_unavailable``). Both the owned and the
+    non-owned handle now resolve to the SAME real coordination worktree's
+    Mission dir -- the coord surface, never the repository-root / primary
+    mission dir (never a silent wrong-data substitution, and never a
+    predicted path that does not exist on disk) -- since both route through
+    the identical accessor for the identical mission.
+    """
     repo, result = _unmaterialized_coord_mission(tmp_path, "coord-ports-demo")
 
     router = RealCoordCommitRouter()
     handle = _owned_handle(repo, result, tmp_path, MissionTopology.COORD)
 
-    with pytest.raises(ActionContextError) as excinfo:
-        router.feature_write_dir(handle)
-    assert excinfo.value.code == OwnedRefusalCode.OWNED_COORDINATION_WORKSPACE_UNAVAILABLE
+    owned_resolved = router.feature_write_dir(handle)
+    assert owned_resolved.exists()
+    assert owned_resolved.is_relative_to(repo / ".worktrees")
+    assert owned_resolved.name == result.mission_slug
 
-    # The realistic (non-owned) default path never reaches the modified seam,
-    # so it is UNCHANGED by this WP -- pinned explicitly so a future change to
-    # this resolver is caught here, not silently.
     default_handle = MissionHandle(repo_root=repo, mission_slug=result.mission_slug)
     default_resolved = router.feature_write_dir(default_handle)
-    assert default_resolved.resolve() == result.feature_dir.resolve()
+    assert default_resolved == owned_resolved
 
 
 # ===========================================================================

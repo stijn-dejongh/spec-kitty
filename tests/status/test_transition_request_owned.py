@@ -377,33 +377,37 @@ def test_commit_for_mission_with_owned_fact_makes_zero_claim_calls(tmp_path: Pat
 # ---------------------------------------------------------------------------
 
 
-def test_real_fs_reader_planning_read_dir_routes_through_the_fact(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_real_fs_reader_planning_read_dir_routes_through_the_fact(tmp_path: Path) -> None:
     """``RealFsReader.planning_read_dir`` with an ``owned`` handle resolves
     P's own mission dir, never the legacy bare-root resolver."""
     from mission_runtime import MissionArtifactKind
     from specify_cli.agent_tasks_ports import MissionHandle, RealFsReader
 
-    def _must_not_run(*_a: object, **_k: object) -> object:
-        raise AssertionError("an owned handle must not route through resolve_feature_dir_for_mission")
-
-    monkeypatch.setattr("specify_cli.agent_tasks_ports.resolve_feature_dir_for_mission", _must_not_run)
-
+    # WP07 re-pin (coord-artifact-single-home-01M3V4BE): the
+    # ``resolve_feature_dir_for_mission`` symbol this guard defended against
+    # is no longer imported at all by agent_tasks_ports.py (T040 -- the
+    # write-side twin, RealCoordCommitRouter.feature_write_dir, was its only
+    # caller and now routes through the single write-location accessor
+    # instead); nothing in this module can call it. The real assertion below
+    # (an owned handle resolves P's own mission dir) still stands unaided.
     fact = _mint_owned_git(tmp_path)
     handle = MissionHandle(fact.repository_root, fact.mission_slug, owned=fact)
     result = RealFsReader().planning_read_dir(handle, kind=MissionArtifactKind.TASKS_INDEX)
     assert result == fact.mission_dir
 
 
-def test_real_coord_commit_router_feature_write_dir_routes_through_the_fact(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_real_coord_commit_router_feature_write_dir_routes_through_the_fact(tmp_path: Path) -> None:
     """``feature_write_dir`` with an ``owned`` handle resolves P's own
     STATUS dir, never the legacy non-owned resolver."""
     from specify_cli.agent_tasks_ports import MissionHandle, RealCoordCommitRouter
 
-    def _must_not_run(*_a: object, **_k: object) -> object:
-        raise AssertionError("an owned handle must not route through resolve_feature_dir_for_mission")
-
-    monkeypatch.setattr("specify_cli.agent_tasks_ports.resolve_feature_dir_for_mission", _must_not_run)
-
+    # WP07 re-pin (coord-artifact-single-home-01M3V4BE, T040): both the owned
+    # and non-owned arms of ``feature_write_dir`` now resolve through the
+    # single write-location accessor (``placement_seam(...).write_dir``);
+    # ``resolve_feature_dir_for_mission`` is no longer imported by this
+    # module at all, so nothing here can route through it. The real
+    # assertion below (an owned handle resolves P's own STATUS dir) still
+    # stands unaided.
     fact = _mint_owned_git(tmp_path)
     handle = MissionHandle(fact.repository_root, fact.mission_slug, owned=fact)
     result = RealCoordCommitRouter().feature_write_dir(handle)
@@ -422,7 +426,22 @@ def test_commit_artifact_threads_owned_only_for_an_owned_handle(tmp_path: Path) 
 
     def _record_commit(*_args: object, **kwargs: object) -> object:
         recorded.append(kwargs)
-        return type("R", (), {"status": "committed", "placement_ref": "main", "commit_hash": None, "diagnostic": None})()
+        return type(
+            "R",
+            (),
+            {
+                "status": "committed",
+                "placement_ref": "main",
+                "commit_hash": None,
+                "diagnostic": None,
+                # WP07 (T040): CommitArtifactResult's new additive fields
+                # (contracts/commit-outcome.md) read these straight off the
+                # injected commit_fn's return value.
+                "commit_hashes": (),
+                "reason": None,
+                "surfaces": (),
+            },
+        )()
 
     fact = _mint_owned_git(tmp_path)
     policy = ProtectionPolicy(protected_branches=frozenset(), operator_hatch_active=False)
