@@ -43,7 +43,9 @@ from mission_runtime import (
     resolve_topology,
     routes_through_coordination,
 )
+from specify_cli.coordination import commit_outcome
 from specify_cli.coordination.coherence import is_coord_residue_churn
+from specify_cli.coordination.commit_outcome import PathFate, SurfaceOutcome
 from specify_cli.coordination.surface_authority import Refuse, resolve_surface_authority
 from specify_cli.git import safe_commit
 from specify_cli.status import FeatureStatusLockTimeoutError
@@ -134,15 +136,22 @@ def _mission_scoped(
 # ONE spelling instead of restating the raw string. This is the "in-band
 # strangle vocabulary" the reviewer guidance calls out: the placement-outcome
 # literal is domain vocabulary, not incidental formatting, so it earns a name.
-_STATUS_COMMITTED: Final = "committed"
-_STATUS_UNCHANGED: Final = "unchanged"
+#
+# WP05 (T024 CORRECTION, brownfield scout round 3): these four aliases now
+# import their VALUE from ``commit_outcome`` — the single canonical owner —
+# instead of each restating the same string (the duplicate previously also
+# lived in ``surface_authority.py``). This file keeps its own private names
+# (``_STATUS_COMMITTED`` etc.) so none of its 8+ existing construction sites
+# need renaming.
+_STATUS_COMMITTED: Final = commit_outcome.STATUS_COMMITTED
+_STATUS_UNCHANGED: Final = commit_outcome.STATUS_UNCHANGED
+_STATUS_NO_OP_WRONG_SURFACE: Final = commit_outcome.STATUS_NO_OP_WRONG_SURFACE
+_STATUS_ERROR: Final = commit_outcome.STATUS_ERROR
 
 # FR-003 (coord-commit-integrity): the re-homed PRIMARY analysis-report basename.
 # Named once so the coord-staging skip (mirroring the STATUS_STATE-kind skip,
 # WP13-retired ``COORD_OWNED_STATUS_FILES``) does not restate the raw literal.
 _ANALYSIS_REPORT_FILENAME: Final = "analysis-report.md"
-_STATUS_NO_OP_WRONG_SURFACE: Final = "no_op_wrong_surface"
-_STATUS_ERROR: Final = "error"
 
 # #255 fix-round-2 (squad pass 2 MAJOR): the planning SOURCE-doc kinds a
 # mission produces BEFORE ``/spec-kitty.tasks`` has run (mirrors the "Planning
@@ -164,8 +173,9 @@ _PRE_TASKS_ARTIFACT_KINDS: Final[frozenset[MissionArtifactKind]] = frozenset(
 # #2739 B03: machine-readable ``reason`` strings for the two ``unchanged``
 # no-op flavours, so a caller can tell "nothing to do" from "silently wrong".
 # Named once (S1192) — every ``_STATUS_UNCHANGED`` construction site carries one.
-_REASON_ALREADY_COMMITTED: Final = "no_op_already_committed"
-_REASON_NO_CHANGES: Final = "no_op_no_changes"
+# WP05: values owned by ``commit_outcome`` (single owner — see above).
+_REASON_ALREADY_COMMITTED: Final = commit_outcome.REASON_ALREADY_COMMITTED
+_REASON_NO_CHANGES: Final = commit_outcome.REASON_NO_CHANGES
 
 # #2739 B01: the operator hatch that permits a commit on a protected branch.
 # Named once and reused by the protected-refusal diagnostic below (S1192).
@@ -204,6 +214,19 @@ class CommitRouterResult:
     #: ``no_op_no_changes`` (nothing to commit / empty changeset). ``None`` for
     #: every non-``unchanged`` status.
     reason: str | None = None
+    #: WP05 (FR-007, contracts/commit-outcome.md rule 1): one
+    #: :class:`~specify_cli.coordination.commit_outcome.SurfaceOutcome` per
+    #: partition group this request touched, ordered PRIMARY then
+    #: coordination. Additive — defaults empty for every pre-existing caller
+    #: and construction site this WP did not touch. The four legacy fields
+    #: above keep today's CALLER-partition projection (rule 4); ``surfaces``
+    #: is the only place a caller can see BOTH groups' outcomes when a batch
+    #: was split (:func:`_group_files_by_partition`). An early argument-error
+    #: return (mismatched ``expected_parent_sha``/``expected_path_bytes``, or
+    #: more than one resolved group with an ``expected_parent_sha``) carries
+    #: ``surfaces=()`` — it is a caller contract violation, never a surface
+    #: outcome.
+    surfaces: tuple[SurfaceOutcome, ...] = ()
 
 
 def mission_has_coordination_branch(repo_root: Path, mission_slug: str) -> bool:
@@ -331,7 +354,27 @@ def commit_for_mission(
         )
         for group_kind, group_files in groups
     ]
-    return _merge_group_results(results, groups, kind)
+    return _log_split_commit_outcome(_merge_group_results(results, groups, kind))
+
+
+def _log_split_commit_outcome(result: CommitRouterResult) -> CommitRouterResult:
+    """Log a split (multi-group) commit's full per-surface outcome, then return it unchanged.
+
+    A split commit's legacy top-level fields describe only the CALLER-partition
+    group (:func:`_merge_group_results` priority rules); the OTHER group's
+    outcome would otherwise reach only a caller that itself inspects
+    ``surfaces``. Rendering through the canonical trio here gives every reader
+    a full per-surface trail in the log regardless of whether that caller has
+    been migrated onto ``surfaces`` yet (WP07-WP16) — a genuine production use
+    of :func:`~specify_cli.coordination.commit_outcome.render_commit_outcome`
+    and :func:`~specify_cli.coordination.commit_outcome.commit_outcome_exit_code`
+    inside this WP, per the "prefer zero-red" guidance for the dead-symbol gate.
+    """
+    level = logging.WARNING if commit_outcome.commit_outcome_exit_code(result) != 0 else logging.DEBUG
+    for line in commit_outcome.render_commit_outcome(result):
+        logger.log(level, "commit_router: %s", line)
+    logger.debug("commit_router: outcome payload %s", commit_outcome.commit_outcome_payload(result))
+    return result
 
 
 def _resolve_group_placement(
@@ -452,6 +495,7 @@ def _classify_no_commit_paths(
     Behaviour-preserving extraction of ``_commit_partition_group``'s former
     empty-commit-paths / wrong-surface classification.
     """
+    surface_name: Literal["primary", "coordination"] = "coordination" if use_coord else "primary"
     # #2739 B16 / #2694: distinguish a genuine no-op (artifact present +
     # already committed) from a WRONG-SURFACE no-op. When the mission routes
     # through coordination and coord staging skipped every artifact (e.g. a
@@ -462,22 +506,27 @@ def _classify_no_commit_paths(
     # stays dirty. Mirror the ``_any_path_absent`` wrong-surface detection and
     # refuse instead (T008 surfaces the actionable error).
     if use_coord and _paths_uncommitted_in_primary(repo_root, files):
+        diagnostic = (
+            f"Artifact(s) written to the primary checkout routed to the "
+            f"coordination placement ({placement.ref}) where nothing was "
+            f"staged; the commit would no-op against the wrong surface and "
+            f"the artifact remains uncommitted in the primary tree. Commit "
+            f"it to its own (primary) surface instead."
+        )
+        refused = tuple(PathFate(path=_relpath(repo_root, f), reason=commit_outcome.WRONG_SURFACE) for f in files)
         return CommitRouterResult(
             status=_STATUS_NO_OP_WRONG_SURFACE,
             placement_ref=placement.ref,
-            diagnostic=(
-                f"Artifact(s) written to the primary checkout routed to the "
-                f"coordination placement ({placement.ref}) where nothing was "
-                f"staged; the commit would no-op against the wrong surface and "
-                f"the artifact remains uncommitted in the primary tree. Commit "
-                f"it to its own (primary) surface instead."
-            ),
+            diagnostic=diagnostic,
+            surfaces=(SurfaceOutcome(surface=surface_name, branch=placement.ref, status="refused", commit_hash=None, refused=refused, diagnostic=diagnostic),),
         )
     # All artifacts already committed (or none present) — genuine no-op.
+    skipped = tuple(PathFate(path=_relpath(repo_root, f), reason=_REASON_ALREADY_COMMITTED) for f in files)
     return CommitRouterResult(
         status=_STATUS_UNCHANGED,
         placement_ref=placement.ref,
         reason=_REASON_ALREADY_COMMITTED,
+        surfaces=(SurfaceOutcome(surface=surface_name, branch=placement.ref, status="unchanged", commit_hash=None, skipped=skipped),),
     )
 
 
@@ -503,8 +552,23 @@ def _commit_partition_group(
     does not re-validate it (single responsibility: resolve + commit one group).
     """
     placement, use_coord, refusal = _resolve_group_placement(repo_root, mission_slug, policy, kind=kind, owned=owned)
+    # FR-007 (contract rule 1): every return site below names this group's
+    # surface -- "coordination" iff this group routes through coordination,
+    # else "primary". ``refusal`` can only occur in the ``not use_coord`` arm
+    # of ``_resolve_group_placement`` (a protected-PRIMARY refusal), so it is
+    # always "primary" there.
+    surface_name: Literal["primary", "coordination"] = "coordination" if use_coord else "primary"
     if refusal is not None:
-        return refusal
+        refused = tuple(PathFate(path=_relpath(repo_root, f), reason=commit_outcome.PROTECTED_BRANCH_REFUSED) for f in files)
+        refused_surface = SurfaceOutcome(
+            surface=surface_name,
+            branch=placement.ref,
+            status="refused",
+            commit_hash=None,
+            refused=refused,
+            diagnostic=refusal.diagnostic,
+        )
+        return replace(refusal, surfaces=(refused_surface,))
 
     if use_coord:
         worktree_root, commit_paths = _materialise_coord_worktree(
@@ -529,10 +593,12 @@ def _commit_partition_group(
             f"({placement.ref}, worktree={worktree_root}); commit would no-op "
             f"against the wrong surface and was not created."
         )
+        refused = tuple(PathFate(path=_relpath(repo_root, p), reason=commit_outcome.WRONG_SURFACE) for p in commit_paths if not p.exists())
         return CommitRouterResult(
             status=_STATUS_NO_OP_WRONG_SURFACE,
             placement_ref=placement.ref,
             diagnostic=diagnostic,
+            surfaces=(SurfaceOutcome(surface=surface_name, branch=placement.ref, status="refused", commit_hash=None, refused=refused, diagnostic=diagnostic),),
         )
 
     commit_result = _safe_commit_group(
@@ -562,12 +628,14 @@ def _commit_partition_group(
     # onto the target -- re-mixing the two surfaces the partition exists to
     # keep apart. ``_try_advance_ref`` is deleted outright; a coordination
     # commit now advances ONLY the coordination branch, never the target.
+    committed = tuple(_relpath(repo_root, p) for p in commit_paths)
     return CommitRouterResult(
         status=_STATUS_COMMITTED,
         placement_ref=placement.ref,
         commit_hash=commit_hash,
         commit_hashes=((placement.ref, commit_hash),) if commit_hash else (),
         diagnostic=getattr(commit_result, "diagnostic", None),
+        surfaces=(SurfaceOutcome(surface=surface_name, branch=placement.ref, status="committed", commit_hash=commit_hash, committed=committed),),
     )
 
 
@@ -609,6 +677,41 @@ def _coord_status_locks(repo_root: Path, worktree_root: Path, commit_paths: tupl
         yield
 
 
+def _safe_commit_error_result(
+    repo_root: Path,
+    placement: CommitTarget,
+    surface_name: Literal["primary", "coordination"],
+    commit_paths: tuple[Path, ...],
+    *,
+    reason: str,
+    diagnostic: str,
+) -> CommitRouterResult:
+    """Build the ``error`` :class:`CommitRouterResult` a :func:`_safe_commit_group` except-arm returns (WP05 T025/T029)."""
+    refused = tuple(PathFate(path=_relpath(repo_root, p), reason=reason) for p in commit_paths)
+    return CommitRouterResult(
+        status=_STATUS_ERROR,
+        placement_ref=placement.ref,
+        diagnostic=diagnostic,
+        surfaces=(SurfaceOutcome(surface=surface_name, branch=placement.ref, status="error", commit_hash=None, refused=refused, diagnostic=diagnostic),),
+    )
+
+
+def _safe_commit_unchanged_result(
+    repo_root: Path,
+    placement: CommitTarget,
+    surface_name: Literal["primary", "coordination"],
+    commit_paths: tuple[Path, ...],
+) -> CommitRouterResult:
+    """Build the ``unchanged`` / ``no_op_no_changes`` :class:`CommitRouterResult` an empty changeset yields (WP05 T025)."""
+    skipped = tuple(PathFate(path=_relpath(repo_root, p), reason=_REASON_NO_CHANGES) for p in commit_paths)
+    return CommitRouterResult(
+        status=_STATUS_UNCHANGED,
+        placement_ref=placement.ref,
+        reason=_REASON_NO_CHANGES,
+        surfaces=(SurfaceOutcome(surface=surface_name, branch=placement.ref, status="unchanged", commit_hash=None, skipped=skipped),),
+    )
+
+
 def _safe_commit_group(
     repo_root: Path,
     worktree_root: Path,
@@ -624,8 +727,11 @@ def _safe_commit_group(
     """Run ``safe_commit`` for one group; a failure or no-op comes back as a :class:`CommitRouterResult`.
 
     A status-lock timeout is an ``error`` result naming the contended lock, so a
-    caller reports it like any other failed commit.
+    caller reports it like any other failed commit. WP05 (T029): the lock
+    timeout's ``surfaces[*].refused`` reason is the lock's own
+    ``error_code`` (``STATUS_LOCK_HELD``, WP03) rather than a generic string.
     """
+    surface_name: Literal["primary", "coordination"] = "coordination" if use_coord else "primary"
     try:
         with _coord_status_locks(repo_root, worktree_root, commit_paths, use_coord=use_coord):
             return safe_commit(
@@ -639,16 +745,17 @@ def _safe_commit_group(
                 **({"expected_path_bytes": expected_path_bytes} if expected_path_bytes is not None else {}),
             )
     except FeatureStatusLockTimeoutError as exc:
-        return CommitRouterResult(status=_STATUS_ERROR, placement_ref=placement.ref, diagnostic=str(exc))
+        reason = getattr(exc, "error_code", None) or commit_outcome.STATUS_LOCK_HELD
+        return _safe_commit_error_result(repo_root, placement, surface_name, commit_paths, reason=reason, diagnostic=str(exc))
     except subprocess.CalledProcessError as exc:
         stderr = getattr(exc, "stderr", "") or ""
         if "nothing to commit" in stderr or "nothing added to commit" in stderr:
-            return CommitRouterResult(status=_STATUS_UNCHANGED, placement_ref=placement.ref, reason=_REASON_NO_CHANGES)
-        return CommitRouterResult(status=_STATUS_ERROR, placement_ref=placement.ref, diagnostic=str(exc))
+            return _safe_commit_unchanged_result(repo_root, placement, surface_name, commit_paths)
+        return _safe_commit_error_result(repo_root, placement, surface_name, commit_paths, reason=_STATUS_ERROR, diagnostic=str(exc))
     except RuntimeError as exc:
         if _is_empty_changeset_error(exc):
-            return CommitRouterResult(status=_STATUS_UNCHANGED, placement_ref=placement.ref, reason=_REASON_NO_CHANGES)
-        return CommitRouterResult(status=_STATUS_ERROR, placement_ref=placement.ref, diagnostic=str(exc))
+            return _safe_commit_unchanged_result(repo_root, placement, surface_name, commit_paths)
+        return _safe_commit_error_result(repo_root, placement, surface_name, commit_paths, reason=_STATUS_ERROR, diagnostic=str(exc))
 
 
 # ---------------------------------------------------------------------------
@@ -831,19 +938,30 @@ def _merge_group_results(
     result's ``commit_hashes`` is always the UNION of every committed group's
     ``commit_hashes`` — so a genuinely split commit (e.g. feature-branch +
     coordination-branch) reports BOTH hashes, not just the caller-partition one.
+
+    WP05 (FR-007 contract rule 1): ``surfaces`` is likewise ALWAYS the union of
+    every group's own ``surfaces`` entry (each group carries exactly one, from
+    :func:`_commit_partition_group`), ordered PRIMARY then coordination
+    (``groups``/``results`` are already in that order — see
+    :func:`_group_files_by_partition`). This holds on EVERY return path below,
+    including the error early-return: masking a coordination group's refusal
+    behind a PRIMARY group's "committed" result is exactly the defect FR-007
+    forbids (a caller must see BOTH groups' outcomes via ``surfaces`` even when
+    the legacy top-level fields still select only one).
     """
+    all_surfaces = tuple(surface for result in results for surface in result.surfaces)
     for result in results:
         if result.status == _STATUS_ERROR:
-            return result
+            return replace(result, surfaces=all_surfaces)
 
     all_commit_hashes = tuple(pair for result in results for pair in result.commit_hashes)
 
     caller_is_primary = is_primary_artifact_kind(caller_kind)
     for (group_kind, _group_files), result in zip(groups, results, strict=True):
         if is_primary_artifact_kind(group_kind) == caller_is_primary:
-            return replace(result, commit_hashes=all_commit_hashes)
+            return replace(result, commit_hashes=all_commit_hashes, surfaces=all_surfaces)
 
-    return replace(results[0], commit_hashes=all_commit_hashes)
+    return replace(results[0], commit_hashes=all_commit_hashes, surfaces=all_surfaces)
 
 
 def _resolve_mission_target_branch(repo_root: Path, mission_slug: str) -> str:
@@ -1335,6 +1453,21 @@ _stage_finalize_artifacts_in_coord_worktree = _stage_artifacts_in_coord_worktree
 def _any_path_absent(paths: tuple[Path, ...]) -> bool:
     """Return True iff any path in *paths* does not exist on disk."""
     return any(not path.exists() for path in paths)
+
+
+def _relpath(repo_root: Path, path: Path) -> str:
+    """Render *path* as the POSIX repo-relative string a :class:`PathFate` carries (WP05).
+
+    Falls back to the raw ``str(path)`` when *path* is not actually under
+    *repo_root* (e.g. a coordination-worktree path compared against the
+    PRIMARY ``repo_root``) — this is cosmetic-only (the contract's ``path``
+    field has no format guarantee beyond "as the caller passed it"), never a
+    classification decision.
+    """
+    try:
+        return path.resolve().relative_to(repo_root.resolve()).as_posix()
+    except ValueError:
+        return path.as_posix()
 
 
 def _paths_uncommitted_in_primary(repo_root: Path, files: tuple[Path, ...]) -> bool:
