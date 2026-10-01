@@ -115,7 +115,7 @@ This WP removes the birth of the defect (#5440, P0; #2533). When it is done, cre
 ## Context & Constraints
 
 - **Spec**: US1 (scenarios 1–6); FR-001, FR-002, FR-002a, FR-002b, FR-016 (R1, R1b, R6 reproductions), NFR-001, C-008; Assumptions (eager materialization decided: decision `specify.design.seed-mechanism`).
-- **Plan**: IC-05 (and IC-02's R1c "S9" implementer check).
+- **Plan**: IC-05 (IC-02's R1c "S9" implementer check is struck: create defaults to COORD).
 - **Research**: D6 (create order, protected target, divergence model), D4 (post-fix discriminator), NFR-001 baseline section; red-first R1, R1b, R1c, R6, R20.
 - **Contracts and data model**: `contracts/seed.md` ("Create-time seed" note), `contracts/write-location-accessor.md`, `data-model.md` §6 (lifecycle) and §7 (create atomicity row).
 - **Upstream WPs**:
@@ -174,6 +174,7 @@ This WP removes the birth of the defect (#5440, P0; #2533). When it is done, cre
   - **Owned checkout.** `roots.owned` / `lifecycle_root`: `write_dir` must be built with the owned binding (WP04 owned arm).
   - **Hosted fan-out** must read the log where it was written.
   - `ensure_coordination_branch` returned `skipped_reason` (target does not resolve, synthetic contexts): then there is no coordination branch. `write_dir` must answer the PRIMARY dir (state NONE) and the old path applies. Test this.
+- **Trailer (round 4, `plan.design.seed-trailer-ownership`)**: create's commit on the coordination branch carries `Spec-Kitty-Coordination-Seed: <mission_id>`, built from WP03's shared constant `COORD_SEED_TRAILER` (import it; never a literal). Test it: after create, `git log --format=%(trailers:key=Spec-Kitty-Coordination-Seed,valueonly) <coordination_branch>` contains the `mission_id`.
 
 ### Subtask T032 – Protected target and failure-atomic rollback (FR-002a, US1.4/1.5)
 
@@ -194,11 +195,11 @@ This WP removes the birth of the defect (#5440, P0; #2533). When it is done, cre
 - **Validation**: all three rollback tests are green, and red at base for (a). Existing create-rollback tests (`grep -rl "_restore_git_state_after_failed_create" tests/`) stay green.
 - **Edge cases**: Windows path handling in teardown (use the guarded remove helper teardown already routes through); rollback must not mask the original exception.
 
-### Subtask T033 – R1c re-pin (with the S9 topology check) and R6 warning tests
+### Subtask T033 – R1c re-pin and R6 warning tests (the S9 check is struck; see Binding)
 
 - **Purpose**: `tests/core/test_mission_creation_decomposition.py::test_scaffold_commit_is_single_commit_excluding_spec_md` (L290; assertion L299 `status.events.jsonl in tree_files`) pins today's defective tree. R6 covers #2533's remaining symptom.
 - **Steps**:
-  1. **The S9 check, first.** `_init_repo` (L39) inits branch `work` with no remote. Run the test once at the lane base with a debug print, or read `meta.json["topology"]` of the created Mission, to see what topology it resolves. Without `origin/HEAD`, primary detection falls back to the current branch, so create may default to `coord`. Record the observed topology in the Activity Log.
+  1. ~~**The S9 check, first.**~~ **Struck (round 4)**: `create_mission_core` defaults to `topology=COORD` (`mission_creation.py:770`), so `_init_repo`'s fixture is coordination-routed. Go straight to step 2. Step 3 does not apply.
   2. **If it resolves `coord`:** re-pin L299 to `assert f"kitty-specs/{slug}/status.events.jsonl" not in tree_files`. Keep the `meta.json` / tasks assertions as positive controls, and add an assertion that the coordination branch tree carries the log. Also add an explicit `lanes` sibling (`topology=MissionTopology.LANES`) that keeps the original assertion (C-008).
   3. **If it resolves `lanes` (or `single_branch`):** leave the test unchanged as the C-008 control, and add a coordination-routed sibling asserting the new tree.
   4. **R6.** In `tests/coordination/test_surface_resolver_coord_empty_warning.py`, add:
@@ -328,7 +329,7 @@ Issues: #5440 #2533
 - The scaffold commit carries no COORD record for coordination topologies; `lanes`/`single_branch` are byte-identical (C-008).
 - The seed runs outside the bootstrap suppression; rollback removes both the worktree and the branch.
 - One divergence predicate is shared by create and doctor; the genuine legacy divergence is still reported.
-- NFR-001 medians are recorded and within budget; the S9 observed topology is recorded.
+- NFR-001 medians are recorded and within budget. ~~The S9 observed topology is recorded~~ (struck: S9 is unnecessary).
 - Gates are green.
 - **FR-016 relocation (post-tasks squad R-M8)**: after R1/R1b are GREEN, fold them into the owning create test module (`tests/core/test_mission_creation_decomposition.py`, owned here; keep the test names). Delete the adopted `tests/core/test_mission_create_coord_status_placement.py`, and remove its "stays red on main" docstring and regression marker.
 - `ensure_coordination_branch` tests (R-M7) and the protected-primary default-path parametrization (R-m4) are green.
@@ -346,7 +347,7 @@ Issues: #5440 #2533
 - Verify the history probe (not the tip tree) in R1, and that the positive control (`meta.json` on the target) is present.
 - Verify the protected-target and rollback-after-seed tests exercise real refs (no mocked git for the assertions).
 - Verify C-008 controls exist for `lanes`.
-- Check the recorded NFR-001 medians and the S9 topology note.
+- Check the recorded NFR-001 medians. ~~and the S9 topology note~~ (struck).
 
 ## Activity Log
 

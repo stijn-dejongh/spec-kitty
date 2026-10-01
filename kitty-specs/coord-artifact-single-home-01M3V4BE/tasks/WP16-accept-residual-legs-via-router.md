@@ -11,6 +11,7 @@ requirement_refs:
 - FR-007
 - FR-009
 - SC-003
+- FR-009b
 planning_base_branch: issue-5440-coord-artifact-single-home
 merge_target_branch: issue-5440-coord-artifact-single-home
 branch_strategy: Planning artifacts for this mission were generated on issue-5440-coord-artifact-single-home. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-5440-coord-artifact-single-home unless the human explicitly redirects the landing branch.
@@ -26,7 +27,6 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: python-pedro
-agent: claude
 authoritative_surface: src/specify_cli/cli/commands/accept.py
 create_intent: []
 execution_mode: code_change
@@ -41,6 +41,7 @@ role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+agent: claude
 assignee: ''
 shell_pid: ''
 ---

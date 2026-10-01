@@ -235,7 +235,7 @@ This WP writes tests only. If the e2e exposes a product defect, it is reported t
 
 - **Purpose**: post-tasks squad R-M1. US4.8 / FR-009b require that a fresh clone of a post-fix Mission, mid-flight, finds every decision, and that the existing PRIMARY-partition committers commit an uncommitted ledger on the target branch. No earlier WP proves this end to end.
 - **Steps**:
-  1. In the same e2e file (both parametrizations), after `decision open`/`resolve` on the post-fix Mission, commit the ledger through the normal path: `spec-commit` (or `setup-plan`, which commits planning files).
+  1. In the same e2e file (both parametrizations), after `decision open`/`resolve` on the post-fix Mission, commit the ledger through the normal path: `spec-commit` ~~(or `setup-plan`, which commits planning files)~~ (struck in round 4: committers are spec-commit and accept only, `plan.scope.ledger-committers`).
   2. Separately assert the ledger commit point **through `spec-commit` and `accept` only** (operator decision G1, `plan.scope.ledger-committers`). Leave a new decision's ledger files uncommitted, then run `accept` (and, in a separate leg, `spec-commit`). Assert with `git log -1 --name-only <target>` that the target branch tip now holds `decisions/index.json` and the new `DM-*.md`.
   3. `git clone <repo> <tmp>/clone` (no coordination worktree). In the clone, run `spec-kitty agent decision verify --mission <M> --json` and `spec-kitty doctor decisions --mission <M> --json`. Assert that every decision id opened in the source repository is found, that verify is clean (not forked), and that doctor reports `ledger.state == "primary"`.
 - **Files**: `tests/integration/test_coord_single_home_workflow.py`.
@@ -261,7 +261,7 @@ uv run --frozen pytest tests/integration/test_coord_single_home_workflow.py -q
 make test-fast
 ```
 
-Optionally re-run the two WP02 factory self-tests (`tests/coordination/test_coord_mission_factory.py`) if you rely on new factory behaviour.
+Re-run the two WP02 factory self-tests (when you rely on new factory behaviour) (`tests/coordination/test_coord_mission_factory.py`) if you rely on new factory behaviour.
 
 **Never run the bare `tests/architectural/`, any e2e/integration directory, performance/stress suites or `make test-full` (NO_FULL_HEAVY_SUITES_IN_MISSION, C-006).** Record commands and counts in the activity log for the PR's *Tests run* section.
 
@@ -299,7 +299,7 @@ Issues: #5440 #5519
 - The reviewer (opus, distinct from the implementer) verifies:
   - the file is GREEN on this WP's final commit;
   - the invariants are non-vacuous. Ask for, or re-run, the planted-failure self-checks from T114.
-- This WP's "red" is the defect it guards. Optionally, check against `ecb5dd914a` that the SC-001 history probe and the single-log assertion fail there (create seeds the target at base). Note that the full flow may not run end to end at base.
+- This WP's "red" is the defect it guards. ~~Optionally~~ **Required (analyze C2)**: check against the planning base / pre-Mission code that the SC-001 history probe and the single-log assertion fail there (create seeds the target at base). Note that the full flow may not run end to end at base.
 - Confirm:
   - topology guards;
   - the moved-merge-base variant really moves the merge base (inspect `git merge-base`);

@@ -226,9 +226,9 @@ Build the **core of the one write-location accessor**: the function that, for a 
   2. **Lock**: `with feature_status_lock(repo_root, mission_dir_name):`. This is reentrant, so a caller already holding it (`BookkeepingTransaction`) does not deadlock. Map `FeatureStatusLockTimeoutError` by letting it propagate (it now carries `STATUS_LOCK_HELD`).
   3. **Re-probe**: `probe_coord_state(...)`. If it is MATERIALIZED, return `SeedReport()` (another writer won; idempotent, I-SEED-6).
   4. **Cleanup**: remove stale `<coord_wt>/kitty-specs/.<dir>.seed-*` dirs (crash leftovers).
-  5. **Collect**: walk `root_mission_dir`. Keep a file iff `kind_for_mission_file(<mission-relative path>)` is a COORD-partition kind; use the taxonomy's partition predicate (`artifact_home_for` / the `_PLACEMENT_ARTIFACT_KINDS` membership exposed by `mission_runtime.artifacts`), not a hand list. Expected: `status.events.jsonl`, `status.json`, `decisions.events.jsonl`, `traces/*.md`, `tasks/*/review-cycle-*.md`, `issue-matrix.*`, `acceptance-matrix.json`. **Never** `meta.json`, `spec.md` or other PRIMARY files.
+  5. **Collect**: walk `root_mission_dir`. Keep a file iff `kind_for_mission_file(<mission-relative path>)` is a COORD-partition kind; use the taxonomy's public partition predicates (`kind_is_coordination_residue(kind, topology)` / `not is_primary_artifact_kind(kind)`, from the `mission_runtime` package root; never the private `_PLACEMENT_ARTIFACT_KINDS`), not a hand list. Expected: `status.events.jsonl`, `status.json`, `decisions.events.jsonl`, `traces/*.md`, `tasks/*/review-cycle-*.md`, `issue-matrix.*`, `acceptance-matrix.json`. **Never** `meta.json`, `spec.md` or other PRIMARY files.
      - Note: WP12 later moves `DECISION_LEDGER` (`decisions/DM-*.md`, `index.json`) to PRIMARY. Rely on the taxonomy, not a list, so the seed follows automatically.
-  6. **Coordination side**: when `post_fix` is set, the coordination-side content is the branch tip blobs (`git show <coord>:kitty-specs/<dir>/<file>`; list them with `git ls-tree -r --name-only <coord> -- kitty-specs/<dir>/`). Otherwise it is empty.
+  6. **Coordination side**: the coordination-side content is the branch-tip blobs of **COORD-kind** files only (`git show <coord>:kitty-specs/<dir>/<file>`; list them with `git ls-tree -r --name-only <coord> -- kitty-specs/<dir>/` and classify each). PRIMARY files on the tip (a pre-fix branch cut after the first target commit) are ignored. When there are no COORD-kind blobs, it is empty (contracts/seed.md step 5).
   7. **Logs**: `classify_prefix` per stream. A fork raises `CoordSeedForkRefused` **before writing anything** (state unchanged). The message names both paths, both refs, the first diverging ids, and the reconcile steps from contracts/seed.md errors table:
      - inspect with `spec-kitty doctor decisions`;
      - keep the coordination log;
@@ -274,6 +274,9 @@ Build the **core of the one write-location accessor**: the function that, for a 
 - **Edge cases**:
   - The commit runs inside the status lock, and `commit_for_mission` takes coordination status locks itself (`_coord_status_locks`, ≈L586). The lock is reentrant on the same key; add a test that proves no deadlock.
   - If WP05 has not landed yet in your lane, the router still commits in-place coordination paths today. Do not depend on WP05 behaviour.
+- **Trailer (round 4, `plan.design.seed-trailer-ownership`)**: the seed commit carries `Spec-Kitty-Coordination-Seed: <mission_id>`, built from the shared constant `COORD_SEED_TRAILER` defined in this WP's `coord_seed.py`.
+- **Refused seed commit, retried**: if the commit is refused, the Mission dir stays, uncommitted (warning). The **next seed attempt** re-commits with the trailer: on the next COORD write, `establish_coord_write_location` detects a pending seed (the Mission dir is present, its COORD records are uncommitted under it, and the branch has no trailer for this `mission_id`) and retries the commit before the triggering write. Keep the check cheap: a porcelain check scoped to the Mission dir first, and the trailer lookup only when that check finds dirt. Do **not** change the commit router.
+- Tests: the refused-then-retried path (first attempt refused, then the ref is unprotected, so the next write commits the seed with the trailer), and the trailer present after a normal seed.
 
 ### Subtask T016 – `establish_coord_write_location`: the state machine
 
@@ -285,10 +288,10 @@ Build the **core of the one write-location accessor**: the function that, for a 
      - **MATERIALIZED**: return the coordination Mission dir, establishment `NONE`. No side effects.
      - **UNMATERIALIZED**: call `materialize_coord_surface_for_write(repo_root, mission_slug)`. It raises `CoordinationWorktreeUnmaterialized` for a remote-only branch (#4970 parity, ruling Q1); let that propagate, because nothing has been written. Re-probe, then continue with the MATERIALIZED or EMPTY handler. Establishment is `MATERIALIZED` unless a seed follows.
      - **DELETED**: raise `CoordinationBranchDeleted`, with the recovery hint the existing exception carries.
-     - **EMPTY, branch tree lacks the Mission dir** (`git ls-tree <coord> -- kitty-specs/<dir>` empty; pre-fix): `seed_coord_surface(post_fix=False)` → `SEEDED`.
-     - **EMPTY, branch tree carries the Mission dir** (post-fix regression, D4, ruling Q3):
+     - **EMPTY, no `Spec-Kitty-Coordination-Seed: <mission_id>` trailer in the coordination branch history** (pre-fix, including a branch whose tree carries PRIMARY files; round 4, D4): `seed_coord_surface(post_fix=False)` → `SEEDED`.
+     - **EMPTY, the trailer is present** (post-fix regression, D4, ruling Q3; ~~"branch tree carries the Mission dir"~~ struck in round 4):
        1. `logger.warning` loudly (Mission, branch, "coordination Mission dir missing from worktree; restoring from branch tip");
-       2. `git -C <coord_wt> checkout HEAD -- kitty-specs/<dir>`, which restores only committed content;
+       2. restore **COORD-kind paths only** from the branch tip, using an explicit pathspec built from `kind_for_mission_file` over `git ls-tree -r <coord> kitty-specs/<dir>/` (~~whole-dir `git checkout HEAD -- kitty-specs/<dir>`~~ struck in round 3);
        3. if root-only COORD records exist, `seed_coord_surface(post_fix=True)` for them;
        4. return `RESTORED_FROM_BRANCH` with `restored_from_branch` filled.
   4. **Lock order** (I-SEED-2): materialization takes the workspace lock and releases it **before** the seed takes the status lock. Never acquire the status lock and then call `CoordinationWorkspace.resolve` from inside this function, **except** when the caller already holds the status lock. That nesting is the existing `BookkeepingTransaction.acquire` order (`transaction.py:292` then `:465`), and `workspace.py` never takes the status lock.
@@ -356,7 +359,10 @@ Build the **core of the one write-location accessor**: the function that, for a 
   - Test it in `tests/coordination/test_coord_seed.py`.
 - **Restore over-reach (operator decision)**: restore **COORD-kind paths only**, using a pathspec built from kind classification. Never `git checkout HEAD -- kitty-specs/<dir>` for the whole dir: a branch cut or fast-forwarded after a target commit carries `meta.json`/`spec.md` (I-SEED-9).
 - **D4 discriminator (operator decision)**: "the coordination branch tree carries `kitty-specs/<dir>`" over-matches pre-fix Missions whose coordination branch was cut after the first target commit (fixture `tests/coordination/test_surface_resolver_solo_coord_primary.py:107-146`).
-  - Define **one** correct discriminator here, e.g. the coordination branch tree carries a COORD-kind file (`status.events.jsonl`) under `coord_mission_dir_name(...)`, or a seed/creation commit marker/trailer that WP06's create and this WP's seed both write.
+  - The discriminator is the **`Spec-Kitty-Coordination-Seed: <mission_id>` commit trailer** (research D4; Decision Moment `plan.design.seed-trailer-ownership`).
+    - Define it once, as the constant `COORD_SEED_TRAILER` in `coord_seed.py` (owned here). WP06 T031 imports it for create's commit.
+    - A Mission is post-fix iff its coordination branch history carries the trailer with its `mission_id`.
+    - ~~The tree-content alternative ("the branch tree carries a COORD-kind file")~~ is removed.
   - Add a **negative test** with that fixture shape: pre-fix → SEEDED, never RESTORED_FROM_BRANCH, and no loud warning.
   - WP04 reuses it.
 - **Value objects**:
@@ -373,6 +379,7 @@ Build the **core of the one write-location accessor**: the function that, for a 
 - **Gate citation fix (operator decision)**: `test_no_worktree_name_guess.py` explicitly **excludes** `.parent.parent` (L474-476, deferred #2007), so it is **not** the P-M3 guard. P-M3 (`checkout_root`, never `.path.parent.parent`) is enforced mechanically by WP20's extension of `test_no_write_side_rederivation.py`; until then review checks it.
 - **"Loud" (analyze A2)** means a WARNING-level log line naming the Mission, the coordination state and the action taken.
 - Valid guards to keep green: `tests/coordination/test_materialize_coord_surface.py`, `test_unmaterialized_remedy_text.py`, `tests/specify_cli/coordination/test_coord_topology_states.py`, `test_coord_branch_remote_probe_4979.py`, `tests/status/test_locking_key.py`, `test_locking_reentrancy_migration.py`. Also run `tests/architectural/test_mission_runtime_surface.py`, `test_no_dead_modules.py`, `test_no_dead_symbols.py` and `test_cold_import_status_boundary.py` by name.
+- **I10 (round 4)**: the single write authority implements **research D22**. The seed trailer and its COORD-only restore implement **D4** (rev 5).
 
 ## Targeted test surface
 

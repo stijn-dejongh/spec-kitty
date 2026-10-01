@@ -105,7 +105,7 @@ Done means:
 
 ## Context & Constraints
 
-- **Spec**: FR-003 (writer families "review-cycle", "status transitions: … mark-status"), FR-007 (consumers "the tasks-port commit wrapper and its callers: review-cycle, mark-status and map-requirements"), SC-003, US2.1/2.2, edge case "Transient staging".
+- **Spec**: FR-003 (writer families "review-cycle", "status transitions: … mark-status"), FR-007 (spec rev 5: "the tasks-port commit wrapper and its committing callers: review-cycle and map-requirements"; mark-status renders nothing), SC-003, US2.1/2.2, edge case "Transient staging".
 - **Plan**: IC-04 (review-cycle and mark-status writer rows), IC-07 (tasks-port consumer row).
 - **Research**: grounding correction "review/cycle.py:298-303 REVIEW_CYCLE fallback" (no production caller passes `kind=REVIEW_CYCLE`; the writers use the PRIMARY `WORK_PACKAGE_TASK` dir and commit via `commit_artifact(kind=REVIEW_CYCLE)`, which is stage-in-root-then-copy), D8 (consumer list, exit-code rule, "discarded-result sites render a warning only when a surface is not committed/unchanged").
 - **Contracts**: `contracts/commit-outcome.md` (rules 1-6, reason codes), `contracts/write-location-accessor.md`.
@@ -177,7 +177,7 @@ Done means:
 - **Validation**: T043 mark-status case is green; existing mark-status tests (`grep -rl "mark-status\|mark_status" tests/ | head -20`) are green.
 - **Edge cases**: the pre30 layout guard runs after resolution and must still see `st.feature_dir`. `write_dir` on a remote-only Mission refuses. Ensure the CLI renders that as an error with the hint, not a traceback.
 
-### Subtask T046 – Render per-surface outcomes at the three tasks-port consumers
+### Subtask T046 – Render per-surface outcomes at the two live tasks-port consumers (mark-status struck; see Binding)
 
 - **Purpose**: The consumers today read only `status` / `placement_ref` / `commit_hash` (FR-007 masking).
 - **Steps**:
@@ -227,6 +227,7 @@ Done means:
 - **Lock ordering**: `create_rejected_review_cycle` runs under the verdict-queue lease. Confirm that the lease is not the workspace lock (I-SEED-2) and record the finding.
 - **PUBLISHED case**: after consolidation `REVIEW_CYCLE` resolves to the target (WP04). Add one post-consolidation reject test.
 - **Single write authority**: WP03 removed the local-head refusal; do not expect `COORD_WRITE_SURFACE_UNMATERIALIZED` for a local head.
+- **I10 (round 4)**: the post-consolidation REVIEW_CYCLE write follows **research D23**. The removed local-head refusal is **D22**.
 
 ## Targeted test surface
 

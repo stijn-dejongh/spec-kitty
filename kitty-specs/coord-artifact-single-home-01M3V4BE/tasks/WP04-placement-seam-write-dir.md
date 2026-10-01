@@ -93,7 +93,7 @@ Success means:
   - **COORD kinds of coordination-routed Missions**: delegates to WP03's `establish_coord_write_location` (materialize, seed, restore or refuse).
 - The owned-checkout coordination arm works through the owned workspace.
 - A property test pins `write_dir(kind).surface` ⇔ `write_target(kind).ref` agreement for every kind × topology. It also pins that `resolve_placement_only`, `write_target` and `read_dir` remain side-effect free.
-- A post-fix Mission (its coordination branch tree carries the Mission dir) whose worktree Mission dir is missing logs the EMPTY warning for **both** `coord` and `lanes_with_coord`. Pre-fix behaviour is unchanged, and reads still fall back to the repository root checkout.
+- A post-fix Mission (its coordination branch history carries the `Spec-Kitty-Coordination-Seed: <mission_id>` trailer; round 4) whose worktree Mission dir is missing logs the EMPTY warning for **both** `coord` and `lanes_with_coord`. Pre-fix behaviour is unchanged, and reads still fall back to the repository root checkout.
 - The docstrings and the `CoordState.EMPTY` contract text say what the code does.
 - The `mission_runtime` outbound ledger does **not** grow (cap 10, `tests/architectural/_baselines.yaml` key `test_layer_rules.mission_runtime_allowed_specify_cli`).
 
@@ -110,7 +110,7 @@ Success means:
   - `read_dir` keeps the read fallback;
   - `resolve_status_surface_with_anchor(for_write=True)` stays pure. It is reached from `resolve_placement_only` (`resolution.py:1974-1982`, `_assemble_core_fragments(..., for_write=True)`).
 - **Plan IC-17**: the code-comment half of FR-017 (stale docstrings in `resolution.py`, the `_read_path_resolver.py` contract text) lands here, because this WP owns those files. The `docs/` half is WP22.
-- **Research**: D1 (accessor shape and rejected alternatives), D4 (post-fix discriminator: `git ls-tree <coord> kitty-specs/<dir>` non-empty; no meta flag).
+- **Research**: D1 (accessor shape and rejected alternatives), D4 (post-fix discriminator: the `Spec-Kitty-Coordination-Seed: <mission_id>` trailer, constant `COORD_SEED_TRAILER` owned by WP03; no meta flag; ~~`git ls-tree` non-empty~~ struck in round 4).
 - **Contract**: `contracts/write-location-accessor.md` (postcondition table, errors, "Relationship to existing seams").
 - **Data model**: §2 (the CoordState handling table and the read-side note).
 - **Code anchors** (verified at `ecb5dd914a`):
@@ -206,12 +206,12 @@ Success means:
 - **Steps**:
   1. In the EMPTY-branch helper WP01 extracted from `resolve_status_surface_with_anchor` (`surface_resolver.py`, the block at ≈L1430-1450), add the post-fix discriminator, research D4:
      ```python
-     post_fix = _coord_branch_carries_mission_dir(repo_root, coordination_branch, mission_dir_name)  # git ls-tree -d <branch> -- kitty-specs/<dir>
+     post_fix = coord_branch_is_post_fix(repo_root, coordination_branch, mission_id)  # WP03's trailer discriminator (COORD_SEED_TRAILER); round 4
      if post_fix or effective_topology is MissionTopology.LANES_WITH_COORD:
          logger.warning(_COORD_EMPTY_FALLBACK_WARNING, {...})
      return ResolvedStatusSurface(surface_path=feature_dir / _STATUS_EVENTS_FILENAME, primary_anchor=feature_dir)
      ```
-  2. The probe is a **read-only** git plumbing call (`git ls-tree`). That keeps the function pure (no writes, no materialization); it is reached from `resolve_placement_only`. If WP03 already exposes a helper for this discriminator in `coord_seed.py`, import it lazily rather than duplicating it (single authority). Otherwise define it here and have WP03's code reuse it. Prefer one definition, in whichever module is lower in the import graph.
+  2. The probe is a **read-only** git call (a trailer lookup in the coordination branch history; ~~`git ls-tree`~~ struck in round 4). Import WP03's single discriminator lazily; never redefine it. That keeps the function pure (no writes, no materialization); it is reached from `resolve_placement_only`. If WP03 already exposes a helper for this discriminator in `coord_seed.py`, import it lazily rather than duplicating it (single authority). Otherwise define it here and have WP03's code reuse it. Prefer one definition, in whichever module is lower in the import graph.
   3. Optionally extend the warning text with "post-fix Mission: the coordination Mission dir was removed from the worktree; writes will restore it from the branch tip". Keep the existing placeholders, and keep the existing tests' message match green.
   4. Tests in `tests/coordination/test_surface_resolver_post_fix_empty_loud.py`:
      - post-fix `coord` → warns (`caplog`);
@@ -224,7 +224,7 @@ Success means:
 - **Files**: `src/specify_cli/coordination/surface_resolver.py`, `tests/coordination/test_surface_resolver_post_fix_empty_loud.py`.
 - **Validation**: existing `tests/coordination/test_surface_resolver_coord_empty_warning.py`, `test_surface_resolver_solo_coord_primary.py` and `tests/specify_cli/coordination/test_legacy_warning_classifier.py` stay green unchanged. If one pins "solo coord never warns" for a fixture that is actually post-fix-shaped, stop: report it rather than re-pin it, because it means the fixture is mislabelled.
 - **Edge cases**:
-  - The extra `git ls-tree` costs one subprocess on the EMPTY branch only, which is the rare path. Do not run it on MATERIALIZED.
+  - The extra trailer lookup costs one subprocess on the EMPTY branch only, which is the rare path. Do not run it on MATERIALIZED.
   - A missing coordination branch is DELETED, a separate branch of the resolver. Leave it unchanged.
 
 ### Subtask T022 – Correct stale in-code contract text
@@ -267,6 +267,7 @@ Success means:
 - `write_dir` must not construct a `CommitTarget` (`test_no_write_side_rederivation.py` scans constructions).
 - **G2**: FR-017 is now in requirement_refs (T022 delivers its code-comment half).
 - Valid guards: `test_surface_resolver_coord_empty_warning.py` :127 and :179 (the latter is pre-fix under the corrected discriminator).
+- **I10 (round 4)**: the PUBLISHED/E2 arm implements **research D23**. The single write authority it agrees with is **D22** (WP03).
 
 ## Targeted test surface
 

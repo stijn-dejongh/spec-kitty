@@ -308,6 +308,11 @@ Use language identifiers in code blocks: ````python`, ````bash`
 - **Executor**: `_phase_porcelain_invariant` (L2013) uses `is_toolchain_generated_churn`; its topology handling is WP12's. Only the message changes here.
 - R16 fixture (d) comes from WP02.
 - **Gate citation fix**: `test_no_worktree_name_guess.py` is a general gate to keep green, **not** the P-M3 guard (it excludes `.parent.parent`). P-M3 is enforced by WP20.
+- **C3 (round 4)**: update the help text and record reference deltas for WP22:
+  - `doctor decisions` prints a fork report, and `--repair` exits 1 on a fork without ever dropping an entry;
+  - `decision verify` exits 1 with `DECISION_LOG_FORKED`;
+  - teardown/discard and consolidation refuse with `COORDINATION_LEDGER_UNREPAIRED`.
+  The reference anchors are `docs/api/cli-commands.md` ≈L1864 (doctor decisions) and `docs/api/agent-subcommands.md` ≈L596 (decision verify).
 
 ## Targeted test surface
 

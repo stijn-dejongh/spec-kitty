@@ -181,6 +181,9 @@ This is a small WP on one file (plus its test file). It depends on WP02 (shared 
 - **Use the choke point**: call `_resolve_workflow_placement(...)` (`workflow.py:680`, the single choke point for `write_target`) and take `.ref`. Do not add a raw `placement_seam(...)`.
 - `tests/git/test_guard_capability_regression.py:252-261` calls `_commit_via_legacy_safe_commit` directly, so keep the kw signature. `test_coord_commit_integrity_e2e.py` references it too.
 - **Stale text**: this WP has **dependencies** (WP02), and it shares a lane with WP08 (WP19 first). It is not a parallel root (analyze I4).
+- **I9 (round 4)**: record the reproduction result explicitly against FR-013 / US6, and against the spec Assumption "#5440's 'implement leaks status' evidence is the misleading receipt", in the activity log and in a `design-decisions` tracer entry. Record whether the coordination-Mission receipt defect reproduced.
+  - If only the `lanes`/`single_branch` fallback reproduces, the fix there is **output-only and additive**: a commit id on every receipt entry, and no change to any existing field, branch name or commit. That is the spec's sanctioned C-008 note (Edge Cases, "Implement receipts on non-coordination topologies"). Add a `lanes` control asserting that every pre-existing receipt field is unchanged.
+  - FR-013 still needs its coordination-Mission green (US6.1/6.2). If that run is green at the base, say so honestly; do not fabricate a red.
 
 ## Targeted test surface
 

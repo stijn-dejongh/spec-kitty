@@ -274,6 +274,10 @@ Done means:
 - **Placement guard**: apply the move to **both** `primary_kinds` and `coord_kinds` (`test_write_surface_placement_guard.py:356-359`). `test_artifact_partition_mapping.py::test_decisions_ledger_kind_is_distinct_from_neighbor_kinds` (L197) should stay green.
 - **G2**: FR-017 is now in requirement_refs (T065 rewrites the residue comments). C-008 is added for the topology-less fix.
 - Quick-run includes `tests/lanes/test_squash_seam_reconciliation.py`.
+- **Round 4 (`plan.design.topology-less-callers`)**: the fix point and its semantics are confirmed, and the design docs now match (plan IC-11, research D12, data-model). There is **no** compatibility set.
+  - **Add coordination-Mission tests** at move-task (`tasks_move_task.py:824`), implement (`implement.py:905/947`) and auto-rebase (`lanes/auto_rebase.py:225`), in `tests/coordination/test_ledger_topology_less_callers.py`. For the now-PRIMARY ledger, an uncommitted `decisions/` file on a coordination Mission is **real work, not residue**. This is a deliberate widening for coordination Missions.
+  - The `lanes`/`single_branch` characterization stays byte-identical to the base.
+- **Round 4 (`plan.design.merge-class-guard-set`)**: confirmed, and plan IC-11 / research D13 now match. `decisions` stays in `_NON_DIVERGENT_COORD_RESIDUE_DIRS`, the ruling text is amended, and the `decisions/index.json` driver pattern is asserted as registered.
 
 ## Targeted test surface
 

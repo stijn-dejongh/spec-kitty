@@ -229,6 +229,7 @@ Done means:
 - **Single write authority**: `write_artifact` calls `assert_coord_write_materialized` before `stage()`, and that is now WP03's delegate. Do not expect the old local-head refusal.
 - `_matrix_read_dir` is at L89. C901: `write_artifact` ≤ 7, `tracer_append` 8.
 - **Docstring follow-up from WP16**: once WP16 lands, `write_seam.py:55` must stop naming `_commit_coord_residuals` as the canonical consumer. WP16 (which depends on this WP) makes that declared out-of-map docstring edit.
+- **I10 (round 4)**: post-consolidation tracer and matrix writes follow **research D23**. `write_artifact`'s gate delegating to the accessor is **D22**.
 
 ## Targeted test surface
 

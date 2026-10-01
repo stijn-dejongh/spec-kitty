@@ -104,7 +104,7 @@ Success means:
 - **Load the charter**: `.kittify/charter/charter.md`, then `spec-kitty charter context --action implement --json`.
 - **Plan**: `kitty-specs/coord-artifact-single-home-01M3V4BE/plan.md` IC-01 (the C901 table and its risks) and the "Shared-file (lane-conflict) map".
 - **Spec**: NFR-003, NFR-004, NFR-005; Constraint C-006 (no heavy suites).
-- **Research**: none of D1-D21 changes behaviour here. The seams you cut are where D7 (router), D10/D16 (finalize), D8 (renderers) and D4 (EMPTY warning) later land.
+- **Research**: none of D1-D23 changes behaviour here. The seams you cut are where D7 (router), D10/D16 (finalize), D8 (renderers) and D4 (EMPTY warning) later land.
 - **Locality (DIRECTIVE_024)**: every extraction stays inside the file that holds the function. Do not move code across modules, and do not rename public symbols. `resolution.py` is explicitly *not* touched; it has nothing ≥ 10.
 - **Do not touch**:
   - `record_analysis` (`mission_record_analysis.py:225`, C901 13). Plan: its consumer at L374 lives in `_maybe_auto_commit`, so the function itself is not changed.

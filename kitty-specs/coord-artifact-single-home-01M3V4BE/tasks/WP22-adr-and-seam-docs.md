@@ -271,6 +271,11 @@ Done means:
   - coordination-routed create materializing the coordination worktree (WP06).
 - CHANGELOG `[Unreleased]` entries are a **closeout item** (tasks.md), not this WP's.
 - Red evidence: exempt (documentation WP; FR-017 is review-only, anchored on the cited ADR sections).
+- **Round 4 (C3)**: add WP17's deltas to the reference pages.
+  - `docs/api/cli-commands.md` ≈L1864: the `doctor decisions` fork report and `--repair` exiting 1 on a fork without dropping entries.
+  - `docs/api/agent-subcommands.md` ≈L596: `decision verify` exiting 1 with `DECISION_LOG_FORKED`.
+  - The teardown/discard refusal `COORDINATION_LEDGER_UNREPAIRED`.
+- **I13**: spec FR-017's anchor list now names this WP's new ADR; ADR 2026-06-19-1's amendment links to it.
 
 ## Targeted test surface
 

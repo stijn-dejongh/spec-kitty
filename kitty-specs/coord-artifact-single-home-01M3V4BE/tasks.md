@@ -5,7 +5,7 @@ description: "Work package task list for Mission coord-artifact-single-home-01M3
 # Work Packages: Coordination artifacts get one durable home
 
 **Inputs**: Design documents from `/kitty-specs/coord-artifact-single-home-01M3V4BE/`
-**Prerequisites**: plan.md (IC-01..IC-18, shared-file map), spec.md (rev 3: US1-US6, FR-001..FR-017), research.md (D1-D21, red-first R1-R24 + R1d, NFR-001 baseline), data-model.md, contracts/ (write-location-accessor, seed, commit-outcome, doctor-decisions-fork-report), quickstart.md
+**Prerequisites**: plan.md (IC-01..IC-18, shared-file map), spec.md (rev 5: US1-US6, FR-001..FR-017), research.md (D1-D23, red-first R1-R24 + R1d, NFR-001 baseline), data-model.md, contracts/ (write-location-accessor, seed, commit-outcome, doctor-decisions-fork-report), quickstart.md
 
 **Tests**: Required. The charter's ATDD-First Discipline (C-011) and spec C-005 / FR-016 apply: every code work package opens with a red-first reproduction through the pre-existing entry point, committed before the fix. The reviewer verifies RED on the work package's base and GREEN on its final commit. Test runs are targeted (C-006, `NO_FULL_HEAVY_SUITES_IN_MISSION`). Never run the bare `tests/architectural/`, an e2e or integration directory, or `make test-full`.
 
@@ -40,19 +40,33 @@ description: "Work package task list for Mission coord-artifact-single-home-01M3
 - **Single project**: `src/` (layered `kernel ← charter ← {glossary, runtime, mission_runtime} ← specify_cli`), `tests/` mirroring the source tree.
 - Every path below is repository-root-relative.
 
-## Lane notes (shared-file map)
+## Lane notes (lanes.json ids; analyze I14)
 
-`owned_files` overlap only between **dependency-ordered** work packages, where the plan's shared-file map asks for one lane. The ownership validator exempts those pairs, and lane computation places them in one lane:
+`owned_files` overlap only between **dependency-ordered** work packages, where the plan's shared-file map asks for one lane. The ownership validator exempts those pairs, and lane computation places them in one lane. The lanes and lane dependencies below are exactly as computed in `lanes.json`.
 
-- **Lane A** (sequential): WP01 → WP04 → WP05 (`surface_resolver.py`, `commit_router.py`). WP01 extracts helpers there first (tidy-first).
-- **Lane B** (sequential, round 3): WP07 → WP09 → WP17 → WP18. The shared files are `tests/mission_runtime/test_coord_read_seam_callers.py` (WP07 re-pins L259, WP09 re-pins L198), `cli/commands/decision.py` (WP09's exception arms, then WP17's verify) and `consolidation/executor.py` (IC-12 before IC-18).
-- **Single owners, round 3**:
+| Lane | WPs (in order) | Depends on lanes | Shared file(s) / note |
+|------|----------------|------------------|-----------------------|
+| lane-b | WP02 | — | root |
+| lane-i | WP11 | — | root |
+| lane-c | WP03 | lane-b | |
+| lane-a | WP01 → WP04 → WP05 | lane-c | `surface_resolver.py`, `commit_router.py`. **lane-a starts after lane-c (WP03)**, so WP01, although it has no WP dependency of its own, does not start concurrently with the roots |
+| lane-d | WP06 | lane-a | |
+| lane-j | WP12 | lane-a, lane-i | |
+| lane-k / lane-l / lane-m | WP13 / WP14 / WP15 | lane-a | own lanes after the P-m7 move of T002/T003/T004 |
+| lane-o | WP07 → WP09 → WP17 → WP18 | lane-a, lane-j | `test_coord_read_seam_callers.py` (WP07 L259, WP09 L198), `cli/commands/decision.py` (WP09, then WP17), `consolidation/executor.py` (IC-12 before IC-18) |
+| lane-f | WP19 → WP08 | lane-b, lane-o | `cli/commands/agent/workflow.py` (WP08 may fix the reject→fix-mode readers) |
+| lane-h | WP10 | lane-a, lane-o | |
+| lane-n | WP16 | lane-a, lane-h, lane-j | |
+| lane-p | WP20 | lane-d, lane-f, lane-h, lane-k, lane-l, lane-m, lane-n, lane-o | |
+| lane-q | WP21 | lane-d, lane-f, lane-n, lane-o, lane-p | |
+| lane-planning | WP22 | lane-q | docs only (`planning_artifact`) |
+
+- **Single owners**:
   - `tests/architectural/test_no_read_side_bypass.py` is WP07's; WP10 depends on WP07 and removes its own entry as a declared out-of-map edit.
   - `coordination/write_seam.py` is WP10's; WP16 depends on WP10 and updates its docstring L55 as a declared out-of-map edit.
   - `mission_runtime/write_target_degrade.py`, `mission_runtime/__init__.py` and `test_mission_runtime_surface.py` are WP03's (single write authority; package-root re-exports).
-- **WP19 → WP08** share one lane (`cli/commands/agent/workflow.py`): WP08 may fix the reject→fix-mode readers (post-tasks squad R-M3).
-- **Post-tasks squad P-m7**: the `spec_commit_cmd.py`, `git/report_transaction.py` and `mission_finalize.py`/`tasks_finalize.py` extractions (T002/T003/T004) moved into WP13/WP14/WP15 as each WP's tidy-first first commit, so those three run in their own lanes after WP05. Subtask ids keep their global numbers, so T002–T004 appear out of numeric order in those WPs.
-- **Declared out-of-map edit**: WP07 updates two tests in `tests/coordination/test_commit_router.py` (≈L953, ≈L1012) that import `status_transition._coord_feature_dir`, which WP07 deletes. That file belongs to lane A, which is complete before WP07 starts.
+- **P-m7**: the T002/T003/T004 extractions are each WP's tidy-first first commit in WP13/WP14/WP15. Subtask ids keep their global numbers.
+- **Declared out-of-map edit**: WP07 updates two tests in `tests/coordination/test_commit_router.py` (≈L953, ≈L1012) that import `status_transition._coord_feature_dir`, which WP07 deletes. That file belongs to lane-a, which completes before lane-o starts.
 - Every other pair of work packages has disjoint ownership.
 
 ---
@@ -75,7 +89,7 @@ T007 Behaviour-preservation proof: same tests, C901 after-table, ruff/format/myp
 ### Implementation Notes
 
 - One commit per extraction. Each extraction stays inside its own file (locality), and each extracted helper gets a focused test.
-- Leave `record_analysis` (C901 13) alone: plan IC-01 marks it as not touched.
+- ~~Leave `record_analysis` (C901 13) alone~~ (struck, round 4: WP14 extracts its suppress-and-commit block first; plan IC-01 corrected).
 
 ### Parallel Opportunities
 
@@ -83,7 +97,7 @@ T007 Behaviour-preservation proof: same tests, C901 after-table, ruff/format/myp
 
 ### Dependencies
 
-- None (starting package).
+- None at WP level. Per lanes.json, its lane-a depends on lane-c, so it starts after WP03 (analyze I14).
 
 ### Risks & Mitigations
 
@@ -112,7 +126,7 @@ T011 `tests/coordination/conftest.py` fixtures and the factory self-tests (WP02)
 
 ### Parallel Opportunities
 
-- Runs in parallel with WP01, WP11 and WP19 from the start.
+- Runs in parallel with WP11 from the start (lane-b and lane-i are the only roots in lanes.json). WP19 follows this WP, and WP01's lane-a waits for lane-c (WP03).
 
 ### Dependencies
 
@@ -245,7 +259,7 @@ T029 Named refusals (`STATUS_LOCK_HELD`, `PROTECTED_BRANCH_REFUSED`, `COORDINATI
 T030 Adopt R1/R1b (`git cherry-pick -x 31ea4681f7`), parametrized over both coordination topologies and the pr-bound path (WP06)
 T031 Create flow: `write_dir(STATUS_STATE)`, emit the creation events there, commit on the coordination branch, drop the status log from the target scaffold (WP06)
 T032 Protected-target seed outside the bootstrap suppression; rollback removes the coordination worktree and the seed (WP06)
-T033 R1c re-pin with the S9 topology check; R6 no-warning-after-create plus the legacy control (WP06)
+T033 R1c re-pin (~~S9 topology check~~ struck: create defaults to COORD) plus an explicit `lanes` control; R6 no-warning-after-create plus the legacy control (WP06)
 T034 `is_expected_coordination_divergence` predicate; `ensure_coordination_branch` accepts it (WP06)
 T035 `doctor coordination` finding uses the predicate; R20 plus the genuinely-diverged control (WP06)
 T036 NFR-001 re-measure against the research baseline (manual; recorded for the PR) (WP06)
@@ -318,7 +332,7 @@ T042 C-008 controls, lock-reentrancy and no-root-residue tests (WP07)
 T043 Red-first: review-cycle written in place with no root residue; mark-status lands on the coordination surface; a skipped surface is rendered (WP08)
 T044 `review/cycle.py` writers use `write_dir(REVIEW_CYCLE)`; the stage-in-root copy is removed (WP08)
 T045 `tasks_mark_status.py` read/write split (WP08)
-T046 Render outcomes at `review/cycle.py:712`, `tasks_mark_status.py:279` and `tasks_map_requirements.py:668` (WP08)
+T046 Render outcomes at `review/cycle.py:712` and `tasks_map_requirements.py:668`; mark-status renders nothing (its live write path commits nothing; the L279 shim is dead) (WP08)
 T047 Consumer, residue and C-008 tests (WP08)
 
 ### Implementation Notes
@@ -530,7 +544,7 @@ T078 Consumer tests; JSON stays additive; C-008 controls (WP14)
 
 ### Implementation Notes
 
-- Do not touch the body of `record_analysis` (C901 13).
+- ~~Do not touch the body of `record_analysis`~~ (struck, round 4): first extract its suppress-and-commit block (L355-391, C901 13) into a private helper, then render there.
 
 ### Parallel Opportunities
 
@@ -587,7 +601,7 @@ T084 A refused automatic refresh warns and continues; an explicit flag refusal s
 **Goal**: Remove accept's raw commit. Both residual legs go through one `commit_for_mission` call; the dirty gate and the committer share one classifier; the birth cutover uses `write_dir` (IC-08).
 **Independent Test**: R7, R8 and R9 (each leg proven separately) plus the committed-ledger control.
 **Prompt**: `/tasks/WP16-accept-residual-legs-via-router.md`
-**Requirement Refs**: FR-003, FR-005, FR-007, FR-009, SC-003
+**Requirement Refs**: FR-003, FR-005, FR-007, FR-009, SC-003, FR-009b
 **Estimated prompt size**: ~400 lines
 
 ### Included Subtasks
@@ -709,7 +723,7 @@ T105 The summary prints short ids; JSON `commits[]` carries `sha` on every entry
 
 ### Parallel Opportunities
 
-- Independent file; runs in parallel from the start.
+- Not a root (analyze I4): it depends on WP02 and sits in lane-f before WP08. Per lanes.json, lane-f depends on lane-b and lane-o.
 
 ### Dependencies
 
@@ -824,8 +838,8 @@ T118 Docs hygiene: freshness dates, terminology guard, named docs checks; FR-017
 
 ## Dependency & Execution Summary
 
-- **Sequence**: the roots are WP01, WP02 and WP11 (analyze I4: WP19 is not a root; it follows WP02). Then WP03 → WP04 → WP05 → {WP06, WP07, WP12, WP13, WP14, WP15} → {WP08 (after WP07 and WP19), WP09, WP10} → {WP16, WP17} → WP18 → WP20 → WP21 → WP22.
-- **Parallelization**: three roots run concurrently (WP01, WP02, WP11), and WP19 follows WP02. After WP05, writer migrations (WP07, WP09, WP10), create (WP06) and the ledger reclassification (WP12) proceed in separate lanes. After the post-tasks squad P-m7 move, WP13/WP14/WP15 each run in their own lane after WP05. Lane B serializes WP07 → WP09 → WP17 → WP18 (round 3); WP19 → WP08 share a lane. 16 lanes in total.
+- **Sequence**: the lane roots in lanes.json are lane-b (WP02) and lane-i (WP11). WP01 has no WP dependency, but its lane-a starts after lane-c (WP03). WP19 is not a root (I4). WP-level order: WP02 → WP03 → WP01 → WP04 → WP05 → {WP06, WP07, WP12, WP13, WP14, WP15} → {WP08 (after WP07 and WP19), WP09, WP10} → {WP16, WP17} → WP18 → WP20 → WP21 → WP22.
+- **Parallelization**: lane-b (WP02) and lane-i (WP11) start concurrently; lane-c (WP03), then lane-a (WP01 → WP04 → WP05). After WP05, writer migrations (WP07, WP09, WP10), create (WP06) and the ledger reclassification (WP12) proceed in separate lanes. After the post-tasks squad P-m7 move, WP13/WP14/WP15 each run in their own lane after WP05. lane-o serializes WP07 → WP09 → WP17 → WP18 and starts after lane-a and lane-j (WP12); lane-f (WP19 → WP08) starts after lane-b and lane-o. 16 lanes in total (lanes.json).
 - **MVP Scope**: WP01–WP06 make creation single-home and the router honest. That is the P0 #5440/#5513 core, but #5519 needs WP07–WP10 as well.
 
 ## Closeout items (in-mission, after lane consolidation; not WPs)
@@ -872,7 +886,7 @@ T118 Docs hygiene: freshness dates, terminology guard, named docs checks; FR-017
 | FR-008 | WP05 |
 | FR-009 | WP12, WP16 |
 | FR-009a | WP12 |
-| FR-009b | WP11, WP12, WP21 |
+| FR-009b | WP11, WP12, WP16, WP21 |
 | FR-009c | WP17 |
 | FR-010 | WP17 |
 | FR-010a | WP17 |
