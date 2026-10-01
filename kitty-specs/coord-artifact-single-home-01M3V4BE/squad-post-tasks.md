@@ -59,3 +59,97 @@
 ## Tooling friction noted
 
 - `spec-kitty agent tasks map-requirements` rewrites the WP frontmatter and drops the `agent`, `assignee` and `shell_pid` keys. They were restored after this fold. The mutating `finalize-tasks` may drop them again, so re-check `agent: claude` per canonical step 8a after it runs.
+
+## Analyze + brownfield scout folds (round 3)
+
+**Inputs**:
+- `analysis-report.md` (verdict BLOCKED: 2 high, 6 medium, 11 low);
+- the brownfield scout notes, copied into the Mission as `research/brownfield-scout-wp01-11.md` and `research/brownfield-scout-wp12-22.md`;
+- the orchestrator's operator decisions.
+
+**Scope**: tasks.md and the WP prompts only. The architect folds the design docs (spec, plan, research, data-model, contracts) in parallel, so findings that live only there are marked "design docs (architect)".
+
+**Mechanics**:
+- Every WP gained a scout pointer in Context & Constraints and a **"Binding corrections — analyze + brownfield scout (round 3)"** section that overrides conflicting text.
+- The tracer and failure-reporting duties were added to every WP's Quality gates.
+- Direct contradictions were also fixed inline.
+
+**Validation**: `finalize-tasks --validate-only` passes with 16 lanes, no lane cycle, no ownership warnings and 28/28 functional requirements mapped.
+
+### Structural deltas
+
+| Change | Why |
+|---|---|
+| New dependencies: WP10 → WP07, WP16 → WP10 | single owner of `test_no_read_side_bypass.py` (WP07); single owner of `write_seam.py` (WP10) |
+| Lanes 18 → 16: WP07, WP09, WP17 and WP18 now share one lane (WP09 co-owns `test_coord_read_seam_callers.py` with WP07 and `decision.py` with WP17, both dependency-ordered) | scout ownership gaps (L198 re-pin; `decision.py:217` arms) |
+| Owned-files additions: WP03 (`mission_runtime/__init__.py`, `test_mission_runtime_surface.py`, `write_target_degrade.py` plus 2 refusal-pin tests); WP05 (`surface_authority.py`); WP06 (2 stale create pins); WP07 (`test_no_read_side_bypass.py`); WP08 (`tasks_verdict_persistence.py`, 3 stale pins, untrusted-path inventory); WP09 (`decision.py`, `test_coord_read_seam_callers.py`); WP10 (`issue_verdict.py`, `gates_core.py`); WP11 (`cli/commands/__init__.py`, `_completion_manifest.json`, golden case, 2 count-pin tests); WP12 (`planning_recency.py` plus test, `coherence.py`, new topology-less-callers test); WP16 (`test_accept_clean_tree.py`, `test_accept_decomposition.py`); WP17 (`mission_type.py`, 2 pins); WP22 (new 4.x ADR, the 4.x index, 3 `docs/api` pages) | operator decisions and scout X4 |
+| Requirement refs: FR-017 added to WP04 and WP12; C-008 added to WP12 | analyze G2; the operator's WP12 topology-less audit |
+| tasks.md: red-evidence table, scout pointer, Closeout items section | analyze C2, C3, U2, G3 |
+
+### Operator decisions
+
+| ID | Item | Disposition | Where |
+|----|------|-------------|-------|
+| OD-G1 | FR-009b committers narrowed to spec-commit and accept only | accepted. T119 step 2 now asserts the ledger commit point through spec-commit and accept only; the "setup-plan or finalize" alternative and the owning-WP routing are removed | WP21 T119, Binding; tasks.md T119 row |
+| OD-WP15 | Keep #4827 orphan fail-closed; Q6 warn-and-continue only for non-orphan automatic refusals; the automatic refresh goes through the no-flag preserve-decision path; keep `test_finalize_refresh_pin_authority.py` green; design T004 around it | accepted. The superseded text (`refresh = flag or planning_changed`, the orphan amend+force recipe, moving the commit call) is struck through inline; the gate is named in Binding | WP15 T004, T083, T084, Binding |
+| OD-WP12 | Own `planning_recency.py` (driver-covered paths skipped); keep `decisions` in the class guard's set, require the index.json driver pattern, amend the ruling text; audit topology-less callers (C-008) with a red-first `lanes` test; take the extended reader list | accepted. Interpretation: the operator's "divergent set" is read as the set that holds `decisions` today (`_NON_DIVERGENT_COORD_RESIDUE_DIRS`), and it stays there. The topology-less fix point is the single predicate in `coherence.py` | WP12 Binding; frontmatter |
+| OD-SWA | Single write authority: `assert_coord_write_materialized` becomes a thin delegate of the accessor (materialize and seed for a local head; remote-only still refuses) | accepted and placed in **WP03**, not WP04. That is cleaner: it gives `coord_seed.py` a production caller in WP03, so the dead-module gate stays green with no transitional red. Red-first test plus deliberate re-pins of 2 refusal pins. WP04/WP08/WP09/WP10 note that the old refusal is gone | WP03 Binding; WP04, WP08, WP10 Binding |
+| OD-PUB | PUBLISHED/E2 case: `write_dir` follows `resolution.py:191-199` after consolidation | accepted. WP04 adds it to T018 with tests; WP08 and WP10 add a post-consolidation write test | WP04, WP08, WP10 Binding |
+| OD-WP03 | WP03 owns `mission_runtime/__init__.py` and `_PUBLIC_SURFACE`; package-root imports only; surface test in the gates | accepted | WP03 Binding, Targeted surface; frontmatter |
+| OD-WP08 | Flip `_review_cycle_wp_dir`'s default to REVIEW_CYCLE; do not re-pin `test_verdict_dir_co_resolution`; approval leg; `workflow.py:1999-2025`; `_evidence_ref` uses `checkout_root`; drop the dead L279 shim | accepted. T046 and the objectives struck inline | WP08 Binding; frontmatter |
+| OD-WP10 | Resolve `write_dir` once before the lock in `locked_reread_splice_and_write`; the same for `issue_verdict.py` (take ownership) | accepted. `gates_core.py` (the third splice caller) is also owned | WP10 Binding; frontmatter |
+| OD-GATE | `test_no_worktree_name_guess.py` is not the P-M3 guard; WP20 extends `test_no_write_side_rederivation.py`'s module list with a `.parent.parent`-from-WriteLocation ban | accepted. The citations in WP03/WP07/WP09/WP17 are replaced; WP20 carries the 23-module list plus the bite test and twin | WP20 Binding; WP03, WP07, WP09, WP17 |
+| OD-OWN | Ownership gaps: the `test_no_read_side_bypass.py` single owner; `decision.py:217`; `test_mission_creation_specify_started.py`; WP11 CLI, manifest, goldens and count pins | accepted (see Structural deltas) | frontmatter; Binding sections |
+| OD-DEAD | Transitional dead-code gates: an expected red with an activity-log note, accepted by reviewers and turned green by the consumer; prefer zero-red | accepted. WP03 is zero-red (OD-SWA gives a caller). WP05: the literals and exit code are consumed by `surface_authority.py`, and the partition predicate by the grouping; only `render_commit_outcome` and `commit_outcome_payload` remain the protocol's transitional red, unless an in-WP production use exists | WP03, WP05 Binding |
+| OD-WP06 | Rollback with the minted slug+mid8 (dirty-worktree refusal handled); the seed lock (owned root, `coord_mission_dir_name` key, bounded timeout); COORD-only restore; slug-vs-dir fix in `coord_branch_has_committed_artifact`; the D4 discriminator plus a negative test | accepted. Split by owner: rollback → WP06; lock and restore → WP03; the D4 discriminator is defined in WP03 and reused by WP04; the naming fix → WP04 (which owns `surface_resolver.py`) | WP03, WP04, WP06 Binding |
+| OD-WP03d | Bounded lock timeout; `.code` not `error_code`; public partition predicates; `ProtectionPolicy.resolve_for_mission` | accepted. The CoordSeedForkRefused text is fixed inline | WP03 Binding, T014 |
+| OD-WP19 | Reproduce through the CLI first; if that fails, fix the lanes/single_branch `sha=None` path and report; keep the allowlisted `CommitTarget` line verbatim; fix the stale "no dependencies" text | accepted. The stale text is replaced inline | WP19 Binding, Objectives |
+| OD-WP16 | Keep the bool return plus a router-result helper; drop the contradictory `_is_coordination_owned`; red reasons re-derived | accepted. T088 is struck inline | WP16 Binding, T088 |
+| OD-WP17 | `ProjectionTeardownAbort`: kw-only `error_code`, a remedy override, an optional SHA; `fork.py` must not import the status store module; handle or declare the new raises | accepted. WP17 owns `mission_type.py` and handles the raise; `consolidate.py:408` is verified and reported | WP17 Binding; frontmatter |
+| OD-WP18 | Extract before adding arms (C901 14); L799; a bare-remote fixture; the dry-run vs real-run asymmetry noted for the PR | accepted. The `materialize` C901 15 extraction is also added | WP18 Binding |
+| OD-C2 | State each WP's red evidence; WP21 red on the planning base is required | accepted | tasks.md red-evidence table; WP02, WP20, WP21, WP22 Binding |
+| OD-C3 | Help text in the owning WPs; CHANGELOG at closeout | accepted with one change: the shared `docs/api/*` reference pages (`cli-commands.md`, `agent-subcommands.md`, `finalize-tasks-internals.md`) go to **WP22**, because several code WPs editing one shared page would create concurrent-lane conflicts. Each code WP updates its in-source help text and records its reference delta for WP22 | WP06, WP11, WP13–WP16, WP18 Binding; WP22 Binding; tasks.md Closeout items |
+| OD-C4 | Tracer entries and the Pre-existing Failure Reporting Rule in every WP's quality gates | accepted | all WPs, Quality gates |
+| OD-LOW | I4, I5, G2, C5, U2 | accepted (see the analyze rows below) | — |
+| OD-MISC | Scout misc: WP01 `_StagePlan` fifth outcome and COPY `dst`; WP04 widens `_empty_coord_surface`; WP05 order-preserving dedupe and the canonical literals in `surface_authority.py`; WP06 `policy`; WP07 no `kind` param; WP09 `_events_path` split and decision rows without a Lamport field; WP11 `config_key`/`pattern` and terminal-beats-open; WP13/WP14 stale wording; WP14 `_maybe_auto_commit` location and the `record_analysis` extraction; WP20 T110 list | accepted | each WP's Binding; inline fixes in WP13, WP14, WP20 |
+
+### Analyze findings
+
+| ID | Severity | Finding (short) | Disposition | Where |
+|----|----------|-----------------|-------------|-------|
+| C1 | HIGH | NFR-001 vs the charter's < 2 s rule is not recorded in the Charter Check | design docs (architect); no task change. WP06 T036 already measures against the ruled budget | plan.md (architect) |
+| G1 | HIGH | FR-009b committer list vs T119 | accepted (OD-G1) | WP21 |
+| I1 | MEDIUM | Fold results missing from the design docs | design docs (architect) | contracts, data-model, plan |
+| I2 | MEDIUM | Remote-only and seed-fork refusals not in the FR-006 list or the contract table | design docs (architect); WP05 already emits them as named refusals | spec, contract |
+| U1 | MEDIUM | Refused seed commit path unspecified | accepted at task level: WP03 tests the refused-seed-commit path (warnings, uncommitted dir, the next commit carries it); spec edge case → architect | WP03 Binding |
+| C2 | MEDIUM | Red-on-base statement does not fit WP01/WP02/WP20/WP21 | accepted (OD-C2) | tasks.md; WP21 |
+| C3 | MEDIUM | No CHANGELOG or docs task | accepted (OD-C3) | tasks.md Closeout; WP22 |
+| C4 | MEDIUM | Tracer and failure-issue duties missing | accepted (OD-C4) | all WPs |
+| A1 | LOW | Protected-primary precondition for the default create path | design docs (architect); WP06 R-m4 and WP21 already pass `--topology` or a protected primary explicitly | spec |
+| A2 | LOW | "Loud" undefined | accepted at task level: WP03 defines it as a WARNING log naming the Mission, the state and the action; spec → architect | WP03 Binding |
+| A3 | LOW | FR-003 vs FR-003a wording | design docs (architect) | spec |
+| I3 | LOW | Stale counts in plan.md | design docs (architect) | plan |
+| I4 | LOW | WP19 described as a root | accepted; fixed in tasks.md, WP02 and WP19 | tasks.md; WP02, WP19 |
+| I5 | LOW | WP05 order credited to the plan | accepted; reworded as a stated deviation | tasks.md; WP05 |
+| I6 | LOW | Standalone repro files named as permanent homes | design docs (architect); WP05/WP06 already fold them in (R-M8) | research, plan |
+| G2 | LOW | FR-017 not mapped to WP04/WP12 | accepted; requirement_refs and the coverage table updated | WP04, WP12; tasks.md |
+| C5 | LOW | Ledger reversal hosted in an unrelated 3.x ADR | accepted; WP22 writes a dedicated `docs/adr/4.x/2026-10-01-2-decision-ledger-primary-partition.md`, and ADR 2026-06-19-1 links to it | WP22 |
+| U2 | LOW | Legacy-copy retirement untracked | accepted: stated as an **in-mission closeout fold, not deferred**; an issue is filed only if the operator defers it after all | tasks.md Closeout items; WP20 |
+| G3 | LOW | No owner for the issue-matrix verdicts (#2533 split) | accepted; added to tasks.md Closeout items | tasks.md |
+
+### Brownfield scout corrections (per WP)
+
+Every `CORRECTION` and relevant hazard in the two scout files is folded into the owning WP's Binding section. The cross-cutting items and where they landed:
+- X1 two write authorities → OD-SWA;
+- X2 E2/PUBLISHED → OD-PUB;
+- X3 P-M3 gate → OD-GATE;
+- X4 ownership spill → OD-OWN;
+- X5 dead-symbol/module reds → OD-DEAD;
+- X6 lock discipline → WP03;
+- X7 D4 over-match → WP03/WP04.
+
+Hazards that need no task change are recorded as "run by name" or "keep green" lines in the Binding sections.
+
+### Tooling friction (repeat)
+
+- `map-requirements` dropped the frontmatter keys `agent`, `assignee` and `shell_pid` again; they were restored. Re-check them after the mutating `finalize-tasks`.

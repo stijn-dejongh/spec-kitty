@@ -35,11 +35,13 @@ These correct the pre-spec grounding notes. The plan uses the corrected values.
 
 - **Decision.** Add one method to the existing seam: `PlacementSeam.write_dir(self, kind: MissionArtifactKind) -> WriteLocation`, in `src/mission_runtime/resolution.py`, beside `write_target` (L2304) and `read_dir` (L2318).
   - `WriteLocation` and its `Establishment` enum live in a new small module, `src/mission_runtime/write_location.py`, so `resolution.py` does not grow by a type block.
+  - `WriteLocation` carries `checkout_root: Path` (post-tasks P-M3): the root of the checkout that holds `path`. That is the coordination worktree root for `surface="coordination"`, and the repository root checkout for `surface="primary"`. Consumers use it instead of guessing `.path.parent.parent`, and `tests/architectural/test_no_worktree_name_guess.py` is a named gate for them.
   - For PRIMARY kinds, and for any kind in a non-coordination topology, it returns the declared PRIMARY dir. That is today's `read_dir`, which for these cases is the declared-PRIMARY short-circuit at L2523-2525 and involves no fallback.
   - For COORD kinds of a coordination-routed Mission, it delegates through a lazy import to `specify_cli.coordination.coord_seed.establish_coord_write_location(...)`, which materializes, seeds or refuses.
 - **Rationale.**
   - C-001 sanctions exactly one accessor on the existing seam.
   - `write_target` already answers "which ref" and `read_dir` "where to read". `write_dir` answers "where to write" and agrees with `write_target` by construction: a COORD kind's dir is inside the coordination worktree, whose branch is the `write_target` ref.
+  - **Public surface.** `coord_seed.py`, and every other module outside `mission_runtime`, may import mission_runtime symbols only from the package root. This is enforced by `tests/architectural/test_mission_runtime_surface.py`: MR-1 (pytestarch, L244) and MR-2 (AST scan, L342). So `src/mission_runtime/__init__.py` `__all__` and the test's `_PUBLIC_SURFACE` (L50) gain `WriteLocation` and `Establishment`, owned by the seed/accessor concern.
   - `coordination` is already in `_MISSION_RUNTIME_ALLOWED_SPECIFY_CLI` (`tests/architectural/test_layer_rules.py`, cap 10 in `_baselines.yaml:21`), so the `mission_runtime` outbound ledger does not grow. This is the same delegation pattern as RETROSPECTIVE's `resolve_retrospective_home`.
 - **Alternatives rejected.**
   - (a) `resolve_status_surface_with_anchor(for_write=True)` as the authority. Its `for_write` arm gates only the completed-Mission shortcut (L1267). It is called from `resolve_placement_only` via `_assemble_core_fragments(for_write=True)` (`resolution.py:1974-1982`), which must stay side-effect-free, so it cannot materialize or seed.
@@ -50,7 +52,10 @@ These correct the pre-spec grounding notes. The plan uses the corrected values.
 ## D2. Seed lock ordering and atomicity
 
 - **Decision.**
-  - The seed runs under `feature_status_lock(<lock root>, <mission dir name>)`. It is keyed on the git common dir plus the Mission dir name (`status/locking.py:147,278`), so the root and coordination surfaces already share it, and it is reentrant (`kernel.locks.machine_file_lock(..., reentrant=True)`).
+  - The seed runs under `feature_status_lock(lock_root, coord_mission_dir_name(slug, mid8), timeout=<bounded>)`.
+    - `lock_root = owned.owned_root if owned else repo_root`, matching `BookkeepingTransaction` (`transaction.py:290-291`).
+    - The key is the Mission dir name, the same key as `coord_status_lock` (`status_transition.py:421-423`) and `commit_router._coord_status_locks` (L586). The lock is keyed on the git common dir plus that name (`status/locking.py:147,278`), so the root and coordination surfaces share it, and it is reentrant (`kernel.locks.machine_file_lock(..., reentrant=True)`).
+    - The timeout is **bounded**, reusing `BOUNDED_STATUS_LOCK_TIMEOUT_SECONDS` (`status/locking.py:54`, 10 s), the constant `coord_status_lock` already passes (`status_transition.py:424`). `feature_status_lock`'s default `timeout=-1` (L278) waits forever, which would make `STATUS_LOCK_HELD` unreachable.
   - Order: materialize first (`CoordinationWorkspace.resolve` takes its own path-keyed lock and releases it), then take the status lock and seed.
   - When the caller already holds the status lock, as `BookkeepingTransaction.acquire` does (`transaction.py:292` then `:465`), materialization nests under it. That is the order the transaction already uses, and `workspace.py` never takes the status lock, so no cycle is possible.
   - The seed builds `kitty-specs/.<dir>.seed-<pid>-<ulid>/` in the coordination worktree and makes it visible with one `os.rename`.
@@ -68,6 +73,7 @@ These correct the pre-spec grounding notes. The plan uses the corrected values.
   - Root a prefix of coordination: nothing to carry.
   - Otherwise refuse with `COORD_SEED_FORK_REFUSED`, naming both locations and the reconcile steps.
   - Non-log records are carried only when absent on the coordination side; the coordination copy wins on conflict and the root copy is reported.
+- **Home.** The rule is a pure classifier in `src/specify_cli/coordination/event_prefix.py` (post-tasks P-M6), for example `event_ids_of(lines)` and `classify_prefix(root_ids, coord_ids) -> PrefixVerdict`. It has no git or lock imports. `coord_seed.py` and the fork detector (D14) both import it.
 - **Rationale.** This is the operator ruling (`specify.design.fork-check`). Comparing event ids, not bytes, tolerates re-serialization. Reading the branch blob when the worktree is empty catches the post-fix regression case.
 - **Alternatives rejected.**
   - A byte-prefix comparison: brittle across key ordering.
@@ -75,14 +81,29 @@ These correct the pre-spec grounding notes. The plan uses the corrected values.
 
 ## D4. Telling a post-fix Mission's empty surface from a pre-fix one
 
-- **Decision.** No new `meta.json` field. A Mission counts as post-fix when its coordination-branch tree carries `kitty-specs/<dir>/` (`git ls-tree <coord> kitty-specs/<dir>`).
-  - EMPTY with the branch carrying the dir means the dir was deleted in the worktree, which is a regression.
-    - Write side: warn loudly, then restore the dir from the branch tip (`git -C <coord wt> checkout HEAD -- kitty-specs/<dir>`; this only restores committed content).
-    - Read side: the `EMPTY` warning (`surface_resolver.py:1430-1450`) also fires for solo `coord`.
-  - EMPTY with the branch not carrying the dir means a pre-fix Mission: seed.
-- **Rationale.** The coordination branch is the durable fact. A meta stamp would be a second source of truth for "was seeded" and could drift (DIRECTIVE_044). After this Mission every create seeds and commits, so the branch carries the dir from birth.
-- **Alternative rejected.** A meta flag such as `coordination_seeded_at`.
-- **Operator ruling (plan, Q3).** Restore the Mission dir from the coordination branch tip, warn loudly, then write. Spec rev 3 states this in US2.7 and FR-003a.
+**Decision.** The discriminator is a **seed marker in the coordination branch history**: a commit trailer `Spec-Kitty-Coordination-Seed: <mission_id>` on every seed commit.
+- Two kinds of commit carry it: the create-time commit (IC-05) and a pre-fix Mission's carry-over commit (D5).
+- A Mission counts as **post-fix** iff `git log --format=%(trailers:key=Spec-Kitty-Coordination-Seed,valueonly) <coordination_branch>` contains its `mission_id`.
+- There is no new `meta.json` field.
+- **EMPTY on a post-fix Mission** means the Mission dir was deleted in the worktree, a regression.
+  - Write side: warn loudly, then restore **COORD-kind paths only** from the branch tip, with an explicit pathspec built from `kind_for_mission_file` over `git ls-tree -r <coord> kitty-specs/<dir>/`. Never restore the whole dir, which would bring PRIMARY files across (I-SEED-9). Then write.
+  - Read side: the `EMPTY` warning (`surface_resolver.py:1430-1450`) also fires for solo `coord`.
+- **EMPTY without the marker** means a pre-fix Mission: seed (D3, D5). The seed commit adds the marker, so a healed Mission is post-fix from then on.
+
+**Why not "the branch tree carries `kitty-specs/<dir>`"** (the plan's first draft). That test over-matches. A pre-fix Mission whose coordination branch was cut **after** the first target commit carries the Mission dir, with PRIMARY planning files, without ever having been seeded (fixture `tests/coordination/test_surface_resolver_solo_coord_primary.py:107-146`). That fixture is the required **negative case**: no trailer means pre-fix, so the Mission is seeded, not restored.
+
+**Fix in passing:** `coord_branch_has_committed_artifact` (`surface_resolver.py:786`) composes `kitty-specs/{mission_slug}`, not the mid8-suffixed Mission dir (`coord_mission_dir_name`), and fails closed to `True`. It is corrected to compose the real Mission dir and to probe COORD-kind paths only. Its write-gate role is absorbed by D22.
+
+**Rationale.**
+- The trailer is written only by the one seed path, so it cannot drift from a meta stamp (DIRECTIVE_044).
+- It survives clones.
+- It is per-Mission even when several Missions share history.
+
+**Alternatives rejected.**
+- A meta flag such as `coordination_seeded_at`: a second source of truth.
+- "Branch tree carries the dir": over-matches, as shown above.
+
+**Operator ruling (plan, Q3).** Restore from the coordination branch tip (COORD-kind paths), warn loudly, then write. Spec rev 3 states this in US2.7 and FR-003a.
 
 ## D5. The seed commits on the coordination branch
 
@@ -103,10 +124,11 @@ These correct the pre-spec grounding notes. The plan uses the corrected values.
 
 **Decision (protected target).**
 - The seed is not inside the `_BOOTSTRAP_META_COMMIT_SKIPS` suppression (L69-73, used at L1178/1601/1642). It runs unconditionally for coordination-routed topologies (FR-002a).
-- `_restore_git_state_after_failed_create` (L683) gains a coordination leg:
-  - remove the coordination worktree (`CoordinationWorkspace.teardown`, `workspace.py:352`);
-  - delete the coordination branch when this create minted it. It already deletes `kitty/mission-*` branches that appeared during the run, so this mostly composes.
-- Rollback covers both refs (US1.5).
+- `_restore_git_state_after_failed_create` (L683) gains a coordination leg for the worktree and branch **this create** made, identified by slug plus mid8 (`coord_mission_dir_name`), never by a glob over other Missions:
+  - Remove the coordination worktree. `CoordinationWorkspace.teardown` (`workspace.py:352`) refuses a dirty worktree with `DestructiveOpRefused` (L363-369), and a failed create can leave exactly the seeded, uncommitted files behind. So the rollback leg removes the worktree with `git worktree remove --force` scoped to that path, which is sanctioned because every file in it was written by this create. Alternatively it passes an `is_residue` that accepts this Mission's COORD-kind paths.
+  - Delete the coordination branch only when this create minted it (`CoordinationBranchResult.created`). The existing sweep of `kitty/mission-*` branches that appeared during the run already covers the branch name; the leg asserts the branch is gone.
+  - Prune worktree metadata (`git worktree prune`).
+- Rollback covers both refs and the worktree (US1.5). A test fails create after the seed commit and asserts that no coordination branch, no worktree and no target scaffold commit remain.
 
 **Decision (divergence model, FR-002b).** Define an "expected divergence" predicate once, in `missions/_create.py`, beside `CoordinationBranchDiverged` (L92). The relation is expected when all of these hold:
 - `merge-base(coord, target)` is reachable from the target;
@@ -138,6 +160,8 @@ Consumers:
 | | `PROTECTED_BRANCH_REFUSED` | reused from `coordination/types.py:90` |
 | | `STATUS_LOCK_HELD` | new; maps `FeatureStatusLockTimeoutError`, `status/locking.py:59`, today turned into `status="error"` at L639-640 |
 | | `COORDINATION_BRANCH_DELETED` | reused |
+| | `COORDINATION_WORKTREE_UNMATERIALIZED` | reused; remote-only coordination branch (#4970 parity), surfaced from `write_dir` |
+| | `COORD_SEED_FORK_REFUSED` | new (contracts/seed.md); surfaced from `write_dir` when establishing the surface hits a fork |
 | | `PATH_UNROUTABLE` | new |
 
 Other COORD kinds keep today's copy behaviour only while the coordination copy is absent (legacy staging), with the existing residue cleanup (L1069-1088). Once writers write in place (IC-04), that path is a fallback.
@@ -196,7 +220,7 @@ Discarded-result sites render a warning only when a surface is not `committed`/`
   - COORD files go to the coordination branch as owning-surface copies (D7).
   - A COORD record dirty only in the repository root checkout is reported as `skipped` with reason `COORD_RECORD_IN_ROOT_CHECKOUT` and never committed to the target branch.
 - Fix L425's join: coordination-relative paths must not be joined onto the root.
-- The dirty gate `_filter_coordination_residue` (`acceptance/__init__.py:411`, L440) and the committer both classify with `kind_for_mission_file` plus `is_coord_residue_churn` under the Mission's topology. A shared-classifier test asserts they agree path for path (US3.7).
+- The dirty gate `_filter_coordination_residue` (`acceptance/__init__.py:411`, L440) calls the commit router's **public per-path partition predicate** (post-tasks P-M5, e.g. `partition_for_mission_path(repo_root, mission_slug, path, *, owned)`). It is the same function the router's grouping uses, not a copy, and no new `_is_coordination_owned()` classifier is added. A test asserts the gate and the committer agree path for path (US3.7).
 - `owned` is forwarded; today `_commit_residual_acceptance_artifacts` (L445) drops it.
 
 **Rationale.** FR-005, and C-001: remove the fifth commit mechanism, add none.
@@ -254,10 +278,43 @@ Readers that flip:
 | `_try_advance_ref` residue | `commit_router.py:1337` | deleted (D11) |
 | placement guard | `tests/architectural/test_write_surface_placement_guard.py` L12 docstring, L344-358 live set | update |
 | merge-class guard | `tests/architectural/test_merge_reconciliation_class_guard.py` `_NON_DIVERGENT_COORD_RESIDUE_DIRS` (L318-334) | update (D13) |
+| commit router: partition-kind readers | `commit_router.py:697` (`kind_for_mission_file`), `:839` (`_merge_group_results` caller partition), `:915` (primary-kind-reached-coord guard), `:1193` (`_resolve_commit_worktree_for_kind`), `:1337` (deleted with D11) | ledger is PRIMARY: never staged to the coordination worktree; the L915 guard now raises if a ledger path reaches coordination staging |
+| surface authority | `coordination/surface_authority.py:232` (`use_coord = routes_coord and not is_primary_artifact_kind(...)`) | ledger commits route PRIMARY |
+| read-path resolver | `missions/_read_path_resolver.py:1446` | ledger reads resolve PRIMARY (already true via `PRIMARY_METADATA`; FR-009a ratchet) |
+| placement seam | `resolution.py:1289`, `:1316` (owned read dir / commit target), `:1419` (placement ref), `:2487` (`declared_read_surface`), `:2704` (owned surface stamp) | ledger resolves PRIMARY on every arm, including owned checkouts |
+| workflow partition | `cli/commands/agent/workflow.py:393` | ledger paths go to the primary partition group |
+| acceptance kind audit | `acceptance/__init__.py:1219` (non-primary kind listing), `:1269` | ledger leaves the non-primary listing; audit the message text |
+| planning recency | `consolidation/planning_recency.py:39` (`_is_primary_planning_path`) | **hazard**: see "Merge-driver hazard" below |
 
-**Rationale.** This is the operator ruling (`decision-ledger-partition`). Writes and reads are already PRIMARY (`decisions/service.py::_ledger_dir` L255-279 → `PRIMARY_METADATA`, #4966), so FR-009a is a ratchet.
+**Design rule: non-coordination topologies keep today's ledger handling (C-008).**
 
-**Risk.** The consolidation dirty gate (`executor.py:2036`) previously reset ledger dirt as residue; now it refuses. That is correct (FR-009), but it is a behaviour change for an operator who left an uncommitted ledger. The refusal message must name `accept` or `spec-commit`.
+- **The problem.** Several residue readers pass no topology, and `is_coord_residue_churn` then defaults to COORD (`coherence.py:224-226`). They are:
+  - the consolidation porcelain invariant (`executor.py:2036`);
+  - move-task (`tasks_move_task.py:824`);
+  - implement (`implement.py:905/947`);
+  - auto-rebase (`lanes/auto_rebase.py:225`);
+  - the commit router grouping (`commit_router.py:768`);
+  - the accept gate (`acceptance/__init__.py:440`), which is guarded by `_mission_routes_through_coordination`;
+  - record-analysis (`mission_record_analysis.py:198`).
+
+  So today `decisions/` counts as residue for **every** topology at those sites. Removing `DECISION_LEDGER` from the COORD set would therefore also change `lanes` and `single_branch` behaviour.
+- **Why not just thread the real topology through.** For a non-coordination topology `kind_is_coordination_residue` returns False for every kind (`artifacts.py:146-147`). Passing the real topology would stop status and trace files counting as residue too, which is a broader `lanes` change.
+- **The rule.**
+  1. `is_coord_residue_churn(path, topology=None)` keeps today's answer for every path, including `decisions/`. A one-member, shrink-only compatibility set, `_TOPOLOGY_LESS_LEGACY_RESIDUE_KINDS = {DECISION_LEDGER}`, is consulted only when `topology is None`. It has its own test pinning it as shrink-only.
+  2. The readers that FR-009 requires to treat the ledger as real work pass the Mission's stored topology **only when it is coordination-routed**: `topology=stored if routes_through_coordination(stored) else None`. Those readers are the accept gate, the consolidation porcelain invariant, record-analysis and the commit router grouping. For them, under `coord`/`lanes_with_coord`, `decisions/` is real work. Every non-coordination Mission still takes the `None` arm, so its behaviour is unchanged.
+  3. The remaining topology-less readers (move-task, implement, auto-rebase, `tasks_shared.py:750`) are unchanged in this Mission. They keep the legacy answer, so for a coordination Mission they still drop ledger dirt as residue. That is acceptable because none of them commits the ledger; spec-commit and accept do (FR-009b). Retiring the COORD default is a follow-up.
+- **Tests.** Every flipped reader gets a paired fixture: a coordination Mission where the ledger is real work, and a `lanes` Mission where the behaviour is unchanged.
+
+**Merge-driver hazard (owned by the ledger-reclassification concern, plan IC-11).**
+- **How it breaks.** After the flip, `planning_recency._is_primary_planning_path` (L39-47) classifies `decisions/index.json` as a PRIMARY planning file. `target_newer_primary_artifacts` (called from `lanes/consolidation.py:748-750`) then re-resolves it with a base/target/lane `git merge-file` that favours the target on overlap. That overwrites the `spec-kitty-decision-index` driver's union result, losing lane-added entries.
+- **Design rule.** Paths covered by a registered merge driver are skipped by the planning-recency resolver. `_is_primary_planning_path` returns False for any path matching a `_MERGE_DRIVERS` pattern (`lanes/consolidation.py:59-123`), the single registry, read rather than copied.
+- **Test.** A target-newer `index.json` plus a lane-added entry: after consolidation both entries are present.
+
+**Rationale.** This is the operator ruling (`decision-ledger-partition`). The reversal of the #3928 intent gets its **own short ADR** in `docs/adr/4.x/` (written with the docs concern, IC-17) rather than an amendment buried in an unrelated 3.x ADR (analyze C5). Writes and reads are already PRIMARY (`decisions/service.py::_ledger_dir` L255-279 → `PRIMARY_METADATA`, #4966), so FR-009a is a ratchet.
+
+**Committers (Decision Moment `plan.scope.ledger-committers`, analyze G1).** The ledger is committed by **spec-commit and accept only**. setup-plan and finalize-tasks keep committing only their own artefacts: at base, `_collect_finalize_artifacts` (`mission_finalize.py:274-356`) does not collect `decisions/`, and setup-plan commits only plan artefacts. No new auto-commit is added.
+
+**Risk.** For coordination-routed Missions, the consolidation dirty gate (`executor.py:2036`) previously reset ledger dirt as residue; now it refuses. That is correct (FR-009), but it is a behaviour change for an operator who left an uncommitted ledger. The refusal message must name `accept` or `spec-commit`.
 
 ## D13. Decision index merge driver
 
@@ -266,6 +323,13 @@ Readers that flip:
 - Register it in `_MERGE_DRIVERS` (`lanes/consolidation.py:59-123`), `MERGE_DRIVER_BODIES` (`consolidation/drivers.py:1117-1126`), the CLI (`cli/commands/merge_driver.py`, a `merge-driver-decision-index` command), the init seed (`cli/commands/init.py:67-74` constants plus `_ensure_event_log_merge_attributes`, L455), and `.gitattributes`.
 - Ship an upgrade migration modelled on `m_3_2_6_decisions_event_log_merge_driver.py`, with its own migration id.
 - `DM-*.md` needs no driver: the files are ULID-named, one per decision.
+
+- The union is a pure public function, `union_decision_index(ours, theirs) -> dict` in `consolidation/drivers.py` (post-tasks P-M6). The driver body is a thin IO wrapper around it, and `doctor decisions --repair`'s coordination-only-ledger merge (D14) reuses it. There is no second union implementation.
+- **Merge-class guard** (`tests/architectural/test_merge_reconciliation_class_guard.py`): the cheapest truthful fix.
+  - Move `decisions` out of `_NON_DIVERGENT_COORD_RESIDUE_DIRS` (L318-334) into the both-sides-divergent set, so the assertion at L355 becomes `divergent_dirs == {"traces", "decisions"}`.
+  - Amend the ruling comment to say the ledger is a PRIMARY record that travels with lane branches.
+  - Make the per-directory pattern check (L362-369) require `kitty-specs/**/decisions/index.json` for `decisions`, instead of the `*.md` pattern.
+- **Hazard.** The planning-recency resolver must skip driver-covered paths (D12, "Merge-driver hazard").
 
 **Rationale.** FR-009b and US4.9. The class guard ruled the ledger single-writer while it was COORD (L320-333). As a PRIMARY record it travels with lane and Mission branches, so concurrent lane additions conflict on `index.json`. The ruling is amended in the same change, so the guard's completeness check stays green.
 
@@ -279,11 +343,11 @@ Readers that flip:
 - PRIMARY side: the repository root checkout's Mission dir when present, else `git show <target_branch>:kitty-specs/<dir>/<stream>`.
 - COORD side: the coordination worktree dir when present, else `git show <coordination_branch>:...`.
 
-Locations come from the seam: `read_dir(PRIMARY_METADATA)` for the root, `CoordinationWorkspace.worktree_path` and `meta.json`'s `coordination_branch` for the coordination side. Both streams are compared on event-id prefixes, and decision ids are grouped per surface. The ledger home is checked the same way: `decisions/` in the PRIMARY dir or at the target ref, versus the coordination ref.
+Locations come from the seam: `read_dir(PRIMARY_METADATA)` for the root, `CoordinationWorkspace.worktree_path` and `meta.json`'s `coordination_branch` for the coordination side. Both streams are compared on event-id prefixes, and decision ids are grouped per surface. The prefix/fork comparison **reuses** the pure classifier in `coordination/event_prefix.py` (owned by the seed concern, post-tasks P-M6), so there is no second classifier. The ledger home is checked the same way: `decisions/` in the PRIMARY dir or at the target ref, versus the coordination ref.
 
 Callers:
 - `_decisions_doctor._diagnose` (L372). The orphan rule becomes "absent on both surfaces" (L384-401).
-- `_repair` (L404). It refuses to drop any entry and prints the reconcile steps when forked. It copies a coordination-only ledger to the PRIMARY dir (additive) and leaves committing to the PRIMARY committers (no auto-commit, per FR-009b).
+- `_repair` (L404). It refuses to drop any entry and prints the reconcile steps when forked. It copies a coordination-only ledger to the PRIMARY dir (additive, via `union_decision_index`) and leaves committing to spec-commit or accept (no auto-commit, per FR-009b).
 - `decisions/verify.py::verify` (L104): a new finding `DECISION_LOG_FORKED`.
 - The teardown predicate (D15).
 
@@ -302,24 +366,33 @@ Callers:
 
 ## D16. Trigger for the `planning_commit_sha` refresh
 
-**Decision.** In `finalize_tasks` (`mission_finalize.py:4758`), compute `refresh = flag or planning_changed`.
-- `planning_changed` is true when `git diff --name-only <recorded planning_commit_sha> <target tip> -- <the Mission's PRIMARY planning paths, excluding lanes.json>` is non-empty. The paths are classified via `kind_for_mission_file`.
-- When true, run the existing refresh flow:
-  - decision `_resolve_refresh_planning_commit_decision` (L2521), which is advance-only unless `--allow-orphaned`;
-  - preflight `_preflight_refresh_planning_commit` (L2682);
-  - commit `_commit_planning_pin_refresh` (L2768).
-- `--refresh-planning-commit` (L4779-4794) stays accepted. It forces a refresh, and its help text is updated.
+**Code fact (brownfield scout).** `refresh_planning_commit=True` is a refresh-only, zero-mutation mode: it returns before `_run_commit_pipeline`. So the automatic refresh cannot be implemented as `refresh = flag or planning_changed`, because that would turn every default finalize into a refresh-only run that skips the normal commit pipeline.
 
-**Rationale.** This is the operator ruling (`planning-commit-refresh`): the flag's behaviour becomes the default. Reusing the flow keeps its CAS and protection checks.
+**Decision.** The automatic refresh goes through the **no-flag preserve-decision path**. In `_resolve_preserve_planning_commit_decision` (`mission_finalize.py:2981`), reached from `_preserve_or_capture_planning_commit_sha` (L3017) once execution has begun, the recorded pin is classified with the shared `classify_recorded_pin` (`lanes/planning_commit_classify.py:45`, `PinClass`). Then:
 
-**Alternative rejected.** Refreshing on every finalize. That is a needless extra commit when nothing changed (US5.2 positive control).
+| Recorded pin | Planning paths changed since the pin? | Result |
+|---|---|---|
+| `ORPHANED` (present, not an ancestor of the tip; #4827) | either | **fail closed before any write, unchanged**. Pinned by `test_issue_4827_repin_orphaned_planning_commit.py::test_plain_finalize_fails_closed_on_orphaned_pin`. |
+| `ADVANCED` (ancestor of the tip) | yes | return a resolution with `sha = tip`, `action = "refreshed"`, `previous_sha = recorded`. The new pin rides the normal `_compute_and_write_lanes` write (L3255/L3307) and the normal TASKS_INDEX commit. No separate pin-refresh commit, no refresh-only mode. |
+| `ADVANCED` | no | preserve (`action = "preserved"`; US5.2 positive control) |
+| `FOREIGN` or `INDETERMINATE` (cannot prove a safe advance) | yes | **warn and continue** (ruling Q6): keep the old pin |
 
-**Operator ruling (plan, Q6): a refused automatic refresh warns and continues.**
-- **When.** The existing safety rules refuse the refresh: the advance-only decision without `--allow-orphaned`, or a dirty-checkout preflight finding.
-- **Behaviour.** Finalize keeps the old pin and exits 0. It prints a warning naming the recorded commit, the would-be commit, and the manual route `spec-kitty agent mission finalize-tasks --refresh-planning-commit` (plus `--allow-orphaned` where that applies).
-- **Explicit flag.** When the operator passes `--refresh-planning-commit`, a refusal still fails, as today.
-- **JSON.** Finalize gains `planning_commit_refresh: {"status": "refreshed" | "unchanged" | "refused", "recorded": <sha>, "candidate": <sha>, "reason": <code>}`.
-- **Spec.** Rev 3 adds this as US5 scenario 3 and in FR-012.
+"Planning paths changed" means `git diff --name-only <recorded> <tip> -- <the Mission's PRIMARY planning paths, excluding lanes.json>` is non-empty; the paths are classified via `kind_for_mission_file`.
+
+`--refresh-planning-commit` (L4779-4794, and with `--allow-orphaned`) keeps its existing refresh-only semantics and its existing refusals, which still fail.
+
+**Rationale.** This is the operator ruling (`planning-commit-refresh`): an advanced refresh becomes the default. Riding the existing lanes write keeps the frozen-SHA contract of ADR `2026-07-29-1` (one write, no second commit). #4827's orphan safety is untouched.
+
+**Alternatives rejected.**
+- `refresh = flag or planning_changed`: it would skip the normal commit pipeline.
+- Refreshing on every finalize: a needless pin churn when nothing changed.
+
+**Operator ruling (plan, Q6), scoped by the #4827 decision.** "Warn and continue" applies only to non-orphan cases where the **automatic** refresh cannot prove a safe advance (`FOREIGN`, `INDETERMINATE`).
+- **Behaviour.** Finalize keeps the old pin and exits 0. It prints a warning naming the recorded commit, the candidate commit, and the manual route `spec-kitty agent mission finalize-tasks --refresh-planning-commit`.
+- **Orphaned pin.** Still fails closed (#4827).
+- **Explicit flag.** An explicit `--refresh-planning-commit` that is refused still fails, as today.
+- **JSON.** Finalize gains `planning_commit_refresh: {"status": "refreshed" | "preserved" | "kept_with_warning", "recorded": <sha>, "candidate": <sha>, "pin_class": <PinClass>, "reason": <code | null>}`. An orphan failure is the existing error envelope, not this field.
+- **Spec.** Rev 4: US5.3, US5.4, FR-012.
 
 ## D17. Implement receipts
 
@@ -367,6 +440,7 @@ Callers:
 - **Floor assertion:** at least 22 scanned functions (the list above), each resolving to a live definition (no stale qualname).
 - **Allowlist:** the shrink-only `ContentDescriptor` mechanism (the existing L175 shape) starts **empty**. It gets an independent size cap of 0 under a new `test_no_write_side_rederivation:` key in `tests/architectural/_baselines.yaml`, following the `test_layer_rules` pattern, so adding any entry reds. The operator ruled (plan Q4) that the consolidation executor and `materialize` sites migrate rather than being allowlisted.
 - **Red at base:** on the real offenders, at least `decisions/emit.py:88` and `decisions/service.py:246`.
+- **Checkout-root guessing (scout X3).** `tests/architectural/test_no_worktree_name_guess.py` explicitly excludes the `.path.parent.parent` class (L474-476, deferred to #2007). The rule that does catch it is grammar 1's `root_walk` in this file (L254), which scans only `_ADOPTED_MODULES` (L87-111). So `_ADOPTED_MODULES` is extended to every `write_dir`/`checkout_root` consumer: `decisions/*`, `events/decision_log.py`, `runtime/next/runtime_bridge*.py`, `review/cycle.py`, `accept.py`, `_decisions_doctor.py`, `consolidation/executor.py`, `materialize.py` and `coordination/commit_router.py`. The P-M3 gate citation points here, not at `test_no_worktree_name_guess.py`.
 - **Self-mutation:** plant `read_dir(MissionArtifactKind.STATUS_STATE)` in a synthetic writer, and assert the scan reds.
 - **Twin:** an allowlist entry that no longer matches reds.
 
@@ -451,6 +525,34 @@ Migration removes both legs, and the gate's allowlist can start empty.
 - `tests/architectural/test_merge_reconciliation_class_guard.py`
 
 **Red-first.** See R22-R24. The MATERIALIZED path is behaviour-preserving, proven by the guards above plus the FR-014 gate; R22 and R24 cover the pre-fix legs that do change.
+
+## D22. `write_dir` absorbs the coordination write gate (single write authority, C-001)
+
+**Problem (brownfield scout X1).** `mission_runtime.assert_coord_write_materialized` (`write_target_degrade.py:157-261`) describes itself as "the single decision locus for S-C (FR-006/#4970)". It **refuses** an UNMATERIALIZED, local-head coordination branch that already carries a committed artifact of the kind (L220-261). `write_dir` **materializes** that same state. After IC-05 every post-fix coordination branch carries content, so the write seam (which consults the gate) and the direct writers (which call `write_dir`) would disagree.
+
+**Decision.** `establish_coord_write_location` becomes the single write-side decision for coordination-routed COORD kinds. `assert_coord_write_materialized` becomes a thin delegate:
+- MATERIALIZED / EMPTY: unchanged no-op.
+- UNMATERIALIZED with a local head: delegate to `write_dir(kind)`. This materializes, then restores or seeds per D4 and D3. The old "branch already carries the kind" refusal is deliberately removed: that state is the normal post-fix shape.
+- UNMATERIALIZED, remote-only: still refuses with `COORDINATION_WORKTREE_UNMATERIALIZED` (ruling Q1).
+- PUBLISHED: per D23.
+
+`resolve_write_target_or_degrade(..., terminus_write=True)` and `write_seam.write_artifact` keep calling the gate name, so call sites are unchanged.
+
+The refusal pins of the old gate are **re-pinned deliberately**, as behaviour changes rather than stale tests, with the remote-only refusal kept as the control. They are the tests that assert `COORD_WRITE_SURFACE_UNMATERIALIZED` for a local head carrying content, under `tests/coordination/test_surface_write_gate.py` and `tests/mission_runtime/`.
+
+**Rationale.** There are two write authorities at base. C-001 and DIRECTIVE_044 require one. The accessor is the sanctioned extension, so the older gate folds into it rather than the reverse.
+
+**Alternative rejected.** `write_dir` calls the gate and inherits its refusal. Every post-fix Mission with a removed worktree would then be refused, which contradicts US2.3.
+
+## D23. PUBLISHED (post-consolidation) kinds follow the existing E2 resolution
+
+**Fact.** `REVIEW_CYCLE`, `TRACER_FILE`, `ISSUE_MATRIX` and `ACCEPTANCE_MATRIX` are in `_E2_CONSOLIDATED_ELIGIBLE_KINDS` (`resolution.py:191-199`). After consolidation, `resolve_placement_only` short-circuits them to the target branch (E2 PUBLISHED, L1961-1963).
+
+**Decision.** `write_dir` checks the same E2 PUBLISHED predicate **before** probing coordination state. For a PUBLISHED Mission and an E2-eligible kind it returns `surface="primary"`, the PRIMARY Mission dir, `checkout_root = repository root checkout`, and `establishment=NONE`. It never probes or materializes the coordination worktree, so it can never raise `CoordinationBranchDeleted` or write into a torn-down worktree.
+
+Non-E2 COORD kinds of a PUBLISHED Mission, such as `STATUS_STATE` and `DECISION_LOG`, keep today's post-consolidation behaviour: the completed-Mission handling in D21 point 2, or the existing refusal.
+
+**Rationale.** It reuses the one existing post-consolidation authority, so `write_dir` agrees with `write_target` by construction.
 
 ---
 
@@ -539,4 +641,11 @@ Each test fails at `ecb5dd914a` through the named pre-existing entry point. All 
 | R24 | `materialize` writes `status.json` beside a stale root log (D21) | `tests/specify_cli/cli/commands/test_materialize.py::test_materialize_all_writes_status_json_on_coordination_surface` (+ control `::test_materialize_lanes_mission_unchanged`) | CLI `spec-kitty materialize` (no `--mission`) on a MATERIALIZED coordination Mission whose root copy is stale | `status.json` is written in the coordination Mission dir and reflects the coordination log. At base the loop reduces the root log and writes the root `status.json`. |
 | R1d | characterization pin for D21 point 2 | `tests/consolidation/test_executor_coord_reconcile.py::test_completed_mission_resume_keeps_primary_events_path` | `_phase_baseline_and_surface` on a completed-Mission `--resume` fixture | Green at base and after: it pins the completed-Mission PRIMARY answer that the migration must preserve. |
 
-After the fixes land, the transitional reproductions (R1, R2, R4, R5) stay in the owning modules' test files named above. None is kept as a standalone regression marker (FR-016).
+After GREEN, the adopted standalone reproduction files are **folded into the owning modules' test files** (post-tasks R-M8):
+- R2 and R2b go into `tests/coordination/test_commit_router.py`;
+- R1 and R1b go into `tests/core/test_mission_creation_decomposition.py`;
+- the standalone files and their "stays red on main" markers are removed.
+
+The other reproductions (R4, R5 and the rest) are written directly in the owning files named above. None is kept as a standalone regression marker (FR-016).
+
+**Issue-matrix verdicts (analyze G3).** The accept/closeout step fills `issue-matrix.json` from this list, including #2533's **split verdict**: the claim leg is fixed by `3599c05990`/`e4644c2342` (evidence above), and the create/empty-surface remainder is covered by this Mission (FR-002, FR-003, R6).

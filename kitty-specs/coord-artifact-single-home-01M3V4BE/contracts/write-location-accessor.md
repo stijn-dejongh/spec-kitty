@@ -3,7 +3,8 @@
 **Operation:** `PlacementSeam.write_dir(self, kind: MissionArtifactKind) -> WriteLocation`
 **Home:** `src/mission_runtime/resolution.py`, class `PlacementSeam` (L2261), beside `write_target` (L2304) and `read_dir` (L2318). `WriteLocation` and `Establishment` live in `src/mission_runtime/write_location.py`, which is new.
 **Delegate:** for a COORD kind of a coordination-routed Mission, the work is done by `specify_cli.coordination.coord_seed.establish_coord_write_location(repo_root, mission_slug, kind, *, owned) -> WriteLocation` (new). The seam reaches it through a lazy import over the existing `coordination` ledger edge.
-**Requirements:** FR-003, FR-003a, FR-004, FR-004a, FR-004b; C-001, C-002, C-008.
+**Public surface:** `WriteLocation` and `Establishment` are exported from the `mission_runtime` package root (`__init__.py` `__all__`, plus `_PUBLIC_SURFACE` in `tests/architectural/test_mission_runtime_surface.py`). Modules outside `mission_runtime` import only from the root (MR-1/MR-2).
+**Requirements:** FR-003, FR-003a, FR-004, FR-004a, FR-004b; C-001, C-002, C-008. Research D1, D4, D22, D23.
 
 ## Signature
 
@@ -11,6 +12,8 @@
 @dataclass(frozen=True)
 class WriteLocation:
     path: Path
+    checkout_root: Path                   # root of the checkout holding `path`: the coordination worktree root,
+                                          # or the repository root checkout; consumers never guess `.parent.parent`
     surface: Literal["primary", "coordination"]
     coord_state_before: CoordState | None
     establishment: Establishment          # NONE | MATERIALIZED | SEEDED | RESTORED_FROM_BRANCH
@@ -31,10 +34,11 @@ class PlacementSeam:
 |------|--------|
 | `kind` is a PRIMARY-partition kind | `surface="primary"`, `path` = the declared PRIMARY dir (identical to `read_dir(kind)` today), `establishment=NONE`. No side effects. |
 | COORD kind, topology `lanes` or `single_branch` | the PRIMARY dir, as today (C-008). No side effects. |
+| E2-eligible COORD kind (`REVIEW_CYCLE`, `TRACER_FILE`, `ISSUE_MATRIX`, `ACCEPTANCE_MATRIX`) of a **PUBLISHED** (post-consolidation) Mission (`resolution.py:191-199`, E2 short-circuit L1961-1963) | `surface="primary"`, the PRIMARY Mission dir, `checkout_root` = the repository root checkout, `establishment=NONE`. This is checked **before** any coordination probe, so it never raises `CoordinationBranchDeleted` and never writes into a torn-down worktree (D23). |
 | COORD kind, coordination-routed, state `MATERIALIZED` | the coordination Mission dir. No side effects. |
-| COORD kind, coordination-routed, state `UNMATERIALIZED` with a local branch | the worktree is materialized via `CoordinationWorkspace.resolve`; then the `MATERIALIZED` or `EMPTY` row applies |
-| COORD kind, coordination-routed, state `EMPTY`, branch lacks the Mission dir | seeded (`contracts/seed.md`); `establishment=SEEDED` |
-| COORD kind, coordination-routed, state `EMPTY`, branch carries the Mission dir | loud `WARNING`, the dir is restored from the branch tip, then any root-only records are seeded; `establishment=RESTORED_FROM_BRANCH` |
+| COORD kind, coordination-routed, state `UNMATERIALIZED` with a local branch (whether or not the branch already carries artifacts of this kind; D22) | the worktree is materialized via `CoordinationWorkspace.resolve`; then the `MATERIALIZED` or `EMPTY` row applies |
+| COORD kind, coordination-routed, state `EMPTY`, **no** seed marker on the coordination branch (pre-fix Mission, D4) | seeded (`contracts/seed.md`); `establishment=SEEDED` |
+| COORD kind, coordination-routed, state `EMPTY`, seed marker present (post-fix Mission; a regression) | loud `WARNING`, then COORD-kind paths only are restored from the branch tip (never PRIMARY files), then any root-only records are seeded; `establishment=RESTORED_FROM_BRANCH` |
 
 The following hold in every case:
 - `write_dir(kind).surface` matches the partition of `write_target(kind).ref`: the coordination worktree's branch is `write_target(kind).ref`. A property test over every `MissionArtifactKind` pins this.
@@ -54,6 +58,13 @@ The following hold in every case:
 Every error message names the Mission, the coordination branch, and a recovery command.
 
 ## Relationship to existing seams
+
+- **`assert_coord_write_materialized`** (`write_target_degrade.py:157-261`, formerly "the single decision locus for S-C"): absorbed (D22). It becomes a thin delegate to this accessor.
+  - MATERIALIZED/EMPTY: no-op.
+  - UNMATERIALIZED with a local head: delegates to `write_dir(kind)`, which materializes and then restores or seeds, instead of refusing when the branch already carries the kind.
+  - Remote-only: still refuses with `COORDINATION_WORKTREE_UNMATERIALIZED`.
+
+  Its callers (`resolve_write_target_or_degrade(..., terminus_write=True)`, `write_seam.write_artifact`) are unchanged. Its old local-head refusal pins are re-pinned deliberately.
 
 - **`resolve_placement_only` / `write_target`:** unchanged. They give the commit ref and are materialization-blind. `write_dir` gives the directory.
 - **`read_dir`:** unchanged. It keeps the `EMPTY` → PRIMARY read fallback (C-002). It is never a write location for a COORD kind; the FR-014 gate enforces that.

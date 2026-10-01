@@ -21,6 +21,16 @@ Decision events stay COORD on both streams: the status log carries `Decision*` e
 
 For non-coordination topologies (`lanes`, `single_branch`), every kind resolves to the PRIMARY partition, as today (C-008).
 
+**Residue classification after the ledger move** (research D12, design rule):
+
+| Caller of `is_coord_residue_churn` | `decisions/` is residue? |
+|---|---|
+| passes `topology=None` (the legacy default) | **yes, as today, for every topology**: a shrink-only compatibility set `{DECISION_LEDGER}`, consulted only when `topology is None` |
+| passes a coordination topology (the FR-009 readers do so only for coordination-routed Missions) | **no**: real work |
+| passes a non-coordination topology | no, as today (nothing is residue there) |
+
+Non-coordination Missions keep exactly today's ledger handling. Paths covered by a registered merge driver (including `decisions/index.json`) are skipped by the planning-recency resolver (research D12, "Merge-driver hazard").
+
 ## 2. Write-location accessor result
 
 `PlacementSeam.write_dir(kind) -> WriteLocation`. The contract is in `contracts/write-location-accessor.md`.
@@ -28,6 +38,7 @@ For non-coordination topologies (`lanes`, `single_branch`), every kind resolves 
 ```text
 WriteLocation (frozen)
   path: Path                     absolute Mission directory to write <kind> files into
+  checkout_root: Path            root of the checkout holding `path` (coordination worktree root, or repository root checkout)
   surface: "primary" | "coordination"
   coord_state_before: CoordState | None   None for PRIMARY kinds / non-coord topologies
   establishment: Establishment   NONE | MATERIALIZED | SEEDED | RESTORED_FROM_BRANCH
@@ -40,12 +51,13 @@ WriteLocation (frozen)
 
 | `CoordState` (write side) | Action | Result |
 |---------------------------|--------|--------|
+| any state, **PUBLISHED** Mission and E2-eligible kind (`REVIEW_CYCLE`, `TRACER_FILE`, `ISSUE_MATRIX`, `ACCEPTANCE_MATRIX`; `resolution.py:191-199`) | none: checked before any coordination probe | PRIMARY dir, `surface="primary"`, `checkout_root` = repository root checkout (research D23) |
 | `NONE` (no coordination branch) | none | PRIMARY dir, `surface="primary"` |
 | `MATERIALIZED` | none | coordination Mission dir |
-| `UNMATERIALIZED`, local head | `CoordinationWorkspace.resolve` (`workspace.py:296`), re-probe, then the `MATERIALIZED` or `EMPTY` row | coordination Mission dir |
+| `UNMATERIALIZED`, local head (whether or not the branch already carries the kind; the absorbed gate, research D22) | `CoordinationWorkspace.resolve` (`workspace.py:296`), re-probe, then the `MATERIALIZED` or `EMPTY` row | coordination Mission dir |
 | `UNMATERIALIZED`, remote-only branch | refuse, `COORDINATION_WORKTREE_UNMATERIALIZED` (existing `_raise_unmaterialized`, `surface_resolver.py:877`) | error with a recovery hint (ruling Q1, #4970 parity) |
-| `EMPTY`, coordination branch tree lacks the Mission dir (pre-fix Mission) | seed (section 3) | coordination Mission dir, `SEEDED` |
-| `EMPTY`, coordination branch tree carries the Mission dir (post-fix Mission; a regression) | loud warning, then restore the dir from the branch tip in the worktree (ruling Q3), then seed rules for any root-only records | coordination Mission dir, `RESTORED_FROM_BRANCH` |
+| `EMPTY`, no `Spec-Kitty-Coordination-Seed: <mission_id>` trailer in the coordination branch history (pre-fix Mission, including one whose branch tree carries PRIMARY files; research D4) | seed (section 3) | coordination Mission dir, `SEEDED` |
+| `EMPTY`, seed trailer present (post-fix Mission; a regression) | loud warning, then restore **COORD-kind paths only** from the branch tip (explicit pathspec; ruling Q3), then seed rules for any root-only records | coordination Mission dir, `RESTORED_FROM_BRANCH` |
 | `DELETED` (branch declared but missing) | refuse, `COORDINATION_BRANCH_DELETED` (existing `CoordinationBranchDeleted`) with the recovery hint | error |
 
 The read side keeps today's `EMPTY` fallback to the repository root checkout (C-002). The only read-side change: for a post-fix Mission, the `EMPTY` warning (`surface_resolver.py:1430-1450`) fires for both `coord` and `lanes_with_coord`, not only `lanes_with_coord`.
@@ -72,9 +84,10 @@ SeedReport (frozen)
 ### Invariants
 
 - **I-SEED-1 (lock).** The seed runs under `feature_status_lock(<git-common-dir>, <mission dir name>)`. The coordination and root surfaces share this lock: it is keyed on the git common dir plus the Mission dir name (`status/locking.py:147,278`), and it is reentrant (`machine_file_lock(..., reentrant=True)`).
+- **I-SEED-1a (lock identity).** The lock root is `owned.owned_root` when owned, else `repo_root`. The key is `coord_mission_dir_name(slug, mid8)`, the same key as `coord_status_lock` and `commit_router._coord_status_locks`. The timeout is bounded at `BOUNDED_STATUS_LOCK_TIMEOUT_SECONDS` (`status/locking.py:54`), so `STATUS_LOCK_HELD` is reachable; the default `-1` waits forever.
 - **I-SEED-2 (lock order).** The workspace lock (`CoordinationWorkspace.resolve`) may be taken while the status lock is held, which is the order `BookkeepingTransaction.acquire` already uses (`transaction.py:292` then `:465`). The status lock is never acquired while the workspace lock is held. Materialization therefore completes, and its lock is released, before the seed takes the status lock.
 - **I-SEED-3 (atomic visibility).** The seed builds the full Mission dir in a sibling temp dir in the coordination worktree (`kitty-specs/.<dir>.seed-<pid>-<ulid>`) and makes it visible with a single `os.rename`. A reader sees either no dir (`EMPTY`, read fallback to root, which holds the same records) or the complete dir. A crash leaves only an ignorable temp dir. The next seed removes stale `.seed-*` dirs under the lock.
-- **I-SEED-4 (prefix rule, per log stream).** For `status.events.jsonl` and `decisions.events.jsonl`, take `R` = the event-id sequence of the root log and `C` = the event-id sequence of the coordination-side log. `C` is the worktree file if present, else the blob on the coordination branch tip.
+- **I-SEED-4 (prefix rule, per log stream).** For `status.events.jsonl` and `decisions.events.jsonl`, take `R` = the event-id sequence of the root log and `C` = the event-id sequence of the coordination-side log. `C` is the worktree file if present, else the blob on the coordination branch tip. The classifier is the pure `coordination/event_prefix.py` (`event_ids_of`, `classify_prefix`), shared with the fork detector.
   - `C` empty: the coordination log becomes the root log, byte for byte.
   - `C` a proper prefix of `R`: the coordination log becomes `C` plus `R[len(C):]`, whose lines are taken from the root file.
   - `R` a prefix of `C`, or equal: nothing to carry.

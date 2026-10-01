@@ -247,6 +247,26 @@
       "status": "resolved",
       "step_id": null,
       "summary_json": null
+    },
+    {
+      "created_at": "2026-10-01T09:29:54.981420Z",
+      "decision_id": "01M3VCS2H5R6R04BCD41RN8GFD",
+      "final_answer": "spec-commit and accept only (narrowed from spec-commit/setup-plan/finalize-tasks/accept): those are the existing committers that already commit the ledger once it is PRIMARY (WP12/WP16); setup-plan and finalize-tasks keep committing only their own artefacts, so no new auto-commit is added. Analyze finding G1.",
+      "input_key": "ledger_committers",
+      "mission_id": "01M3V4BEWYPR3TP9N6A95A44KN",
+      "mission_slug": "coord-artifact-single-home-01M3V4BE",
+      "opened_by": "cli",
+      "options": [],
+      "origin_flow": "plan",
+      "other_answer": false,
+      "question": "Which existing PRIMARY-partition commands commit a new Mission's decision ledger (FR-009b)?",
+      "rationale": null,
+      "resolved_at": "2026-10-01T09:29:56.888966Z",
+      "resolved_by": null,
+      "slot_key": "plan.scope.ledger-committers",
+      "status": "resolved",
+      "step_id": null,
+      "summary_json": null
     }
   ],
   "mission_id": "01M3V4BEWYPR3TP9N6A95A44KN",

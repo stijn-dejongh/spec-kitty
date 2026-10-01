@@ -11,18 +11,18 @@
 
 ## Procedure
 
-1. **Lock.** Acquire `feature_status_lock(<lock root>, <mission dir name>)`.
+1. **Lock.** Acquire `feature_status_lock(lock_root, coord_mission_dir_name(slug, mid8), timeout=BOUNDED_STATUS_LOCK_TIMEOUT_SECONDS)`. `lock_root` is `owned.owned_root` when owned, else `repo_root` (as `transaction.py:290-291`). The key matches `coord_status_lock` and `commit_router._coord_status_locks`. The timeout is bounded (`status/locking.py:54`, 10 s); the default `-1` would wait forever and make `STATUS_LOCK_HELD` unreachable.
 2. **Re-check.** Re-probe the state. If it is `MATERIALIZED`, return an empty report: another writer seeded first, so the seed is idempotent.
 3. **Clean up.** Remove stale `kitty-specs/.<dir>.seed-*` temp dirs.
 4. **Collect.** Gather root COORD records from the repository root checkout's Mission dir. These are the files whose `kind_for_mission_file` is a COORD kind: the status log, `decisions.events.jsonl`, `traces/*.md`, `tasks/*/review-cycle-*.md`, `issue-matrix.json` and `acceptance-matrix.json`. PRIMARY files are never collected.
-5. **Read the coordination side.** If the coordination branch tip carries `kitty-specs/<dir>/`, the coordination-side content is the branch blobs (post-fix regression case). Otherwise it is empty.
+5. **Read the coordination side.** The coordination-side content is the branch-tip blobs of **COORD-kind** files under `kitty-specs/<dir>/` (classified with `kind_for_mission_file`), if any; otherwise it is empty. PRIMARY files on the branch tip (a pre-fix branch cut after the first target commit) are ignored. When the branch carries the seed marker (post-fix regression), the accessor first restores the COORD-kind paths from the tip, with an explicit pathspec rather than a whole-dir checkout, and that restored content is the coordination side.
 6. **Apply the prefix rule per log stream**, on event-id sequences `R` (root) and `C` (coordination):
    - `C` empty, or `C` a proper prefix of `R`: the output is `C` + `R[len(C):]`, using the root lines.
    - `R` a prefix of `C`, or equal: the output is `C`.
    - Otherwise: release everything and raise `COORD_SEED_FORK_REFUSED`.
 7. **Non-log records.** Take the coordination copy if present, else the root copy. When both exist and differ, add a warning; the root copy is kept untouched.
 8. **Write.** Write the output tree into `kitty-specs/.<dir>.seed-<pid>-<ulid>/`, then `os.rename` it to `kitty-specs/<dir>/`. The rename is atomic within the worktree's filesystem.
-9. **Commit.** Commit on the coordination branch through `commit_for_mission(kind=STATUS_STATE, files=<coordination paths>)`, with the message `chore(<mission>): seed coordination surface`. Then record `coord_commit`.
+9. **Commit.** Commit on the coordination branch through `commit_for_mission(kind=STATUS_STATE, files=<coordination paths>)`, with the message `chore(<mission>): seed coordination surface` and the trailer `Spec-Kitty-Coordination-Seed: <mission_id>`. The trailer is the post-fix discriminator (research D4). Then record `coord_commit`.
 10. **Restore the root checkout.** For each carried root file: if it is tracked and dirty, run `git checkout -- <path>`; if it is untracked, remove it. Committed history is never rewritten (C-004).
 11. **Release** the lock and return the `SeedReport`.
 
@@ -34,6 +34,7 @@ Create-time seed: steps 4-7 find nothing (the scaffold no longer writes the stat
 - In each log, no event id appears twice.
 - The coordination branch carries the seed commit, so a later fresh clone that materializes the worktree sees `MATERIALIZED` and never seeds again.
 - No PRIMARY-partition file exists in the coordination Mission dir (US1.3).
+- The coordination branch carries a commit with the `Spec-Kitty-Coordination-Seed: <mission_id>` trailer, unless the seed commit was refused (see Errors), in which case the next coordination commit carries the seed and the trailer.
 
 ## Errors
 
@@ -41,7 +42,7 @@ Create-time seed: steps 4-7 find nothing (the scaffold no longer writes the stat
 |------|-----------|-------------|
 | `COORD_SEED_FORK_REFUSED` (new) | both logs non-empty, and neither event-id sequence is a prefix of the other | unchanged. The message names both paths, both refs, the first diverging event id on each side, and the reconcile steps: inspect with `spec-kitty doctor decisions`; keep the coordination log; re-open any root-only decisions with `spec-kitty agent decision open ...`; then remove the root copy. |
 | `STATUS_LOCK_HELD` | lock timeout | unchanged |
-| commit refusal (`PROTECTED_BRANCH_REFUSED` on the coordination ref, …) | step 9 refused | Mission dir present and uncommitted (records are not lost). The next coordination commit carries them. Reported in `SeedReport.warnings`. |
+| commit refusal (`PROTECTED_BRANCH_REFUSED` on the coordination ref, …) | step 9 refused | Mission dir present and uncommitted (records are not lost). The triggering write proceeds. A loud warning names the Mission, the refused ref and the reason. The next coordination commit through the router carries the seed (its outcome lists the carried paths) and the trailer. Reported in `SeedReport.warnings` (spec edge case "Refused seed commit"). |
 
 ## Compatibility
 

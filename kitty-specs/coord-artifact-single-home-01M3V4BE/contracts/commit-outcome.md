@@ -46,6 +46,8 @@ class SurfaceOutcome:
 | `PROTECTED_BRANCH_REFUSED` | refused | destination ref is protected | existing (`coordination/types.py:90`) |
 | `STATUS_LOCK_HELD` | refused | status lock held by another writer | new code (maps `FeatureStatusLockTimeoutError`) |
 | `COORDINATION_BRANCH_DELETED` | refused | coordination branch missing | existing |
+| `COORDINATION_WORKTREE_UNMATERIALIZED` | refused | coordination branch exists only on the remote (#4970 parity), surfaced from `write_dir` | existing |
+| `COORD_SEED_FORK_REFUSED` | refused | establishing the coordination surface found a forked log (`contracts/seed.md`) | new |
 | `PATH_UNROUTABLE` | refused | path outside the Mission, or kind not classifiable | new |
 | `WRONG_SURFACE` | refused | today's `no_op_wrong_surface` situation | existing semantics; new name in `surfaces` only |
 
@@ -71,7 +73,10 @@ class SurfaceOutcome:
 `arguments` lists every input path exactly once, with `fate` one of `committed`, `unchanged`, `skipped` or `refused`, plus `reason` when not committed (FR-007a). `success` becomes `false` when any surface is `refused` or `error`.
 
 **accept** (`--json`): adds `residual_commit: {"surfaces": [...]}`.
-**finalize-tasks** (`--json`): adds `commit_surfaces: [...]` beside the existing `commit_hashes` (emitted at `mission_finalize.py:3746`). It also adds `planning_commit_refresh: {status, recorded, candidate, reason}`; a `refused` refresh is a warning with exit 0 (ruling Q6, research D16).
+**finalize-tasks** (`--json`): adds `commit_surfaces: [...]` beside the existing `commit_hashes` (emitted at `mission_finalize.py:3746`). It also adds `planning_commit_refresh: {status: "refreshed" | "preserved" | "kept_with_warning", recorded, candidate, pin_class, reason}`.
+  - `kept_with_warning` (exit 0) applies only when the **automatic** refresh cannot prove a safe advance for a non-orphan pin (`FOREIGN`/`INDETERMINATE`; ruling Q6).
+  - An **orphaned** pin keeps failing closed before any write with the existing error envelope (#4827, `test_plain_finalize_fails_closed_on_orphaned_pin`); this field is not emitted then.
+  - An explicit `--refresh-planning-commit` keeps its existing refusals, which also fail (research D16).
 **retrospect, setup-plan, record-analysis:** add `surfaces` to their existing commit payloads.
 **implement receipts** (`{"commits": [...]}`, `workflow.py:837`): every entry carries a non-null `sha` (FR-013).
 
