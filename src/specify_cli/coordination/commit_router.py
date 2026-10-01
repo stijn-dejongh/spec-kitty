@@ -1861,6 +1861,61 @@ def _relpath(repo_root: Path, path: Path) -> str:
         return path.as_posix()
 
 
+def _c_unquote_git_path(raw: str) -> str:
+    """Undo git's C-style quoting of a porcelain path field.
+
+    git wraps a path in double quotes and C-escapes it (``\\\\``, ``\\"``,
+    ``\\t``, ``\\n``, and an octal ``\\NNN`` per non-printable/non-ASCII
+    byte) whenever it contains a space, a double quote, a backslash, or
+    (under the default ``core.quotePath=true``) any non-ASCII byte. A path
+    needing none of that is left bare. Decodes the escaped BYTES then
+    re-decodes them as UTF-8, since a multi-byte UTF-8 character is escaped
+    one octal triplet per byte (e.g. ``\\303\\251`` for ``é``).
+    """
+    if len(raw) < 2 or raw[0] != '"' or raw[-1] != '"':
+        return raw
+    body = raw[1:-1]
+    out = bytearray()
+    i = 0
+    while i < len(body):
+        ch = body[i]
+        if ch != "\\":
+            out.extend(ch.encode("utf-8"))
+            i += 1
+            continue
+        nxt = body[i + 1] if i + 1 < len(body) else ""
+        simple = {"\\": "\\", '"': '"', "t": "\t", "n": "\n", "r": "\r"}
+        if nxt in simple:
+            out.extend(simple[nxt].encode("utf-8"))
+            i += 2
+            continue
+        octal = body[i + 1 : i + 4]
+        if len(octal) == 3 and all(c in "01234567" for c in octal):
+            out.append(int(octal, 8))
+            i += 4
+            continue
+        # Unrecognized escape: keep the backslash literally rather than
+        # silently dropping a byte.
+        out.extend(ch.encode("utf-8"))
+        i += 1
+    try:
+        return out.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw
+
+
+def _porcelain_entry_path(field: str) -> str:
+    """Resolve one dirty-entry's path field to a plain (unquoted) path.
+
+    Splits a rename's ``old -> new`` arrow (keeping the NEW name, the same
+    convention :func:`specify_cli.git.ref_advance._porcelain_path` uses),
+    then C-unquotes whichever side remains.
+    """
+    if " -> " in field:
+        field = field.rsplit(" -> ", 1)[1]
+    return _c_unquote_git_path(field)
+
+
 def _dirty_paths_in_checkout(checkout_root: Path, files: tuple[Path, ...]) -> tuple[Path, ...]:
     """Return the subset of *files* that are present on disk AND carry uncommitted
     content (untracked or modified) in *checkout_root*.
@@ -1889,6 +1944,18 @@ def _dirty_paths_in_checkout(checkout_root: Path, files: tuple[Path, ...]) -> tu
     below treats a directory-shaped dirty entry as covering every path
     under it, so a file inside a brand-new untracked directory still
     resolves to dirty.
+
+    coord-artifact-single-home-01M3V4BE WP07 (review cycle 1 N5): porcelain
+    paths are C-quoted by git whenever they contain a space, a double quote,
+    a backslash, or (under the default ``core.quotePath=true``) a non-ASCII
+    byte (octal-escaped) -- e.g. ``"a file.txt"`` or ``"caf\\303\\251.txt"``
+    -- and a rename entry names BOTH sides (``old -> new``, either side
+    independently quoted). ``_porcelain_entry_path`` below splits the rename
+    arrow (keeping the NEW name, matching
+    :func:`specify_cli.git.ref_advance._porcelain_path`'s own convention)
+    and C-unquotes whichever side remains, so a quoted or renamed dirty
+    entry still matches the plain (unquoted) ``rel`` path this function
+    compares against.
     """
     # Same-layer reuse of a module-private helper, mirroring git/destructive_guard.py's
     # own cross-module call into this exact function.
@@ -1901,7 +1968,7 @@ def _dirty_paths_in_checkout(checkout_root: Path, files: tuple[Path, ...]) -> tu
     )
     # Strip the 2-char status code + space, then any trailing explanatory
     # suffix ``_dirty_entries`` appends (always introduced by " (").
-    dirty_rel_paths = tuple(entry[3:].split(" (", 1)[0] for entry in dirty_entries)
+    dirty_rel_paths = tuple(_porcelain_entry_path(entry[3:].split(" (", 1)[0]) for entry in dirty_entries)
 
     def _entry_covers_path(entry_path: str, rel: str) -> bool:
         if entry_path.endswith("/"):

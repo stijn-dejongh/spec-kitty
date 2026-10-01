@@ -187,8 +187,10 @@ EXPECTED_LOCK_COMPOSITION_SITES: frozenset[str] = frozenset(
         # single-row splice + write-and-commit critical section, mirroring
         # #4858 for the issue-matrix twin of the lost-update race.
         "specify_cli.cli.commands.agent.issue_verdict",
-        # coord-artifact-single-home-01M3V4BE WP07 (WP03 regression #<see
-        # mission tracer>): the single write-location accessor's one-time
+        # coord-artifact-single-home-01M3V4BE WP07 (WP03 regression; ruling
+        # recorded at traces/design-decisions.md entry
+        # design-decisions-71f124fc4627): the single write-location
+        # accessor's one-time
         # coordination seed (``coord_seed._seed_coord_surface``) composes
         # ``feature_status_lock`` around a byte-level CARRY of events the
         # root checkout already persisted onto the coordination branch

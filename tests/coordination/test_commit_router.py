@@ -2410,3 +2410,67 @@ def test_partition_for_mission_path_matches_group_files_by_partition(tmp_path: P
         assert partition_for_mission_path(tmp_path, mission_slug, file) == "primary"
     for file in coord_group_files:
         assert partition_for_mission_path(tmp_path, mission_slug, file) == "coordination"
+
+
+# ---------------------------------------------------------------------------
+# Review cycle 1 N5: ``_dirty_paths_in_checkout`` must correctly match a
+# porcelain entry whose path git C-quotes (a space, or a non-ASCII byte
+# under the default ``core.quotePath=true``) and a rename entry (``old ->
+# new``, either side independently quoted).
+# ---------------------------------------------------------------------------
+
+
+def test_dirty_paths_in_checkout_matches_a_quoted_path_with_a_space(tmp_path: Path) -> None:
+    from specify_cli.coordination.commit_router import _dirty_paths_in_checkout
+
+    repo_root = tmp_path / "repo"
+    _init_repo(repo_root)
+    quoted_file = repo_root / "kitty-specs" / "a file with space.txt"
+    quoted_file.parent.mkdir(parents=True)
+    quoted_file.write_text("x\n", encoding="utf-8")
+
+    dirty = _dirty_paths_in_checkout(repo_root, (quoted_file,))
+
+    assert dirty == (quoted_file,)
+
+
+def test_dirty_paths_in_checkout_matches_a_quoted_non_ascii_path(tmp_path: Path) -> None:
+    from specify_cli.coordination.commit_router import _dirty_paths_in_checkout
+
+    repo_root = tmp_path / "repo"
+    _init_repo(repo_root)
+    non_ascii_file = repo_root / "kitty-specs" / "café.txt"
+    non_ascii_file.parent.mkdir(parents=True)
+    non_ascii_file.write_text("x\n", encoding="utf-8")
+
+    dirty = _dirty_paths_in_checkout(repo_root, (non_ascii_file,))
+
+    assert dirty == (non_ascii_file,)
+
+
+def test_dirty_paths_in_checkout_matches_the_new_side_of_a_rename(tmp_path: Path) -> None:
+    from specify_cli.coordination.commit_router import _dirty_paths_in_checkout
+
+    repo_root = tmp_path / "repo"
+    _init_repo(repo_root)
+    old_file = repo_root / "kitty-specs" / "old name.txt"
+    old_file.parent.mkdir(parents=True)
+    old_file.write_text("identical content for a clean rename\n", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=repo_root, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "baseline"], cwd=repo_root, check=True)
+    new_file = repo_root / "kitty-specs" / "new name.txt"
+    subprocess.run(["git", "mv", str(old_file), str(new_file)], cwd=repo_root, check=True)
+
+    dirty = _dirty_paths_in_checkout(repo_root, (new_file,))
+
+    assert dirty == (new_file,)
+
+
+def test_porcelain_entry_path_unquotes_and_splits_renames() -> None:
+    from specify_cli.coordination.commit_router import _porcelain_entry_path
+
+    assert _porcelain_entry_path('"a file with space.txt"') == "a file with space.txt"
+    assert _porcelain_entry_path('"caf\\303\\251.txt"') == "café.txt"
+    assert _porcelain_entry_path('"old name.txt" -> "new name.txt"') == "new name.txt"
+    assert _porcelain_entry_path('"old name.txt" -> plain.txt') == "plain.txt"
+    assert _porcelain_entry_path("plain.txt") == "plain.txt"
