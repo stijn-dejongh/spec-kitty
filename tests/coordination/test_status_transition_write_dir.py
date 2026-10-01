@@ -677,3 +677,36 @@ def test_transaction_resolve_coord_worktree_root_wraps_unexpected_failure(tmp_pa
         )
     assert "demo-01ABCDEF" in str(excinfo.value)
     assert "placement seam exploded" in str(excinfo.value)
+
+
+def test_commit_idempotent_no_ops_when_the_seed_already_committed_everything(tmp_path: Path) -> None:
+    """Review cycle 1 N1 (the OTHER half): the single write-location
+    accessor's seed can commit a pre-fix EMPTY mission's root records onto
+    the coordination branch as a side effect of ``BookkeepingTransaction.
+    acquire`` resolving WHERE to write -- before this caller ever stages
+    anything. ``commit_idempotent`` must then no-op successfully (not raise
+    ``BookkeepingCommitFailed``), because the write location already carries
+    content (``_pre_emit_events_existed`` is True, computed AFTER the seed
+    ran)."""
+    import json
+
+    from specify_cli.coordination.transaction import BookkeepingTransaction
+
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    meta = json.loads((coord.root_mission_dir / "meta.json").read_text(encoding="utf-8"))
+    mission_id = str(meta["mission_id"])
+
+    with BookkeepingTransaction.acquire(
+        repo_root=coord.repo_root,
+        mission_id=mission_id,
+        mission_slug=coord.mission_slug,
+        mid8=coord.mid8,
+        destination_ref=coord.coordination_branch,
+        operation="N1 seed-already-committed no-op",
+    ) as txn:
+        assert not txn._staged_paths
+        assert txn._pre_emit_events_existed  # the seed already created it
+        receipt = txn.commit_idempotent("status: should no-op")
+
+    assert receipt is not None
+    assert (coord.coord_mission_dir / _STATUS_LOG).exists()

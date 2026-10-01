@@ -913,20 +913,26 @@ class BookkeepingTransaction(AbstractContextManager["BookkeepingTransaction"]):
         commit and by adversarial rollback callers), which must still surface an
         empty/failed changeset as :class:`BookkeepingCommitFailed`.
 
-        coord-artifact-single-home-01M3V4BE WP07: the no-op guard no longer
-        requires ``self._staged_paths`` to be non-empty. The single
-        write-location accessor's one-time seed (contracts/seed.md) can now
-        itself commit a caller's intended content onto the coordination
-        branch as a side effect of resolving WHERE to write (the SAME class
-        of "another committer got there first" this method's docstring
-        already describes for the transactional-emit case) -- before the
-        caller ever decides whether it still needs to ``write_artifact`` at
-        all. A caller that then finds nothing new to stage (``_staged_paths``
-        empty) is exactly as idempotent-safe as one whose staged paths
-        already match HEAD: ``_worktree_has_pending_changes()`` already
-        returns ``False`` for an empty ``_staged_paths`` (nothing staged
-        trivially has no pending changes among it), so this is a pure
-        widening of the SAME no-op condition, not a new one.
+        coord-artifact-single-home-01M3V4BE WP07 (review cycle 1 N1,
+        narrowed): the no-op guard no longer requires ``self._staged_paths``
+        to be non-empty -- but ONLY when the write location already carried
+        SOMETHING before this transaction (``self._pre_emit_events_existed``,
+        computed from ``events_path.exists()`` at acquire time, AFTER the
+        single write-location accessor's one-time seed had its chance to
+        materialize/restore the events file). That covers the genuine new
+        case this widening targets: the seed committed the caller's intended
+        content onto the coordination branch as a side effect of resolving
+        WHERE to write, before the caller ever decided whether it still
+        needed to ``write_artifact`` at all -- exactly as idempotent-safe as
+        a caller whose staged paths already match HEAD.
+
+        It does NOT cover a caller whose ``_staged_paths`` is empty because
+        nothing was ever written AND nothing pre-existed either (e.g.
+        ``implement.py``'s planning-artifact commit skips every requested
+        source that does not exist on disk, per its own ``continue``) --
+        that remains a genuine empty changeset and still falls through to
+        :meth:`commit`, which raises :class:`BookkeepingCommitFailed` for it,
+        unchanged from before this WP.
         """
         if self._committed:
             if self._explicit_commit_receipt is None:
@@ -935,6 +941,11 @@ class BookkeepingTransaction(AbstractContextManager["BookkeepingTransaction"]):
                     "commit receipt was recorded"
                 )
             return self._explicit_commit_receipt
+        if not self._staged_paths and not self._pre_emit_events_existed:
+            # Genuinely nothing was ever written and nothing pre-existed at
+            # the write location either -- delegate to the strict path so an
+            # empty changeset still raises BookkeepingCommitFailed.
+            return self.commit(message)
         if not self._worktree_has_pending_changes():
             receipt = self._noop_commit_receipt()
             self._committed = True
