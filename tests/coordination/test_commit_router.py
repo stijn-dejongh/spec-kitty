@@ -156,6 +156,13 @@ def test_unprotected_direct_commit(tmp_path: Path) -> None:
     assert result.placement_ref == _PRIMARY_BRANCH
     # The materialiser must NOT have been called on the unprotected path.
     assert len(materialise_calls) == 0
+    # WP05 T025: a single-group (the common fast path) batch gets exactly one
+    # SurfaceOutcome, "primary", carrying the committed path.
+    assert len(result.surfaces) == 1
+    assert result.surfaces[0].surface == "primary"
+    assert result.surfaces[0].branch == _PRIMARY_BRANCH
+    assert result.surfaces[0].status == "committed"
+    assert result.surfaces[0].committed == ("spec.md",)
 
 
 def test_protected_primary_refusal_names_mission_create_for_pre_tasks_kind(tmp_path: Path) -> None:
@@ -311,6 +318,146 @@ def test_protected_coord_placement_materialises(tmp_path: Path) -> None:
     assert result.placement_ref == _COORD_REF
     # Materialiser MUST have been called.
     assert len(materialise_calls) == 1
+
+
+# ---------------------------------------------------------------------------
+# WP05 T025 — ``surfaces`` for a genuinely split (mixed-partition) batch.
+# ---------------------------------------------------------------------------
+
+
+def _fake_resolve_placement_only_by_partition(_repo_root: Path, _mission_slug: str, *, kind: MissionArtifactKind, owned: object | None = None) -> object:
+    """Kind-aware placement stub: a PRIMARY kind resolves to the primary ref, else the coord ref."""
+    from mission_runtime import is_primary_artifact_kind
+
+    return _make_primary_target() if is_primary_artifact_kind(kind) else _make_coord_target()
+
+
+def test_mixed_batch_populates_surfaces_primary_then_coordination(tmp_path: Path) -> None:
+    """``CommitRouterResult.surfaces`` carries BOTH groups' outcomes, PRIMARY first (contract rule 1)."""
+    mission_slug = "001-my-mission"
+    feature_dir = tmp_path / "kitty-specs" / mission_slug
+    feature_dir.mkdir(parents=True)
+    tasks_file = feature_dir / "tasks.md"
+    tasks_file.write_text("# Tasks\n", encoding="utf-8")
+    matrix_file = feature_dir / "acceptance-matrix.json"
+    matrix_file.write_text("{}", encoding="utf-8")
+
+    coord_worktree = tmp_path / ".worktrees" / "coord"
+    coord_worktree.mkdir(parents=True)
+
+    def _fake_materialise(repo_root: Path, _mission_slug: str, _placement: object, files: tuple[Path, ...], **_kwargs: object) -> tuple[Path, tuple[Path, ...]]:
+        staged: list[Path] = []
+        for src in files:
+            dst = coord_worktree / src.relative_to(repo_root)
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            dst.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+            staged.append(dst)
+        return coord_worktree, tuple(staged)
+
+    with (
+        _patch_topology(coord=True),
+        _patch_primary_target(),
+        patch(
+            "specify_cli.coordination.commit_router.resolve_placement_only",
+            side_effect=_fake_resolve_placement_only_by_partition,
+        ),
+        patch(
+            "specify_cli.coordination.commit_router._materialise_coord_worktree",
+            side_effect=_fake_materialise,
+        ),
+        patch(
+            "specify_cli.coordination.commit_router.safe_commit",
+            return_value=_FakeCommitResult(),
+        ),
+    ):
+        from specify_cli.coordination.commit_router import commit_for_mission
+
+        result = commit_for_mission(
+            repo_root=tmp_path,
+            mission_slug=mission_slug,
+            files=(tasks_file, matrix_file),
+            message="chore: finalize tasks",
+            policy=_make_policy(protected=False),
+            kind=MissionArtifactKind.TASKS_INDEX,
+        )
+
+    assert result.status == "committed"
+    assert len(result.surfaces) == 2, f"expected one SurfaceOutcome per partition group, got {result.surfaces!r}"
+    primary_surface, coord_surface = result.surfaces
+    assert primary_surface.surface == "primary"
+    assert primary_surface.branch == _PRIMARY_BRANCH
+    assert primary_surface.status == "committed"
+    assert primary_surface.committed == ("kitty-specs/001-my-mission/tasks.md",)
+    assert coord_surface.surface == "coordination"
+    assert coord_surface.branch == _COORD_REF
+    assert coord_surface.status == "committed"
+    assert coord_surface.committed == (".worktrees/coord/kitty-specs/001-my-mission/acceptance-matrix.json",)
+    # Legacy fields stay the caller-partition (TASKS_INDEX -> PRIMARY) projection.
+    assert result.placement_ref == _PRIMARY_BRANCH
+
+
+def test_mixed_batch_error_on_one_group_still_carries_both_surfaces(tmp_path: Path) -> None:
+    """A real git error on ONE group of a split batch never masks the OTHER group's outcome in ``surfaces`` (FR-007)."""
+    mission_slug = "001-my-mission"
+    feature_dir = tmp_path / "kitty-specs" / mission_slug
+    feature_dir.mkdir(parents=True)
+    tasks_file = feature_dir / "tasks.md"
+    tasks_file.write_text("# Tasks\n", encoding="utf-8")
+    matrix_file = feature_dir / "acceptance-matrix.json"
+    matrix_file.write_text("{}", encoding="utf-8")
+
+    coord_worktree = tmp_path / ".worktrees" / "coord"
+    coord_worktree.mkdir(parents=True)
+
+    def _fake_materialise(repo_root: Path, _mission_slug: str, _placement: object, files: tuple[Path, ...], **_kwargs: object) -> tuple[Path, tuple[Path, ...]]:
+        staged: list[Path] = []
+        for src in files:
+            dst = coord_worktree / src.relative_to(repo_root)
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            dst.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+            staged.append(dst)
+        return coord_worktree, tuple(staged)
+
+    calls = {"n": 0}
+
+    def _flaky_safe_commit(**_kwargs: object) -> object:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return _FakeCommitResult()
+        raise subprocess.CalledProcessError(1, ["git", "commit"], stderr="fatal: lock denied")
+
+    with (
+        _patch_topology(coord=True),
+        _patch_primary_target(),
+        patch(
+            "specify_cli.coordination.commit_router.resolve_placement_only",
+            side_effect=_fake_resolve_placement_only_by_partition,
+        ),
+        patch(
+            "specify_cli.coordination.commit_router._materialise_coord_worktree",
+            side_effect=_fake_materialise,
+        ),
+        patch("specify_cli.coordination.commit_router.safe_commit", side_effect=_flaky_safe_commit),
+    ):
+        from specify_cli.coordination.commit_router import commit_for_mission
+
+        result = commit_for_mission(
+            repo_root=tmp_path,
+            mission_slug=mission_slug,
+            files=(tasks_file, matrix_file),
+            message="chore: finalize tasks",
+            policy=_make_policy(protected=False),
+            kind=MissionArtifactKind.TASKS_INDEX,
+        )
+
+    assert result.status == "error"
+    assert len(result.surfaces) == 2, f"an error on one group must not drop the other group's surface: {result.surfaces!r}"
+    primary_surface, coord_surface = result.surfaces
+    assert primary_surface.surface == "primary"
+    assert primary_surface.status == "committed"
+    assert coord_surface.surface == "coordination"
+    assert coord_surface.status == "error"
+    assert coord_surface.refused
 
 
 def test_idempotent_unchanged(tmp_path: Path) -> None:
