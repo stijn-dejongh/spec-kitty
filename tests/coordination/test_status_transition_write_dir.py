@@ -347,3 +347,90 @@ def test_transactional_emit_materialized_forked_mission_is_not_locked_out(tmp_pa
     assert set(coord_ids_before) <= set(coord_ids_after)
     assert event.event_id in coord_ids_after
     assert len(coord_ids_after) == len(coord_ids_before) + 1
+
+
+# ---------------------------------------------------------------------------
+# T042: the single write-location accessor's own seed L1
+# (``feature_status_lock``, keyed by the coord mission's dir name) is
+# re-entrant within a caller's thread, and refuses loudly (``STATUS_LOCK_HELD``)
+# against a genuinely different holder. Exercised directly at the
+# ``write_dir`` boundary (the accessor WP03/WP04 delivered and this WP's
+# writers all route through) rather than through the full transactional
+# emit: ``status_transition.py``'s OUTER L1 acquire wraps the whole emit with
+# its own (effectively unbounded) wait, which would otherwise mask the
+# seed's own bounded timeout behind a successful-after-the-holder-releases
+# retry -- exactly the layer this WP owns and changed.
+# ---------------------------------------------------------------------------
+
+
+def _write_dir(coord: CoordMission) -> Path:
+    from mission_runtime import MissionArtifactKind, placement_seam
+
+    return placement_seam(coord.repo_root, coord.mission_dir_name).write_dir(MissionArtifactKind.STATUS_STATE).path
+
+
+def test_seed_lock_is_reentrant_for_a_caller_already_holding_it(tmp_path: Path) -> None:
+    """A caller that already holds ``feature_status_lock`` for this mission
+    can still trigger a seed-performing ``write_dir`` call on the SAME
+    thread without deadlocking -- the lock is re-entrant per thread
+    (``status/locking.py::feature_status_lock`` docstring), and the seed's
+    own acquire (``coord_seed.py``) must honor that, not introduce a second,
+    non-reentrant lock object keyed the same way.
+    """
+    from specify_cli.status.locking import feature_status_lock
+
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    root_ids_before = event_ids(coord.root_mission_dir / _STATUS_LOG)
+    assert root_ids_before
+
+    with feature_status_lock(coord.repo_root, coord.mission_dir_name, timeout=5.0):
+        resolved = _write_dir(coord)
+
+    assert resolved == coord.coord_mission_dir
+    coord_ids_after = event_ids(resolved / _STATUS_LOG)
+    assert set(root_ids_before) <= set(coord_ids_after)
+
+
+def test_seed_lock_contention_from_a_different_holder_refuses_status_lock_held(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A genuinely different holder (a separate thread, never this test's own
+    thread) blocking the SAME lock key must make a seed-triggering
+    ``write_dir`` call refuse with ``FeatureStatusLockTimeoutError``
+    (``error_code == "STATUS_LOCK_HELD"``) -- and leave nothing written: no
+    coord log, no root-checkout residue.
+    """
+    import threading
+
+    import specify_cli.status.locking as locking_module
+    from specify_cli.status.locking import FeatureStatusLockTimeoutError, feature_status_lock
+
+    # ``coord_seed.py`` imports ``BOUNDED_STATUS_LOCK_TIMEOUT_SECONDS`` LOCALLY
+    # (inside the function that uses it), re-reading the live module attribute
+    # on every call -- patch the defining module, not coord_seed's namespace.
+    monkeypatch.setattr(locking_module, "BOUNDED_STATUS_LOCK_TIMEOUT_SECONDS", 0.3)
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    root_status_before = _repo_root_coord_dir_porcelain(coord)
+
+    holder_ready = threading.Event()
+    release_holder = threading.Event()
+
+    def _hold_lock() -> None:
+        with feature_status_lock(coord.repo_root, coord.mission_dir_name, timeout=5.0):
+            holder_ready.set()
+            release_holder.wait(timeout=5.0)
+
+    holder_thread = threading.Thread(target=_hold_lock)
+    holder_thread.start()
+    try:
+        assert holder_ready.wait(timeout=5.0), "the holder thread never acquired the lock"
+
+        with pytest.raises(FeatureStatusLockTimeoutError) as exc_info:
+            _write_dir(coord)
+        assert exc_info.value.error_code == "STATUS_LOCK_HELD"
+    finally:
+        release_holder.set()
+        holder_thread.join(timeout=5.0)
+
+    # Nothing was written: the coord Mission dir was never seeded, and the
+    # root checkout carries no new residue from the refused attempt.
+    assert not coord.coord_mission_dir.exists()
+    assert _repo_root_coord_dir_porcelain(coord) == root_status_before
