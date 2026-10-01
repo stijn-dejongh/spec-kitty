@@ -788,6 +788,8 @@ def coord_branch_has_committed_artifact(
     coord_branch: str,
     mission_slug: str,
     kind: MissionArtifactKind,
+    *,
+    mid8: str | None = None,
 ) -> bool:
     """Return whether *coord_branch* carries a COMMITTED artifact of *kind*.
 
@@ -797,26 +799,44 @@ def coord_branch_has_committed_artifact(
     a *stale* head, not a virgin first-write window: materializing over it would
     fork from the primary branch and clobber committed coordination state.
 
-    The probe scans the WHOLE ``kitty-specs/<mission_slug>/`` subtree of
-    *coord_branch* (``git ls-tree -r``) and matches on the artifact BASENAME, so a
-    path-drifted committed matrix (one that migrated to a non-default sub-path) is
-    still detected rather than mis-read as "absent" (post-plan F2). Both
+    The probe scans the WHOLE coordination Mission-dir subtree of *coord_branch*
+    (``git ls-tree -r``) and matches on the artifact BASENAME, so a path-drifted
+    committed matrix (one that migrated to a non-default sub-path) is still
+    detected rather than mis-read as "absent" (post-plan F2). Both
     ``issue-matrix.json`` and ``issue-matrix.md`` map to ``ISSUE_MATRIX``, so a
     not-yet-migrated legacy mission is protected too.
 
-    Fail-closed (mirrors :func:`_coord_branch_is_local_head`'s posture): an
-    unreadable git context — a missing/foreign ref, or the git binary absent, i.e.
-    anything other than a CLEAN, readable "subtree absent" — returns ``True``
-    (treated as present ⇒ the caller REFUSEs). The pathspec form ``git ls-tree -r
-    --name-only <branch> -- <subtree>`` returns exit 0 with EMPTY output for a
-    readable branch whose subtree simply holds no such file (⇒ ``False``, a genuine
-    first-write) and a non-zero exit for an unresolvable ref (⇒ fail-closed
-    ``True``), so the two cases never collapse together.
+    ``mid8`` (coord-artifact-single-home-01M3V4BE WP04, D4 "naming fix" binding
+    correction): when given, the subtree is the REAL coordination Mission dir,
+    composed via the single verbatim grammar
+    (:func:`~specify_cli.lanes.branch_naming.coord_mission_dir_name`) — not the
+    bare ``kitty-specs/<mission_slug>/`` this probe used before, which silently
+    MISSED a mission whose slug does not already embed its own mid8 suffix (the
+    common case). ``mid8=None`` preserves the pre-WP04 composition for a caller
+    that has not threaded its ``mid8`` through yet.
+
+    Fail-closed (mirrors :func:`_coord_branch_is_local_head`'s posture), but the
+    git-error arm is now EXPLICIT rather than a bare silent ``True`` (binding
+    correction): an unreadable git context — a missing/foreign ref, or the git
+    binary absent, i.e. anything other than a CLEAN, readable "subtree absent" —
+    logs a ``WARNING`` naming the failure, then returns ``True`` (treated as
+    present ⇒ the caller REFUSEs), so a genuine infrastructure problem is
+    observable rather than indistinguishable from a quiet, correct refusal. The
+    pathspec form ``git ls-tree -r --name-only <branch> -- <subtree>`` returns
+    exit 0 with EMPTY output for a readable branch whose subtree simply holds no
+    such file (⇒ ``False``, a genuine first-write) and a non-zero exit for an
+    unresolvable ref (⇒ fail-closed ``True`` + warning), so the two cases never
+    collapse together.
     """
     basenames = _artifact_basenames_for_kind(kind)
     if not basenames:
         return False
-    subtree = f"kitty-specs/{mission_slug}/"
+    mission_dir_name = mission_slug
+    if mid8:
+        from specify_cli.lanes.branch_naming import coord_mission_dir_name
+
+        mission_dir_name = coord_mission_dir_name(mission_slug, mid8=mid8)
+    subtree = f"{KITTY_SPECS_DIR}/{mission_dir_name}/"
     try:
         result = subprocess.run(
             ["git", "-C", str(repo_root), "ls-tree", "-r", "--name-only", coord_branch, "--", subtree],
@@ -824,9 +844,30 @@ def coord_branch_has_committed_artifact(
             capture_output=True,
             text=True,
         )
-    except OSError:
+    except OSError as exc:
+        # Explicit git-error arm (binding correction): the git BINARY itself
+        # is unavailable/unrunnable -- distinct from a merely unresolvable
+        # ref (below), but both fail closed to "present" since neither can
+        # prove the subtree empty.
+        logger.warning(
+            "coord_branch_has_committed_artifact: could not run git for mission %r on branch %r (%s); failing closed to present.",
+            mission_slug,
+            coord_branch,
+            exc,
+        )
         return True
     if result.returncode != 0:
+        # Explicit git-error arm (binding correction): a non-zero exit here
+        # means the REF itself is unresolvable (a missing/foreign branch) --
+        # ``ls-tree`` exits 0 with empty output for a readable branch whose
+        # subtree simply holds nothing, so this is never a legitimate
+        # "absent" result.
+        logger.warning(
+            "coord_branch_has_committed_artifact: git ls-tree %r -- %r failed (%s); failing closed to present.",
+            coord_branch,
+            subtree,
+            result.stderr.strip(),
+        )
         return True
     return any(line.rsplit("/", 1)[-1] in basenames for line in result.stdout.splitlines())
 
@@ -1438,7 +1479,18 @@ def resolve_status_surface_with_anchor(
     # primary checkout authoritative one level up (the aggregate's not-yet-
     # materialized gate).
     if coord_state is CoordState.EMPTY:
-        return _empty_coord_surface(feature_dir, composed_coord_dir, mission_slug, effective_topology)
+        raw_mission_id = meta.get("mission_id")
+        mission_id = str(raw_mission_id) if raw_mission_id else ""
+        return _empty_coord_surface(
+            feature_dir,
+            composed_coord_dir,
+            mission_slug,
+            effective_topology,
+            repo_root=repo_root,
+            coord_branch=coord_branch,
+            mission_id=mission_id,
+            for_write=for_write,
+        )
     return ResolvedStatusSurface(
         surface_path=composed_coord_dir / _STATUS_EVENTS_FILENAME,
         primary_anchor=feature_dir,
@@ -1450,13 +1502,21 @@ def _empty_coord_surface(
     composed_coord_dir: Path,
     mission_slug: str,
     effective_topology: MissionTopology,
+    *,
+    repo_root: Path,
+    coord_branch: str,
+    mission_id: str,
+    for_write: bool,
 ) -> ResolvedStatusSurface:
     """Handle ``CoordState.EMPTY``: a materialized-but-empty coordination worktree.
 
     Extracted verbatim from :func:`resolve_status_surface_with_anchor` (T006,
     campsite-clean WP01) — no new side effects (no git writes, no directory
     creation, no materialization); the warning call and its ``.parent.parent``
-    derivation reproduce exactly.
+    derivation reproduce exactly. Widened (coord-artifact-single-home-01M3V4BE
+    WP04, binding correction round 3 "D4 / naming fix") to take ``repo_root``
+    and ``coord_branch`` — WP01 could not pre-add them here because ruff ARG
+    would have flagged the then-unused parameters.
 
     Option B loud primary fallback (FR-001 / FR-003 / #1716): the coord worktree
     root is materialized but its mission dir is absent (coord-empty). Reading the
@@ -1477,8 +1537,59 @@ def _empty_coord_surface(
     parallel ``pr_bound`` signal) — solo ``COORD`` is the only other
     coord-routing member (``_topology_uses_coord_surface`` gated this
     branch to exactly {COORD, LANES_WITH_COORD} already).
+
+    **Post-fix loudness (WP04, research D4/US2.7/FR-003a).** After mission
+    coord-artifact-single-home-01M3V4BE every COORD write seeds the
+    coordination surface (WP06+), so a **post-fix** mission's EMPTY worktree
+    (its coordination-branch history already carries the
+    ``Spec-Kitty-Coordination-Seed: <mission_id>`` trailer, WP03's single
+    discriminator, :func:`~specify_cli.coordination.coord_seed.
+    coord_branch_is_post_fix`) signals a regression — the Mission dir was
+    removed from an otherwise-seeded worktree — and now warns for **both**
+    coordination topologies, not only ``LANES_WITH_COORD``. A pre-fix
+    Mission (no trailer yet) keeps today's behaviour unchanged: quiet for
+    solo ``COORD`` (#2533), loud for ``LANES_WITH_COORD``.
+
+    **Dedup (binding correction round 3) — narrowed to avoid a regression.**
+    This EMPTY branch is ALSO reachable from
+    :func:`~mission_runtime.resolve_placement_only` /
+    :meth:`~mission_runtime.resolution.PlacementSeam.write_target` (via
+    ``_assemble_core_fragments(for_write=True)``), which pre-date this WP and
+    are PINNED (``tests/mission_runtime/test_status_read_path_error_contract.py``)
+    to already emit today's unconditional ``LANES_WITH_COORD`` warning on
+    THAT path too — gating the warning itself on ``not for_write`` would
+    silently remove that warning for every caller that has not migrated to
+    :meth:`~mission_runtime.resolution.PlacementSeam.write_dir` yet (none
+    have, as of this WP), a real regression, not a dedup. Only the NEW
+    post-fix trailer probe (one extra subprocess, and the only thing that
+    could newly warn a solo ``COORD`` write-side caller) is gated on
+    ``not for_write``: :func:`~specify_cli.coordination.coord_seed.
+    establish_coord_write_location` (reached ONLY through ``write_dir``, the
+    one caller that actually performs a WRITE here) already emits its OWN
+    post-fix warning, on its own logger, when it restores a post-fix
+    surface — so a ``write_dir`` caller is never left silent, and a
+    not-yet-migrated ``write_target`` caller keeps EXACTLY today's
+    LANES_WITH_COORD-only behaviour, unchanged.
     """
-    if effective_topology is MissionTopology.LANES_WITH_COORD:
+    post_fix = False
+    if not for_write:
+        from specify_cli.coordination.coord_seed import _CoordGitProbeError, coord_branch_is_post_fix
+
+        try:
+            post_fix = coord_branch_is_post_fix(repo_root, coord_branch, mission_id)
+        except _CoordGitProbeError:
+            # Decision (WP04, T021 edge case): DEGRADE, never propagate. This
+            # EMPTY branch is a read-side diagnostic -- the PRIMARY fallback
+            # below is returned regardless of post-fix-ness (C-002 keeps the
+            # read fallback unconditionally), so a git-probe failure
+            # classifying "should this warn louder" must never turn an
+            # otherwise-successful read into a crash. Degrading to ``True``
+            # (not ``False``) keeps the module's existing fail-LOUD bias
+            # (#1716/#1848: never silently hide a possible regression) -- an
+            # unclassifiable branch still warns, it just cannot claim the
+            # quiet pre-fix/solo-coord exemption.
+            post_fix = True
+    if post_fix or effective_topology is MissionTopology.LANES_WITH_COORD:
         logger.warning(
             _COORD_EMPTY_FALLBACK_WARNING,
             {"slug": mission_slug, "coord_root": composed_coord_dir.parent.parent},

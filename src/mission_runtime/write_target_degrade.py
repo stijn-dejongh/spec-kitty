@@ -250,7 +250,11 @@ def assert_coord_write_materialized(
         # post-fix self-heal of an already-populated local head.
         from specify_cli.coordination.surface_resolver import coord_branch_has_committed_artifact
 
-        if coord_branch_has_committed_artifact(repo_root, coord_branch, mission_slug, kind):
+        # ``mid8=mid8`` (WP04 D4 naming fix): the probe composes the REAL
+        # coordination Mission dir instead of the bare ``kitty-specs/<slug>/``,
+        # which silently missed a mission whose slug does not embed its own
+        # mid8 suffix.
+        if coord_branch_has_committed_artifact(repo_root, coord_branch, mission_slug, kind, mid8=mid8):
             logger.info(
                 "self-materializing mission %s's local-head coordination branch %r, which already "
                 "carries committed %r content (D22: the single write authority seeds/restores it).",
