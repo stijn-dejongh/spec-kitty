@@ -257,9 +257,17 @@ def commit_for_mission(
                      typecheck rather than silently mis-routing (FR-003 / C-005).
         primary_paths_created_this_invocation: Paths the caller materialised this
                      invocation (eligible for residue cleanup after staging, R6).
-        target_branch: Short primary branch name for the post-commit ff-advance
-                     (WP09 / FR-010 / #1878). Optional; advance is skipped when
-                     ``None``.
+        target_branch: Short TARGET branch name (the sense: the mission's own
+                     primary/target ref, not the repository-root checkout).
+                     R12 / FR-008 (#5440, WP05): this no longer drives a
+                     post-commit fast-forward — that best-effort advance
+                     (``_try_advance_ref``, WP09 / FR-010 / #1878) is RETIRED,
+                     because it silently carried coordination-only commits
+                     onto the target once the target became an ancestor of
+                     the coordination tip (post-create-seed, WP06). The
+                     parameter is kept only because it still feeds the owned-
+                     placement result (``placement_ref=target_branch or ""``,
+                     the split-path early returns); it has no other effect.
         expected_parent_sha: Optional captured parent for a conditional ref update.
         expected_path_bytes: Optional exact raw bytes for selected paths in that
                      expected-parent commit; clean-filter rewrites are refused.
@@ -302,7 +310,6 @@ def commit_for_mission(
             policy,
             kind=effective_kind,
             primary_paths_created_this_invocation=primary_paths_created_this_invocation,
-            target_branch=target_branch,
             owned=owned,
             expected_parent_sha=expected_parent_sha,
             expected_path_bytes=expected_path_bytes,
@@ -321,7 +328,6 @@ def commit_for_mission(
             policy,
             kind=group_kind,
             primary_paths_created_this_invocation=primary_paths_created_this_invocation,
-            target_branch=target_branch,
         )
         for group_kind, group_files in groups
     ]
@@ -484,7 +490,6 @@ def _commit_partition_group(
     *,
     kind: MissionArtifactKind,
     primary_paths_created_this_invocation: frozenset[Path] | None = None,
-    target_branch: str | None = None,
     owned: OwnedCheckout | None = None,
     expected_parent_sha: str | None = None,
     expected_path_bytes: Mapping[Path, bytes] | None = None,
@@ -548,19 +553,15 @@ def _commit_partition_group(
     if commit_result is not None and hasattr(commit_result, "sha"):
         commit_hash = commit_result.sha
 
-    # WP09 / FR-010 (#1878): best-effort ff-advance after a coord write. This
-    # fires ONLY on the coord branch (``use_coord`` True ⇒ a coordination kind),
-    # so it now advances ``target_branch`` to a STATUS/bookkeeping-only coord HEAD
-    # (write-surface-coherence WP05 / FR-005): planning no longer transits coord,
-    # so the coord HEAD never mixes planning+status. The
-    # ``is_residue=is_toolchain_generated_churn`` exclusion in
-    # ``_try_advance_ref`` (WP13 retired the former ``coord_owned_filenames``
-    # param onto the single canonical churn owner) still matches exactly what a
-    # status-only coord write produces — no behaviour change for status writes;
-    # the planning case is gone.
-    if use_coord and target_branch:
-        _try_advance_ref(repo_root, target_branch, worktree_root, mission_slug=mission_slug)
-
+    # R12 / FR-008 (#5440, coord-artifact-single-home-01M3V4BE WP05): the
+    # former WP09 / FR-010 (#1878) best-effort post-commit ff-advance of
+    # ``target_branch`` to the coordination HEAD is RETIRED. After /spec-kitty.
+    # create seeds the coordination branch from the target (WP06), the target
+    # is already an ancestor of the coordination tip, so a fast-forward there
+    # would silently carry every coordination-only (STATUS/bookkeeping) commit
+    # onto the target -- re-mixing the two surfaces the partition exists to
+    # keep apart. ``_try_advance_ref`` is deleted outright; a coordination
+    # commit now advances ONLY the coordination branch, never the target.
     return CommitRouterResult(
         status=_STATUS_COMMITTED,
         placement_ref=placement.ref,
@@ -1373,49 +1374,6 @@ def _is_empty_changeset_error(exc: RuntimeError) -> bool:
     # pre-commit hook, a lock error, etc.) must fall through to a real error,
     # never be silently reported as "unchanged".
     return "safe_commit: nothing to commit" in str(exc)
-
-
-def _try_advance_ref(
-    repo_root: Path,
-    primary_branch: str,
-    coord_worktree: Path,
-    *,
-    mission_slug: str | None = None,
-) -> None:
-    """Best-effort fast-forward of *primary_branch* to the coord HEAD (#1878).
-
-    ``advance_branch_ref`` advances the ref to a *SHA* (it does not accept a
-    worktree path), so resolve the coordination worktree's HEAD here first.
-    Toolchain-generated churn (coordination status residue, spec-kitty's own
-    bookkeeping) on the primary checkout is legitimate after a coord-branch
-    write, so exclude it from the dirty gate via the single canonical churn
-    owner (#1878 / #2795 / FR-012 / WP13-IC-07c) — mirrors the merge-pipeline
-    call sites.
-    """
-    try:
-        import functools
-
-        from specify_cli.coordination.coherence import is_toolchain_generated_churn
-        from specify_cli.git.ref_advance import advance_branch_ref
-
-        head = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=str(coord_worktree),
-            capture_output=True,
-            text=True,
-            check=True,
-        ).stdout.strip()
-
-        advance_branch_ref(
-            repo_root,
-            primary_branch,
-            head,
-            is_residue=functools.partial(is_toolchain_generated_churn, mission_slug=mission_slug),
-        )
-    except Exception:  # noqa: BLE001  # best-effort only
-        logger.debug(
-            "commit_router: _try_advance_ref best-effort advance failed silently",
-        )
 
 
 __all__ = [
