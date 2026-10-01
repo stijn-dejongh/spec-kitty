@@ -58,9 +58,7 @@ _DECISION_INDEX_ATTR_ENTRY = "kitty-specs/**/decisions/index.json merge=spec-kit
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["git", *args], cwd=str(repo), capture_output=True, text=True, check=True
-    )
+    return subprocess.run(["git", *args], cwd=str(repo), capture_output=True, text=True, check=True)
 
 
 def _init_repo(repo: Path) -> None:
@@ -163,6 +161,13 @@ def _bootstrap_two_lanes(repo: Path) -> None:
 def test_two_lanes_adding_decisions_merge_without_loss(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _bootstrap_two_lanes(repo)
+
+    # The ``.gitattributes`` mapping must be committed on the MERGE-TARGET
+    # (``ours``) branch -- git resolves attributes from the checked-out
+    # side being merged INTO, not from ``theirs``. Committing it onto
+    # ``lane-b`` (the side merged FROM) would leave ``lane-a`` without the
+    # mapping once checked out below, and the driver would never fire.
+    _git(repo, "checkout", "-q", "lane-a")
     (repo / ".gitattributes").write_text(_DECISION_INDEX_ATTR_ENTRY + "\n", encoding="utf-8")
     _git(repo, "add", ".gitattributes")
     _git(repo, "commit", "-m", "attrs")
@@ -170,19 +175,19 @@ def test_two_lanes_adding_decisions_merge_without_loss(tmp_path: Path) -> None:
     _git(repo, "config", "merge.spec-kitty-decision-index.name", "decision-index test driver")
     _git(repo, "config", "merge.spec-kitty-decision-index.driver", _hermetic_driver_command_line())
 
-    _git(repo, "checkout", "-q", "lane-a")
     result = subprocess.run(
         ["git", "merge", "lane-b"],
-        cwd=str(repo), capture_output=True, text=True, env=_hermetic_env(),
+        cwd=str(repo),
+        capture_output=True,
+        text=True,
+        env=_hermetic_env(),
     )
     assert result.returncode == 0, f"stdout={result.stdout!r} stderr={result.stderr!r}"
 
     merged_text = (repo / _DECISIONS_REL_PATH).read_text(encoding="utf-8")
     merged = json.loads(merged_text)
     ids = {entry["decision_id"] for entry in merged["entries"]}
-    assert ids == {_BASE_ENTRY.decision_id, _ENTRY_A.decision_id, _ENTRY_B.decision_id}, (
-        f"expected base + both lanes' entries to survive the merge, got {ids!r}"
-    )
+    assert ids == {_BASE_ENTRY.decision_id, _ENTRY_A.decision_id, _ENTRY_B.decision_id}, f"expected base + both lanes' entries to survive the merge, got {ids!r}"
     assert "<<<<<<<" not in merged_text, "no conflict markers must remain"
 
 
@@ -287,9 +292,7 @@ def test_union_decision_index_identical_entry_kept_once() -> None:
 @pytest.mark.unit
 def test_union_decision_index_terminal_beats_open_ours_terminal() -> None:
     open_entry = _raw_entry("id-a", status="open")
-    resolved_entry = _raw_entry(
-        "id-a", status="resolved", resolved_at="2026-01-02T00:00:00Z", resolved_by="agent", final_answer="yes"
-    )
+    resolved_entry = _raw_entry("id-a", status="resolved", resolved_at="2026-01-02T00:00:00Z", resolved_by="agent", final_answer="yes")
     merged = union_decision_index(_doc(entries=[resolved_entry]), _doc(entries=[open_entry]))
     assert merged["entries"][0]["status"] == "resolved"
 
@@ -298,9 +301,7 @@ def test_union_decision_index_terminal_beats_open_ours_terminal() -> None:
 def test_union_decision_index_terminal_beats_open_theirs_terminal() -> None:
     """Same precedence, opposite side -- proving it is not simply 'ours wins'."""
     open_entry = _raw_entry("id-a", status="open")
-    resolved_entry = _raw_entry(
-        "id-a", status="resolved", resolved_at="2026-01-02T00:00:00Z", resolved_by="agent", final_answer="yes"
-    )
+    resolved_entry = _raw_entry("id-a", status="resolved", resolved_at="2026-01-02T00:00:00Z", resolved_by="agent", final_answer="yes")
     merged = union_decision_index(_doc(entries=[open_entry]), _doc(entries=[resolved_entry]))
     assert merged["entries"][0]["status"] == "resolved"
 
@@ -308,9 +309,7 @@ def test_union_decision_index_terminal_beats_open_theirs_terminal() -> None:
 @pytest.mark.unit
 def test_union_decision_index_allowed_reopen_deferred_to_resolved_either_direction() -> None:
     deferred = _raw_entry("id-a", status="deferred", resolved_at="2026-01-02T00:00:00Z", resolved_by="agent")
-    resolved = _raw_entry(
-        "id-a", status="resolved", resolved_at="2026-01-03T00:00:00Z", resolved_by="agent", final_answer="yes"
-    )
+    resolved = _raw_entry("id-a", status="resolved", resolved_at="2026-01-03T00:00:00Z", resolved_by="agent", final_answer="yes")
     merged_ours_deferred = union_decision_index(_doc(entries=[deferred]), _doc(entries=[resolved]))
     assert merged_ours_deferred["entries"][0]["status"] == "resolved"
 

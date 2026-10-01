@@ -59,11 +59,7 @@ def test_apply_installs_decision_index_driver(tmp_path: Path) -> None:
 
     attributes = (repo / ".gitattributes").read_text(encoding="utf-8")
     assert _DECISION_INDEX_ENTRY in attributes
-    assert (
-        _git(["config", "--local", "--get", "merge.spec-kitty-decision-index.driver"], repo)
-        .stdout.strip()
-        == "spec-kitty merge-driver-decision-index %O %A %B"
-    )
+    assert _git(["config", "--local", "--get", "merge.spec-kitty-decision-index.driver"], repo).stdout.strip() == "spec-kitty merge-driver-decision-index %O %A %B"
     assert migration.detect(repo) is False
 
 
@@ -93,10 +89,7 @@ def test_preserves_unrelated_gitattributes_content(tmp_path: Path) -> None:
 
 def test_ships_as_distinct_id_from_review_cycle() -> None:
     """A distinct id is the whole point -- see the runner re-run test below."""
-    assert (
-        DecisionIndexMergeDriverMigration.migration_id
-        != ReviewCycleMergeDriverMigration.migration_id
-    )
+    assert DecisionIndexMergeDriverMigration.migration_id != ReviewCycleMergeDriverMigration.migration_id
 
 
 def test_prior_review_cycle_upgrade_does_not_strand_decision_index_driver(
@@ -122,14 +115,10 @@ def test_prior_review_cycle_upgrade_does_not_strand_decision_index_driver(
 
     runner = MigrationRunner(repo)
 
-    _result, status = runner._apply_migration(
-        DecisionIndexMergeDriverMigration(), metadata, dry_run=False
-    )
+    _result, status = runner._apply_migration(DecisionIndexMergeDriverMigration(), metadata, dry_run=False)
     assert status == "applied"
     assert _DECISION_INDEX_ENTRY in (repo / ".gitattributes").read_text(encoding="utf-8")
 
     metadata.record_migration(DecisionIndexMergeDriverMigration.migration_id, "success")
-    _result2, status2 = runner._apply_migration(
-        DecisionIndexMergeDriverMigration(), metadata, dry_run=False
-    )
+    _result2, status2 = runner._apply_migration(DecisionIndexMergeDriverMigration(), metadata, dry_run=False)
     assert status2 == "skipped"
