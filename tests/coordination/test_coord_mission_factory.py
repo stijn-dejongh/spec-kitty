@@ -5,6 +5,11 @@ its documented shape at the current base. This WP ships no reproduction --
 every assertion here is GREEN by design (analyze C2: red-evidence exempt,
 harness only).
 
+L2: markers are applied per-test (not as a module-level ``pytestmark``) so
+the pure probe tests (``fast``/``unit``) stay in ``make test-fast``'s
+``(fast or unit)`` selection -- a module-level ``integration`` mark would
+exclude them (``FAST_TIER_MARKERS`` deselects ``not integration``).
+
 How later WPs use this (research red-first list):
     R1/R1b/R6/R20 (WP06) -- ``make_prefix_coord_mission``.
     R2 (WP05)            -- ``make_coord_mission``.
@@ -15,13 +20,15 @@ How later WPs use this (research red-first list):
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import pytest
 
 from mission_runtime import MissionTopology
+from specify_cli.git.protection_policy import ProtectionPolicy
 from specify_cli.missions._read_path_resolver import CoordState, probe_coord_state
 from tests._factories.coord_mission import (
     COORD_TOPOLOGIES,
@@ -35,9 +42,8 @@ from tests._factories.coord_mission import (
     make_coord_mission,
     make_fork_fixture,
     make_prefix_coord_mission,
+    _rewrite_into_prefix_shape,
 )
-
-pytestmark = [pytest.mark.integration, pytest.mark.git_repo]
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -54,11 +60,19 @@ def _is_ancestor(repo: Path, ancestor_sha: str, descendant_ref: str) -> bool:
     return result.returncode == 0
 
 
+def _first_event_type(path: Path) -> str:
+    first_line = path.read_text(encoding="utf-8").splitlines()[0]
+    event_type = json.loads(first_line)["event_type"]
+    return str(event_type)
+
+
 # ---------------------------------------------------------------------------
 # T008 -- make_coord_mission, every via x topology
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
+@pytest.mark.git_repo
 @pytest.mark.parametrize("via", ["core", "cli_topology", "cli_pr_bound"])
 @pytest.mark.parametrize("topology", COORD_TOPOLOGIES, ids=lambda t: t.value)
 def test_make_coord_mission_records_requested_topology(
@@ -73,6 +87,8 @@ def test_make_coord_mission_records_requested_topology(
     assert _is_ancestor(coord.repo_root, coord.creation_base_sha, coord.target_branch)
 
 
+@pytest.mark.integration
+@pytest.mark.git_repo
 def test_make_coord_mission_materialized_true_reaches_materialized(tmp_path: Path) -> None:
     coord = make_coord_mission(tmp_path, MissionTopology.COORD, materialized=True)
 
@@ -89,19 +105,68 @@ def test_make_coord_mission_materialized_true_reaches_materialized(tmp_path: Pat
     assert "Spec-Kitty-Coordination-Seed" not in log
 
 
-def test_make_coord_mission_protected_primary_marks_target_protected(tmp_path: Path) -> None:
-    coord = make_coord_mission(tmp_path, MissionTopology.COORD, via="cli_pr_bound", protected_primary=True)
+@pytest.mark.integration
+@pytest.mark.git_repo
+def test_make_coord_mission_unknown_via_raises(tmp_path: Path) -> None:
+    # L1: pass the bad value through an Any-typed local rather than a
+    # `# type: ignore` -- the branch is deliberately outside the `via`
+    # Literal, to exercise the runtime fail-closed else-branch a
+    # type-correct caller can never reach statically.
+    bogus_via: Any = "bogus"
+    with pytest.raises(ValueError, match="Unknown via"):
+        make_coord_mission(tmp_path, MissionTopology.COORD, via=bogus_via)
+
+
+# ---------------------------------------------------------------------------
+# M1 -- topology=None (WP06's real default path: no --topology, product-resolved)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+@pytest.mark.git_repo
+def test_make_coord_mission_cli_pr_bound_no_topology_resolves_to_coord(tmp_path: Path) -> None:
+    """WP06 US1.4's real default path: pr-bound, protected primary, NO --topology."""
+    coord = make_coord_mission(tmp_path, None, via="cli_pr_bound", protected_primary=True)
+
+    assert coord.topology is MissionTopology.COORD
+
+
+@pytest.mark.integration
+@pytest.mark.git_repo
+@pytest.mark.parametrize("via", ["core", "cli_topology"])
+def test_make_coord_mission_topology_none_rejected_for_non_pr_bound_via(tmp_path: Path, via: Literal["core", "cli_topology"]) -> None:
+    with pytest.raises(ValueError, match="topology=None"):
+        make_coord_mission(tmp_path, None, via=via)
+
+
+# ---------------------------------------------------------------------------
+# M2 -- protected_primary protects the Primary Branch (main), consistently
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+@pytest.mark.git_repo
+@pytest.mark.parametrize("via", ["core", "cli_topology", "cli_pr_bound"])
+def test_make_coord_mission_protected_primary_protects_main_for_every_via(tmp_path: Path, via: Literal["core", "cli_topology", "cli_pr_bound"]) -> None:
+    coord = make_coord_mission(tmp_path, MissionTopology.COORD, via=via, protected_primary=True)
+
+    policy = ProtectionPolicy.resolve(coord.repo_root)
+    assert policy.is_protected("main"), f"via={via} did not protect the Primary Branch"
+
+
+@pytest.mark.integration
+@pytest.mark.git_repo
+def test_make_coord_mission_default_writes_no_protection_config(tmp_path: Path) -> None:
+    """Without protected_primary, the fixture itself never writes a ``protection``
+    key -- it is production's own fail-safe default (``{main, master}``) that
+    protects ``main`` regardless, not something this fixture configured. A
+    literal ``is_protected("main") is False`` assertion would be FALSE here
+    even on a correct fixture, since that default applies with zero config.
+    """
+    coord = make_coord_mission(tmp_path, MissionTopology.COORD)
 
     config_text = (coord.repo_root / ".kittify" / "config.yaml").read_text(encoding="utf-8")
-    assert "protection" in config_text
-    assert "main" in config_text
-
-
-def test_make_coord_mission_unknown_via_raises(tmp_path: Path) -> None:
-    # Deliberately outside the `via` Literal, to exercise the runtime
-    # fail-closed else-branch a type-correct caller can never reach statically.
-    with pytest.raises(ValueError, match="Unknown via"):
-        make_coord_mission(tmp_path, MissionTopology.COORD, via="bogus")  # type: ignore[arg-type]
+    assert "protection" not in config_text
 
 
 # ---------------------------------------------------------------------------
@@ -112,8 +177,16 @@ def test_make_coord_mission_unknown_via_raises(tmp_path: Path) -> None:
 def _assert_root_log_has_creation_events(coord: CoordMission) -> None:
     ids = event_ids(coord.root_mission_dir / "status.events.jsonl")
     assert ids, "root checkout status log must contain the creation events"
+    # L3: assert the documented event type, not merely non-empty ids.
+    assert _first_event_type(coord.root_mission_dir / "status.events.jsonl") == "MissionCreated"
+    # L3: assert the log is actually committed on the target branch, as the
+    # docstring claims -- not merely present on disk.
+    rel = f"kitty-specs/{coord.mission_dir_name}/status.events.jsonl"
+    assert coord_tree_has(coord.repo_root, coord.target_branch, rel)
 
 
+@pytest.mark.integration
+@pytest.mark.git_repo
 @pytest.mark.parametrize("worktree", ["absent", "empty"])
 def test_make_prefix_coord_mission_worktree_variants(tmp_path: Path, worktree: Literal["absent", "empty"]) -> None:
     coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree=worktree)
@@ -131,6 +204,8 @@ def test_make_prefix_coord_mission_worktree_variants(tmp_path: Path, worktree: L
     assert not coord_tree_has(coord.repo_root, coord.coordination_branch, mission_dir_path)
 
 
+@pytest.mark.integration
+@pytest.mark.git_repo
 def test_make_prefix_coord_mission_remote_only(tmp_path: Path) -> None:
     coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, remote_only=True)
 
@@ -146,6 +221,8 @@ def test_make_prefix_coord_mission_remote_only(tmp_path: Path) -> None:
     assert local_heads == ""
 
 
+@pytest.mark.integration
+@pytest.mark.git_repo
 def test_make_prefix_coord_mission_branch_deleted(tmp_path: Path) -> None:
     coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, branch_deleted=True)
 
@@ -158,6 +235,8 @@ def test_make_prefix_coord_mission_branch_deleted(tmp_path: Path) -> None:
     assert state is CoordState.DELETED
 
 
+@pytest.mark.integration
+@pytest.mark.git_repo
 def test_make_prefix_coord_mission_extra_events_are_uncommitted(tmp_path: Path) -> None:
     coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, extra_events=2)
 
@@ -168,6 +247,8 @@ def test_make_prefix_coord_mission_extra_events_are_uncommitted(tmp_path: Path) 
     assert rel in status
 
 
+@pytest.mark.integration
+@pytest.mark.git_repo
 @pytest.mark.parametrize("topology", COORD_TOPOLOGIES, ids=lambda t: t.value)
 def test_make_prefix_coord_mission_both_topologies(tmp_path: Path, topology: MissionTopology) -> None:
     coord = make_prefix_coord_mission(tmp_path, topology)
@@ -175,29 +256,130 @@ def test_make_prefix_coord_mission_both_topologies(tmp_path: Path, topology: Mis
 
 
 # ---------------------------------------------------------------------------
-# T010 -- NFR-002 fork fixtures
+# H1 -- the pre-fix builder is built explicitly, independent of create's placement
 # ---------------------------------------------------------------------------
 
 
-def test_fork_fixture_root_uncommitted_coord_untracked(tmp_path: Path) -> None:
-    fixture = make_fork_fixture(tmp_path, "root_uncommitted_coord_untracked")
+def _simulate_post_fix_seeded_coordination(coord: CoordMission) -> None:
+    """Simulate WP06's FUTURE create output: coordination branch seeded with the
+    Mission dir + status log, root checkout never gets it.
 
-    root_ids = event_ids(fixture.root_mission_dir / "status.events.jsonl")
-    coord_ids = event_ids(fixture.coord_mission_dir / "status.events.jsonl")
-    assert root_ids and coord_ids
-    root_set, coord_set = set(root_ids), set(coord_ids)
-    assert not root_set.issubset(coord_set)
-    assert not coord_set.issubset(root_set)
+    Used only to prove :func:`_rewrite_into_prefix_shape` does not depend on
+    today's create placement (H1) -- it must reach the documented pre-fix
+    shape from EITHER create output, not just the one create happens to
+    produce right now.
+    """
+    root_log = coord.root_mission_dir / "status.events.jsonl"
+    content = root_log.read_text(encoding="utf-8")
+    root_log.unlink()
+    rel = coord.root_mission_dir.relative_to(coord.repo_root)
+    _git(coord.repo_root, "add", "-A", str(rel))
+    _git(coord.repo_root, "commit", "-m", "chore(fixture): simulate WP06 -- drop root log")
+
+    _git(coord.repo_root, "worktree", "add", str(coord.coord_worktree_path), coord.coordination_branch)
+    coord_log = coord.coord_mission_dir / "status.events.jsonl"
+    coord_log.parent.mkdir(parents=True, exist_ok=True)
+    coord_log.write_text(content, encoding="utf-8")
+    _git(coord.coord_worktree_path, "add", "kitty-specs")
+    _git(
+        coord.coord_worktree_path,
+        "commit",
+        "-m",
+        "chore(fixture): simulate WP06 -- seed coordination branch",
+    )
+
+
+@pytest.mark.integration
+@pytest.mark.git_repo
+def test_rewrite_into_prefix_shape_is_independent_of_create_placement(tmp_path: Path) -> None:
+    """H1 proof: the rewrite step reaches the documented pre-fix shape even when
+    create already seeded the coordination branch and skipped the root log
+    (WP06's future output) -- not just today's already-pre-fix create output.
+    """
+    coord = make_coord_mission(tmp_path, MissionTopology.COORD, via="core", slug="simfuture")
+    _simulate_post_fix_seeded_coordination(coord)
+
+    mission_dir_path = f"kitty-specs/{coord.mission_dir_name}"
+    # Sanity: the simulated state really is the OPPOSITE of pre-fix.
+    assert not (coord.root_mission_dir / "status.events.jsonl").exists()
+    assert coord_tree_has(coord.repo_root, coord.coordination_branch, mission_dir_path)
+
+    _rewrite_into_prefix_shape(coord)
+
+    # Now it must match the documented pre-fix shape, built explicitly.
+    assert not coord_tree_has(coord.repo_root, coord.coordination_branch, mission_dir_path)
+    assert not coord.coord_worktree_path.exists()
+    _assert_root_log_has_creation_events(coord)
+
+
+@pytest.mark.integration
+@pytest.mark.git_repo
+def test_rewrite_into_prefix_shape_is_a_no_op_on_already_prefix_shaped_output(
+    tmp_path: Path,
+) -> None:
+    """The rewrite step is idempotent on today's already-pre-fix create output
+    (no simulated seeding) -- the common case running through
+    ``make_prefix_coord_mission`` every other test in this module exercises.
+    """
+    coord = make_coord_mission(tmp_path, MissionTopology.COORD, via="core", slug="alreadyprefix")
+    base_tip = _git(coord.repo_root, "rev-parse", coord.coordination_branch)
+
+    _rewrite_into_prefix_shape(coord)
+
+    assert _git(coord.repo_root, "rev-parse", coord.coordination_branch) == base_tip
+
+
+# ---------------------------------------------------------------------------
+# H2/H3 -- NFR-002 fork fixtures, per-stream, self-checked at construction
+# ---------------------------------------------------------------------------
+
+
+def _stream_filename(stream: Literal["status_log", "decision_log"]) -> str:
+    return "status.events.jsonl" if stream == "status_log" else "decisions.events.jsonl"
+
+
+@pytest.mark.integration
+@pytest.mark.git_repo
+@pytest.mark.parametrize("stream", ["status_log", "decision_log", "both"])
+def test_fork_fixture_root_uncommitted_coord_untracked_per_stream(tmp_path: Path, stream: Literal["status_log", "decision_log", "both"]) -> None:
+    fixture = make_fork_fixture(tmp_path, "root_uncommitted_coord_untracked", MissionTopology.COORD, stream=stream)
+
+    streams: tuple[Literal["status_log", "decision_log"], ...] = ("status_log", "decision_log") if stream == "both" else (stream,)
+    for one_stream in streams:
+        filename = _stream_filename(one_stream)
+        root_ids = event_ids(fixture.root_mission_dir / filename)
+        coord_ids = event_ids(fixture.coord_mission_dir / filename)
+        assert root_ids and coord_ids
+        root_set, coord_set = set(root_ids), set(coord_ids)
+        assert not root_set.issubset(coord_set)
+        assert not coord_set.issubset(root_set)
     assert fixture.decision_ids_root != fixture.decision_ids_coord
 
+    # The OTHER stream is untouched by this fixture's injection (H2: "absent
+    # or single-home"). `status.events.jsonl` is single-home on the root
+    # (the normal, un-diverged creation copy) when `decision_log` is the
+    # selected stream; `decisions.events.jsonl` is brand new and so fully
+    # absent on both surfaces when `status_log` is selected.
+    if stream != "both":
+        other: Literal["status_log", "decision_log"] = "decision_log" if stream == "status_log" else "status_log"
+        other_filename = _stream_filename(other)
+        if other == "status_log":
+            assert (fixture.root_mission_dir / other_filename).exists()
+        else:
+            assert not (fixture.root_mission_dir / other_filename).exists()
+        assert not (fixture.coord_mission_dir / other_filename).exists()
+
     root_status = _git(fixture.repo_root, "status", "--porcelain")
-    assert f"kitty-specs/{fixture.mission_dir_name}/status.events.jsonl" in root_status
     coord_status = _git(fixture.coord_worktree_path, "status", "--porcelain")
+    assert "kitty-specs/" in root_status  # uncommitted in the root checkout
     assert "kitty-specs/" in coord_status  # untracked in the coord worktree
 
 
-def test_fork_fixture_both_committed(tmp_path: Path) -> None:
-    fixture = make_fork_fixture(tmp_path, "both_committed")
+@pytest.mark.integration
+@pytest.mark.git_repo
+@pytest.mark.parametrize("stream", ["status_log", "decision_log", "both"])
+def test_fork_fixture_both_committed_per_stream(tmp_path: Path, stream: Literal["status_log", "decision_log", "both"]) -> None:
+    fixture = make_fork_fixture(tmp_path, "both_committed", MissionTopology.COORD, stream=stream)
 
     # Both event logs are committed on their respective branches -- neither
     # appears as a pending (untracked/modified) path, regardless of other
@@ -205,25 +387,33 @@ def test_fork_fixture_both_committed(tmp_path: Path) -> None:
     # leaves uncommitted in the root checkout.
     root_status = _git(fixture.repo_root, "status", "--porcelain")
     coord_status = _git(fixture.coord_worktree_path, "status", "--porcelain")
-    rel = f"kitty-specs/{fixture.mission_dir_name}/status.events.jsonl"
-    assert rel not in root_status
-    assert rel not in coord_status
-    assert coord_tree_has(fixture.repo_root, fixture.coordination_branch, rel)
-    assert coord_tree_has(fixture.repo_root, fixture.target_branch, rel)
+    streams: tuple[Literal["status_log", "decision_log"], ...] = ("status_log", "decision_log") if stream == "both" else (stream,)
+    for one_stream in streams:
+        filename = _stream_filename(one_stream)
+        rel = f"kitty-specs/{fixture.mission_dir_name}/{filename}"
+        assert rel not in root_status
+        assert rel not in coord_status
+        assert coord_tree_has(fixture.repo_root, fixture.coordination_branch, rel)
+        assert coord_tree_has(fixture.repo_root, fixture.target_branch, rel)
 
 
-def test_fork_fixture_fresh_clone(tmp_path: Path) -> None:
-    fixture = make_fork_fixture(tmp_path, "fresh_clone")
+@pytest.mark.integration
+@pytest.mark.git_repo
+@pytest.mark.parametrize("stream", ["status_log", "decision_log"])
+def test_fork_fixture_fresh_clone_per_stream(tmp_path: Path, stream: Literal["status_log", "decision_log"]) -> None:
+    fixture = make_fork_fixture(tmp_path, "fresh_clone", MissionTopology.COORD, stream=stream)
 
     assert fixture.clone_root is not None
     assert not (fixture.clone_root / ".worktrees").exists()
-    relpath = f"kitty-specs/{fixture.mission_dir_name}/status.events.jsonl"
+    relpath = f"kitty-specs/{fixture.mission_dir_name}/{_stream_filename(stream)}"
     ids = event_ids((fixture.clone_root, fixture.coordination_branch, relpath))
     assert ids
 
 
+@pytest.mark.integration
+@pytest.mark.git_repo
 def test_fork_fixture_ledger_only_on_coordination(tmp_path: Path) -> None:
-    fixture = make_fork_fixture(tmp_path, "ledger_only_on_coordination")
+    fixture = make_fork_fixture(tmp_path, "ledger_only_on_coordination", MissionTopology.COORD)
 
     assert not (fixture.root_mission_dir / "decisions").exists()
     decisions_path = f"kitty-specs/{fixture.mission_dir_name}/decisions"
@@ -231,15 +421,23 @@ def test_fork_fixture_ledger_only_on_coordination(tmp_path: Path) -> None:
     index_path = f"{decisions_path}/index.json"
     coord_ids = index_entry_ids((fixture.repo_root, fixture.coordination_branch, index_path))
     assert fixture.decision_ids_coord[0] in coord_ids
+
+    # Downstream note: `_read_source` returns "" both for a missing path and
+    # for a bad ref, so a wrong ref would make this negative pass without
+    # testing anything. Assert the ref resolves FIRST.
+    assert _git(fixture.repo_root, "rev-parse", "--verify", fixture.target_branch)
     target_ids = index_entry_ids((fixture.repo_root, fixture.target_branch, index_path))
     assert target_ids == set()
 
 
+@pytest.mark.integration
+@pytest.mark.git_repo
 def test_make_fork_fixture_unknown_shape_raises(tmp_path: Path) -> None:
-    # Deliberately outside the `shape` Literal, to exercise the runtime
-    # fail-closed else-branch a type-correct caller can never reach statically.
+    # L1: Any-typed local for the deliberately-ill-typed call (see
+    # test_make_coord_mission_unknown_via_raises for the same pattern).
+    bogus_shape: Any = "bogus-shape"
     with pytest.raises(ValueError, match="Unknown fork fixture shape"):
-        make_fork_fixture(tmp_path, "bogus-shape")  # type: ignore[arg-type]
+        make_fork_fixture(tmp_path, bogus_shape)
 
 
 # ---------------------------------------------------------------------------
@@ -309,11 +507,15 @@ def test_event_ids_absent_file_returns_empty_tuple(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.integration
+@pytest.mark.git_repo
 def test_coord_mission_fixture_both_topologies_parametrized(coord_mission: CoordMission) -> None:
     assert coord_mission.topology in COORD_TOPOLOGIES
     assert coord_mission.coordination_branch
 
 
+@pytest.mark.integration
+@pytest.mark.git_repo
 def test_prefix_coord_mission_fixture_default_is_empty(prefix_coord_mission: CoordMission) -> None:
     state = probe_coord_state(
         prefix_coord_mission.repo_root,
@@ -324,6 +526,8 @@ def test_prefix_coord_mission_fixture_default_is_empty(prefix_coord_mission: Coo
     assert state is CoordState.EMPTY
 
 
+@pytest.mark.integration
+@pytest.mark.git_repo
 @pytest.mark.parametrize("prefix_coord_mission", [{"worktree": "absent"}], indirect=True)
 def test_prefix_coord_mission_fixture_indirect_override(
     prefix_coord_mission: CoordMission,
@@ -337,7 +541,21 @@ def test_prefix_coord_mission_fixture_indirect_override(
     assert state is CoordState.UNMATERIALIZED
 
 
+@pytest.mark.integration
+@pytest.mark.git_repo
 @pytest.mark.parametrize("fork_fixture", ["both_committed"], indirect=True)
 def test_fork_fixture_indirect_shape(fork_fixture: ForkFixture) -> None:
     assert fork_fixture.decision_ids_root
     assert fork_fixture.decision_ids_coord
+
+
+@pytest.mark.integration
+@pytest.mark.git_repo
+@pytest.mark.parametrize(
+    "fork_fixture",
+    [{"shape": "both_committed", "stream": "decision_log"}],
+    indirect=True,
+)
+def test_fork_fixture_indirect_shape_and_stream(fork_fixture: ForkFixture) -> None:
+    relpath = f"kitty-specs/{fork_fixture.mission_dir_name}/decisions.events.jsonl"
+    assert coord_tree_has(fork_fixture.repo_root, fork_fixture.coordination_branch, relpath)

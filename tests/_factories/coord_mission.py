@@ -5,8 +5,10 @@ builds its preconditions from this module instead of hand-rolling git/coord
 fixtures per test file. Each builder constructs its documented shape through
 the **production create path** (``create_mission_core`` / the
 ``spec-kitty agent mission create`` CLI) or, where the production path no
-longer produces a pre-fix shape, by explicit git plumbing that validates
-itself against the production probe before returning.
+longer produces a pre-fix shape (or where the write path under test would
+otherwise decide the fixture's own shape), by explicit low-level appends into
+chosen paths -- each self-checked against the production probe or the
+documented invariant before returning (fail loud, never silently).
 
 This WP ships no reproduction: it is the harness only, and its own tests
 (``tests/coordination/test_coord_mission_factory.py``) are green at the
@@ -17,14 +19,18 @@ Public API
 - :func:`make_coord_mission` -- production create path, both coordination
   topologies, three ``via`` variants (``core`` / ``cli_topology`` /
   ``cli_pr_bound``), optional ``materialized=True`` for a deterministic
-  MATERIALIZED coordination surface.
+  MATERIALIZED coordination surface. ``topology=None`` is accepted only for
+  ``via="cli_pr_bound"`` (the real WP06 default-resolution path: no
+  ``--topology``, topology comes back from ``meta.json``).
 - :func:`make_prefix_coord_mission` -- the **pre-fix shape**: a committed
   root-checkout status log, a coordination branch cut *without* the Mission
-  dir, and an absent/empty coordination worktree. Several later WPs assert
-  against this shape explicitly because ``create_mission_core`` will stop
-  producing it once WP06 lands.
+  dir, and an absent/empty coordination worktree. Built EXPLICITLY (never by
+  trusting create's current placement): after create returns, the result is
+  rewritten into the pre-fix shape, so the builder keeps working once WP06
+  makes create seed the coordination branch and stop writing the root log.
 - :func:`make_fork_fixture` -- the four NFR-002 fork shapes shared by WP03,
-  WP17 and WP21.
+  WP17 and WP21, with a per-stream selector (``status_log`` /
+  ``decision_log`` / ``both``) for shapes (a)/(b)/(c).
 - Pure git-plumbing probes: :func:`event_ids`, :func:`lamports`,
   :func:`commits_touching`, :func:`coord_tree_has`, :func:`index_entry_ids`.
 
@@ -41,6 +47,16 @@ Caller contract: every builder clones a **fresh** git repo under the
 Two builder calls must never share the same ``tmp_path`` -- pass distinct
 subdirectories (``tmp_path / "a"``, ``tmp_path / "b"``) when a single test
 needs more than one Mission.
+
+Downstream notes (no action needed in WP02, recorded for later WPs):
+    - ``make_fork_fixture(..., "fresh_clone")``'s ``ForkFixture.repo_root`` /
+      ``coord_worktree_path`` point at the **base** repo, not the clone.
+      Consumers must read ``.clone_root``.
+    - Fork fixture (d) (``ledger_only_on_coordination``) carries no companion
+      ``DecisionPointOpened`` row in the coordination status log. A pre-fix
+      ``open_decision`` call would also have written one; WP17's
+      union-orphan rule may classify the ledger-only decision as orphaned.
+      Left for WP17 to decide whether (d) needs that companion row.
 """
 
 from __future__ import annotations
@@ -57,16 +73,22 @@ from typer.testing import CliRunner
 
 from kernel.clock import now_utc, now_utc_iso
 from mission_runtime import MissionTopology
+from spec_kitty_events.decision_moment import OriginFlow as _EventOriginFlow, OriginSurface
+from spec_kitty_events.decisionpoint import DECISION_POINT_OPENED, DecisionPointOpenedInterviewPayload
+from spec_kitty_events.mission_next import (
+    DECISION_INPUT_REQUESTED,
+    DecisionInputRequestedPayload,
+    RuntimeActorIdentity,
+)
 from specify_cli.cli.commands.agent.mission import app as _mission_app
 from specify_cli.core.constants import KITTY_SPECS_DIR
 from specify_cli.core.mission_creation import create_mission_core
 from specify_cli.coordination.workspace import CoordinationWorkspace
 from specify_cli.decisions import store as decision_store
 from specify_cli.decisions.models import DecisionStatus, IndexEntry, OriginFlow
-from specify_cli.decisions.service import open_decision
 from specify_cli.missions._read_path_resolver import CoordState, probe_coord_state
 from specify_cli.status.models import Lane, StatusEvent
-from specify_cli.status.store import append_event
+from specify_cli.status.store import append_event, append_raw_rows_atomic
 from tests._factories import provision_test_charter
 from tests._support.git_template import clone_template
 
@@ -99,6 +121,11 @@ COORD_TOPOLOGIES: tuple[MissionTopology, ...] = (
 
 _TOPIC_BRANCH = "topic"
 _PRIMARY_BRANCH = "main"
+#: Nit (S1192): the two event-log filenames recur across construction, commit
+#: and probe call sites -- hoisted once rather than restated as literals.
+_STATUS_LOG_FILENAME = "status.events.jsonl"
+_DECISION_LOG_FILENAME = "decisions.events.jsonl"
+_DECISION_MISSION_TYPE = "software-dev"
 _PrefixWorktree = Literal["absent", "empty"]
 _ForkShape = Literal[
     "root_uncommitted_coord_untracked",
@@ -106,6 +133,10 @@ _ForkShape = Literal[
     "fresh_clone",
     "ledger_only_on_coordination",
 ]
+#: Which event log a fork fixture diverges in (H2 binding correction: "Fork
+#: fixtures (a) and (b) must say which stream diverges; provide per-stream
+#: variants, because WP03's prefix rule runs per stream").
+_ForkStream = Literal["status_log", "decision_log", "both"]
 #: A probe source is either a file on disk, or ``(repo, ref, relpath)`` read
 #: via ``git show`` (used for refs that have no checked-out worktree, e.g. a
 #: ``fresh_clone`` fork fixture).
@@ -144,7 +175,12 @@ class CoordMission:
 
 @dataclass(frozen=True)
 class ForkFixture(CoordMission):
-    """A :class:`CoordMission` plus the NFR-002 fork-detection evidence."""
+    """A :class:`CoordMission` plus the NFR-002 fork-detection evidence.
+
+    For ``shape="fresh_clone"``, ``repo_root`` / ``coord_worktree_path`` still
+    point at the BASE repo the clone was made from -- read the clone via
+    ``clone_root`` instead.
+    """
 
     decision_ids_root: tuple[str, ...] = ()
     decision_ids_coord: tuple[str, ...] = ()
@@ -186,12 +222,24 @@ def _write_protected_branches(repo: Path, branches: tuple[str, ...]) -> None:
 
 
 def _init_repo_with_target(tmp_path: Path, *, target_branch: str, protected_primary: bool) -> Path:
-    """Clone the fast git template, provision the charter, and check out *target_branch*."""
+    """Clone the fast git template, provision + commit the charter, and check out *target_branch*.
+
+    ``protected_primary=True`` always protects the **Primary Branch**
+    (``main``) -- not ``target_branch`` -- regardless of ``via`` (M2: the
+    parameter name says "primary", and WP06's US1.4 needs the Primary Branch
+    protected the same way for every create path).
+    """
     repo = clone_template(tmp_path / "repo")
     provision_test_charter(repo)
     if protected_primary:
-        _write_protected_branches(repo, (target_branch,))
-    if target_branch != "main":
+        _write_protected_branches(repo, (_PRIMARY_BRANCH,))
+    # L4: commit the provisioned charter rather than leaving it untracked, as
+    # T008 asks ("provision the charter, commit"). Lands on `main` (before any
+    # target-branch checkout below), since `.kittify/` is project-level, not
+    # Mission-specific.
+    _git(repo, "add", ".kittify")
+    _git(repo, "commit", "-m", "chore(fixture): provision charter")
+    if target_branch != _PRIMARY_BRANCH:
         _git(repo, "checkout", "-b", target_branch)
     return repo
 
@@ -232,13 +280,22 @@ def _coord_mission_from_meta(
     *,
     slug: str,
     meta: dict[str, object],
-    topology: MissionTopology,
+    topology: MissionTopology | None,
     creation_base_sha: str,
 ) -> CoordMission:
+    """Build a :class:`CoordMission` from a create outcome's ``meta.json``.
+
+    ``topology=None`` (M1, WP06's real default path) skips the requested-
+    topology assertion entirely and resolves ``topology`` from ``meta.json``
+    instead -- the caller asserts the product default itself (e.g.
+    ``coord.topology is MissionTopology.COORD``).
+    """
     topology_value = meta["topology"]
     if not isinstance(topology_value, str):
         raise AssertionError(f"meta.json topology is not a string: {topology_value!r}")
-    _require_topology_match(topology_value, topology)
+    if topology is not None:
+        _require_topology_match(topology_value, topology)
+    resolved_topology = MissionTopology(topology_value)
 
     coordination_branch = meta.get("coordination_branch")
     if not isinstance(coordination_branch, str):
@@ -256,7 +313,7 @@ def _coord_mission_from_meta(
         mission_slug=slug,
         mid8=mid8,
         mission_dir_name=mission_dir_name,
-        topology=topology,
+        topology=resolved_topology,
         target_branch=target_branch,
         coordination_branch=coordination_branch,
         coord_worktree_path=worktree_path,
@@ -304,11 +361,17 @@ def _invoke_mission_create_cli(repo: Path, args: list[str]) -> dict[str, object]
     return _first_json_line(result.output)
 
 
-def _cli_create_args(slug: str, topology: MissionTopology, *extra: str) -> list[str]:
+def _cli_create_args(slug: str, topology: MissionTopology | None, *extra: str) -> list[str]:
+    """Build the ``agent mission create`` arg list.
+
+    ``topology=None`` omits ``--topology`` entirely (M1): the real WP06
+    default path for ``--pr-bound`` from a protected primary branch, where
+    the product itself resolves the topology rather than the caller.
+    """
+    topology_args = ["--topology", topology.value] if topology is not None else []
     return [
         slug,
-        "--topology",
-        topology.value,
+        *topology_args,
         "--branch-strategy",
         "already-confirmed",
         "--json",
@@ -327,7 +390,7 @@ def _coord_mission_from_cli_payload(
     payload: dict[str, object],
     *,
     slug: str,
-    topology: MissionTopology,
+    topology: MissionTopology | None,
     creation_base_sha: str,
 ) -> CoordMission:
     meta_file = payload["meta_file"]
@@ -344,7 +407,7 @@ def _make_coord_mission_via_cli_topology(tmp_path: Path, topology: MissionTopolo
     return _coord_mission_from_cli_payload(repo, payload, slug=slug, topology=topology, creation_base_sha=creation_base_sha)
 
 
-def _make_coord_mission_via_cli_pr_bound(tmp_path: Path, topology: MissionTopology, *, slug: str, protected_primary: bool) -> CoordMission:
+def _make_coord_mission_via_cli_pr_bound(tmp_path: Path, topology: MissionTopology | None, *, slug: str, protected_primary: bool) -> CoordMission:
     repo = _init_repo_with_target(tmp_path, target_branch=_PRIMARY_BRANCH, protected_primary=protected_primary)
     _set_up_bare_remote(repo)
     creation_base_sha = _git_rev_parse(repo, _PRIMARY_BRANCH)
@@ -368,8 +431,8 @@ def _materialize_coord_surface(coord: CoordMission) -> CoordMission:
     coord_dir = coord.coord_mission_dir
     if not coord_dir.exists():
         coord_dir.mkdir(parents=True, exist_ok=True)
-        root_events = coord.root_mission_dir / "status.events.jsonl"
-        coord_events = coord_dir / "status.events.jsonl"
+        root_events = coord.root_mission_dir / _STATUS_LOG_FILENAME
+        coord_events = coord_dir / _STATUS_LOG_FILENAME
         coord_events.write_text(
             root_events.read_text(encoding="utf-8") if root_events.exists() else "",
             encoding="utf-8",
@@ -390,7 +453,7 @@ def _materialize_coord_surface(coord: CoordMission) -> CoordMission:
 
 def make_coord_mission(
     tmp_path: Path,
-    topology: MissionTopology,
+    topology: MissionTopology | None,
     *,
     via: Literal["core", "cli_topology", "cli_pr_bound"] = "core",
     slug: str = "demo",
@@ -407,9 +470,15 @@ def make_coord_mission(
         --start-branch topic`` from ``main``, with a bare ``origin`` and
         ``origin/HEAD`` set (required for default-topology resolution).
 
-    ``protected_primary=True`` configures the created mission's target
-    branch as protected (``protection.protected_branches``), for WP06's
-    US1.4 test.
+    ``topology``: required (non-``None``) for ``via="core"``/``"cli_topology"``.
+    ``via="cli_pr_bound"`` additionally accepts ``topology=None`` (M1): this
+    is WP06's real default path -- ``--topology`` is omitted entirely and the
+    resulting ``coord.topology`` is read back from ``meta.json`` (the caller
+    asserts the product default, e.g. ``is MissionTopology.COORD``, itself).
+
+    ``protected_primary=True`` configures the Primary Branch (``main``) as
+    protected (``protection.protected_branches``) -- the SAME meaning for
+    every ``via`` (M2), for WP06's US1.4 test.
 
     ``materialized=True`` additionally forces a real, production-probe-
     verified MATERIALIZED coordination surface (see
@@ -423,21 +492,110 @@ def make_coord_mission(
     use :func:`make_prefix_coord_mission` for the explicit pre-fix shape.
     """
     if via == "core":
-        coord = _make_coord_mission_via_core(tmp_path, topology, slug=slug, protected_primary=protected_primary)
+        coord = _make_coord_mission_via_core(tmp_path, _require_topology(topology, via), slug=slug, protected_primary=protected_primary)
     elif via == "cli_topology":
-        coord = _make_coord_mission_via_cli_topology(tmp_path, topology, slug=slug, protected_primary=protected_primary)
+        coord = _make_coord_mission_via_cli_topology(tmp_path, _require_topology(topology, via), slug=slug, protected_primary=protected_primary)
     elif via == "cli_pr_bound":
         coord = _make_coord_mission_via_cli_pr_bound(tmp_path, topology, slug=slug, protected_primary=protected_primary)
-    else:  # pragma: no cover - Literal guards callers; defensive for non-mypy callers.
+    else:
         raise ValueError(f"Unknown via={via!r}")
     if materialized:
         coord = _materialize_coord_surface(coord)
     return coord
 
 
+def _require_topology(topology: MissionTopology | None, via: str) -> MissionTopology:
+    if topology is None:
+        raise ValueError(f"topology=None is only supported for via='cli_pr_bound' (got via={via!r})")
+    return topology
+
+
 # ---------------------------------------------------------------------------
-# T009 -- pre-fix shape builder
+# T009 -- pre-fix shape builder (H1: built explicitly, independent of create)
 # ---------------------------------------------------------------------------
+
+
+def _mission_dir_relpath(coord: CoordMission) -> str:
+    return f"{_KITTY_SPECS_DIR}/{coord.mission_dir_name}"
+
+
+def _read_mission_id(coord: CoordMission) -> str:
+    meta: dict[str, object] = json.loads((coord.root_mission_dir / "meta.json").read_text(encoding="utf-8"))
+    mission_id = meta["mission_id"]
+    if not isinstance(mission_id, str):
+        raise AssertionError(f"meta.json missing a string mission_id: {meta!r}")
+    return mission_id
+
+
+def _read_coordination_log_blob(coord: CoordMission) -> str | None:
+    """Read ``status.events.jsonl`` from the coordination branch tree, or ``None`` if absent."""
+    relpath = f"{_mission_dir_relpath(coord)}/{_STATUS_LOG_FILENAME}"
+    result = subprocess.run(
+        ["git", "-C", str(coord.repo_root), "show", f"{coord.coordination_branch}:{relpath}"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.stdout if result.returncode == 0 else None
+
+
+def _ensure_root_log_committed(coord: CoordMission) -> None:
+    """Ensure the root checkout carries the creation events, committed on the target branch.
+
+    Independent of where create actually put them (H1): if the root checkout
+    already has them (today's base), this only commits them when they are
+    not yet committed. If create instead seeded the coordination branch and
+    skipped the root log (WP06's future shape), the content is carried over
+    from the coordination copy.
+    """
+    root_log = coord.root_mission_dir / _STATUS_LOG_FILENAME
+    already_committed = coord_tree_has(coord.repo_root, coord.target_branch, f"{_mission_dir_relpath(coord)}/{_STATUS_LOG_FILENAME}")
+    if root_log.exists() and event_ids(root_log):
+        if not already_committed:
+            _commit_root_events(coord, f"chore({coord.mission_dir_name}): fixture root log")
+        return
+
+    content = _read_coordination_log_blob(coord)
+    if content is None:
+        raise AssertionError("neither the root checkout nor the coordination branch carries the creation events")
+    root_log.parent.mkdir(parents=True, exist_ok=True)
+    root_log.write_text(content, encoding="utf-8")
+    _commit_root_events(coord, f"chore({coord.mission_dir_name}): fixture root log (carried from coordination)")
+
+
+def _reset_coordination_branch_to_precreate(coord: CoordMission) -> None:
+    """Tear down any coordination worktree and reset the branch to the pre-create tip.
+
+    No-op when the coordination branch already excludes the Mission dir
+    (today's base, where create already cuts the branch before the scaffold
+    commit).
+    """
+    if not coord_tree_has(coord.repo_root, coord.coordination_branch, _mission_dir_relpath(coord)):
+        return
+    if coord.coord_worktree_path.exists():
+        _git(coord.repo_root, "worktree", "remove", "--force", str(coord.coord_worktree_path))
+    _git(coord.repo_root, "worktree", "prune")
+    _git(
+        coord.repo_root,
+        "update-ref",
+        f"refs/heads/{coord.coordination_branch}",
+        coord.creation_base_sha,
+    )
+
+
+def _rewrite_into_prefix_shape(coord: CoordMission) -> None:
+    """Transform *coord* (whatever create produced) into the explicit pre-fix shape.
+
+    H1 (blocking): built explicitly rather than trusted from create's current
+    placement, so this keeps producing the documented shape whether create
+    already cuts the coordination branch before the scaffold commit (today),
+    or seeds the coordination branch with the Mission dir and skips the root
+    log entirely (WP06's future shape) -- see
+    ``test_rewrite_into_prefix_shape_is_independent_of_create_placement`` for
+    the proof against a simulated post-fix create output.
+    """
+    _ensure_root_log_committed(coord)
+    _reset_coordination_branch_to_precreate(coord)
 
 
 def _append_extra_root_events(coord: CoordMission, count: int) -> None:
@@ -503,10 +661,8 @@ def _assert_prefix_shape(
         raise AssertionError(
             f"make_prefix_coord_mission built {actual} but expected {expected} (worktree={worktree!r}, remote_only={remote_only}, branch_deleted={branch_deleted})"
         )
-    if not branch_deleted:
-        mission_dir_path = f"{_KITTY_SPECS_DIR}/{coord.mission_dir_name}"
-        if coord_tree_has(coord.repo_root, coord.coordination_branch, mission_dir_path):
-            raise AssertionError("coordination branch unexpectedly contains the mission dir")
+    if not branch_deleted and coord_tree_has(coord.repo_root, coord.coordination_branch, _mission_dir_relpath(coord)):
+        raise AssertionError("coordination branch unexpectedly contains the mission dir")
 
 
 def make_prefix_coord_mission(
@@ -523,12 +679,11 @@ def make_prefix_coord_mission(
     The root checkout's ``status.events.jsonl`` (``MissionCreated`` +
     ``SpecifyStarted``) is committed on the target branch; the coordination
     branch is cut at the commit BEFORE that scaffold commit, so it never
-    contains the Mission dir. This is exactly what ``create_mission_core``
-    already produces at the current base (WP06 has not landed), so this
-    builder reuses :func:`make_coord_mission` for construction and only adds
-    the explicit worktree/remote/deletion variants on top -- then validates
-    the result against the production probe, never trusting its own
-    construction silently (NFR-002 "fail loud").
+    contains the Mission dir. This shape is built EXPLICITLY via
+    :func:`_rewrite_into_prefix_shape` (H1) -- never merely asserted from
+    whatever ``create_mission_core`` happened to produce -- so it keeps
+    working after WP06 changes create's placement, then validated against
+    the production probe (NFR-002 "fail loud").
 
     ``worktree="empty"`` (default) materializes the coordination worktree
     (its Mission dir stays absent -> ``EMPTY``). ``worktree="absent"`` never
@@ -537,6 +692,7 @@ def make_prefix_coord_mission(
     remote-only branch cannot have a materialized worktree).
     """
     coord = _make_coord_mission_via_core(tmp_path, topology, slug="prefix", protected_primary=False)
+    _rewrite_into_prefix_shape(coord)
     if extra_events:
         _append_extra_root_events(coord, extra_events)
     if remote_only:
@@ -577,64 +733,199 @@ def _to_fork_fixture(
     )
 
 
-def _open_decision(repo_root: Path, mission_slug: str, *, slot_key: str, question: str, actor: str) -> str:
-    response = open_decision(
-        repo_root,
-        mission_slug,
-        origin_flow=OriginFlow.SPECIFY,
-        input_key=slot_key,
+def _append_row(path: Path, row: dict[str, object]) -> None:
+    """Append one production-shaped event dict directly to an explicit *path*.
+
+    H3: the fixture, not the live surface resolver, decides where each row
+    lands. Uses the public, envelope-agnostic, atomic-write primitive
+    (``append_raw_rows_atomic``) -- the same durability mechanism production
+    code uses for both ``status.events.jsonl`` and sibling logs.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    append_raw_rows_atomic(path, [row])
+
+
+def _decision_point_opened_row(*, decision_id: str, mission_id: str, mission_slug: str, input_key: str, question: str, actor: str) -> dict[str, object]:
+    """Build a production-shaped ``DecisionPointOpened`` row (the ``status.events.jsonl`` stream).
+
+    Mirrors ``specify_cli.decisions.emit.emit_decision_opened``'s wire shape
+    exactly (same payload model, same envelope keys), but never calls it --
+    H3 requires the fixture to choose placement, not the live write path.
+    """
+    now = now_utc()
+    payload = DecisionPointOpenedInterviewPayload(
+        origin_surface=OriginSurface.PLANNING_INTERVIEW,
+        decision_point_id=decision_id,
+        mission_id=mission_id,
+        run_id=decision_id,
+        mission_slug=mission_slug,
+        mission_type=_DECISION_MISSION_TYPE,
+        phase=OriginFlow.SPECIFY.value.upper(),
+        origin_flow=_EventOriginFlow(OriginFlow.SPECIFY.value),
         question=question,
-        slot_key=slot_key,
-        actor=actor,
+        options=(),
+        input_key=input_key,
+        step_id=input_key,
+        actor_id=actor,
+        actor_type="human",
+        state_entered_at=now,
+        recorded_at=now,
     )
-    decision_id: str = response.decision_id
-    return decision_id
+    return {
+        "event_id": str(_ulid_mod.ULID()),
+        "at": now.isoformat(),
+        "event_type": DECISION_POINT_OPENED,
+        "payload": json.loads(payload.model_dump_json()),
+    }
+
+
+def _decision_input_requested_row(*, decision_id: str, mission_id: str, mission_slug: str, input_key: str, question: str, actor: str) -> dict[str, object]:
+    """Build a production-shaped ``DecisionInputRequested`` row (the ``decisions.events.jsonl`` stream).
+
+    Mirrors ``specify_cli.events.decision_log.DecisionGitLog``'s wire shape
+    (same payload model, same envelope keys), written directly to an explicit
+    path instead of through that class's commit-triggering machinery (H3).
+    """
+    actor_identity = RuntimeActorIdentity(
+        actor_id=actor,
+        actor_type="human",
+        display_name="",
+        provider=None,
+        model=None,
+        tool=None,
+    )
+    payload = DecisionInputRequestedPayload(
+        run_id=decision_id,
+        decision_id=decision_id,
+        step_id=input_key,
+        question=question,
+        options=(),
+        input_key=input_key,
+        actor=actor_identity,
+        mission_id=mission_id,
+        mission_slug=mission_slug,
+    )
+    return {
+        "at": now_utc_iso(),
+        "event_id": str(_ulid_mod.ULID()),
+        "event_type": DECISION_INPUT_REQUESTED,
+        "mission_id": mission_id,
+        "payload": payload.model_dump(mode="json"),
+    }
+
+
+def _stream_filename(stream: Literal["status_log", "decision_log"]) -> str:
+    return _STATUS_LOG_FILENAME if stream == "status_log" else _DECISION_LOG_FILENAME
+
+
+def _append_diverging_rows_for_stream(coord: CoordMission, stream: Literal["status_log", "decision_log"], *, mission_id: str) -> tuple[str, str]:
+    """Append one row to the root Mission dir and a different row to the coordination
+    Mission dir, for the named *stream*. Returns ``(root_decision_id, coord_decision_id)``.
+    """
+    root_id = str(_ulid_mod.ULID())
+    coord_id = str(_ulid_mod.ULID())
+    filename = _stream_filename(stream)
+    root_row: dict[str, object]
+    coord_row: dict[str, object]
+    if stream == "status_log":
+        root_row = _decision_point_opened_row(
+            decision_id=root_id,
+            mission_id=mission_id,
+            mission_slug=coord.mission_dir_name,
+            input_key="root-slot",
+            question="Root decision?",
+            actor="fixture-root",
+        )
+        coord_row = _decision_point_opened_row(
+            decision_id=coord_id,
+            mission_id=mission_id,
+            mission_slug=coord.mission_dir_name,
+            input_key="coord-slot",
+            question="Coord decision?",
+            actor="fixture-coord",
+        )
+    else:
+        root_row = _decision_input_requested_row(
+            decision_id=root_id,
+            mission_id=mission_id,
+            mission_slug=coord.mission_dir_name,
+            input_key="root-slot",
+            question="Root decision?",
+            actor="fixture-root",
+        )
+        coord_row = _decision_input_requested_row(
+            decision_id=coord_id,
+            mission_id=mission_id,
+            mission_slug=coord.mission_dir_name,
+            input_key="coord-slot",
+            question="Coord decision?",
+            actor="fixture-coord",
+        )
+    _append_row(coord.root_mission_dir / filename, root_row)
+    _append_row(coord.coord_mission_dir / filename, coord_row)
+    return root_id, coord_id
+
+
+def _assert_fork_pair_diverges(coord: CoordMission, streams: tuple[Literal["status_log", "decision_log"], ...]) -> None:
+    """H3: the builder self-checks its own fork shape rather than trusting the self-tests."""
+    for stream in streams:
+        filename = _stream_filename(stream)
+        root_ids = event_ids(coord.root_mission_dir / filename)
+        coord_ids = event_ids(coord.coord_mission_dir / filename)
+        if not root_ids or not coord_ids:
+            raise AssertionError(f"fork fixture stream {stream!r} did not diverge: root={root_ids!r} coord={coord_ids!r}")
+        root_set, coord_set = set(root_ids), set(coord_ids)
+        if root_set <= coord_set or coord_set <= root_set:
+            raise AssertionError(f"fork fixture stream {stream!r} is not a true fork: root={root_ids!r} coord={coord_ids!r}")
 
 
 def _commit_root_events(coord: CoordMission, message: str) -> None:
-    rel = (coord.root_mission_dir / "status.events.jsonl").relative_to(coord.repo_root)
-    _git(coord.repo_root, "add", str(rel))
+    rel = coord.root_mission_dir.relative_to(coord.repo_root)
+    _git(coord.repo_root, "add", "-A", str(rel))
     _git(coord.repo_root, "commit", "-m", message)
 
 
 def _commit_coord_events(coord: CoordMission, message: str) -> None:
-    _git(coord.coord_worktree_path, "add", _KITTY_SPECS_DIR)
+    rel = coord.coord_mission_dir.relative_to(coord.coord_worktree_path)
+    _git(coord.coord_worktree_path, "add", "-A", str(rel))
     _git(coord.coord_worktree_path, "commit", "-m", message)
 
 
-def _build_diverging_decision_pair(tmp_path: Path, topology: MissionTopology, *, commit: bool) -> tuple[CoordMission, str, str]:
-    """Build the (a)/(b) fork shapes: a root decision, then a diverging coord decision.
+def _fork_streams(stream: _ForkStream) -> tuple[Literal["status_log", "decision_log"], ...]:
+    return ("status_log", "decision_log") if stream == "both" else (stream,)
 
-    The two decisions are opened through ``open_decision`` against the SAME
-    ``repo_root`` -- the first while the coordination surface is
-    UNMATERIALIZED (routes to the root checkout), the second after the
-    coordination Mission dir is created on disk (routes to the coordination
-    worktree). Neither event-id sequence is a prefix of the other because
-    they land in two different files.
+
+def _build_diverging_decision_pair(
+    tmp_path: Path, topology: MissionTopology, *, commit: bool, stream: _ForkStream
+) -> tuple[CoordMission, tuple[str, ...], tuple[str, ...]]:
+    """Build the (a)/(b) fork shapes for the chosen *stream* (H2/H3 binding correction).
+
+    Appends production-shaped rows via low-level primitives directly into
+    explicitly chosen paths -- the root Mission dir and the coordination
+    Mission dir -- rather than through ``open_decision``/the live surface
+    resolver (H3), so the fixture's shape never depends on how later WPs
+    (seed-on-write, fork refusal, ``write_dir``) change that routing. The
+    builder asserts its own fork shape before returning (H3).
     """
     coord = make_prefix_coord_mission(tmp_path, topology, worktree="absent")
-    decision_root = _open_decision(
-        coord.repo_root,
-        coord.mission_dir_name,
-        slot_key="root-slot",
-        question="Root decision?",
-        actor="fixture-root",
-    )
-    if commit:
-        _commit_root_events(coord, f"chore({coord.mission_dir_name}): fixture root decision")
-
+    mission_id = _read_mission_id(coord)
     CoordinationWorkspace.resolve(coord.repo_root, coord.mission_dir_name, coord.mid8)
     coord.coord_mission_dir.mkdir(parents=True, exist_ok=True)
-    decision_coord = _open_decision(
-        coord.repo_root,
-        coord.mission_dir_name,
-        slot_key="coord-slot",
-        question="Coord decision?",
-        actor="fixture-coord",
-    )
+
+    streams = _fork_streams(stream)
+    root_ids: list[str] = []
+    coord_ids: list[str] = []
+    for one_stream in streams:
+        root_id, coord_id = _append_diverging_rows_for_stream(coord, one_stream, mission_id=mission_id)
+        root_ids.append(root_id)
+        coord_ids.append(coord_id)
+
+    _assert_fork_pair_diverges(coord, streams)
+
     if commit:
-        _commit_coord_events(coord, f"chore({coord.mission_dir_name}): fixture coord decision")
-    return coord, decision_root, decision_coord
+        _commit_root_events(coord, f"chore({coord.mission_dir_name}): fixture root decision ({stream})")
+        _commit_coord_events(coord, f"chore({coord.mission_dir_name}): fixture coord decision ({stream})")
+    return coord, tuple(root_ids), tuple(coord_ids)
 
 
 def _clone_repo_with_branches(repo: Path, clone_root: Path, branches: tuple[str, ...]) -> None:
@@ -669,10 +960,7 @@ def _seed_ledger_only_fixture(coord: CoordMission) -> str:
     CoordinationWorkspace.resolve(coord.repo_root, coord.mission_dir_name, coord.mid8)
     coord_dir = coord.coord_mission_dir
     coord_dir.mkdir(parents=True, exist_ok=True)
-    meta: dict[str, object] = json.loads((coord.root_mission_dir / "meta.json").read_text(encoding="utf-8"))
-    mission_id = meta["mission_id"]
-    if not isinstance(mission_id, str):
-        raise AssertionError(f"meta.json missing a string mission_id: {meta!r}")
+    mission_id = _read_mission_id(coord)
 
     entry = IndexEntry(
         decision_id=str(_ulid_mod.ULID()),
@@ -692,18 +980,18 @@ def _seed_ledger_only_fixture(coord: CoordMission) -> str:
     return decision_id
 
 
-def _fork_fixture_root_uncommitted(tmp_path: Path, topology: MissionTopology) -> ForkFixture:
-    coord, decision_root, decision_coord = _build_diverging_decision_pair(tmp_path, topology, commit=False)
-    return _to_fork_fixture(coord, decision_ids_root=(decision_root,), decision_ids_coord=(decision_coord,))
+def _fork_fixture_root_uncommitted(tmp_path: Path, topology: MissionTopology, *, stream: _ForkStream) -> ForkFixture:
+    coord, root_ids, coord_ids = _build_diverging_decision_pair(tmp_path, topology, commit=False, stream=stream)
+    return _to_fork_fixture(coord, decision_ids_root=root_ids, decision_ids_coord=coord_ids)
 
 
-def _fork_fixture_both_committed(tmp_path: Path, topology: MissionTopology) -> ForkFixture:
-    coord, decision_root, decision_coord = _build_diverging_decision_pair(tmp_path, topology, commit=True)
-    return _to_fork_fixture(coord, decision_ids_root=(decision_root,), decision_ids_coord=(decision_coord,))
+def _fork_fixture_both_committed(tmp_path: Path, topology: MissionTopology, *, stream: _ForkStream) -> ForkFixture:
+    coord, root_ids, coord_ids = _build_diverging_decision_pair(tmp_path, topology, commit=True, stream=stream)
+    return _to_fork_fixture(coord, decision_ids_root=root_ids, decision_ids_coord=coord_ids)
 
 
-def _fork_fixture_fresh_clone(tmp_path: Path, topology: MissionTopology) -> ForkFixture:
-    base = _fork_fixture_both_committed(tmp_path / "base", topology)
+def _fork_fixture_fresh_clone(tmp_path: Path, topology: MissionTopology, *, stream: _ForkStream) -> ForkFixture:
+    base = _fork_fixture_both_committed(tmp_path / "base", topology, stream=stream)
     clone_root = tmp_path / "clone"
     _clone_repo_with_branches(base.repo_root, clone_root, (base.target_branch, base.coordination_branch))
     return _to_fork_fixture(
@@ -720,13 +1008,19 @@ def _fork_fixture_ledger_only(tmp_path: Path, topology: MissionTopology) -> Fork
     return _to_fork_fixture(coord, decision_ids_coord=(decision_id,))
 
 
-def make_fork_fixture(tmp_path: Path, shape: _ForkShape, topology: MissionTopology = MissionTopology.COORD) -> ForkFixture:
+def make_fork_fixture(
+    tmp_path: Path,
+    shape: _ForkShape,
+    topology: MissionTopology = MissionTopology.COORD,
+    *,
+    stream: _ForkStream = "status_log",
+) -> ForkFixture:
     """Build one of the four NFR-002 fork shapes (SC-004: 0 entries/events lost, no id twice).
 
     - ``"root_uncommitted_coord_untracked"`` (the #5519 shape): a decision
-      opened in the root checkout (uncommitted), then a second, diverging
-      decision opened once the coordination Mission dir exists (untracked
-      in the coordination worktree).
+      row appended to the root checkout (uncommitted), then a second,
+      diverging row appended once the coordination Mission dir exists
+      (untracked in the coordination worktree).
     - ``"both_committed"``: like (a), but both copies are committed on their
       respective branches.
     - ``"fresh_clone"``: a ``git clone`` of (b), with both branches fetched
@@ -734,16 +1028,23 @@ def make_fork_fixture(tmp_path: Path, shape: _ForkShape, topology: MissionTopolo
     - ``"ledger_only_on_coordination"``: ``decisions/index.json`` +
       ``decisions/DM-<id>.md`` committed only on the coordination branch
       (the pre-fix #3928 placement), absent from the root checkout.
+
+    ``stream`` (H2 binding correction; shapes (a)/(b)/(c) only -- ignored for
+    (d), whose divergence is about the ledger, not an event stream):
+      - ``"status_log"`` (default): the divergence is in ``status.events.jsonl``.
+      - ``"decision_log"``: the divergence is in ``decisions.events.jsonl``
+        (the ``DecisionGitLog`` stream).
+      - ``"both"``: both streams diverge independently.
     """
     if shape == "root_uncommitted_coord_untracked":
-        return _fork_fixture_root_uncommitted(tmp_path, topology)
+        return _fork_fixture_root_uncommitted(tmp_path, topology, stream=stream)
     if shape == "both_committed":
-        return _fork_fixture_both_committed(tmp_path, topology)
+        return _fork_fixture_both_committed(tmp_path, topology, stream=stream)
     if shape == "fresh_clone":
-        return _fork_fixture_fresh_clone(tmp_path, topology)
+        return _fork_fixture_fresh_clone(tmp_path, topology, stream=stream)
     if shape == "ledger_only_on_coordination":
         return _fork_fixture_ledger_only(tmp_path, topology)
-    raise ValueError(f"Unknown fork fixture shape: {shape!r}")  # pragma: no cover - Literal guards callers.
+    raise ValueError(f"Unknown fork fixture shape: {shape!r}")
 
 
 # ---------------------------------------------------------------------------

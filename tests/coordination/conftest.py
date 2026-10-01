@@ -51,11 +51,23 @@ def prefix_coord_mission(tmp_path: Path, request: pytest.FixtureRequest) -> Coor
 
 @pytest.fixture
 def fork_fixture(tmp_path: Path, request: pytest.FixtureRequest) -> ForkFixture:
-    """A NFR-002 fork fixture. Indirect-parametrize with the desired shape string::
+    """A NFR-002 fork fixture.
 
-    @pytest.mark.parametrize(
-        "fork_fixture", ["both_committed"], indirect=True
-    )
+    Indirect-parametrize with the desired shape string::
+
+        @pytest.mark.parametrize("fork_fixture", ["both_committed"], indirect=True)
+
+    Or with a kwargs dict (``shape`` required) to also select the diverging
+    stream (H2) and/or topology::
+
+        @pytest.mark.parametrize(
+            "fork_fixture",
+            [{"shape": "both_committed", "stream": "decision_log"}],
+            indirect=True,
+        )
     """
-    shape = request.param
-    return make_fork_fixture(tmp_path, shape)
+    param = request.param
+    overrides: dict[str, Any] = {"shape": param} if isinstance(param, str) else dict(param)
+    overrides.setdefault("stream", "status_log")
+    overrides.setdefault("topology", MissionTopology.COORD)
+    return make_fork_fixture(tmp_path, **overrides)
