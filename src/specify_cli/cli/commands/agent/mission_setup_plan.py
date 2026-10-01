@@ -44,6 +44,8 @@ from charter.activation.mission_type_profiles import resolve_mission_type_contex
 from charter.resolution import ResolutionResult
 from mission_runtime import MissionArtifactKind, OwnedCheckout, placement_seam
 from specify_cli.cli.commands._owned_checkout import OwnedCheckoutOption
+from specify_cli.coordination.commit_outcome import SurfaceOutcome, commit_outcome_payload, render_commit_outcome
+from specify_cli.coordination.commit_router import CommitRouterResult
 from specify_cli.core.checkout_identity import CheckoutIdentity, Intent, resolve_checkout_identity
 from specify_cli.core.constants import MISSION_TYPE_DOCUMENTATION
 from specify_cli.doc_analysis.doc_state import GeneratorConfig
@@ -119,6 +121,23 @@ def _print_artifact_unchanged(artifact_type: str, json_output: bool) -> None:
         console.print(f"[dim]{artifact_type.capitalize()} unchanged, no commit needed[/dim]")
 
 
+def _warn_on_incomplete_surfaces(result: CommitRouterResult, *, json_output: bool) -> None:
+    """Print a line for every surface research D8 says is actionable.
+
+    WP14 (contracts/commit-outcome.md rule 6): a best-effort commit whose
+    result was previously discarded (the gap-analysis and generator-config
+    sites below) renders through the shared :func:`render_commit_outcome`
+    when, and only when, some surface is neither ``committed`` nor
+    ``unchanged`` -- an all-success batch prints nothing (the common case).
+    """
+    if json_output:
+        return
+    if not any(outcome.status not in ("committed", "unchanged") for outcome in result.surfaces):
+        return
+    for line in render_commit_outcome(result):
+        console.print(line)
+
+
 def _warn_commit_failed(
     artifact_type: str,
     file_path: Path,
@@ -151,12 +170,18 @@ class CommitToBranchResult:
     * ``"no_op_wrong_surface"`` — the artifact is NOT present at the resolved
       placement (the commit would no-op against the wrong worktree/surface);
       ``diagnostic`` names the missing artifact + placement.
+
+    ``surfaces`` (WP14, ``contracts/commit-outcome.md``): the router's own
+    per-surface outcome, carried through additively so the setup-plan JSON
+    envelope can render EVERY partition group this commit touched, not just
+    the caller-surface projection the four fields above alone describe.
     """
 
     status: Literal["committed", "unchanged", "no_op_wrong_surface"]
     placement_ref: str
     commit_hash: str | None = None
     diagnostic: str | None = None
+    surfaces: tuple[SurfaceOutcome, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -254,10 +279,11 @@ def _commit_to_branch(
             status="committed",
             placement_ref=router_result.placement_ref,
             commit_hash=router_result.commit_hash,
+            surfaces=router_result.surfaces,
         )
     elif router_result.status == "unchanged":
         _print_artifact_unchanged(artifact_type, json_output)
-        return CommitToBranchResult(status="unchanged", placement_ref=router_result.placement_ref)
+        return CommitToBranchResult(status="unchanged", placement_ref=router_result.placement_ref, surfaces=router_result.surfaces)
     elif router_result.status == "no_op_wrong_surface":
         if not json_output:
             console.print(f"[yellow]Warning:[/yellow] {router_result.diagnostic}")
@@ -265,6 +291,7 @@ def _commit_to_branch(
             status="no_op_wrong_surface",
             placement_ref=router_result.placement_ref,
             diagnostic=router_result.diagnostic,
+            surfaces=router_result.surfaces,
         )
     else:
         # "error" status — surface via warn helper and re-raise as RuntimeError
@@ -889,7 +916,7 @@ def _run_documentation_gap_analysis(
             # write itself still lands on P via commit_for_mission's owned=.
             _gap_protection_root = owned.repository_root if owned is not None else repo_root
             _gap_policy = ProtectionPolicy.resolve(_gap_protection_root)
-            commit_for_mission(
+            _gap_commit_result = commit_for_mission(
                 repo_root=_gap_protection_root,
                 mission_slug=mission_slug,
                 files=(gap_analysis_output, meta_file),
@@ -899,6 +926,7 @@ def _run_documentation_gap_analysis(
                 target_branch=target_branch,
                 owned=owned,
             )
+            _warn_on_incomplete_surfaces(_gap_commit_result, json_output=json_output)
         if not json_output:
             coverage_pct = analysis.coverage_matrix.get_coverage_percentage() * 100
             console.print(f"[cyan]→ Gap analysis generated: {gap_analysis_output.name} (coverage: {coverage_pct:.1f}%)[/cyan]")
@@ -948,7 +976,7 @@ def _detect_and_configure_generators(
                 # root rule as the gap-analysis commit above.
                 _gen_protection_root = owned.repository_root if owned is not None else repo_root
                 _gen_policy = ProtectionPolicy.resolve(_gen_protection_root)
-                commit_for_mission(
+                _gen_commit_result = commit_for_mission(
                     repo_root=_gen_protection_root,
                     mission_slug=mission_slug,
                     files=(meta_file,),
@@ -958,6 +986,7 @@ def _detect_and_configure_generators(
                     target_branch=target_branch,
                     owned=owned,
                 )
+                _warn_on_incomplete_surfaces(_gen_commit_result, json_output=json_output)
         except Exception as gen_err:
             if not json_output:
                 console.print(f"[yellow]Warning:[/yellow] Failed to save generator config: {gen_err}")
@@ -1065,6 +1094,8 @@ def _build_setup_plan_result(
         result["commit_status"] = plan_commit_result.status
         if plan_commit_result.diagnostic is not None:
             result["commit_diagnostic"] = plan_commit_result.diagnostic
+        if plan_commit_result.surfaces:
+            result.update(commit_outcome_payload(plan_commit_result))
     if gap_analysis_path:
         result["gap_analysis"] = gap_analysis_path
     if generators_detected:
