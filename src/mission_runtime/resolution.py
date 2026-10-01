@@ -2349,6 +2349,13 @@ class PlacementSeam:
         verbatim (NFR-002 forbids only *undeclared* fallbacks, not these
         declared ones).
 
+        This is the READ side only (coord-artifact-single-home-01M3V4BE WP04,
+        FR-017): a writer never substitutes ``read_dir``'s declared EMPTY /
+        UNMATERIALIZED primary fallback for a real coordination write. The
+        write side is :meth:`write_dir`, which materializes an
+        UNMATERIALIZED local head, seeds or restores an EMPTY surface, or
+        refuses — it never silently writes into the root checkout instead.
+
         Identical *raising* is NOT identical *anchoring*.
         :func:`resolve_artifact_surface` applies
         :func:`~specify_cli.core.paths.get_main_repo_root` to ``repo_root``
@@ -2568,7 +2575,10 @@ class ResolvedSurface:
     """A resolved surface plus the stamp naming which physical tree it is (C6).
 
     The output of :func:`resolve_artifact_surface`: ``path`` is where the artifact
-    is read/written; ``surface_kind`` is the :class:`TopologySurface` stamp a
+    is READ (coord-artifact-single-home-01M3V4BE WP04, FR-017: the write side
+    is :meth:`PlacementSeam.write_dir`, which materializes/seeds/restores/
+    refuses — it never substitutes this read-side surface for a real
+    coordination write); ``surface_kind`` is the :class:`TopologySurface` stamp a
     recorded judgement names (NFR-003 / contract GEC-3). Per GEC-5 a ``PRIMARY``
     stamp on a *substituted* surface (the ``EMPTY`` / ``UNMATERIALIZED`` create
     window) is visible, not authoritative — the consuming gate decides whether the
@@ -2783,7 +2793,13 @@ def resolve_artifact_surface(
     resolver: MissionResolver | None = None,
     owned: OwnedCheckout | None = None,
 ) -> ResolvedSurface:
-    """Resolve the affirmative read/write surface for a mission artifact ``kind``.
+    """Resolve the affirmative READ surface for a mission artifact ``kind``.
+
+    coord-artifact-single-home-01M3V4BE WP04 (FR-017): read side only. The
+    write side is :meth:`PlacementSeam.write_dir`, which materializes a
+    coordination worktree, seeds or restores an EMPTY surface, or refuses —
+    it never substitutes this function's declared PRIMARY fallback for a
+    real coordination write.
 
     The stamped face of the surface→filesystem seam (data-model.md "ArtifactHome"
     AH-1/AH-2, contract GEC-3 / C3 — the four-``CoordState`` answer set). Consumes

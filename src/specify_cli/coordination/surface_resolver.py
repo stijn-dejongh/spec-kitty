@@ -1289,6 +1289,13 @@ def resolve_status_surface_with_anchor(
     ``for_write`` preserves coordination validation for placement callers. A
     completed mission's primary read authority does not grant write placement
     for artifact kinds excluded from post-consolidation writes (#4358).
+    ``for_write=True`` is **commit-ref oriented, not a write location**
+    (coord-artifact-single-home-01M3V4BE WP04, FR-017): it is reached from
+    :func:`~mission_runtime.resolution.resolve_placement_only` (via
+    ``_assemble_core_fragments(for_write=True)``) and MUST stay side-effect
+    free — it never materializes, seeds or writes anything, unlike
+    :meth:`~mission_runtime.resolution.PlacementSeam.write_dir`, the ONE
+    accessor sanctioned to do that.
 
     Raises FileNotFoundError when meta.json is absent.
     Raises ValueError when meta.json is malformed.

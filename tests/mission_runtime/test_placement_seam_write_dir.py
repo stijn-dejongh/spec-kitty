@@ -381,9 +381,7 @@ def test_write_dir_checkout_root_reanchors_from_a_lane_worktree(tmp_path: Path) 
 # ---------------------------------------------------------------------------
 
 
-def test_coord_branch_has_committed_artifact_git_binary_missing_fails_closed_loudly(
-    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-) -> None:
+def test_coord_branch_has_committed_artifact_git_binary_missing_fails_closed_loudly(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
     """The git-BINARY-unavailable arm is now explicit (binding correction):
     it fails closed to ``True`` (present, so the caller refuses/self-heals
     defensively), AND it is observable -- a ``WARNING``, never a silent
@@ -430,10 +428,6 @@ def test_coord_branch_has_committed_artifact_uses_mid8_composed_mission_dir(tmp_
     # Without mid8: composes the bare-slug subtree ("kitty-specs/a-bare-slug/"),
     # which this branch does NOT carry -- a false negative under the pre-WP04
     # composition.
-    assert (
-        coord_branch_has_committed_artifact(repo, "coord", bare_slug, MissionArtifactKind.ISSUE_MATRIX) is False
-    )
+    assert coord_branch_has_committed_artifact(repo, "coord", bare_slug, MissionArtifactKind.ISSUE_MATRIX) is False
     # With mid8: composes the REAL mid8-suffixed subtree and finds it.
-    assert (
-        coord_branch_has_committed_artifact(repo, "coord", bare_slug, MissionArtifactKind.ISSUE_MATRIX, mid8=mid8) is True
-    )
+    assert coord_branch_has_committed_artifact(repo, "coord", bare_slug, MissionArtifactKind.ISSUE_MATRIX, mid8=mid8) is True
