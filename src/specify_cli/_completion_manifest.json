@@ -992,6 +992,11 @@
    "hidden": true,
    "deprecated": false
   },
+  "merge-driver-decision-index": {
+   "help": "Union ``decisions/index.json`` entries keyed by ``decision_id`` (FR-009b/#5023).\n\nSee ``specify_cli.consolidation.drivers.run_decision_index_driver``'s\ndocstring for the full collision/precedence semantics: a terminal status\n(resolved/deferred/canceled) beats ``open``; the one legal reopen pair\n(deferred -> resolved) takes the reopen target; any other divergence, or\nmalformed input, is a conflict (non-zero exit) -- never a silently\npicked side.",
+   "hidden": true,
+   "deprecated": false
+  },
   "merge-driver-event-log": {
    "help": "Merge ``status.events.jsonl`` conflict inputs using event-log semantics.",
    "hidden": true,

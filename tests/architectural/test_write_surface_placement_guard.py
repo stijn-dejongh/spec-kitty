@@ -5,10 +5,13 @@ REAL coordination-topology fixture, across EVERY converged write path. The bifur
 
 * PRIMARY-partition kinds (``SPEC`` / ``DATA_MODEL`` / ``RESEARCH`` / ``CHECKLIST`` /
   ``FINALIZED_EXECUTION_PLAN`` / ``TASKS_INDEX`` / ``WORK_PACKAGE_TASK`` /
-  ``LANE_STATE`` / ``PRIMARY_METADATA`` / ``RETROSPECTIVE`` / ``ANALYSIS_REPORT``)
-  resolve to the primary ``target_branch`` for EVERY topology and NEVER transit
-  coordination. (``ANALYSIS_REPORT`` was re-homed COORD→PRIMARY by FR-003 /
-  coord-commit-integrity.)
+  ``LANE_STATE`` / ``PRIMARY_METADATA`` / ``RETROSPECTIVE`` / ``ANALYSIS_REPORT`` /
+  ``DECISION_LEDGER``) resolve to the primary ``target_branch`` for EVERY
+  topology and NEVER transit coordination. (``ANALYSIS_REPORT`` was re-homed
+  COORD→PRIMARY by FR-003 / coord-commit-integrity; ``DECISION_LEDGER`` was
+  re-homed COORD→PRIMARY by coord-artifact-single-home-01M3V4BE WP12, FR-009,
+  #5023 — #3928's COORD classification disagreed with the write side, which
+  already resolved PRIMARY since #4966 AC-D2.)
 * COORD-partition kinds (``STATUS_STATE`` / ``ISSUE_MATRIX`` / ``ACCEPTANCE_MATRIX``)
   keep the topology-routed coordination ref under coord topology.
 
@@ -340,6 +343,12 @@ def test_full_partition_resolves_per_membership(coord_mission: _CoordMission) ->
         MissionArtifactKind.RETROSPECTIVE,
         # FR-003 (coord-commit-integrity): ANALYSIS_REPORT re-homed COORD→PRIMARY.
         MissionArtifactKind.ANALYSIS_REPORT,
+        # coord-artifact-single-home-01M3V4BE WP12 (FR-009, #5023): the
+        # Decision Moment ledger (``decisions/index.json`` +
+        # ``decisions/DM-<ulid>.md``) re-homed COORD→PRIMARY -- its own
+        # reads/writes already resolved PRIMARY (#4966 AC-D2); this
+        # reclassification makes the taxonomy agree with the write side.
+        MissionArtifactKind.DECISION_LEDGER,
     }
     coord_kinds = {
         MissionArtifactKind.STATUS_STATE,
@@ -353,10 +362,6 @@ def test_full_partition_resolves_per_membership(coord_mission: _CoordMission) ->
         # 2026-08-03-1): review-cycle artifacts are per-WP lifecycle
         # bookkeeping -- COORD-partition.
         MissionArtifactKind.REVIEW_CYCLE,
-        # #3928: the Decision Moment ledger (``decisions/index.json`` +
-        # ``decisions/DM-<ulid>.md``) -- coord-authority-owned state, matching
-        # the write side's own ``read_dir(STATUS_STATE)`` placement.
-        MissionArtifactKind.DECISION_LEDGER,
     }
     # Sanity: the two sets partition the whole enum exactly once.
     assert primary_kinds | coord_kinds == set(MissionArtifactKind)
