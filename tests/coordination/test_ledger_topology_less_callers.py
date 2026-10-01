@@ -1,117 +1,145 @@
 """C-008: topology-less callers' verdict for decision-ledger paths (WP12, #5023).
 
 Six call sites classify a path's coordination-residue status WITHOUT passing
-an explicit ``topology`` -- ``consolidation/executor.py`` (via
-``is_toolchain_generated_churn(path, mission_slug=...)``),
-``cli/commands/agent/tasks_move_task.py``, ``cli/commands/agent/tasks_shared.py``,
-``cli/commands/implement.py`` (two call sites), ``lanes/auto_rebase.py`` and
-``coordination/commit_router.py::partition_for_mission_path`` (via
-``is_coord_residue_churn(path, mission_slug=...)``). ``is_coord_residue_churn``'s
-``topology=None`` default is an EXPLICIT, documented backward-compatible
-``MissionTopology.COORD`` projection (see its own docstring).
+an explicit ``topology`` to :func:`~specify_cli.coordination.coherence.
+is_coord_residue_churn` / :func:`~specify_cli.coordination.coherence.
+is_toolchain_generated_churn` -- its ``topology=None`` default is an EXPLICIT,
+documented backward-compatible ``MissionTopology.COORD`` projection (see its
+own docstring). Four of the six pass NEITHER a ``topology`` NOR a
+``mission_slug`` at all (the truly "blind" shape):
 
-**Finding (recorded as the design-decisions tracer entry for this WP):**
-``kind_is_coordination_residue`` derives PURELY from a kind's partition
-membership — ``routes_through_coordination(topology)`` gates first, kind
-membership in the COORD partition decides second. Once WP12 (T065) moves
-``DECISION_LEDGER`` out of the COORD partition, ``kind_is_coordination_residue``
-returns ``False`` for it **regardless of which topology value is fed in** — the
-membership check that would have returned ``True`` no longer exists. This means
-EVERY one of the six topology-less callers above gets the correct "new PRIMARY
-rule" (an uncommitted ledger is real work, never residue) automatically, for
-EVERY actual mission topology, with **no code change in ``coherence.py``** —
-confirmed empirically by this file (brownfield scout: "T065 step 2 ...
-needs no code change"; this file extends that same conclusion one layer up, to
-``is_coord_residue_churn``/``is_toolchain_generated_churn`` themselves).
+- ``cli/commands/agent/tasks_move_task.py::_drop_lane_coord_residue``
+- ``cli/commands/agent/tasks_shared.py::_list_wp_branch_mission_specs_changes``
+- ``cli/commands/implement.py::_partition_files_for_commit`` /
+  ``_guard_planning_commit_partition`` (two call sites, same file)
+- ``lanes/auto_rebase.py::_is_coordination_owned_artifact``
 
-This file is therefore the "single predicate point" characterization the WP
-calls for: it pins each caller's OWN call shape directly, over every
-:class:`MissionTopology` member (the forced-``COORD`` default never actually
-diverges per-topology for this kind), proving the fix is already complete.
+Two pass ``mission_slug`` but not ``topology``:
+
+- ``coordination/commit_router.py::partition_for_mission_path`` (deliberately
+  topology-blind by its own docstring, to agree with
+  ``_group_files_by_partition``'s grouping);
+- ``consolidation/executor.py``'s post-merge invariant gate (via
+  ``is_toolchain_generated_churn(path_part, mission_slug=run.mission_slug)``).
+
+This file drives the FIRST FOUR plus ``commit_router`` through their own real
+entry points (DIRECTIVE_041: assert the reader's observable decision, never
+the shared predicate directly) on a REAL coordination Mission built through
+WP02's production-create-path factory. ``consolidation/executor``'s shape is
+covered in ``tests/mission_runtime/test_decision_ledger_reader_flips.py::
+test_injected_residue_predicate_treats_ledger_as_real_work``.
+
+**C-008 status (binding correction, escalated to the operator -- see the
+``design-decisions`` tracer entry for the ruling this file currently
+reflects):** once ``DECISION_LEDGER`` leaves the COORD partition (T065), NO
+topology value makes ``kind_is_coordination_residue`` return True for it --
+the membership check the forced-COORD default relied on no longer exists. So
+every one of the six callers above returns "real work, never residue" for a
+coordination Mission (asserted below). The ruling's OTHER half -- what a
+``lanes`` / ``single_branch`` Mission should observe at these SAME blind call
+sites -- is NOT yet resolved (the recorded ruling text is self-contradictory:
+"keep today's verdict" + "no compatibility set" cannot both hold once the
+kind's own partition has moved) and is deliberately NOT characterized here
+pending that ruling. Do not add a lanes/single_branch characterization to this
+file, and do not change ``coherence.py``'s resolution logic, until the operator
+amendment lands.
 """
 
 from __future__ import annotations
 
-import functools
+from pathlib import Path
 
 import pytest
 
-from mission_runtime import MissionArtifactKind, MissionTopology, kind_for_mission_file
-from specify_cli.coordination.coherence import (
-    is_coord_residue_churn,
-    is_toolchain_generated_churn,
-)
+from mission_runtime import MissionTopology
+from tests._factories.coord_mission import make_coord_mission
 
-pytestmark = [pytest.mark.unit, pytest.mark.fast]
-
-_MISSION_SLUG = "some-mission"
-_LEDGER_PATHS = (
-    f"kitty-specs/{_MISSION_SLUG}/decisions/index.json",
-    f"kitty-specs/{_MISSION_SLUG}/decisions/DM-01M1VRA2ABCDEFGHJKMNPQRS.md",
-)
+pytestmark = [pytest.mark.unit, pytest.mark.git_repo]
 
 
-@pytest.fixture(autouse=True, params=list(MissionTopology))
-def _any_stored_topology(request: pytest.FixtureRequest) -> MissionTopology:
-    """Parametrize every test in this module over every real stored topology.
-
-    None of the six callers below ever passes this value in explicitly -- it
-    stands for "whatever the mission's REAL stored topology happens to be",
-    proving the blind ``topology=None`` default's answer does not vary by it.
+def test_tasks_move_task_keeps_ledger_as_real_work(tmp_path: Path) -> None:
+    """``tasks_move_task.py::_drop_lane_coord_residue`` (~L824), the truly blind
+    shape (no mission_slug, no topology): a dirty ``decisions/index.json`` must
+    be KEPT in the lane deliverable set, not dropped as coordination residue.
     """
-    topology: MissionTopology = request.param
-    return topology
+    from specify_cli.cli.commands.agent.tasks_move_task import _drop_lane_coord_residue
+
+    coord = make_coord_mission(tmp_path, MissionTopology.COORD)
+    index_path = coord.root_mission_dir / "decisions" / "index.json"
+    index_path.parent.mkdir(parents=True, exist_ok=True)
+    index_path.write_text('{"entries": []}\n', encoding="utf-8")
+
+    kept = _drop_lane_coord_residue(coord.repo_root, (index_path,))
+
+    assert index_path in kept, (
+        "decisions/index.json was dropped as coordination residue by "
+        "_drop_lane_coord_residue -- the PRIMARY-partition ledger is real "
+        "lane work and must survive the Seam-A filter (FR-009, #5023)"
+    )
 
 
-@pytest.mark.parametrize("path", _LEDGER_PATHS)
-def test_commit_router_partition_for_mission_path_shape(path: str, _any_stored_topology: MissionTopology) -> None:
-    """``commit_router.py::partition_for_mission_path`` call shape (``mission_slug``, no topology)."""
-    assert is_coord_residue_churn(path, mission_slug=_MISSION_SLUG) is False
-
-
-@pytest.mark.parametrize("path", _LEDGER_PATHS)
-def test_tasks_move_task_bare_call_shape(path: str, _any_stored_topology: MissionTopology) -> None:
-    """``tasks_move_task.py::_drop_lane_coord_residue`` call shape (bare path, no slug, no topology).
-
-    "A caller that passes neither topology nor slug: list it and keep the base
-    behaviour" -- the base behaviour (COORD-projected, kind-membership-derived)
-    is what this pins; it is unaffected by the mission's real stored topology
-    because the call never threads it.
+def test_implement_partition_files_for_commit_classifies_ledger_primary(tmp_path: Path) -> None:
+    """``implement.py::_partition_files_for_commit`` (~L905), the truly blind
+    shape (bare path string, no mission_slug, no topology): the ledger joins
+    the PRIMARY group, not the COORD-residue group.
     """
-    assert is_coord_residue_churn(path) is False
+    from specify_cli.cli.commands.implement import _partition_files_for_commit
+
+    coord = make_coord_mission(tmp_path, MissionTopology.COORD)
+    rel = f"kitty-specs/{coord.mission_dir_name}/decisions/index.json"
+
+    primary_files, coord_files = _partition_files_for_commit([rel])
+
+    assert primary_files == [rel], (primary_files, coord_files)
+    assert coord_files == []
 
 
-@pytest.mark.parametrize("path", _LEDGER_PATHS)
-def test_tasks_shared_bare_call_shape(path: str, _any_stored_topology: MissionTopology) -> None:
-    """``tasks_shared.py`` call shape (bare path, no slug, no topology)."""
-    assert is_coord_residue_churn(path) is False
-
-
-@pytest.mark.parametrize("path", _LEDGER_PATHS)
-def test_implement_py_bare_call_shape(path: str, _any_stored_topology: MissionTopology) -> None:
-    """``implement.py``'s two call sites (``_partition_files_for_commit`` /
-    ``_guard_planning_commit_partition``), both bare (no slug, no topology)."""
-    assert is_coord_residue_churn(path) is False
-
-
-@pytest.mark.parametrize("path", _LEDGER_PATHS)
-def test_auto_rebase_bare_call_shape(path: str, _any_stored_topology: MissionTopology) -> None:
-    """``lanes/auto_rebase.py`` call shape (bare path, no slug, no topology).
-
-    For the now-PRIMARY ledger, an uncommitted ``decisions/`` file at a
-    coordination Mission is real work, not residue -- the deliberate widening
-    this WP's binding corrections call for "at every caller, including
-    move-task, implement and auto-rebase".
+def test_implement_guard_refuses_ledger_reaching_coord_seam(tmp_path: Path) -> None:
+    """``implement.py::_guard_planning_commit_partition`` (~L947), the truly
+    blind shape: a PRIMARY-kind ledger path reaching a COORD-destination
+    commit seam is now the FORBIDDEN PRIMARY→coord route (it was the
+    permitted same-partition route pre-WP12); reaching a PRIMARY destination
+    is the permitted route.
     """
-    assert is_coord_residue_churn(path) is False
-    kind = kind_for_mission_file(path)
-    assert kind is MissionArtifactKind.DECISION_LEDGER
+    from specify_cli.cli.commands.implement import _guard_planning_commit_partition
+    from specify_cli.coordination.commit_router import PrimaryKindReachedCoordStagingError
+
+    coord = make_coord_mission(tmp_path, MissionTopology.COORD)
+    rel = f"kitty-specs/{coord.mission_dir_name}/decisions/index.json"
+
+    with pytest.raises(PrimaryKindReachedCoordStagingError):
+        _guard_planning_commit_partition([rel], destination_is_coord=True)
+
+    # The mirror route (PRIMARY destination) is permitted -- no raise.
+    _guard_planning_commit_partition([rel], destination_is_coord=False)
 
 
-@pytest.mark.parametrize("path", _LEDGER_PATHS)
-def test_consolidation_executor_post_merge_invariant_shape(path: str, _any_stored_topology: MissionTopology) -> None:
-    """``consolidation/executor.py``'s post-merge invariant gate call shape
-    (``is_toolchain_generated_churn(path_part, mission_slug=run.mission_slug)``,
-    no topology)."""
-    is_residue = functools.partial(is_toolchain_generated_churn, mission_slug=_MISSION_SLUG)
-    assert is_residue(path) is False
+def test_auto_rebase_does_not_treat_ledger_as_coordination_owned(tmp_path: Path) -> None:
+    """``lanes/auto_rebase.py::_is_coordination_owned_artifact`` (~L225), the
+    truly blind shape (bare rel path): the ledger is neither surface residue
+    nor managed PRIMARY layout, so auto-rebase does NOT take-theirs resolve a
+    conflict on it -- it surfaces as a real (Manual-halt-eligible) conflict,
+    matching "an uncommitted ledger file is real work, not residue."
+    """
+    from specify_cli.lanes.auto_rebase import _is_coordination_owned_artifact
+
+    coord = make_coord_mission(tmp_path, MissionTopology.COORD)
+    rel = f"kitty-specs/{coord.mission_dir_name}/decisions/index.json"
+
+    assert _is_coordination_owned_artifact(rel) is False
+
+
+def test_commit_router_partition_for_mission_path_classifies_ledger_primary(tmp_path: Path) -> None:
+    """``commit_router.py::partition_for_mission_path`` (~L768/937): passes
+    ``mission_slug`` but deliberately never ``topology`` (its own docstring:
+    topology-blind on purpose, to agree with ``_group_files_by_partition``'s
+    grouping). The ledger now classifies "primary".
+    """
+    from specify_cli.coordination.commit_router import partition_for_mission_path
+
+    coord = make_coord_mission(tmp_path, MissionTopology.COORD)
+    index_path = coord.root_mission_dir / "decisions" / "index.json"
+    index_path.parent.mkdir(parents=True, exist_ok=True)
+    index_path.write_text('{"entries": []}\n', encoding="utf-8")
+
+    assert partition_for_mission_path(coord.repo_root, coord.mission_dir_name, index_path) == "primary"

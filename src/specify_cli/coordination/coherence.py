@@ -184,6 +184,27 @@ def is_coord_residue_churn(
     It is deliberately NOT a silent internal assumption: the parameter exists so
     a topology-aware caller overrides it, and the merge dirty gate does.
 
+    **C-008 topology-less callers (coord-artifact-single-home-01M3V4BE WP12,
+    #5023, OPEN — operator ruling pending).** Six call sites never thread a
+    ``topology`` through this predicate (so they hit the ``MissionTopology.COORD``
+    default above); four of those also never thread ``mission_slug``:
+    ``cli/commands/agent/tasks_move_task.py::_drop_lane_coord_residue``,
+    ``cli/commands/agent/tasks_shared.py::_list_wp_branch_mission_specs_changes``,
+    ``cli/commands/implement.py::_partition_files_for_commit`` /
+    ``_guard_planning_commit_partition``, and
+    ``lanes/auto_rebase.py::_is_coordination_owned_artifact`` pass neither;
+    ``coordination/commit_router.py::partition_for_mission_path`` and
+    ``consolidation/executor.py``'s post-merge invariant gate pass
+    ``mission_slug`` but still never ``topology``. WP12's reclassification of
+    ``MissionArtifactKind.DECISION_LEDGER`` out of the COORD partition means NO
+    topology value makes :func:`~mission_runtime.kind_is_coordination_residue`
+    return ``True`` for it any more — so all six now report the ledger as real
+    work (never residue) for a coordination Mission, with no code change needed
+    here. What a ``lanes``/``single_branch`` Mission should observe at these
+    SAME blind call sites is a separate, still-open question (recorded as a
+    ``design-decisions`` tracer entry) — do not infer an answer from this
+    docstring; this is a listing, not a ruling.
+
     WP12 retirement: absorbs the retired ``mission_runtime`` predicate
     ``is_coordination_artifact_residue_path`` (module
     ``src/mission_runtime/artifacts.py``, registry mechanism `IC-07b`) as the

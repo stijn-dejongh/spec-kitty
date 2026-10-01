@@ -118,6 +118,77 @@ def test_router_commits_ledger_on_target_branch(tmp_path: Path) -> None:
     assert coord_touched.strip() == "", f"the coordination branch unexpectedly gained a commit touching decisions/: {coord_touched!r}"
 
 
+def test_mixed_batch_splits_decision_log_coord_and_ledger_primary(tmp_path: Path) -> None:
+    """B4 (review cycle 1): one ``commit_for_mission`` batch carrying all three
+    decision-related artifacts must SPLIT across both branches.
+
+    ``decisions.events.jsonl`` (``DECISION_LOG``) stays COORD-partition --
+    unaffected by this WP's reclassification; ``decisions/index.json`` and
+    ``decisions/DM-<ulid>.md`` (``DECISION_LEDGER``) are PRIMARY. Asserts both
+    ``surfaces`` (the primary group commits the ledger pair, the coordination
+    group commits the log) AND ``git log``/``git show`` per branch: the target
+    gains no ``decisions.events.jsonl`` and the coordination branch gains no
+    ``decisions/DM-*``/``index.json``. Never ``owned=`` -- drives the real
+    ``_group_files_by_partition`` split.
+    """
+    from specify_cli.coordination.commit_router import commit_for_mission
+    from specify_cli.git.protection_policy import ProtectionPolicy
+
+    coord = make_coord_mission(tmp_path, MissionTopology.COORD, materialized=True)
+
+    index_path = coord.root_mission_dir / "decisions" / "index.json"
+    index_path.parent.mkdir(parents=True, exist_ok=True)
+    index_path.write_text('{"entries": []}\n', encoding="utf-8")
+    dm_path = coord.root_mission_dir / "decisions" / "DM-01M1VRA2ABCDEFGHJKMNPQRS.md"
+    dm_path.write_text("# Decision\n", encoding="utf-8")
+    # DECISION_LOG (decisions.events.jsonl) is an append-only log authored
+    # DIRECTLY in the coordination worktree (never the root) -- the commit
+    # router's SKIP_DECISION_LOG stage plan translates a root-path DECISION_LOG
+    # input to its owning (coordination) copy rather than copying bytes, so
+    # the file must already exist there for the group to find something to
+    # commit (WRONG_SURFACE otherwise).
+    coord.coord_mission_dir.mkdir(parents=True, exist_ok=True)
+    log_path = coord.coord_mission_dir / "decisions.events.jsonl"
+    log_path.write_text('{"event_id": "01M1VRA2ABCDEFGHJKMNPQRS", "at": "2026-01-01T00:00:00+00:00"}\n', encoding="utf-8")
+
+    policy = ProtectionPolicy(protected_branches=frozenset(), operator_hatch_active=False)
+
+    result = commit_for_mission(
+        coord.repo_root,
+        coord.mission_dir_name,
+        (index_path, dm_path, log_path),
+        "test: mixed decision-log + ledger batch",
+        policy,
+        kind=MissionArtifactKind.SPEC,
+    )
+
+    assert result.status == "committed", result.diagnostic
+    primary_outcomes = [o for o in result.surfaces if o.surface == "primary"]
+    coord_outcomes = [o for o in result.surfaces if o.surface == "coordination"]
+    assert primary_outcomes and primary_outcomes[0].status == "committed", result.surfaces
+    assert coord_outcomes and coord_outcomes[0].status == "committed", result.surfaces
+
+    index_rel = f"kitty-specs/{coord.mission_dir_name}/decisions/index.json"
+    dm_rel = f"kitty-specs/{coord.mission_dir_name}/decisions/DM-01M1VRA2ABCDEFGHJKMNPQRS.md"
+    log_rel = f"kitty-specs/{coord.mission_dir_name}/decisions.events.jsonl"
+    assert set(primary_outcomes[0].committed) == {index_rel, dm_rel}, primary_outcomes[0]
+    # The coord group's path is IN_PLACE-staged (never copied), so `surfaces`
+    # reports it relative to repo_root -- it carries the `.worktrees/...`
+    # prefix the caller's own path argument had, not the owning-surface
+    # relative path `index_rel`/`dm_rel` use above.
+    assert any(path.endswith(log_rel) for path in coord_outcomes[0].committed), coord_outcomes[0]
+
+    target_committed = _committed_paths(coord.repo_root, coord.target_branch)
+    assert index_rel in target_committed and dm_rel in target_committed
+    assert log_rel not in target_committed, f"decisions.events.jsonl (COORD/DECISION_LOG) leaked onto the target branch: {target_committed!r}"
+
+    coord_committed = _committed_paths(coord.repo_root, coord.coordination_branch)
+    assert log_rel in coord_committed
+    assert index_rel not in coord_committed and dm_rel not in coord_committed, (
+        f"the decision ledger (PRIMARY) leaked onto the coordination branch: {coord_committed!r}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # T064 step 2b — spec-commit (#5501, US3.4) commits the ledger on the target.
 # ---------------------------------------------------------------------------

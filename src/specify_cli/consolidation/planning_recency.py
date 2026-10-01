@@ -42,9 +42,15 @@ def _is_driver_covered(rel: str) -> bool:
 
     coord-artifact-single-home-01M3V4BE WP12 (operator decision, "planning_recency
     hazard", FR-009b / #5023): a PRIMARY-partition kind whose path is ALSO
-    covered by a registered merge driver (today: only ``decisions/index.json``,
-    WP11's ``spec-kitty-decision-index`` driver) must be excluded from this
-    module's own target-favouring ``git merge-file --ours`` recency restore --
+    covered by a registered merge driver (today: only ``decisions/index.json``
+    -- WP11's ``spec-kitty-decision-index`` driver; ``_MERGE_DRIVERS`` also
+    covers several COORD-partition paths such as ``decisions.events.jsonl``,
+    but ``kind_is_coordination_residue`` already excludes those from this
+    module's PRIMARY-only candidate set via :func:`_is_primary_planning_path`'s
+    own ``is_primary_artifact_kind`` check above, so ``index.json`` is the
+    only PRIMARY-partition driver-covered path this leg needs to catch today)
+    must be excluded from this module's own target-favouring ``git merge-file
+    --ours`` recency restore --
     the driver already unions both sides' entries; blindly overwriting its
     squash result with the target's pre-squash bytes would silently drop a
     lane-added decision entry. Function-local import avoids a module-top

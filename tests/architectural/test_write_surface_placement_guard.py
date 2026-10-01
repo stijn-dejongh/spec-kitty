@@ -142,9 +142,9 @@ def coord_mission(tmp_path: Path) -> _CoordMission:
     mission = _build_coord_mission(tmp_path)
     # Precondition: the REAL resolver classifies this fixture as coord-routing.
     # Without this the two-ref guard is exercising the wrong topology cell.
-    assert routes_through_coordination(resolve_topology(mission.repo_root, mission.mission_slug)), (
-        "fixture precondition violated: mission must route through coordination"
-    )
+    assert routes_through_coordination(
+        resolve_topology(mission.repo_root, mission.mission_slug)
+    ), "fixture precondition violated: mission must route through coordination"
     return mission
 
 
@@ -169,7 +169,9 @@ def _path_commit_for_mission(mission: _CoordMission) -> tuple[str, str]:
     from specify_cli.coordination.commit_router import commit_for_mission
     from specify_cli.git.protection_policy import ProtectionPolicy
 
-    policy = ProtectionPolicy(protected_branches=frozenset({"main", "master"}), operator_hatch_active=False)
+    policy = ProtectionPolicy(
+        protected_branches=frozenset({"main", "master"}), operator_hatch_active=False
+    )
 
     # PRIMARY kind: actually mutate + commit; assert it lands on the target branch.
     spec_path = mission.feature_dir / "spec.md"
@@ -233,15 +235,24 @@ def _path_planning_commit_worktree(mission: _CoordMission) -> tuple[str, str]:
     from specify_cli.cli.commands.agent.mission import _planning_commit_worktree
 
     spec_path = mission.feature_dir / "spec.md"
-    primary_wt, primary_paths = _planning_commit_worktree(mission.repo_root, mission.mission_slug, (spec_path,), kind=_PRIMARY_KIND)
+    primary_wt, primary_paths = _planning_commit_worktree(
+        mission.repo_root, mission.mission_slug, (spec_path,), kind=_PRIMARY_KIND
+    )
     # PRIMARY kind never transits coordination: it commits directly from the
     # primary checkout, so the resolved ref is the primary target branch.
-    assert primary_wt == mission.repo_root, "PRIMARY kind transited a non-primary worktree (planning→coord route was not removed)"
+    assert primary_wt == mission.repo_root, (
+        "PRIMARY kind transited a non-primary worktree (planning→coord route "
+        "was not removed)"
+    )
     assert primary_paths == (spec_path,)
-    primary_ref = resolve_placement_only(mission.repo_root, mission.mission_slug, kind=_PRIMARY_KIND).ref
+    primary_ref = resolve_placement_only(
+        mission.repo_root, mission.mission_slug, kind=_PRIMARY_KIND
+    ).ref
 
     # COORD kind routes through coordination — its placement ref is the coord ref.
-    coord_ref = resolve_placement_only(mission.repo_root, mission.mission_slug, kind=_COORD_KIND).ref
+    coord_ref = resolve_placement_only(
+        mission.repo_root, mission.mission_slug, kind=_COORD_KIND
+    ).ref
     return primary_ref, coord_ref
 
 
@@ -283,7 +294,9 @@ _WRITE_PATHS = {
 
 
 @pytest.mark.parametrize("path_name", sorted(_WRITE_PATHS))
-def test_two_ref_partition_per_write_path(coord_mission: _CoordMission, path_name: str) -> None:
+def test_two_ref_partition_per_write_path(
+    coord_mission: _CoordMission, path_name: str
+) -> None:
     """NFR-002 two-ref guard: each converged write path lands the PRIMARY kind on
     the primary ``target_branch`` AND the COORD kind on the ``coordination_branch``.
 
@@ -295,10 +308,12 @@ def test_two_ref_partition_per_write_path(coord_mission: _CoordMission, path_nam
     primary_ref, coord_ref = resolve_path(coord_mission)
 
     assert primary_ref == coord_mission.target_branch, (
-        f"[{path_name}] PRIMARY kind {_PRIMARY_KIND.name} did NOT resolve to the primary target branch {coord_mission.target_branch!r}; got {primary_ref!r}"
+        f"[{path_name}] PRIMARY kind {_PRIMARY_KIND.name} did NOT resolve to the "
+        f"primary target branch {coord_mission.target_branch!r}; got {primary_ref!r}"
     )
     assert coord_ref == coord_mission.coordination_branch, (
-        f"[{path_name}] COORD kind {_COORD_KIND.name} did NOT resolve to the coordination branch {coord_mission.coordination_branch!r}; got {coord_ref!r}"
+        f"[{path_name}] COORD kind {_COORD_KIND.name} did NOT resolve to the "
+        f"coordination branch {coord_mission.coordination_branch!r}; got {coord_ref!r}"
     )
     # The two refs must DIFFER — a configuration where they collapse to one ref
     # would let a vacuous guard pass.
@@ -354,13 +369,21 @@ def test_full_partition_resolves_per_membership(coord_mission: _CoordMission) ->
 
     for kind in primary_kinds:
         assert is_primary_artifact_kind(kind), kind
-        ref = resolve_placement_only(coord_mission.repo_root, coord_mission.mission_slug, kind=kind).ref
-        assert ref == coord_mission.target_branch, f"PRIMARY kind {kind.name} resolved to {ref!r}, not the target branch"
+        ref = resolve_placement_only(
+            coord_mission.repo_root, coord_mission.mission_slug, kind=kind
+        ).ref
+        assert ref == coord_mission.target_branch, (
+            f"PRIMARY kind {kind.name} resolved to {ref!r}, not the target branch"
+        )
 
     for kind in coord_kinds:
         assert not is_primary_artifact_kind(kind), kind
-        ref = resolve_placement_only(coord_mission.repo_root, coord_mission.mission_slug, kind=kind).ref
-        assert ref == coord_mission.coordination_branch, f"COORD kind {kind.name} resolved to {ref!r}, not the coordination branch"
+        ref = resolve_placement_only(
+            coord_mission.repo_root, coord_mission.mission_slug, kind=kind
+        ).ref
+        assert ref == coord_mission.coordination_branch, (
+            f"COORD kind {kind.name} resolved to {ref!r}, not the coordination branch"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -400,7 +423,9 @@ def _forced_pre_fix_partition(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-def test_anti_mutant_pre_fix_partition_makes_planning_ref_go_red(coord_mission: _CoordMission, _forced_pre_fix_partition: None) -> None:
+def test_anti_mutant_pre_fix_partition_makes_planning_ref_go_red(
+    coord_mission: _CoordMission, _forced_pre_fix_partition: None
+) -> None:
     """Anti-mutant: with SPEC forced back into the COORD partition, the planning-ref
     assertion the two-ref guard makes goes RED — proving the guard KILLS the
     "always-coord-for-coord-topology" mutant and is not vacuous (DECISION 7).
@@ -411,14 +436,16 @@ def test_anti_mutant_pre_fix_partition_makes_planning_ref_go_red(coord_mission: 
     directly (SPEC now resolves to coord) so this test is the explicit
     mutant-catcher paired with the positive guard.
     """
-    spec_ref = resolve_placement_only(coord_mission.repo_root, coord_mission.mission_slug, kind=MissionArtifactKind.SPEC).ref
+    spec_ref = resolve_placement_only(
+        coord_mission.repo_root, coord_mission.mission_slug, kind=MissionArtifactKind.SPEC
+    ).ref
     # Under the pre-fix mutant the planning artifact resolves to coordination —
     # exactly the regression the positive guard forbids.
     assert spec_ref == coord_mission.coordination_branch
     assert spec_ref != coord_mission.target_branch, (
-        "Anti-mutant test is vacuous: forcing SPEC into the placement partition did not change its resolved ref — the two-ref guard could pass vacuously."
+        "Anti-mutant test is vacuous: forcing SPEC into the placement partition "
+        "did not change its resolved ref — the two-ref guard could pass vacuously."
     )
-
 
 # ---------------------------------------------------------------------------
 # T014 — the filename-anchored REVIEW_CYCLE classifier leg.
@@ -474,7 +501,10 @@ def test_review_cycle_pattern_anchors_on_final_component_only() -> None:
     FINAL path component (the actual filename) may match the glob. A WP-shaped
     directory segment spelled ``review-cycle-thing`` holding an ordinary WP
     task file must still classify WORK_PACKAGE_TASK."""
-    path = f"kitty-specs/{_CLASSIFIER_MISSION_SLUG}/tasks/review-cycle-thing/baseline-tests.json"
+    path = (
+        f"kitty-specs/{_CLASSIFIER_MISSION_SLUG}/tasks/review-cycle-thing/"
+        "baseline-tests.json"
+    )
     assert kind_for_mission_file(path) is MissionArtifactKind.WORK_PACKAGE_TASK
 
 
@@ -567,9 +597,9 @@ def _build_single_branch_mission(tmp_path: Path) -> _CoordMission:
 @pytest.fixture
 def single_branch_mission(tmp_path: Path) -> _CoordMission:
     mission = _build_single_branch_mission(tmp_path)
-    assert not routes_through_coordination(resolve_topology(mission.repo_root, mission.mission_slug)), (
-        "fixture precondition violated: mission must be coordless (SINGLE_BRANCH)"
-    )
+    assert not routes_through_coordination(
+        resolve_topology(mission.repo_root, mission.mission_slug)
+    ), "fixture precondition violated: mission must be coordless (SINGLE_BRANCH)"
     return mission
 
 
@@ -590,7 +620,9 @@ def test_review_cycle_write_lands_on_coord_ref_under_coord_topology(
     from specify_cli.coordination.commit_router import commit_for_mission
     from specify_cli.git.protection_policy import ProtectionPolicy
 
-    policy = ProtectionPolicy(protected_branches=frozenset({"main", "master"}), operator_hatch_active=False)
+    policy = ProtectionPolicy(
+        protected_branches=frozenset({"main", "master"}), operator_hatch_active=False
+    )
     artifact_path = _write_review_cycle_file(coord_mission, "WP01", 1)
 
     result = commit_for_mission(
@@ -614,7 +646,9 @@ def test_review_cycle_write_lands_on_target_branch_under_single_branch_topology(
     from specify_cli.coordination.commit_router import commit_for_mission
     from specify_cli.git.protection_policy import ProtectionPolicy
 
-    policy = ProtectionPolicy(protected_branches=frozenset({"main", "master"}), operator_hatch_active=False)
+    policy = ProtectionPolicy(
+        protected_branches=frozenset({"main", "master"}), operator_hatch_active=False
+    )
     artifact_path = _write_review_cycle_file(single_branch_mission, "WP01", 1)
 
     result = commit_for_mission(
@@ -642,7 +676,9 @@ def test_mixed_review_cycle_and_work_package_task_batch_splits_under_coord(
     from specify_cli.coordination.commit_router import commit_for_mission
     from specify_cli.git.protection_policy import ProtectionPolicy
 
-    policy = ProtectionPolicy(protected_branches=frozenset({"main", "master"}), operator_hatch_active=False)
+    policy = ProtectionPolicy(
+        protected_branches=frozenset({"main", "master"}), operator_hatch_active=False
+    )
     review_cycle_path = _write_review_cycle_file(coord_mission, "WP01", 1)
     wp_task_path = coord_mission.feature_dir / "tasks" / "WP01" / "WP01-foo.md"
     wp_task_path.write_text("# WP01\n", encoding="utf-8")
@@ -666,7 +702,10 @@ def test_mixed_review_cycle_and_work_package_task_batch_splits_under_coord(
     assert refs_committed == {
         coord_mission.target_branch,
         coord_mission.coordination_branch,
-    }, f"a mixed REVIEW_CYCLE + WORK_PACKAGE_TASK batch under coord topology must split into two commits against two distinct refs; got {refs_committed!r}"
+    }, (
+        "a mixed REVIEW_CYCLE + WORK_PACKAGE_TASK batch under coord topology "
+        f"must split into two commits against two distinct refs; got {refs_committed!r}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -704,9 +743,7 @@ def _build_e2_review_cycle_mission(tmp_path: Path) -> tuple[Path, str]:
     _e2_git(repo, "commit", "-q", "-m", "init")
     init_sha = subprocess.run(
         ["git", "-C", str(repo), "rev-parse", "HEAD"],
-        capture_output=True,
-        text=True,
-        check=True,
+        capture_output=True, text=True, check=True,
     ).stdout.strip()
 
     mission_id = str(ULID())
@@ -738,7 +775,9 @@ def _build_e2_review_cycle_mission(tmp_path: Path) -> tuple[Path, str]:
         encoding="utf-8",
     )
     (feature_dir / "tasks" / "WP01").mkdir(parents=True)
-    (feature_dir / "tasks" / "WP01" / "review-cycle-1.md").write_text("# Review cycle 1\n\nverdict: rejected\n", encoding="utf-8")
+    (feature_dir / "tasks" / "WP01" / "review-cycle-1.md").write_text(
+        "# Review cycle 1\n\nverdict: rejected\n", encoding="utf-8"
+    )
     _e2_git(repo, "add", "-A")
     _e2_git(repo, "commit", "-q", "-m", f"chore({slug}): mission scaffold")
 

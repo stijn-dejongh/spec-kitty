@@ -23,7 +23,6 @@ entry points (:func:`artifact_home_for` and :func:`resolve_placement_only`):
 Fixture data uses a real 26-char ULID ``mission_id`` and the derived 8-char
 ``mid8`` so the resolver exercises real-shaped identity, not a short fake slug.
 """
-
 from __future__ import annotations
 
 import json
@@ -60,7 +59,9 @@ def repo(tmp_path: Path) -> Path:
     _git(r, "config", "user.name", "Test")
     _git(r, "config", "commit.gpgsign", "false")
     (r / ".kittify").mkdir()
-    (r / ".kittify" / "config.yaml").write_text("agents:\n  available:\n    - claude\n", encoding="utf-8")
+    (r / ".kittify" / "config.yaml").write_text(
+        "agents:\n  available:\n    - claude\n", encoding="utf-8"
+    )
     return r
 
 
@@ -184,7 +185,9 @@ def test_status_state_resolves_to_coordination_branch(repo: Path) -> None:
     _build_mission(repo, coordination_branch=_COORD_BRANCH)
     _git(repo, "branch", _COORD_BRANCH)
 
-    placement = resolve_placement_only(repo, _MISSION_SLUG, kind=MissionArtifactKind.STATUS_STATE)
+    placement = resolve_placement_only(
+        repo, _MISSION_SLUG, kind=MissionArtifactKind.STATUS_STATE
+    )
 
     assert placement.ref == _COORD_BRANCH
 
@@ -193,8 +196,12 @@ def test_flattened_routes_both_kinds_to_target_branch(repo: Path) -> None:
     """A flattened mission (no coordination branch) routes both kinds to target."""
     _build_mission(repo)  # no coordination branch → flattened
 
-    spec_placement = resolve_placement_only(repo, _MISSION_SLUG, kind=MissionArtifactKind.SPEC)
-    status_placement = resolve_placement_only(repo, _MISSION_SLUG, kind=MissionArtifactKind.STATUS_STATE)
+    spec_placement = resolve_placement_only(
+        repo, _MISSION_SLUG, kind=MissionArtifactKind.SPEC
+    )
+    status_placement = resolve_placement_only(
+        repo, _MISSION_SLUG, kind=MissionArtifactKind.STATUS_STATE
+    )
 
     assert spec_placement.ref == _TARGET_BRANCH
     assert status_placement.ref == _TARGET_BRANCH

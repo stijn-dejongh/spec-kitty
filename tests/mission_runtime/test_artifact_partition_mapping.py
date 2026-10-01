@@ -65,7 +65,10 @@ def test_primary_metadata_commit_target_is_partition_aware() -> None:
 
     assert home.write_surface is TopologySurface.PRIMARY
     assert home.read_surface is TopologySurface.PRIMARY
-    assert home.commit_target is not None, "PRIMARY_METADATA.commit_target must be partition-aware (T006), not the port-blind None sentinel"
+    assert home.commit_target is not None, (
+        "PRIMARY_METADATA.commit_target must be partition-aware (T006), not "
+        "the port-blind None sentinel"
+    )
     assert home.commit_target == _COORD_BRANCH_REF
 
 
@@ -85,8 +88,14 @@ def test_decisions_events_jsonl_classifies_to_coord() -> None:
 
     kind = kind_for_mission_file(path)
 
-    assert kind is not None, "decisions.events.jsonl must classify to a MissionArtifactKind (FR-003), not fall through the unrecognized-path None"
-    assert not is_primary_artifact_kind(kind), f"decisions.events.jsonl classified to {kind!r}, a PRIMARY-partition kind -- FR-003 requires COORD"
+    assert kind is not None, (
+        "decisions.events.jsonl must classify to a MissionArtifactKind "
+        "(FR-003), not fall through the unrecognized-path None"
+    )
+    assert not is_primary_artifact_kind(kind), (
+        f"decisions.events.jsonl classified to {kind!r}, a PRIMARY-partition "
+        "kind -- FR-003 requires COORD"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -100,8 +109,14 @@ def test_traces_dir_classifies_to_coord() -> None:
 
     kind = kind_for_mission_file(path)
 
-    assert kind is not None, "traces/ must classify to a MissionArtifactKind (FR-006), not fall through the unrecognized-path None"
-    assert not is_primary_artifact_kind(kind), f"traces/ classified to {kind!r}, a PRIMARY-partition kind -- FR-006 requires COORD"
+    assert kind is not None, (
+        "traces/ must classify to a MissionArtifactKind (FR-006), not fall "
+        "through the unrecognized-path None"
+    )
+    assert not is_primary_artifact_kind(kind), (
+        f"traces/ classified to {kind!r}, a PRIMARY-partition kind -- FR-006 "
+        "requires COORD"
+    )
 
 
 def test_decisions_and_traces_kinds_are_distinct_from_each_other() -> None:
@@ -118,8 +133,11 @@ def test_decisions_and_traces_kinds_are_distinct_from_each_other() -> None:
 
 
 # ---------------------------------------------------------------------------
-# #3928 -- the decisions/ LEDGER (index.json + DM-<ulid>.md) classifies to a
-# COORD-partition kind, so the churn classifier agrees with the write side.
+# RE-PIN (coord-artifact-single-home-01M3V4BE WP12, FR-009, #5023): the
+# decisions/ LEDGER (index.json + DM-<ulid>.md) now classifies to a
+# PRIMARY-partition kind, so the churn classifier agrees with the write
+# side. #3928 originally pinned COORD here; see the two re-pinned tests
+# below for the reversal.
 # ---------------------------------------------------------------------------
 
 # The two (and only two) ledger shapes ``decisions/store.py`` writes
@@ -131,32 +149,37 @@ _LEDGER_PATHS = (
 
 
 @pytest.mark.parametrize("path", _LEDGER_PATHS)
-def test_decisions_ledger_classifies_to_coord(path: str) -> None:
+def test_decisions_ledger_classifies_to_primary(path: str) -> None:
     """RE-PIN (coord-artifact-single-home-01M3V4BE WP12, FR-009, #5023):
     decisions/<ledger file> -> a PRIMARY-homed kind via the ONE classifier.
 
+    Formerly ``test_decisions_ledger_classifies_to_coord`` (grep continuity):
     #3928 originally pinned a COORD classification here, on the theory that
     ``decisions/service.py`` documented the ledger as coord-authority-owned
     STATUS-partition state. WP12 reverses that: the ledger's own reads/writes
     already resolved PRIMARY (#4966 AC-D2), so the taxonomy now agrees with
     the write side. Behavioral like T007/T008: any PRIMARY-partition kind
-    keeps this green. (Test NAME kept for history/grep continuity; the
-    assertion direction is the re-pin.)
+    keeps this green.
     """
     kind = kind_for_mission_file(path)
 
-    assert kind is not None, f"{path} must classify to a MissionArtifactKind (FR-009), not fall through the unrecognized-path None"
+    assert kind is not None, (
+        f"{path} must classify to a MissionArtifactKind (FR-009), not fall "
+        "through the unrecognized-path None"
+    )
     assert is_primary_artifact_kind(kind), (
-        f"{path} classified to {kind!r}, a COORD-partition kind -- FR-009 requires the ledger to resolve PRIMARY (its writes/reads already do)"
+        f"{path} classified to {kind!r}, a COORD-partition kind -- FR-009 "
+        "requires the ledger to resolve PRIMARY (its writes/reads already do)"
     )
 
 
 @pytest.mark.parametrize("path", _LEDGER_PATHS)
-def test_decisions_ledger_is_coord_residue_churn(path: str) -> None:
+def test_decisions_ledger_is_not_coord_residue_churn(path: str) -> None:
     """RE-PIN (coord-artifact-single-home-01M3V4BE WP12, FR-009, #5023):
-    the ledger is NEVER coordination residue churn — it is a PRIMARY kind.
+    the ledger is NEVER coordination residue churn -- it is a PRIMARY kind.
 
-    ``is_coord_residue_churn`` is the exact predicate
+    Formerly ``test_decisions_ledger_is_coord_residue_churn`` (grep
+    continuity). ``is_coord_residue_churn`` is the exact predicate
     ``cli/commands/agent/mission_record_analysis.py`` filters dirty paths
     through; pre-WP12 it returned True for both ledger shapes (the #3928
     COORD classification). After the FR-009 reclassification an uncommitted
@@ -164,15 +187,18 @@ def test_decisions_ledger_is_coord_residue_churn(path: str) -> None:
     mission-slug scoping and that the ledger did NOT borrow STATUS_STATE --
     the WP13 ``is_status_state_path`` predicate must keep matching exactly
     ``status.events.jsonl`` / ``status.json`` (its coord-commit consumers
-    stage on that narrow set). (Test NAME kept for history/grep continuity;
-    the assertion direction is the re-pin.)
+    stage on that narrow set).
     """
     assert is_coord_residue_churn(path, mission_slug=_MISSION_SLUG) is False, (
-        f"{path} must NOT classify as coordination residue churn (FR-009): the ledger is a PRIMARY-partition kind"
+        f"{path} must NOT classify as coordination residue churn (FR-009): "
+        "the ledger is a PRIMARY-partition kind"
     )
-    assert is_coord_residue_churn(path, mission_slug="another-mission-01") is False
+    assert is_coord_residue_churn(path, mission_slug="another-mission-01") is False, (
+        "a ledger under another mission's directory is not this mission's residue"
+    )
     assert is_status_state_path(path) is False, (
-        f"{path} must not classify as STATUS_STATE -- is_status_state_path is deliberately narrow (WP13) and must not widen to the ledger"
+        f"{path} must not classify as STATUS_STATE -- is_status_state_path is "
+        "deliberately narrow (WP13) and must not widen to the ledger"
     )
 
 
@@ -208,7 +234,9 @@ def test_partition_invariant_stays_exhaustive_and_disjoint() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _route_meta_write_dir(*, primary_dir: Path, ambient_dir: Path, placement_ref: CommitTarget) -> Path:
+def _route_meta_write_dir(
+    *, primary_dir: Path, ambient_dir: Path, placement_ref: CommitTarget
+) -> Path:
     """Mimic a real meta-write caller deriving its target from the port.
 
     A caller that consumes ``PRIMARY_METADATA``'s resolved home routes the
@@ -239,16 +267,24 @@ def test_write_meta_lands_on_primary_surface_via_the_port(tmp_path: Path) -> Non
     ambient_dir = tmp_path / "ambient-decoy-surface"
     ambient_dir.mkdir()
 
-    target_dir = _route_meta_write_dir(primary_dir=primary_dir, ambient_dir=ambient_dir, placement_ref=_COORD_BRANCH_REF)
+    target_dir = _route_meta_write_dir(
+        primary_dir=primary_dir, ambient_dir=ambient_dir, placement_ref=_COORD_BRANCH_REF
+    )
     write_meta(target_dir, {"slug": "x"}, validate=False)
 
     assert (primary_dir / "meta.json").exists(), (
-        "write_meta must land meta.json on the PRIMARY surface resolved via the port's commit_target, not an ambient fallback"
+        "write_meta must land meta.json on the PRIMARY surface resolved via "
+        "the port's commit_target, not an ambient fallback"
     )
-    assert not (ambient_dir / "meta.json").exists(), "meta.json leaked onto the ambient decoy directory -- the port's commit_target was not consulted"
+    assert not (ambient_dir / "meta.json").exists(), (
+        "meta.json leaked onto the ambient decoy directory -- the port's "
+        "commit_target was not consulted"
+    )
 
 
-def test_write_meta_routing_anti_mutant_catches_reverted_sentinel(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_write_meta_routing_anti_mutant_catches_reverted_sentinel(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Anti-mutant: forcing the OLD PRIMARY_METADATA commit_target=None arm back
     makes the routing helper -- and therefore write_meta's landing surface --
     fall back to the ambient decoy, proving the positive T054 test above is
@@ -261,7 +297,9 @@ def test_write_meta_routing_anti_mutant_catches_reverted_sentinel(tmp_path: Path
 
     original_artifact_home_for = artifacts_mod.artifact_home_for
 
-    def _forced_none_commit_target(kind: MissionArtifactKind, placement_ref: CommitTarget) -> MissionArtifactHome:
+    def _forced_none_commit_target(
+        kind: MissionArtifactKind, placement_ref: CommitTarget
+    ) -> MissionArtifactHome:
         home = original_artifact_home_for(kind, placement_ref)
         if kind is MissionArtifactKind.PRIMARY_METADATA:
             return MissionArtifactHome(
@@ -274,10 +312,13 @@ def test_write_meta_routing_anti_mutant_catches_reverted_sentinel(tmp_path: Path
 
     monkeypatch.setattr(artifacts_mod, "artifact_home_for", _forced_none_commit_target)
 
-    target_dir = _route_meta_write_dir(primary_dir=primary_dir, ambient_dir=ambient_dir, placement_ref=_COORD_BRANCH_REF)
+    target_dir = _route_meta_write_dir(
+        primary_dir=primary_dir, ambient_dir=ambient_dir, placement_ref=_COORD_BRANCH_REF
+    )
     write_meta(target_dir, {"slug": "x"}, validate=False)
 
     assert (ambient_dir / "meta.json").exists(), (
-        "mutant did not reproduce the pre-fix routing -- this test would be vacuous against a regression that reintroduces commit_target=None"
+        "mutant did not reproduce the pre-fix routing -- this test would be "
+        "vacuous against a regression that reintroduces commit_target=None"
     )
     assert not (primary_dir / "meta.json").exists()
