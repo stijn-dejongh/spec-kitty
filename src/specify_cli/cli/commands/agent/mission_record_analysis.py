@@ -15,11 +15,13 @@ is preserved byte-for-byte from the pre-decomposition ``mission.py``.
 
 from __future__ import annotations
 
-import contextlib
 from pathlib import Path
 import subprocess
 import sys
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
+
+if TYPE_CHECKING:
+    from specify_cli.coordination.commit_router import CommitRouterResult
 
 from specify_cli.cli.console import console
 import typer
@@ -222,6 +224,61 @@ def _enforce_analysis_report_write_preflight(
     # the coordination worktree before committing.
 
 
+def _warn_on_incomplete_surfaces(result: CommitRouterResult, *, json_output: bool) -> None:
+    """Print a line for every surface research D8 says is actionable (WP14, contracts/commit-outcome.md rule 6).
+
+    Renders through the shared :func:`render_commit_outcome` only when some
+    surface is neither ``committed`` nor ``unchanged`` -- an all-success
+    commit (the common case) prints nothing.
+    """
+    if json_output:
+        return
+    from specify_cli.coordination.commit_outcome import render_commit_outcome
+
+    if not any(outcome.status not in ("committed", "unchanged") for outcome in result.surfaces):
+        return
+    for line in render_commit_outcome(result):
+        console.print(line)
+
+
+def _commit_analysis_report(
+    *,
+    repo_root: Path,
+    mission_slug: str,
+    report_path: Path,
+    target_branch: str,
+) -> CommitRouterResult | None:
+    """Best-effort commit of the analysis report; ``None`` on a suppressed commit failure.
+
+    WP14 (T003/T076 extraction, behaviour-preserving): the ``commit_for_mission``
+    call and the narrowed best-effort exception set this WP's own predecessor
+    (#3128) scoped it to -- lifted verbatim out of :func:`record_analysis`'s
+    body so the caller can render the router's per-surface outcome instead of
+    discarding the result entirely.
+    """
+    from specify_cli.coordination.commit_router import commit_for_mission
+    from specify_cli.git.protection_policy import ProtectionPolicy
+
+    try:
+        policy = ProtectionPolicy.resolve(repo_root)
+        return commit_for_mission(
+            repo_root=repo_root,
+            mission_slug=mission_slug,
+            files=(report_path,),
+            # #3678 (FR-006): conventional-commit-compliant subject -- see the
+            # original call site's comment for the full rationale.
+            message=f"docs(record-analysis): record analysis report for mission {mission_slug}",
+            policy=policy,
+            # ANALYSIS_REPORT is a PRIMARY kind (FR-003, coord-commit-integrity):
+            # the report lands on the primary ``target_branch`` under every
+            # topology and NEVER transits the coordination branch.
+            kind=MissionArtifactKind.ANALYSIS_REPORT,
+            target_branch=target_branch,
+        )
+    except (subprocess.CalledProcessError, OSError, RuntimeError, ValueError):
+        return None
+
+
 def record_analysis(
     feature: Annotated[str | None, typer.Option("--mission", help="Mission slug (e.g., '020-my-mission')")] = None,
     input_file: Annotated[
@@ -365,39 +422,24 @@ def record_analysis(
         # ``Exception``-direct refusal, deliberately outside this tuple), which
         # this record-analysis path is out of scope for. Best-effort semantics
         # for genuine commit failures (e.g. a protected target ref) are preserved.
-        with contextlib.suppress(subprocess.CalledProcessError, OSError, RuntimeError, ValueError):
-            from specify_cli.coordination.commit_router import commit_for_mission
-            from specify_cli.git.protection_policy import ProtectionPolicy
-
-            _analysis_policy = ProtectionPolicy.resolve(repo_root)
-            _analysis_mission_slug = feature_dir.name
-            commit_for_mission(
-                repo_root=repo_root,
-                mission_slug=_analysis_mission_slug,
-                files=(result.path,),
-                # #3678 (FR-006): conventional-commit-compliant subject —
-                # commitlint.config.cjs's `type-enum`/`type-case` rules require a
-                # recognized `type(scope): subject` prefix; the prior
-                # "Add analysis report for mission {slug}" shape had none and
-                # failed `type-empty`/`subject-empty` outright. `type` is pinned
-                # to `docs` per this repo's own convention for tool-authored
-                # analyze/review commits (spec.md Grounding Correction 4 /
-                # ledger SK-64's option (1): fix the emitted subject, not
-                # commitlint.config.cjs's ignore regex — C-004).
-                message=f"docs(record-analysis): record analysis report for mission {_analysis_mission_slug}",
-                policy=_analysis_policy,
-                # ANALYSIS_REPORT is a PRIMARY kind (FR-003, coord-commit-integrity):
-                # the report lands on the primary ``target_branch`` under every
-                # topology and NEVER transits the coordination branch. No coord copy
-                # is made — the write surface equals the read surface.
-                kind=MissionArtifactKind.ANALYSIS_REPORT,
-                target_branch=get_feature_target_branch(repo_root, _analysis_mission_slug),
-            )
+        _analysis_mission_slug = feature_dir.name
+        commit_result = _commit_analysis_report(
+            repo_root=repo_root,
+            mission_slug=_analysis_mission_slug,
+            report_path=result.path,
+            target_branch=get_feature_target_branch(repo_root, _analysis_mission_slug),
+        )
 
         payload = {_PAYLOAD_KEY_SUCCESS: True, "result": "success", **result.to_dict()}
+        if commit_result is not None and commit_result.surfaces:
+            from specify_cli.coordination.commit_outcome import commit_outcome_payload
+
+            payload.update(commit_outcome_payload(commit_result))
         if json_output:
             _emit_json(payload)
         else:
+            if commit_result is not None:
+                _warn_on_incomplete_surfaces(commit_result, json_output=json_output)
             rel = result.path.relative_to(repo_root) if result.path.is_relative_to(repo_root) else result.path
             console.print(f"[green]✓[/green] Analysis report persisted: {rel}")
 
