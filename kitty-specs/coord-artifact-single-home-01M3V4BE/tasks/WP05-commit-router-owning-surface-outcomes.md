@@ -42,10 +42,13 @@ owned_files:
 - tests/coordination/test_commit_router_fail_loud.py
 - tests/coordination/test_commit_router_coord_only_dirty_status_log.py
 - tests/coordination/test_commit_outcome.py
+- src/specify_cli/coordination/surface_authority.py
 role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP05 – Commit router: retire the target fast-forward, per-surface outcome contract, owning-surface commits
@@ -105,7 +108,7 @@ Consumers are **not** migrated here. That happens in WP08, WP10, WP13, WP14, WP1
 ## Context & Constraints
 
 - **Spec**: FR-006, FR-007, FR-008, FR-016 (R2 adoption), SC-003; US3.1, US3.2, US3.3. Contract: `kitty-specs/coord-artifact-single-home-01M3V4BE/contracts/commit-outcome.md` (types, rules 1–6, reason codes, JSON shape). Data model: `data-model.md` §5.
-- **Plan**: IC-10, then IC-07 (contract core only), then IC-06, all in this WP and in that order. The shared-file map pins `commit_router.py` to one lane in the order 10 → 06 → 07.
+- **Plan**: IC-10, then IC-07 (contract core only), then IC-06, all in this WP and in that order. This is a **stated deviation** from the plan's shared-file order 10 → 06 → 07 (analyze I5): R2's tightened refusal assertion needs `surfaces` before the owning-surface fix. IC-07's consumer migration still follows IC-06 in WP07–WP16.
 - **Research**:
   - D7: owning-surface commit and its outcome table;
   - D8: the contract shape, the exit-code rule and the 14 consumers, which migrate later;
@@ -120,6 +123,7 @@ Consumers are **not** migrated here. That happens in WP08, WP10, WP13, WP14, WP1
 - **Terminology**: Mission, never feature. Name the sense of "primary": the **PRIMARY partition**, the **repository root checkout**, or the **target branch**.
 - **C-006**: no heavy suites (see the Targeted test surface section).
 - **C-008**: `lanes` and `single_branch` Missions must behave byte-identically.
+- **Brownfield scout (binding read)**: before coding, read `## WP05` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp01-11.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -267,6 +271,37 @@ Consumers are **not** migrated here. That happens in WP08, WP10, WP13, WP14, WP1
 - **Validation**: each reason surfaces in `result.surfaces[*].refused` and in `commit_outcome_exit_code(result) == 1`. A router patched to always refuse makes R2 fail (the tightened branch requires `committed` on the standard fixture).
 - **Edge cases**: a mixed batch where PRIMARY commits and coordination is refused: the legacy fields show the caller surface, and `surfaces` shows both. That is exactly the masking FR-007 forbids consumers to ignore.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **I5 (analyze): stated deviation from the plan.** The subtask order IC-10 → contract core → IC-06 deviates from plan.md's shared-file order 10 → 06 → 07 because R2's tightened refusal assertion needs `surfaces` before the owning-surface fix lands. IC-07's consumer migration still follows IC-06 (WP07–WP16).
+- **T029 step 3 correction**: the partition split runs only when `owned is None` (L278: `groups = [(kind, files)] if owned is not None else _group_files_by_partition(...)`), so threading `owned` into the split is a no-op. Owned Missions cannot be coordination-routed today (`core/owned_mission.py:57`, `LIFECYCLE_OWNED_TOPOLOGIES == {SINGLE_BRANCH}`). Label every owned-coordination case a **forward guard**.
+- **Canonical literals and exit code**:
+  - `COORDINATION_BRANCH_DELETED` is a **class attribute**, `CoordinationBranchDeleted.error_code` (surface_resolver.py:205), plus a literal at `runtime_bridge.py:468`;
+  - status/reason literals are duplicated in `coordination/surface_authority.py:261-268`, and its `_exit_code_for` (L315) is "the canonical exit-code mapping".
+  - Make `commit_outcome` the **single owner** of the reason literals and the exit-code rule, reusing the canonical mapping, not a second one. `surface_authority.py` (now owned by this WP) imports them. This also gives `commit_outcome_exit_code` and the literals a `src` consumer.
+- **Transitional dead-symbol red (operator protocol)**:
+  - `render_commit_outcome` and `commit_outcome_payload` have no `src` consumer until the first consumer WP lands (WP10's tracer_append / WP07–WP08 / WP13–WP16).
+  - `tests/architectural/test_no_dead_symbols.py` (allowlist cap 293, `_baselines.yaml:443`) is therefore **EXPECTED red at this WP's tip**. Add an activity-log note naming the consuming WP. Reviewers accept this specific transitional red; the first consuming WP to land must turn it green. Closeout history cleanup folds the gate companions.
+  - **Prefer zero-red**: if a natural in-WP production use exists (e.g. the router logging a WARNING through `render_commit_outcome` for internal discarded-result paths), use it and the gate stays green.
+  - The public partition predicate (P-M5) is consumed by the router's own grouping, so it is live.
+- **Signatures and seams**:
+  - `commit_for_mission` has a required positional `policy` (L218); every snippet must pass it.
+  - `_stage_artifacts_in_coord_worktree` gains `mission_slug` and `owned` as **keyword-only, optional** parameters. This keeps the three-positional unit callers green: `test_commit_router.py:792/833/871/891`, `test_finalize_coord_staging.py` ×5, `test_finalize_clobber_e2e.py:374` and `test_wp06_sc2_paused_mission_blockers.py:658/680/714`. Their fixtures have no `meta.json`, so call `write_dir` only when `mission_slug` is given.
+  - The second production caller is `_resolve_commit_worktree_for_kind` (L1230).
+  - Resolve **one** `WriteLocation` per staging call, not one per path.
+  - `_merge_group_results` returns the first error as-is (L833-835); attach the surfaces with `dataclasses.replace(result, surfaces=...)`.
+- **#5353 pin**: `test_commit_router.py::test_coord_staging_keeps_a_status_log_already_in_the_coord_worktree` (L812) expects `coord_files == [coord_log]` when both logs are passed. Translation produces a duplicate, so use an **order-preserving dedupe**.
+- **Valid guard**: `test_finalize_clobber_e2e.py::...::test_coord_refinalize_with_only_status_changes_is_noop` must survive the `COORD_RECORD_IN_ROOT_CHECKOUT` skip.
+- **Recursion**: the WP03 seed commits through `commit_for_mission` with in-worktree paths, which hit IN_PLACE first. Add a test proving there is no recursion.
+- **Constraints carried over**:
+  - the lock key is `coord_feature_dir.name`;
+  - `commit_outcome` must not import `specify_cli.cli` (`test_commit_router_layering.py`);
+  - print ✓/✗ through rich or an ASCII fallback (cp1252);
+  - keep `write_dir` lazy and patch-compatible (tests patch `CoordinationWorkspace.resolve`).
+- Run the scout's quick-run additions by name, including `tests/git/test_commit_to_target_scope_guards.py` and `tests/architectural/test_dead_symbol_allowlist_contract.py`.
+
 ## Targeted test surface
 
 Run from the lane worktree:
@@ -294,6 +329,8 @@ uv run --frozen pytest tests/architectural/test_layer_rules.py tests/architectur
 - `ruff check` and `ruff format --check` on changed files; `mypy --strict` on changed files; zero new suppressions (NFR-005).
 - ≥ 90% coverage of new and changed lines, with a focused test for every new branch and helper (NFR-003, diff-cover gate).
 - New public symbols in `commit_outcome.py`: run `tests/architectural/test_no_dead_symbols.py`.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

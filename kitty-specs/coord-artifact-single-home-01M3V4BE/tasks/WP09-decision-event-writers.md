@@ -44,10 +44,14 @@ owned_files:
 - tests/specify_cli/events/test_decision_log_coord.py
 - tests/specify_cli/events/test_decision_log.py
 - tests/git/test_guard_capability_regression.py
+- src/specify_cli/cli/commands/decision.py
+- tests/mission_runtime/test_coord_read_seam_callers.py
 role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP09 – Decision event writers move to the accessor
@@ -115,6 +119,7 @@ Done means:
 - **Terminology**: "Mission", never "feature". Name each sense of "primary".
 - **Fixture semantics across lanes (post-tasks squad P-m5):** pre-fix assertions use WP02's `make_prefix_coord_mission`; `make_coord_mission` carries only shape-agnostic invariants (its shape changes when WP06 lands); use `make_coord_mission(..., materialized=True)` when a test needs a deterministic MATERIALIZED coordination surface in every lane.
 - **Dependency added (P-M1)**: WP07. It owns and re-pins `tests/mission_runtime/test_coord_read_seam_callers.py` first.
+- **Brownfield scout (binding read)**: before coding, read `## WP09` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp01-11.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -192,7 +197,7 @@ Done means:
   - (a) prove, with a pinned test over the reachable creation paths, that no coordination-routed Mission has differing shapes; or
   - (b) carry and fold a legacy `kitty-specs/<slug>/decisions.events.jsonl` stream once into the canonical dir. Do it under the seed's status lock, reusing WP03's `event_prefix` classifier and refusing a true fork.
   Record the choice in the activity log. WP17 depends on this WP and composes dir names only via `lanes.branch_naming`.
-- **`WriteLocation.checkout_root` (post-tasks squad P-M3):** take the checkout root from `write_dir(kind).checkout_root` (WP03/WP04). Never derive it as `.path.parent.parent` or by guessing a worktree name; `tests/architectural/test_no_worktree_name_guess.py` is a named gate for this WP.
+- **`WriteLocation.checkout_root` (post-tasks squad P-M3):** take the checkout root from `write_dir(kind).checkout_root` (WP03/WP04). Never derive it as `.path.parent.parent` or by guessing a worktree name. `test_no_worktree_name_guess.py` does not police `.parent.parent` (#2007); WP20 extends `test_no_write_side_rederivation.py` to enforce this, so until then review checks it.
 
 ### Subtask T052 – State matrix, ledger control, C-008
 
@@ -210,6 +215,30 @@ Done means:
   5. Make sure each test would fail if its writer reverted to `read_dir` (mutation sanity: temporarily revert locally, confirm red, restore; note it in the log).
 - **Files**: the two new test files.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **Decision rows have no Lamport field.** Their keys are `event_id`, `at`, `event_type` (`"DecisionPointOpened"`, not `"DecisionOpened"`) and `payload` (`decisions/emit.py:241-245`). The clock is the line-count proxy returned by `_append_raw_event` (`emit.py:140`), surfaced as `event_lamport` in `decision open --json` (`decision.py:162`). R4 asserts on that value or on log position. This supersedes the earlier `lamport_clock` note for decision rows.
+- **Keep fail-closed**: a coordination-routed non-owned failure raises `DecisionGitLogUnavailable` (`runtime_bridge.py:403-408`). Only the coordination-less arm falls back to the plain emitter.
+- **Read/write split in `service.py` too**: `_events_path` also serves reads (`_opened_event_exists` L303-312, via `_repair_missing_opened_event` L336/L529). Reads keep the read resolver; writes use `write_dir`. Otherwise the idempotency probe would seed or materialize.
+- **Other `open_decision` callers**: `charter/_widen.py`, `charter/interview.py`, `missions/plan/{plan,specify}_interview.py`, `orchestrator_api/commands.py:144`. Run their tests by name.
+- **`decision.py:217` (now owned; shared with WP17, which depends on this WP)**: `_handle_status_read_path_error` catches only `StatusReadPathNotFound`. Add arms rendering `COORD_SEED_FORK_REFUSED` (`.code` on the `ActionContextError`) and `STATUS_LOCK_HELD` with recovery hints, plus tests.
+- **`DecisionGitLog.worktree_root`** stays; it is the commit `cwd` (L252). Take it from `WriteLocation.checkout_root`.
+  - The coordination-less arm passes `mission_dir = anchor_root/kitty-specs/<slug>`, using the owned root for owned coordination-less Missions (C-008).
+  - In `runtime_bridge.py`, take the coordination worktree root from `checkout_root`, not from `resolve_commit_target`'s naming-convention candidate (`runtime_bridge_io.py:1505`). Do not edit `runtime_bridge_io.py`.
+- `materialize_coord_surface_for_write` stays live (`_coordination_doctor.py:1424`); do not delete it.
+- **L198 re-pin**: re-pin `tests/mission_runtime/test_coord_read_seam_callers.py::test_decisions_emit_mission_dir_fails_loud_sanely` here; it expected a raise on UNMATERIALIZED with a local branch, and `write_dir` now materializes. The file is co-owned with WP07; this WP depends on WP07, so they share a lane.
+- **Valid guards**:
+  - `test_read_seam_leniency.py::test_decisions_mission_dir_fails_loud_when_coord_deleted` and `::test_decisions_mission_dir_preserves_healthy_status_home`;
+  - `test_coord_read_seam_callers.py::test_decisions_emit_mission_dir_no_raise_on_single_branch`;
+  - in `test_decision_fresh_coord_5113.py`: `test_materialization_failure_is_byte_identical`, `test_list_and_verify_never_materialize` and `test_dry_run_never_materializes` (list, verify and dry-run never reach `write_dir`), plus the remote-only refusals;
+  - `test_decision_log.py:493` (an unsafe slug raises `ValueError` before placement).
+- **Lock key**: `emit.py:138` uses `feature_dir.name`, which must equal the seed lock key (`coord_mission_dir_name`).
+- **Cold import**: keep the `mission_runtime` import function-local in `decisions/*`. Add no new `specify_cli` subpackage edges from `runtime`.
+- **P-M3 gap**: `decisions/*`, `events/decision_log.py` and `runtime_bridge*.py` are not yet scanned for `.parent.parent`. WP20 extends the gate; until then review checks it. `test_no_worktree_name_guess.py` is **not** the P-M3 guard (it excludes `.parent.parent`, #2007).
+- C901: `_wrap_with_decision_git_log` 11, `open_decision` 8.
+
 ## Targeted test surface
 
 - New: `tests/specify_cli/decisions/test_service_coord_single_home.py`, `tests/runtime/test_decision_git_log_write_dir.py`.
@@ -217,13 +246,15 @@ Done means:
 - Baseline: `make test-fast`.
 - Named architectural gates only: `tests/architectural/test_layer_rules.py` (runtime outbound ledger), `tests/architectural/test_cold_import_status_boundary.py`, `tests/architectural/test_no_write_side_rederivation.py`, `tests/architectural/test_status_events_writes_gate.py`.
 - Never run the bare `tests/architectural/`, any e2e or integration directory, performance or stress suites, or `make test-full` (NO_FULL_HEAVY_SUITES_IN_MISSION, C-006). Record commands and counts in the Activity Log. Classify unexplained reds with CLAUDE.md's baseline-red gotcha.
-- Post-tasks squad additions, by name: `tests/specify_cli/cli/commands/test_decision_fresh_coord_5113.py`, `tests/mission_runtime/test_coord_read_seam_callers.py` (re-pinned by WP07, which this WP now depends on), the six migrated `DecisionGitLog` caller test files, and `tests/architectural/test_no_worktree_name_guess.py`.
+- Post-tasks squad additions, by name: `tests/specify_cli/cli/commands/test_decision_fresh_coord_5113.py`, `tests/mission_runtime/test_coord_read_seam_callers.py` (re-pinned by WP07, which this WP now depends on), the six migrated `DecisionGitLog` caller test files, and `tests/architectural/test_status_events_writes_gate.py`.
 
 ## Quality gates
 
 - Keep C901 ≤ 15 for every touched function (NFR-004): `_wrap_with_decision_git_log` (11), `open_decision` and the terminal decision path in service.py. Extract if any approaches 15.
 - Run `ruff check`, `ruff format --check` and `mypy --strict` on the changed files, with no new suppressions (NFR-005). `src/runtime/` and `src/specify_cli/` both run under strict mypy.
 - Reach ≥ 90% coverage of new and changed lines, with focused tests per new branch (NFR-003). If you add public symbols, run `tests/architectural/test_no_dead_symbols.py`.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

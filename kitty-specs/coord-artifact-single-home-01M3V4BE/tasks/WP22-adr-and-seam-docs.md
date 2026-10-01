@@ -21,17 +21,25 @@ history:
 agent_profile: curator-carla
 agent: claude
 authoritative_surface: docs/
-create_intent: []
+create_intent:
+- docs/adr/4.x/2026-10-01-2-decision-ledger-primary-partition.md
 execution_mode: planning_artifact
 model: claude-sonnet-5
 owned_files:
 - docs/adr/3.x/2026-06-19-1-coord-empty-surface-fallback.md
 - docs/adr/3.x/2026-09-24-2-coord-read-fail-closed.md
 - docs/architecture/artifact-placement-seam.md
+- docs/adr/4.x/2026-10-01-2-decision-ledger-primary-partition.md
+- docs/adr/4.x/index.md
+- docs/api/cli-commands.md
+- docs/api/agent-subcommands.md
+- docs/api/finalize-tasks-internals.md
 role: curator
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP22 – Decision records and seam documentation
@@ -118,6 +126,7 @@ Done means:
 - **Scope guard**: this WP owns ONLY the three `docs/` files above.
   - If a new standalone ADR file seems necessary, stop and ask the orchestrator: it would have to be added to `owned_files` and to the ADR index first.
   - Do not edit `src/`, `tests/`, or `kitty-specs/` (the activity-log entry in this prompt excepted).
+- **Brownfield scout (binding read)**: before coding, read `## WP22` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp12-22.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -243,6 +252,26 @@ Done means:
 - **Validation**: all commands above green; counts recorded.
 - **Edge cases**: if a freshness tool expects a specific `updated` format, match the existing quoting (`'2026-09-30'` style).
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **C5 (analyze)**: write a short, dedicated **4.x ADR**, `docs/adr/4.x/2026-10-01-2-decision-ledger-primary-partition.md`, for the decision-ledger partition reversal (the #3928 intent reversed: the ledger is PRIMARY, events stay COORD, the index merge driver, the doctor repair, the teardown refusal).
+  - Register it with `python -m scripts.docs.freshen_adr_inventory docs/adr/4.x/<adr>.md`, which updates `docs/adr/4.x/index.md` (now owned).
+  - If 2026-10-01-2 is taken when you write it, use the next free N and ask the orchestrator to update owned_files.
+  - ADR 2026-06-19-1's amendment links to this ADR instead of hosting the reversal.
+- **ADR 2026-06-19-1** has `status: Superseded`. Its amendment must state that it binds despite that status, or point to the superseding record; keep the status MADR-valid.
+- `docs/architecture/artifact-placement-seam.md` has `updated: '2026-09-30'` (L5); bump it.
+- **C3 reference docs (consolidated here to avoid shared-page lane conflicts)**: this WP now owns `docs/api/cli-commands.md`, `docs/api/agent-subcommands.md` and `docs/api/finalize-tasks-internals.md`. Apply the reference deltas the code WPs recorded in their activity logs:
+  - spec-commit `success=false` and the non-zero exit (WP13);
+  - accept committing the decision ledger (WP16);
+  - consolidate materializing an UNMATERIALIZED coordination surface, and `materialize` creating and seeding coordination worktrees (WP18);
+  - finalize's automatic planning-pin refresh and the `planning_commit_refresh` JSON field (WP15);
+  - the decision-index merge-driver migration (WP11);
+  - coordination-routed create materializing the coordination worktree (WP06).
+- CHANGELOG `[Unreleased]` entries are a **closeout item** (tasks.md), not this WP's.
+- Red evidence: exempt (documentation WP; FR-017 is review-only, anchored on the cited ADR sections).
+
 ## Targeted test surface
 
 ```bash
@@ -260,6 +289,8 @@ uv run --frozen pytest tests/architectural/test_no_legacy_terminology.py -q
 - No code changes, so C901, mypy and coverage do not apply. Markdown must keep valid frontmatter and Mermaid, if used.
 - Every cited `path:line` is verified against the final code; citing symbol names is preferred over bare line numbers where the page's convention allows.
 - Terminology canon: Mission; the sense of "primary" named; the sense of "routing" named.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

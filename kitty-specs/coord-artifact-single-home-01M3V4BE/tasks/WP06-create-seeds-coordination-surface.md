@@ -46,10 +46,14 @@ owned_files:
 - tests/missions/test_expected_coordination_divergence.py
 - tests/specify_cli/cli/commands/test_coordination_doctor.py
 - tests/coordination/test_surface_resolver_coord_empty_warning.py
+- tests/core/test_mission_creation_fanout_commit_boundary.py
+- tests/specify_cli/core/test_mission_creation_specify_started.py
 role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP06 – Create materializes and seeds the coordination surface; expected-divergence model
@@ -122,6 +126,7 @@ This WP removes the birth of the defect (#5440, P0; #2533). When it is done, cre
 - **Model discipline**: implement = sonnet (`claude-sonnet-5`); review = opus.
 - **Terminology**: Mission, never feature. "Target branch" (`meta.json` `target_branch`), "repository root checkout", "PRIMARY partition": always name the sense of "primary".
 - **C-006**: no heavy suites (see the Targeted test surface section).
+- **Brownfield scout (binding read)**: before coding, read `## WP06` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp01-11.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -254,6 +259,38 @@ This WP removes the birth of the defect (#5440, P0; #2533). When it is done, cre
   4. Record the medians against the budgets: coord/topic ≤ 3.646 s, coord/pr-bound ≤ 3.641 s, lanes_with_coord/topic ≤ 3.633 s, lanes_with_coord/pr-bound ≤ 3.647 s (base median + 1.0 s, ruling Q2). Put the medians in the Activity Log for the PR.
 - **Notes**: The original bench script lives in the planner's scratchpad, not in the repo; reproduce the documented commands. Do **not** add a performance test (NFR-001 is measured manually). If a budget is exceeded, profile before optimizing and report.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **S9 is unnecessary**: `create_mission_core` defaults to `topology=MissionTopology.COORD` (mission_creation.py:770); the `origin/HEAD` fallback only affects the CLI default. Record this observation and skip the empirical check.
+- **`commit_for_mission(...)` needs the required positional `policy`** in every snippet.
+- **Seam map**:
+  - the seed runs after `write_meta` (L1336) and before `_commit_create_scaffold` (call at L1938);
+  - `_emit_create_events` gets a `status_dir` parameter (read-back at L1502);
+  - `_build_create_result` (L1688/L1697) receives the coordination log path as a value, so hosted fan-out reads it without re-deriving;
+  - `ensure_coordination_branch` has one caller (L1302). Run its tests by name: `tests/core/test_mission_creation_topology.py`, `tests/specify_cli/cli/commands/agent/test_mission_create.py`, `tests/migration/test_birth_cutover.py`.
+- **Rollback (operator decision; scout risk 5)**:
+  - `mission_slug_formatted` and `mid8` are minted inside `_create_mission_core_impl` (L1875-1880), so snapshot the worktree list plus a `{branch: sha}` map in the outer `create_mission_core` (L760).
+  - Tear down the coordination worktree and branch **with the slug+mid8 this create minted**.
+  - `CoordinationWorkspace.teardown` (workspace.py:352) **refuses a dirty worktree** (`DestructiveOpRefused` via `guarded_worktree_remove`). Clean the seed's uncommitted files first, or use the `is_residue` hook, before teardown; then delete the branch.
+  - `force_recreate` moves a pre-existing branch, so CAS-reset it to the pre-create tip.
+  - With `--owned-checkout`, `rollback_root` is the owned checkout.
+- The **seed lock** (owned root, `coord_mission_dir_name` key, bounded timeout), the **COORD-only restore** and the **D4 discriminator** are WP03/WP04's; this WP consumes them and must not re-derive them.
+- **Doctor predicate**:
+  - `_coord_branch_stale_vs_target_finding` is also reached from `tasks_finalize.py:541` (`check_and_warn_coord_staleness`).
+  - Add `mission_dir_name` as **keyword-only with a default**: `tests/coordination/test_coord_staleness.py` L141/150/163 pass 3 positionals, and L189 monkeypatches it with `lambda *a`.
+  - `git diff-tree` prints nothing for merge commits without `-m`, so use `--first-parent -m` or reject merges.
+- **Stale pins, now owned; re-pin with a one-line rationale**:
+  - `tests/core/test_mission_creation_decomposition.py::test_status_log_holds_exactly_created_and_specify_started` (L281);
+  - `tests/core/test_mission_creation_fanout_commit_boundary.py` L27/L103/L117;
+  - `tests/specify_cli/core/test_mission_creation_specify_started.py` L105/131/169/207 (not under `tests/core/`).
+- **Probable reds to check by name**: `tests/core/test_mission_create_scaffold_rollback.py`, `tests/specify_cli/core/test_feature_creation.py`, `tests/coordination/test_materialize_coord_surface.py` and `test_mission_create_json_remediation.py`. If stale, re-pin as a declared out-of-map edit with rationale. `tests/integration/test_specify_plan_commit_boundary.py` is CI-owned: run it by name once and record the result.
+- **Gate**: `test_no_write_side_rederivation.py` scans `mission_creation.py`, and its `root_walk` flags `parent.parent`; use `checkout_root`.
+- **Upstream R1**: it asserts on the tip tree; change it to the history probe. Upstream has no R1b; write it.
+- **C3 (analyze)**: update the `agent mission create` help text so a coordination-routed create states that it materializes the coordination worktree. Record the reference-doc delta in the activity log for WP22.
+- Quick-run additions: listed in the scout's `## WP06` section; run each by name.
+
 ## Targeted test surface
 
 ```bash
@@ -278,6 +315,8 @@ uv run --frozen pytest tests/architectural/test_layer_rules.py tests/architectur
 - `ruff check`, `ruff format --check` and `mypy --strict` on changed files; no new suppressions (NFR-005).
 - ≥ 90% coverage of new and changed lines, with a focused test per new branch and helper (NFR-003).
 - New public symbol (`is_expected_coordination_divergence`): run `tests/architectural/test_no_dead_symbols.py`.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

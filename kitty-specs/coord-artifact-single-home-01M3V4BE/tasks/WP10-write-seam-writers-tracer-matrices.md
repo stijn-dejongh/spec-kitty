@@ -3,6 +3,7 @@ work_package_id: WP10
 title: 'Write-seam writers: tracer, issue matrix, acceptance matrix'
 dependencies:
 - WP05
+- WP07
 requirement_refs:
 - FR-003
 - FR-007
@@ -45,10 +46,14 @@ owned_files:
 - tests/acceptance/test_acceptance_matrix_write_dir.py
 - src/specify_cli/cli/commands/agent/tracer_append.py
 - tests/specify_cli/cli/commands/agent/test_tracer_append_outcome.py
+- src/specify_cli/cli/commands/agent/issue_verdict.py
+- src/specify_cli/acceptance/gates_core.py
 role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP10 – Write-seam writers: tracer, issue matrix, acceptance matrix
@@ -120,6 +125,7 @@ Done means:
 - **Model discipline**: implement with sonnet (`claude-sonnet-5`); review with opus.
 - **Terminology**: "Mission", never "feature". Name each sense of "primary".
 - **Fixture semantics across lanes (post-tasks squad P-m5):** pre-fix assertions use WP02's `make_prefix_coord_mission`; `make_coord_mission` carries only shape-agnostic invariants (its shape changes when WP06 lands); use `make_coord_mission(..., materialized=True)` when a test needs a deterministic MATERIALIZED coordination surface in every lane.
+- **Brownfield scout (binding read)**: before coding, read `## WP10` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp01-11.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -205,6 +211,25 @@ Done means:
   5. Unit tests for every new helper (`_matrix_write_dir`, lazy-resolution thunks).
 - **Files**: the four new test files.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **Lost update (operator decision; #4858/#4887)**: resolve `write_dir(ACCEPTANCE_MATRIX)` **once, before the lock**, in `locked_reread_splice_and_write` (`acceptance/matrix.py:546`), and pass it as `matrix_dir`. That one dir is both the re-read base and the write target, with lock key `matrix_dir.name`.
+  - Its callers are `acceptance_verdict.py:319,390` and `acceptance/gates_core.py:647` (`gates_core._acceptance_matrix_read_dir`, a read dir used as a write dir; now owned).
+  - **Never** split read and write dirs, or resolve `write_dir` lazily inside `_stage`, within the locked splice.
+  - The seed side effect before the lock is an explicit, documented choice; record it in `design-decisions`.
+  - The same applies in `src/specify_cli/cli/commands/agent/issue_verdict.py:271-285` (now owned): `feature_status_lock(repo_root, read_dir.name)` around `write_issue_matrix(read_dir...)` must use one `write_dir(ISSUE_MATRIX)` resolved before the lock.
+- **Unlisted callers**: `write_issue_matrix` is also called from `issue_matrix_migration.py:370`; `write_and_commit_acceptance_matrix` from `matrix.py:910` (`scaffold_acceptance_matrix`). Cover them, or record them as read-only/unaffected with a reason.
+- `append_tracer_finding` has **no** `owned` parameter, so the "thread it if present" step does not apply.
+- **Tracer read before write**: `_read_current_coord_content` (L155-185) runs before the stage thunk and raises `CoordinationWorktreeUnmaterialized`, so `write_dir` never gets to materialize. Merge the base content inside `_stage`, after `write_dir`.
+- **Stale allow-list entry (declared out-of-map edit)**: removing `candidate_feature_dir_for_mission` from `_local_staging_path` turns `tests/architectural/test_no_read_side_bypass.py::test_allow_list_entry_is_still_a_live_finding` red (descriptor L601-619). WP07 owns that file. This WP now **depends on WP07** and removes only its own entry, with a one-line rationale.
+- **Valid guard**: `tests/mission_runtime/test_coord_read_seam_callers.py::test_tracer_append_cli_structured_refusal_on_unmaterialized` (L379). Keep the CLI `except CoordinationWorktreeUnmaterialized` / `except UnicodeDecodeError` arms when switching to the shared renderer; remote-only and DELETED still refuse.
+- **PUBLISHED case**: after consolidation, tracer and matrix writes resolve to the target branch (WP04). Add one test.
+- **Single write authority**: `write_artifact` calls `assert_coord_write_materialized` before `stage()`, and that is now WP03's delegate. Do not expect the old local-head refusal.
+- `_matrix_read_dir` is at L89. C901: `write_artifact` ≤ 7, `tracer_append` 8.
+- **Docstring follow-up from WP16**: once WP16 lands, `write_seam.py:55` must stop naming `_commit_coord_residuals` as the canonical consumer. WP16 (which depends on this WP) makes that declared out-of-map docstring edit.
+
 ## Targeted test surface
 
 - New: `tests/coordination/test_write_seam_surfaces.py`, `tests/retrospective/test_tracer_writer_write_dir.py`, `tests/tasks/test_issue_matrix_write_dir.py`, `tests/acceptance/test_acceptance_matrix_write_dir.py`.
@@ -219,6 +244,8 @@ Done means:
 - Keep C901 ≤ 15 for every touched function (NFR-004): `write_artifact`, `scaffold_issue_matrix`, the acceptance-verdict command body. Extract helpers rather than growing them.
 - Run `ruff check`, `ruff format --check` and `mypy --strict` on the changed files, with no new suppressions (NFR-005).
 - Reach ≥ 90% coverage of new and changed lines, with focused tests per new branch or helper (NFR-003). If you add public symbols, run `tests/architectural/test_no_dead_symbols.py`.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

@@ -4,6 +4,7 @@ title: 'accept: both residual legs through the commit router'
 dependencies:
 - WP05
 - WP12
+- WP10
 requirement_refs:
 - FR-003
 - FR-005
@@ -34,10 +35,14 @@ owned_files:
 - src/specify_cli/cli/commands/accept.py
 - src/specify_cli/acceptance/__init__.py
 - tests/specify_cli/cli/commands/test_accept_residual_partition.py
+- tests/specify_cli/cli/commands/test_accept_clean_tree.py
+- tests/specify_cli/cli/commands/test_accept_decomposition.py
 role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP16 – accept: both residual legs through the commit router
@@ -108,6 +113,7 @@ Done means:
 - **Model discipline**: implement = sonnet (`claude-sonnet-5`), review = opus.
 - **Terminology**: say Mission, never feature. Name the sense of "primary": "repository root checkout", "target branch", "PRIMARY partition".
 - **Fixture semantics across lanes (post-tasks squad P-m5):** pre-fix assertions use WP02's `make_prefix_coord_mission`; `make_coord_mission` carries only shape-agnostic invariants (its shape changes when WP06 lands); use `make_coord_mission(..., materialized=True)` when a test needs a deterministic MATERIALIZED coordination surface in every lane.
+- **Brownfield scout (binding read)**: before coding, read `## WP16` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp12-22.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -202,8 +208,8 @@ Done means:
 - **Purpose**: US3.7, where the gate and the committer must give the same partition answer for every path. Single canonical authority: no second classifier.
 - **Steps**:
   1. `acceptance/__init__.py::_filter_coordination_residue` (≈L411; predicate at ≈L440) drops paths by `is_coord_residue_churn(path, mission_slug=feature)` (`coordination/coherence.py` ≈L159), gated by `_mission_routes_through_coordination`. The committer groups by `kind_for_mission_file` inside the router.
-     - Make both consult the **same** decision, by extracting a tiny shared function in `acceptance/__init__.py`, for example `_is_coordination_owned(path, *, repo_root, feature, owned) -> bool`, defined in terms of `kind_for_mission_file` plus `is_coord_residue_churn` under the Mission's stored topology.
-     - Use it from the gate. Accept's committer does not pre-classify (the router does), so add a test-level assertion (R9) that the router's grouping equals `_is_coordination_owned` for every fixture path.
+     - ~~(superseded by P-M5 / round 3: no `_is_coordination_owned`)~~ Make both consult the **same** decision: the gate calls WP05's public per-path partition predicate, defined in terms of `kind_for_mission_file` plus `is_coord_residue_churn` under the Mission's stored topology.
+     - Use it from the gate. Accept's committer does not pre-classify (the router does), so add a test-level assertion (R9) that the router's grouping equals WP05's public partition predicate for every fixture path.
      - Do NOT add a classifier inside `accept.py`.
   2. Verify the gate treats `decisions/*` as real work after WP12. That flows from the taxonomy, so no special case is needed. A special case here would be a second authority.
   3. Render per-surface outcomes at `acceptance/__init__.py` ≈L1791 (the protected-primary acceptance commit through `commit_for_mission`, which reads the status) and ≈L1822 (the second commit, whose result is discarded today: warn only when a surface is not committed/unchanged, D8). Keep the existing `AcceptanceError` semantics for the first commit.
@@ -238,6 +244,22 @@ Done means:
 - **Edge cases**: `resolve_artifact_surface` is no longer needed for the write decision. Remove its import if it is unused (ruff will flag it).
 - **`WriteLocation.checkout_root` (post-tasks squad P-M3):** take the checkout root from `write_dir(kind).checkout_root` (WP03/WP04). Never derive it as `.path.parent.parent` or by guessing a worktree name.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **Keep `_commit_residual_acceptance_artifacts -> bool` (operator decision).** Callers and tests depend on it:
+  - `tests/specify_cli/cli/commands/test_accept_decomposition.py:202` monkeypatches it, and L687 asserts `... is False`;
+  - the CI-owned integration test `test_accept_matrix_coord_partition.py:361` asserts `created is True`.
+  - Add a **private helper returning `CommitRouterResult | None`** for JSON/text rendering; the bool wrapper calls it.
+- **Drop T088 step 1 (`_is_coordination_owned`)**: P-M5 wins. The gate calls WP05's public per-path partition predicate. This removes the contradiction.
+- **`test_accept_clean_tree.py::test_residual_acceptance_commit_is_scoped_to_mission_paths` (L325; now owned)**: it has no `meta.json`, a root-level `acceptance-matrix.json` and a pre-staged unrelated file. Through the router it may fail topology resolution, or hit `SafeCommitBackstopError` (`git/commit_helpers.py:393-419`). **Run it first.** Then either re-pin it deliberately (with rationale) or make the router path tolerate the pre-staged foreign path. Decide, and record the decision in `design-decisions`.
+- **`write_seam.py:55` docstring**: it names `_commit_coord_residuals` as the canonical write-seam consumer. Update it as a **declared out-of-map edit**; this WP now depends on WP10, which owns `write_seam.py`. Also tell WP20 that the consumer list entry is now this WP's helper.
+- **Lines and qualnames**: the root-join is at **L427** (`files = tuple(repo_root / path for path in dirty)`), and the call site is L1079. Keep the qualname `_coord_status_feature_dir`, which is in WP20's census.
+- **Protected target**: the raw commit becoming a router `PROTECTED_BRANCH_REFUSED` is a behaviour change. Run `#2739` tests and `tests/specify_cli/cli/commands/test_issue_4891_accept_missing_lanes.py` by name.
+- **C3**: the accept help and output say accept now commits an uncommitted decision ledger on the target branch. Record the reference-doc delta for WP22.
+- Red reasons were re-derived on this WP's lane base (R-M6, already folded); `traces/*.md` is the path that disagrees for R9.
+
 ## Targeted test surface
 
 ```bash
@@ -259,6 +281,8 @@ make test-fast
 - ≥ 90% coverage on new and changed lines, with a focused test per branch, including refused-surface and owned-checkout arms (NFR-003).
 - No empty or effect-free exception handlers (Sonar).
 - C901 watch list (post-tasks squad R-m7): `accept.py::_print_acceptance_result` is at C901 13 at the base. If the residual-commit rendering touches it, extract first and keep it ≤ 15.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

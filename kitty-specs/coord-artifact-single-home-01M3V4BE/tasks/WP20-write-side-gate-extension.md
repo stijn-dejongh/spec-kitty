@@ -46,6 +46,8 @@ role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP20 – Extend the write-side rederivation gate; pin the commit-outcome consumer list
@@ -119,6 +121,7 @@ Done means all of the following hold:
   - The staleness twins `test_checkout_head_selector_entry_is_still_a_live_finding` (L428) and `test_checkout_grammar_allow_list_entries_are_still_live` (L973), both through `descriptor_still_live`.
   - Helpers come from `tests/architectural/_ratchet_keys.py` (`ContentDescriptor`, `CompositeKey`, `composite_key`, `resolve_descriptor`, `descriptor_still_live`) and `tests/architectural/_ast_scan.py` (`parse_source`, `read_source`).
 - **The baselines table**: `tests/architectural/test_ratchet_baselines.py` holds the ONE size-ratchet table `_SIZE_RATCHETS` (≈L149). `test_every_baseline_leaf_is_enforced_by_a_size_ratchet` (≈L478) reds any `_baselines.yaml` leaf without a row. A new yaml leaf therefore needs a matching `_SizeRatchet(...)` row, which is why that file is in this WP's `owned_files` (deviation from the plan's file list; it is required by the existing meta-gate).
+- **Brownfield scout (binding read)**: before coding, read `## WP20` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp12-22.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -249,7 +252,7 @@ Done means all of the following hold:
 - **Steps**:
   1. Create `tests/coordination/test_commit_outcome_consumer_pin.py` with `_CONSUMERS: tuple[tuple[str, str], ...]` of `(rel_path, qualname)` for each D8 site, re-derived from the merged code. The D8 sites are:
      - setup-plan: `mission_setup_plan.py`, the functions around L237 / L892 / L951;
-     - record-analysis: `mission_record_analysis.py::_maybe_auto_commit`;
+     - record-analysis: `mission_record_analysis.py::record_analysis` or the private helper WP14 extracts from it (see Binding corrections);
      - the report transaction helper in `git/report_transaction.py` (WP01 extracted it);
      - the orchestrator API site (`orchestrator_api/commands.py`, ≈L3018);
      - acceptance: `acceptance/__init__.py` ≈L1791 and ≈L1822, and `acceptance/matrix.py` ≈L524;
@@ -271,6 +274,25 @@ Done means all of the following hold:
   - If a consumer legitimately renders via a module-local helper, pin the helper and assert the consumer calls it. Document this in a comment.
 - **Additional consumer (post-tasks squad R-M2)**: add `cli/commands/agent/tracer_append.py` (migrated in WP10) to the pinned `_CONSUMERS` floor.
 - **Legacy root-staging copy note (P-M2)**: the router's legacy `shutil.copy2` root-staging copy is a recorded **post-consolidation fold** (tasks.md). Add a comment in the gate module pointing at it, so the follow-up is visible where the class is guarded. Do not allowlist it.
+
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **Gate fix (operator decision; scout X3)**: `test_no_worktree_name_guess.py` explicitly excludes `.parent.parent` (L474-476, #2007). This WP therefore extends **`test_no_write_side_rederivation.py`'s scanned-module list** (`_ADOPTED_MODULES`, L87-111) to every `write_dir` consumer module, with a **`.parent.parent`-from-`WriteLocation` ban**: any `.parent.parent` on an expression derived from `write_dir(...)` / `WriteLocation.path` reds; use `checkout_root`.
+  - **Modules to add**: `decisions/emit.py`, `decisions/service.py`, `decisions/fork.py`, `events/decision_log.py`, `runtime/next/runtime_bridge.py` (outside `_SRC`, so resolve from the repo root), `review/cycle.py`, `cli/commands/accept.py`, `cli/commands/_decisions_doctor.py`, `consolidation/executor.py`, `cli/commands/materialize.py`, `coordination/commit_router.py`, `coordination/coord_seed.py`, `coordination/transaction.py`, `lanes/recovery.py`, `retrospective/tracer_writer.py`, `tasks/issue_matrix.py`, `acceptance/matrix.py`, `acceptance/gates_core.py`, `cli/commands/agent/issue_verdict.py`, `cli/commands/agent/tasks_mark_status.py`, `agent_tasks_ports.py`, `cli/commands/retrospect.py`, `cli/commands/agent_retrospect.py`.
+  - **Pre-existing `.parent.parent` occurrences** the extension surfaces: fix them if they sit in Mission-touched code; otherwise record them in a shrink-only sanctioned list with rationale (cap in `_baselines.yaml`). Add a bite test and a twin.
+- **T110 consumer-list corrections**:
+  - there is no `mission_record_analysis.py::_maybe_auto_commit`; the record-analysis consumer is `record_analysis` or the private helper WP14 extracted;
+  - the retrospect consumer is `retrospect.py::_maybe_auto_commit` (L294);
+  - `acceptance/matrix.py` ≈L524 is a `write_seam.write_artifact` consumer, so pin its caller;
+  - the `report_transaction` and `spec_commit` helpers are WP14's and WP13's own extractions (not WP01's);
+  - the accept consumer is WP16's private router-result helper;
+  - `tracer_append.py` is WP10's;
+  - mark-status has no live commit consumer, because WP08 dropped the dead L279 shim; remove it from the list.
+- **Ratchet tests**: run `tests/architectural/test_ratchet_baselines.py` as a whole file. Its parametrized tests treat a cap-0 leaf with an empty live list as an edge case. Respect lazy module resolution (`test_fast_collection_does_not_import_round_trip_corpus`, L780).
+- **Red evidence (analyze C2)**: red at `ecb5dd914a` on the real offenders (`decisions/emit.py::_mission_dir`, `decisions/service.py::_mission_dir`), plus the planted mutation. The proof is feasible now because both still hold `read_dir(STATUS_STATE)` at HEAD.
+- **Legacy root-staging copy**: its retirement is an **in-mission closeout fold** (tasks.md "Closeout items"), not deferred. The gate-module comment points to it.
 
 ## Targeted test surface
 
@@ -335,6 +357,8 @@ Baseline-red gotcha (CLAUDE.md): before treating a red as yours, check whether i
 - C901 ≤ 15 for every new helper (NFR-004). Split the scanner into find-function, extract-callee and classify steps.
 - `ruff check` and `ruff format --check` on changed files; `mypy --strict` on changed test files (NFR-005, no new suppressions).
 - Every new helper and branch has a focused test (NFR-003): the scan-root override, the qualname lookup, and the `KITTY_SPECS_DIR` heuristic.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

@@ -41,6 +41,8 @@ role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP21 – End-to-end single-home invariant over the coordination workflow
@@ -120,6 +122,7 @@ This WP writes tests only. If the e2e exposes a product defect, it is reported t
 - **Charter**: load `.kittify/charter/charter.md` and `spec-kitty charter context --action implement --json`. Relevant rules: ATDD / live evidence (Standing Order 4) and no heavy suites (Agent Operating Discipline).
 - **Model discipline**: implement = sonnet (`claude-sonnet-5`); review = opus.
 - **Terminology**: say Mission, never feature. Here `consolidate` is **local lane consolidation** into the local target branch. It is never a publish to origin; never push.
+- **Brownfield scout (binding read)**: before coding, read `## WP21` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp12-22.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -233,11 +236,23 @@ This WP writes tests only. If the e2e exposes a product defect, it is reported t
 - **Purpose**: post-tasks squad R-M1. US4.8 / FR-009b require that a fresh clone of a post-fix Mission, mid-flight, finds every decision, and that the existing PRIMARY-partition committers commit an uncommitted ledger on the target branch. No earlier WP proves this end to end.
 - **Steps**:
   1. In the same e2e file (both parametrizations), after `decision open`/`resolve` on the post-fix Mission, commit the ledger through the normal path: `spec-commit` (or `setup-plan`, which commits planning files).
-  2. Separately assert the auto-commit point: leave a new decision's ledger files uncommitted, run `setup-plan` or `finalize-tasks`, and assert with `git log -1 --name-only <target>` that the target branch tip now holds `decisions/index.json` and the new `DM-*.md`. No new auto-commit mechanism is expected (FR-009b), so if neither command commits it, record that as a defect for the owning WP.
+  2. Separately assert the ledger commit point **through `spec-commit` and `accept` only** (operator decision G1, `plan.scope.ledger-committers`). Leave a new decision's ledger files uncommitted, then run `accept` (and, in a separate leg, `spec-commit`). Assert with `git log -1 --name-only <target>` that the target branch tip now holds `decisions/index.json` and the new `DM-*.md`.
   3. `git clone <repo> <tmp>/clone` (no coordination worktree). In the clone, run `spec-kitty agent decision verify --mission <M> --json` and `spec-kitty doctor decisions --mission <M> --json`. Assert that every decision id opened in the source repository is found, that verify is clean (not forked), and that doctor reports `ledger.state == "primary"`.
 - **Files**: `tests/integration/test_coord_single_home_workflow.py`.
 - **Validation**: green on the final tree. Record the decision-id sets (source vs clone) in the activity log.
 - **Edge cases**: the clone has no coordination worktree. Reads must work from refs (WP17's detector is read-only), and the CLI must not materialize anything for a read.
+
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **G1 (operator decision; `plan.scope.ledger-committers`)**: FR-009b's committers are **spec-commit and accept only**. T119 step 2 asserts the ledger commit point through `spec-commit` and `accept` (WP16) **only**.
+  - Leave a new decision's ledger uncommitted, then run `accept`, and separately `spec-commit`. Each time, `git log -1 --name-only <target>` must show `decisions/index.json` and the new `DM-*.md`.
+  - The earlier "setup-plan or finalize-tasks" alternative and the "defect for the owning WP" routing are **removed**.
+- **Red evidence (analyze C2; REQUIRED, not optional)**: the SC-001 history probe and the single-log assertion **MUST be shown RED on this WP's planning base**. Run this file against the pre-Mission product code (a worktree of `issue-5440-coord-artifact-single-home` at its planning base, i.e. without the lanes' code, via `PYTHONPATH=<that worktree>/src` or by installing it), and paste the red output into the activity log. This supersedes any "optional" wording in Review Guidance.
+- **Cross-check**: `_collect_finalize_artifacts` lists the root-checkout `status.events.jsonl` / `status.json`. If WP15 leaked them, SC-001 catches it; report that to WP15's owner (the orchestrator).
+- **Optional extra hook**: open a decision on the target branch mid-flight, to exercise WP11's driver and WP12's recency fix together. This is new scope, so do it **only with explicit operator sign-off**; otherwise list it as a suggestion.
+- Run the CLI as `uv run --frozen spec-kitty` from the lane worktree (stale-install gotcha), with `-p no:randomly --durations=10`.
 
 ## Targeted test surface
 
@@ -257,6 +272,8 @@ Baseline-red gotcha (CLAUDE.md): classify any red before acting on it: a pre-exi
 - C901 ≤ 15 per helper (NFR-004). Split the flow driver into step helpers.
 - `ruff check`, `ruff format --check` and `mypy --strict` clean on the new file (NFR-005).
 - No `xfail` and no `skip` except the repository's standard platform skips (for example, POSIX-only hooks), with a reason.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

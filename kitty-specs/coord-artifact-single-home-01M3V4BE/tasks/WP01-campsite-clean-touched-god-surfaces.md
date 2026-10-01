@@ -35,6 +35,8 @@ role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP01 – Campsite-clean the functions this Mission changes (IC-01)
@@ -111,6 +113,7 @@ Success means:
 - **Model discipline**: implement = sonnet (`claude-sonnet-5`); review = opus.
 - **Terminology canon**: say Mission, never feature. Always name the sense of "primary": PRIMARY partition / repository root checkout / target branch.
 - **No heavy suites** (C-006, NO_FULL_HEAVY_SUITES_IN_MISSION).
+- **Brownfield scout (binding read)**: before coding, read `## WP01` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp01-11.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -207,6 +210,26 @@ Success means:
 - **Validation**: the Activity Log carries the after-table, the test counts, and the static-gate results.
 - **Edge cases**: one commit per extraction (T005, T006) is ideal. The reviewer can then bisect a behaviour change to one extraction.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **T005 `_StagePlan` has FIVE outcomes**: IN_PLACE, SKIP_STATUS_LOG, SKIP_ANALYSIS_REPORT, COPY(dst) and **DROP_FOREIGN_WORKTREE**. The last one covers a path under `.worktrees/` that is not this worktree, including an `analysis-report.md` there. `commit_router.py:1026-1029` `continue`s without appending it, as pinned by `test_commit_router.py::test_coord_staging_drops_a_status_log_from_another_worktree` (both params). Never fold DROP into a SKIP that WP05 might later translate.
+- **COPY semantics**: L1062-1067 appends `dst` to `coord_files` **even when `src` is absent** (no copy, still listed), and only the copied pairs go into `staged_sources`. Keep both behaviours; a classifier that returns COPY only when `src.exists()` is a silent behaviour change.
+- **Propagate and keep as-is**:
+  - `src.relative_to(repo_root)` (L1018) raises `ValueError` for a path outside the repo; let it propagate.
+  - Keep `.resolve()` inside `_is_directly_in_worktree`, which the symlink pin `test_commit_router.py:876` depends on.
+  - Keep the `is_under_worktrees_segment` import function-local; `test_commit_router_layering.py` AST-scans for it.
+  - Keep the alias `_stage_finalize_artifacts_in_coord_worktree = …` assigned **after** the def, not as a wrapper. It is re-exported by `agent/mission.py:298` and pinned by `test_mission_shim_reexports.py:91`.
+- **T005 validation adds**: `tests/specify_cli/cli/commands/agent/test_finalize_coord_staging.py`, `.../agent/test_finalize_clobber_e2e.py`, `tests/specify_cli/cli/commands/test_wp06_sc2_paused_mission_blockers.py`, `.../agent/test_mission_shim_reexports.py`.
+- **T006**:
+  - ruff `ARG` is enabled, so do **not** pre-add `repo_root`/`coord_branch` parameters to `_empty_coord_surface`; WP04 widens that private signature itself.
+  - Move the `logger.warning(_COORD_EMPTY_FALLBACK_WARNING, {...})` call (L1443-1446, mapping-style args) **verbatim**.
+  - Move the `.parent.parent` expressions at L385/L1445 verbatim; do not "fix" them.
+  - C901 headroom: extracting only the EMPTY branch gives about 10. Also extract the completed-Mission shortcut or the `meta is None` fallback (L1341-1358). If you extract the latter, check `_load_meta_census.py` for an un-keyed census count.
+- Keep every extracted name private (dead-symbol gate scans public names only).
+- Run the scout's quick-run commands by name. Baseline: 513 passed / 10 skipped with `-n 4 --dist loadfile`.
+
 ## Targeted test surface
 
 - Baseline: `make test-fast`.
@@ -228,6 +251,8 @@ Success means:
 - `ruff check` and `ruff format --check` clean on changed files. `mypy --strict` clean on changed `src/` files (NFR-005), with no new `# noqa` / `# type: ignore`.
 - ≥ 90% coverage of new or changed lines (NFR-003, diff-cover gate). Each new helper gets a direct test.
 - New public symbols: run `tests/architectural/test_no_dead_symbols.py`. Prefer private helpers.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

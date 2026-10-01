@@ -42,6 +42,8 @@ role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP15 – finalize-tasks: write location, coordination dirt, per-surface output, planning-commit refresh
@@ -106,6 +108,7 @@ Use language identifiers in code blocks: ````python`, ````bash`
 - **C-006**: no heavy suites locally (see Targeted test surface).
 - **C-008**: `lanes` and `single_branch` Missions must behave exactly as today.
 - **Fixture semantics across lanes (post-tasks squad P-m5):** pre-fix assertions use WP02's `make_prefix_coord_mission`; `make_coord_mission` carries only shape-agnostic invariants (its shape changes when WP06 lands); use `make_coord_mission(..., materialized=True)` when a test needs a deterministic MATERIALIZED coordination surface in every lane.
+- **Brownfield scout (binding read)**: before coding, read `## WP15` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp12-22.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -132,7 +135,7 @@ Use language identifiers in code blocks: ````python`, ````bash`
      - Extract the option/flag interpretation block, including how `--refresh-planning-commit` / `--allow-orphaned` turn into a refresh decision, into `_resolve_finalize_options(...)` or a similarly named helper. **WP15 adds `planning_changed` there.**
      - Extract the JSON/text result emission into `_emit_finalize_result(...)` if it is inline.
   2. `_commit_planning_pin_refresh_locked` (L2807):
-     - Extract the commit-and-interpret step: the `commit_for_mission(..., kind=MissionArtifactKind.LANE_STATE)` call and its result handling, into `_commit_pin_refresh_files(...)`.
+     - **Superseded (round 3; `test_finalize_refresh_pin_authority.py`)**: extract **only the result interpretation**; the single `commit_for_mission(..., kind=MissionArtifactKind.LANE_STATE)` call stays inside `_commit_planning_pin_refresh_locked`. (Former text: extract the commit call into `_commit_pin_refresh_files(...)`.
      - Extract the `lanes.json` byte-compare guard (`raise RuntimeError("lanes.json changed before the conditional commit; ...")`) into a named guard helper.
      - Preserve compare-and-swap semantics exactly. This is the pin refresh's safety check.
   3. `_ft_apply_writes` (tasks_finalize.py:250): extract the status-event emission leg (the block that resolves the status dir with `read_dir(STATUS_STATE)` near L444 and emits) into `_ft_emit_status_events(...)`. Keep the call order. **WP15 swaps the dir resolution inside this helper**, and WP20's gate will scan whichever function holds that call.
@@ -182,7 +185,7 @@ Use language identifiers in code blocks: ````python`, ````bash`
 - **Validation**: record the red outcome for each test in the activity log. The planning-pin control is green.
 - **Edge cases**:
   - Finalize may require a valid `tasks.md`/WP set and `lanes.json`; build them via the CLI where possible (`finalize-tasks` itself writes `lanes.json`).
-  - US5.3's ancestor break needs a real history rewrite in the throwaway repo; use `git commit --amend` on the recorded planning commit, then force the target ref.
+  - ~~US5.3 orphan recipe (amend + force)~~ **Superseded**: US5.3 uses a **non-orphan** refusal (#4827's orphan fail-closed stays green). See Binding corrections.
   - Never `xfail` a reproduction.
 - **Fixture premise at the lane base (post-tasks squad R-M4)**: this WP's lane base is WP01–WP05; WP06's create seeding is NOT present. Build the coordination-routed fixture with WP02's `make_coord_mission(..., materialized=True)`, or `make_prefix_coord_mission` for a pre-fix leg. Before invoking the CLI, **assert the precondition** the red depends on: the coordination state is MATERIALIZED, the coordination copy of the record is dirty, and the root copy is clean (or whatever the scenario requires). A red then cannot come from a wrong fixture. Do NOT add a dependency on WP06.
 
@@ -249,7 +252,7 @@ Use language identifiers in code blocks: ````python`, ````bash`
 
 - **Purpose**: FR-012, US5.1/5.2. The flag's behaviour becomes the default (research D16).
 - **Steps**:
-  1. In `finalize_tasks` (L4758; options start at L4779), compute `refresh = refresh_planning_commit or planning_changed`.
+  1. ~~`refresh = refresh_planning_commit or planning_changed`~~ **Superseded (operator decision; see Binding corrections):** thread the refreshed `planning_sha` through the no-flag preserve-decision path (`_preserve_or_capture_planning_commit_sha` → `_resolve_preserve_planning_commit_decision`) when the planning artefacts changed and the pin is not orphaned. Never flip `refresh_planning_commit`, which is a refresh-only, zero-mutation mode.
      - Put the computation in a new helper (for example `_planning_changed_since_pin(repo_root, mission_slug, recorded_sha, target_tip) -> bool`) so `finalize_tasks` stays ≤ 15.
   2. `planning_changed` is true when `git diff --name-only <recorded planning_commit_sha> <target tip> -- <the Mission's PRIMARY planning paths, excluding lanes.json>` is non-empty.
      - Classify each path with `kind_for_mission_file`, keeping only PRIMARY-partition kinds.
@@ -291,6 +294,29 @@ Use language identifiers in code blocks: ````python`, ````bash`
   - Do not swallow unrelated exceptions: catch only the refusal types/exits the refresh flow raises, and give each its own reason code.
   - Make sure the warning goes to stderr/console and not into the JSON stream.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **#4827 is kept (operator decision)**: a plain finalize on an **ORPHANED** pin still **fails closed** (`_resolve_preserve_planning_commit_decision`). `tests/specify_cli/cli/commands/agent/test_issue_4827_repin_orphaned_planning_commit.py::test_plain_finalize_fails_closed_on_orphaned_pin` (L206) stays **green and is not re-pinned**.
+  - Q6 "warn and continue" applies **only to non-orphan advance-only refusals of the AUTOMATIC refresh**.
+  - US5.3 uses a **non-orphan** refusal fixture: an advance-only refusal that is not an orphan, or a dirty-checkout preflight finding. It must never use the "amend + force the target ref" orphan recipe written earlier in this prompt; that recipe is superseded.
+- **Automatic refresh path (operator decision)**: it is **NOT** `refresh = flag or planning_changed`.
+  - `refresh_planning_commit=True` is a **refresh-only, zero-mutation** mode (`finalize_tasks` L4939-5026): ownership gates run zero-mutation, `_emit_tasks_started` is skipped, the run returns right after `_commit_planning_pin_refresh`, and `_run_commit_pipeline` never runs.
+  - The automatic refresh goes through the **no-flag preserve-decision path**. `_preserve_or_capture_planning_commit_sha` → `_resolve_preserve_planning_commit_decision` resolves the refreshed `planning_sha` when the planning artefacts changed (non-orphan), and that value is threaded through the normal pipeline. The mode flag is never flipped. T083 and T084 follow this design.
+- **Gate `tests/architectural/test_finalize_refresh_pin_authority.py` must stay green** (name it in the targeted surface). It AST-pins:
+  - `_preserve_or_capture_planning_commit_sha` is called **exactly once, directly in `finalize_tasks`**;
+  - `_preflight_refresh_planning_commit` is called once in `finalize_tasks`, inside `if not validate_only:`, lexically before every writer;
+  - the `_emit_validate_only_report(planning_sha=)` / `_run_commit_pipeline(planning_sha=)` keywords stay present;
+  - `_commit_planning_pin_refresh` holds `lanes_json_lock` and calls `_commit_planning_pin_refresh_locked`, which contains **exactly one** `commit_for_mission(files=plan.files, kind=…LANE_STATE, expected_parent_sha=…)`;
+  - `_prepare_primary_pin_refresh_commit` assigns `files = (lanes_path,)` or `owned.files([lanes_path])`;
+  - no emit or scaffold calls appear in the refresh path.
+  - **T004 design**: from `_commit_planning_pin_refresh_locked`, extract **only the result interpretation**; never move the `commit_for_mission` call. An "options" helper must not absorb the pin-authority or preflight calls.
+- **Root-copy leakage**: `_collect_finalize_artifacts` (≈L312) lists the root `status.events.jsonl` / `status.json`. After T080/T081, make sure root copies of COORD records are never staged to the target (R7-style leakage). WP21's SC-001 probe cross-checks this.
+- R17 needs execution to have begun; before that, a re-finalize already re-captures.
+- Also run, by name: `tests/lanes/test_issue_4827_allocator_orphan_pin.py`, `tests/lanes/test_planning_commit_classify.py`, `tests/specify_cli/cli/commands/agent/test_claim_ancestry_gate.py`, `tests/specify_cli/cli/commands/agent/test_issue_4827_repin_orphaned_planning_commit.py`.
+- **C3**: update the `--refresh-planning-commit` help (now a forcing, refresh-only mode; the default refresh is automatic) and document the `planning_commit_refresh` JSON field. Record the reference-doc delta (`docs/api/finalize-tasks-internals.md`) for WP22.
+
 ## Targeted test surface
 
 - Red-first and fix tests: `uv run --frozen pytest tests/specify_cli/cli/commands/agent/test_finalize_tasks_commit_surface.py -q`.
@@ -313,6 +339,8 @@ Use language identifiers in code blocks: ````python`, ````bash`
 - `uv run --frozen ruff check <changed files>`, `uv run --frozen ruff format --check <changed files>`, `uv run --frozen mypy --strict <changed files>`. Zero issues and no new suppressions (NFR-005).
 - ≥ 90% coverage of new and changed lines, with a focused test per new helper and branch (NFR-003, diff-cover).
 - JSON changes are additive only.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

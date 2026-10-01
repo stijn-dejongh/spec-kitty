@@ -36,6 +36,8 @@ role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP13 – spec-commit names every argument's fate
@@ -89,17 +91,18 @@ Done means:
 ## Context & Constraints
 
 - **Spec**: FR-007 (per-surface outcomes, shared renderer), FR-007a (spec-commit names every argument's fate), FR-016 (R5), SC-003, US3.4.
-- **Plan**: IC-07 (the spec-commit consumer, `spec_commit_cmd.py` L70-95 and L214-285), IC-10 (help text, L166-170), IC-01 (WP01 already extracted the helpers from `spec_commit_command`).
+- **Plan**: IC-07 (the spec-commit consumer, `spec_commit_cmd.py` L70-95 and L214-285), IC-10 (help text, L166-170), IC-01 (this WP's own T002 extracts the helpers from `spec_commit_command`).
 - **Research**: D8 (consumer table and exit-code rule), D11 (`_try_advance_ref` retired), D12 (the ledger is now PRIMARY), R5.
 - **Contract**: `contracts/commit-outcome.md`. Read the JSON example for spec-commit's `surfaces` and `arguments[]` carefully; it is the target shape.
 - **Dependencies**:
   - WP05 provides `commit_outcome.py` (`render_commit_outcome`, `commit_outcome_payload`, the exit-code helper), `CommitRouterResult.surfaces`, owning-surface translation of the root-path status log, and the named refusals;
   - WP12 (separate lane, NOT a dependency) makes the ledger PRIMARY. WP12 owns the "spec-commit commits the ledger on the target branch" assertion. This WP asserts only that the ledger's fate is named on the taxonomy-assigned surface, so R5 holds in either landing order;
-  - WP01 (same lane, via a dependency chain) extracted the render branch into a helper. Work inside that helper.
+  - Your own T002 (moved from WP01) extracts the render branch into a helper. Work inside that helper.
 - **Charter**: load `.kittify/charter/charter.md` and run `spec-kitty charter context --action implement --json`.
 - **Model discipline**: implement = sonnet (`claude-sonnet-5`), review = opus.
 - **Terminology**: say Mission in all user-facing strings. Name the sense of "primary" ("target branch", "coordination branch"); never bare "primary branch" when you mean the PRIMARY partition.
 - **Fixture semantics across lanes (post-tasks squad P-m5):** pre-fix assertions use WP02's `make_prefix_coord_mission`; `make_coord_mission` carries only shape-agnostic invariants (its shape changes when WP06 lands); use `make_coord_mission(..., materialized=True)` when a test needs a deterministic MATERIALIZED coordination surface in every lane.
+- **Brownfield scout (binding read)**: before coding, read `## WP13` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp12-22.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -190,10 +193,10 @@ Done means:
 
 - **Purpose**: One renderer everywhere (FR-007; D8 parity), and the exit-code rule.
 - **Steps**:
-  1. In the render helper that WP01 extracted from the former L214-285 branch, replace the per-status `console.print` formatting for the success and unchanged arms. Print `render_commit_outcome(result)` lines, then one line per non-committed argument.
+  1. In the render helper you extracted in T002 from the former L214-285 branch, replace the per-status `console.print` formatting for the success and unchanged arms. Print `render_commit_outcome(result)` lines, then one line per non-committed argument.
   2. Exit with the shared exit-code helper from `commit_outcome.py`: non-zero when any surface is `refused` or `error`; `skipped` and `unchanged` exit 0.
   3. Keep the existing actionable refusal for `no_op_wrong_surface` and the `ActionContextError` / `RuntimeError` arms. They now also carry `surfaces` when a result exists.
-  4. Keep `spec_commit_command` at or below 15 on C901. WP01 brought it to about 10; add logic in helpers, not in the command body.
+  4. Keep `spec_commit_command` at or below 15 on C901. T002 brings it to about 10; add logic in helpers, not in the command body.
 - **Files**: `src/specify_cli/cli/commands/spec_commit_cmd.py`.
 - **Validation**: a text-output assertion in R5; a check that the exit code is 1 when a surface is refused. Measure with `ruff check --select C901 src/specify_cli/cli/commands/spec_commit_cmd.py`.
 - **Edge cases**: in `--json` mode, never print the rich text lines to stdout, because that breaks JSON parsing.
@@ -223,6 +226,18 @@ Done means:
 - **Validation**: all green. Each one would fail if the shared renderer were bypassed or if a surface were masked.
 - **Edge cases**: also run `tests/specify_cli/cli/commands/test_issue_2739_spec_commit_protected_primary_guard.py`. Its expectations about `committed: false` plus `reason` must still hold.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **Stale wording**: every "WP01 extracted …" statement in this prompt is wrong. The `spec_commit_command` extraction is **this WP's own T002**, and the function is at **C901 15 (zero headroom)** on the base. Work inside the helpers *you* extract in T002.
+- **`_resolve_commit_inputs` (L103) already exists**: extend or rename it consistently instead of adding a near-duplicate `_resolve_spec_commit_inputs`.
+- **`--target-branch`** is also passed to `resolve_owned_or_refuse(target_override=target_branch)` (L200), so the help rewrite must mention the owned-checkout target override.
+- **Owned checkout**: there is no partition grouping (router L281), so `surfaces` has a single entry. Mirror this in an owned test.
+- Keep stdout clean in `--json` mode (the `console.print` arms are text-only).
+- **C3**: the help text states that `success` is `false`, with a non-zero exit, when any surface is refused or errored. Record the reference-doc delta in the activity log for WP22.
+- **Pins**: `test_spec_commit_cmd.py` (existing JSON keys); `test_issue_2739_spec_commit_protected_primary_guard.py` (B03, B11, B16); `tests/coordination/test_commit_router_fail_loud.py`.
+
 ## Targeted test surface
 
 ```bash
@@ -244,6 +259,8 @@ make test-fast
 - `ruff check` and `ruff format --check` on the changed files; `mypy --strict` on the changed files. No new suppressions (NFR-005).
 - ≥ 90% coverage on new and changed lines, with a focused test per new helper (`_argument_fates`) and per branch (NFR-003).
 - Repeated reason or fate literals (three or more uses) become module constants, or come from `commit_outcome.py` (Sonar S1192).
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

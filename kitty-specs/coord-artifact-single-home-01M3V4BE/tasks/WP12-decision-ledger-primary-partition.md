@@ -8,6 +8,8 @@ requirement_refs:
 - FR-009
 - FR-009a
 - FR-009b
+- FR-017
+- C-008
 planning_base_branch: issue-5440-coord-artifact-single-home
 merge_target_branch: issue-5440-coord-artifact-single-home
 branch_strategy: Planning artifacts for this mission were generated on issue-5440-coord-artifact-single-home. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-5440-coord-artifact-single-home unless the human explicitly redirects the landing branch.
@@ -23,11 +25,11 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: python-pedro
-agent: claude
 authoritative_surface: src/mission_runtime/artifacts.py
 create_intent:
 - tests/mission_runtime/test_decision_ledger_reader_flips.py
 - tests/specify_cli/decisions/test_ledger_primary_ratchet.py
+- tests/coordination/test_ledger_topology_less_callers.py
 execution_mode: code_change
 model: claude-sonnet-5
 owned_files:
@@ -39,10 +41,17 @@ owned_files:
 - tests/architectural/test_merge_reconciliation_class_guard.py
 - tests/mission_runtime/test_artifact_partition_mapping.py
 - tests/coordination/test_coherence_integrity.py
+- src/specify_cli/consolidation/planning_recency.py
+- tests/consolidation/test_planning_recency_helper.py
+- src/specify_cli/coordination/coherence.py
+- tests/coordination/test_ledger_topology_less_callers.py
 role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+agent: claude
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP12 – Decision ledger reclassified to the PRIMARY partition
@@ -111,6 +120,7 @@ Done means:
 - **Model discipline**: implement = sonnet (`claude-sonnet-5`), review = opus.
 - **Terminology**: say Mission, never feature. Always name the sense of "primary": the PRIMARY partition, the target branch, or the repository root checkout.
 - **C-006**: named architectural files only.
+- **Brownfield scout (binding read)**: before coding, read `## WP12` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp12-22.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -241,6 +251,30 @@ Done means:
 - **Validation**: run both files by name. Also run `tests/architectural/test_status_state_read_dir_single_authority.py` and `tests/architectural/test_layer_rules.py`.
 - **Edge cases**: if WP11's driver is not yet visible in your lane, rebase onto the lane base that includes WP11, which is a declared dependency. Never hard-code the driver name in the guard; resolve it through the registry.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **`planning_recency` hazard (operator decision; now owned)**: `src/specify_cli/consolidation/planning_recency.py` must skip paths covered by a registered merge driver (`_MERGE_DRIVERS` pattern match; driver-covered wins) in `_is_primary_planning_path` (L47) / `target_newer_primary_artifacts` (L84).
+  - Otherwise `lanes/consolidation.py:748-750` (`_restore_target_newer_planning`) and `:892-901` (`_resolve_planning_conflicts`) overwrite the driver's `decisions/index.json` with `git merge-file --ours`.
+  - Test in `tests/consolidation/test_planning_recency_helper.py` (owned). It is a **forward guard**: green at the base, because the ledger is COORD there. Show it red on the commit after T065 and before the recency fix, and record that output.
+- **Merge class guard (operator decision)**: keep `"decisions"` in the guard's existing `_NON_DIVERGENT_COORD_RESIDUE_DIRS` set. Do not move it into the divergent set: the guard hard-asserts `divergent_dirs == {"traces"}` and requires a `decisions/*.md` driver that does not exist, because `DM-*.md` files are ULID-unique.
+  - Amend the ruling text: the dir is PRIMARY, `DM-*.md` are ULID one-shot writes, and `index.json` is covered by the `spec-kitty-decision-index` driver.
+  - **Require** that the `.gitattributes` pattern for `decisions/index.json` is registered, discovered via the `_MERGE_DRIVERS` `config_key`, never a literal. Note that the guard reads root `.gitattributes` (`_gitattributes_merge_drivers()`, L161), not `_MERGE_DRIVERS`.
+  - Interpretation note: the operator wrote "divergent set"; the guard's set that holds `decisions` today is the non-divergent one, and it stays there.
+- **Topology-less callers (operator decision; C-008)**: `is_coord_residue_churn` / `is_toolchain_generated_churn` (`coordination/coherence.py`, now owned) project COORD when `topology=None`. After the flip, the ledger verdict changes for **every** topology at these callers: `consolidation/executor.py` ~L2036, `tasks_move_task.py:824`, `tasks_shared.py:750`, `implement.py:905/947`, `lanes/auto_rebase.py:225`, `commit_router.py:768`.
+  - **Red-first**: `tests/coordination/test_ledger_topology_less_callers.py` (new) is a parametrized characterization on a **`lanes`** Mission and a `single_branch` Mission. It pins each caller's base verdict for `decisions/*` paths, and it goes red after T065 without the fix.
+  - **Fix at the single predicate point** in `coherence.py`. When `topology is None` and `mission_slug` is known, resolve the stored topology and keep the base verdict for non-coordination topologies. Coordination-routed Missions get the new PRIMARY rule. No per-caller patches.
+  - A caller that passes neither topology nor slug: list it and keep the base behaviour.
+  - Record the rule in `design-decisions` (tracer).
+- **Extended reader list for T066 (scout)**: `commit_router.py` L697-698, L839-841, L915, L1193, L1337; `coordination/surface_authority.py:232`; `missions/_read_path_resolver.py:1446`; `resolution.py` L1289/1316/1419/2487/2704; `git/ref_advance.py` (injected predicate); `cli/commands/agent/workflow.py:393`; `acceptance/__init__.py:1219/1269`; `consolidation/planning_recency.py:47`.
+- **T065 step 2**: `kind_is_coordination_residue` is already partition-derived (`return kind in _PLACEMENT_ARTIFACT_KINDS`), so it needs no code change. Say so in the activity log.
+- **R13** needs a `placement_ref`: `artifact_home_for(DECISION_LEDGER, CommitTarget(ref=...)).read_surface`.
+- **Router reader test**: never use an `owned=` fixture, because owned bypasses grouping (`commit_for_mission` L281). Assert `git log` per branch, not only `surfaces`.
+- **Placement guard**: apply the move to **both** `primary_kinds` and `coord_kinds` (`test_write_surface_placement_guard.py:356-359`). `test_artifact_partition_mapping.py::test_decisions_ledger_kind_is_distinct_from_neighbor_kinds` (L197) should stay green.
+- **G2**: FR-017 is now in requirement_refs (T065 rewrites the residue comments). C-008 is added for the topology-less fix.
+- Quick-run includes `tests/lanes/test_squash_seam_reconciliation.py`.
+
 ## Targeted test surface
 
 ```bash
@@ -262,6 +296,8 @@ make test-fast
 - C901 ≤ 15 for any touched function (NFR-004). `kind_is_coordination_residue` must not grow complex.
 - `ruff check` and `ruff format --check` on the changed files; `mypy --strict` on the changed files. No new suppressions (NFR-005).
 - ≥ 90% coverage on changed lines, with a focused test per new branch (NFR-003).
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

@@ -10,6 +10,7 @@ requirement_refs:
 - C-001
 - C-002
 - C-008
+- FR-017
 planning_base_branch: issue-5440-coord-artifact-single-home
 merge_target_branch: issue-5440-coord-artifact-single-home
 branch_strategy: Planning artifacts for this mission were generated on issue-5440-coord-artifact-single-home. During /spec-kitty.implement this WP may branch from a dependency-specific base, but completed changes must merge back into issue-5440-coord-artifact-single-home unless the human explicitly redirects the landing branch.
@@ -25,7 +26,6 @@ history:
   actor: system
   action: Prompt generated via /spec-kitty.tasks
 agent_profile: python-pedro
-agent: claude
 authoritative_surface: src/mission_runtime/resolution.py
 create_intent:
 - tests/mission_runtime/test_placement_seam_write_dir.py
@@ -42,6 +42,9 @@ role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+agent: claude
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP04 – PlacementSeam.write_dir and the loud post-fix EMPTY surface (IC-03 part 2)
@@ -121,6 +124,7 @@ Success means:
 - **Model discipline**: implement = sonnet (`claude-sonnet-5`); review = opus.
 - **Terminology**: Mission, never feature. "PRIMARY partition" for the partition sense; "repository root checkout" for the read fallback's location.
 - **No heavy suites** (C-006).
+- **Brownfield scout (binding read)**: before coding, read `## WP04` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp01-11.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -240,6 +244,30 @@ Success means:
 - **Validation**: `uv run --frozen pytest tests/architectural/test_no_legacy_terminology.py -q` (terminology guard), and ruff on the files.
 - **Edge cases**: avoid the retired terms the terminology guard rejects. Say Mission (never feature) and name each sense of "primary".
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **Single write authority**: WP03 made `assert_coord_write_materialized` a delegate of `establish_coord_write_location`. `write_dir` uses the same accessor; there must be no second write-side decision.
+- **PUBLISHED / E2 case (operator decision; scout X2)**: after consolidation, `REVIEW_CYCLE`, `TRACER_FILE`, `ISSUE_MATRIX` and `ACCEPTANCE_MATRIX` resolve to the **target branch** (`_E2_CONSOLIDATED_ELIGIBLE_KINDS`, `resolution.py:191-199`).
+  - `write_dir` follows that existing resolution **before** any coordination-state probe. It returns the PRIMARY dir with `checkout_root` = the main repo root, never raises `CoordinationBranchDeleted` and never writes into a torn-down worktree.
+  - Add this to T018 with tests: a consolidated Mission fixture (coordination branch deleted) where `write_dir(REVIEW_CYCLE|TRACER_FILE|ISSUE_MATRIX|ACCEPTANCE_MATRIX)` gives a PRIMARY location with no raise; `STATUS_STATE` follows whatever `write_target` resolves today.
+- **No `# noqa: PLC0415`**: the rule is not selected (pyproject.toml:2446-2468), so the suppression is unused (NFR-005). The precedent lazy import at `resolution.py:2356` carries none.
+- **Declared surface**: call the public, owned-aware `declared_read_surface(repo_root, slug, kind, owned=self.owned)` (`resolution.py:2451`). Do not extract a new `_declared_surface`.
+- **`checkout_root` for PRIMARY** must be the main repo root via `get_main_repo_root` (the re-anchor in `read_dir`, L2346-2355), or `owned.owned_root`, never `self.repo_root` verbatim. Pin this in T020 by calling from a lane worktree.
+- **Exceptions**: `CoordinationBranchDeleted` and `CoordinationWorktreeUnmaterialized` are `StatusReadPathNotFound` subclasses (surface_resolver.py:191, :292), not `ActionContextError`. `write_dir` propagates them; say so in the docstring for WP07+ writers.
+- **D4 / naming fix (operator decision)**:
+  - fix `coord_branch_has_committed_artifact` (surface_resolver.py:786) to compose the Mission dir via `coord_mission_dir_name` / `_compose_mission_dir(slug, mid8)` instead of `kitty-specs/{mission_slug}/`;
+  - make the git-error arm explicit rather than a silent fail-closed `True`;
+  - drive the loud post-fix warning from WP03's discriminator (one definition);
+  - widen `_empty_coord_surface`'s private signature here (`repo_root`, `coord_branch`; WP01 could not, because of ruff ARG).
+  - Negative test: the `test_surface_resolver_solo_coord_primary.py:107-146` pre-fix shape does not get the post-fix loud warning.
+- **Duplicate warnings**: the EMPTY warning is reachable from `resolve_placement_only` (`_assemble_core_fragments(for_write=True)`). Gate it on `not for_write` (or dedupe) so that `write_target`/commit-ref queries do not warn repeatedly; `establish` warns once.
+- **Purity probe**: `probe_coord_state`'s DELETED arm may hit the network, so the T020 snapshot fixtures are remote-less.
+- `write_dir` must not construct a `CommitTarget` (`test_no_write_side_rederivation.py` scans constructions).
+- **G2**: FR-017 is now in requirement_refs (T022 delivers its code-comment half).
+- Valid guards: `test_surface_resolver_coord_empty_warning.py` :127 and :179 (the latter is pre-fix under the corrected discriminator).
+
 ## Targeted test surface
 
 - Baseline: `make test-fast`.
@@ -264,6 +292,8 @@ Success means:
 - C901 ≤ 15 for every touched function (NFR-004). The EMPTY helper from WP01 has headroom; keep `write_dir` trivial.
 - `ruff check`, `ruff format --check` and `mypy --strict` are clean on changed files (NFR-005). The lazy import carries the file's existing `# noqa: PLC0415` convention with a rationale; no other suppression.
 - ≥ 90% coverage of new lines (NFR-003): every `write_dir` branch, both topologies and the owned arm are tested.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

@@ -46,6 +46,8 @@ role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP14 – Planning-command and retrospect consumers render per-surface outcomes
@@ -90,7 +92,7 @@ Several commands either read only the caller-surface fields of `CommitRouterResu
 Done means:
 - R11, retrospect half, is green: `retrospect` reports each surface's outcome, so a skipped coordination surface is visible.
 - **setup-plan**: the `_commit_to_branch` consumer (`mission_setup_plan.py` ≈L237) renders through `render_commit_outcome` and adds JSON `surfaces`. The two discarded-result sites (≈L892 gap analysis, ≈L951 generator config) print a warning when a surface is neither `committed` nor `unchanged`.
-- **record-analysis** (`mission_record_analysis.py` ≈L374, inside `_maybe_auto_commit`), the **orchestrator API** (`orchestrator_api/commands.py` ≈L3018) and the **report transaction** (`git/report_transaction.py` ≈L199) all render through the shared pair. JSON stays additive.
+- **record-analysis** (`mission_record_analysis.py` ≈L374, inside `record_analysis` itself; extract that block first — see Binding corrections), the **orchestrator API** (`orchestrator_api/commands.py` ≈L3018) and the **report transaction** (`git/report_transaction.py` ≈L199) all render through the shared pair. JSON stays additive.
 - **retrospect**: `_canonical_events_path` (≈L109) splits reads (keep the read resolver) from appends (`write_dir(STATUS_STATE)`), and `agent_retrospect._canonical_events_dir` (≈L198) does the same. The commit at ≈L315 renders per-surface outcomes.
 - Non-coordination Missions keep identical output (C-008), and JSON is additive only.
 
@@ -103,15 +105,16 @@ Done means:
 - **Dependencies**:
   - WP05 provides `commit_outcome.py` and `CommitRouterResult.surfaces`;
   - WP04 provides `PlacementSeam.write_dir` (transitively, through WP05);
-  - WP01 (same lane) extracted `record_report_transaction`'s commit call into one helper. Edit the helper, not the main body.
+  - Your own T003 (moved from WP01) extracts `record_report_transaction`'s commit call into one helper. Edit that helper, not the main body.
 - **Leave alone**:
-  - `record_analysis` (`mission_record_analysis.py` ≈L225, C901 13): change only the call in `_maybe_auto_commit` (≈L294 onward);
+  - `record_analysis` (`mission_record_analysis.py` ≈L225, C901 13): extract the suppress-and-commit block (L355-391) into a private helper first, then render there (Binding corrections);
   - `setup_plan` (C901 11) must stay at or below 15.
 - **Charter**: load `.kittify/charter/charter.md` and run `spec-kitty charter context --action implement --json`.
 - **Model discipline**: implement = sonnet (`claude-sonnet-5`), review = opus.
 - **Terminology**: say Mission, never feature, and name the sense of "primary".
 - **C-006**: targeted tests only.
 - **Fixture semantics across lanes (post-tasks squad P-m5):** pre-fix assertions use WP02's `make_prefix_coord_mission`; `make_coord_mission` carries only shape-agnostic invariants (its shape changes when WP06 lands); use `make_coord_mission(..., materialized=True)` when a test needs a deterministic MATERIALIZED coordination surface in every lane.
+- **Brownfield scout (binding read)**: before coding, read `## WP14` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp12-22.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -150,7 +153,7 @@ Done means:
 - **Steps**:
   1. **R11, retrospect half.** In `tests/specify_cli/cli/commands/test_retrospect_doctor_surface_4090.py`, add `test_retrospect_reports_each_surface`.
      - Build a coordination-routed Mission with WP02's factory (`tests._factories.coord_mission`).
-     - Run the retrospect command path that auto-commits (the `_auto_commit` helper around L305-330 is reached from the retrospect create/record commands; use the CLI).
+     - Run the retrospect command path that auto-commits (`_maybe_auto_commit`, L294-344 in `retrospect.py`, is reached from the retrospect create/record commands; use the CLI).
      - Make one surface's group commit and the other's be skipped or refused. For example, hold the status lock so the coordination group is refused with `STATUS_LOCK_HELD` while the PRIMARY retrospective record commits.
      - Assert that the output names the coordination surface's fate.
 
@@ -187,9 +190,9 @@ Done means:
 
 - **Purpose**: Close the remaining D8 rows that read or discard the result.
 - **Steps**:
-  1. **record-analysis.** At `mission_record_analysis.py` ≈L374, inside `_maybe_auto_commit` (≈L294 onward), capture the `commit_for_mission(...)` result. Render it through `render_commit_outcome` when a surface is not `committed`/`unchanged`, and add `surfaces` to the command's JSON payload where that payload is built. Do not touch `record_analysis` (≈L225).
+  1. **record-analysis.** At `mission_record_analysis.py` ≈L374, in the private helper you extract from `record_analysis` (L355-391), capture the `commit_for_mission(...)` result. Render it through `render_commit_outcome` when a surface is not `committed`/`unchanged`, and add `surfaces` to the command's JSON payload where that payload is built. Do not touch `record_analysis` (≈L225).
   2. **Orchestrator API.** At `orchestrator_api/commands.py` ≈L3018, the call sits inside a `contextlib.suppress(...)` block whose result is discarded. Capture it and add an additive payload field `commit_surfaces` (via `commit_outcome_payload`) to the orchestrator envelope this function returns, plus a warning entry when a surface is not committed/unchanged. Keep the suppression semantics: a commit failure never undoes the write. Check the orchestrator contract tests for envelope-shape pins (`tests/orchestrator_api/`), and add only new keys.
-  3. **Report transaction.** At `git/report_transaction.py` ≈L199, in the helper WP01 extracted, read the outcome through the shared pair. The returned dict gains `surfaces`, and its `status`, `commit_hash` and `diagnostic` keep their existing meaning.
+  3. **Report transaction.** At `git/report_transaction.py` ≈L199, in the helper you extracted in T003, read the outcome through the shared pair. The returned dict gains `surfaces`, and its `status`, `commit_hash` and `diagnostic` keep their existing meaning.
 - **Files**: the three source files, `tests/git/test_report_transaction.py`, and `tests/orchestrator_api/test_commit_outcome_rendering.py` (new).
 - **Validation**:
   - for each consumer, a one-surface-skipped fixture shows the skip in the output or payload;
@@ -209,7 +212,7 @@ Done means:
      Update every append or commit caller to the write variant and every read caller to the read variant (grep the module).
   2. `agent_retrospect.py::_canonical_events_dir` (≈L198): the same split, with a write variant on `write_dir(STATUS_STATE).path`. Keep the `fallback_dir` semantics for reads only.
   3. Write-side errors from `write_dir` (`COORDINATION_BRANCH_DELETED`, remote-only `COORDINATION_WORKTREE_UNMATERIALIZED`, `COORD_SEED_FORK_REFUSED`) surface as the command's actionable error. Never fall back to the repository root checkout on the write path.
-  4. `retrospect.py` ≈L315 (`_auto_commit`): after `commit_for_mission`, render `render_commit_outcome(result)` lines when a surface is not committed/unchanged. Keep the existing protected-target warning helpers (`_refused_on_protected_target`, `_warn_protected_target_refused`), which carry specific remediation text, and add the surface lines.
+  4. `retrospect.py` ≈L315 (`_maybe_auto_commit`): after `commit_for_mission`, render `render_commit_outcome(result)` lines when a surface is not committed/unchanged. Keep the existing protected-target warning helpers (`_refused_on_protected_target`, `_warn_protected_target_refused`), which carry specific remediation text, and add the surface lines.
 - **Files**: `src/specify_cli/cli/commands/retrospect.py`, `src/specify_cli/cli/commands/agent_retrospect.py`.
 - **Validation**:
   - T074's retrospect tests are green;
@@ -231,6 +234,23 @@ Done means:
 - **Files**: the test files in `owned_files`.
 - **Validation**: all green, and coverage of the new helpers is at least 90%.
 - **Edge cases**: avoid tautological render tests. Assert the surface name, the fate and the reason that reach the user, not that a function was called (DIRECTIVE_041).
+
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **`_maybe_auto_commit` lives in `retrospect.py:294`** (commit at L315), not in `mission_record_analysis.py`.
+  - The record-analysis commit is **inside `record_analysis`** (`mission_record_analysis.py` L355-391, under `contextlib.suppress`, C901 13).
+  - **First** extract that suppress-and-commit block into a private helper (behaviour-preserving, its own commit), then render there. "Leave `record_analysis` alone" is superseded.
+- **T074 step 1**: the retrospect helper is `_maybe_auto_commit` (L294-344), not `_auto_commit` around L305-330.
+- **Stale wording**: "WP01 extracted `record_report_transaction`" is wrong. That extraction is **this WP's own T003**, and the function is at C901 15 on the base.
+- **Orchestrator**: `_do_record_analysis_write` (L2979) commits at L3018 under `contextlib.suppress` and returns the `write_analysis_report` result. Change its return so it also carries the router result. Its caller `record_analysis` (C901 12, L3031) runs it under `_run_write_with_timeout`.
+- Existing protected-target warnings (`_refused_on_protected_target`, `_warn_protected_target_refused`) must keep firing, without double-printing.
+- **Retrospect read variant**: keep `_canonical_events_path`'s read variant byte-identical, including the `candidate_feature_dir_for_mission` fallback. If the write moves into `_canonical_events_write_path`, record the new qualname for WP20's census.
+- **Repro**:
+  - retrospect auto-commit is gated by `get_auto_commit_default(repo_root)`;
+  - `create` needs a completed Mission (`_check_mission_completed` L170); reuse the builder in `test_retrospect_doctor_surface_4090.py`.
+- **C3**: update help text where output changes. Record the reference-doc delta for WP22.
 
 ## Targeted test surface
 
@@ -254,6 +274,8 @@ make test-fast
 - `ruff check` and `ruff format --check` on the changed files; `mypy --strict` on the changed files. No new suppressions (NFR-005).
 - ≥ 90% new and changed-line coverage, with a focused test per new helper or branch (NFR-003).
 - Repeated literals used three or more times become constants (S1192).
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

@@ -42,10 +42,17 @@ owned_files:
 - src/specify_cli/cli/commands/agent/workflow_cores.py
 - src/specify_cli/cli/commands/agent/workflow_executor.py
 - tests/specify_cli/cli/commands/agent/test_review_reject_fix_mode_coord.py
+- src/specify_cli/cli/commands/agent/tasks_verdict_persistence.py
+- tests/specify_cli/review/test_cycle_kind_flip.py
+- tests/specify_cli/test_read_seam_leniency.py
+- tests/specify_cli/test_owned_history_support.py
+- tests/architectural/untrusted_path_audit/inventory.md
 role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP08 – Review-cycle, mark-status and map-requirements: write location and outcomes
@@ -93,7 +100,7 @@ Done means:
 
 - On a coordination-routed Mission, a rejection (`spec-kitty agent tasks move-task WPxx --to planned --review-feedback-file <f>`) writes `tasks/<wp>/review-cycle-N.md` directly into the coordination worktree at `write_dir(REVIEW_CYCLE).path`. It is committed in place on the coordination branch, and the repository root checkout keeps **no** copy or residue (spec edge case "Transient staging").
 - The mark-status status-event write location is `write_dir(STATUS_STATE)`. Reads keep their read resolver.
-- `review/cycle.py:712`, `tasks_mark_status.py:279` and `tasks_map_requirements.py:668` render outcomes through WP05's `render_commit_outcome` / `commit_outcome_payload`, and apply the shared exit-code rule where the command decides an exit code. A skipped or refused surface is never masked (FR-007, SC-003).
+- `review/cycle.py:712` and `tasks_map_requirements.py:668` render outcomes (the dead `tasks_mark_status.py:279` shim is out of scope; round 3) through WP05's `render_commit_outcome` / `commit_outcome_payload`, and apply the shared exit-code rule where the command decides an exit code. A skipped or refused surface is never masked (FR-007, SC-003).
 - `lanes` / `single_branch` Missions behave as before (C-008).
 
 ## Context & Constraints
@@ -109,6 +116,7 @@ Done means:
 - **Model discipline**: implement with sonnet (`claude-sonnet-5`); review with opus.
 - **Terminology**: "Mission", never "feature". Name each sense of "primary" (PRIMARY partition, repository root checkout, target branch).
 - **Fixture semantics across lanes (post-tasks squad P-m5):** pre-fix assertions use WP02's `make_prefix_coord_mission`; `make_coord_mission` carries only shape-agnostic invariants (its shape changes when WP06 lands); use `make_coord_mission(..., materialized=True)` when a test needs a deterministic MATERIALIZED coordination surface in every lane.
+- **Brownfield scout (binding read)**: before coding, read `## WP08` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp01-11.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -174,7 +182,7 @@ Done means:
 - **Purpose**: The consumers today read only `status` / `placement_ref` / `commit_hash` (FR-007 masking).
 - **Steps**:
   1. `review/cycle.py:712`: the `VerdictPersistenceOutcome` message must include the surface outcomes. When any surface is `refused` / `error`, classify as `persistence_failed` with the named reason (exit-code rule). When the coordination group is `skipped` with `COORD_RECORD_IN_ROOT_CHECKOUT`, surface it in the message. Use `render_commit_outcome(result)` lines. Add an optional `surfaces` field to the outcome payload if one is emitted as JSON (additive).
-  2. `tasks_mark_status.py:279` (`_do_mark_status`; per its docstring, not on the live mark-status flow, but still a consumer): replace the "Failed to auto-commit" branch with the rendered lines. `--json` callers get `commit_outcome_payload(...)` under an additive key.
+  2. ~~`tasks_mark_status.py:279`~~ **Dropped (operator decision)**: dead `_ms_commit` shim, not reached by `_do_mark_status`. The live write path `_ms_emit_subtask_state` (L359, L406-413) gets the write-location fix instead. (Former step: replace the "Failed to auto-commit" branch with the rendered lines. `--json` callers get `commit_outcome_payload(...)` under an additive key.
   3. `tasks_map_requirements.py:668`: keep `st.commit_result_payload` for `committed`. Add `surfaces` (payload) additively, and when not committed/unchanged, print the rendered warning instead of silently skipping.
   4. No hand formatting of `SurfaceOutcome` anywhere. WP20's consumer-pin test will AST-check these three sites for `render_commit_outcome` / `commit_outcome_payload`.
 - **Files**: the three owned source files.
@@ -191,6 +199,35 @@ Done means:
   5. Transitional repro assertions live in these owning-module files (FR-016).
 - **Files**: the two new test files.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **BLOCKER: flip `_review_cycle_wp_dir`'s default kind to `REVIEW_CYCLE` (operator decision).**
+  - Readers and writers then move together: `review/cycle.py:520`, `review/arbiter.py:415`, `tasks_verdict_persistence.py:734` (the safety verdict reader), `workflow_cores.py:419`, `workflow_executor.py:1127`, and the writer at `cycle.py:1271`.
+  - Moving only the writer would make rejections invisible to the readers (fail-open).
+  - **Do NOT re-pin `tests/coordination/test_verdict_dir_co_resolution.py`.** It is a valid guard: its AST guard allows `kind=REVIEW_CYCLE` with exactly 3 positionals.
+- **Approval leg (now owned)**: `tasks_verdict_persistence.py:880,915` (`create_rejected_review_cycle(verdict="approved")`) must land on the same surface.
+- **`workflow.py::review` (L1999-2025)** hand-joins `_resolve_workflow_read_dir(kind=WORK_PACKAGE_TASK)/"tasks"/wp_slug`, `mkdir`s it, and numbers feedback with `next_review_feedback_source_path(sub_artifact_dir)`. Route it through `_review_cycle_wp_dir`. Otherwise the numbering restarts at 1 and an empty PRIMARY dir is created on every review.
+- **`_evidence_ref` (L803)** relativizes against `operation_root` and yields `.worktrees/...-coord/kitty-specs/...`; the `git show <coord>:<that>` read-back then misses (`destination_readback_missing`). Relativize against `write_dir(REVIEW_CYCLE).checkout_root` (P-M3).
+- **Path-dependent internals** must all receive the coordination dir: `_resolve_review_body`, the provenance guard, `_local_matching_retained_review_cycles` and cycle allocation.
+- **Drop the dead `tasks_mark_status.py:279` (`_ms_commit`) shim from scope (operator decision).**
+  - The live path is `_ms_emit_subtask_state` (L359). Its non-owned arm (L406-413) calls the flat `emit_inner_state_changed(st.status_dir, ...)` and **commits nothing**.
+  - Fix the write location there (read/write split) and assert on the **file**, not on a branch tip.
+  - The T046 consumer list becomes `review/cycle.py:712` and `tasks_map_requirements.py:668` only.
+- **Output change**: `_ms_output` (L441-442) `status_events_path` / `status_snapshot_path` values change for coordination Missions. That is not additive-only; say so in the PR body.
+- **C901**: `_mr_emit_output` (`tasks_map_requirements.py:688`) is at 11, so put the `surfaces` payload in a helper. `resolve_review_cycle_pointer` is at 10.
+- **Stale pins (now owned; re-pin with rationale)**:
+  - `tests/specify_cli/review/test_cycle_kind_flip.py::test_physical_write_home_is_primary_so_rehome_guard_stays_green` (L201-231);
+  - `tests/specify_cli/test_read_seam_leniency.py::test_review_cycle_wp_dir_preserves_primary_home` (L145);
+  - `tests/specify_cli/test_owned_history_support.py` (~L318-325).
+  - `tests/integration/test_review_durability_matrix.py:1605` is CI-owned; run it by name only.
+- **Valid guards**: `test_verdict_dir_co_resolution.py` (all), `test_cycle_kind_flip.py::test_verdict_reader_authority_is_decoupled_from_write_side_kind` (L159), `test_read_seam_leniency.py::test_review_cycle_wp_dir_stays_silent_when_coord_deleted`.
+- **New path joins**: any new `/ "tasks" / wp_slug` join needs a row in `tests/architectural/untrusted_path_audit/inventory.md` (now owned) for `test_untrusted_path_containment.py`.
+- **Lock ordering**: `create_rejected_review_cycle` runs under the verdict-queue lease. Confirm that the lease is not the workspace lock (I-SEED-2) and record the finding.
+- **PUBLISHED case**: after consolidation `REVIEW_CYCLE` resolves to the target (WP04). Add one post-consolidation reject test.
+- **Single write authority**: WP03 removed the local-head refusal; do not expect `COORD_WRITE_SURFACE_UNMATERIALIZED` for a local head.
+
 ## Targeted test surface
 
 - New: `tests/review/test_cycle_write_dir.py`, `tests/specify_cli/cli/commands/agent/test_tasks_port_commit_outcome.py`.
@@ -206,6 +243,8 @@ Done means:
 - Keep C901 ≤ 15 for every touched function (NFR-004). `create_rejected_review_cycle` and `_commit_review_cycle_artifact` are long, so extract helpers for the new outcome classification.
 - Run `ruff check`, `ruff format --check` and `mypy --strict` on the changed files, with no new suppressions (NFR-005).
 - Reach ≥ 90% coverage of new and changed lines, with a focused test per new branch or helper (NFR-003). If you add public symbols, run `tests/architectural/test_no_dead_symbols.py`.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

@@ -41,10 +41,13 @@ owned_files:
 - tests/lanes/test_recovery_write_dir.py
 - tests/specify_cli/test_agent_tasks_ports_write_dir.py
 - tests/mission_runtime/test_coord_read_seam_callers.py
+- tests/architectural/test_no_read_side_bypass.py
 role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP07 – Transactional status writers and the tasks-port write location
@@ -113,6 +116,7 @@ Done means:
 - **Terminology**: write "Mission", never "feature", in user-facing text and new docstrings. Name the sense of "primary" you mean: the PRIMARY partition, the repository root checkout, or the target branch.
 - **C-006**: run no full heavy suites (see Targeted test surface).
 - **Fixture semantics across lanes (post-tasks squad P-m5):** pre-fix assertions use WP02's `make_prefix_coord_mission`; `make_coord_mission` carries only shape-agnostic invariants (its shape changes when WP06 lands); use `make_coord_mission(..., materialized=True)` when a test needs a deterministic MATERIALIZED coordination surface in every lane.
+- **Brownfield scout (binding read)**: before coding, read `## WP07` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp01-11.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -160,7 +164,7 @@ Done means:
 - **Edge cases**: `write_dir` may seed, and seeding takes the reentrant status lock. If this call site already holds the status lock (check the call stack), reentrancy covers it. If it holds the *workspace* lock, you would invert I-SEED-2. Verify that it doesn't.
 - **Pinned pre-fix callers (post-tasks squad P-M1)**: `tests/mission_runtime/test_coord_read_seam_callers.py` (≈L198, ≈L259) pins today's pre-fix writer behaviour. Both this WP and WP09 flip it. This WP owns the file and re-pins it, and WP09 depends on this WP, so the two never edit it concurrently. Re-pin with a one-line rationale per assertion.
 - **Out-of-map edit, declared (P-M1)**: `tests/coordination/test_commit_router.py` (≈L953, ≈L1012) imports `status_transition._coord_feature_dir`, which this WP deletes. Update those two tests to the `write_dir` successor. Rationale: the symbol this WP removes; the file belongs to WP01/WP05 (lane A), which is complete before this WP starts (dependency WP05), so there is no concurrent edit. Record it in the activity log.
-- **`WriteLocation.checkout_root` (post-tasks squad P-M3):** take the checkout root from `write_dir(kind).checkout_root` (WP03/WP04). Never derive it as `.path.parent.parent` or by guessing a worktree name; `tests/architectural/test_no_worktree_name_guess.py` is a named gate for this WP.
+- **`WriteLocation.checkout_root` (post-tasks squad P-M3):** take the checkout root from `write_dir(kind).checkout_root` (WP03/WP04). Never derive it as `.path.parent.parent` or by guessing a worktree name. `test_no_worktree_name_guess.py` does not police `.parent.parent` (#2007); WP20 extends `test_no_write_side_rederivation.py` to enforce this, so until then review checks it.
 
 ### Subtask T039 – `transaction.py`: `_acquire_locked` uses `write_dir` under the held status lock
 
@@ -211,6 +215,27 @@ Done means:
 - **Files**: the three new test files.
 - **Validation**: the full WP test set is green, and coverage of the changed lines is ≥ 90%.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **`_coord_feature_dir`**: its only production caller is `_emit_on_coord_then_commit` (`status_transition.py:492`). Editing that function is expected; keep its order of operations identical.
+- **`_acquire_locked`**: the L489-490 composition is shared by **four** arms (legacy lane, coordination-less, `commit_to_primary_target`, coordination). Only the **coordination arm** switches to `write_dir`; the other three stay byte-identical (C-008). Do not delete the composition outright. Extract the coordination arm (C901 is 9).
+- **No `.path.parent.parent`** (P-M3). `test_no_write_side_rederivation.py`'s `root_walk` already flags it in `status_transition.py`. Use `WriteLocation.checkout_root`.
+- **Owned root**: inside `_acquire_locked`, build `placement_seam` from `owned.repository_root` plus `owned=`, never from the inner lock `repo_root` (`transaction.py:291/300`).
+- **T040**:
+  - do **not** add a `kind` parameter to `feature_write_dir`; 14 test fakes implement the 1-argument protocol. It returns `write_dir(STATUS_STATE).path`.
+  - Its callers are `tasks_move_task.py:558` and `tasks_mark_status.py:227` (owned arm only). The non-owned mark-status write uses `resolve_status_surface(...).parent` (`tasks_mark_status.py:231`) and is fixed in WP08.
+  - The result also feeds `check_pre30_layout` (L560) and `_read_transactional_wp_lane` (L571).
+- **T041**: `placement_seam` and `MissionArtifactKind` are already module-level imports in `lanes/recovery.py:12`. Remove the now-unused `resolve_feature_dir_for_mission` import (F401).
+  - The per-emit `try/except Exception: break` (L819) swallows refusals; log them and surface them in the recovery report instead of silently breaking.
+- **`_resolve_fallback_coord_worktree`**: keep its name and signature, because unowned tests depend on it (`tests/coordination/test_status_write_authority.py` L130/186-190/236/267; `tests/specify_cli/coordination/test_plain_door_semantics.py:143-150`). Delegate its coordination composition to `write_dir` internally.
+- **Sanctioned read-side residual**: `_read_contract_from_transaction_target` (L1357-1368) composes `worktree_path / KITTY_SPECS_DIR / _transaction_dir_name`. Record it in the activity log as sanctioned, so the reviewer's grep does not bounce the WP.
+- **Stale allow-list (operator decision; now owned)**: in `tests/architectural/test_no_read_side_bypass.py`, delete the entries for `agent_tasks_ports.py::RealCoordCommitRouter.feature_write_dir` and `lanes/recovery.py::reconcile_status`; otherwise the twin `test_allow_list_entry_is_still_a_live_finding` goes red. This WP is the file's single owner. WP10 depends on this WP and removes its own tracer entry afterwards as a declared out-of-map edit.
+- **`test_coord_read_seam_callers.py`**: this WP re-pins L259. WP09 now co-owns the file (it depends on this WP; same lane) and re-pins L198 (the decision test) together with its own fix. **Do not re-pin L198 here**: decisions are not migrated at this WP's tip. L346 (single-branch guard) stays green.
+- Run `tests/specify_cli/coordination/test_transaction.py` by name. Its `MISSION_SLUG="demo-feature"` has no mid8, which exercises the dir-name agreement (T039).
+- **Gate citation fix**: `test_no_worktree_name_guess.py` is not the P-M3 guard (it excludes `.parent.parent`, deferred #2007); WP20 adds the real one.
+
 ## Targeted test surface
 
 - New: `tests/coordination/test_status_transition_write_dir.py`, `tests/lanes/test_recovery_write_dir.py`, `tests/specify_cli/test_agent_tasks_ports_write_dir.py`.
@@ -221,7 +246,7 @@ Done means:
 - Example: `uv run --frozen pytest tests/coordination/test_status_transition_write_dir.py tests/lanes/test_recovery_write_dir.py tests/specify_cli/test_agent_tasks_ports_write_dir.py -q`.
 - Never run the bare `tests/architectural/`, any e2e or integration directory, performance or stress suites, or `make test-full` (NO_FULL_HEAVY_SUITES_IN_MISSION, C-006). Record commands and pass/fail counts in the Activity Log for the PR's *Tests run* section.
 - Before you treat a red as yours, classify it with CLAUDE.md's baseline-red gotcha: pre-existing P0, CI-environment, stale install, or stale venv (`uv sync --frozen --all-extras`).
-- Post-tasks squad additions, by name: `tests/mission_runtime/test_coord_read_seam_callers.py`, `tests/coordination/test_commit_router.py` (the two re-pointed tests), `tests/architectural/test_no_worktree_name_guess.py`.
+- Post-tasks squad additions, by name: `tests/mission_runtime/test_coord_read_seam_callers.py`, `tests/coordination/test_commit_router.py` (the two re-pointed tests), `tests/architectural/test_no_read_side_bypass.py` (now owned).
 
 ## Quality gates
 
@@ -229,6 +254,8 @@ Done means:
 - Run `ruff check` and `ruff format --check` on the changed files, and `mypy --strict` on the changed files, with zero issues and no new `# noqa` / `# type: ignore` (NFR-005).
 - Reach ≥ 90% coverage of new and changed lines (diff-cover gate), with a focused test for every new branch or helper (NFR-003).
 - If you add public symbols, run `tests/architectural/test_no_dead_symbols.py`.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

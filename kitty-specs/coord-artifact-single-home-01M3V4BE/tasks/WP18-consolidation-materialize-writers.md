@@ -41,6 +41,8 @@ role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP18 – Consolidation executor and materialize writers move to the accessor
@@ -106,6 +108,7 @@ Operator ruling Q4 requires the consolidation executor's status writes and `mate
 - **Terminology**: say Mission, never feature. "Consolidate" here is **local lane consolidation** into the local target branch, never a publish to origin. Name the sense of "primary": the repository root checkout, the PRIMARY partition, or the target branch.
 - **C-006**: run each named guard file, never the directory.
 - **Fixture semantics across lanes (post-tasks squad P-m5):** pre-fix assertions use WP02's `make_prefix_coord_mission`; `make_coord_mission` carries only shape-agnostic invariants (its shape changes when WP06 lands); use `make_coord_mission(..., materialized=True)` when a test needs a deterministic MATERIALIZED coordination surface in every lane.
+- **Brownfield scout (binding read)**: before coding, read `## WP18` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp12-22.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -247,6 +250,23 @@ Operator ruling Q4 requires the consolidation executor's status writes and `mate
 - **Validation**: all green; strict xfails unchanged.
 - **Edge cases**: if a guard goes red, classify it first (baseline-red gotcha). If it is caused by this WP, fix the product; never re-pin a terminus guard to green-wash.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **Extract before adding**: `_run_lane_based_consolidation` (L4114) is at **C901 14**. Its `seam.read_dir(STATUS_STATE)` is at **L4181**, with except arms at L4182-4194.
+  - Adding the `CoordSeedForkRefused` and `FeatureStatusLockTimeoutError` arms would bring it to 16.
+  - **First** extract `_resolve_run_status_dir(seam, …) -> Path` (raising `typer.Exit`) with focused tests, then add the arms there.
+- **Locations**: `_phase_baseline_and_surface` is at **L799**; its `resolve_status_surface` call is at L825.
+- **`materialize`** (`materialize.py` L40) is at **C901 15 (zero headroom)**. Extract the per-Mission dir resolution into a helper first. In the loop, keep the **root dir name** as the slug for `.kittify/derived/<slug>`, never the coordination path's name.
+- **R23 remote-only control** needs a **new fixture**: a `file://` bare remote, the branch pushed, and the local head deleted. Keep only the assertions byte-for-byte.
+- **PR-body note (operator decision)**: `consolidate --dry-run` stays fail-closed on UNMATERIALIZED (the forecast says abort), while the real run now materializes and proceeds. State this asymmetry in the PR body.
+- **R22**: import WP03's seed-commit message constant; never hard-code the literal.
+- **Merge lock**: verify that `_run_lane_based_consolidation` runs outside the global merge lock (the locked driver is `_run_lane_based_consolidation_locked` L3587; preflight-with-recovery L4029), and record the evidence.
+- `test_canceled_content_residuals.py` uses strict xfail, so an XPASS is red.
+- **C3**: the `consolidate` help says an UNMATERIALIZED coordination surface is materialized. The `materialize` help says the command may create coordination worktrees and seed them. Record the reference-doc delta for WP22.
+- **P-M3**: consume `WriteLocation.checkout_root`; `executor.py` is in WP20's extended scan.
+
 ## Targeted test surface
 
 - WP tests: `uv run --frozen pytest tests/consolidation/test_executor_coord_reconcile.py tests/consolidation/test_done_bookkeeping_seam.py tests/cli/commands/test_merge_status_commit.py tests/specify_cli/cli/commands/test_materialize.py -q`.
@@ -267,6 +287,8 @@ Operator ruling Q4 requires the consolidation executor's status writes and `mate
 - ≥ 90% coverage of new and changed lines, each new arm/helper with a focused test (NFR-003).
 
 **WP20 note:** the completed-Mission `resolve_status_surface` call in T100 is a *read* of projected records. If WP20's grammar scans `_phase_baseline_and_surface`, isolate that read in a separately named helper (for example `_completed_mission_projected_events_path`) that is not on the census list, so the gate's allowlist can stay empty. Record this in the activity log for WP20.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

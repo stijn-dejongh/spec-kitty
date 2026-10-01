@@ -36,6 +36,8 @@ role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP02 – Shared coordination-routed Mission fixture harness (IC-02)
@@ -112,6 +114,7 @@ Deliver the **one shared fixture harness** that every red-first reproduction in 
 - **Terminology**: Mission, never feature. Say "repository root checkout" or "target branch"; never bare "primary".
 - **No heavy suites** (C-006).
 - **Fixture semantics across lanes (post-tasks squad P-m5):** pre-fix assertions use WP02's `make_prefix_coord_mission`; `make_coord_mission` carries only shape-agnostic invariants (its shape changes when WP06 lands); use `make_coord_mission(..., materialized=True)` when a test needs a deterministic MATERIALIZED coordination surface in every lane.
+- **Brownfield scout (binding read)**: before coding, read `## WP02` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp01-11.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -120,7 +123,7 @@ Deliver the **one shared fixture harness** that every red-first reproduction in 
 - **Merge target branch**: `issue-5440-coord-artifact-single-home`
 - `finalize-tasks` allocates execution worktrees per computed lane from `lanes.json`.
 - Start with `spec-kitty agent action implement WP02 --agent claude` and use the printed workspace path.
-- **Lane-relevant shared files**: none. This WP owns only new test files, runs in its own lane, and can run in parallel with WP01, WP11 and WP19 from the start.
+- **Lane-relevant shared files**: none. This WP owns only new test files, runs in its own lane, and can run in parallel with WP01 and WP11 from the start.
 
 ## Subtasks & Detailed Guidance
 
@@ -243,6 +246,23 @@ Deliver the **one shared fixture harness** that every red-first reproduction in 
 - **Validation**: `uv run --frozen pytest tests/coordination/test_coord_mission_factory.py -q` is green. Run the whole `tests/coordination/` directory once, to prove the new conftest breaks no existing test there (name clashes with existing fixtures).
 - **Edge cases**: fixture names must not shadow existing fixtures in `tests/conftest.py`. Grep for `def coord_mission` / `prefix_` before naming.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **DELETED variant**: `probe_coord_state(..., coordination_branch=None)` (`_read_path_resolver.py:278`) returns DELETED **only when `coordination_branch=` is passed**. `_coord_branch_exists` (surface_resolver.py:688) checks the local head, then `refs/remotes/`, then a network `remote_branch_lookup` (HIT or ERROR count as present). So `branch_deleted=True` must remove the local head, the remote-tracking ref and the bare-remote branch, or use no remote at all. Keep fixtures remote-less unless `remote_only=True`; an unreachable remote is a flake vector.
+- **`lamports` probe**:
+  - status rows carry `lamport_clock` (lifecycle envelope) or nothing (`MissionCreated`);
+  - decision rows carry no Lamport field; the CLI's `event_lamport` is a line-count proxy (`decisions/emit.py:97,140`).
+  - The probe must tolerate a missing field per row.
+- **Two decision streams**: DecisionPoint* rows go into `status.events.jsonl` (via `decisions/emit.py:88`), and `DecisionGitLog` writes `decisions.events.jsonl` (`events/decision_log.py:119`). Fork fixtures (a) and (b) must say which stream diverges; provide per-stream variants, because WP03's prefix rule runs per stream.
+- **Fork fixture (d)**, the ledger only on the coordination branch, is built with git plumbing; WP17's R16 needs it.
+- **`materialized=True` must use a real `git worktree add`**. MATERIALIZED vs EMPTY is decided by `Path.exists()` on the worktree root, so a plain `mkdir` reads EMPTY.
+- Fixture name `coord_mission` also exists in other directory-scoped conftests (`tests/terminus/conftest.py:1351`, …). That is fine, but never import two `CoordMission` classes into one module.
+- `hypothesis` is not a dependency; property tests use a seeded RNG.
+- **I4**: WP19 is **not** a parallel root. It depends on this WP; the roots are WP01, WP02 and WP11.
+- **Red evidence (analyze C2)**: exempt. This WP is the harness and its self-tests are green by design.
+
 ## Targeted test surface
 
 - Baseline: `make test-fast`.
@@ -261,6 +281,8 @@ Deliver the **one shared fixture harness** that every red-first reproduction in 
 - C901 ≤ 15 for every function (NFR-004). Builders are naturally long, so split them into private step helpers.
 - `ruff check`, `ruff format --check` and `mypy --strict` are clean on the three new files (NFR-005). Tests are typed too: annotate fixtures and helpers.
 - ≥ 90% coverage of the new helper module from the self-tests (NFR-003).
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

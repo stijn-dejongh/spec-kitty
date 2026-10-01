@@ -9,6 +9,20 @@ description: "Work package task list for Mission coord-artifact-single-home-01M3
 
 **Tests**: Required. The charter's ATDD-First Discipline (C-011) and spec C-005 / FR-016 apply: every code work package opens with a red-first reproduction through the pre-existing entry point, committed before the fix. The reviewer verifies RED on the work package's base and GREEN on its final commit. Test runs are targeted (C-006, `NO_FULL_HEAVY_SUITES_IN_MISSION`). Never run the bare `tests/architectural/`, an e2e or integration directory, or `make test-full`.
 
+**Red evidence per WP (analyze C2)**:
+
+| WP | Red evidence the reviewer checks |
+|----|----------------------------------|
+| WP01 | Exempt: tidy-first, behaviour-preserving. Same tests and same results before and after, with lower C901 (the moved tidy-first commits T002/T003/T004 in WP13/WP14/WP15 follow the same rule) |
+| WP02 | Exempt: test harness; its self-tests are green by design |
+| WP03–WP19 | The red-first test(s) named in the prompt are RED on the WP's lane base (its `planning_base_branch` plus stacked dependency lanes) and GREEN on its final commit. Forward guards (e.g. R20, R1d, WP12's recency guard) are labelled as such and shown red on the intermediate commit the prompt names |
+| WP19 | First reproduce the receipt defect through the CLI. If the coordination-Mission premise does not reproduce, the red comes from the lanes/single_branch `sha=None` receipt and the finding is reported (never a faked red) |
+| WP20 | RED at `ecb5dd914a` on the real offenders (`decisions/emit.py::_mission_dir`, `decisions/service.py::_mission_dir`) plus the planted mutation; GREEN on the final tree |
+| WP21 | REQUIRED: the SC-001 history probe and the single-log assertion RED on the planning base (pre-Mission product code), GREEN on the final tree |
+| WP22 | Exempt: documentation; FR-017 is anchored on the cited ADR sections |
+
+**Brownfield scout notes (binding per-WP corrections)**: `research/brownfield-scout-wp01-11.md` and `research/brownfield-scout-wp12-22.md`. Each prompt points to its `## WPxx` section and folds the corrections into a "Binding corrections — analyze + brownfield scout (round 3)" section.
+
 **Organization**: Fine-grained subtasks (`Txxx`) roll up into work packages (`WPxx`). Each work package is independently deliverable and testable.
 
 **Prompt Files**: Each work package references a matching prompt file in `/tasks/`. Treat this file as the high-level checklist; the deep implementation detail lives in the prompt files.
@@ -31,7 +45,11 @@ description: "Work package task list for Mission coord-artifact-single-home-01M3
 `owned_files` overlap only between **dependency-ordered** work packages, where the plan's shared-file map asks for one lane. The ownership validator exempts those pairs, and lane computation places them in one lane:
 
 - **Lane A** (sequential): WP01 → WP04 → WP05 (`surface_resolver.py`, `commit_router.py`). WP01 extracts helpers there first (tidy-first).
-- **Lane B** (sequential): WP17 → WP18 (`consolidation/executor.py`, IC-12 before IC-18).
+- **Lane B** (sequential, round 3): WP07 → WP09 → WP17 → WP18. The shared files are `tests/mission_runtime/test_coord_read_seam_callers.py` (WP07 re-pins L259, WP09 re-pins L198), `cli/commands/decision.py` (WP09's exception arms, then WP17's verify) and `consolidation/executor.py` (IC-12 before IC-18).
+- **Single owners, round 3**:
+  - `tests/architectural/test_no_read_side_bypass.py` is WP07's; WP10 depends on WP07 and removes its own entry as a declared out-of-map edit.
+  - `coordination/write_seam.py` is WP10's; WP16 depends on WP10 and updates its docstring L55 as a declared out-of-map edit.
+  - `mission_runtime/write_target_degrade.py`, `mission_runtime/__init__.py` and `test_mission_runtime_surface.py` are WP03's (single write authority; package-root re-exports).
 - **WP19 → WP08** share one lane (`cli/commands/agent/workflow.py`): WP08 may fix the reject→fix-mode readers (post-tasks squad R-M3).
 - **Post-tasks squad P-m7**: the `spec_commit_cmd.py`, `git/report_transaction.py` and `mission_finalize.py`/`tasks_finalize.py` extractions (T002/T003/T004) moved into WP13/WP14/WP15 as each WP's tidy-first first commit, so those three run in their own lanes after WP05. Subtask ids keep their global numbers, so T002–T004 appear out of numeric order in those WPs.
 - **Declared out-of-map edit**: WP07 updates two tests in `tests/coordination/test_commit_router.py` (≈L953, ≈L1012) that import `status_transition._coord_feature_dir`, which WP07 deletes. That file belongs to lane A, which is complete before WP07 starts.
@@ -148,7 +166,7 @@ T017 Complete the test matrix with the WP02 builders (WP03)
 **Goal**: Add the single sanctioned seam extension, `PlacementSeam.write_dir(kind) -> WriteLocation`, make the read-side EMPTY warning loud for post-fix Missions, and fix the stale seam docstrings (IC-03 part 2).
 **Independent Test**: Property tests show `write_dir`/`write_target` agreement over every kind and topology; `read_dir`, `write_target` and `resolve_placement_only` stay side-effect-free; the post-fix EMPTY warning fires in both coordination topologies.
 **Prompt**: `/tasks/WP04-placement-seam-write-dir.md`
-**Requirement Refs**: FR-003, FR-003a, C-001, C-002, C-008
+**Requirement Refs**: FR-003, FR-003a, C-001, C-002, C-008, FR-017
 **Estimated prompt size**: ~380 lines
 
 ### Included Subtasks
@@ -179,7 +197,7 @@ T022 Stale seam docstrings and the `CoordState.EMPTY` contract text (WP04)
 
 ## Work Package WP05: Commit router — retire the target fast-forward, per-surface outcomes, owning-surface commits (Priority: P1)
 
-**Goal**: "Unchanged" means unchanged. A COORD record passed by its repository-root path is judged and committed on its coordination copy, or refused for a named reason. Every surface's outcome is carried in the shared result contract. The router's target fast-forward is retired. Plan order: IC-10 → IC-07 core → IC-06.
+**Goal**: "Unchanged" means unchanged. A COORD record passed by its repository-root path is judged and committed on its coordination copy, or refused for a named reason. Every surface's outcome is carried in the shared result contract. The router's target fast-forward is retired. Subtask order IC-10 → IC-07 core → IC-06 is a **stated deviation** from plan.md's 10 → 06 → 07 (analyze I5): R2's tightened refusal assertion needs `surfaces` first; IC-07's consumer migration still follows IC-06 in later WPs.
 **Independent Test**: R12, the adopted R2/R2b (tightened), and the per-reason refusal tests.
 **Prompt**: `/tasks/WP05-commit-router-owning-surface-outcomes.md`
 **Requirement Refs**: FR-006, FR-007, FR-008, FR-016, SC-003
@@ -382,7 +400,7 @@ T058 Transient-staging, rendering and C-008 tests (WP10)
 
 ### Dependencies
 
-- Depends on WP05.
+- Depends on WP05, WP07 (WP07 owns `tests/architectural/test_no_read_side_bypass.py`; this WP removes its own stale entry after it).
 
 ### Risks & Mitigations
 
@@ -429,7 +447,7 @@ T063 Upgrade migration `m_4_0_0rc5_decision_index_merge_driver.py` and its tests
 **Goal**: The decision ledger is a PRIMARY-partition record in the taxonomy. Every reader that flips is pinned by a focused test, the ledger write/read ratchet holds, and the two architectural guards are amended (IC-11, FR-009/009a).
 **Independent Test**: R13, the commit-router grouping of the ledger, the reader-flip tests, and the FR-009a ratchet.
 **Prompt**: `/tasks/WP12-decision-ledger-primary-partition.md`
-**Requirement Refs**: FR-009, FR-009a, FR-009b
+**Requirement Refs**: FR-009, FR-009a, FR-009b, FR-017, C-008
 **Estimated prompt size**: ~400 lines
 
 ### Included Subtasks
@@ -592,7 +610,7 @@ T089 Birth cutover via `write_dir`; C-008 controls (WP16)
 
 ### Dependencies
 
-- Depends on WP05, WP12.
+- Depends on WP05, WP12, WP10 (declared out-of-map docstring edit to `write_seam.py:55`).
 
 ### Risks & Mitigations
 
@@ -751,7 +769,7 @@ T111 Scaffold the end-to-end test: integration marker, production CLI create, pa
 T112 Linear flow and its assertions (no COORD path on the target before consolidation, one log, every decision, monotonic clock) (WP21)
 T113 Moved-merge-base variant: consolidation succeeds with no target content conflict (WP21)
 T114 Local single-file run recorded; SC-001 probe non-vacuity check; defects reported to their owning work package (WP21)
-T119 Fresh-clone decision durability and the ledger commit point (US4.8, FR-009b) (WP21)
+T119 Fresh-clone decision durability and the ledger commit point via spec-commit and accept only (US4.8, FR-009b; operator decision G1) (WP21)
 
 ### Implementation Notes
 
@@ -806,13 +824,30 @@ T118 Docs hygiene: freshness dates, terminology guard, named docs checks; FR-017
 
 ## Dependency & Execution Summary
 
-- **Sequence**: {WP01, WP02, WP11} start immediately; WP19 follows WP02 → WP03 → WP04 → WP05 → {WP06, WP07, WP10, WP12, WP13, WP14, WP15} → {WP08, WP09, WP16} → WP17 → WP18 → WP20 → WP21 → WP22.
-- **Parallelization**: four roots run concurrently (WP01, WP02, WP11, WP19). After WP05, writer migrations (WP07, WP09, WP10), create (WP06) and the ledger reclassification (WP12) proceed in separate lanes. After the post-tasks squad P-m7 move, WP13/WP14/WP15 each run in their own lane after WP05. Lane B serializes WP17 → WP18; WP19 → WP08 share a lane.
+- **Sequence**: the roots are WP01, WP02 and WP11 (analyze I4: WP19 is not a root; it follows WP02). Then WP03 → WP04 → WP05 → {WP06, WP07, WP12, WP13, WP14, WP15} → {WP08 (after WP07 and WP19), WP09, WP10} → {WP16, WP17} → WP18 → WP20 → WP21 → WP22.
+- **Parallelization**: three roots run concurrently (WP01, WP02, WP11), and WP19 follows WP02. After WP05, writer migrations (WP07, WP09, WP10), create (WP06) and the ledger reclassification (WP12) proceed in separate lanes. After the post-tasks squad P-m7 move, WP13/WP14/WP15 each run in their own lane after WP05. Lane B serializes WP07 → WP09 → WP17 → WP18 (round 3); WP19 → WP08 share a lane. 16 lanes in total.
 - **MVP Scope**: WP01–WP06 make creation single-home and the router honest. That is the P0 #5440/#5513 core, but #5519 needs WP07–WP10 as well.
 
-## Named post-consolidation fold (not a WP)
+## Closeout items (in-mission, after lane consolidation; not WPs)
 
-- **Retire the commit router's legacy root-staging copy** (`shutil.copy2` of non-log COORD records from the repository root checkout into the coordination worktree; `commit_router.py`, legacy branch ≈L1069-1088) once the WP08/WP10 writers write in place. It cannot be a WP in this Mission, because a WP that depends on WP08/WP10 and edits `commit_router.py` (lane A) would create a lane dependency cycle. Track it as a follow-up after consolidation. WP20's gate module carries a pointer comment (post-tasks squad P-M2).
+1. **Retire the commit router's legacy root-staging copy**: the `shutil.copy2` of non-log COORD records from the repository root checkout into the coordination worktree (`commit_router.py`, legacy branch ≈L1069-1088), once the WP08/WP10 writers write in place.
+   - This is an **in-mission closeout fold, not deferred work** (analyze U2). It runs after lane consolidation and before the PR is marked ready.
+   - It cannot be a WP: a WP that depends on WP08/WP10 and edits `commit_router.py` (lane A) would create a lane dependency cycle.
+   - WP20's gate module carries a pointer comment (post-tasks squad P-M2).
+   - If the operator ends up deferring it after all, a GitHub issue is filed and cited here.
+2. **CHANGELOG `[Unreleased]` entries (analyze C3)** for every operator-visible change:
+   - create materializes and seeds the coordination worktree;
+   - spec-commit reports per-argument fates and `success=false` with a non-zero exit on a refused surface;
+   - accept commits an uncommitted decision ledger on the target branch, and a protected-target residual is refused by the router;
+   - the consolidation dirty gate treats ledger dirt as real work;
+   - consolidate materializes an UNMATERIALIZED coordination surface (R23);
+   - `spec-kitty materialize` may create and seed coordination worktrees;
+   - finalize refreshes `planning_commit_sha` by default, with a new `planning_commit_refresh` JSON field;
+   - the decision-index merge-driver migration;
+   - doctor decisions fork detection, non-destructive repair, and verify exiting 1 on a fork;
+   - teardown refuses a coordination-only ledger.
+   The CLI help text is updated inside each owning WP; the shared `docs/api/*` reference pages are updated in WP22.
+3. **Issue-matrix verdicts (analyze G3)**: fill `issue-matrix.json` rows for #5440, #5513, #5519, #5501, #2533 and #5023, including the split verdict for #2533: claim leg fixed by `3599c05990`/`e4644c2342`; create/empty-surface leg covered by this Mission (research "Verification: #2533's implement-claim leg").
 
 ---
 
@@ -847,7 +882,7 @@ T118 Docs hygiene: freshness dates, terminology guard, named docs checks; FR-017
 | FR-014 | WP18, WP20 |
 | FR-015 | WP21 |
 | FR-016 | WP02, WP05, WP06, WP09, WP13, WP14, WP15, WP17, WP18 |
-| FR-017 | WP22 |
+| FR-017 | WP04, WP12, WP22 |
 | NFR-001 | WP06 |
 | NFR-002 | WP02, WP03, WP17, WP18, WP21 |
 | NFR-003 | WP01 (every WP applies it) |
@@ -858,7 +893,7 @@ T118 Docs hygiene: freshness dates, terminology guard, named docs checks; FR-017
 | C-003 | WP03, WP17 |
 | C-004 | WP03 |
 | C-005 | WP02 (every code WP opens red-first) |
-| C-008 | WP04, WP06, WP07, WP18 |
+| C-008 | WP04, WP06, WP07, WP12, WP18 |
 | SC-001 | WP21 |
 | SC-002 | WP09, WP21 |
 | SC-003 | WP05, WP08, WP10, WP13, WP14, WP15, WP16 |

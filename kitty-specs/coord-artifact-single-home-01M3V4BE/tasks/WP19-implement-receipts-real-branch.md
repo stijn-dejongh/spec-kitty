@@ -30,6 +30,8 @@ role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP19 – implement receipts name the branch that holds each commit
@@ -76,7 +78,7 @@ After `spec-kitty agent action implement`, the CLI prints which commits it made 
 - The human summary prints the short commit id per line; the JSON `{"commits": [...]}` carries a non-null `sha` on every entry (additive).
 - **C-008.** `lanes`/`single_branch` receipts are unchanged in meaning, and every entry still has a sha.
 
-This is a small, self-contained WP on one file (plus its test file) with no dependencies. It can run in parallel from the start of the Mission.
+This is a small WP on one file (plus its test file). It depends on WP02 (shared fixture factory) and shares a lane with WP08, which runs after it. It is not a parallel root (analyze I4).
 
 ## Context & Constraints
 
@@ -95,6 +97,7 @@ This is a small, self-contained WP on one file (plus its test file) with no depe
 - **Model discipline**: implement = sonnet (`claude-sonnet-5`); review = opus.
 - **Terminology**: Mission, never feature. Say "target branch" and "coordination branch"; never a bare "primary".
 - **C-006**: no heavy suites.
+- **Brownfield scout (binding read)**: before coding, read `## WP19` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp12-22.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -166,6 +169,19 @@ This is a small, self-contained WP on one file (plus its test file) with no depe
 - **Validation**: unit tests for `_print_commit_summary` (capsys) in human and JSON modes, plus the committed-without-sha warning test. The existing `TestWorkflowCommitReceipts` tests stay green.
 - **Edge cases**: receipts accumulated across multiple operations in one invocation (`_reset_workflow_receipts`); unchanged JSON key order is not required but keep it stable.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **Red premise (operator decision)**: on a coordination-routed Mission with a complete identity triple, `workflow_executor.commit_workflow_change` (L292) uses `_commit_via_coordination_transaction`, whose receipts carry non-null shas. R18 as written may therefore be **GREEN at the base**.
+  1. **First** reproduce through the CLI on a coordination Mission. The grounding repro saw `chore: Start WP01 implementation [ok]` against the target branch. If it reproduces, fix that path.
+  2. If it does **not** reproduce, fix the lanes/single_branch `sha=None` receipt path that does reproduce. That is `_commit_via_legacy_safe_commit` L806-813, reached for coordination-less Missions (`workflow_executor.py` ≈L366-372).
+  3. Re-target R18 accordingly, with the coordination run as the control, and **report the finding** to the orchestrator (activity log plus a `tooling-friction` tracer entry). Never fake a red.
+- **Keep the allowlisted line verbatim**: `safe_commit(target=CommitTarget(ref=target_branch))` stays inside `_commit_via_legacy_safe_commit`. It is allowlisted in `test_no_write_side_rederivation.py:780-790`, and its liveness twin is `test_checkout_grammar_allow_list_entries_are_still_live` (L973). Add no new non-seam `CommitTarget(ref=…)`.
+- **Use the choke point**: call `_resolve_workflow_placement(...)` (`workflow.py:680`, the single choke point for `write_target`) and take `.ref`. Do not add a raw `placement_seam(...)`.
+- `tests/git/test_guard_capability_regression.py:252-261` calls `_commit_via_legacy_safe_commit` directly, so keep the kw signature. `test_coord_commit_integrity_e2e.py` references it too.
+- **Stale text**: this WP has **dependencies** (WP02), and it shares a lane with WP08 (WP19 first). It is not a parallel root (analyze I4).
+
 ## Targeted test surface
 
 ```bash
@@ -185,6 +201,8 @@ make test-fast
 - C901 ≤ 15 for `_commit_via_legacy_safe_commit`, `_print_commit_summary`, `_record_receipt` and any new helper (NFR-004).
 - `ruff check`, `ruff format --check` and `mypy --strict` on changed files; no new suppressions (NFR-005).
 - ≥ 90% coverage of new and changed lines, with a focused test per new helper and branch (NFR-003).
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

@@ -25,6 +25,11 @@ create_intent:
 - src/specify_cli/upgrade/migrations/m_4_0_0rc5_decision_index_merge_driver.py
 - tests/consolidation/test_decision_index_merge_driver.py
 - tests/upgrade/migrations/test_m_4_0_0rc5_decision_index_merge_driver.py
+- tests/consolidation/merge_driver_goldens/merge-driver-decision-index/union-two-lanes/case.json
+- tests/consolidation/merge_driver_goldens/merge-driver-decision-index/union-two-lanes/O
+- tests/consolidation/merge_driver_goldens/merge-driver-decision-index/union-two-lanes/A
+- tests/consolidation/merge_driver_goldens/merge-driver-decision-index/union-two-lanes/B
+- tests/consolidation/merge_driver_goldens/merge-driver-decision-index/union-two-lanes/expected_A
 execution_mode: code_change
 model: claude-sonnet-5
 owned_files:
@@ -36,10 +41,21 @@ owned_files:
 - .gitattributes
 - tests/consolidation/test_decision_index_merge_driver.py
 - tests/upgrade/migrations/test_m_4_0_0rc5_decision_index_merge_driver.py
+- src/specify_cli/cli/commands/__init__.py
+- src/specify_cli/_completion_manifest.json
+- tests/consolidation/test_merge_drivers.py
+- tests/consolidation/test_merge_driver_goldens.py
+- tests/consolidation/merge_driver_goldens/merge-driver-decision-index/union-two-lanes/case.json
+- tests/consolidation/merge_driver_goldens/merge-driver-decision-index/union-two-lanes/O
+- tests/consolidation/merge_driver_goldens/merge-driver-decision-index/union-two-lanes/A
+- tests/consolidation/merge_driver_goldens/merge-driver-decision-index/union-two-lanes/B
+- tests/consolidation/merge_driver_goldens/merge-driver-decision-index/union-two-lanes/expected_A
 role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP11 – Decision index merge driver
@@ -110,6 +126,7 @@ Done means:
   - `src/specify_cli/upgrade/migrations/m_3_2_7_review_cycle_merge_driver.py`. Its docstring explains why `target_version` must not exceed the installed package version.
   - `m_3_2_6_decisions_event_log_merge_driver.py` and the shared `_merge_driver_seeding.py`.
 - **Out of scope**: the class-guard amendment in `tests/architectural/test_merge_reconciliation_class_guard.py` belongs to WP12, which depends on this WP. If this WP on its own turns that guard red, stop and report it in the activity log rather than editing the guard.
+- **Brownfield scout (binding read)**: before coding, read `## WP11` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp01-11.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -232,6 +249,27 @@ Done means:
   - Never assume `.gitattributes` exists: create it when absent, as the sibling does.
   - Never reorder existing lines.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **Owned files added (operator decision)**:
+  - `src/specify_cli/cli/commands/__init__.py`: L362 hidden `app.command(name="merge-driver-decision-index", hidden=True)` and L656 `_COMMAND_REGISTRARS`;
+  - `src/specify_cli/_completion_manifest.json` (`test_completion_manifest_freshness.py`);
+  - golden case `tests/consolidation/merge_driver_goldens/merge-driver-decision-index/union-two-lanes/{case.json,O,A,B,expected_A}`, mirroring the sibling dirs; add more cases (collision terminal-beats-open, malformed) under the same dir if needed;
+  - the count pins 6 → 7: `tests/consolidation/test_merge_drivers.py::test_merge_driver_bodies_matches_the_two_other_driver_name_authorities`, `tests/consolidation/test_merge_driver_goldens.py::test_golden_cases_are_discovered_and_cover_all_six_commands` and `::test_distinct_config_key_count_matches_six_registered_commands`.
+- **`_MergeDriverSpec` fields** are `config_key`, `name`, `command` and `pattern` (`attributes_line` is derived). Use `config_key="spec-kitty-decision-index"`, `pattern="kitty-specs/**/decisions/index.json"`.
+- **Terminal-beats-open must be written**: `index_fold.apply_terminal` (L144) and `_select_terminal_event` (L215) never compare two `IndexEntry` versions. `is_allowed_terminal_reopen` (L90) helps.
+- **Byte-stability**: the serializer is inline in `decisions/store.py:124-145` (`json.dumps(DecisionIndex(...).model_dump(mode="json"), sort_keys=True, indent=2) + "\n"`, sorted by `(created_at.isoformat(), decision_id)`). Round-trip through the `DecisionIndex` model, never raw JSON sorting.
+- **Migration**:
+  - it must **subclass `MergeDriverSeedingMigration`** (like `m_3_2_7`);
+  - `target_version="4.0.0rc5"` equals the package version, so already-rc5 projects get it only through `detect()`; `detect()` must return true when the line or config is missing (`upgrade/registry.py:94-100`).
+- **Dead symbols**: keep `union_decision_index` public but **out of `__all__`** until WP17 imports it (intra-module use rescues non-`__all__` names).
+- **Wider reach**: `_MERGE_DRIVERS` also feeds `_ensure_info_attributes` (`consolidation.py:488`) and `git_probes._resolve_registered_driver_callable` (#5038 squash replay). The new driver becomes authoritative in reconciliation blob attribution immediately. Run by name: `tests/consolidation/test_reconciliation.py`, `test_reconciliation_divergent.py`, `test_squash_reconcilers_2709.py`, `test_issue_2709_projection_union.py`.
+- **Stale install**: the real `git merge` test shells out. Use the sibling pattern (absolute interpreter, `python -m specify_cli`).
+- **Valid guards**: in `test_merge_reconciliation_class_guard.py`, `test_declared_merge_drivers_are_registered_in_gitattributes`, `test_init_seed_is_superset_of_registry_merge_drivers` and `test_migration_seed_is_superset_of_registry_merge_drivers`; also `tests/agent/test_init_command.py` L290-345.
+- **C3**: the merge-driver command is hidden; state the migration's operator-visible effect in its description. The CHANGELOG entry is a closeout item.
+
 ## Targeted test surface
 
 ```bash
@@ -258,6 +296,8 @@ make test-fast
 - `ruff check` and `ruff format --check` on the changed files; `mypy --strict` on the changed files. No new suppressions (NFR-005).
 - ≥ 90% new-line coverage, and every new branch (conflict, malformed input, terminal precedence) has a focused test (NFR-003).
 - New public symbols: `tests/architectural/test_no_dead_symbols.py` must stay green. Every new symbol needs a caller in `src/`.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

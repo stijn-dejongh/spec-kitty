@@ -50,10 +50,15 @@ owned_files:
 - tests/specify_cli/decisions/test_verify_integration.py
 - tests/coordination/test_projection_teardown.py
 - tests/consolidation/test_executor_ledger_preflight.py
+- src/specify_cli/cli/commands/mission_type.py
+- tests/status/test_authoritative_non_lane_registry_4897.py
+- tests/specify_cli/cli/commands/test_doctor_cli_surface_golden.py
 role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP17 – doctor decisions fork detection, honest verify, non-destructive repair, teardown and preflight refusal
@@ -123,6 +128,7 @@ Use language identifiers in code blocks: ````python`, ````bash`
 - **Terminology**: say Mission, never feature. "PRIMARY partition" (where the ledger lives), "repository root checkout", "target branch", "coordination branch/surface". Never write bare "primary".
 - **C-003**: never merge or re-sequence forked logs automatically; detect and guide only.
 - **C-004**: fix forward; the repair is additive and rewrites no history.
+- **Brownfield scout (binding read)**: before coding, read `## WP17` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp12-22.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -184,7 +190,7 @@ Use language identifiers in code blocks: ````python`, ````bash`
   - A missing branch (DELETED): treat that side as absent and add a warning.
   - `<dir>` naming: use the canonical Mission dir name (slug including mid8 where applicable) exactly as the seam resolves it.
 - **Mandatory reuse (post-tasks squad P-M6, P-M4)**: classify streams with WP03's pure `coordination/event_prefix.py` classifier; no second prefix/fork implementation. Compose every Mission dir name only via `lanes.branch_naming` (`coord_mission_dir_name` and siblings); never hand-join `<slug>` or `<slug>-<mid8>`. Read the legacy `kitty-specs/<slug>/decisions.events.jsonl` shape exactly as WP09 ruled (this WP now depends on WP09).
-- Named gate: `tests/architectural/test_no_worktree_name_guess.py`.
+- Keep `tests/architectural/test_no_worktree_name_guess.py` green as a general gate. It is not the P-M3 guard; P-M3 is enforced by WP20.
 
 ### Subtask T092 – `coordination_only_ledger`
 
@@ -275,6 +281,34 @@ Use language identifiers in code blocks: ````python`, ````bash`
   - `--abort` (consolidate) must refuse too; per CLAUDE.md, rollback restores before clearing the record, so the refusal happens before any teardown.
 - **Caller rendering (post-tasks squad P-m1)**: `consolidate.py` (≈L408) and `mission_type.py` (≈L1144) are not owned. Scope to reporting: verify through each CLI entry that the `COORDINATION_LEDGER_UNREPAIRED` message and hint reach the operator via the existing `ProjectionTeardownAbort` rendering. If a caller swallows it, record a follow-up in the activity log instead of editing those files.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **`ProjectionTeardownAbort` (teardown.py:90; operator decision)**:
+  - today `error_code` is a class attribute, `__init__(*, reason, coord_ref, expected_sha, actual_sha=None)` has a required `expected_sha`, and the message hard-codes the remedy "re-run the merge (`spec-kitty consolidate --resume`)";
+  - add a **kw-only `error_code` override**, a **`remedy` override** and an **optional `expected_sha`**;
+  - existing callers stay unchanged.
+- **`fork.py` imports (shrink-only door gate `tests/architectural/test_status_unsafe_allowlist.py`)**:
+  - never `import specify_cli.status.store`, never `from specify_cli.status import store`, never import any `append_*`;
+  - `from specify_cli.status.store import read_events` is fine;
+  - for ref reads, parse the bytes with an existing non-door parser.
+  - `teardown.py` late-imports `decisions.fork` (stdlib-only top-level imports).
+- **New raises in no-raise callers (operator decision)**: `mission_type.py:1144` (discard/close) carries the comment "this never raises". This WP now owns `src/specify_cli/cli/commands/mission_type.py`.
+  - Handle `ProjectionTeardownAbort(COORDINATION_LEDGER_UNREPAIRED)` there: render the refusal and the hint, exit non-zero, no partial teardown. Update the comment and add a test.
+  - `consolidate.py:408` (`--abort`, after the rollback restore) is unowned. Verify through the CLI that the message reaches the operator; if it is swallowed, report it per the Pre-existing Failure Reporting Rule.
+  - The `executor.py:3126` path is covered by the preflight.
+- **`_diagnose(events_dir, ledger_dir, mission_slug)` has no `repo_root`**: thread it from `run_decisions_reconciliation` (L529) as a kw-only parameter with a default. `tests/status/test_authoritative_non_lane_registry_4897.py` drives `_diagnose` directly; it is now owned, so re-pin it if needed.
+- **`verify` is public API** (re-exported from `decisions/__init__.py:32`): add a kw-only `repo_root: Path | None = None`, or do the fork check in `cmd_verify` (`decision.py:568`).
+  - Decide the `--no-fail-on-stale` precedence; the contract says a fork exits 1. Document it.
+  - `decision.py` is co-owned with WP09 (dependency-ordered; same lane).
+- **Doctor golden**: `tests/specify_cli/cli/commands/test_doctor_cli_surface_golden.py` (now owned) may need a refresh for the additive JSON.
+- **Dead symbols**: every public name in `fork.py` needs a `src` importer. Keep the value-object dataclasses out of `__all__` unless doctor or verify imports them. Import WP11's `union_decision_index`; that also makes it live.
+- **Reuse (P-M6)**: use WP03's `coordination/event_prefix.py` classifier, and compose dir names only via `lanes.branch_naming`.
+- **Executor**: `_phase_porcelain_invariant` (L2013) uses `is_toolchain_generated_churn`; its topology handling is WP12's. Only the message changes here.
+- R16 fixture (d) comes from WP02.
+- **Gate citation fix**: `test_no_worktree_name_guess.py` is a general gate to keep green, **not** the P-M3 guard (it excludes `.parent.parent`). P-M3 is enforced by WP20.
+
 ## Targeted test surface
 
 - WP tests: `uv run --frozen pytest tests/decisions/test_decisions_reconciler.py tests/decisions/test_decision_fork_detector.py tests/specify_cli/decisions/test_verify_integration.py tests/coordination/test_projection_teardown.py tests/consolidation/test_executor_ledger_preflight.py -q`.
@@ -306,6 +340,8 @@ Use language identifiers in code blocks: ````python`, ````bash`
 - C901 ≤ 15 for every touched function (NFR-004). `_diagnose`/`_repair`/`run_decisions_reconciliation` must stay under the ceiling; extract helpers.
 - ruff check, ruff format --check, mypy --strict on changed files: 0 issues, no new suppressions (NFR-005). Remove the `ARG001` noqa on `verify` once `mission_slug` is used.
 - ≥ 90% coverage of new and changed lines (NFR-003). `fork.py` is core domain logic, so apply higher rigour (tiered standards): table tests for every state.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 

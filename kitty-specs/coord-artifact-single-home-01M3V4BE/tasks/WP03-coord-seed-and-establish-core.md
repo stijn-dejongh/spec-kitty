@@ -47,10 +47,17 @@ owned_files:
 - tests/mission_runtime/test_write_location.py
 - src/specify_cli/coordination/event_prefix.py
 - tests/coordination/test_event_prefix.py
+- src/mission_runtime/__init__.py
+- tests/architectural/test_mission_runtime_surface.py
+- src/mission_runtime/write_target_degrade.py
+- tests/mission_runtime/test_write_target_degrade_selfmat.py
+- tests/specify_cli/cli/commands/test_coordination_remedy_5113.py
 role: implementer
 tags: []
 task_type: implement
 tracker_refs: []
+assignee: ''
+shell_pid: ''
 ---
 
 # Work Package Prompt: WP03 – Coordination write-location core: establish, seed, refuse (IC-03 part 1)
@@ -138,6 +145,7 @@ Build the **core of the one write-location accessor**: the function that, for a 
 - **Model discipline**: implement = sonnet (`claude-sonnet-5`); review = opus.
 - **Terminology**: Mission, never feature. Name the sense: "repository root checkout" (where pre-fix records sit), "target branch", "coordination branch/surface".
 - **No heavy suites** (C-006).
+- **Brownfield scout (binding read)**: before coding, read `## WP03` in `kitty-specs/coord-artifact-single-home-01M3V4BE/research/brownfield-scout-wp01-11.md` (plus its "Cross-cutting" section where present). Its corrections are folded into the "Binding corrections" section below, which overrides conflicting text above.
 
 ## Branch Strategy
 
@@ -180,7 +188,7 @@ Build the **core of the one write-location accessor**: the function that, for a 
          seed: SeedReport | None = None
      ```
      `CoordState` lives in `specify_cli.missions._read_path_resolver`. Do not import it at module level from mission_runtime: use `TYPE_CHECKING` plus a string annotation, or type `coord_state_before` as `str | None` holding the enum value. Pick whichever passes `test_layer_rules.py` and `mypy --strict`, and document the choice. Declare `__all__`.
-  3. **Error type**: `CoordSeedForkRefused(ActionContextError)`. Place it in `coord_seed.py` (specify_cli may import `mission_runtime.resolution`). Putting it in `write_location.py` would make that module import `resolution.py`, and `resolution.py` will import `write_location.py` in WP04: a cycle. Give it `error_code = "COORD_SEED_FORK_REFUSED"` and structured attributes: `root_path`, `coord_path`, `coord_ref`, `first_divergence_root`, `first_divergence_coord`, `reconcile_steps`.
+  3. **Error type**: `CoordSeedForkRefused(ActionContextError)`. Place it in `coord_seed.py`, importing `ActionContextError` from the `mission_runtime` **package root** only (MR-1/MR-2; see Binding corrections); construct it with `.code`, not `error_code`. Putting it in `write_location.py` would make that module import `resolution.py`, and `resolution.py` will import `write_location.py` in WP04: a cycle. Give it `error_code = "COORD_SEED_FORK_REFUSED"` and structured attributes: `root_path`, `coord_path`, `coord_ref`, `first_divergence_root`, `first_divergence_coord`, `reconcile_steps`.
   4. `status/locking.py:59`: add the class attribute `error_code: str = "STATUS_LOCK_HELD"` to `FeatureStatusLockTimeoutError`. Additive; the message is unchanged.
 - **Files**: `src/mission_runtime/write_location.py`, `src/specify_cli/status/locking.py`, `tests/coordination/test_coord_seed.py`, `tests/mission_runtime/test_write_location.py`.
 - **Validation**: the red commit fails for the right reason (missing behaviour, not a fixture error); `tests/mission_runtime/test_write_location.py` covers frozen-ness and defaults; the existing locking tests stay green (`grep -rl FeatureStatusLockTimeoutError tests/`).
@@ -314,6 +322,58 @@ Build the **core of the one write-location accessor**: the function that, for a 
 - **Validation**: all green; diff coverage ≥ 90% on `coord_seed.py` and `write_location.py`.
 - **Edge cases**: tests must not depend on create's current status-log placement. Use the explicit pre-fix builder.
 
+## Binding corrections — analyze + brownfield scout (round 3)
+
+> These corrections are binding and **override any conflicting text earlier in this prompt**. Source: `analysis-report.md` and the brownfield scout notes (pointer in Context & Constraints). Operator decisions are quoted where they apply.
+
+- **BLOCKING: package-root imports only.** MR-1/MR-2 (`tests/architectural/test_mission_runtime_surface.py::test_no_external_submodule_imports` :244, `::test_ast_scan_no_external_internal_imports` :342) forbid any `src/` module outside `mission_runtime` from importing a `mission_runtime` submodule, lazy imports included.
+  - Re-export `WriteLocation`, `Establishment` and `SeedReport` from `src/mission_runtime/__init__.py` (re-export plus `__all__`), and update `_PUBLIC_SURFACE` in `test_mission_runtime_surface.py:50` (strict ordered equality). Both files are now owned by this WP.
+  - `coord_seed.py` imports from the package root only.
+  - `CoordState` is a `TYPE_CHECKING`-only import in `write_location.py`, so `test_package_root_cold_imports` (:223) stays cold.
+  - This supersedes the T014 phrase "specify_cli may import `mission_runtime.resolution`".
+- **Error codes**: `ActionContextError(code, message)` stores **`.code`**, not `error_code` (`resolution.py:126-135`). Construct `CoordSeedForkRefused` with `super().__init__("COORD_SEED_FORK_REFUSED", msg)`. Consumers branch on `.code` (`write_seam.py:312`, `next_cmd.py:873`).
+  - Adding `error_code="STATUS_LOCK_HELD"` to `FeatureStatusLockTimeoutError` changes generic `getattr(err, "error_code")` renderers: owned mark-status goes from `MARK_STATUS_FAILED` to `STATUS_LOCK_HELD` (`tasks_mark_status.py:573`), and `next_cmd.py:873` changes too. Declare this in the PR body.
+- **Partition predicate**: use the root-exported `kind_is_coordination_residue(kind, topology)` or `not is_primary_artifact_kind(kind)`, and filter `kind_for_mission_file(...) is None` explicitly. Never import `_PLACEMENT_ARTIFACT_KINDS`. Until WP12 lands, `DECISION_LEDGER` is COORD, so the seed copies `decisions/` ledger files. This is a cross-lane timing note; do not special-case it.
+- **SINGLE WRITE AUTHORITY (operator decision; scout X1)**: this WP now owns `src/mission_runtime/write_target_degrade.py`.
+  - `assert_coord_write_materialized` (L157) becomes a **thin delegate** to `establish_coord_write_location` (lazy import over the existing `coordination` edge):
+    - UNMATERIALIZED with a local head → materialize and seed instead of refusing `COORD_WRITE_SURFACE_UNMATERIALIZED`;
+    - remote-only still refuses (#4970);
+    - DELETED still refuses.
+  - **Red-first**: through `coordination/write_seam.write_artifact` (or `resolve_write_target_or_degrade(terminus_write=True)`) on UNMATERIALIZED with a local head whose branch carries the kind, expect materialization. It is red at the base (refusal).
+  - **Re-pin deliberately** (owned): `tests/mission_runtime/test_write_target_degrade_selfmat.py` and `tests/specify_cli/cli/commands/test_coordination_remedy_5113.py`. Keep the remote-only refusal pins.
+  - This also gives `coord_seed.py` a production caller in this WP, so `tests/architectural/test_no_dead_modules.py` stays **green** (zero-red sequencing; the transitional-red protocol is not needed here).
+  - After this WP, WP08, WP09 and WP10 never hit the old refusal.
+- **Locks (operator decision; scout X6)**:
+  - the lock root is `owned.owned_root if owned else repo_root` (`transaction.py:290-291`);
+  - the key is `coord_mission_dir_name(slug, mid8)`, equal to `coord_feature_dir.name`, matching `coord_status_lock` (`status_transition.py:421-423`) and `commit_router._coord_status_locks` (:586);
+  - use a **bounded timeout** `BOUNDED_STATUS_LOCK_TIMEOUT_SECONDS`. `feature_status_lock`'s default `timeout=-1` (`locking.py:278`) makes `STATUS_LOCK_HELD` unreachable.
+- **Seed commit**: use policy `ProtectionPolicy.resolve_for_mission(repo_root, slug)` (`git/protection_policy.py:249`), or `resolve_for_owned` (:203) plus `owned=`. Map every non-`committed` `CommitRouterResult.status` (`unchanged`, `no_op_wrong_surface`, `error`) into `SeedReport`.
+- **U1 (analyze): refused seed commit.** On a protected coordination ref:
+  - the Mission dir stays, uncommitted (no records lost);
+  - `SeedReport.warnings` names the refusal;
+  - a WARNING log names the Mission, the state and the action;
+  - the triggering write proceeds, and the next coordination commit carries the seed.
+  - Test it in `tests/coordination/test_coord_seed.py`.
+- **Restore over-reach (operator decision)**: restore **COORD-kind paths only**, using a pathspec built from kind classification. Never `git checkout HEAD -- kitty-specs/<dir>` for the whole dir: a branch cut or fast-forwarded after a target commit carries `meta.json`/`spec.md` (I-SEED-9).
+- **D4 discriminator (operator decision)**: "the coordination branch tree carries `kitty-specs/<dir>`" over-matches pre-fix Missions whose coordination branch was cut after the first target commit (fixture `tests/coordination/test_surface_resolver_solo_coord_primary.py:107-146`).
+  - Define **one** correct discriminator here, e.g. the coordination branch tree carries a COORD-kind file (`status.events.jsonl`) under `coord_mission_dir_name(...)`, or a seed/creation commit marker/trailer that WP06's create and this WP's seed both write.
+  - Add a **negative test** with that fixture shape: pre-fix → SEEDED, never RESTORED_FROM_BRANCH, and no loud warning.
+  - WP04 reuses it.
+- **Value objects**:
+  - use `@dataclass(frozen=True, kw_only=True)`, because adding `checkout_root` after a defaulted field is a `TypeError`;
+  - prefer the `TopologySurface` enum over `Literal` strings for `surface`;
+  - avoid the `Establishment.MATERIALIZED` vs `CoordState.MATERIALIZED` name collision (e.g. `WORKTREE_MATERIALIZED`).
+  - Decide and record (tracer `design-decisions`).
+- **Paths and portability**:
+  - compose temp and target paths from `coord_feature_dir(...)` (`_read_path_resolver.py:218`);
+  - `os.rename` onto an existing dir raises on Windows;
+  - normalise `git status --porcelain=v1 -z` paths before comparing with `Path`.
+- **Owned arm**: `_resolve_owned_coordination_workspace` is private in `runtime/next/runtime_bridge.py:417`; import it lazily and do not relocate it. The owned coordination dir composes from `owned.repository_root` (`resolution.py:1290`), not from `owned_root`.
+- **Cold import**: keep `coord_seed` module-level imports light; `decisions.*` is on the charter cold-import path.
+- **Gate citation fix (operator decision)**: `test_no_worktree_name_guess.py` explicitly **excludes** `.parent.parent` (L474-476, deferred #2007), so it is **not** the P-M3 guard. P-M3 (`checkout_root`, never `.path.parent.parent`) is enforced mechanically by WP20's extension of `test_no_write_side_rederivation.py`; until then review checks it.
+- **"Loud" (analyze A2)** means a WARNING-level log line naming the Mission, the coordination state and the action taken.
+- Valid guards to keep green: `tests/coordination/test_materialize_coord_surface.py`, `test_unmaterialized_remedy_text.py`, `tests/specify_cli/coordination/test_coord_topology_states.py`, `test_coord_branch_remote_probe_4979.py`, `tests/status/test_locking_key.py`, `test_locking_reentrancy_migration.py`. Also run `tests/architectural/test_mission_runtime_surface.py`, `test_no_dead_modules.py`, `test_no_dead_symbols.py` and `test_cold_import_status_boundary.py` by name.
+
 ## Targeted test surface
 
 - Baseline: `make test-fast`.
@@ -326,7 +386,7 @@ Build the **core of the one write-location accessor**: the function that, for a 
 - Named architectural gate files: `tests/architectural/test_layer_rules.py` (mission_runtime must not grow its outbound ledger), `tests/architectural/test_no_dead_symbols.py` (new public symbols must have callers; WP04 adds the caller, so declare `__all__` and keep public names minimal).
 - Never run the bare `tests/architectural/`, any e2e/integration directory, performance/stress suites or `make test-full` (NO_FULL_HEAVY_SUITES_IN_MISSION, C-006).
 - Record commands and counts in the Activity Log. Classify unrelated reds with the CLAUDE.md baseline-red gotcha.
-- Named architectural gate (post-tasks squad P-M3): `uv run --frozen pytest tests/architectural/test_no_worktree_name_guess.py -q`.
+- Named architectural gates (round 3): `uv run --frozen pytest tests/architectural/test_mission_runtime_surface.py tests/architectural/test_no_dead_modules.py tests/architectural/test_no_dead_symbols.py tests/architectural/test_cold_import_status_boundary.py -q` (`test_no_worktree_name_guess.py` is not the P-M3 guard; see Binding corrections).
 - New file: `uv run --frozen pytest tests/coordination/test_event_prefix.py -q`.
 
 ## Quality gates
@@ -335,6 +395,8 @@ Build the **core of the one write-location accessor**: the function that, for a 
 - `ruff check`, `ruff format --check` and `mypy --strict` are clean on changed files (NFR-005), with no new suppressions.
 - ≥ 90% coverage of new lines, and a focused test for every branch, including error branches (NFR-003).
 - New public symbols: `tests/architectural/test_no_dead_symbols.py`. If it flags `establish_coord_write_location` as callerless until WP04, record that in the Activity Log and coordinate (WP04 is the immediate dependent); do not add a fake caller.
+- **Mission tracer files (analyze C4; charter Standing Order 3)**: at every decision point and every friction, append a dated entry through the canonical CLI, e.g. `spec-kitty agent tracer-append --mission coord-artifact-single-home-01M3V4BE --category design-decisions|approach|tooling-friction --entry "<YYYY-MM-DD WPxx: …>" --actor <you>`. The files are `traces/tooling-friction.md`, `traces/approach.md` and `traces/design-decisions.md`.
+- **Pre-existing Failure Reporting Rule (analyze C4; charter)**: a red you did not cause and that is red on your base MUST be reported. Record the test id, the exact command and the evidence (output, base SHA) in the activity log and notify the orchestrator, who files the GitHub issue. Never fix it silently, never green-wash it, never xfail it.
 
 ## Issues
 
