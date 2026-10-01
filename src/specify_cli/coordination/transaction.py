@@ -910,6 +910,21 @@ class BookkeepingTransaction(AbstractContextManager["BookkeepingTransaction"]):
         Distinct from :meth:`commit` (used by the transactional emit's implicit
         commit and by adversarial rollback callers), which must still surface an
         empty/failed changeset as :class:`BookkeepingCommitFailed`.
+
+        coord-artifact-single-home-01M3V4BE WP07: the no-op guard no longer
+        requires ``self._staged_paths`` to be non-empty. The single
+        write-location accessor's one-time seed (contracts/seed.md) can now
+        itself commit a caller's intended content onto the coordination
+        branch as a side effect of resolving WHERE to write (the SAME class
+        of "another committer got there first" this method's docstring
+        already describes for the transactional-emit case) -- before the
+        caller ever decides whether it still needs to ``write_artifact`` at
+        all. A caller that then finds nothing new to stage (``_staged_paths``
+        empty) is exactly as idempotent-safe as one whose staged paths
+        already match HEAD: ``_worktree_has_pending_changes()`` already
+        returns ``False`` for an empty ``_staged_paths`` (nothing staged
+        trivially has no pending changes among it), so this is a pure
+        widening of the SAME no-op condition, not a new one.
         """
         if self._committed:
             if self._explicit_commit_receipt is None:
@@ -918,7 +933,7 @@ class BookkeepingTransaction(AbstractContextManager["BookkeepingTransaction"]):
                     "commit receipt was recorded"
                 )
             return self._explicit_commit_receipt
-        if self._staged_paths and not self._worktree_has_pending_changes():
+        if not self._worktree_has_pending_changes():
             receipt = self._noop_commit_receipt()
             self._committed = True
             self._explicit_commit_message = message
