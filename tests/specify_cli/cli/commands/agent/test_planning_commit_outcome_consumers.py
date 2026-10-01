@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -144,7 +145,7 @@ def test_warn_on_incomplete_surfaces_renders_the_refused_surface(capsys: pytest.
 # ---------------------------------------------------------------------------
 
 
-def _base_build_kwargs(tmp_path: Path, *, plan_commit_result: CommitToBranchResult | None) -> dict[str, object]:
+def _base_build_kwargs(tmp_path: Path, *, plan_commit_result: CommitToBranchResult | None) -> dict[str, Any]:
     return {
         "plan_file": tmp_path / "plan.md",
         "spec_file": tmp_path / "spec.md",
