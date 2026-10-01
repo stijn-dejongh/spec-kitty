@@ -1905,15 +1905,58 @@ def _c_unquote_git_path(raw: str) -> str:
 
 
 def _porcelain_entry_path(field: str) -> str:
-    """Resolve one dirty-entry's path field to a plain (unquoted) path.
+    """Resolve one dirty-entry's (status-code-already-stripped) path field to
+    a plain (unquoted) path.
 
     Splits a rename's ``old -> new`` arrow (keeping the NEW name, the same
     convention :func:`specify_cli.git.ref_advance._porcelain_path` uses),
-    then C-unquotes whichever side remains.
+    then C-unquotes whichever side remains. Does NOT delegate to
+    ``_porcelain_path`` itself: that helper also ``rstrip("/")``s its result,
+    which would destroy the trailing-slash directory-collapse marker
+    :func:`_entry_covers_path` (below) depends on to treat a whole-directory
+    dirty entry as covering every path beneath it.
     """
     if " -> " in field:
         field = field.rsplit(" -> ", 1)[1]
     return _c_unquote_git_path(field)
+
+
+# The exact explanatory suffixes ``ref_advance._dirty_entries`` appends to a
+# ``??``/``!!`` entry (never to a tracked-change entry) -- see that
+# function's body. ``_UNTRACKED_DISCARD_SUFFIX`` fires under
+# ``treat_untracked_as_dirty=True`` (this module's only call shape);
+# ``_obstruction_suffix_for`` fires under tree-obstruction (``target_paths``
+# non-empty -- never the case for this module's call, which always passes
+# ``target_paths=set()``, but handled for robustness against a future
+# change to that call).
+_UNTRACKED_DISCARD_SUFFIX = " (untracked local file would be discarded by worktree removal)"
+
+
+def _obstruction_suffix_for(new_sha: str) -> str:
+    return f" ({ref_advance._RESET_OBSTRUCTION_MARKER}{new_sha[:12]})"
+
+
+def _strip_dirty_entry_suffix(entry: str, *, new_sha: str) -> str:
+    """Remove ``_dirty_entries``'s own explanatory suffix from *entry*, by
+    EXACT text match -- never a generic ``" ("`` cut, which would wrongly
+    truncate a quoted path that itself contains ``" ("`` (review cycle 2
+    R2: e.g. a C-quoted ``"Copy (1).md"`` was cut mid-quote, at the literal
+    ``" ("`` inside the filename, leaving an unparseable, unclosed-quote
+    remainder that never matched anything).
+
+    Only a ``??``/``!!`` entry can carry either suffix (tracked-change
+    entries never do); a tracked-change entry -- which may legitimately
+    itself end in text resembling a suffix -- is returned unchanged.
+    """
+    status_code = entry[:2]
+    if status_code not in ("??", "!!"):
+        return entry
+    if entry.endswith(_UNTRACKED_DISCARD_SUFFIX):
+        return entry[: -len(_UNTRACKED_DISCARD_SUFFIX)]
+    obstruction_suffix = _obstruction_suffix_for(new_sha)
+    if entry.endswith(obstruction_suffix):
+        return entry[: -len(obstruction_suffix)]
+    return entry
 
 
 def _dirty_paths_in_checkout(checkout_root: Path, files: tuple[Path, ...]) -> tuple[Path, ...]:
@@ -1956,6 +1999,16 @@ def _dirty_paths_in_checkout(checkout_root: Path, files: tuple[Path, ...]) -> tu
     and C-unquotes whichever side remains, so a quoted or renamed dirty
     entry still matches the plain (unquoted) ``rel`` path this function
     compares against.
+
+    coord-artifact-single-home-01M3V4BE WP07 (review cycle 2 R2, regression
+    fix): ``_strip_dirty_entry_suffix`` removes ``_dirty_entries``'s own
+    explanatory suffix by EXACT text match, BEFORE un-quoting -- never a
+    generic ``" ("`` cut. The cycle-1 version cut at the first ``" ("``
+    found anywhere in the raw entry, which lands INSIDE the quotes for a
+    C-quoted path that itself contains ``" ("`` (e.g. an untracked
+    ``"Copy (1).md"``, or a tracked-modified ``"tracked (2).md"``), leaving
+    an unparseable, unclosed-quote remainder that matched nothing -- a
+    false "clean" regression against base for exactly that shape.
     """
     # Same-layer reuse of a module-private helper, mirroring git/destructive_guard.py's
     # own cross-module call into this exact function.
@@ -1966,9 +2019,9 @@ def _dirty_paths_in_checkout(checkout_root: Path, files: tuple[Path, ...]) -> tu
         target_paths=set(),
         treat_untracked_as_dirty=True,
     )
-    # Strip the 2-char status code + space, then any trailing explanatory
-    # suffix ``_dirty_entries`` appends (always introduced by " (").
-    dirty_rel_paths = tuple(_porcelain_entry_path(entry[3:].split(" (", 1)[0]) for entry in dirty_entries)
+    dirty_rel_paths = tuple(
+        _porcelain_entry_path(_strip_dirty_entry_suffix(entry, new_sha="HEAD")[3:]) for entry in dirty_entries
+    )
 
     def _entry_covers_path(entry_path: str, rel: str) -> bool:
         if entry_path.endswith("/"):
