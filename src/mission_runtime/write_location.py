@@ -51,7 +51,7 @@ class Establishment(enum.Enum):
 
 @dataclass(frozen=True, kw_only=True)
 class SeedReport:
-    """Outcome of one :func:`~specify_cli.coordination.coord_seed.seed_coord_surface` call.
+    """Outcome of one coordination-surface seed attempt (``specify_cli.coordination.coord_seed``, module-private).
 
     See data-model.md section 3.
     """

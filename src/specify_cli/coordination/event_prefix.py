@@ -121,6 +121,21 @@ def classify_prefix(root_ids: tuple[str, ...], coord_ids: tuple[str, ...]) -> Pr
     return PrefixVerdict(kind="fork", first_divergence=(root_value, coord_value))
 
 
+def _ensure_trailing_newline(line: str) -> str:
+    """Return *line* with exactly one trailing ``\\n`` appended if it lacks one.
+
+    B9: a coordination (or root) file's final kept line commonly lacks a
+    trailing newline (a plain editor save, or the last line of a file nobody
+    appended to since). Joining two line sequences without normalising that
+    glues the next row onto the previous one byte-for-byte
+    (``{"event_id":"a"}{"event_id":"b"}\\n``), corrupting the merged JSONL.
+    This still never re-serializes a row's own bytes -- it only guarantees
+    the line TERMINATOR between rows, which is metadata the JSONL format
+    requires, not content.
+    """
+    return line if line.endswith("\n") else line + "\n"
+
+
 def merged_log_bytes(
     root_lines: tuple[str, ...],
     coord_lines: tuple[str, ...],
@@ -131,9 +146,12 @@ def merged_log_bytes(
     ``root_lines`` / ``coord_lines`` must be the SAME blank-filtered sequences
     (:func:`non_blank_lines_of`) that produced the event ids fed to
     :func:`classify_prefix`, so ``verdict.tail_start`` indexes correctly.
+
+    Every kept line gets a trailing ``\\n`` if it does not already have one
+    (B9) -- never gluing two rows together when a file's last kept line
+    lacks a terminator.
     """
     if verdict.kind == "fork":
         raise ValueError("cannot merge a forked log; raise COORD_SEED_FORK_REFUSED instead")
-    if verdict.kind == "nothing":
-        return "".join(coord_lines).encode("utf-8")
-    return ("".join(coord_lines) + "".join(root_lines[verdict.tail_start :])).encode("utf-8")
+    kept = coord_lines if verdict.kind == "nothing" else (*coord_lines, *root_lines[verdict.tail_start :])
+    return "".join(_ensure_trailing_newline(line) for line in kept).encode("utf-8")

@@ -2,8 +2,9 @@
 
 The single answer to "where does a COORD write go" for a coordination-routed
 Mission (``establish_coord_write_location``), and the one-time carry-over from
-the repository-root checkout to the coordination surface (``seed_coord_surface``).
-See ``contracts/write-location-accessor.md`` and ``contracts/seed.md``.
+the repository-root checkout to the coordination surface (the module-private
+``_seed_coord_surface``). See ``contracts/write-location-accessor.md`` and
+``contracts/seed.md``.
 
 Cold-import discipline: every ``specify_cli`` submodule this module needs
 (``specify_cli.status.locking``, ``specify_cli.missions._read_path_resolver``,
@@ -12,6 +13,16 @@ Cold-import discipline: every ``specify_cli`` submodule this module needs
 the function that needs it, never at module level, so a future cold-import
 caller of this module never drags the whole status/coordination stack in
 just to read a type.
+
+**Review cycle 2 note (dead-symbol governance, charter Burn-down Policy a):**
+``SeedRequest`` / ``seed_coord_surface`` are module-private (``_SeedRequest`` /
+``_seed_coord_surface``) because, by contract design, their only caller is
+this module (``establish_coord_write_location``); tests import the private
+names directly. ``COORD_SEED_TRAILER``, ``CoordSeedForkRefused`` and
+``coord_branch_is_post_fix`` are genuine cross-WP vocabulary with no
+cross-module caller *yet* -- they are deliberately left un-allowlisted (an
+accepted transitional red on ``test_no_dead_symbols``, cured when their
+consumer WP lands; see the WP03 Activity Log for the curing-WP mapping).
 """
 
 from __future__ import annotations
@@ -39,11 +50,13 @@ from mission_runtime import (
 )
 from specify_cli.core.constants import KITTY_SPECS_DIR
 from specify_cli.coordination.event_prefix import (
+    DuplicateEventIdError,
+    MalformedEventLogLineError,
     PrefixVerdict,
     classify_prefix,
     event_ids_of,
-    merged_log_bytes,
     non_blank_lines_of,
+    merged_log_bytes,
 )
 
 if TYPE_CHECKING:
@@ -53,9 +66,8 @@ if TYPE_CHECKING:
 __all__ = [
     "COORD_SEED_TRAILER",
     "CoordSeedForkRefused",
-    "SeedRequest",
+    "coord_branch_is_post_fix",
     "establish_coord_write_location",
-    "seed_coord_surface",
 ]
 
 logger = logging.getLogger(__name__)
@@ -65,10 +77,14 @@ logger = logging.getLogger(__name__)
 COORD_SEED_TRAILER = "Spec-Kitty-Coordination-Seed"
 
 _COORD_SEED_FORK_REFUSED_CODE = "COORD_SEED_FORK_REFUSED"
+_COORD_SEED_EVENT_LOG_MALFORMED_CODE = "COORD_SEED_EVENT_LOG_MALFORMED"
+_COORD_SEED_DUPLICATE_EVENT_ID_CODE = "COORD_SEED_DUPLICATE_EVENT_ID"
+_COORD_SEED_GIT_PROBE_FAILED_CODE = "COORD_SEED_GIT_PROBE_FAILED"
 _STATUS_LOG_FILENAME = "status.events.jsonl"
 _DECISION_LOG_FILENAME = "decisions.events.jsonl"
 _LOG_FILENAMES: tuple[str, ...] = (_STATUS_LOG_FILENAME, _DECISION_LOG_FILENAME)
 _STATUS_COMMITTED = "committed"
+_STATUS_UNCHANGED = "unchanged"
 
 
 class CoordSeedForkRefused(ActionContextError):
@@ -106,9 +122,32 @@ class CoordSeedForkRefused(ActionContextError):
         self.reconcile_steps = reconcile_steps
 
 
+class _CoordGitProbeError(ActionContextError):
+    """A git probe that must distinguish "absent" from "command failed" hit the failure case (B8).
+
+    Raised by :func:`_coord_tip_relpaths`, :func:`_coord_side_text` and
+    :func:`coord_branch_is_post_fix` on a genuine git command failure --
+    never on a legitimate "path/ref absent" result, which they return as
+    ``None``/``()``/``False`` instead. The coordination branch is already
+    known to exist by every call site (state EMPTY or MATERIALIZED), so a
+    non-zero git exit at this point is an infrastructure error, not an
+    absence, and must never silently flip a pre-fix/post-fix or a fork/no-fork
+    decision.
+    """
+
+    error_code = _COORD_SEED_GIT_PROBE_FAILED_CODE
+
+    def __init__(self, message: str) -> None:
+        super().__init__(self.error_code, message)
+
+
 @dataclass(frozen=True, kw_only=True)
-class SeedRequest:
-    """Everything :func:`seed_coord_surface` needs for one seed attempt (data-model.md §3)."""
+class _SeedRequest:
+    """Everything the seed needs for one attempt (data-model.md §3).
+
+    Module-private (review cycle 2, B7): by contract, the only caller of
+    the seed entry point is this module.
+    """
 
     repo_root: Path
     mission_slug: str
@@ -119,10 +158,8 @@ class SeedRequest:
     coord_worktree: Path
     root_mission_dir: Path
     #: ``True`` when this is the post-fix restore-then-seed leg (the branch
-    #: already carried the seed trailer and COORD-kind paths were just
-    #: restored from its tip) -- merges root-only leftovers IN PLACE rather
-    #: than building a fresh temp dir for an atomic rename (the target dir
-    #: already exists after the restore).
+    #: already carries the seed trailer). The restore from the branch tip now
+    #: happens INSIDE the lock (B1/B2), driven by this flag.
     post_fix: bool = False
     owned: OwnedCheckout | None = None
 
@@ -143,7 +180,7 @@ class _MergeResult:
     fork: CoordSeedForkRefused | None
 
 
-def _lock_root(request: SeedRequest) -> Path:
+def _lock_root(request: _SeedRequest) -> Path:
     return request.owned.owned_root if request.owned is not None else request.repo_root
 
 
@@ -170,6 +207,7 @@ def _walk_root_coord_relpaths(root_mission_dir: Path) -> tuple[str, ...]:
 
 
 def _coord_tip_relpaths(repo_root: Path, coordination_branch: str, mission_dir_name: str) -> tuple[str, ...]:
+    """List the COORD-kind paths at the coordination branch tip (B8: raises on a real git failure)."""
     prefix = f"{KITTY_SPECS_DIR}/{mission_dir_name}/"
     result = subprocess.run(
         ["git", "-C", str(repo_root), "ls-tree", "-r", "--name-only", coordination_branch, "--", prefix],
@@ -178,7 +216,12 @@ def _coord_tip_relpaths(repo_root: Path, coordination_branch: str, mission_dir_n
         check=False,
     )
     if result.returncode != 0:
-        return ()
+        # ``ls-tree`` exits 0 with empty output for a readable branch whose
+        # subtree simply holds nothing -- a non-zero exit here means the ref
+        # itself is unreadable, which the branch is already known to exist by
+        # this point (state EMPTY/MATERIALIZED), so this is an error, not an
+        # absence.
+        raise _CoordGitProbeError(f"git ls-tree {coordination_branch} -- {prefix} failed: {result.stderr.strip()}")
     relpaths = []
     for line in result.stdout.splitlines():
         if not line.startswith(prefix):
@@ -200,6 +243,9 @@ def _read_text_newline_preserving(path: Path) -> str:
         return handle.read()
 
 
+_GIT_SHOW_ABSENT_MARKERS = ("does not exist in", "exists on disk, but not in")
+
+
 def _coord_side_text(
     repo_root: Path,
     coord_worktree: Path,
@@ -207,17 +253,27 @@ def _coord_side_text(
     mission_dir_name: str,
     relpath: str,
 ) -> str | None:
-    """Return the coordination-side content for *relpath*: disk first, else the branch tip blob (D3)."""
+    """Return the coordination-side content for *relpath*: disk first, else the branch tip blob (D3).
+
+    B8: a genuinely absent path at the tip (``git show`` naming it "does not
+    exist") returns ``None``; any OTHER non-zero exit (a bad ref, an
+    unreadable repo) raises -- it is never silently treated as "absent".
+    """
     disk_path = coord_worktree / KITTY_SPECS_DIR / mission_dir_name / relpath
     if disk_path.exists():
         return _read_text_newline_preserving(disk_path)
+    pathspec = f"{KITTY_SPECS_DIR}/{mission_dir_name}/{relpath}"
     result = subprocess.run(
-        ["git", "-C", str(repo_root), "show", f"{coordination_branch}:{KITTY_SPECS_DIR}/{mission_dir_name}/{relpath}"],
+        ["git", "-C", str(repo_root), "show", f"{coordination_branch}:{pathspec}"],
         capture_output=True,
         text=True,
         check=False,
     )
-    return result.stdout if result.returncode == 0 else None
+    if result.returncode == 0:
+        return result.stdout
+    if any(marker in result.stderr for marker in _GIT_SHOW_ABSENT_MARKERS):
+        return None
+    raise _CoordGitProbeError(f"git show {coordination_branch}:{pathspec} failed: {result.stderr.strip()}")
 
 
 def _reconcile_steps() -> tuple[str, ...]:
@@ -229,14 +285,59 @@ def _reconcile_steps() -> tuple[str, ...]:
     )
 
 
-def _merge_stream(request: SeedRequest, filename: str) -> _StreamMerge | CoordSeedForkRefused | None:
+def _raise_event_log_error(
+    request: _SeedRequest,
+    *,
+    filename: str,
+    side: Literal["root", "coordination"],
+    location_hint: str,
+    exc: MalformedEventLogLineError | DuplicateEventIdError,
+) -> NoReturn:
+    """Translate an event_prefix parse error into a structured, actionable refusal.
+
+    Review cycle 2 B7/T016-step-6: ``MalformedEventLogLineError`` /
+    ``DuplicateEventIdError`` never escape this module as bare ``ValueError``s
+    with no context -- every coord_seed error names the Mission, the
+    coordination branch and a recovery command.
+    """
+    code = _COORD_SEED_EVENT_LOG_MALFORMED_CODE if isinstance(exc, MalformedEventLogLineError) else _COORD_SEED_DUPLICATE_EVENT_ID_CODE
+    raise ActionContextError(
+        code,
+        f"coordination seed cannot classify mission {request.mission_slug!r}'s {side} "
+        f"{filename!r} ({location_hint}): {exc}. The coordination branch is "
+        f"{request.coordination_branch!r}. Inspect and repair the malformed/duplicate "
+        "row by hand (it is never silently skipped, NFR-002), then retry the write.",
+    ) from exc
+
+
+def _event_ids_or_raise(
+    request: _SeedRequest,
+    lines: tuple[str, ...],
+    *,
+    filename: str,
+    side: Literal["root", "coordination"],
+    location_hint: str,
+) -> tuple[str, ...]:
+    try:
+        return event_ids_of(lines)
+    except (MalformedEventLogLineError, DuplicateEventIdError) as exc:
+        _raise_event_log_error(request, filename=filename, side=side, location_hint=location_hint, exc=exc)
+
+
+def _merge_stream(request: _SeedRequest, filename: str) -> _StreamMerge | CoordSeedForkRefused | None:
     root_path = request.root_mission_dir / filename
     root_text = _read_text_newline_preserving(root_path) if root_path.exists() else ""
     coord_text = _coord_side_text(request.repo_root, request.coord_worktree, request.coordination_branch, request.mission_dir_name, filename) or ""
     root_lines = non_blank_lines_of(root_text.splitlines(keepends=True))
     coord_lines = non_blank_lines_of(coord_text.splitlines(keepends=True))
-    root_ids = event_ids_of(root_lines)
-    coord_ids = event_ids_of(coord_lines)
+    root_ids = _event_ids_or_raise(request, root_lines, filename=filename, side="root", location_hint=str(root_path))
+    coord_ids = _event_ids_or_raise(
+        request,
+        coord_lines,
+        filename=filename,
+        side="coordination",
+        location_hint=f"{request.coordination_branch}:{KITTY_SPECS_DIR}/{request.mission_dir_name}/{filename}",
+    )
     verdict: PrefixVerdict = classify_prefix(root_ids, coord_ids)
     if verdict.kind == "fork":
         coord_ref_path = f"{KITTY_SPECS_DIR}/{request.mission_dir_name}/{filename}"
@@ -254,7 +355,8 @@ def _merge_stream(request: SeedRequest, filename: str) -> _StreamMerge | CoordSe
     return _StreamMerge(relpath=filename, merged_text=merged, carried=verdict.kind == "carry_tail")
 
 
-def _merge_non_log_files(request: SeedRequest) -> tuple[tuple[tuple[str, bytes], ...], tuple[str, ...], tuple[str, ...]]:
+def _merge_non_log_files(request: _SeedRequest) -> tuple[tuple[tuple[str, bytes], ...], tuple[str, ...], tuple[str, ...]]:
+    """I-SEED-5: carry a root-only non-log COORD file; keep the coordination copy on conflict (warn, never discard)."""
     root_relpaths = {p for p in _walk_root_coord_relpaths(request.root_mission_dir) if p not in _LOG_FILENAMES}
     coord_relpaths = {p for p in _coord_tip_relpaths(request.repo_root, request.coordination_branch, request.mission_dir_name) if p not in _LOG_FILENAMES}
     non_log_files: list[tuple[str, bytes]] = []
@@ -273,7 +375,7 @@ def _merge_non_log_files(request: SeedRequest) -> tuple[tuple[tuple[str, bytes],
     return tuple(non_log_files), tuple(carried), tuple(warnings)
 
 
-def _merge_coord_content(request: SeedRequest) -> _MergeResult:
+def _merge_coord_content(request: _SeedRequest) -> _MergeResult:
     stream_merges: list[_StreamMerge] = []
     carried: list[str] = []
     for filename in _LOG_FILENAMES:
@@ -310,7 +412,7 @@ def _write_merge_files(target_dir: Path, merge: _MergeResult) -> None:
         path.write_bytes(content)
 
 
-def _cleanup_stale_seed_temp_dirs(request: SeedRequest) -> None:
+def _cleanup_stale_seed_temp_dirs(request: _SeedRequest) -> None:
     specs_dir = request.coord_worktree / KITTY_SPECS_DIR
     if not specs_dir.exists():
         return
@@ -326,7 +428,7 @@ def _remove_tree(path: Path) -> None:
     shutil.rmtree(path, ignore_errors=True)
 
 
-def _write_merge_via_temp_rename(request: SeedRequest, merge: _MergeResult) -> Path:
+def _write_merge_via_temp_rename(request: _SeedRequest, merge: _MergeResult) -> Path:
     # Explicit ``Path`` annotations: ``KITTY_SPECS_DIR`` is typed ``Any`` under
     # the project's ``follow_imports = "skip"`` mypy config, which would
     # otherwise poison the ``/`` chain below with ``Any``.
@@ -336,11 +438,19 @@ def _write_merge_via_temp_rename(request: SeedRequest, merge: _MergeResult) -> P
     temp_dir: Path = specs_dir / f".{request.mission_dir_name}.seed-{os.getpid()}-{uuid.uuid4().hex[:12]}"
     temp_dir.mkdir(parents=True)
     _write_merge_files(temp_dir, merge)
-    os.rename(temp_dir, final_dir)
+    try:
+        os.rename(temp_dir, final_dir)
+    except OSError:
+        # L3: never leave the temp dir behind on a failed rename -- the
+        # caller re-probes once to tell a genuine failure apart from a
+        # same-lock-window race (impossible for cooperating lock holders,
+        # but cheap to make the state machine honest either way).
+        _remove_tree(temp_dir)
+        raise
     return final_dir
 
 
-def _write_merge_in_place(request: SeedRequest, merge: _MergeResult) -> Path:
+def _write_merge_in_place(request: _SeedRequest, merge: _MergeResult) -> Path:
     final_dir: Path = request.coord_worktree / KITTY_SPECS_DIR / request.mission_dir_name
     final_dir.mkdir(parents=True, exist_ok=True)
     _write_merge_files(final_dir, merge)
@@ -351,22 +461,36 @@ def _to_repo_relpath(repo_root: Path, path: Path) -> str:
     return path.relative_to(repo_root).as_posix()
 
 
-def _git_path_status(repo_root: Path, repo_relpath: str) -> Literal["dirty", "untracked", "clean"]:
+def _git_status_entry(repo_root: Path, repo_relpath: str) -> str | None:
+    """Return the raw ``XY`` porcelain code for *repo_relpath*, or ``None`` if clean."""
     result = subprocess.run(
-        ["git", "-C", str(repo_root), "status", "--porcelain=v1", "--", repo_relpath],
+        ["git", "-C", str(repo_root), "status", "--porcelain=v1", "-z", "--", repo_relpath],
         capture_output=True,
         text=True,
         check=False,
     )
-    output = result.stdout.strip("\n")
-    if not output:
+    entries = [entry for entry in result.stdout.split("\x00") if entry]
+    if not entries:
+        return None
+    return entries[0][:2]
+
+
+def _git_path_status(repo_root: Path, repo_relpath: str) -> Literal["dirty", "untracked", "staged_new", "clean"]:
+    code = _git_status_entry(repo_root, repo_relpath)
+    if code is None:
         return "clean"
-    if output.startswith("??"):
+    if code == "??":
         return "untracked"
+    if code[0] == "A":
+        # L4: staged-new (added to the index, absent at HEAD). ``git checkout
+        # -- <path>`` restores from the INDEX, not HEAD, so it is a no-op for
+        # a path with no HEAD version at all and the file silently stays on
+        # disk. Handled separately below: unstage, then remove.
+        return "staged_new"
     return "dirty"
 
 
-def _restore_root_files(request: SeedRequest, carried: tuple[str, ...]) -> tuple[str, ...]:
+def _restore_root_files(request: _SeedRequest, carried: tuple[str, ...]) -> tuple[str, ...]:
     restored: list[str] = []
     for relpath in carried:
         root_path = request.root_mission_dir / relpath
@@ -377,6 +501,10 @@ def _restore_root_files(request: SeedRequest, carried: tuple[str, ...]) -> tuple
         if status == "untracked":
             root_path.unlink()
             restored.append(repo_relpath)
+        elif status == "staged_new":
+            subprocess.run(["git", "-C", str(request.repo_root), "restore", "--staged", "--", repo_relpath], check=True, capture_output=True)
+            root_path.unlink()
+            restored.append(repo_relpath)
         elif status == "dirty":
             subprocess.run(["git", "-C", str(request.repo_root), "checkout", "--", repo_relpath], check=True, capture_output=True)
             restored.append(repo_relpath)
@@ -384,7 +512,7 @@ def _restore_root_files(request: SeedRequest, carried: tuple[str, ...]) -> tuple
     return tuple(restored)
 
 
-def _commit_seed(request: SeedRequest, commit_paths: tuple[Path, ...]) -> CommitRouterResult:
+def _commit_seed(request: _SeedRequest, commit_paths: tuple[Path, ...]) -> CommitRouterResult:
     from specify_cli.coordination.commit_router import commit_for_mission
     from specify_cli.git.protection_policy import ProtectionPolicy
 
@@ -405,10 +533,26 @@ def _commit_seed(request: SeedRequest, commit_paths: tuple[Path, ...]) -> Commit
     )
 
 
-_STATUS_UNCHANGED = "unchanged"
+def _coord_kind_relpaths_on_disk(final_dir: Path) -> tuple[str, ...]:
+    if not final_dir.exists():
+        return ()
+    relpaths = []
+    for candidate in sorted(final_dir.rglob("*")):
+        if not candidate.is_file():
+            continue
+        relpath = candidate.relative_to(final_dir).as_posix()
+        if _is_coord_relpath(relpath):
+            relpaths.append(relpath)
+    return tuple(relpaths)
 
 
-def _commit_and_restore(request: SeedRequest, merge: _MergeResult, final_dir: Path) -> SeedReport:
+def _commit_and_restore(
+    request: _SeedRequest,
+    merge: _MergeResult,
+    final_dir: Path,
+    *,
+    restored_from_branch: tuple[str, ...] = (),
+) -> SeedReport:
     """Commit every COORD-kind file now on disk (I-SEED-7), then restore the root checkout (I-SEED-8).
 
     Committing everything on disk -- not merely ``merge.carried`` -- matters
@@ -433,24 +577,35 @@ def _commit_and_restore(request: SeedRequest, merge: _MergeResult, final_dir: Pa
                 "dir is present but uncommitted. The next coordination write retries the commit."
             )
     restored_root = _restore_root_files(request, merge.carried)
-    if merge.carried or warnings:
+    if merge.carried or warnings or restored_from_branch:
         logger.warning(
-            "coordination seed for mission %s: carried=%s restored_root=%s coord_commit=%s warnings=%s",
+            "coordination seed for mission %s: carried=%s restored_root=%s restored_from_branch=%s coord_commit=%s warnings=%s",
             request.mission_slug,
             merge.carried,
             restored_root,
+            restored_from_branch,
             coord_commit,
             warnings,
         )
     return SeedReport(
         carried=merge.carried,
         restored_root=restored_root,
+        restored_from_branch=restored_from_branch,
         coord_commit=coord_commit,
         warnings=tuple(warnings),
     )
 
 
-def _trailer_present(repo_root: Path, coordination_branch: str, mission_id: str) -> bool:
+def coord_branch_is_post_fix(repo_root: Path, coordination_branch: str, mission_id: str) -> bool:
+    """Return whether *coordination_branch*'s history carries the seed trailer for *mission_id* (D4).
+
+    The ONE public post-fix discriminator (cross-WP vocabulary, WP04 T021
+    imports it lazily): a Mission is post-fix iff its coordination branch
+    history carries ``Spec-Kitty-Coordination-Seed: <mission_id>``. Read-only,
+    no writes. B8: raises on a genuine git failure rather than silently
+    reading "pre-fix" -- the branch is already known to exist by every call
+    site, so a non-zero ``git log`` exit here is an error, not an absence.
+    """
     if not mission_id:
         return False
     result = subprocess.run(
@@ -460,56 +615,97 @@ def _trailer_present(repo_root: Path, coordination_branch: str, mission_id: str)
         check=False,
     )
     if result.returncode != 0:
-        return False
+        raise _CoordGitProbeError(f"git log {coordination_branch} failed: {result.stderr.strip()}")
     return mission_id in {line.strip() for line in result.stdout.splitlines() if line.strip()}
 
 
-def _seed_pending(request: SeedRequest) -> bool:
-    """I-SEED-10: pending iff the Mission dir is wholly untracked AND has no trailer/committed blob."""
-    repo_relpath = f"{KITTY_SPECS_DIR}/{request.mission_dir_name}/"
+def _whole_dir_untracked_fast(coord_worktree: Path, mission_dir_name: str) -> bool:
+    """B3: the cheap, config-independent "is the whole Mission dir untracked" check.
+
+    ``--untracked-files=normal`` is passed EXPLICITLY so the result never
+    depends on the operator's ``status.showUntrackedFiles`` -- with ``all``
+    git would otherwise list one line per file instead of collapsing an
+    untracked directory into one ``?? <dir>/`` entry, and with ``no`` it
+    would print nothing at all; either misreading silently makes a pending
+    seed commit un-retryable forever. ``-z`` is parsed (NUL-separated,
+    unquoted paths) rather than ``splitlines()``.
+    """
+    repo_relpath = f"{KITTY_SPECS_DIR}/{mission_dir_name}/"
     result = subprocess.run(
-        ["git", "-C", str(request.coord_worktree), "status", "--porcelain", "--", repo_relpath],
+        ["git", "-C", str(coord_worktree), "status", "--porcelain=v1", "-z", "--untracked-files=normal", "--", repo_relpath],
         capture_output=True,
         text=True,
         check=False,
     )
-    lines = [line for line in result.stdout.splitlines() if line.strip()]
-    if lines != [f"?? {repo_relpath}"]:
+    if result.returncode != 0:
+        raise _CoordGitProbeError(f"git status -- {repo_relpath} failed: {result.stderr.strip()}")
+    entries = [entry for entry in result.stdout.split("\x00") if entry]
+    return entries == [f"?? {repo_relpath}"]
+
+
+def _seed_pending(request: _SeedRequest) -> bool:
+    """I-SEED-10: pending iff the Mission dir is wholly untracked AND has no trailer/committed blob."""
+    if not _whole_dir_untracked_fast(request.coord_worktree, request.mission_dir_name):
         return False
-    if _trailer_present(request.repo_root, request.coordination_branch, request.mission_id):
+    if coord_branch_is_post_fix(request.repo_root, request.coordination_branch, request.mission_id):
         return False
     return not _coord_tip_relpaths(request.repo_root, request.coordination_branch, request.mission_dir_name)
 
 
-def _coord_kind_relpaths_on_disk(final_dir: Path) -> tuple[str, ...]:
-    if not final_dir.exists():
+def _restore_coord_kind_paths_from_tip(
+    repo_root: Path,
+    coordination_branch: str,
+    mission_dir_name: str,
+    coord_worktree: Path,
+) -> tuple[str, ...]:
+    relpaths = _coord_tip_relpaths(repo_root, coordination_branch, mission_dir_name)
+    if not relpaths:
         return ()
-    relpaths = []
-    for candidate in sorted(final_dir.rglob("*")):
-        if not candidate.is_file():
-            continue
-        relpath = candidate.relative_to(final_dir).as_posix()
-        if _is_coord_relpath(relpath):
-            relpaths.append(relpath)
-    return tuple(relpaths)
+    pathspecs = [f"{KITTY_SPECS_DIR}/{mission_dir_name}/{relpath}" for relpath in relpaths]
+    subprocess.run(
+        ["git", "-C", str(coord_worktree), "checkout", coordination_branch, "--", *pathspecs],
+        check=True,
+        capture_output=True,
+    )
+    return tuple(sorted(relpaths))
 
 
-def _run_merge_and_commit(request: SeedRequest, *, in_place: bool) -> SeedReport:
+def _run_merge_and_commit(
+    request: _SeedRequest,
+    *,
+    in_place: bool,
+    restored_from_branch: tuple[str, ...] = (),
+) -> SeedReport:
     """Merge (with a full fork re-check, I-SEED-4), write, commit, restore.
 
     Used by both the fresh pre-fix/post-fix paths and the MATERIALIZED
     pending-seed retry (I-SEED-10): the fork check always re-runs against the
     CURRENT root content, regardless of whatever happens to already sit on
     disk, so a retry never blindly trusts stale or adversarial disk content.
+    This can carry NEW root records on a retry too (a deliberate superset of
+    I-SEED-6's "carries nothing new" wording -- accepted, review cycle 1).
     """
     merge = _merge_coord_content(request)
     if merge.fork is not None:
         raise merge.fork
-    final_dir = _write_merge_in_place(request, merge) if in_place else _write_merge_via_temp_rename(request, merge)
-    return _commit_and_restore(request, merge, final_dir)
+    if in_place:
+        final_dir = _write_merge_in_place(request, merge)
+    else:
+        try:
+            final_dir = _write_merge_via_temp_rename(request, merge)
+        except OSError:
+            from specify_cli.missions._read_path_resolver import CoordState, probe_coord_state
+
+            re_probed = probe_coord_state(request.repo_root, request.mission_slug, request.mid8, coordination_branch=request.coordination_branch)
+            if re_probed is CoordState.MATERIALIZED:
+                # L3: another cooperating holder of this same lock already
+                # materialized it first (re-entrant call); nothing lost.
+                return SeedReport()
+            raise
+    return _commit_and_restore(request, merge, final_dir, restored_from_branch=restored_from_branch)
 
 
-def _seed_coord_surface_locked(request: SeedRequest) -> SeedReport:
+def _seed_coord_surface_locked(request: _SeedRequest) -> SeedReport:
     from specify_cli.missions._read_path_resolver import CoordState, probe_coord_state
 
     state = probe_coord_state(request.repo_root, request.mission_slug, request.mid8, coordination_branch=request.coordination_branch)
@@ -518,16 +714,30 @@ def _seed_coord_surface_locked(request: SeedRequest) -> SeedReport:
             return SeedReport()
         return _run_merge_and_commit(request, in_place=True)
 
+    restored_from_branch: tuple[str, ...] = ()
+    if request.post_fix and state is CoordState.EMPTY:
+        # B1/B2: the restore-from-tip now happens HERE, under the lock, after
+        # a fresh re-probe -- never outside it. If another writer already won
+        # (state is MATERIALIZED by the time we got the lock), we fall
+        # through to the ordinary pending check above on THIS call's own
+        # probe, so a concurrent restore can never race a concurrent
+        # triggering write for the same Mission dir.
+        restored_from_branch = _restore_coord_kind_paths_from_tip(request.repo_root, request.coordination_branch, request.mission_dir_name, request.coord_worktree)
+
     _cleanup_stale_seed_temp_dirs(request)
-    return _run_merge_and_commit(request, in_place=request.post_fix)
+    # Once the tip content (if any) is restored, the merge pipeline below
+    # compares CURRENT root content against it and carries any root-only
+    # records forward too (B1) -- never just the restored tip in isolation.
+    return _run_merge_and_commit(request, in_place=request.post_fix, restored_from_branch=restored_from_branch)
 
 
-def seed_coord_surface(request: SeedRequest) -> SeedReport:
+def _seed_coord_surface(request: _SeedRequest) -> SeedReport:
     """Carry root-checkout COORD records onto the coordination surface exactly once.
 
     See ``contracts/seed.md``. Runs under the mission status lock (I-SEED-1);
     re-entrant, so a caller already holding it (``BookkeepingTransaction``) is
-    not deadlocked.
+    not deadlocked. Module-private (review cycle 2, B7): by contract, the
+    only caller is :func:`establish_coord_write_location` in this module.
     """
     from specify_cli.status.locking import (
         BOUNDED_STATUS_LOCK_TIMEOUT_SECONDS,
@@ -582,7 +792,7 @@ def _materialize_for_write(
     if owned is not None:
         try:
             _establish_owned_coord_workspace(owned, mission_slug, mid8)
-        except Exception as exc:  # noqa: BLE001 -- translated into the owned refusal code (C-001: no new error type)
+        except Exception as exc:  # translated into the owned refusal code (C-001: no new error type)
             raise ActionContextError(
                 OwnedRefusalCode.OWNED_COORDINATION_WORKSPACE_UNAVAILABLE.value,
                 f"owned coordination workspace unavailable for mission {mission_slug!r}: {exc}",
@@ -612,24 +822,6 @@ def _raise_coord_branch_deleted(
     )
 
 
-def _restore_coord_kind_paths_from_tip(
-    repo_root: Path,
-    coordination_branch: str,
-    mission_dir_name: str,
-    coord_worktree: Path,
-) -> tuple[str, ...]:
-    relpaths = _coord_tip_relpaths(repo_root, coordination_branch, mission_dir_name)
-    if not relpaths:
-        return ()
-    pathspecs = [f"{KITTY_SPECS_DIR}/{mission_dir_name}/{relpath}" for relpath in relpaths]
-    subprocess.run(
-        ["git", "-C", str(coord_worktree), "checkout", coordination_branch, "--", *pathspecs],
-        check=True,
-        capture_output=True,
-    )
-    return tuple(sorted(relpaths))
-
-
 @dataclass(frozen=True, kw_only=True)
 class _EstablishContext:
     repo_root: Path
@@ -643,8 +835,8 @@ class _EstablishContext:
     owned: OwnedCheckout | None
 
 
-def _to_seed_request(ctx: _EstablishContext, *, post_fix: bool) -> SeedRequest:
-    return SeedRequest(
+def _to_seed_request(ctx: _EstablishContext, *, post_fix: bool) -> _SeedRequest:
+    return _SeedRequest(
         repo_root=ctx.repo_root,
         mission_slug=ctx.mission_slug,
         mission_dir_name=ctx.mission_dir_name,
@@ -658,22 +850,43 @@ def _to_seed_request(ctx: _EstablishContext, *, post_fix: bool) -> SeedRequest:
     )
 
 
-def _handle_materialized(ctx: _EstablishContext, coord_state_before: CoordState) -> WriteLocation:
-    report = seed_coord_surface(_to_seed_request(ctx, post_fix=False))
-    seed = report if (report.carried or report.coord_commit or report.warnings) else None
+def _handle_materialized(
+    ctx: _EstablishContext,
+    coord_state_before: CoordState,
+    *,
+    base_establishment: Establishment,
+) -> WriteLocation:
+    """L2: a cheap, lock-free fast path skips the whole seed call (and its 10s-bounded
+    lock acquisition) for the overwhelming common case -- a MATERIALIZED
+    surface with nothing pending. The full, lock-protected check in
+    :func:`_seed_coord_surface_locked` still runs whenever this fast path
+    cannot already rule pending out, so a false negative here is never a
+    correctness risk, only a missed optimisation.
+    """
     coord_dir = ctx.coord_worktree / KITTY_SPECS_DIR / ctx.mission_dir_name
+    if not _whole_dir_untracked_fast(ctx.coord_worktree, ctx.mission_dir_name):
+        return WriteLocation(
+            path=coord_dir,
+            checkout_root=ctx.coord_worktree,
+            surface=TopologySurface.COORD,
+            coord_state_before=coord_state_before,
+            establishment=base_establishment,
+            seed=None,
+        )
+    report = _seed_coord_surface(_to_seed_request(ctx, post_fix=False))
+    seed = report if (report.carried or report.coord_commit or report.warnings) else None
     return WriteLocation(
         path=coord_dir,
         checkout_root=ctx.coord_worktree,
         surface=TopologySurface.COORD,
         coord_state_before=coord_state_before,
-        establishment=Establishment.NONE,
+        establishment=base_establishment,
         seed=seed,
     )
 
 
 def _handle_empty_pre_fix(ctx: _EstablishContext, coord_state_before: CoordState) -> WriteLocation:
-    report = seed_coord_surface(_to_seed_request(ctx, post_fix=False))
+    report = _seed_coord_surface(_to_seed_request(ctx, post_fix=False))
     coord_dir = ctx.coord_worktree / KITTY_SPECS_DIR / ctx.mission_dir_name
     return WriteLocation(
         path=coord_dir,
@@ -686,14 +899,16 @@ def _handle_empty_pre_fix(ctx: _EstablishContext, coord_state_before: CoordState
 
 
 def _handle_empty_post_fix(ctx: _EstablishContext, coord_state_before: CoordState) -> WriteLocation:
+    """B1/B2: the restore-from-tip and the root-only-record carry now both
+    happen inside :func:`_seed_coord_surface`'s locked, re-probed section --
+    this handler only logs the loud warning and reports the outcome.
+    """
     logger.warning(
         "coordination Mission dir missing from worktree for mission %s (branch %s); restoring from branch tip.",
         ctx.mission_slug,
         ctx.coordination_branch,
     )
-    restored = _restore_coord_kind_paths_from_tip(ctx.repo_root, ctx.coordination_branch, ctx.mission_dir_name, ctx.coord_worktree)
-    report = seed_coord_surface(_to_seed_request(ctx, post_fix=True))
-    merged_report = replace(report, restored_from_branch=restored)
+    report = _seed_coord_surface(_to_seed_request(ctx, post_fix=True))
     coord_dir = ctx.coord_worktree / KITTY_SPECS_DIR / ctx.mission_dir_name
     return WriteLocation(
         path=coord_dir,
@@ -701,7 +916,7 @@ def _handle_empty_post_fix(ctx: _EstablishContext, coord_state_before: CoordStat
         surface=TopologySurface.COORD,
         coord_state_before=coord_state_before,
         establishment=Establishment.RESTORED_FROM_BRANCH,
-        seed=merged_report,
+        seed=report,
     )
 
 
@@ -711,10 +926,16 @@ def _handle_unmaterialized(repo_root: Path, mission_slug: str, ctx: _EstablishCo
     new_state = _materialize_for_write(repo_root, mission_slug, ctx.mid8, ctx.coordination_branch, ctx.owned)
     materialized_ctx = replace(ctx, coord_worktree=_resolve_coord_worktree_root(repo_root, mission_slug, ctx.mid8, ctx.owned))
     if new_state is CoordState.MATERIALIZED:
-        return _handle_materialized(materialized_ctx, CoordState.UNMATERIALIZED)
+        # B5: the state machine just transitioned UNMATERIALIZED ->
+        # MATERIALIZED -- report WORKTREE_MATERIALIZED (contract + T016),
+        # unless the pending-seed check inside ``_handle_materialized``
+        # finds a genuine seed to run, in which case ``seed`` is populated
+        # too (the WriteLocation still names the base establishment as the
+        # transition that happened; a populated ``seed`` tells the caller
+        # more happened than a bare materialization).
+        return _handle_materialized(materialized_ctx, CoordState.UNMATERIALIZED, base_establishment=Establishment.WORKTREE_MATERIALIZED)
     if new_state is CoordState.EMPTY:
-        trailer_present = _trailer_present(repo_root, ctx.coordination_branch, ctx.mission_id)
-        if not trailer_present:
+        if not coord_branch_is_post_fix(repo_root, ctx.coordination_branch, ctx.mission_id):
             return _handle_empty_pre_fix(materialized_ctx, CoordState.UNMATERIALIZED)
         return _handle_empty_post_fix(materialized_ctx, CoordState.UNMATERIALIZED)
     # Materialization is documented to leave only MATERIALIZED/EMPTY on
@@ -778,8 +999,8 @@ def establish_coord_write_location(
     if state is CoordState.UNMATERIALIZED:
         return _handle_unmaterialized(repo_root, mission_slug, ctx)
     if state is CoordState.MATERIALIZED:
-        return _handle_materialized(ctx, CoordState.MATERIALIZED)
+        return _handle_materialized(ctx, CoordState.MATERIALIZED, base_establishment=Establishment.NONE)
     # state is EMPTY.
-    if not _trailer_present(repo_root, coordination_branch, mission_id):
+    if not coord_branch_is_post_fix(repo_root, coordination_branch, mission_id):
         return _handle_empty_pre_fix(ctx, CoordState.EMPTY)
     return _handle_empty_post_fix(ctx, CoordState.EMPTY)
