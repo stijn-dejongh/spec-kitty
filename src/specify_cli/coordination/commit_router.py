@@ -47,7 +47,7 @@ from specify_cli.coordination import commit_outcome
 from specify_cli.coordination.coherence import is_coord_residue_churn
 from specify_cli.coordination.commit_outcome import PathFate, SurfaceOutcome
 from specify_cli.coordination.surface_authority import Refuse, resolve_surface_authority
-from specify_cli.git import safe_commit
+from specify_cli.git import ref_advance, safe_commit
 from specify_cli.status import FeatureStatusLockTimeoutError
 
 if TYPE_CHECKING:
@@ -102,7 +102,6 @@ class _ProtectionPolicyProtocol(Protocol):
     """
 
     def is_protected(self, ref: str) -> bool: ...
-
 
 logger = logging.getLogger(__name__)
 
@@ -698,7 +697,9 @@ def _commit_partition_group(
         expected_path_bytes=expected_path_bytes,
     )
     if isinstance(commit_result, CommitRouterResult):
-        return _refine_unchanged_for_root_checkout_dirt(commit_result, repo_root, files, use_coord=use_coord, surface_name=surface_name, placement=placement)
+        return _refine_unchanged_for_root_checkout_dirt(
+            commit_result, repo_root, files, use_coord=use_coord, surface_name=surface_name, placement=placement
+        )
 
     commit_hash: str | None = None
     if commit_result is not None and hasattr(commit_result, "sha"):
@@ -1006,7 +1007,9 @@ def _group_files_by_partition(
         else:
             primary_files.append(file)
 
-    caller_partition_holds_everything = (caller_is_primary and not coord_files) or (not caller_is_primary and not primary_files)
+    caller_partition_holds_everything = (
+        caller_is_primary and not coord_files
+    ) or (not caller_is_primary and not primary_files)
     if caller_partition_holds_everything:
         # Every file lands in the caller's own partition — the historical
         # fast path: no extra resolve_placement_only call, byte-identical to
@@ -1225,7 +1228,9 @@ def _resolve_mid8(repo_root: Path, mission_slug: str) -> str | None:
         from specify_cli.mission_metadata import load_meta
         from specify_cli.missions._read_path_resolver import MissionSelectorAmbiguous
 
-        feature_dir = placement_seam(repo_root, mission_slug).read_dir(MissionArtifactKind.PRIMARY_METADATA)
+        feature_dir = placement_seam(repo_root, mission_slug).read_dir(
+            MissionArtifactKind.PRIMARY_METADATA
+        )
         meta = load_meta(feature_dir, allow_missing=True, on_malformed="none")
         raw_mid = meta.get("mission_id") if meta else None
         if not isinstance(raw_mid, str) or len(raw_mid) < 8:
@@ -1658,7 +1663,9 @@ def _stage_artifacts_in_coord_worktree(
     for src in files:
         rel = src.relative_to(repo_root)
         plan = _classify_stage_path(src, rel, coord_worktree)
-        coord_file, staged_pair = _act_on_stage_plan(plan, src, rel, coord_worktree, repo_root, mission_slug=mission_slug, owned=owned, write_dirs=write_dirs)
+        coord_file, staged_pair = _act_on_stage_plan(
+            plan, src, rel, coord_worktree, repo_root, mission_slug=mission_slug, owned=owned, write_dirs=write_dirs
+        )
         if coord_file is not None and coord_file not in seen:
             seen.add(coord_file)
             coord_files.append(coord_file)
@@ -1683,7 +1690,9 @@ def _stage_artifacts_in_coord_worktree(
 # ---------------------------------------------------------------------------
 
 
-def _resolve_planning_placement(repo_root: Path, mission_slug: str, *, kind: MissionArtifactKind) -> CommitTarget:
+def _resolve_planning_placement(
+    repo_root: Path, mission_slug: str, *, kind: MissionArtifactKind
+) -> CommitTarget:
     """Resolve the single planning-phase :class:`CommitTarget` for ``mission_slug``.
 
     WP05 / FR-003 / C-GUARD-3a (#1784): the ONE destination authority for every
@@ -1881,9 +1890,9 @@ def _dirty_paths_in_checkout(checkout_root: Path, files: tuple[Path, ...]) -> tu
     under it, so a file inside a brand-new untracked directory still
     resolves to dirty.
     """
-    from specify_cli.git import ref_advance  # noqa: PLC0415 -- narrow import, avoids a module-level cycle
-
-    dirty_entries = ref_advance._dirty_entries(  # noqa: SLF001 -- same-layer reuse, mirrors git/destructive_guard.py
+    # Same-layer reuse of a module-private helper, mirroring git/destructive_guard.py's
+    # own cross-module call into this exact function.
+    dirty_entries = ref_advance._dirty_entries(
         checkout_root,
         None,
         new_sha="HEAD",

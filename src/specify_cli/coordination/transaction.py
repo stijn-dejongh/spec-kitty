@@ -45,8 +45,13 @@ from specify_cli.coordination.types import (
     Refused,
 )
 from specify_cli.coordination.workspace import CoordinationWorkspace
-from mission_runtime import CommitTarget, OwnedCheckout
+from mission_runtime import CommitTarget, MissionArtifactKind, OwnedCheckout, placement_seam
 from specify_cli.core.commit_guard import GuardCapability
+from specify_cli.coordination.coord_seed import CoordSeedForkRefused
+from specify_cli.coordination.surface_resolver import (
+    CoordinationBranchDeleted,
+    CoordinationWorktreeUnmaterialized,
+)
 from specify_cli.git.commit_helpers import (
     SafeCommitPathPolicyError,
     SafeCommitRecoveryFailed,
@@ -204,14 +209,6 @@ def _resolve_coord_worktree_root_for_transaction(
     materialization failure is wrapped into :class:`BookkeepingWorktreeMissing`,
     matching the exception this call site always raised for that case.
     """
-    from mission_runtime import MissionArtifactKind, placement_seam  # noqa: PLC0415
-    from specify_cli.coordination.coord_seed import CoordSeedForkRefused  # noqa: PLC0415
-    from specify_cli.coordination.surface_resolver import (  # noqa: PLC0415
-        CoordinationBranchDeleted,
-        CoordinationWorktreeUnmaterialized,
-    )
-    from specify_cli.status.locking import FeatureStatusLockTimeoutError  # noqa: PLC0415
-
     seam_repo_root = owned.repository_root if owned is not None else repo_root
     canonical_mission_slug = _canonical_coord_mission_slug(seam_repo_root, mission_slug, mid8, owned=owned)
     try:
@@ -225,7 +222,12 @@ def _resolve_coord_worktree_root_for_transaction(
         FeatureStatusLockTimeoutError,
     ):
         raise
-    except Exception as exc:  # noqa: BLE001 — domain error surface
+    except Exception as exc:
+        # Domain-error surface: any genuinely unexpected materialization failure
+        # (programming bug, unforeseen git-plumbing error) becomes the typed
+        # BookkeepingWorktreeMissing this call site has always raised for that
+        # case, rather than propagating an unclassified exception to callers
+        # that only expect this module's own error hierarchy.
         identity = coord_mission_dir_name(mission_slug, mid8=mid8)
         raise BookkeepingWorktreeMissing(
             f"Failed to resolve coordination worktree for {identity}: {exc}"

@@ -36,7 +36,13 @@ from kernel.clock import now_utc, now_utc_iso, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 
+from mission_runtime import MissionArtifactKind, TopologySurface, placement_seam
+from specify_cli.coordination.coord_seed import CoordSeedForkRefused
 from specify_cli.coordination.outbound import queue_saas_emission
+from specify_cli.coordination.surface_resolver import (
+    CoordinationBranchDeleted,
+    CoordinationWorktreeUnmaterialized,
+)
 from specify_cli.core import hosted_posture
 from specify_cli.core.commit_guard import GuardCapability
 from specify_cli.core.errors import StructuredError
@@ -60,6 +66,7 @@ from specify_cli.lanes.branch_naming import (
 from specify_cli.status import emit as _emit
 from specify_cli.status.locking import (
     BOUNDED_STATUS_LOCK_TIMEOUT_SECONDS,
+    FeatureStatusLockTimeoutError,
     feature_status_lock,
 )
 from specify_cli.status.models import (
@@ -267,14 +274,6 @@ def _resolve_fallback_coord_worktree(identity: _TransactionIdentity, mission_slu
       shape, not just the historical ``CoordinationWorkspace.resolve``
       plumbing failure.
     """
-    from mission_runtime import MissionArtifactKind, TopologySurface, placement_seam  # noqa: PLC0415
-    from specify_cli.coordination.coord_seed import CoordSeedForkRefused  # noqa: PLC0415
-    from specify_cli.coordination.surface_resolver import (  # noqa: PLC0415
-        CoordinationBranchDeleted,
-        CoordinationWorktreeUnmaterialized,
-    )
-    from specify_cli.status.locking import FeatureStatusLockTimeoutError  # noqa: PLC0415
-
     canonical_mission_slug = _canonical_coord_mission_slug(identity, mission_slug)
     try:
         location = placement_seam(identity.repo_root, canonical_mission_slug, owned=identity.owned).write_dir(MissionArtifactKind.STATUS_STATE)
@@ -519,8 +518,6 @@ def _emit_on_coord_then_commit(
     unless a seed is genuinely still pending), so it is a cheap probe, not a
     second materialize/seed attempt.
     """
-    from mission_runtime import MissionArtifactKind, placement_seam  # noqa: PLC0415
-
     canonical_mission_slug = _canonical_coord_mission_slug(identity, mission_slug)
     coord_fd = placement_seam(identity.repo_root, canonical_mission_slug, owned=identity.owned).write_dir(MissionArtifactKind.STATUS_STATE).path
     # The flat shell re-enters the same L1. Keep it through commit/rollback:
@@ -1792,12 +1789,6 @@ def emit_inner_state_changed_transactional(
     )
     # The acquire shape is the shared one (``_acquire_status_transaction``):
     # ``identity.owned`` threads the owned checkout through identically here.
-    from specify_cli.coordination.coord_seed import CoordSeedForkRefused  # noqa: PLC0415
-    from specify_cli.coordination.surface_resolver import (  # noqa: PLC0415
-        CoordinationBranchDeleted,
-        CoordinationWorktreeUnmaterialized,
-    )
-
     try:
         with _acquire_status_transaction(
             identity,

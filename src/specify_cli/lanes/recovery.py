@@ -822,7 +822,10 @@ def reconcile_status(
                 )
             )
             emitted += 1
-        except Exception as exc:  # noqa: BLE001 -- recovery is best-effort; logged, then stop this WP's catch-up
+        except Exception as exc:
+            # Recovery is best-effort: log and stop this WP's catch-up rather
+            # than letting an unexpected failure propagate out of a crash-
+            # recovery sweep.
             logger.warning(
                 "reconcile_status: stopped emitting catch-up transitions for WP %s (mission %s) at %s "
                 "after %s: %s",
