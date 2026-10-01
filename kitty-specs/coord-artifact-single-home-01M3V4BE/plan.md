@@ -1,6 +1,6 @@
 # Implementation Plan: Coordination artifacts get one durable home
 
-**Branch**: `issue-5440-coord-artifact-single-home` | **Date**: 2026-10-01 | **Spec**: [spec.md](spec.md) (revision 4)
+**Branch**: `issue-5440-coord-artifact-single-home` | **Date**: 2026-10-01 | **Spec**: [spec.md](spec.md) (revision 5)
 **Input**: Mission specification from `kitty-specs/coord-artifact-single-home-01M3V4BE/spec.md`
 
 **Note**: Base revision `ecb5dd914a`; product code is unchanged on this branch. Every file:line below was re-verified there. The operator's plan-phase rulings Q1-Q6, the `/spec-kitty.analyze` folds and the WP01-WP11 brownfield-scout decisions are folded in (see `traces/design-decisions.md`). Detail lives in [research.md](research.md) (decisions D1-D23, the NFR-001 baseline, the #2533 verdict, the red-first list), [data-model.md](data-model.md), [contracts/](contracts/) and [quickstart.md](quickstart.md).
@@ -43,7 +43,7 @@
 | DDD + tiered rigour | PASS | Core logic (seed prefix rule, fork detection, outcome contract) gets property-style and fixture tests; CLI glue gets entry-point tests. |
 | ATDD / red-first (C-005, Standing Order 4) | PASS | R1-R24 plus R1d through pre-existing entry points. Adopted reds come from PR #5518 and PR #5520; after GREEN they are folded into the owning module test files (R-M8). |
 | Campsite cleaning first (Standing Order 2, DIRECTIVE_025) | PASS | IC-01 precedes the functional ICs and extracts helpers from touched functions at C901 ≥ 12. |
-| Non-vacuous gate (Standing Order 5, DIRECTIVE_043) | PASS | IC-15 extends the existing gate. Floor ≥ 18 writer functions, red at base on real offenders, self-mutation, shrink-only allowlist. |
+| Non-vacuous gate (Standing Order 5, DIRECTIVE_043) | PASS | IC-15 extends the existing gate. Floor ≥ 22 writer functions, red at base on real offenders, self-mutation, shrink-only allowlist. |
 | No full heavy suites in mission (Standing Order / internal pack) | PASS | The test policy is in Technical Context and quickstart §Test policy. |
 | Terminology canon (Mission; name the sense of "primary") | PASS | Artifacts say "PRIMARY partition", "repository root checkout" and "target branch" explicitly. |
 | Reconcile change-scope tensions | PASS | The writer census bounds the file set. Per ruling Q4, the consolidation executor and `materialize` writers are migrated in their own concern (IC-18), so the gate's allowlist starts empty. The extension beyond the planning writers is directly connected to the goal (FR-003, FR-014), with a one-line rationale in research D21. |
@@ -83,9 +83,9 @@ src/mission_runtime/
 ├── write_target_degrade.py       # assert_coord_write_materialized becomes a thin delegate to write_dir (research D22)
 └── artifacts.py                  # DECISION_LEDGER -> _PRIMARY_ARTIFACT_KINDS; stale #3928 comments
 src/specify_cli/coordination/
-├── coord_seed.py                 # NEW: establish_coord_write_location, seed_coord_surface (imports mission_runtime root only)
+├── coord_seed.py                 # NEW: establish_coord_write_location, seed_coord_surface, COORD_SEED_TRAILER (the one trailer constant; imports mission_runtime root only)
 ├── event_prefix.py               # NEW: pure prefix/fork classifier (event_ids_of, classify_prefix); reused by decisions/fork.py
-├── coherence.py                  # _TOPOLOGY_LESS_LEGACY_RESIDUE_KINDS compatibility set (research D12)
+├── coherence.py                  # is_coord_residue_churn: topology=None resolves the stored topology from the slug (research D12, Decision Moment plan.design.topology-less-callers)
 ├── surface_resolver.py           # materialize_coord_surface_for_write (step 1); loud EMPTY for post-fix (L1430-1450)
 ├── commit_router.py              # owning-surface commit (L991, L436/457), surfaces, retire _try_advance_ref (L560, L1302)
 ├── commit_outcome.py             # NEW: PathFate, SurfaceOutcome, render/payload
@@ -159,7 +159,8 @@ docs/architecture/artifact-placement-seam.md (write_dir section; stale line cita
   | `finalize_tasks` | `mission_finalize.py:4758` | **14** | IC-09, IC-13 |
   | `_ft_apply_writes` | `tasks_finalize.py:250` | **14** | IC-04 |
   | `_stage_artifacts_in_coord_worktree` | `commit_router.py:991` | **13** | IC-06 |
-  | `record_analysis` | `mission_record_analysis.py:225` | **13** | not touched: the L374 consumer is in `_maybe_auto_commit` (L294), so leave it |
+  | `record_analysis` | `mission_record_analysis.py:225` | **13** | ~~not touched~~ **touched (scout correction)**: the commit at L374 is inside `record_analysis` itself (L355-391); `_maybe_auto_commit` is in `retrospect.py:294`. Its suppress-and-commit block is extracted first, then rendered (IC-07) |
+  | `_commit_planning_pin_refresh_locked` | `mission_finalize.py:2807` | **15** | IC-07, IC-13 (only the result interpretation is extracted; the single commit call stays, per `test_finalize_refresh_pin_authority.py`) |
   | `resolve_status_surface_with_anchor` | `surface_resolver.py:1192` | **12** | IC-03 |
   | `setup_plan` | `mission_setup_plan.py:1225` | 11 | |
   | `_wrap_with_decision_git_log` | `runtime_bridge.py:283` | 11 | |
@@ -183,10 +184,7 @@ docs/architecture/artifact-placement-seam.md (write_dir section; stale line cita
 - **Sequencing/depends-on**: IC-01
 - **Risks**: Each reproduction lands with, or immediately before, the IC that turns it green; never `xfail`.
   - R1c (`test_scaffold_commit_is_single_commit_excluding_spec_md`, L290/299) pins today's defective tree, so it is re-pinned in IC-05.
-  - **Implementer check (S9).** Before re-pinning, confirm what topology the fixture `_init_repo` (`tests/core/test_mission_creation_decomposition.py:39`, branch `work`, no remote) actually resolves. Without `origin/HEAD`, primary-branch detection falls back to the current branch, so create defaults to `coord`.
-    - If it resolves `coord`, re-pin the L299 assertion to "not in the target tree".
-    - If not, leave the test as a `lanes` control (C-008) and add a coordination-routed sibling.
-    - Record the observed topology in the work-package notes.
+  - ~~**Implementer check (S9).**~~ **Superseded (scout correction):** the empirical check is unnecessary. `create_mission_core` defaults to `topology=MissionTopology.COORD` (`mission_creation.py:770`); the `origin/HEAD` fallback only affects the CLI default. Re-pin the L299 assertion to "not in the target tree", and add an explicit `lanes` sibling that keeps the original assertion (C-008).
   - R20 is a forward guard, not red at base.
 
 ### IC-03 — Write-location accessor on the placement seam (owns materialize + seed)
@@ -201,7 +199,7 @@ docs/architecture/artifact-placement-seam.md (write_dir section; stale line cita
   - `src/specify_cli/coordination/event_prefix.py` (new): the pure prefix/fork classifier, reused by IC-12 (P-M6).
   - `mission_runtime/write_target_degrade.py::assert_coord_write_materialized` (L157-261) becomes a thin delegate to `write_dir`: one write authority (research D22). Its local-head refusal pins are re-pinned deliberately; the remote-only refusal stays.
   - PUBLISHED (post-consolidation) Missions: E2-eligible kinds resolve PRIMARY before any coordination probe (research D23).
-  - Post-fix discriminator: the `Spec-Kitty-Coordination-Seed: <mission_id>` commit trailer, with the over-matching pre-fix fixture `test_surface_resolver_solo_coord_primary.py:107-146` as the negative case. The EMPTY restore copies COORD-kind paths only. `coord_branch_has_committed_artifact` (`surface_resolver.py:786`) is fixed to compose the real Mission dir (research D4).
+  - Post-fix discriminator: the `Spec-Kitty-Coordination-Seed: <mission_id>` commit trailer (one constant `COORD_SEED_TRAILER` in `coord_seed.py`, written by the seed commit and by create's commit; after a refused seed commit, the next seed attempt re-commits with the trailer, with no router change; Decision Moment `plan.design.seed-trailer-ownership`), with the over-matching pre-fix fixture `test_surface_resolver_solo_coord_primary.py:107-146` as the negative case. The EMPTY restore copies COORD-kind paths only. `coord_branch_has_committed_artifact` (`surface_resolver.py:786`) is fixed to compose the real Mission dir (research D4).
   - `surface_resolver.py:1430-1450`: the `EMPTY` warning goes loud for post-fix Missions in both coordination topologies.
   - Error codes: new `COORD_SEED_FORK_REFUSED`; new `error_code="STATUS_LOCK_HELD"` on `FeatureStatusLockTimeoutError` (`status/locking.py:59`).
   - New tests: `tests/coordination/test_coord_seed.py` and `tests/mission_runtime/test_placement_seam_write_dir.py` (state × kind matrix, prefix and fork, idempotence, atomic rename, root restoration, lock reentrancy, `write_dir`/`write_target` agreement property).
@@ -233,7 +231,7 @@ docs/architecture/artifact-placement-seam.md (write_dir section; stale line cita
   | Decision event stream | `runtime/next/runtime_bridge.py:283-375` (`_wrap_with_decision_git_log`; worktree pick L359-363) | — |
   | | `events/decision_log.py:118-120` composes the log path; it takes the dir from `write_dir(DECISION_LOG)` instead | |
   | Status transitions (move-task, mark-status) | `agent_tasks_ports.py:354-362` (`feature_write_dir`) | kind-blind `resolve_feature_dir_for_mission` |
-  | | `tasks_mark_status.py:209-231` | `resolve_status_surface(...).parent` |
+  | | `tasks_mark_status.py::_ms_emit_subtask_state` (L359; non-owned arm L406-413, flat `emit_inner_state_changed(st.status_dir, ...)`, commits nothing) | `resolve_status_surface(...).parent` (`_ms_resolve_read_dir`, L209-231) |
   | Transactional status path | `coordination/status_transition.py:241-286, 400-405` (`_resolve_fallback_coord_worktree`, `_coord_feature_dir`) | composed |
   | | `coordination/transaction.py:490` (`_acquire_locked`) | composed |
   | Finalize bootstrap | `tasks_finalize.py:444`; `mission_finalize.py:2266` (`_emit_local_canonical_events` writes to `planning_dir`) | |
@@ -268,7 +266,7 @@ docs/architecture/artifact-placement-seam.md (write_dir section; stale line cita
     - drop `status.events.jsonl` from `scaffold_paths` (L1168-1173) and L1201;
     - the seed is outside the `_BOOTSTRAP_META_COMMIT_SKIPS` suppression (L69-73, L1178, L1601, L1642);
     - `_restore_git_state_after_failed_create` (L683) tears down the coordination worktree and branch **this create** made, identified by slug plus mid8. It handles `CoordinationWorkspace.teardown`'s dirty-worktree refusal (`DestructiveOpRefused`, `workspace.py:363-369`) with a path-scoped forced removal of the create-owned worktree, deletes the branch only if this create minted it, and prunes worktree metadata (research D6).
-    - The create seed commit carries the `Spec-Kitty-Coordination-Seed: <mission_id>` trailer (D4).
+    - The create seed commit carries the `Spec-Kitty-Coordination-Seed: <mission_id>` trailer (D4), written through the one shared constant `COORD_SEED_TRAILER` owned by `coord_seed.py` (Decision Moment `plan.design.seed-trailer-ownership`).
   - `missions/_create.py`: an `is_expected_coordination_divergence(...)` predicate (research D6), used by `ensure_coordination_branch` (L195, raise at L254) and by `_coordination_doctor._coord_branch_stale_vs_target_finding` (L642; code L635).
   - Tests: R1, R1b, R1c, R20; protected-target create and rollback-after-seed tests in `tests/core/`.
 - **Sequencing/depends-on**: IC-03 (accessor), IC-06 (the router must commit coordination paths in place), IC-10 (no target fast-forward)
@@ -312,7 +310,8 @@ docs/architecture/artifact-placement-seam.md (write_dir section; stale line cita
     | finalize | `mission_finalize.py:2874, 3585-3746` |
     | retrospect | `retrospect.py:315` |
     | spec-commit | `spec_commit_cmd.py:70-95, 214-285` (with the per-argument `arguments[]` of FR-007a) |
-    | tasks ports | `review/cycle.py:712`, `tasks_mark_status.py:279`, `tasks_map_requirements.py:668` |
+    | tasks ports | `review/cycle.py:712`, `tasks_map_requirements.py:668` (mark-status renders nothing: its live write path commits nothing, and the `tasks_mark_status.py:279` `_ms_commit` shim is dead) |
+    | tracer-append CLI | `cli/commands/agent/tracer_append.py:135-163` (hand-rendered today) |
 
   - Contract: `contracts/commit-outcome.md`. Tests: R5, R11, plus a consumer-list pin test.
 - **Sequencing/depends-on**: IC-06
@@ -365,7 +364,11 @@ docs/architecture/artifact-placement-seam.md (write_dir section; stale line cita
 - **Affected surfaces**:
   - `mission_runtime/artifacts.py`: move `DECISION_LEDGER` from L194-213 to L158-186; rewrite the comments at L108-117, L209-211, L280-287.
   - Every reader in research D12, each with a focused test in its module, including the scout additions: `commit_router.py:697/839/915/1193`, `surface_authority.py:232`, `_read_path_resolver.py:1446`, `resolution.py` sites, `workflow.py:393`, `acceptance/__init__.py:1219/1269`, `consolidation/planning_recency.py`.
-  - **C-008 design rule** (research D12): `is_coord_residue_churn(topology=None)` keeps today's `decisions/` answer for every topology, through the shrink-only `_TOPOLOGY_LESS_LEGACY_RESIDUE_KINDS` set in `coherence.py`. The FR-009 readers (accept gate, consolidation porcelain invariant `executor.py:2036`, record-analysis, commit router grouping) pass the stored topology **only when coordination-routed**. Every flipped reader gets a coordination fixture and a `lanes`-unchanged control.
+  - **C-008 design rule** (research D12; Decision Moment `plan.design.topology-less-callers`): one fix point, the predicate. When `topology is None` and the Mission slug is known, `is_coord_residue_churn` (and `is_toolchain_generated_churn`, which consults it) in `coherence.py` resolves the Mission's stored topology.
+    - `lanes` and `single_branch` Missions keep today's verdict at every caller (C-008), pinned by a characterization test.
+    - Coordination Missions get the PRIMARY ledger rule at **every** caller, including move-task, implement and auto-rebase: an uncommitted ledger is real work, not residue.
+    - A caller that passes neither topology nor slug keeps the base verdict, and is listed.
+    - There are no per-caller topology patches and no compatibility set. Every flipped reader gets a coordination fixture and a `lanes`-unchanged control.
   - **Committers** (Decision Moment `plan.scope.ledger-committers`): spec-commit and accept only. setup-plan and finalize-tasks are unchanged.
   - **Merge-driver hazard:** `planning_recency._is_primary_planning_path` skips paths covered by a registered `_MERGE_DRIVERS` pattern, so `lanes/consolidation.py:748-750`'s target-favouring `git merge-file` never overwrites the index driver's union.
   - Pure `union_decision_index(ours, theirs)` in `consolidation/drivers.py`, which the driver wraps and IC-12's repair reuses (P-M6).
@@ -376,7 +379,7 @@ docs/architecture/artifact-placement-seam.md (write_dir section; stale line cita
     - `init.py` (L67-74, L455);
     - `.gitattributes`;
     - a new upgrade migration modelled on `m_3_2_6_decisions_event_log_merge_driver.py`.
-  - Gate updates: `test_write_surface_placement_guard.py` (L12, L344-358). In `test_merge_reconciliation_class_guard.py`, `decisions` moves into the both-sides-divergent set (`divergent_dirs == {"traces", "decisions"}`), the ruling text at L318-334 is amended, and the per-dir check requires the `kitty-specs/**/decisions/index.json` driver pattern (research D13).
+  - Gate updates: `test_write_surface_placement_guard.py` (L12, L344-358). In `test_merge_reconciliation_class_guard.py` (Decision Moment `plan.design.merge-class-guard-set`), `decisions` **stays** in `_NON_DIVERGENT_COORD_RESIDUE_DIRS`: the guard hard-asserts `divergent_dirs == {"traces"}`, and `DM-*.md` are ULID-unique one-shot writes. The ruling text at L318-334 is amended (the dir is PRIMARY; `index.json` is covered by the `spec-kitty-decision-index` driver). A new assertion requires the `decisions/index.json` driver pattern to be registered in root `.gitattributes`, discovered via the `_MERGE_DRIVERS` `config_key` (research D13).
   - Tests: R13, R21, the FR-009a ratchet (ledger writes and reads stay PRIMARY: `decisions/service.py:255-279`, `_decisions_doctor.py:146-156`).
 - **Sequencing/depends-on**: IC-06 (router grouping); before IC-08 and IC-12
 - **Risks**:
@@ -384,7 +387,7 @@ docs/architecture/artifact-placement-seam.md (write_dir section; stale line cita
   - The pre-fix coordination-only ledger is excluded from the projection (`bookkeeping_projection.py:481`), which is why IC-12's teardown refusal must land in the same release.
   - Editing a migration triggers the migration-registry tests; run `tests/upgrade/` for the new migration.
   - Without the planning-recency skip, consolidation silently drops lane-added index entries whenever the target's `index.json` is newer. A dedicated test covers it.
-  - The topology-less readers left on the legacy answer (move-task, implement, auto-rebase, `tasks_shared.py:750`) still drop ledger dirt for coordination Missions. That is acceptable because they never commit the ledger; retiring the COORD default is a follow-up.
+  - Resolving the stored topology widens coordination-Mission behaviour at move-task, implement and auto-rebase: ledger dirt there is now real work. Each gets a coordination-Mission test (Decision Moment `plan.design.topology-less-callers`).
 
 ### IC-12 — `doctor decisions` fork detection, honest verify, non-destructive repair, pre-fix ledger repair, teardown refusal
 

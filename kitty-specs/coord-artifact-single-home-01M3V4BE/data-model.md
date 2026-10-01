@@ -21,12 +21,14 @@ Decision events stay COORD on both streams: the status log carries `Decision*` e
 
 For non-coordination topologies (`lanes`, `single_branch`), every kind resolves to the PRIMARY partition, as today (C-008).
 
-**Residue classification after the ledger move** (research D12, design rule):
+**Residue classification after the ledger move** (research D12, Decision Moment `plan.design.topology-less-callers`):
 
 | Caller of `is_coord_residue_churn` | `decisions/` is residue? |
 |---|---|
-| passes `topology=None` (the legacy default) | **yes, as today, for every topology**: a shrink-only compatibility set `{DECISION_LEDGER}`, consulted only when `topology is None` |
-| passes a coordination topology (the FR-009 readers do so only for coordination-routed Missions) | **no**: real work |
+| passes `topology=None`, slug known, Mission is coordination-routed | **no**: real work (the stored topology is resolved at the predicate) |
+| passes `topology=None`, slug known, Mission is `lanes`/`single_branch` | as today (the base verdict is kept; C-008) |
+| passes `topology=None` and no slug | as today (base verdict; listed) |
+| passes a coordination topology | **no**: real work |
 | passes a non-coordination topology | no, as today (nothing is residue there) |
 
 Non-coordination Missions keep exactly today's ledger handling. Paths covered by a registered merge driver (including `decisions/index.json`) are skipped by the planning-recency resolver (research D12, "Merge-driver hazard").

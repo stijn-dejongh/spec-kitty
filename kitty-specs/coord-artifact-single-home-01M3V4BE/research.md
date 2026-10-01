@@ -82,7 +82,7 @@ These correct the pre-spec grounding notes. The plan uses the corrected values.
 ## D4. Telling a post-fix Mission's empty surface from a pre-fix one
 
 **Decision.** The discriminator is a **seed marker in the coordination branch history**: a commit trailer `Spec-Kitty-Coordination-Seed: <mission_id>` on every seed commit.
-- Two kinds of commit carry it: the create-time commit (IC-05) and a pre-fix Mission's carry-over commit (D5).
+- Two kinds of commit carry it: the create-time commit (IC-05) and a pre-fix Mission's carry-over commit (D5). Both write it through **one shared constant**, `COORD_SEED_TRAILER` in `coordination/coord_seed.py` (Decision Moment `plan.design.seed-trailer-ownership`). If a seed commit is refused, the next seed attempt (the next COORD write, which finds the seed pending) re-commits with the trailer; the commit router itself never adds the trailer.
 - A Mission counts as **post-fix** iff `git log --format=%(trailers:key=Spec-Kitty-Coordination-Seed,valueonly) <coordination_branch>` contains its `mission_id`.
 - There is no new `meta.json` field.
 - **EMPTY on a post-fix Mission** means the Mission dir was deleted in the worktree, a regression.
@@ -108,7 +108,7 @@ These correct the pre-spec grounding notes. The plan uses the corrected values.
 ## D5. The seed commits on the coordination branch
 
 - **Decision.** The seed commits the carried files as one commit on the coordination branch through the existing coordination commit path, before the triggering write appends. The call is `commit_for_mission(kind=STATUS_STATE, files=<coordination-worktree paths>)`; such paths commit in place per `commit_router.py:1026-1029`.
-- **Rationale.** The commit makes the carry-over durable across clones, so a later fresh clone sees MATERIALIZED and never re-seeds (FR-004a, "exactly once"). It also makes D4's branch-tree discriminator true for healed pre-fix Missions.
+- **Rationale.** The commit makes the carry-over durable across clones, so a later fresh clone sees MATERIALIZED and never re-seeds (FR-004a, "exactly once"). It also writes D4's seed trailer, so a healed pre-fix Mission counts as post-fix from then on.
 - **Alternative rejected.** Leaving the carry-over uncommitted until the next commit. A tracer-only write would leave the status log uncommitted on the coordination surface indefinitely.
 - **Operator ruling (plan, Q5).** Confirmed: the pre-fix seed makes one commit on the coordination branch before the triggering write proceeds. Spec rev 3 states this in FR-004 and US2.4.
 
@@ -199,7 +199,10 @@ Every consumer renders through the shared pair. The consumers, verified:
 | finalize pin refresh | `mission_finalize.py:2874` | reads |
 | retrospect | `retrospect.py:315` | reads |
 | spec-commit | `spec_commit_cmd.py:214` (branch L229-285) | reads caller fields only |
-| tasks ports | `agent_tasks_ports.py:389/400` → `review/cycle.py:712`, `tasks_mark_status.py:279`, `tasks_map_requirements.py:668` | drops hashes/reason |
+| tasks ports | `agent_tasks_ports.py:389/400` → `review/cycle.py:712`, `tasks_map_requirements.py:668` | drops hashes/reason |
+| tracer-append CLI | `cli/commands/agent/tracer_append.py:135-163` | hand-renders caller fields |
+
+mark-status is **not** a consumer: its live write path (`_ms_emit_subtask_state`, L359/L406-413) commits nothing, and the `tasks_mark_status.py:279` `_ms_commit` shim is dead code.
 
 Discarded-result sites render a warning only when a surface is not `committed`/`unchanged`.
 
@@ -253,7 +256,7 @@ Discarded-result sites render a warning only when a surface is not `committed`/`
 - Move `DECISION_LEDGER` from `_PLACEMENT_ARTIFACT_KINDS` (`artifacts.py:194-213`) to `_PRIMARY_ARTIFACT_KINDS` (L158-186). `_COORD_RESIDUE_DIRS["decisions"]` (L287) keeps mapping the dir to the kind; the kind's partition now makes `kind_is_coordination_residue` (L131-149) false.
 - Rewrite the stale #3928 comments at L108-117, L209-211 and L280-287.
 
-Readers that flip:
+Readers that flip (for coordination-routed Missions; `lanes`/`single_branch` keep today's verdict per the design rule below):
 
 | Reader | Site | After |
 |--------|------|-------|
@@ -286,24 +289,25 @@ Readers that flip:
 | acceptance kind audit | `acceptance/__init__.py:1219` (non-primary kind listing), `:1269` | ledger leaves the non-primary listing; audit the message text |
 | planning recency | `consolidation/planning_recency.py:39` (`_is_primary_planning_path`) | **hazard**: see "Merge-driver hazard" below |
 
-**Design rule: non-coordination topologies keep today's ledger handling (C-008).**
+**Design rule: non-coordination topologies keep today's ledger handling (C-008)** (Decision Moment `plan.design.topology-less-callers`).
 
 - **The problem.** Several residue readers pass no topology, and `is_coord_residue_churn` then defaults to COORD (`coherence.py:224-226`). They are:
   - the consolidation porcelain invariant (`executor.py:2036`);
-  - move-task (`tasks_move_task.py:824`);
+  - move-task (`tasks_move_task.py:824`) and `tasks_shared.py:750`;
   - implement (`implement.py:905/947`);
   - auto-rebase (`lanes/auto_rebase.py:225`);
-  - the commit router grouping (`commit_router.py:768`);
-  - the accept gate (`acceptance/__init__.py:440`), which is guarded by `_mission_routes_through_coordination`;
-  - record-analysis (`mission_record_analysis.py:198`).
+  - the commit router grouping (`commit_router.py:768`).
 
-  So today `decisions/` counts as residue for **every** topology at those sites. Removing `DECISION_LEDGER` from the COORD set would therefore also change `lanes` and `single_branch` behaviour.
-- **Why not just thread the real topology through.** For a non-coordination topology `kind_is_coordination_residue` returns False for every kind (`artifacts.py:146-147`). Passing the real topology would stop status and trace files counting as residue too, which is a broader `lanes` change.
-- **The rule.**
-  1. `is_coord_residue_churn(path, topology=None)` keeps today's answer for every path, including `decisions/`. A one-member, shrink-only compatibility set, `_TOPOLOGY_LESS_LEGACY_RESIDUE_KINDS = {DECISION_LEDGER}`, is consulted only when `topology is None`. It has its own test pinning it as shrink-only.
-  2. The readers that FR-009 requires to treat the ledger as real work pass the Mission's stored topology **only when it is coordination-routed**: `topology=stored if routes_through_coordination(stored) else None`. Those readers are the accept gate, the consolidation porcelain invariant, record-analysis and the commit router grouping. For them, under `coord`/`lanes_with_coord`, `decisions/` is real work. Every non-coordination Mission still takes the `None` arm, so its behaviour is unchanged.
-  3. The remaining topology-less readers (move-task, implement, auto-rebase, `tasks_shared.py:750`) are unchanged in this Mission. They keep the legacy answer, so for a coordination Mission they still drop ledger dirt as residue. That is acceptable because none of them commits the ledger; spec-commit and accept do (FR-009b). Retiring the COORD default is a follow-up.
-- **Tests.** Every flipped reader gets a paired fixture: a coordination Mission where the ledger is real work, and a `lanes` Mission where the behaviour is unchanged.
+  So today `decisions/` counts as residue for **every** topology at those sites, and removing `DECISION_LEDGER` from the COORD set would also change `lanes` and `single_branch` behaviour.
+- **The rule: one fix point, the predicate.** When `topology is None` and a Mission slug is available, `is_coord_residue_churn` (and therefore `is_toolchain_generated_churn`) in `coherence.py` resolves the Mission's **stored** topology:
+  1. **Non-coordination Missions** (`lanes`, `single_branch`) keep exactly today's verdict at every caller (C-008), pinned by a characterization test over each caller path.
+  2. **Coordination-routed Missions** get the PRIMARY ledger rule at **every** caller, including move-task, implement and auto-rebase: an uncommitted ledger is real work, not residue.
+  3. A caller that passes neither topology nor slug keeps the base verdict, and is listed in the activity log.
+
+  There are no per-caller topology patches and no compatibility set.
+- **Tests.**
+  - A red-first characterization on `lanes` and `single_branch` Missions: each caller's base verdict for `decisions/*`.
+  - Coordination-Mission tests at move-task, implement and auto-rebase (plus the FR-009 readers: the accept gate, the consolidation porcelain invariant, record-analysis and the commit router grouping), asserting that an uncommitted ledger is real work.
 
 **Merge-driver hazard (owned by the ledger-reclassification concern, plan IC-11).**
 - **How it breaks.** After the flip, `planning_recency._is_primary_planning_path` (L39-47) classifies `decisions/index.json` as a PRIMARY planning file. `target_newer_primary_artifacts` (called from `lanes/consolidation.py:748-750`) then re-resolves it with a base/target/lane `git merge-file` that favours the target on overlap. That overwrites the `spec-kitty-decision-index` driver's union result, losing lane-added entries.
@@ -325,10 +329,10 @@ Readers that flip:
 - `DM-*.md` needs no driver: the files are ULID-named, one per decision.
 
 - The union is a pure public function, `union_decision_index(ours, theirs) -> dict` in `consolidation/drivers.py` (post-tasks P-M6). The driver body is a thin IO wrapper around it, and `doctor decisions --repair`'s coordination-only-ledger merge (D14) reuses it. There is no second union implementation.
-- **Merge-class guard** (`tests/architectural/test_merge_reconciliation_class_guard.py`): the cheapest truthful fix.
-  - Move `decisions` out of `_NON_DIVERGENT_COORD_RESIDUE_DIRS` (L318-334) into the both-sides-divergent set, so the assertion at L355 becomes `divergent_dirs == {"traces", "decisions"}`.
-  - Amend the ruling comment to say the ledger is a PRIMARY record that travels with lane branches.
-  - Make the per-directory pattern check (L362-369) require `kitty-specs/**/decisions/index.json` for `decisions`, instead of the `*.md` pattern.
+- **Merge-class guard** (`tests/architectural/test_merge_reconciliation_class_guard.py`; Decision Moment `plan.design.merge-class-guard-set`):
+  - Keep `decisions` **in** `_NON_DIVERGENT_COORD_RESIDUE_DIRS` (L318-334). The guard hard-asserts `divergent_dirs == {"traces"}` (L355) and requires a `*.md` driver per divergent dir, and `DM-*.md` are ULID-unique one-shot writes.
+  - Amend the ruling comment: the ledger is a PRIMARY record that travels with lane branches, and its `index.json` is covered by the `spec-kitty-decision-index` driver.
+  - Add an assertion that the `kitty-specs/**/decisions/index.json` driver pattern is registered in root `.gitattributes`, discovered via the `_MERGE_DRIVERS` `config_key`, not a literal. The guard reads `.gitattributes` (`_gitattributes_merge_drivers()`, L161).
 - **Hazard.** The planning-recency resolver must skip driver-covered paths (D12, "Merge-driver hazard").
 
 **Rationale.** FR-009b and US4.9. The class guard ruled the ledger single-writer while it was COORD (L320-333). As a PRIMARY record it travels with lane and Mission branches, so concurrent lane additions conflict on `index.json`. The ruling is amended in the same change, so the guard's completeness check stays green.

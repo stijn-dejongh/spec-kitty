@@ -22,7 +22,7 @@
    - Otherwise: release everything and raise `COORD_SEED_FORK_REFUSED`.
 7. **Non-log records.** Take the coordination copy if present, else the root copy. When both exist and differ, add a warning; the root copy is kept untouched.
 8. **Write.** Write the output tree into `kitty-specs/.<dir>.seed-<pid>-<ulid>/`, then `os.rename` it to `kitty-specs/<dir>/`. The rename is atomic within the worktree's filesystem.
-9. **Commit.** Commit on the coordination branch through `commit_for_mission(kind=STATUS_STATE, files=<coordination paths>)`, with the message `chore(<mission>): seed coordination surface` and the trailer `Spec-Kitty-Coordination-Seed: <mission_id>`. The trailer is the post-fix discriminator (research D4). Then record `coord_commit`.
+9. **Commit.** Commit on the coordination branch through `commit_for_mission(kind=STATUS_STATE, files=<coordination paths>)`, with the message `chore(<mission>): seed coordination surface` and the trailer `Spec-Kitty-Coordination-Seed: <mission_id>`, built from the one shared constant `COORD_SEED_TRAILER` in `coord_seed.py`, which create's commit also uses (Decision Moment `plan.design.seed-trailer-ownership`). The trailer is the post-fix discriminator (research D4). Then record `coord_commit`.
 10. **Restore the root checkout.** For each carried root file: if it is tracked and dirty, run `git checkout -- <path>`; if it is untracked, remove it. Committed history is never rewritten (C-004).
 11. **Release** the lock and return the `SeedReport`.
 
@@ -34,7 +34,7 @@ Create-time seed: steps 4-7 find nothing (the scaffold no longer writes the stat
 - In each log, no event id appears twice.
 - The coordination branch carries the seed commit, so a later fresh clone that materializes the worktree sees `MATERIALIZED` and never seeds again.
 - No PRIMARY-partition file exists in the coordination Mission dir (US1.3).
-- The coordination branch carries a commit with the `Spec-Kitty-Coordination-Seed: <mission_id>` trailer, unless the seed commit was refused (see Errors), in which case the next coordination commit carries the seed and the trailer.
+- The coordination branch carries a commit with the `Spec-Kitty-Coordination-Seed: <mission_id>` trailer, unless the seed commit was refused (see Errors). In that case the next seed attempt re-commits the seed with the trailer.
 
 ## Errors
 
@@ -42,7 +42,7 @@ Create-time seed: steps 4-7 find nothing (the scaffold no longer writes the stat
 |------|-----------|-------------|
 | `COORD_SEED_FORK_REFUSED` (new) | both logs non-empty, and neither event-id sequence is a prefix of the other | unchanged. The message names both paths, both refs, the first diverging event id on each side, and the reconcile steps: inspect with `spec-kitty doctor decisions`; keep the coordination log; re-open any root-only decisions with `spec-kitty agent decision open ...`; then remove the root copy. |
 | `STATUS_LOCK_HELD` | lock timeout | unchanged |
-| commit refusal (`PROTECTED_BRANCH_REFUSED` on the coordination ref, …) | step 9 refused | Mission dir present and uncommitted (records are not lost). The triggering write proceeds. A loud warning names the Mission, the refused ref and the reason. The next coordination commit through the router carries the seed (its outcome lists the carried paths) and the trailer. Reported in `SeedReport.warnings` (spec edge case "Refused seed commit"). |
+| commit refusal (`PROTECTED_BRANCH_REFUSED` on the coordination ref, …) | step 9 refused | Mission dir present and uncommitted (records are not lost). The triggering write proceeds. A loud warning names the Mission, the refused ref and the reason. The next seed attempt re-commits it with the trailer: the next COORD write finds the seed pending (the Mission dir is present, its COORD records are uncommitted, and the branch has no trailer for this `mission_id`) and retries the commit before its own write. The commit router is not changed. If the ref is still protected, the warning repeats. Reported in `SeedReport.warnings` (spec edge case "Refused seed commit"). |
 
 ## Compatibility
 

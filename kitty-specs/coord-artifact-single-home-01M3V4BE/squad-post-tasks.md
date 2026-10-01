@@ -153,3 +153,31 @@ Hazards that need no task change are recorded as "run by name" or "keep green" l
 ### Tooling friction (repeat)
 
 - `map-requirements` dropped the frontmatter keys `agent`, `assignee` and `shell_pid` again; they were restored. Re-check them after the mutating `finalize-tasks`.
+
+## Analyze re-run folds (round 4)
+
+**Input**: `analysis-report.md` re-run, verdict READY (0 high, 3 medium, 10 low). The mediums came from design-doc / WP drift.
+
+**Scope**: this round folds every artifact so that they stay mutually consistent: spec.md (now **revision 5**), plan.md, research.md, data-model.md, contracts/seed.md, traces/design-decisions.md (a dated round-4 entry, with the superseded round-3 bullets struck), tasks.md and the WP prompts.
+
+**Validation**: `finalize-tasks --validate-only` passes with 16 lanes, no lane cycle, no ownership warnings and 28/28 functional requirements mapped. The `agent: claude` key was restored in WP16 after map-requirements.
+
+| ID | Severity | Decision / finding | Disposition | Where |
+|----|----------|--------------------|-------------|-------|
+| I7 | MEDIUM | `plan.design.merge-class-guard-set`: `decisions` stays in `_NON_DIVERGENT_COORD_RESIDUE_DIRS`; amend the ruling; assert the `index.json` driver pattern is registered | accepted. plan IC-11, research D13 and the traces now match WP12 (round-3 traces bullet struck) | plan.md IC-11; research.md D13; traces; WP12 Binding |
+| I8 | MEDIUM | `plan.design.topology-less-callers`: a single fix point in `coherence.py` resolves the stored topology; `lanes`/`single_branch` keep today's verdict; coordination Missions get the PRIMARY ledger rule at every caller | accepted. `_TOPOLOGY_LESS_LEGACY_RESIDUE_KINDS` and the old D12 rule 3 are removed from plan (IC-11 rule, risks, Project Structure), research D12 and the data-model residue table. WP12 gains coordination-Mission tests at move-task, implement and auto-rebase (uncommitted ledger = real work) | plan.md; research.md D12; data-model.md; traces; WP12 Binding |
+| U3 | MEDIUM | `plan.design.seed-trailer-ownership`: one constant `COORD_SEED_TRAILER` (WP03) written by WP03 T015 and WP06 T031; the tree-content alternative removed; a refused seed commit is retried with the trailer by the next seed attempt, with no router change | accepted. contracts/seed.md step 9, Postconditions and Errors updated; research D4 and D5 sentences reconciled; spec edge case "Refused seed commit" updated; plan IC-03/IC-05 and the Project Structure name the constant. WP03 T015 and WP06 T031 gain trailer subtasks with tests. The tree-content discriminator is struck in WP03 (Binding, T016 state rows, T014 step 6) and WP04 (T021 probe, Objectives, Context) | spec.md; plan.md; research.md D4/D5; contracts/seed.md; WP03; WP04; WP06 |
+| C3 | LOW | WP17 help and reference deltas | accepted. WP17 Binding gains a C3 line; WP22's delta list gains WP17's deltas (`docs/api/cli-commands.md` ≈L1864, `docs/api/agent-subcommands.md` ≈L596) | WP17; WP22 |
+| I3 | LOW | Charter Check gate floor | accepted: ≥ 22 | plan.md |
+| I4 | LOW | WP19 called a root | accepted. tasks.md WP02 and WP19 parallel lines, plus the Sequence and Parallelization lines | tasks.md |
+| I9 | LOW | WP19 fallback vs C-008 | accepted. A spec Edge Case "Implement receipts on non-coordination topologies (C-008 note)" says the change is output-only and additive. WP19 Binding requires recording the reproduction result against FR-013/US6 and the #5440 implement Assumption, plus a `lanes` unchanged-fields control | spec.md Edge Cases; WP19 Binding |
+| I10 | LOW | Stale cross-references | accepted. tasks.md header (spec rev 5; research D1-D23); WP01 Context (D1-D23); D22 cited in the WP03/WP04/WP08/WP10 Bindings; D23 cited in WP04/WP08/WP10 | tasks.md; WP01; WP03; WP04; WP08; WP10 |
+| I11 | LOW | Unstruck superseded text | accepted, struck inline: WP21 T119 step 1 "(or setup-plan …)" and the Review Guidance "Optionally" (now Required); WP06 T033 title/step 1, Context, DoD and Review S9; plan IC-01 `record_analysis` row (plus the missing `_commit_planning_pin_refresh_locked` row) and IC-02 S9 check; tasks.md T033, WP01 "leave record_analysis alone" and WP14 "do not touch record_analysis" | WP21; WP06; plan.md; tasks.md |
+| I12 | LOW | mark-status listed as a commit-outcome consumer; wrong IC-04 site | accepted. mark-status is removed from spec FR-007, plan IC-07, research D8 and tasks.md T046, with a note that it renders nothing; the tracer-append CLI is added as a consumer. plan IC-04's mark-status site is corrected to `_ms_emit_subtask_state` (L359/L406-413). WP08 Context quotes the rev-5 FR-007 wording | spec.md; plan.md; research.md; tasks.md; WP08 |
+| I13 | LOW | FR-017 anchor list misses the 4.x ADR | accepted. FR-017 names `docs/adr/4.x/2026-10-01-2-decision-ledger-primary-partition.md`; ADR 2026-06-19-1 links to it (WP22) | spec.md; WP22 |
+| I14 | LOW | Lane prose vs lanes.json | accepted. The tasks.md lane notes are rewritten as a lanes.json table (lane ids and lane dependencies). They state that lane-a (WP01/WP04/WP05) starts after lane-c (WP03), that lane-o starts after lane-a and lane-j, and that lane-f starts after lane-b and lane-o. The WP01 dependency note and the Sequence line are updated | tasks.md |
+| G4 | LOW | FR-009b missing from WP16 | accepted. `map-requirements --wp WP16 --refs FR-009b`; tasks.md WP16 refs and the coverage row updated | WP16 frontmatter; tasks.md |
+
+**Residual historical wording** (intentionally kept):
+- research.md cites "Spec rev 3" where the operator rulings were first stated (Q1, Q2, Q3, Q5). These are historical provenance notes, not stale cross-references.
+- The earlier rounds' rows in this file are an append-only log.

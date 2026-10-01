@@ -27,9 +27,9 @@ Running log of design choices and their rationale. One entry per decision, 1-3 s
   - **C1.** NFR-001 is recorded as an accepted charter deviation (Decision Moment `plan.nfr.create-latency`).
   - **G1.** The ledger committers are narrowed to spec-commit and accept (`plan.scope.ledger-committers`).
   - **#4827.** The orphan fail-closed is kept. The automatic `planning_commit_sha` refresh rides the no-flag preserve-decision path, and Q6's warn-and-continue covers only non-orphan cases.
-  - **C-008.** Topology-less residue readers keep today's `decisions/` answer through a shrink-only compatibility set. Only coordination-routed Missions pass their topology to the FR-009 readers.
+  - **C-008.** ~~Topology-less residue readers keep today's `decisions/` answer through a shrink-only compatibility set.~~ Superseded 2026-10-01 (round 4) by `plan.design.topology-less-callers`; see the entry below.
   - **Merge drivers.** Paths covered by a merge driver are skipped by planning recency.
-  - **Merge-class guard.** `decisions` moves into its divergent set, with the `index.json` pattern required.
+  - **Merge-class guard.** ~~`decisions` moves into its divergent set~~ Superseded 2026-10-01 (round 4) by `plan.design.merge-class-guard-set`; see the entry below.
   - **Single write authority.** `write_dir` absorbs `assert_coord_write_materialized` (D22).
   - **PUBLISHED kinds.** They follow the existing E2 resolution (D23).
   - **Post-fix discriminator.** It is a `Spec-Kitty-Coordination-Seed` commit trailer (the branch-tree test over-matched), and the restore copies COORD-kind paths only.
@@ -39,3 +39,14 @@ Running log of design choices and their rationale. One entry per decision, 1-3 s
   - **Matrix writes.** `write_dir` is resolved before the lock.
   - **Review cycle.** `_review_cycle_wp_dir` defaults to `REVIEW_CYCLE`, so readers and writers move together.
   - **Ledger ADR.** The ledger reversal gets its own 4.x ADR.
+- 2026-10-01 (analyze re-run folds, round 4; recorded as plan Decision Moments):
+  - **I7, `plan.design.merge-class-guard-set`.** `decisions` stays in `_NON_DIVERGENT_COORD_RESIDUE_DIRS`, because the guard hard-asserts the divergent set is `{traces}`. The ruling text is amended, and an assertion requires the `decisions/index.json` driver pattern to be registered.
+  - **I8, `plan.design.topology-less-callers`.** The fix lives at one point: `coherence.py` resolves the stored topology from the slug when `topology is None`.
+    - `lanes`/`single_branch` keep today's verdict (C-008).
+    - Coordination Missions get the PRIMARY ledger rule at every caller.
+    - The compatibility set is dropped.
+    - Coordination-Mission tests are added at move-task, implement and auto-rebase.
+  - **U3, `plan.design.seed-trailer-ownership`.** One constant, `COORD_SEED_TRAILER`, is owned by `coord_seed.py` (WP03) and written by the seed commit (WP03 T015) and create's commit (WP06 T031). A refused seed commit is retried with the trailer by the next seed attempt; there is no router change. The tree-content alternative is removed.
+  - **I12.** mark-status is not a commit-outcome consumer; its live write path commits nothing. The tracer-append CLI is.
+  - **I13.** FR-017's anchors include the new 4.x ledger ADR.
+  - **I9.** If FR-013 touches the `lanes`/`single_branch` receipt, the change is output-only and additive (spec edge case).
