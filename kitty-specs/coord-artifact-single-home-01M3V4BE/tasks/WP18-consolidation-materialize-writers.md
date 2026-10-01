@@ -246,7 +246,7 @@ Operator ruling Q4 requires the consolidation executor's status writes and `mate
   - `tests/architectural/test_merge_reconciliation_class_guard.py`
 
   Record each command with pass/fail/xfail counts in the activity log.
-  Then write a short **resume-integrity note** in the activity log: why the persisted `pre_mutation_refs`, `pre_mutation_coord_sha`, `pre_interrupt_lane_tips` and `reconciliation_passed_for_tip` are unaffected. A resumed run is MATERIALIZED or completed, so `write_dir` has no side effects, and the completed case keeps PRIMARY via T100.
+  Then write a short **resume-integrity note** in the activity log: why the persisted `pre_mutation_refs`, `pre_mutation_coord_sha`, `pre_interrupt_lane_tips` and `reconciliation_passed_for_tip` are unaffected. A resumed run is MATERIALIZED or completed, so `write_dir` has no side effects (a pending seed commit, I-SEED-10, would already have been retried by the original run's unlocked pre-phase), and the completed case keeps PRIMARY via T100.
 - **Validation**: all green; strict xfails unchanged.
 - **Edge cases**: if a guard goes red, classify it first (baseline-red gotcha). If it is caused by this WP, fix the product; never re-pin a terminus guard to green-wash.
 

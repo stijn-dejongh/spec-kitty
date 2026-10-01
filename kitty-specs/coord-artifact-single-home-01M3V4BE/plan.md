@@ -497,7 +497,7 @@ docs/architecture/artifact-placement-seam.md (write_dir section; stale line cita
 - **Sequencing/depends-on**: IC-03 (accessor), IC-12 (same file, `executor.py::_pre_mutation_safety_preflight`). It lands before IC-15 turns green and before IC-16.
 - **Risks**:
   - **Deliberate behaviour change.** Consolidation on an UNMATERIALIZED surface with a local branch now materializes and proceeds instead of aborting (R23 re-pin). `consolidate --dry-run` must stay side-effect-free: the forecast keeps its `read_dir` calls (`test_dry_run_fails_closed_on_unmaterialized_coord.py`).
-  - **`--resume` integrity.** The persisted `pre_mutation_refs`, `pre_mutation_coord_sha`, `pre_interrupt_lane_tips` and `reconciliation_passed_for_tip` must be untouched. A resumed run is MATERIALIZED or completed, so `write_dir` has no side effects there.
+  - **`--resume` integrity.** The persisted `pre_mutation_refs`, `pre_mutation_coord_sha`, `pre_interrupt_lane_tips` and `reconciliation_passed_for_tip` must be untouched. A resumed run is MATERIALIZED or completed, so `write_dir` has no side effects there; a pending seed commit (data-model I-SEED-10) would already have been retried by the original run's unlocked pre-phase.
   - **Guards that must stay green** (run each named file, never the directory; full list in research D21):
     - `tests/consolidation/test_single_rollback_authority.py`, `test_rollback_authority.py`
     - `test_reconciliation.py`, `test_reconciliation_divergent.py`, `test_squash_reconcilers_2709.py`

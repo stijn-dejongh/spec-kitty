@@ -299,7 +299,7 @@ Issues: #5513 #5501
 - The reviewer (opus, a different agent from the implementer) verifies red→green: the T074 tests were RED on the WP base and are GREEN on the final commit.
 - Confirm that no consumer reads `result.status` / `commit_hash` alone to decide what the user sees about other surfaces.
 - Confirm the retrospect write path cannot reach the repository root checkout for a coordination-routed Mission.
-- Confirm `record_analysis` (L225) is untouched and that C901 limits hold.
+- Confirm that `record_analysis`'s suppress-and-commit block (L355-391) was extracted into a private helper as a separate behaviour-preserving commit **before** rendering was added (~~"record_analysis is untouched"~~ struck in round 5), and that the C901 limits hold.
 
 ## Activity Log
 

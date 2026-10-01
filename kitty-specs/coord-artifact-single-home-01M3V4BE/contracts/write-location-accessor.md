@@ -35,7 +35,7 @@ class PlacementSeam:
 | `kind` is a PRIMARY-partition kind | `surface="primary"`, `path` = the declared PRIMARY dir (identical to `read_dir(kind)` today), `establishment=NONE`. No side effects. |
 | COORD kind, topology `lanes` or `single_branch` | the PRIMARY dir, as today (C-008). No side effects. |
 | E2-eligible COORD kind (`REVIEW_CYCLE`, `TRACER_FILE`, `ISSUE_MATRIX`, `ACCEPTANCE_MATRIX`) of a **PUBLISHED** (post-consolidation) Mission (`resolution.py:191-199`, E2 short-circuit L1961-1963) | `surface="primary"`, the PRIMARY Mission dir, `checkout_root` = the repository root checkout, `establishment=NONE`. This is checked **before** any coordination probe, so it never raises `CoordinationBranchDeleted` and never writes into a torn-down worktree (D23). |
-| COORD kind, coordination-routed, state `MATERIALIZED` | the coordination Mission dir. No side effects. |
+| COORD kind, coordination-routed, state `MATERIALIZED` | the coordination Mission dir. No side effects **unless a seed commit is pending**: a seed commit is **pending** iff the coordination branch history has no `Spec-Kitty-Coordination-Seed: <mission_id>` trailer **and** the coordination tip has no COORD-kind blob under the Mission dir, i.e. the Mission dir is wholly untracked, which only a refused seed leaves. A never-seeded pre-fix MATERIALIZED Mission (#5519 shape) has committed COORD blobs at the tip, so it never matches. When it is pending, the next seed attempt re-commits the dir with the trailer before the write (contracts/seed.md). |
 | COORD kind, coordination-routed, state `UNMATERIALIZED` with a local branch (whether or not the branch already carries artifacts of this kind; D22) | the worktree is materialized via `CoordinationWorkspace.resolve`; then the `MATERIALIZED` or `EMPTY` row applies |
 | COORD kind, coordination-routed, state `EMPTY`, **no** seed marker on the coordination branch (pre-fix Mission, D4) | seeded (`contracts/seed.md`); `establishment=SEEDED` |
 | COORD kind, coordination-routed, state `EMPTY`, seed marker present (post-fix Mission; a regression) | loud `WARNING`, then COORD-kind paths only are restored from the branch tip (never PRIMARY files), then any root-only records are seeded; `establishment=RESTORED_FROM_BRANCH` |
@@ -60,7 +60,7 @@ Every error message names the Mission, the coordination branch, and a recovery c
 ## Relationship to existing seams
 
 - **`assert_coord_write_materialized`** (`write_target_degrade.py:157-261`, formerly "the single decision locus for S-C"): absorbed (D22). It becomes a thin delegate to this accessor.
-  - MATERIALIZED/EMPTY: no-op.
+  - MATERIALIZED/EMPTY: no-op, except that a MATERIALIZED Mission with a pending seed commit (see the `MATERIALIZED` row above) gets its seed re-committed, as through `write_dir`.
   - UNMATERIALIZED with a local head: delegates to `write_dir(kind)`, which materializes and then restores or seeds, instead of refusing when the branch already carries the kind.
   - Remote-only: still refuses with `COORDINATION_WORKTREE_UNMATERIALIZED`.
 

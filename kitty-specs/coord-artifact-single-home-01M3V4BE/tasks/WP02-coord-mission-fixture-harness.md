@@ -196,6 +196,8 @@ Deliver the **one shared fixture harness** that every red-first reproduction in 
   2. If the coordination branch tree lacks `kitty-specs/<dir>/`, copy the creation events (MissionCreated/SpecifyStarted) into `<coord wt>/kitty-specs/<dir>/status.events.jsonl` and commit them on the coordination branch (`chore(<mission>): fixture seed`). Copy COORD records only, never `meta.json` (US1.3).
   3. Assert the production coordination-state probe reports MATERIALIZED (the `CoordState` classifier in `missions/_read_path_resolver.py`; find the exact probe function, e.g. `probe_coord_state`) before returning. The builder fails loudly otherwise.
   WP13/WP14/WP15 use this so their red-first fixtures hold at their lane base (WP01–WP05), where create does not yet seed.
+- **Shape caveat (round 5, X2)**: `materialized=True` produces a **pre-fix-shaped** MATERIALIZED surface. Its fixture commit carries **no** `Spec-Kitty-Coordination-Seed` trailer; WP02 runs first and cannot import WP03's `COORD_SEED_TRAILER`. It is the right fixture for "MATERIALIZED, coordination copy dirty" preconditions (WP13/WP14/WP15/WP19), but it is **not** a post-fix Mission.
+- **Helper note: post-fix fixtures come from WP03's real seed.** Build them from a pre-fix EMPTY Mission (`make_prefix_coord_mission(worktree="empty")`), then call `placement_seam(...).write_dir(STATUS_STATE)` → SEEDED with the trailer committed, then delete the coordination Mission dir if an EMPTY post-fix state is needed. WP04, WP07 and later WPs do this in their own tests; WP02 only documents it.
 
 ### Subtask T010 – NFR-002 fork fixtures and probes
 

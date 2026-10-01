@@ -129,7 +129,7 @@ Build the **core of the one write-location accessor**: the function that, for a 
   - C-004 (fix forward);
   - NFR-002 (zero loss).
 - **Plan**: IC-03, including its risks: lock ordering; the owned-checkout arm; remote-only refusal (ruling Q1); post-fix restore (ruling Q3); pre-fix seed commit (ruling Q5).
-- **Research**: D1 (accessor shape), D2 (lock ordering, atomicity), D3 (prefix rule, fork refusal), D4 (post-fix vs pre-fix discriminator: no meta flag, the coordination branch tree is the fact), D5 (seed commits on the coordination branch), D20 (remote-only refusal).
+- **Research**: D1 (accessor shape), D2 (lock ordering, atomicity), D3 (prefix rule, fork refusal), D4 (post-fix vs pre-fix discriminator: the `Spec-Kitty-Coordination-Seed: <mission_id>` trailer, constant `COORD_SEED_TRAILER` owned here; no meta flag; ~~"the coordination branch tree is the fact"~~ struck in round 4), D5 (seed commits on the coordination branch), D20 (remote-only refusal).
 - **Contracts**: `contracts/seed.md` (procedure steps 1-11, errors) and `contracts/write-location-accessor.md` (states, errors).
 - **Data model**: §2 (WriteLocation, CoordState handling table), §3 (SeedRequest/SeedReport, invariants I-SEED-1..9, outcomes), §7 (atomicity boundaries).
 - **Code anchors** (verified at `ecb5dd914a`):
@@ -257,7 +257,7 @@ Build the **core of the one write-location accessor**: the function that, for a 
      )
      ```
      The paths are under `.worktrees/`, so the router commits them in place.
-  2. `committed` → `coord_commit = result.commit_hash`. Anything else (protected coordination ref, etc.) → **do not roll back the dir** (records are not lost); append a warning naming the reason. The next coordination commit carries them (data-model §7).
+  2. `committed` → `coord_commit = result.commit_hash`. Anything else (protected coordination ref, etc.) → **do not roll back the dir** (records are not lost); append a warning naming the reason. The **next seed attempt** re-commits them with the trailer (data-model §7, I-SEED-10).
   3. **Root restoration**, per carried root file:
      - tracked and dirty → `git checkout -- <path>`;
      - untracked → unlink;
@@ -275,7 +275,7 @@ Build the **core of the one write-location accessor**: the function that, for a 
   - The commit runs inside the status lock, and `commit_for_mission` takes coordination status locks itself (`_coord_status_locks`, ≈L586). The lock is reentrant on the same key; add a test that proves no deadlock.
   - If WP05 has not landed yet in your lane, the router still commits in-place coordination paths today. Do not depend on WP05 behaviour.
 - **Trailer (round 4, `plan.design.seed-trailer-ownership`)**: the seed commit carries `Spec-Kitty-Coordination-Seed: <mission_id>`, built from the shared constant `COORD_SEED_TRAILER` defined in this WP's `coord_seed.py`.
-- **Refused seed commit, retried**: if the commit is refused, the Mission dir stays, uncommitted (warning). The **next seed attempt** re-commits with the trailer: on the next COORD write, `establish_coord_write_location` detects a pending seed (the Mission dir is present, its COORD records are uncommitted under it, and the branch has no trailer for this `mission_id`) and retries the commit before the triggering write. Keep the check cheap: a porcelain check scoped to the Mission dir first, and the trailer lookup only when that check finds dirt. Do **not** change the commit router.
+- **Refused seed commit, retried**: if the commit is refused, the Mission dir stays, uncommitted (warning). The **next seed attempt** re-commits with the trailer: on the next COORD write, `establish_coord_write_location` detects a pending seed and retries the commit before the triggering write. The predicate is narrowed (round 5, X1; data-model I-SEED-10): **no trailer for this `mission_id` AND no COORD-kind blob under the Mission dir at the coordination tip**, i.e. the dir is wholly untracked. ~~"dir present + uncommitted COORD records + no trailer"~~ is struck, because it also matched never-seeded pre-fix MATERIALIZED Missions. Keep it cheap: the fast path is `git status --porcelain -- kitty-specs/<dir>` reporting `?? kitty-specs/<dir>/`; only then probe the trailer and the tip. Do **not** change the commit router.
 - Tests: the refused-then-retried path (first attempt refused, then the ref is unprotected, so the next write commits the seed with the trailer), and the trailer present after a normal seed.
 
 ### Subtask T016 – `establish_coord_write_location`: the state machine
@@ -285,7 +285,7 @@ Build the **core of the one write-location accessor**: the function that, for a 
   1. Signature: `establish_coord_write_location(repo_root: Path, mission_slug: str, kind: MissionArtifactKind, *, owned: OwnedCheckout | None) -> WriteLocation`.
   2. Read `meta.json` from the PRIMARY partition (`read_primary_meta`, as `materialize_coord_surface_for_write` does). Resolve `mid8` and `coordination_branch`. No coordination branch → `WriteLocation(path=<primary dir>, surface="primary", coord_state_before=None, establishment=NONE)`.
   3. `state = probe_coord_state(...)`, then dispatch to one small handler per state:
-     - **MATERIALIZED**: return the coordination Mission dir, establishment `NONE`. No side effects.
+     - **MATERIALIZED**: return the coordination Mission dir, establishment `NONE`. No side effects **unless a seed commit is pending** (round 5, X1; I-SEED-10: no trailer and no COORD-kind blob under the Mission dir at the coordination tip). In that case, re-commit the seed with the trailer first.
      - **UNMATERIALIZED**: call `materialize_coord_surface_for_write(repo_root, mission_slug)`. It raises `CoordinationWorktreeUnmaterialized` for a remote-only branch (#4970 parity, ruling Q1); let that propagate, because nothing has been written. Re-probe, then continue with the MATERIALIZED or EMPTY handler. Establishment is `MATERIALIZED` unless a seed follows.
      - **DELETED**: raise `CoordinationBranchDeleted`, with the recovery hint the existing exception carries.
      - **EMPTY, no `Spec-Kitty-Coordination-Seed: <mission_id>` trailer in the coordination branch history** (pre-fix, including a branch whose tree carries PRIMARY files; round 4, D4): `seed_coord_surface(post_fix=False)` → `SEEDED`.
@@ -324,6 +324,8 @@ Build the **core of the one write-location accessor**: the function that, for a 
 - **Files**: `tests/coordination/test_coord_seed.py`, `tests/mission_runtime/test_write_location.py`.
 - **Validation**: all green; diff coverage ≥ 90% on `coord_seed.py` and `write_location.py`.
 - **Edge cases**: tests must not depend on create's current status-log placement. Use the explicit pre-fix builder.
+- **Negative test (round 5, X1)**: a pre-fix MATERIALIZED Mission (the #5519 shape: COORD records already committed on the coordination branch, no trailer) with an extra **uncommitted** COORD record in its coordination Mission dir. A COORD write must make **no seed commit and add no trailer**; only the triggering write's own commit happens. This proves the pending-seed predicate does not over-match.
+- **MATERIALIZED stays side-effect-free** apart from a pending seed: assert that a normal post-fix MATERIALIZED write makes no extra commit.
 
 ## Binding corrections — analyze + brownfield scout (round 3)
 
@@ -355,7 +357,7 @@ Build the **core of the one write-location accessor**: the function that, for a 
   - the Mission dir stays, uncommitted (no records lost);
   - `SeedReport.warnings` names the refusal;
   - a WARNING log names the Mission, the state and the action;
-  - the triggering write proceeds, and the next coordination commit carries the seed.
+  - the triggering write proceeds, and the **next seed attempt** (the next COORD write, pending-seed predicate I-SEED-10) re-commits it with the trailer.
   - Test it in `tests/coordination/test_coord_seed.py`.
 - **Restore over-reach (operator decision)**: restore **COORD-kind paths only**, using a pathspec built from kind classification. Never `git checkout HEAD -- kitty-specs/<dir>` for the whole dir: a branch cut or fast-forwarded after a target commit carries `meta.json`/`spec.md` (I-SEED-9).
 - **D4 discriminator (operator decision)**: "the coordination branch tree carries `kitty-specs/<dir>`" over-matches pre-fix Missions whose coordination branch was cut after the first target commit (fixture `tests/coordination/test_surface_resolver_solo_coord_primary.py:107-146`).

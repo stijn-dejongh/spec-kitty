@@ -107,7 +107,7 @@ Success means:
 - **Research**: none of D1-D23 changes behaviour here. The seams you cut are where D7 (router), D10/D16 (finalize), D8 (renderers) and D4 (EMPTY warning) later land.
 - **Locality (DIRECTIVE_024)**: every extraction stays inside the file that holds the function. Do not move code across modules, and do not rename public symbols. `resolution.py` is explicitly *not* touched; it has nothing ≥ 10.
 - **Do not touch**:
-  - `record_analysis` (`mission_record_analysis.py:225`, C901 13). Plan: its consumer at L374 lives in `_maybe_auto_commit`, so the function itself is not changed.
+  - `record_analysis` (`mission_record_analysis.py:225`, C901 13). ~~Plan: its consumer at L374 lives in `_maybe_auto_commit`, so the function itself is not changed.~~ Struck (round 5): the commit is inside `record_analysis` itself (L355-391), and WP14 extracts it. Not this WP's work.
   - The C901 10-11 functions (`setup_plan`, `_wrap_with_decision_git_log`, `_build_create_meta`, `decisions/verify.py::verify`, `commit_workflow_change`). They have enough headroom.
 - **Purity**: `resolve_status_surface_with_anchor` is reached from `resolve_placement_only` (`resolution.py:1974-1982` via `_assemble_core_fragments(for_write=True)`). It must stay side-effect free, and so must any helper you extract from it.
 - **Model discipline**: implement = sonnet (`claude-sonnet-5`); review = opus.

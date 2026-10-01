@@ -55,7 +55,7 @@ WriteLocation (frozen)
 |---------------------------|--------|--------|
 | any state, **PUBLISHED** Mission and E2-eligible kind (`REVIEW_CYCLE`, `TRACER_FILE`, `ISSUE_MATRIX`, `ACCEPTANCE_MATRIX`; `resolution.py:191-199`) | none: checked before any coordination probe | PRIMARY dir, `surface="primary"`, `checkout_root` = repository root checkout (research D23) |
 | `NONE` (no coordination branch) | none | PRIMARY dir, `surface="primary"` |
-| `MATERIALIZED` | none | coordination Mission dir |
+| `MATERIALIZED` | none, **unless a seed commit is pending** (I-SEED-10): then the next seed attempt re-commits the dir with the trailer | coordination Mission dir |
 | `UNMATERIALIZED`, local head (whether or not the branch already carries the kind; the absorbed gate, research D22) | `CoordinationWorkspace.resolve` (`workspace.py:296`), re-probe, then the `MATERIALIZED` or `EMPTY` row | coordination Mission dir |
 | `UNMATERIALIZED`, remote-only branch | refuse, `COORDINATION_WORKTREE_UNMATERIALIZED` (existing `_raise_unmaterialized`, `surface_resolver.py:877`) | error with a recovery hint (ruling Q1, #4970 parity) |
 | `EMPTY`, no `Spec-Kitty-Coordination-Seed: <mission_id>` trailer in the coordination branch history (pre-fix Mission, including one whose branch tree carries PRIMARY files; research D4) | seed (section 3) | coordination Mission dir, `SEEDED` |
@@ -95,7 +95,8 @@ SeedReport (frozen)
   - `R` a prefix of `C`, or equal: nothing to carry.
   - Neither is a prefix of the other, and both are non-empty: refuse with `COORD_SEED_FORK_REFUSED` (section 4).
 - **I-SEED-5 (non-log records).** Traces, review-cycle files and the matrices are carried only when absent on the coordination side. When present on both sides and different, the coordination copy wins and the root copy is reported in `warnings`; it is not restored, so no data is discarded.
-- **I-SEED-6 (exactly once).** After the rename the state is `MATERIALIZED`, so later writes never seed again. No event id appears twice in one log, because the prefix rule only appends ids that are not in `C`.
+- **I-SEED-10 (pending seed).** A seed commit is **pending** iff the coordination branch history has no `Spec-Kitty-Coordination-Seed: <mission_id>` trailer **and** the coordination tip has no COORD-kind blob under the Mission dir, i.e. the Mission dir is wholly untracked, which only a refused seed leaves. A never-seeded pre-fix MATERIALIZED Mission (#5519 shape) has committed COORD blobs at the tip, so it never matches. The fast path is a porcelain check that reports `?? kitty-specs/<dir>/` (the whole dir untracked); only then are the trailer and tip probed.
+- **I-SEED-6 (exactly once).** After the rename the state is `MATERIALIZED`, so later writes never seed again. The only later seed activity is retrying a refused seed **commit** (I-SEED-10), which carries nothing new over and never duplicates an event id. No event id appears twice in one log, because the prefix rule only appends ids that are not in `C`.
 - **I-SEED-7 (durable).** The seed commits the carried files on the coordination branch through the existing coordination commit path (`commit_for_mission(kind=STATUS_STATE, ...)` with coordination-worktree paths). This happens before the triggering write appends, so the triggering write's own commit is a separate commit.
 - **I-SEED-8 (root restoration).** Each carried root file that is tracked and dirty is restored to `HEAD` (`git checkout -- <path>`). Each carried root file that is untracked is removed. A file tracked and clean on the target branch stays as is (pre-fix Missions keep their committed history, C-004). Every restored path is listed in `restored_root`.
 - **I-SEED-9 (no planning copies).** The seed never writes PRIMARY-partition files (such as `meta.json` or `spec.md`) into the coordination Mission dir (US1.3).
@@ -194,7 +195,7 @@ stateDiagram-v2
 | Operation | Boundary | Rollback |
 |-----------|----------|----------|
 | Create (coordination-routed) | create transaction: target scaffold commit (if not suppressed) plus coordination branch, worktree, seed commit | `_restore_git_state_after_failed_create` (`mission_creation.py:683`) also removes the coordination worktree and the seed commit, by deleting the branch when this create minted it or resetting it to its pre-create tip otherwise |
-| Seed | status lock plus temp-dir rename plus one coordination commit, made before the triggering write proceeds (ruling Q5) | before the rename: drop the temp dir. After the rename but before the commit: the dir stays (records are not lost) and the next write commits it |
+| Seed | status lock plus temp-dir rename plus one coordination commit, made before the triggering write proceeds (ruling Q5) | before the rename: drop the temp dir. After the rename but before the commit (refused): the dir stays (records are not lost), and the next seed attempt (the next COORD write, which finds the seed pending, I-SEED-10) re-commits it with the trailer |
 | Status transition | existing `_emit_on_coord_then_commit` (`status_transition.py:475-537`) | unchanged |
 | Commit router batch | one commit per partition group | per-group outcome reported; no cross-group rollback (unchanged) |
 | `doctor decisions --repair` | ledger `index.json.lock` (`_decisions_doctor.py:404`) | the repair writes only additive changes |

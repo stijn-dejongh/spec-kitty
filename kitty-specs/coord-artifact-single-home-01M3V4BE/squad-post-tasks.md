@@ -181,3 +181,17 @@ Hazards that need no task change are recorded as "run by name" or "keep green" l
 **Residual historical wording** (intentionally kept):
 - research.md cites "Spec rev 3" where the operator rulings were first stated (Q1, Q2, Q3, Q5). These are historical provenance notes, not stale cross-references.
 - The earlier rounds' rows in this file are an append-only log.
+
+## Confirming-analyze folds (round 5)
+
+**Input**: the confirming `/spec-kitty.analyze`, verdict READY, with three follow-on findings from the round-4 trailer fold.
+
+**Scope**: folded consistently across contracts/write-location-accessor.md, contracts/seed.md, data-model.md (§2, the new I-SEED-10, I-SEED-6, §7), spec.md (edge case "Refused seed commit"), research.md (D4, D22), plan.md (IC-18 resume note), and WP01, WP02, WP03, WP04, WP07, WP12, WP14, WP18, WP20 and WP22.
+
+**Validation**: `finalize-tasks --validate-only` passes with 16 lanes and no ownership warnings.
+
+| ID | Severity | Finding | Disposition | Where |
+|----|----------|---------|-------------|-------|
+| X1 | MEDIUM | The refused-seed retry contradicted "MATERIALIZED: no side effects", and its predicate also matched never-seeded pre-fix MATERIALIZED Missions (#5519 shape) | accepted. (1) **Narrowed predicate** (data-model I-SEED-10): pending ⇔ no `Spec-Kitty-Coordination-Seed: <mission_id>` trailer **and** no COORD-kind blob under the Mission dir at the coordination tip (the dir is wholly untracked, which only a refused seed leaves); the fast path is the porcelain `?? kitty-specs/<dir>/` check. (2) The MATERIALIZED rows now read "no side effects unless a seed commit is pending" (accessor contract, data-model §2, I-SEED-6, seed.md step 2 and the Errors row, research D22, WP03 T016, WP22 table). (3) WP03 T015 step 2, the U1 Binding and data-model §7 now say "the next seed attempt". (4) WP03 T017 gains the negative test: a pre-fix MATERIALIZED Mission with an uncommitted COORD record gets no seed commit and no trailer. The IC-18 `--resume` note is qualified | contracts; data-model; spec; research; plan; WP03; WP18; WP22 |
+| X2 | MEDIUM | Post-fix fixtures must come from WP03's real seed | accepted. WP02 states that `materialized=True` is **pre-fix-shaped** (no trailer) and adds a helper note that post-fix fixtures come from WP03's seed (pre-fix EMPTY → `write_dir` → SEEDED with the trailer → delete the dir). WP07 T037's post-fix EMPTY row, WP04 T021 step 4 and its Review line are rebuilt through WP03's seed. WP04's "otherwise define it here" fallback is struck. WP03 Context D4 and WP22 T115's ADR text now name the trailer | WP02; WP03; WP04; WP07; WP22 |
+| X3 | LOW | Leftover superseded text | accepted, struck or reworded: WP12 T068 step 2 (decided: `decisions` stays) and its Risk; WP14 Review ("record_analysis untouched" → extracted first); WP01 C901 table note (`_maybe_auto_commit`); WP20 T110 `tasks_mark_status.py ≈L279` | WP12; WP14; WP01; WP20 |

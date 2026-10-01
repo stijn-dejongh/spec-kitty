@@ -244,7 +244,7 @@ Done means:
      The guard drives the real resolver: confirm it now asserts that the ledger resolves to the target branch for every topology.
   2. `tests/architectural/test_merge_reconciliation_class_guard.py`, `_NON_DIVERGENT_COORD_RESIDUE_DIRS` (≈L316-334):
      - amend the #3928 single-writer ruling for `"decisions"`. The ledger is now PRIMARY, travels with lane branches, can be written concurrently on two lanes, and `index.json` carries WP11's `spec-kitty-decision-index` driver;
-     - decide with the guard's own logic whether `decisions` leaves this frozenset (it is no longer COORD residue) or the guard gains a PRIMARY-with-driver classification;
+     - ~~decide whether `decisions` leaves this frozenset~~ **Decided (`plan.design.merge-class-guard-set`)**: `decisions` **stays** in `_NON_DIVERGENT_COORD_RESIDUE_DIRS`. Amend only the ruling text, and add the assertion that the `decisions/index.json` driver pattern is registered in root `.gitattributes`, discovered via the `_MERGE_DRIVERS` `config_key`;
      - keep `test_both_sides_divergent_canonical_artifacts_carry_merge_driver` and the guard's self-mutation tests green and non-vacuous: the driver must be found through the real `_MERGE_DRIVERS` registry.
   3. Record the amended ruling text in the activity log for the PR.
 - **Files**: the two architectural test files.
@@ -320,7 +320,7 @@ Issues: #5023
 
 - **The broadest behaviour flip** in the Mission (about 20 reader sites). Mitigation: a focused test per reader, and running each reader's owning test files.
 - **Stale tests in other WPs' files go red.** Mitigation: re-pin them here with a rationale; never defer red.
-- **The class guard's completeness check goes vacuous** after `decisions` leaves the frozenset. Mitigation: keep its self-mutation tests and confirm they still bite.
+- **The class guard's completeness check could go vacuous** if the amended ruling weakened it (`decisions` stays in the frozenset; `plan.design.merge-class-guard-set`). Mitigation: the new `index.json`-driver-registered assertion, plus the guard's self-mutation tests, which must still bite.
 - **Pre-fix coordination-only ledger loss at teardown.** Mitigation: WP17's refusal ships in the same mission. Mention it in the PR.
 
 ## Review Guidance

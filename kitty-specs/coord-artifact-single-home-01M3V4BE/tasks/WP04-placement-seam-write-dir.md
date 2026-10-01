@@ -211,7 +211,7 @@ Success means:
          logger.warning(_COORD_EMPTY_FALLBACK_WARNING, {...})
      return ResolvedStatusSurface(surface_path=feature_dir / _STATUS_EVENTS_FILENAME, primary_anchor=feature_dir)
      ```
-  2. The probe is a **read-only** git call (a trailer lookup in the coordination branch history; ~~`git ls-tree`~~ struck in round 4). Import WP03's single discriminator lazily; never redefine it. That keeps the function pure (no writes, no materialization); it is reached from `resolve_placement_only`. If WP03 already exposes a helper for this discriminator in `coord_seed.py`, import it lazily rather than duplicating it (single authority). Otherwise define it here and have WP03's code reuse it. Prefer one definition, in whichever module is lower in the import graph.
+  2. The probe is a **read-only** git call (a trailer lookup in the coordination branch history; ~~`git ls-tree`~~ struck in round 4). Import WP03's single discriminator lazily; never redefine it. That keeps the function pure (no writes, no materialization); it is reached from `resolve_placement_only`. WP03 defines it (with `COORD_SEED_TRAILER`) in `coord_seed.py`; import it lazily (single authority). ~~Otherwise define it here~~ is struck in round 5: WP03 always provides it.
   3. Optionally extend the warning text with "post-fix Mission: the coordination Mission dir was removed from the worktree; writes will restore it from the branch tip". Keep the existing placeholders, and keep the existing tests' message match green.
   4. Tests in `tests/coordination/test_surface_resolver_post_fix_empty_loud.py`:
      - post-fix `coord` → warns (`caplog`);
@@ -220,7 +220,7 @@ Success means:
      - pre-fix `lanes_with_coord` → warns (today);
      - all four → the returned surface is the root dir (C-002).
 
-     Build the post-fix fixture with `make_coord_mission` plus a manual commit of the Mission dir on the coordination branch (WP06 is not in your base), then delete the dir in the worktree.
+     Build the post-fix fixture through **WP03's real seed** (round 5, X2; WP03 is in your base): a pre-fix EMPTY Mission (`make_prefix_coord_mission(worktree="empty")`), then `write_dir(STATUS_STATE)` → SEEDED with the trailer, then delete the dir in the worktree. ~~A manual commit of the Mission dir~~ is struck: it carries no trailer and so is not post-fix.
 - **Files**: `src/specify_cli/coordination/surface_resolver.py`, `tests/coordination/test_surface_resolver_post_fix_empty_loud.py`.
 - **Validation**: existing `tests/coordination/test_surface_resolver_coord_empty_warning.py`, `test_surface_resolver_solo_coord_primary.py` and `tests/specify_cli/coordination/test_legacy_warning_classifier.py` stay green unchanged. If one pins "solo coord never warns" for a fixture that is actually post-fix-shaped, stop: report it rather than re-pin it, because it means the fixture is mislabelled.
 - **Edge cases**:
@@ -324,7 +324,7 @@ Issues: #5519 #2533
   - there is no second write-location entry point (DIRECTIVE_044);
   - `resolve_placement_only` / `write_target` / `read_dir` are unchanged in behaviour;
   - the ledger cap is unchanged;
-  - the EMPTY warning logic uses the branch-tree discriminator (no meta flag);
+  - the EMPTY warning logic uses WP03's trailer discriminator (no meta flag; ~~branch-tree discriminator~~ struck);
   - the docstring changes match shipped behaviour.
 
 ## Activity Log

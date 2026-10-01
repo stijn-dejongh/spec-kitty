@@ -82,7 +82,7 @@ These correct the pre-spec grounding notes. The plan uses the corrected values.
 ## D4. Telling a post-fix Mission's empty surface from a pre-fix one
 
 **Decision.** The discriminator is a **seed marker in the coordination branch history**: a commit trailer `Spec-Kitty-Coordination-Seed: <mission_id>` on every seed commit.
-- Two kinds of commit carry it: the create-time commit (IC-05) and a pre-fix Mission's carry-over commit (D5). Both write it through **one shared constant**, `COORD_SEED_TRAILER` in `coordination/coord_seed.py` (Decision Moment `plan.design.seed-trailer-ownership`). If a seed commit is refused, the next seed attempt (the next COORD write, which finds the seed pending) re-commits with the trailer; the commit router itself never adds the trailer.
+- Two kinds of commit carry it: the create-time commit (IC-05) and a pre-fix Mission's carry-over commit (D5). Both write it through **one shared constant**, `COORD_SEED_TRAILER` in `coordination/coord_seed.py` (Decision Moment `plan.design.seed-trailer-ownership`). If a seed commit is refused, the next seed attempt (the next COORD write, which finds the seed pending: no trailer **and** no COORD-kind blob under the Mission dir at the coordination tip; data-model I-SEED-10) re-commits with the trailer. A never-seeded pre-fix MATERIALIZED Mission (#5519 shape) has committed COORD blobs and is never touched; the commit router itself never adds the trailer.
 - A Mission counts as **post-fix** iff `git log --format=%(trailers:key=Spec-Kitty-Coordination-Seed,valueonly) <coordination_branch>` contains its `mission_id`.
 - There is no new `meta.json` field.
 - **EMPTY on a post-fix Mission** means the Mission dir was deleted in the worktree, a regression.
@@ -535,7 +535,7 @@ Migration removes both legs, and the gate's allowlist can start empty.
 **Problem (brownfield scout X1).** `mission_runtime.assert_coord_write_materialized` (`write_target_degrade.py:157-261`) describes itself as "the single decision locus for S-C (FR-006/#4970)". It **refuses** an UNMATERIALIZED, local-head coordination branch that already carries a committed artifact of the kind (L220-261). `write_dir` **materializes** that same state. After IC-05 every post-fix coordination branch carries content, so the write seam (which consults the gate) and the direct writers (which call `write_dir`) would disagree.
 
 **Decision.** `establish_coord_write_location` becomes the single write-side decision for coordination-routed COORD kinds. `assert_coord_write_materialized` becomes a thin delegate:
-- MATERIALIZED / EMPTY: unchanged no-op.
+- MATERIALIZED / EMPTY: unchanged no-op, except that a MATERIALIZED Mission with a pending seed commit (data-model I-SEED-10) gets its refused seed re-committed with the trailer.
 - UNMATERIALIZED with a local head: delegate to `write_dir(kind)`. This materializes, then restores or seeds per D4 and D3. The old "branch already carries the kind" refusal is deliberately removed: that state is the normal post-fix shape.
 - UNMATERIALIZED, remote-only: still refuses with `COORDINATION_WORKTREE_UNMATERIALIZED` (ruling Q1).
 - PUBLISHED: per D23.

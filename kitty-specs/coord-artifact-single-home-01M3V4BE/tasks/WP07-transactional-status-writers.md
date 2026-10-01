@@ -148,7 +148,7 @@ Done means:
 - **Files**: `tests/coordination/test_status_transition_write_dir.py` (new).
 - **Validation**: each red assertion fails on the defect, not on fixture plumbing. If the fixture itself errors, fix the fixture first.
 - **Edge cases**: the remote-only fixture needs a bare remote with the branch and no local branch. Make sure `origin/HEAD` exists so primary-branch detection doesn't fall back (CLAUDE.md "Create-time topology" caveat). Some cases may already be green at base (DELETED refusal may already refuse); keep them as controls and say so in the log.
-- **Post-fix EMPTY row (post-tasks squad R-m3)**: use a Mission whose coordination branch tree carries `kitty-specs/<dir>/` (WP02 `materialized=True`). Remove the coordination Mission dir in the worktree, run `move-task`, and assert: a loud WARNING is emitted; the dir is restored from the branch tip (`RESTORED_FROM_BRANCH`); the event lands there; nothing is written to the repository root checkout.
+- **Post-fix EMPTY row (post-tasks squad R-m3)**: build a **post-fix** Mission through WP03's real seed (round 5, X2): `make_prefix_coord_mission(worktree="empty")`, then `placement_seam(...).write_dir(STATUS_STATE)` → SEEDED with the `Spec-Kitty-Coordination-Seed` trailer. ~~(WP02 `materialized=True`)~~ is struck: it is pre-fix-shaped, with no trailer. Then remove the coordination Mission dir in the worktree, run `move-task`, and assert: a loud WARNING is emitted; the dir is restored from the branch tip (`RESTORED_FROM_BRANCH`); the event lands there; nothing is written to the repository root checkout.
 
 ### Subtask T038 – `status_transition.py`: retire the private coordination-dir composer
 

@@ -260,7 +260,7 @@ Done means all of the following hold:
      - finalize: `mission_finalize.py::_apply_finalize_commit_router_result` and the pin-refresh consumer;
      - retrospect: `retrospect.py`, ≈L315;
      - spec-commit: the `spec_commit_cmd.py` render helper;
-     - the tasks ports: `agent_tasks_ports.py`, `review/cycle.py` ≈L712, `tasks_mark_status.py` ≈L279, `tasks_map_requirements.py` ≈L668;
+     - the tasks ports: `agent_tasks_ports.py`, `review/cycle.py` ≈L712, ~~`tasks_mark_status.py` ≈L279~~ (struck: dead shim, mark-status commits nothing), `tasks_map_requirements.py` ≈L668;
      - accept: the residual committer in `accept.py`.
      Discarded-result sites render only a warning, but they still call the shared renderer, so they are in scope.
   2. AST assertion, per consumer function: it calls `render_commit_outcome`, `commit_outcome_payload`, or a thin wrapper defined in `commit_outcome.py` (allow `commit_outcome_exit_code` as a companion, not a substitute). Also:
