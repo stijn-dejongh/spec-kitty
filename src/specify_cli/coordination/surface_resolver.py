@@ -1189,6 +1189,26 @@ def resolve_status_surface(
     return resolve_status_surface_with_anchor(repo_root, mission_slug, topology, for_write=for_write).surface_path
 
 
+def _meta_unreadable_fallback(primary_dir: Path, feature_dir: Path, mission_slug: str) -> ResolvedStatusSurface:
+    """Resolve the surface when no readable ``meta.json`` was found anywhere.
+
+    Extracted verbatim from :func:`resolve_status_surface_with_anchor` (T006,
+    campsite-clean WP01) — prefers the primary dir when it exists on disk, then
+    the (possibly coord) ``feature_dir``, and fails loud when neither exists.
+    """
+    if primary_dir.exists():
+        return ResolvedStatusSurface(
+            surface_path=primary_dir / _STATUS_EVENTS_FILENAME,
+            primary_anchor=primary_dir,
+        )
+    if feature_dir.exists():
+        return ResolvedStatusSurface(
+            surface_path=feature_dir / _STATUS_EVENTS_FILENAME,
+            primary_anchor=feature_dir,
+        )
+    raise FileNotFoundError(f"meta.json not found for mission {mission_slug!r} at {feature_dir}")
+
+
 def resolve_status_surface_with_anchor(
     repo_root: Path,
     mission_slug: str,
@@ -1345,17 +1365,7 @@ def resolve_status_surface_with_anchor(
 
         meta = load_meta_fail_closed(primary_dir)
     if meta is None:
-        if primary_dir.exists():
-            return ResolvedStatusSurface(
-                surface_path=primary_dir / _STATUS_EVENTS_FILENAME,
-                primary_anchor=primary_dir,
-            )
-        if feature_dir.exists():
-            return ResolvedStatusSurface(
-                surface_path=feature_dir / _STATUS_EVENTS_FILENAME,
-                primary_anchor=feature_dir,
-            )
-        raise FileNotFoundError(f"meta.json not found for mission {mission_slug!r} at {feature_dir}")
+        return _meta_unreadable_fallback(primary_dir, feature_dir, mission_slug)
 
     # Config is now in hand. The canonical primary anchor is the topology-blind
     # primary dir (the create→first-write window authority the transaction
@@ -1428,27 +1438,52 @@ def resolve_status_surface_with_anchor(
     # primary checkout authoritative one level up (the aggregate's not-yet-
     # materialized gate).
     if coord_state is CoordState.EMPTY:
-        # #2533: a solo (no-lanes) coord-topology mission whose coord worktree
-        # never received a write is an EXPECTED empty state, not a stale
-        # split-brain — routing it to PRIMARY is the correct, quiet outcome
-        # (WP08 T029). Only ``MissionTopology.LANES_WITH_COORD`` implies real
-        # lane worktrees were provisioned to write there; for THAT shape an
-        # empty coord root is genuinely unexpected and the loud warning's
-        # true-positive signal must survive (WP08 T031). ``effective_topology``
-        # is the SAME value already disposed above (no re-derivation, no
-        # parallel ``pr_bound`` signal) — solo ``COORD`` is the only other
-        # coord-routing member (``_topology_uses_coord_surface`` gated this
-        # branch to exactly {COORD, LANES_WITH_COORD} already).
-        if effective_topology is MissionTopology.LANES_WITH_COORD:
-            logger.warning(
-                _COORD_EMPTY_FALLBACK_WARNING,
-                {"slug": mission_slug, "coord_root": composed_coord_dir.parent.parent},
-            )
-        return ResolvedStatusSurface(
-            surface_path=feature_dir / _STATUS_EVENTS_FILENAME,
-            primary_anchor=feature_dir,
-        )
+        return _empty_coord_surface(feature_dir, composed_coord_dir, mission_slug, effective_topology)
     return ResolvedStatusSurface(
         surface_path=composed_coord_dir / _STATUS_EVENTS_FILENAME,
+        primary_anchor=feature_dir,
+    )
+
+
+def _empty_coord_surface(
+    feature_dir: Path,
+    composed_coord_dir: Path,
+    mission_slug: str,
+    effective_topology: MissionTopology,
+) -> ResolvedStatusSurface:
+    """Handle ``CoordState.EMPTY``: a materialized-but-empty coordination worktree.
+
+    Extracted verbatim from :func:`resolve_status_surface_with_anchor` (T006,
+    campsite-clean WP01) — no new side effects (no git writes, no directory
+    creation, no materialization); the warning call and its ``.parent.parent``
+    derivation reproduce exactly.
+
+    Option B loud primary fallback (FR-001 / FR-003 / #1716): the coord worktree
+    root is materialized but its mission dir is absent (coord-empty). Reading the
+    primary checkout may expose a stale, split-brain status surface (#1589/#1821),
+    so emit a single loud ``logging.WARNING`` naming the risk AND both recovery
+    paths (flatten OR `spec-kitty doctor workspaces --fix`) — making the fallback
+    observable so an operator/orchestrating agent can intervene — then return the
+    PRIMARY surface and proceed.
+
+    #2533: a solo (no-lanes) coord-topology mission whose coord worktree
+    never received a write is an EXPECTED empty state, not a stale
+    split-brain — routing it to PRIMARY is the correct, quiet outcome
+    (WP08 T029). Only ``MissionTopology.LANES_WITH_COORD`` implies real
+    lane worktrees were provisioned to write there; for THAT shape an
+    empty coord root is genuinely unexpected and the loud warning's
+    true-positive signal must survive (WP08 T031). ``effective_topology``
+    is the SAME value already disposed by the caller (no re-derivation, no
+    parallel ``pr_bound`` signal) — solo ``COORD`` is the only other
+    coord-routing member (``_topology_uses_coord_surface`` gated this
+    branch to exactly {COORD, LANES_WITH_COORD} already).
+    """
+    if effective_topology is MissionTopology.LANES_WITH_COORD:
+        logger.warning(
+            _COORD_EMPTY_FALLBACK_WARNING,
+            {"slug": mission_slug, "coord_root": composed_coord_dir.parent.parent},
+        )
+    return ResolvedStatusSurface(
+        surface_path=feature_dir / _STATUS_EVENTS_FILENAME,
         primary_anchor=feature_dir,
     )
