@@ -257,7 +257,16 @@ class CoordState(enum.Enum):
     * ``MATERIALIZED`` — coord worktree root AND its mission dir both exist; the
       coord surface is the authoritative read.
     * ``EMPTY`` — coord worktree root exists but its mission dir is absent
-      (#1716 / FR-006): a fail-closed condition, never a silent primary fallback.
+      (#1716 / FR-006). coord-artifact-single-home-01M3V4BE WP04 (FR-017):
+      READ — a loud, declared PRIMARY fallback (C-002; the non-owned arm
+      keeps resolving the primary checkout, with a ``logging.WARNING`` for a
+      ``LANES_WITH_COORD`` or post-fix Mission). WRITE — seeded (a pre-fix
+      Mission) or restored from the coordination-branch tip (a post-fix
+      regression) via :meth:`~mission_runtime.resolution.PlacementSeam.write_dir`;
+      it never silently substitutes the primary checkout. The OWNED read arm
+      (:func:`~mission_runtime.resolution._owned_read_dir_for_kind`) is
+      STRICTER and unchanged by this WP: it still fails closed with
+      ``OWNED_COORDINATION_WORKSPACE_UNAVAILABLE`` rather than falling back.
     * ``UNMATERIALIZED`` — neither the coord root nor a *deleted* branch: the
       declared-but-not-yet-created window (``mission create`` → first coord
       materialization), where the primary checkout stays authoritative.
