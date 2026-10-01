@@ -6,6 +6,8 @@ No git, no filesystem -- pure over event-id sequences, matching
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from specify_cli.coordination.event_prefix import (
@@ -111,6 +113,28 @@ class TestMergedLogBytes:
         verdict = classify_prefix(("a", "b"), ())
         merged = merged_log_bytes(root_lines, (), verdict)
         assert merged == "".join(root_lines).encode("utf-8")
+
+    def test_missing_trailing_newline_on_coord_last_line_does_not_glue_rows(self) -> None:
+        """B9 (review cycle 2): a coordination log whose last kept line lacks a
+        trailing newline must not glue the next carried row onto it."""
+        coord_lines = (_row("a").rstrip("\n"),)  # no trailing newline
+        root_lines = (_row("a"), _row("b"))
+        verdict = classify_prefix(("a", "b"), ("a",))
+        merged = merged_log_bytes(root_lines, coord_lines, verdict)
+        assert merged == (_row("a") + _row("b")).encode("utf-8")
+        # Exactly two well-formed JSONL rows, never one glued line.
+        decoded = merged.decode("utf-8")
+        lines = [line for line in decoded.splitlines() if line.strip()]
+        assert len(lines) == 2
+        for line in lines:
+            json.loads(line)  # each line parses as its own JSON object
+
+    def test_missing_trailing_newline_on_nothing_verdict_still_ends_in_newline(self) -> None:
+        coord_lines = (_row("a").rstrip("\n"),)
+        verdict = PrefixVerdict(kind="nothing")
+        merged = merged_log_bytes((), coord_lines, verdict)
+        assert merged == _row("a").encode("utf-8")
+        assert merged.endswith(b"\n")
 
 
 class TestDuplicateWithinOneSide:

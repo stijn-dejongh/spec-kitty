@@ -35,6 +35,7 @@ from mission_runtime.write_target_degrade import assert_coord_write_materialized
 from specify_cli.coordination.surface_resolver import (
     coord_branch_has_committed_artifact,
 )
+from specify_cli.coordination.workspace import CoordinationWorkspace
 
 # Pure-git, tmp_path-only — same fast/unit tier as the sibling
 # ``tests/mission_runtime/test_write_target_degrade.py``.
@@ -124,10 +125,19 @@ class TestSelfMaterializationNowAllowed:
     ((a)/(c)/(d) REFUSEd, (b) ALLOWed); they now all ALLOW uniformly.
     """
 
+    def _assert_matrix_survives(self, repo: Path, matrix_rel: str) -> None:
+        """L5 (review cycle 2): the #4970 no-clobber control -- self-materializing
+        over committed content must never discard it."""
+        worktree = CoordinationWorkspace.worktree_path(repo, _SLUG, _MID8)
+        matrix_path = worktree / "kitty-specs" / _SLUG / matrix_rel
+        assert matrix_path.exists(), f"committed matrix {matrix_rel!r} did not survive materialization"
+        assert json.loads(matrix_path.read_text(encoding="utf-8")) == {"rows": {"#1111": {"verdict": "fixed"}}}
+
     def test_stale_local_head_with_committed_matrix_now_allowed(self, tmp_path: Path) -> None:
         """(a) UNMATERIALIZED local head that already carries committed rows ⇒ ALLOW (re-pinned)."""
         repo = _build_unmaterialized_coord(tmp_path, matrix_rel=_DEFAULT_MATRIX_REL)
         _assert(repo)  # must NOT raise
+        self._assert_matrix_survives(repo, _DEFAULT_MATRIX_REL)
 
     def test_genuine_first_write_is_allowed(self, tmp_path: Path) -> None:
         """(b) UNMATERIALIZED local head with NO committed matrix ⇒ ALLOW (unchanged)."""
@@ -139,12 +149,14 @@ class TestSelfMaterializationNowAllowed:
         """(c) A committed matrix under a NON-default sub-path ⇒ ALLOW (re-pinned)."""
         repo = _build_unmaterialized_coord(tmp_path, matrix_rel="drift/issue-matrix.json")
         _assert(repo)  # must NOT raise
+        self._assert_matrix_survives(repo, "drift/issue-matrix.json")
 
     def test_legacy_md_committed_matrix_now_allowed(self, tmp_path: Path) -> None:
         """Both ``issue-matrix.json`` and ``issue-matrix.md`` map to ISSUE_MATRIX —
         a not-yet-migrated legacy ``.md`` on the coord branch ⇒ ALLOW (re-pinned)."""
         repo = _build_unmaterialized_coord(tmp_path, matrix_rel="issue-matrix.md")
         _assert(repo)  # must NOT raise
+        self._assert_matrix_survives(repo, "issue-matrix.md")
 
 
 class TestCommittedContentProbeFailClosed:

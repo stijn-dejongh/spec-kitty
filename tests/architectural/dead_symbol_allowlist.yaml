@@ -368,22 +368,6 @@ categories:
       and by the WP06 reconciliation test suite (tests/consolidation/test_reconciliation.py), not yet
       imported from a second src/ module. External consumers land with the Epic #5001 follow-ups.'
     requires_issue: false
-  category_c_wp_in_flight_coord_write_location:
-    rationale: 'C. WP-in-flight coordination write-location core (mission coord-artifact-single-home-01M3V4BE,
-      #5519 / #2533). WP03 ships the seed contract (``contracts/seed.md`` names ``seed_coord_surface`` /
-      ``SeedRequest`` with ``establish_coord_write_location`` -- in the SAME module -- as their only
-      caller by design) ahead of the cross-module production callers landing in later WPs of the same
-      mission: WP06 (T031) imports ``COORD_SEED_TRAILER`` for the create-time seed commit; the fork error
-      ``CoordSeedForkRefused`` and the seed entry point ``seed_coord_surface`` are exercised directly by
-      ``tests/coordination/test_coord_seed.py`` (the WP03 red-first test matrix) per the contract, not from
-      a second src/ module, until a later WP widens the callers. The pure classifier module
-      ``coordination/event_prefix.py`` similarly raises ``MalformedEventLogLineError`` /
-      ``DuplicateEventIdError`` from ``event_ids_of`` (the zero-loss NFR-002 rule) -- production code
-      (``coord_seed.py``) lets them propagate rather than naming them in an ``except`` clause, so
-      ``tests/coordination/test_event_prefix.py`` is their only by-name reference until a later WP (or a
-      future caller) catches them explicitly. Follow-up: WP04/WP06 of the same mission wire the remaining
-      cross-module callers.'
-    requires_issue: false
 entries:
 - module: charter.activation._catalog_miss
   name: CharterCatalogMissError
@@ -1431,24 +1415,6 @@ entries:
   category: category_c_terminus_reconciliation_5001
   rationale: public vocabulary of the new reconciliation gate (raised by `route_terminus` for an unrouted
     terminus path).
-- module: specify_cli.coordination.coord_seed
-  name: COORD_SEED_TRAILER
-  category: category_c_wp_in_flight_coord_write_location
-- module: specify_cli.coordination.coord_seed
-  name: CoordSeedForkRefused
-  category: category_c_wp_in_flight_coord_write_location
-- module: specify_cli.coordination.coord_seed
-  name: SeedRequest
-  category: category_c_wp_in_flight_coord_write_location
-- module: specify_cli.coordination.coord_seed
-  name: seed_coord_surface
-  category: category_c_wp_in_flight_coord_write_location
-- module: specify_cli.coordination.event_prefix
-  name: MalformedEventLogLineError
-  category: category_c_wp_in_flight_coord_write_location
-- module: specify_cli.coordination.event_prefix
-  name: DuplicateEventIdError
-  category: category_c_wp_in_flight_coord_write_location
 widened_grandfathered_470:
   rationale: 'Pre-existing debt the #470 widened (non-__all__) walk surfaced, kept apart from `entries`
     because these names are not __all__ members. Reviewed by hand at widening time: each entry is either

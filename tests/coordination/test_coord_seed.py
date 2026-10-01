@@ -6,27 +6,37 @@ come from the shared harness (``tests/_factories/coord_mission.py``, WP02).
 
 from __future__ import annotations
 
+import json
+import os
+import shutil
 import subprocess
+import sys
+import time
 from pathlib import Path
 
 import pytest
 
-from mission_runtime import Establishment, MissionArtifactKind, MissionTopology, TopologySurface, placement_seam
+from mission_runtime import ActionContextError, Establishment, MissionArtifactKind, MissionTopology, TopologySurface, placement_seam
 from specify_cli.coordination.coord_seed import (
     COORD_SEED_TRAILER,
     CoordSeedForkRefused,
     establish_coord_write_location,
 )
 from specify_cli.coordination.surface_resolver import CoordinationBranchDeleted, CoordinationWorktreeUnmaterialized
+from specify_cli.coordination.workspace import CoordinationWorkspace
 from specify_cli.missions._read_path_resolver import CoordState, probe_coord_state
-from specify_cli.status.locking import feature_status_lock
+from specify_cli.status.locking import FeatureStatusLockTimeoutError, feature_status_lock
 from tests._factories.coord_mission import (
     CoordMission,
     event_ids,
+    index_entry_ids,
     make_coord_mission,
     make_fork_fixture,
     make_prefix_coord_mission,
 )
+from tests._owned_fixtures import mint_test_fact
+
+_DECISION_LOG = "decisions.events.jsonl"
 
 pytestmark = [pytest.mark.fast]
 
@@ -161,7 +171,6 @@ def test_post_fix_empty_restores_from_branch_with_loud_warning(tmp_path: Path, t
     assert probe_coord_state(coord.repo_root, coord.mission_dir_name, coord.mid8, coordination_branch=coord.coordination_branch) is CoordState.MATERIALIZED
 
     # Simulate the regression: the Mission dir is removed from the worktree.
-    import shutil
 
     shutil.rmtree(coord.coord_mission_dir)
     assert probe_coord_state(coord.repo_root, coord.mission_dir_name, coord.mid8, coordination_branch=coord.coordination_branch) is CoordState.EMPTY
@@ -172,6 +181,62 @@ def test_post_fix_empty_restores_from_branch_with_loud_warning(tmp_path: Path, t
     assert location.establishment is Establishment.RESTORED_FROM_BRANCH
     assert (coord.coord_mission_dir / _STATUS_LOG).exists()
     assert any("missing from worktree" in record.message for record in caplog.records)
+
+
+def test_post_fix_empty_carries_root_only_records_too(tmp_path: Path) -> None:
+    """B1 (review cycle 2, HIGH/data loss): a root-only record that lands AFTER
+    the Mission went post-fix (e.g. a write that could not reach the coord
+    surface before it was deleted) must still be carried by the restore-then-
+    seed leg, not silently dropped because the re-probe sees MATERIALIZED and
+    treats the restore as "nothing pending"."""
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    shutil.rmtree(coord.coord_mission_dir)
+    with (coord.root_mission_dir / _STATUS_LOG).open("a", encoding="utf-8") as handle:
+        handle.write('{"event_id": "01ROOTONLYAFTERSEED00000"}\n')
+
+    location = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    assert location.establishment is Establishment.RESTORED_FROM_BRANCH
+    ids = event_ids(coord.coord_mission_dir / _STATUS_LOG)
+    assert "01ROOTONLYAFTERSEED00000" in ids, ids
+
+
+def test_post_fix_empty_restore_skipped_when_another_writer_already_won(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """B2 (review cycle 2, concurrency/data loss): the restore-from-tip only
+    happens under the lock, after a fresh re-probe. If the state is already
+    MATERIALIZED by the time the lock is acquired (another writer's restore +
+    seed already landed), this call must not re-run ``git checkout`` over it
+    -- it falls through to the ordinary pending check instead."""
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    shutil.rmtree(coord.coord_mission_dir)
+    assert probe_coord_state(coord.repo_root, coord.mission_dir_name, coord.mid8, coordination_branch=coord.coordination_branch) is CoordState.EMPTY
+
+    from specify_cli.coordination import coord_seed as cs
+
+    real_restore = cs._restore_coord_kind_paths_from_tip
+    calls = {"n": 0}
+
+    def _counting_restore(
+        repo_root: Path,
+        coordination_branch: str,
+        mission_dir_name: str,
+        coord_worktree: Path,
+    ) -> tuple[str, ...]:
+        calls["n"] += 1
+        result: tuple[str, ...] = real_restore(repo_root, coordination_branch, mission_dir_name, coord_worktree)
+        return result
+
+    monkeypatch.setattr(cs, "_restore_coord_kind_paths_from_tip", _counting_restore)
+    establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+    assert calls["n"] == 1
+    # A second establish call on an already-MATERIALIZED surface must never
+    # call the restore helper again.
+    establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+    assert calls["n"] == 1
 
 
 # ---------------------------------------------------------------------------
@@ -227,7 +292,9 @@ def test_second_call_is_idempotent(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_rename_failure_leaves_only_a_temp_dir_and_next_call_heals(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_rename_failure_cleans_up_temp_dir_and_next_call_heals(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """L3 (review cycle 2): a failed rename no longer leaves a stale temp dir --
+    ``_write_merge_via_temp_rename`` removes it immediately on ``OSError``."""
     coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
 
     import os as os_module
@@ -248,7 +315,7 @@ def test_rename_failure_leaves_only_a_temp_dir_and_next_call_heals(tmp_path: Pat
 
     assert probe_coord_state(coord.repo_root, coord.mission_dir_name, coord.mid8, coordination_branch=coord.coordination_branch) is CoordState.EMPTY
     stale = list((coord.coord_worktree_path / "kitty-specs").glob(f".{coord.mission_dir_name}.seed-*"))
-    assert len(stale) == 1
+    assert stale == [], "L3: the temp dir must not linger after a failed rename"
 
     monkeypatch.undo()
     location = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
@@ -261,7 +328,9 @@ def test_rename_failure_leaves_only_a_temp_dir_and_next_call_heals(tmp_path: Pat
 # ---------------------------------------------------------------------------
 
 
-def test_root_restoration_untracked_extra_events_removed(tmp_path: Path) -> None:
+def test_root_restoration_dirty_tracked_extra_events_removed(tmp_path: Path) -> None:
+    """Root restoration, dirty-tracked variant: an extra uncommitted event appended
+    to the already-committed root log is reset to HEAD after the carry."""
     coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty", extra_events=1)
     root_path = coord.root_mission_dir / _STATUS_LOG
     status_before = subprocess.run(
@@ -283,6 +352,31 @@ def test_root_restoration_untracked_extra_events_removed(tmp_path: Path) -> None
         check=True,
     ).stdout
     assert status_after.strip() == ""
+
+
+def test_root_restoration_untracked_non_log_file_removed(tmp_path: Path) -> None:
+    """Root restoration, untracked variant (B4 item 2): a root-only non-log COORD
+    file that was never ``git add``-ed is carried then deleted from the root
+    checkout, not merely reset (there is nothing tracked to reset to)."""
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    untracked_path = coord.root_mission_dir / "issue-matrix.json"
+    untracked_path.write_text('{"rows": {}}', encoding="utf-8")
+    repo_relpath = str(untracked_path.relative_to(coord.repo_root))
+    status_before = subprocess.run(
+        ["git", "-C", str(coord.repo_root), "status", "--porcelain", "--", repo_relpath],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    assert status_before.strip().startswith("??")
+
+    location = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    assert location.seed is not None
+    assert "issue-matrix.json" in location.seed.carried
+    assert repo_relpath in location.seed.restored_root
+    assert not untracked_path.exists()
+    assert (coord.coord_mission_dir / "issue-matrix.json").read_text(encoding="utf-8") == '{"rows": {}}'
 
 
 # ---------------------------------------------------------------------------
@@ -392,3 +486,333 @@ def test_primary_kind_returns_primary_location_defensively(tmp_path: Path) -> No
     assert location.surface is TopologySurface.PRIMARY
     assert location.establishment is Establishment.NONE
     assert location.path == coord.root_mission_dir
+
+
+# ---------------------------------------------------------------------------
+# B7/T016-step-6: a malformed or duplicate event-log row is translated into a
+# structured, actionable error -- never a bare ``ValueError`` with no context.
+# ---------------------------------------------------------------------------
+
+
+def test_malformed_root_event_log_raises_structured_error(tmp_path: Path) -> None:
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    with (coord.root_mission_dir / _STATUS_LOG).open("a", encoding="utf-8") as handle:
+        handle.write("not json at all\n")
+
+    with pytest.raises(ActionContextError) as excinfo:
+        establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    assert excinfo.value.code == "COORD_SEED_EVENT_LOG_MALFORMED"
+    message = str(excinfo.value)
+    assert coord.mission_dir_name in message
+    assert coord.coordination_branch in message
+
+
+def test_duplicate_event_id_raises_structured_error(tmp_path: Path) -> None:
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    with (coord.root_mission_dir / _STATUS_LOG).open("a", encoding="utf-8") as handle:
+        existing_id = event_ids(coord.root_mission_dir / _STATUS_LOG)[0]
+        handle.write(json.dumps({"event_id": existing_id}) + "\n")
+
+    with pytest.raises(ActionContextError) as excinfo:
+        establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    assert excinfo.value.code == "COORD_SEED_DUPLICATE_EVENT_ID"
+
+
+# ---------------------------------------------------------------------------
+# B4-1: the refused-then-retried seed commit (binding U1, T015).
+# ---------------------------------------------------------------------------
+
+
+class _RefusedCommit:
+    status = "error"
+    reason = "protected"
+    commit_hash = None
+
+
+def test_refused_seed_commit_then_retried(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+    from specify_cli.coordination import coord_seed as cs
+
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    real_commit_seed = cs._commit_seed
+    monkeypatch.setattr(cs, "_commit_seed", lambda req, paths: _RefusedCommit())
+
+    with caplog.at_level("WARNING"):
+        first = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    assert first.seed is not None
+    assert first.seed.coord_commit is None
+    assert first.seed.warnings
+    assert any("not applied" in record.message for record in caplog.records)
+    assert probe_coord_state(coord.repo_root, coord.mission_dir_name, coord.mid8, coordination_branch=coord.coordination_branch) is CoordState.MATERIALIZED
+    assert not _trailer_mission_ids(coord)
+
+    monkeypatch.setattr(cs, "_commit_seed", real_commit_seed)
+    second = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+    assert second.seed is not None
+    assert second.seed.coord_commit is not None
+    assert _trailer_mission_ids(coord)
+
+    before = subprocess.run(["git", "-C", str(coord.repo_root), "rev-parse", coord.coordination_branch], capture_output=True, text=True, check=True).stdout
+    third = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+    after = subprocess.run(["git", "-C", str(coord.repo_root), "rev-parse", coord.coordination_branch], capture_output=True, text=True, check=True).stdout
+    assert before == after
+    assert third.seed is None
+
+
+@pytest.mark.parametrize("show_untracked_files", ["all", "no", "normal"])
+def test_refused_seed_commit_retry_is_config_independent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, show_untracked_files: str) -> None:
+    """B3: the pending-seed predicate must not depend on the operator's
+    ``status.showUntrackedFiles``."""
+    from specify_cli.coordination import coord_seed as cs
+
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    subprocess.run(["git", "-C", str(coord.repo_root), "config", "status.showUntrackedFiles", show_untracked_files], check=True, capture_output=True)
+    real_commit_seed = cs._commit_seed
+    monkeypatch.setattr(cs, "_commit_seed", lambda req, paths: _RefusedCommit())
+    establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    monkeypatch.setattr(cs, "_commit_seed", real_commit_seed)
+    location = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+    assert location.seed is not None and location.seed.coord_commit is not None, location
+
+
+# ---------------------------------------------------------------------------
+# B4-3: I-SEED-5 non-log COORD file carry + conflicting-copies warning.
+# ---------------------------------------------------------------------------
+
+
+def test_non_log_coord_file_carried_conflict_warns_and_primary_never_copied(tmp_path: Path) -> None:
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    traces_dir = coord.root_mission_dir / "traces"
+    traces_dir.mkdir(parents=True, exist_ok=True)
+    (traces_dir / "approach.md").write_text("root-only trace v1\n", encoding="utf-8")
+    (coord.root_mission_dir / "spec.md").write_text("primary content\n", encoding="utf-8")
+
+    first = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    assert first.seed is not None
+    assert "traces/approach.md" in first.seed.carried
+    assert (coord.coord_mission_dir / "traces" / "approach.md").read_text(encoding="utf-8") == "root-only trace v1\n"
+    assert not (coord.coord_mission_dir / "spec.md").exists()  # I-SEED-9
+
+    # Simulate the post-fix regression plus an independent root drift.
+    shutil.rmtree(coord.coord_mission_dir)
+    (traces_dir / "approach.md").write_text("root drifted v2\n", encoding="utf-8")
+
+    second = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    assert second.establishment is Establishment.RESTORED_FROM_BRANCH
+    assert second.seed is not None
+    assert any("traces/approach.md" in warning for warning in second.seed.warnings)
+    assert (coord.coord_mission_dir / "traces" / "approach.md").read_text(encoding="utf-8") == "root-only trace v1\n"
+    assert (traces_dir / "approach.md").read_text(encoding="utf-8") == "root drifted v2\n"
+    assert not (coord.coord_mission_dir / "spec.md").exists()  # I-SEED-9, again on the restore leg
+
+
+# ---------------------------------------------------------------------------
+# B4-4: D4 negative shape -- a branch cut AFTER the target commit (carrying
+# PRIMARY files) is pre-fix, never RESTORED_FROM_BRANCH.
+# ---------------------------------------------------------------------------
+
+
+def test_d4_negative_branch_cut_after_target_commit_is_seeded_not_restored(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.email", "d4@test"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.name", "D4"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "commit.gpgsign", "false"], cwd=repo, check=True)
+    (repo / ".kittify").mkdir()
+    (repo / ".kittify" / "config.yaml").write_text("agents:\n  available:\n    - claude\n", encoding="utf-8")
+
+    slug = "d4neg"
+    mid8 = "01D4NEG0"
+    coord_branch = CoordinationWorkspace.branch_name(slug, mid8)
+    mission_dir = repo / "kitty-specs" / slug
+    mission_dir.mkdir(parents=True)
+    meta = {
+        "mission_id": (mid8 + "0" * 26)[:26],
+        "mission_slug": slug,
+        "mission_type": "software-dev",
+        "target_branch": "main",
+        "friendly_name": "D4 negative",
+        "topology": "coord",
+        "coordination_branch": coord_branch,
+        "mid8": mid8,
+    }
+    (mission_dir / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+    (mission_dir / "spec.md").write_text("primary spec content\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "seed"], cwd=repo, check=True)
+
+    # Cut the coordination branch AFTER the target commit: its tree carries
+    # the PRIMARY files, without ever having been seeded (no trailer).
+    subprocess.run(["git", "branch", coord_branch], cwd=repo, check=True)
+
+    # Materialize for real, then delete the checked-out Mission dir to reach
+    # the EMPTY state the D4 discriminator must classify correctly.
+    coord_worktree = CoordinationWorkspace.resolve(repo, slug, mid8)
+    shutil.rmtree(coord_worktree / "kitty-specs" / slug)
+    assert probe_coord_state(repo, slug, mid8, coordination_branch=coord_branch) is CoordState.EMPTY
+
+    with caplog.at_level("WARNING"):
+        location = establish_coord_write_location(repo, slug, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    assert location.establishment is Establishment.SEEDED
+    assert not any("missing from worktree" in record.message for record in caplog.records)
+    assert not (coord_worktree / "kitty-specs" / slug / "spec.md").exists()
+
+
+# ---------------------------------------------------------------------------
+# B4-5: the decisions stream (fork refusal and a normal carry).
+# ---------------------------------------------------------------------------
+
+
+def test_decisions_stream_fork_refuses(tmp_path: Path) -> None:
+    fixture = make_fork_fixture(tmp_path, "root_uncommitted_coord_untracked", MissionTopology.COORD, stream="decision_log")
+
+    with pytest.raises(CoordSeedForkRefused):
+        establish_coord_write_location(fixture.repo_root, fixture.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+
+def test_decisions_stream_carries_on_normal_seed(tmp_path: Path) -> None:
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    (coord.root_mission_dir / _DECISION_LOG).write_text('{"event_id": "01DECISIONROOTONLY0000"}\n', encoding="utf-8")
+
+    location = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    assert location.seed is not None
+    assert _DECISION_LOG in location.seed.carried
+    assert "01DECISIONROOTONLY0000" in event_ids(coord.coord_mission_dir / _DECISION_LOG)
+
+
+# ---------------------------------------------------------------------------
+# B4-6: the bounded status lock actually fires STATUS_LOCK_HELD.
+# ---------------------------------------------------------------------------
+
+
+def test_bounded_lock_fires_status_lock_held_and_writes_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("specify_cli.status.locking.BOUNDED_STATUS_LOCK_TIMEOUT_SECONDS", 1.0)
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    flag = tmp_path / "held"
+    code = (
+        "import time\nfrom pathlib import Path\nfrom specify_cli.status.locking import feature_status_lock\n"
+        f"with feature_status_lock(Path({str(coord.repo_root)!r}), {coord.mission_dir_name!r}, timeout=20):\n"
+        f"    Path({str(flag)!r}).write_text('x')\n"
+        "    time.sleep(20)\n"
+    )
+    proc = subprocess.Popen([sys.executable, "-c", code], env=os.environ.copy())
+    try:
+        for _ in range(100):
+            if flag.exists():
+                break
+            time.sleep(0.1)
+        assert flag.exists(), "the holder subprocess never acquired the lock"
+
+        with pytest.raises(FeatureStatusLockTimeoutError) as excinfo:
+            establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+        assert excinfo.value.error_code == "STATUS_LOCK_HELD"
+        assert FeatureStatusLockTimeoutError.error_code == "STATUS_LOCK_HELD"
+        assert not coord.coord_mission_dir.exists()
+    finally:
+        proc.kill()
+        proc.wait(timeout=5)
+
+
+# ---------------------------------------------------------------------------
+# B4-7: the owned arm (workspace-unavailable translation).
+# ---------------------------------------------------------------------------
+
+
+def test_owned_arm_translates_workspace_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from specify_cli.coordination import coord_seed as cs
+
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="absent")
+    owned_root = tmp_path / "owned-checkout"
+    owned_mission_dir = owned_root / "kitty-specs" / coord.mission_dir_name
+    owned_mission_dir.mkdir(parents=True)
+    owned = mint_test_fact(
+        repository_root=coord.repo_root,
+        owned_root=owned_root,
+        mission_dir=owned_mission_dir,
+        mission_slug=coord.mission_dir_name,
+        write_branch=coord.target_branch,
+        topology=MissionTopology.COORD,
+    )
+
+    def _boom(owned_arg: object, mission_slug: str, mid8: str) -> None:
+        raise RuntimeError("workspace unavailable")
+
+    monkeypatch.setattr(cs, "_establish_owned_coord_workspace", _boom)
+
+    with pytest.raises(ActionContextError) as excinfo:
+        establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=owned)
+    assert excinfo.value.code == "OWNED_COORDINATION_WORKSPACE_UNAVAILABLE"
+
+
+# ---------------------------------------------------------------------------
+# B4-8 / B5: NFR-002 across fork-fixture shapes (b)/(c)/(d); shape (a) is
+# covered by ``test_fork_refuses_and_writes_nothing`` above.
+# ---------------------------------------------------------------------------
+
+
+def test_nfr002_both_committed_shape_is_untouched(tmp_path: Path) -> None:
+    fixture = make_fork_fixture(tmp_path, "both_committed", MissionTopology.COORD)
+    root_ids_before = event_ids(fixture.root_mission_dir / _STATUS_LOG)
+    coord_ids_before = event_ids(fixture.coord_mission_dir / _STATUS_LOG)
+
+    establish_coord_write_location(fixture.repo_root, fixture.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    assert event_ids(fixture.root_mission_dir / _STATUS_LOG) == root_ids_before
+    assert event_ids(fixture.coord_mission_dir / _STATUS_LOG) == coord_ids_before
+
+
+def test_nfr002_fresh_clone_shape_preserves_both_histories(tmp_path: Path) -> None:
+    fixture = make_fork_fixture(tmp_path, "fresh_clone", MissionTopology.COORD)
+    assert fixture.clone_root is not None
+    coord_ids_before = event_ids(fixture.coord_mission_dir / _STATUS_LOG)
+    root_ids_before = event_ids(fixture.root_mission_dir / _STATUS_LOG)
+    assert coord_ids_before and root_ids_before and set(coord_ids_before) != set(root_ids_before)
+
+    location = establish_coord_write_location(fixture.clone_root, fixture.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    coord_ids_after = event_ids(location.path / _STATUS_LOG)
+    assert set(coord_ids_before) <= set(coord_ids_after)
+    root_only = set(root_ids_before) - set(coord_ids_before)
+    assert not (root_only & set(coord_ids_after))  # independent histories: never silently merged (C-003)
+
+
+def test_nfr002_ledger_only_shape_preserves_the_decision(tmp_path: Path) -> None:
+    fixture = make_fork_fixture(tmp_path, "ledger_only_on_coordination", MissionTopology.COORD)
+    index_path = fixture.coord_mission_dir / "decisions" / "index.json"
+    before_ids = index_entry_ids(index_path)
+    assert fixture.decision_ids_coord[0] in before_ids
+
+    establish_coord_write_location(fixture.repo_root, fixture.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    after_ids = index_entry_ids(index_path)
+    assert before_ids <= after_ids
+    assert fixture.decision_ids_coord[0] in after_ids
+
+
+# ---------------------------------------------------------------------------
+# B5: UNMATERIALIZED -> MATERIALIZED with no seed reports WORKTREE_MATERIALIZED.
+# ---------------------------------------------------------------------------
+
+
+def test_unmaterialized_to_materialized_without_seed_reports_worktree_materialized(tmp_path: Path) -> None:
+    coord = make_coord_mission(tmp_path, MissionTopology.COORD, materialized=True)
+    subprocess.run(
+        ["git", "-C", str(coord.repo_root), "worktree", "remove", "--force", str(coord.coord_worktree_path)],
+        check=True,
+        capture_output=True,
+    )
+    assert probe_coord_state(coord.repo_root, coord.mission_dir_name, coord.mid8, coordination_branch=coord.coordination_branch) is CoordState.UNMATERIALIZED
+
+    location = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    assert location.establishment is Establishment.WORKTREE_MATERIALIZED
+    assert location.coord_state_before is CoordState.UNMATERIALIZED
+    assert location.seed is None
