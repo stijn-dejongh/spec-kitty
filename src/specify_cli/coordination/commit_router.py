@@ -103,6 +103,7 @@ class _ProtectionPolicyProtocol(Protocol):
 
     def is_protected(self, ref: str) -> bool: ...
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -697,9 +698,7 @@ def _commit_partition_group(
         expected_path_bytes=expected_path_bytes,
     )
     if isinstance(commit_result, CommitRouterResult):
-        return _refine_unchanged_for_root_checkout_dirt(
-            commit_result, repo_root, files, use_coord=use_coord, surface_name=surface_name, placement=placement
-        )
+        return _refine_unchanged_for_root_checkout_dirt(commit_result, repo_root, files, use_coord=use_coord, surface_name=surface_name, placement=placement)
 
     commit_hash: str | None = None
     if commit_result is not None and hasattr(commit_result, "sha"):
@@ -1007,9 +1006,7 @@ def _group_files_by_partition(
         else:
             primary_files.append(file)
 
-    caller_partition_holds_everything = (
-        caller_is_primary and not coord_files
-    ) or (not caller_is_primary and not primary_files)
+    caller_partition_holds_everything = (caller_is_primary and not coord_files) or (not caller_is_primary and not primary_files)
     if caller_partition_holds_everything:
         # Every file lands in the caller's own partition — the historical
         # fast path: no extra resolve_placement_only call, byte-identical to
@@ -1228,9 +1225,7 @@ def _resolve_mid8(repo_root: Path, mission_slug: str) -> str | None:
         from specify_cli.mission_metadata import load_meta
         from specify_cli.missions._read_path_resolver import MissionSelectorAmbiguous
 
-        feature_dir = placement_seam(repo_root, mission_slug).read_dir(
-            MissionArtifactKind.PRIMARY_METADATA
-        )
+        feature_dir = placement_seam(repo_root, mission_slug).read_dir(MissionArtifactKind.PRIMARY_METADATA)
         meta = load_meta(feature_dir, allow_missing=True, on_malformed="none")
         raw_mid = meta.get("mission_id") if meta else None
         if not isinstance(raw_mid, str) or len(raw_mid) < 8:
@@ -1663,9 +1658,7 @@ def _stage_artifacts_in_coord_worktree(
     for src in files:
         rel = src.relative_to(repo_root)
         plan = _classify_stage_path(src, rel, coord_worktree)
-        coord_file, staged_pair = _act_on_stage_plan(
-            plan, src, rel, coord_worktree, repo_root, mission_slug=mission_slug, owned=owned, write_dirs=write_dirs
-        )
+        coord_file, staged_pair = _act_on_stage_plan(plan, src, rel, coord_worktree, repo_root, mission_slug=mission_slug, owned=owned, write_dirs=write_dirs)
         if coord_file is not None and coord_file not in seen:
             seen.add(coord_file)
             coord_files.append(coord_file)
@@ -1690,9 +1683,7 @@ def _stage_artifacts_in_coord_worktree(
 # ---------------------------------------------------------------------------
 
 
-def _resolve_planning_placement(
-    repo_root: Path, mission_slug: str, *, kind: MissionArtifactKind
-) -> CommitTarget:
+def _resolve_planning_placement(repo_root: Path, mission_slug: str, *, kind: MissionArtifactKind) -> CommitTarget:
     """Resolve the single planning-phase :class:`CommitTarget` for ``mission_slug``.
 
     WP05 / FR-003 / C-GUARD-3a (#1784): the ONE destination authority for every
@@ -1863,29 +1854,60 @@ def _relpath(repo_root: Path, path: Path) -> str:
 
 def _dirty_paths_in_checkout(checkout_root: Path, files: tuple[Path, ...]) -> tuple[Path, ...]:
     """Return the subset of *files* that are present on disk AND carry uncommitted
-    content (untracked or modified) in *checkout_root* per ``git status --porcelain``.
+    content (untracked or modified) in *checkout_root*.
 
     WP05 (T028): the single primitive both :func:`_paths_uncommitted_in_primary`
     (the #2739 B16 wrong-surface discriminator) and the root-checkout-dirt
     refinement (:func:`_refine_unchanged_for_root_checkout_dirt`) consult — one
-    git-porcelain check, not two independently-written loops.
+    dirty check, not two independently-written loops.
+
+    coord-artifact-single-home-01M3V4BE WP07 (WP05 regression,
+    ``tests/architectural/test_destructive_op_routing.py``): reuses the
+    shared git-plumbing dirty-worktree primitive
+    (:func:`specify_cli.git.ref_advance._dirty_entries`, INV-3/NFR-006)
+    instead of hand-rolling a second ``git status --porcelain`` parser.
+    ``treat_untracked_as_dirty=True`` preserves this predicate's historical
+    reading (an untracked file counts as dirty unconditionally, not gated on
+    ``reset --hard`` tree-obstruction); ``target_paths=set()`` means an
+    ignored (``!!``) entry is never flagged -- matching the bare
+    ``git status --porcelain`` (no ``--ignored``) this predicate used to run,
+    which never surfaced ignored paths at all.
+
+    Plain (unscoped) ``git status`` collapses a wholly-untracked directory
+    into ONE porcelain entry naming the directory, not each file beneath it
+    (unlike the retired per-path ``git status --porcelain -- <path>`` call,
+    which always named the queried path itself). ``_entry_covers_path``
+    below treats a directory-shaped dirty entry as covering every path
+    under it, so a file inside a brand-new untracked directory still
+    resolves to dirty.
     """
+    from specify_cli.git import ref_advance  # noqa: PLC0415 -- narrow import, avoids a module-level cycle
+
+    dirty_entries = ref_advance._dirty_entries(  # noqa: SLF001 -- same-layer reuse, mirrors git/destructive_guard.py
+        checkout_root,
+        None,
+        new_sha="HEAD",
+        target_paths=set(),
+        treat_untracked_as_dirty=True,
+    )
+    # Strip the 2-char status code + space, then any trailing explanatory
+    # suffix ``_dirty_entries`` appends (always introduced by " (").
+    dirty_rel_paths = tuple(entry[3:].split(" (", 1)[0] for entry in dirty_entries)
+
+    def _entry_covers_path(entry_path: str, rel: str) -> bool:
+        if entry_path.endswith("/"):
+            return rel == entry_path.rstrip("/") or rel.startswith(entry_path)
+        return rel == entry_path or rel.startswith(f"{entry_path}/")
+
     dirty: list[Path] = []
     for path in files:
         if not path.exists():
             continue
         try:
-            rel = path.resolve().relative_to(checkout_root.resolve())
+            rel = path.resolve().relative_to(checkout_root.resolve()).as_posix()
         except ValueError:
             continue
-        proc = subprocess.run(
-            ["git", "status", "--porcelain", "--", str(rel)],
-            cwd=str(checkout_root),
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if proc.stdout.strip():
+        if any(_entry_covers_path(entry_path, rel) for entry_path in dirty_rel_paths):
             dirty.append(path)
     return tuple(dirty)
 

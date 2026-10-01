@@ -457,7 +457,11 @@ _KNOWN_DIRTY_PREDICATES: frozenset[str] = frozenset(
         "specify_cli/consolidation/git_probes.py::_paths_have_status_changes",
         "specify_cli/git/ref_advance.py::_dirty_entries",
         "specify_cli/coordination/transaction.py::BookkeepingTransaction._worktree_has_pending_changes",
-        "specify_cli/coordination/commit_router.py::_paths_uncommitted_in_primary",
+        # coord-artifact-single-home-01M3V4BE WP07: `_paths_uncommitted_in_primary`'s
+        # helper `_dirty_paths_in_checkout` no longer hand-rolls a `git status
+        # --porcelain` parse -- it reuses `ref_advance._dirty_entries` (already
+        # censused above), so this entry is trimmed (shrink-only, per this
+        # file's module docstring).
         "specify_cli/core/vcs/git.py::GitVCS.get_workspace_info",
         "specify_cli/core/vcs/git.py::GitVCS.detect_conflicts",
         "specify_cli/core/vcs/git.py::GitVCS.has_conflicts",
