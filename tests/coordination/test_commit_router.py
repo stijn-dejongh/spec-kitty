@@ -1108,8 +1108,13 @@ def test_router_does_not_commit_a_status_row_while_a_transition_holds_the_status
     from specify_cli.coordination import status_transition as st
     from specify_cli.status.locking import feature_status_lock
 
+    from mission_runtime import MissionArtifactKind, placement_seam
+
     mission, log, coord = _coord_mission_with_clean_status_log(tmp_path)
-    coord_fd = st._coord_feature_dir(coord, mission.slug, mission.mid8)
+    # WP07 re-pin (coord-artifact-single-home-01M3V4BE, T038): ``status_transition.
+    # _coord_feature_dir`` is retired; the single write-location accessor is its
+    # successor.
+    coord_fd = placement_seam(mission.repo, mission.slug).write_dir(MissionArtifactKind.STATUS_STATE).path
     assert coord_fd == log.parent
     monkeypatch.setattr(st, "BOUNDED_STATUS_LOCK_TIMEOUT_SECONDS", 0.2)
     head_before = _coord_head(coord)
@@ -1156,7 +1161,6 @@ def test_router_does_not_commit_a_status_row_while_a_transition_holds_the_status
 @pytest.mark.git_repo
 def test_router_commits_a_status_row_when_its_own_thread_already_holds_the_status_lock(tmp_path: Path) -> None:
     """The lock is re-entrant: a caller that already holds L1 is not deadlocked by the router."""
-    from specify_cli.coordination import status_transition as st
     from specify_cli.status.locking import feature_status_lock
 
     mission, log, coord = _coord_mission_with_clean_status_log(tmp_path)
@@ -1166,9 +1170,12 @@ def test_router_commits_a_status_row_when_its_own_thread_already_holds_the_statu
             fh.write(_PENDING_TRANSITION_ROW)
         result = _commit_log_via_router(mission, log)
 
+    from mission_runtime import MissionArtifactKind, placement_seam
+
     assert result.status == "committed"
     assert _coord_head(coord) != head_before
-    assert st._coord_feature_dir(coord, mission.slug, mission.mid8) == log.parent
+    # WP07 re-pin (coord-artifact-single-home-01M3V4BE, T038): successor accessor.
+    assert placement_seam(mission.repo, mission.slug).write_dir(MissionArtifactKind.STATUS_STATE).path == log.parent
 
 
 # ---------------------------------------------------------------------------

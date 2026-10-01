@@ -115,6 +115,124 @@ _EVENTS_FILENAME = "status.events.jsonl"
 _SNAPSHOT_FILENAME = "status.json"
 
 
+def _canonical_coord_mission_slug(
+    seam_repo_root: Path,
+    mission_slug: str,
+    mid8: str,
+    *,
+    owned: OwnedCheckout | None,
+) -> str:
+    """Pick the mission_slug form whose ``meta.json`` actually declares coordination.
+
+    coord-artifact-single-home-01M3V4BE WP07 (T039 step 4, campsite fix): a
+    caller's ``mission_slug`` may be bare (not embedding ``mid8``) in TWO
+    genuinely different on-disk shapes, and composing blindly breaks one of
+    them:
+
+    * A bare caller whose primary dir is itself the CANONICAL ``<slug>-<mid8>``
+      name (e.g. ``test_transaction.py``'s ``MISSION_SLUG = "demo-feature"``,
+      ``mid8 = "01J6XW9K"``, primary dir ``demo-feature-01J6XW9K``) -- the
+      literal bare slug's ``meta.json`` does not exist, so it must be composed.
+    * A mission whose primary dir is ITSELF bare (no ``-<mid8>`` suffix at
+      all), even though its coordination branch is a canonical
+      ``<slug>-<mid8>`` ref -- composing here invents a primary dir that does
+      not exist, so ``establish_coord_write_location`` silently classifies
+      PRIMARY (no meta found) instead of the real COORD mission.
+
+    Tries the literal ``mission_slug`` first (``read_primary_meta`` already
+    does its own literal + backfill-canonicalization fallback); only when
+    that finds no declared coordination branch at all does it retry the
+    mid8-composed canonical name.
+    """
+    if owned is not None:
+        # Zero I/O: the fact already carries its own canonical mission_slug.
+        return owned.mission_slug
+    from specify_cli.missions._read_path_resolver import read_primary_meta
+
+    _meta, declares = read_primary_meta(seam_repo_root, mission_slug)
+    if declares:
+        return mission_slug
+    composed = coord_mission_dir_name(mission_slug, mid8=mid8)
+    if composed == mission_slug:
+        return mission_slug
+    _composed_meta, composed_declares = read_primary_meta(seam_repo_root, composed)
+    return composed if composed_declares else mission_slug
+
+
+def _resolve_coord_worktree_root_for_transaction(
+    *,
+    repo_root: Path,
+    mission_slug: str,
+    mid8: str,
+    owned: OwnedCheckout | None,
+) -> Path:
+    """Materialize/seed the coordination write location for the coordination arm.
+
+    coord-artifact-single-home-01M3V4BE WP07 (T039): replaces the bare
+    ``CoordinationWorkspace.resolve`` call, which only materializes an
+    ``UNMATERIALIZED`` worktree and is blind to ``EMPTY`` -- the first
+    transactional write on a pre-fix ``EMPTY`` coordination surface used to
+    create the Mission dir itself and fork the log instead of carrying the
+    root-checkout records over once. ``write_dir`` (WP03/WP04) materializes,
+    seeds or restores as the state requires, or refuses loudly; its
+    ``checkout_root`` is returned (never ``.path.parent.parent``) so the
+    caller's own ``KITTY_SPECS_DIR / kitty_dir_name`` composition (shared by
+    all four ``_acquire_locked`` arms, C-008) stays the single place that
+    builds ``feature_dir``.
+
+    ``repo_root`` here is the REAL repository root (``owned.repository_root``
+    when owned), never the inner lock root ``_acquire_locked`` itself resolves
+    worktree-relative paths against -- the placement seam always anchors on
+    the actual git repository, with ``owned`` threaded separately.
+
+    ``mission_slug``/``mid8`` arrive as this call's own two-part addressing
+    (a caller may pass a BARE slug that does not embed ``mid8``), but the
+    placement seam resolves ``meta.json`` off the CANONICAL on-disk
+    ``<slug>-<mid8>`` directory name -- so the seam is built from
+    ``coord_mission_dir_name(mission_slug, mid8=mid8)`` (the same primitive
+    :func:`_mission_specs_dir_name` / ``coord_seed._transaction_dir_name``
+    already delegate to), never the raw ``mission_slug``, or a bare-slug
+    caller's ``meta.json`` read silently finds nothing and the seam degrades
+    to the PRIMARY checkout instead of the coordination worktree (T039 step 4
+    dir-name agreement).
+
+    The accessor's own typed refusals (``CoordinationWorktreeUnmaterialized``,
+    ``CoordinationBranchDeleted``, ``CoordSeedForkRefused``, a
+    ``STATUS_LOCK_HELD``-coded ``FeatureStatusLockTimeoutError``) propagate
+    UNCHANGED -- callers that render coordination-specific recovery hints for
+    these types must keep catching them. Only a genuinely unexpected
+    materialization failure is wrapped into :class:`BookkeepingWorktreeMissing`,
+    matching the exception this call site always raised for that case.
+    """
+    from mission_runtime import MissionArtifactKind, placement_seam  # noqa: PLC0415
+    from specify_cli.coordination.coord_seed import CoordSeedForkRefused  # noqa: PLC0415
+    from specify_cli.coordination.surface_resolver import (  # noqa: PLC0415
+        CoordinationBranchDeleted,
+        CoordinationWorktreeUnmaterialized,
+    )
+    from specify_cli.status.locking import FeatureStatusLockTimeoutError  # noqa: PLC0415
+
+    seam_repo_root = owned.repository_root if owned is not None else repo_root
+    canonical_mission_slug = _canonical_coord_mission_slug(seam_repo_root, mission_slug, mid8, owned=owned)
+    try:
+        location = placement_seam(seam_repo_root, canonical_mission_slug, owned=owned).write_dir(
+            MissionArtifactKind.STATUS_STATE
+        )
+    except (
+        CoordinationWorktreeUnmaterialized,
+        CoordinationBranchDeleted,
+        CoordSeedForkRefused,
+        FeatureStatusLockTimeoutError,
+    ):
+        raise
+    except Exception as exc:  # noqa: BLE001 — domain error surface
+        identity = coord_mission_dir_name(mission_slug, mid8=mid8)
+        raise BookkeepingWorktreeMissing(
+            f"Failed to resolve coordination worktree for {identity}: {exc}"
+        ) from exc
+    return location.checkout_root
+
+
 def _write_confined_artifact_bytes(
     worktree_root: Path,
     path: Path,
@@ -460,19 +578,16 @@ class BookkeepingTransaction(AbstractContextManager["BookkeepingTransaction"]):
                 # redirect below is skipped entirely.
                 worktree_root = repo_root
             else:
-                # New topology — create coord worktree on first call.
-                try:
-                    worktree_root = CoordinationWorkspace.resolve(
-                        repo_root, safe_mission_slug, safe_mid8,
-                    )
-                except Exception as exc:  # noqa: BLE001 — domain error surface
-                    identity = coord_mission_dir_name(
-                        safe_mission_slug, mid8=safe_mid8
-                    )
-                    raise BookkeepingWorktreeMissing(
-                        f"Failed to resolve coordination worktree for "
-                        f"{identity}: {exc}"
-                    ) from exc
+                # New topology — materialize/seed the coordination write
+                # location on first call (WP07 T039: the single write-location
+                # accessor, not a bare ``CoordinationWorkspace.resolve`` blind
+                # to ``EMPTY``).
+                worktree_root = _resolve_coord_worktree_root_for_transaction(
+                    repo_root=repo_root,
+                    mission_slug=safe_mission_slug,
+                    mid8=safe_mid8,
+                    owned=owned,
+                )
                 # Status events must be committed to the coordination branch,
                 # not the caller-supplied destination (which may be "main").
                 # Mirror the legacy path's destination_ref override (lines above).

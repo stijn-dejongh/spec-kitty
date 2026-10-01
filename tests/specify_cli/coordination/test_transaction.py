@@ -136,6 +136,7 @@ def test_acquire_creates_coord_worktree_and_holds_lock(repo: Path) -> None:
 
 def test_concurrent_first_acquire_serializes_coord_worktree_creation(repo: Path) -> None:
     """Concurrent first use must not race ``git worktree add``."""
+    _write_modern_meta(repo)
     worktree_path = CoordinationWorkspace.worktree_path(repo, MISSION_SLUG, MID8)
     assert not worktree_path.exists()
 
@@ -176,6 +177,7 @@ def test_concurrent_first_acquire_serializes_coord_worktree_creation(repo: Path)
 
 
 def test_append_event_then_commit_returns_receipt(repo: Path) -> None:
+    _write_modern_meta(repo)
     event = _make_event()
     with BookkeepingTransaction.acquire(
         repo_root=repo,
@@ -380,6 +382,7 @@ def _install_rejecting_pre_commit_hook(worktree_root: Path) -> None:
 
 def test_commit_failure_rolls_back_event_log_byte_identical(repo: Path) -> None:
     """When safe_commit fails, status.events.jsonl is restored byte-identical."""
+    _write_modern_meta(repo)
     # Seed: first transaction succeeds → known event log on disk.
     with BookkeepingTransaction.acquire(
         repo_root=repo,
@@ -426,6 +429,7 @@ def test_commit_failure_rolls_back_event_log_byte_identical(repo: Path) -> None:
 
 def test_commit_failure_removes_event_log_created_by_transaction(repo: Path) -> None:
     """If no event log existed before emit, rollback must not leave an empty file."""
+    _write_modern_meta(repo)
     worktree_root = CoordinationWorkspace.resolve(repo, MISSION_SLUG, MID8)
     feature_dir = worktree_root / "kitty-specs" / FEATURE_DIRNAME
     events_path = feature_dir / "status.events.jsonl"
@@ -491,6 +495,7 @@ def test_stage_path_refuses_paths_outside_worktree(repo: Path, tmp_path: Path) -
 
 def test_commit_failure_restores_empty_status_json(repo: Path) -> None:
     """An originally empty status.json must stay empty, not be unlinked."""
+    _write_modern_meta(repo)
     worktree_root = CoordinationWorkspace.resolve(repo, MISSION_SLUG, MID8)
     feature_dir = worktree_root / "kitty-specs" / FEATURE_DIRNAME
     feature_dir.mkdir(parents=True, exist_ok=True)
@@ -519,6 +524,7 @@ def test_post_commit_recovery_failure_does_not_roll_back_committed_artifacts(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """If safe_commit created a commit, recovery failure is not a no-commit rollback."""
+    _write_modern_meta(repo)
     worktree_root = CoordinationWorkspace.resolve(repo, MISSION_SLUG, MID8)
     events_path = worktree_root / "kitty-specs" / FEATURE_DIRNAME / "status.events.jsonl"
     emitted_bytes: bytes | None = None
@@ -552,6 +558,7 @@ def test_post_commit_recovery_failure_does_not_roll_back_committed_artifacts(
 
 def test_rollback_skips_deferred_outbound(repo: Path) -> None:
     """On rollback, deferred callables MUST NOT run."""
+    _write_modern_meta(repo)
     # Inject failing hook.
     worktree = CoordinationWorkspace.resolve(repo, MISSION_SLUG, MID8)
     hooks_dir_raw = subprocess.check_output(
@@ -589,6 +596,7 @@ def test_rollback_artifact_restore_refuses_parent_symlink_escape(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Rollback restore must not write snapshots through a swapped parent."""
+    _write_modern_meta(repo)
     outside_dir = tmp_path / "outside"
     outside_dir.mkdir()
     worktree = CoordinationWorkspace.resolve(repo, MISSION_SLUG, MID8)
@@ -657,6 +665,7 @@ def test_rollback_restores_artifact_bytes_exactly_through_windows_fallback(
     (3.2.7) does not just corrupt the write — it corrupts the *restore*,
     the one place bytes are promised to come back exactly.
     """
+    _write_modern_meta(repo)
     worktree = CoordinationWorkspace.resolve(repo, MISSION_SLUG, MID8)
     artifact = worktree / "kitty-specs" / FEATURE_DIRNAME / "requirements.md"
     original = b"# requirements\nline two\r\nmixed endings\n"
@@ -689,6 +698,7 @@ def test_rollback_removes_newly_created_artifact_through_windows_fallback(
     windows_crt_textmode: None,
 ) -> None:
     """#4181: rollback of an artifact created inside the transaction unlinks it."""
+    _write_modern_meta(repo)
     worktree = CoordinationWorkspace.resolve(repo, MISSION_SLUG, MID8)
     artifact = worktree / "kitty-specs" / FEATURE_DIRNAME / "created.json"
 
@@ -717,6 +727,7 @@ def test_rollback_removes_newly_created_artifact_through_windows_fallback(
 
 
 def test_double_event_id_raises(repo: Path) -> None:
+    _write_modern_meta(repo)
     with BookkeepingTransaction.acquire(
         repo_root=repo,
         mission_id=MISSION_ID,
@@ -741,6 +752,7 @@ def test_double_event_id_raises(repo: Path) -> None:
 
 
 def test_deferred_outbound_runs_in_order_on_success(repo: Path) -> None:
+    _write_modern_meta(repo)
     ran: list[str] = []
     with BookkeepingTransaction.acquire(
         repo_root=repo,
@@ -762,6 +774,7 @@ def test_deferred_outbound_individual_failure_logged(
     repo: Path, caplog: pytest.LogCaptureFixture,
 ) -> None:
     """One callable failing does NOT abort the rest."""
+    _write_modern_meta(repo)
     ran: list[str] = []
 
     def boom() -> None:
@@ -786,6 +799,7 @@ def test_deferred_outbound_individual_failure_logged(
 
 def test_write_artifact_refuses_paths_outside_coordination_worktree(repo: Path) -> None:
     """Artifact writes must stay inside the coordination worktree."""
+    _write_modern_meta(repo)
     with BookkeepingTransaction.acquire(
         repo_root=repo,
         mission_id=MISSION_ID,
@@ -904,6 +918,7 @@ def test_write_artifact_refuses_parent_swap_after_final_validation(
 
 def test_write_artifact_preserves_existing_file_mode(repo: Path) -> None:
     """Atomic temp replace must not strip executable/user mode bits."""
+    _write_modern_meta(repo)
     with BookkeepingTransaction.acquire(
         repo_root=repo,
         mission_id=MISSION_ID,
@@ -940,6 +955,7 @@ def test_worktree_has_pending_changes_fails_open_when_git_unreadable(
     worktree), the safety net must fail OPEN so the caller falls through to
     the ordinary strict-commit path, which then surfaces the real failure.
     """
+    _write_modern_meta(repo)
     with BookkeepingTransaction.acquire(
         repo_root=repo,
         mission_id=MISSION_ID,
@@ -1129,3 +1145,5 @@ def test_legacy_head_override_block_is_byte_unchanged() -> None:
         "charter directive; any change must go through an explicit, reviewed "
         "decision, not an incidental refactor."
     )
+
+

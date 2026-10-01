@@ -169,7 +169,16 @@ def _mint_owned_linked_worktree(tmp_path: Path, *, slug: str = "owned-linked-01M
         mission_dir=mission_dir,
         mission_slug=slug,
         topology=MissionTopology.SINGLE_BRANCH,
-        write_branch="main",
+        # WP07 re-pin: ``write_branch`` is "the branch every owned write
+        # lands on and the checkout must be ON" (``OwnedCheckout`` docstring)
+        # -- it must match the branch ``git worktree add -b`` actually
+        # checked ``owned_root`` out onto above, not the ancestor ref
+        # ("main") it was branched FROM. A real ``BookkeepingTransaction``
+        # commit now reaches this fact's own write_branch via the
+        # topology-aware coordination-less arm (WP07), which previously
+        # never exercised this mismatch because the fixture's declared
+        # ``coordination_branch`` always redirected the commit elsewhere.
+        write_branch="owned/checkout",
     )
 
 
@@ -261,17 +270,38 @@ def test_bootstrap_canonical_state_seeds_with_zero_revalidation(tmp_path: Path, 
         "---\nwork_package_id: WP01\ntitle: Example\n---\nbody\n",
         encoding="utf-8",
     )
-    from specify_cli.coordination.workspace import CoordinationWorkspace
-
-    mid8 = fact.mission_slug[:8]
-    coord_branch = CoordinationWorkspace.branch_name(fact.mission_slug, mid8)
+    # WP07 re-pin: mid8 is the slug's OWN embedded suffix (not an arbitrary
+    # 8-char slice), so ``_mission_specs_dir_name``/``coord_mission_dir_name``
+    # is a no-op and ``transaction_meta_exists`` (keyed on that composed name)
+    # finds this fixture's ``meta.json`` at its real, bare ``fact.mission_dir``
+    # location -- the topology-available gate for an owned mission no longer
+    # has a ``coordination_branch`` short-circuit to lean on (see below).
+    mid8 = fact.mission_slug[-8:]
+    # WP07 re-pin: the coordination arm now resolves its write location
+    # through the topology-aware ``placement_seam(...).write_dir`` accessor,
+    # which reads the owned fact's OWN declared topology (``SINGLE_BRANCH``
+    # here, the only one owned checkouts support today) -- never a
+    # meta.json ``coordination_branch`` key read independently of it. A
+    # SINGLE_BRANCH owned mission's ``STATUS_STATE`` is a PRIMARY-partition
+    # write (it never routes through coordination), so this fixture no
+    # longer declares a ``coordination_branch`` / creates a matching coord
+    # branch -- doing so previously produced an internally-contradictory
+    # fixture (a SINGLE_BRANCH fact whose meta.json nonetheless declared
+    # coordination) that the old, topology-blind
+    # ``CoordinationWorkspace.resolve`` call tolerated by accident.
     (fact.mission_dir / "meta.json").write_text(
         json.dumps(
             {
                 "mission_slug": fact.mission_slug,
                 "mission_id": fact.mission_slug,
                 "mid8": mid8,
-                "coordination_branch": coord_branch,
+                # Declared explicitly (matching ``fact.topology``) so
+                # ``_warrants_legacy_warning`` classifies this as a modern
+                # coordination-less mission, not genuinely-legacy -- the
+                # latter resolves the write target from the CURRENT
+                # checked-out branch of whatever repo the test process
+                # happens to be running in, not this fixture's own tmp repo.
+                "topology": "single_branch",
             }
         )
         + "\n",
@@ -279,7 +309,6 @@ def test_bootstrap_canonical_state_seeds_with_zero_revalidation(tmp_path: Path, 
     )
     subprocess.run(["git", "add", "kitty-specs"], cwd=fact.owned_root, check=True)
     subprocess.run(["git", "commit", "-q", "-m", "seed"], cwd=fact.owned_root, check=True)
-    subprocess.run(["git", "branch", coord_branch], cwd=fact.repository_root, check=True)
 
     from specify_cli.core.commit_guard import GuardCapability
 
