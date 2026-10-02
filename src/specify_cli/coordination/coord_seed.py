@@ -999,7 +999,29 @@ def establish_coord_write_location(
         read_primary_meta,
     )
 
-    meta, _declares_coordination = read_primary_meta(repo_root, mission_slug)
+    # <owned>-aware meta read (declared out-of-map fix, coord-artifact-single-
+    # home-01M3V4BE WP09): ``read_primary_meta`` composes
+    # ``repo_root/KITTY_SPECS_DIR/<slug>`` directly and is NOT owned-aware --
+    # for an owned Mission, ``meta.json`` lives at ``owned.mission_dir`` (the
+    # owned checkout P), never under the real repository root R. Reading the
+    # wrong (empty) location silently found no ``coordination_branch``,
+    # degrading EVERY owned coordination-kind write to the declared-PRIMARY
+    # fallback regardless of the Mission's real (coordination-routed)
+    # topology -- latent since this function shipped, surfaced by WP09's
+    # migration of ``DecisionGitLog``'s owned arm onto this accessor (the
+    # prior inline ladder had its OWN owned-aware identity read and never
+    # reached this function for an owned caller at all). ``root_mission_dir``
+    # (needed either way, below) IS the owned-aware primary dir
+    # ``placement_seam`` already resolves correctly for both arms --
+    # resolved once, here, and reused for the meta read on the owned arm
+    # instead of a second, owned-blind resolution.
+    root_mission_dir = placement_seam(repo_root, mission_slug, owned=owned).read_dir(MissionArtifactKind.PRIMARY_METADATA)
+    if owned is not None:
+        from specify_cli.core.paths import load_meta_fail_closed
+
+        meta = load_meta_fail_closed(root_mission_dir) or {}
+    else:
+        meta, _declares_coordination = read_primary_meta(repo_root, mission_slug)
     raw_branch = meta.get("coordination_branch")
     coordination_branch = str(raw_branch) if raw_branch else None
     if coordination_branch is None:
@@ -1008,7 +1030,6 @@ def establish_coord_write_location(
     mid8 = resolve_declared_mid8(meta, mission_slug)
     mission_id = str(meta.get("mission_id") or "")
     mission_dir_name = coord_feature_dir(repo_root, mission_slug, mid8).name
-    root_mission_dir = placement_seam(repo_root, mission_slug, owned=owned).read_dir(MissionArtifactKind.PRIMARY_METADATA)
 
     state = probe_coord_state(repo_root, mission_slug, mid8, coordination_branch=coordination_branch)
     coord_worktree = _resolve_coord_worktree_root(repo_root, mission_slug, mid8, owned)
