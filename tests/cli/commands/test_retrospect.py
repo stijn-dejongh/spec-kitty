@@ -1100,6 +1100,108 @@ class TestAutoCommitFailureIsSurfaced:
 
 
 # ---------------------------------------------------------------------------
+# TestPublishedCoordMissionCreate -- B1 (WP14 cycle 2 review empirical repro,
+# #5513/#5501): `retrospect create` on a PUBLISHED coordination Mission whose
+# coordination branch was torn down by consolidation.
+# ---------------------------------------------------------------------------
+
+
+def _seed_published_coord_mission_repo(repo: Path, *, mission_slug: str) -> Path:
+    """A real git repo holding one PUBLISHED coordination Mission, coordination branch GONE.
+
+    Mirrors ``_build_e2_mission_coord_fully_retired``
+    (tests/mission_runtime/test_consolidated_resolution.py) but through the
+    lighter ``_init_git_repo``/``_write_meta`` harness this file already uses,
+    and driven through the real ``retrospect create`` CLI entry point rather
+    than ``resolve_placement_only`` directly. ``_terminal_completion_evidence``
+    (mission_runtime.lifecycle_phase) is satisfied by the all-``done`` status
+    event log alone -- no ``mission_number``/baseline-bookkeeping dance is
+    needed for PUBLISHED detection here, only a present
+    ``baseline_merge_commit`` plus an absent Target Ref.
+    """
+    _init_git_repo(repo, auto_commit=True)
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "init")
+    init_sha = _git(repo, "rev-parse", "HEAD")
+
+    target_branch = f"kitty/mission-{mission_slug}"
+    coordination_branch = f"kitty/mission-{mission_slug}-coord"
+    feature_dir = repo / "kitty-specs" / mission_slug
+    _write_meta(
+        feature_dir,
+        "01PUBLSH00000000000000000",
+        mission_slug,
+        target_branch=target_branch,
+        topology="coord",
+        coordination_branch=coordination_branch,
+        baseline_merge_commit=init_sha,
+        # ``_primary_mission_is_completed`` (surface_resolver.py, the READ-side
+        # merge-authoritative short-circuit `_canonical_events_path`/
+        # `_check_mission_completed` depend on) keys ONLY on this explicit
+        # marker (`is_mission_merged`), not on `_terminal_completion_evidence`'s
+        # all-done-WPs-or-mission_number signal that the WRITE-side
+        # `resolve_lifecycle_phase` uses -- the reviewer's empirical repro
+        # names this step explicitly ("stamp merged_at").
+        merged_at="2026-10-01T00:00:00+00:00",
+    )
+    _write_status_events_all_done(feature_dir, mission_slug)
+    _git(repo, "add", "--", "kitty-specs")
+    _git(repo, "commit", "-q", "-m", "mission scaffold")
+    # ``target_branch``/``coordination_branch`` are DECLARED in meta.json but
+    # never created as real git refs here -- git-ref-absence is the identical
+    # signal to "created, then torn down by consolidation" for both
+    # ``_target_ref_exists`` (lifecycle_phase.py) and ``write_dir``'s own
+    # coordination-branch-existence probe.
+    assert not _branch_exists(repo, target_branch)
+    assert not _branch_exists(repo, coordination_branch)
+    return feature_dir
+
+
+def _branch_exists(repo: Path, branch: str) -> bool:
+    result = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}"],
+        cwd=repo,
+        capture_output=True,
+    )
+    return result.returncode == 0
+
+
+class TestPublishedCoordMissionCreate:
+    """B1: a PUBLISHED coordination Mission's retrospective must not crash."""
+
+    def test_create_succeeds_instead_of_raising_coordination_branch_deleted(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Empirical repro (cycle 2 review): at the WP base, this raised an
+        uncaught ``CoordinationBranchDeleted`` traceback from
+        ``retrospect.py``'s event-path resolution (exit 1, no stdout JSON) --
+        post-merge is the NORMAL time to run retrospect, so this was a
+        regression on the main path. The `plan.design.published-status-state-
+        write` ruling (mission_runtime.resolution) fixes it at the root: a
+        PUBLISHED Mission's STATUS_STATE write now joins the PUBLISHED/E2
+        short-circuit, so the event log resolves to the primary checkout
+        instead of re-probing the torn-down coordination branch."""
+        repo = tmp_path / "repo"
+        mission_slug = "published-coord-mission-wp14"
+        feature_dir = _seed_published_coord_mission_repo(repo, mission_slug=mission_slug)
+        monkeypatch.chdir(repo)
+
+        with patch(_FANOUT_EDGE):
+            result = RUNNER.invoke(retrospect_app, ["create", "--mission", mission_slug, "--json"])
+
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.stdout)
+        assert payload["result"] == "success"
+        assert (feature_dir / "retrospective.yaml").is_file()
+        assert (feature_dir / "status.events.jsonl").is_file()
+        # The record and the event log both land -- and commit -- on the
+        # resolved Primary Branch (this single-repo fixture has no remote, so
+        # the current checkout branch IS the resolved Primary Branch); never
+        # a raised CoordinationBranchDeleted, never a fallback write to a
+        # DIFFERENT (uncommitted) root-checkout copy.
+        status = _git(repo, "status", "--porcelain")
+        assert status == "", f"retrospective record/event log left uncommitted: {status!r}"
+
+
+# ---------------------------------------------------------------------------
 # TestCreateCmdErrorPaths
 # ---------------------------------------------------------------------------
 
