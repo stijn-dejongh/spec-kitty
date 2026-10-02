@@ -27,6 +27,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
+import typer
 import yaml
 from typer.testing import CliRunner
 
@@ -1014,6 +1015,36 @@ def _lock_the_index(repo: Path) -> str:
     return "failed to stage requested files"
 
 
+class TestAutoCommitBackfilledWriteLocationRefusal:
+    """B1 (cycle 2 review): ``_auto_commit_backfilled`` degrades one mission's
+    refusal to a warning, never aborting the batch (#1771)."""
+
+    def test_warns_and_commits_the_record_alone(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+        from specify_cli.cli.commands import retrospect as retrospect_module
+        from specify_cli.status.locking import FeatureStatusLockTimeoutError
+
+        def _boom(_root: Path, _slug: str) -> Path:
+            raise FeatureStatusLockTimeoutError("status lock contended")
+
+        monkeypatch.setattr(retrospect_module, "_canonical_events_write_path", _boom)
+        calls: list[tuple[Any, ...]] = []
+        monkeypatch.setattr(retrospect_module, "_maybe_auto_commit", lambda *args: calls.append(args))
+        record_path = tmp_path / "retrospective.yaml"
+        record_path.write_text("mission_id: demo\n", encoding="utf-8")
+        created = [{"mission_id": "demo-id", "mission_slug": "demo", "record_path": str(record_path)}]
+
+        retrospect_module._auto_commit_backfilled(tmp_path, created)
+
+        err = strip_ansi(capsys.readouterr().err)
+        assert "demo" in err
+        assert "STATUS_LOCK_HELD" in err
+        assert "event log was not attached" in err
+        (call_args,) = calls
+        _repo_root, _mission_slug, files, _message = call_args
+        # The record commits ALONE -- the refused event log is never appended.
+        assert files == [record_path]
+
+
 class TestAutoCommitFailureIsSurfaced:
     """A failed auto-commit is non-fatal but never silent (the operator must commit by hand)."""
 
@@ -1206,6 +1237,141 @@ class TestPublishedCoordMissionCreate:
         # DIFFERENT (uncommitted) root-checkout copy.
         status = _git(repo, "status", "--porcelain")
         assert status == "", f"retrospective record/event log left uncommitted: {status!r}"
+
+
+# ---------------------------------------------------------------------------
+# TestWriteLocationRefusalHelpers -- B1 (cycle 2 review): the named-refusal
+# helpers in isolation.
+# ---------------------------------------------------------------------------
+
+
+class TestWriteLocationRefusalHelpers:
+    def test_refusal_code_prefers_error_code(self) -> None:
+        from specify_cli.cli.commands.retrospect import _write_location_refusal_code
+        from specify_cli.status.locking import FeatureStatusLockTimeoutError
+
+        assert _write_location_refusal_code(FeatureStatusLockTimeoutError("locked")) == "STATUS_LOCK_HELD"
+
+    def test_refusal_code_falls_back_to_code_attribute(self) -> None:
+        from mission_runtime import ActionContextError
+
+        from specify_cli.cli.commands.retrospect import _write_location_refusal_code
+
+        assert _write_location_refusal_code(ActionContextError("SOME_CODE", "boom")) == "SOME_CODE"
+
+    def test_refusal_code_defaults_when_neither_is_present(self) -> None:
+        from specify_cli.cli.commands.retrospect import _write_location_refusal_code
+
+        assert _write_location_refusal_code(RuntimeError("plain")) == "WRITE_LOCATION_REFUSED"
+
+    def test_emit_write_location_refusal_json(self, capsys: pytest.CaptureFixture[str]) -> None:
+        from specify_cli.cli.commands.retrospect import _emit_write_location_refusal
+        from specify_cli.status.locking import FeatureStatusLockTimeoutError
+
+        with pytest.raises(typer.Exit) as excinfo:
+            _emit_write_location_refusal(FeatureStatusLockTimeoutError("status lock contended"), mission_slug="demo", json_output=True)
+
+        assert excinfo.value.exit_code == 1
+        payload = json.loads(capsys.readouterr().out)
+        assert payload == {
+            "result": "blocked",
+            "code": "STATUS_LOCK_HELD",
+            "mission_slug": "demo",
+            "blocked_reason": "status lock contended",
+            "exit_code": 1,
+        }
+
+    def test_emit_write_location_refusal_text(self, capsys: pytest.CaptureFixture[str]) -> None:
+        from specify_cli.cli.commands.retrospect import _emit_write_location_refusal
+        from specify_cli.status.locking import FeatureStatusLockTimeoutError
+
+        with pytest.raises(typer.Exit) as excinfo:
+            _emit_write_location_refusal(FeatureStatusLockTimeoutError("status lock contended"), mission_slug="demo", json_output=False)
+
+        assert excinfo.value.exit_code == 1
+        err = strip_ansi(capsys.readouterr().err)
+        assert "STATUS_LOCK_HELD" in err
+        assert "status lock contended" in err
+
+    def test_warn_write_location_refusal(self, capsys: pytest.CaptureFixture[str]) -> None:
+        from specify_cli.cli.commands.retrospect import _warn_write_location_refusal
+        from specify_cli.status.locking import FeatureStatusLockTimeoutError
+
+        _warn_write_location_refusal(FeatureStatusLockTimeoutError("status lock contended"), mission_slug="demo")
+
+        err = strip_ansi(capsys.readouterr().err)
+        assert "demo" in err
+        assert "STATUS_LOCK_HELD" in err
+        assert "event log was not attached" in err
+
+    def test_canonical_events_write_path_or_exit_passes_through_on_success(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        from specify_cli.cli.commands import retrospect as retrospect_module
+
+        monkeypatch.setattr(retrospect_module, "_canonical_events_write_path", lambda _root, _slug: tmp_path / "status.events.jsonl")
+
+        result = retrospect_module._canonical_events_write_path_or_exit(tmp_path, "demo", json_output=True)
+
+        assert result == tmp_path / "status.events.jsonl"
+
+    def test_canonical_events_write_path_or_exit_exits_on_a_named_refusal(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        from specify_cli.cli.commands import retrospect as retrospect_module
+        from specify_cli.status.locking import FeatureStatusLockTimeoutError
+
+        def _boom(_root: Path, _slug: str) -> Path:
+            raise FeatureStatusLockTimeoutError("status lock contended")
+
+        monkeypatch.setattr(retrospect_module, "_canonical_events_write_path", _boom)
+
+        with pytest.raises(typer.Exit) as excinfo:
+            retrospect_module._canonical_events_write_path_or_exit(tmp_path, "demo", json_output=True)
+
+        assert excinfo.value.exit_code == 1
+        assert json.loads(capsys.readouterr().out)["code"] == "STATUS_LOCK_HELD"
+
+
+# ---------------------------------------------------------------------------
+# TestCreateCmdWriteLocationRefusal -- B1: create_cmd's genuine (non-PUBLISHED)
+# write-location refusal, end to end on a real project.
+# ---------------------------------------------------------------------------
+
+
+class TestCreateCmdWriteLocationRefusal:
+    def test_create_json_renders_the_refusal_and_exits_1(self, retrospect_project: RetrospectProject, monkeypatch: pytest.MonkeyPatch) -> None:
+        from specify_cli.cli.commands import retrospect as retrospect_module
+        from specify_cli.status.locking import FeatureStatusLockTimeoutError
+
+        def _boom(_root: Path, _slug: str) -> Path:
+            raise FeatureStatusLockTimeoutError("status lock contended")
+
+        monkeypatch.setattr(retrospect_module, "_canonical_events_write_path", _boom)
+
+        result = _create("--json")
+
+        assert result.exit_code == 1
+        payload = json.loads(result.stdout)
+        assert payload["code"] == "STATUS_LOCK_HELD"
+        assert payload["result"] == "blocked"
+        # The retrospective record itself was already written before the
+        # refused event-log resolution -- B1 never discards it.
+        assert retrospect_project.record_path.is_file()
+
+    def test_create_text_renders_the_refusal_and_exits_1(self, retrospect_project: RetrospectProject, monkeypatch: pytest.MonkeyPatch) -> None:
+        from specify_cli.cli.commands import retrospect as retrospect_module
+        from specify_cli.status.locking import FeatureStatusLockTimeoutError
+
+        def _boom(_root: Path, _slug: str) -> Path:
+            raise FeatureStatusLockTimeoutError("status lock contended")
+
+        monkeypatch.setattr(retrospect_module, "_canonical_events_write_path", _boom)
+
+        result = _create()
+
+        assert result.exit_code == 1
+        err = strip_ansi(result.stderr)
+        assert "STATUS_LOCK_HELD" in err
+        assert "status lock contended" in err
 
 
 # ---------------------------------------------------------------------------
@@ -2601,6 +2767,32 @@ class TestCreateHarness:
 
 class TestBackfillHarness:
     """`retrospect backfill` on a real project: aggregate report, records, failure rows, git."""
+
+    def test_backfill_reports_event_log_write_location_refused(self, retrospect_project: RetrospectProject, monkeypatch: pytest.MonkeyPatch) -> None:
+        """B1: a genuine write-location refusal during backfill's main emit does NOT
+        mislabel the already-written record as a ``generator_exception`` (cycle 2 review)."""
+        from specify_cli.cli.commands import retrospect as retrospect_module
+        from specify_cli.status.locking import FeatureStatusLockTimeoutError
+
+        project = retrospect_project
+        project.register_for_backfill(MISSION_ID_COMPLETED, MISSION_SLUG_COMPLETED)
+
+        def _boom(_root: Path, _slug: str) -> Path:
+            raise FeatureStatusLockTimeoutError("status lock contended")
+
+        monkeypatch.setattr(retrospect_module, "_canonical_events_write_path", _boom)
+
+        result = _backfill("--json")
+
+        assert result.exit_code == 0, result.output
+        report = json.loads(result.stdout)
+        assert report["created"] == 0
+        (failure,) = report["failed"]
+        assert failure["mission_slug"] == MISSION_SLUG_COMPLETED
+        assert failure["failure_category"] == "event_log_write_location_refused"
+        assert "status lock contended" in failure["remediation_hint"]
+        # The record itself WAS generated and written -- B1's whole point.
+        assert project.record_path.is_file()
 
     def test_backfill_authors_commits_and_reports_the_record(self, retrospect_project: RetrospectProject) -> None:
         project = retrospect_project
