@@ -104,6 +104,60 @@ def test_commit_to_branch_carries_router_surfaces_through(tmp_path: Path, monkey
 
 
 # ---------------------------------------------------------------------------
+# B6 (cycle 2 review): a text-mode (json_output=False) test for the
+# render-every-arm guard (mission_setup_plan.py ~L283) -- every existing
+# ``_commit_to_branch`` test runs with json_output=True, so mutant M2
+# (replacing the render guard with ``if False``) survived the whole suite.
+# ---------------------------------------------------------------------------
+
+
+def test_commit_to_branch_renders_surface_lines_in_text_mode_on_committed_arm(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """Kills M2: with the render guard replaced by ``if False``, no surface
+    line reaches stdout and this assertion fails."""
+    _init_repo(tmp_path)
+    plan_file = tmp_path / "plan.md"
+    mixed = _mixed_surfaces_result(primary_ref=_TARGET_BRANCH)
+    monkeypatch.setattr(commit_router_module, "commit_for_mission", lambda **_kwargs: mixed)
+
+    result = _commit_to_branch(plan_file, "demo", "plan", tmp_path, _TARGET_BRANCH, json_output=False)
+
+    assert result.status == "committed"
+    out = capsys.readouterr().out
+    assert "coordination" in out
+    assert "STATUS_LOCK_HELD" in out
+
+
+def test_commit_to_branch_renders_surface_lines_in_text_mode_on_no_op_wrong_surface_arm(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The same render-every-arm guard, exercised on the ``no_op_wrong_surface`` arm."""
+    _init_repo(tmp_path)
+    plan_file = tmp_path / "plan.md"
+    primary = SurfaceOutcome(surface="primary", branch=_TARGET_BRANCH, status="committed", commit_hash="abc", committed=("plan.md",))
+    coordination = SurfaceOutcome(
+        surface="coordination",
+        branch=_COORD_BRANCH,
+        status="refused",
+        commit_hash=None,
+        refused=(PathFate(path="kitty-specs/demo/status.events.jsonl", reason="STATUS_LOCK_HELD"),),
+    )
+    wrong_surface = CommitRouterResult(
+        status="no_op_wrong_surface",
+        placement_ref=_TARGET_BRANCH,
+        diagnostic="artifact absent at the resolved placement",
+        surfaces=(primary, coordination),
+    )
+    monkeypatch.setattr(commit_router_module, "commit_for_mission", lambda **_kwargs: wrong_surface)
+
+    result = _commit_to_branch(plan_file, "demo", "plan", tmp_path, _TARGET_BRANCH, json_output=False)
+
+    assert result.status == "no_op_wrong_surface"
+    out = capsys.readouterr().out
+    assert "coordination" in out
+    assert "STATUS_LOCK_HELD" in out
+
+
+# ---------------------------------------------------------------------------
 # T075 -- the two discarded-result sites now warn via _warn_on_incomplete_surfaces.
 # ---------------------------------------------------------------------------
 
