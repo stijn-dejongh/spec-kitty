@@ -433,10 +433,10 @@ def cmd_open(  # noqa: PLR0913
         # write. Before ``StatusReadPathNotFound`` below: not a subclass of
         # it, but ordered to read alongside the other write-location refusals.
         _handle_coord_seed_fork_refused(exc)
-        return  # unreachable — _handle_coord_seed_fork_refused raises
+        return  # pragma: no cover — handler always raises typer.Exit
     except FeatureStatusLockTimeoutError as exc:
         _handle_status_lock_timeout(exc)
-        return  # unreachable — _handle_status_lock_timeout raises
+        return  # pragma: no cover — handler always raises typer.Exit
     except DecisionIndexReadError as exc:
         _handle_index_read_error(exc)
         return  # unreachable — _handle_index_read_error raises
@@ -514,10 +514,10 @@ def cmd_resolve(  # noqa: PLR0913
         return
     except CoordSeedForkRefused as exc:
         _handle_coord_seed_fork_refused(exc)
-        return  # unreachable — _handle_coord_seed_fork_refused raises
+        return  # pragma: no cover — handler always raises typer.Exit
     except FeatureStatusLockTimeoutError as exc:
         _handle_status_lock_timeout(exc)
-        return  # unreachable — _handle_status_lock_timeout raises
+        return  # pragma: no cover — handler always raises typer.Exit
     except DecisionIndexReadError as exc:
         _handle_index_read_error(exc)
         return  # unreachable — _handle_index_read_error raises
@@ -578,10 +578,10 @@ def cmd_defer(
         return
     except CoordSeedForkRefused as exc:
         _handle_coord_seed_fork_refused(exc)
-        return  # unreachable — _handle_coord_seed_fork_refused raises
+        return  # pragma: no cover — handler always raises typer.Exit
     except FeatureStatusLockTimeoutError as exc:
         _handle_status_lock_timeout(exc)
-        return  # unreachable — _handle_status_lock_timeout raises
+        return  # pragma: no cover — handler always raises typer.Exit
     except DecisionIndexReadError as exc:
         _handle_index_read_error(exc)
         return  # unreachable — _handle_index_read_error raises
@@ -642,10 +642,10 @@ def cmd_cancel(
         return
     except CoordSeedForkRefused as exc:
         _handle_coord_seed_fork_refused(exc)
-        return  # unreachable — _handle_coord_seed_fork_refused raises
+        return  # pragma: no cover — handler always raises typer.Exit
     except FeatureStatusLockTimeoutError as exc:
         _handle_status_lock_timeout(exc)
-        return  # unreachable — _handle_status_lock_timeout raises
+        return  # pragma: no cover — handler always raises typer.Exit
     except DecisionIndexReadError as exc:
         _handle_index_read_error(exc)
         return  # unreachable — _handle_index_read_error raises
