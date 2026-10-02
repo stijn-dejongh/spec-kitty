@@ -61,6 +61,15 @@ def test_no_coordination_branch_is_a_noop(tmp_path: Path) -> None:
     assert not (tmp_path / ".worktrees").exists()
 
 
+def test_explicit_coordination_branch_without_mid8_raises(tmp_path: Path) -> None:
+    """Review cycle 2 (coord-artifact-single-home-01M3V4BE WP09, B1-residual):
+    the optional ``coordination_branch``/``mid8`` override pair is a caller
+    contract -- passing one without the other must never silently fall
+    through to a half-resolved materialization attempt."""
+    with pytest.raises(ValueError, match="mid8 must accompany an explicit coordination_branch override"):
+        materialize_coord_surface_for_write(tmp_path, "whatever", coordination_branch="kitty/mission-whatever-01ABCDEF")
+
+
 # ---------------------------------------------------------------------------
 # 2. MATERIALIZED -> no-op, no second worktree created
 # ---------------------------------------------------------------------------

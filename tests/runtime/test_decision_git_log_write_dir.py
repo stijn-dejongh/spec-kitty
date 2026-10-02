@@ -194,6 +194,7 @@ def test_wrap_refuses_when_write_dir_resolves_primary_under_coord_topology(tmp_p
     """
     import mission_runtime
     from mission_runtime import Establishment, WriteLocation
+    from mission_runtime import placement_seam as _real_placement_seam
     from runtime.next import runtime_bridge
 
     coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
@@ -207,14 +208,25 @@ def test_wrap_refuses_when_write_dir_resolves_primary_under_coord_topology(tmp_p
     )
 
     class _FakeSeam:
-        def __init__(self, *_a: object, **_k: object) -> None:
-            pass
+        """Overrides ONLY write_dir; every other attribute (notably read_dir,
+        which _resolve_coordination_branch's identity resolution calls BEFORE
+        write_dir is ever reached) delegates to the REAL seam -- an
+        AttributeError here would be swallowed by the generic ``except
+        Exception`` below and silently produce a DIFFERENT, GENERIC
+        DecisionGitLogUnavailable, giving this test a false-positive pass
+        without ever exercising the surface check under test."""
+
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            self._real = _real_placement_seam(*args, **kwargs)  # type: ignore[arg-type]
 
         def write_dir(self, _kind: object) -> WriteLocation:
             return fake_location
 
+        def __getattr__(self, name: str) -> object:
+            return getattr(self._real, name)
+
     monkeypatch.setattr(mission_runtime, "placement_seam", _FakeSeam)
     inner = MagicMock(spec=RuntimeEventEmitter)
 
-    with pytest.raises(DecisionGitLogUnavailable):
+    with pytest.raises(DecisionGitLogUnavailable, match="resolved a PRIMARY surface"):
         _wrap_with_decision_git_log(inner, coord.mission_dir_name, coord.repo_root)
