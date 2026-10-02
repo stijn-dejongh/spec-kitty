@@ -14,19 +14,37 @@ here rather than silently passing.
 
 from __future__ import annotations
 
+import contextlib
 import json
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from typer.testing import CliRunner
 
+from mission_runtime import MissionTopology
+from specify_cli import app as root_app
 from specify_cli.decisions import index_fold
 from specify_cli.decisions import store as _store
 from specify_cli.decisions.index_fold import FoldError, fold_events
 from specify_cli.decisions.models import DecisionStatus, IndexEntry, OriginFlow
 from specify_cli.decisions.service import open_decision, resolve_decision
+from tests._factories.coord_mission import make_fork_fixture
 
 pytestmark = [pytest.mark.unit, pytest.mark.fast]
+
+_runner = CliRunner()
+
+
+def _invoke_doctor_decisions_json(cwd: Path, mission: str, *, repair: bool) -> tuple[int, dict]:  # type: ignore[type-arg]
+    """Run the REAL ``spec-kitty doctor decisions --json`` CLI from *cwd* (WP17)."""
+    args = ["doctor", "decisions", "--mission", mission, "--json"]
+    if repair:
+        args.append("--repair")
+    with contextlib.chdir(cwd):
+        result = _runner.invoke(root_app, args, catch_exceptions=False)
+    return result.exit_code, json.loads(result.output)
+
 
 MISSION_ID = "01KTEST_RECONCILER_MISSION_0"
 MISSION_SLUG = "reconciler-mission"
@@ -705,3 +723,93 @@ def test_service_and_doctor_resolve_ledger_dir_in_lockstep_under_coord_topology(
 
     assert events_dir == coord_dir, "fixture sanity: the events dir must resolve the mocked COORD surface"
     assert service_ledger_dir != events_dir, "PRIMARY ledger dir must differ from the COORD events dir -- a drift to STATUS_STATE would collapse this undetected"
+
+
+# ---------------------------------------------------------------------------
+# WP17 (T090, FR-010/FR-010a/FR-011/FR-009c, #5023/#5519) -- red-first
+# reproductions over the NFR-002 fork fixtures, through the REAL CLI.
+# ---------------------------------------------------------------------------
+
+
+def test_repair_never_drops_entries_on_forked_log(tmp_path: Path) -> None:
+    """R3: fixture (a) -- root-uncommitted, coordination-untracked (#5519 shape).
+
+    Red at base: ``_diagnose`` builds ``orphaned_in_index`` from one surface's
+    log alone and ``_repair`` rebuilds the WHOLE index from it, so a forked
+    decision on the other surface is silently dropped. Fixed: the index
+    entry count is unchanged across ``--repair``, and the output names the
+    fork (never a silent, "clean" 0/0 report).
+    """
+    fixture = make_fork_fixture(tmp_path, "root_uncommitted_coord_untracked", MissionTopology.COORD)
+    before = len(_store.load_index(fixture.root_mission_dir).entries)
+
+    exit_code, payload = _invoke_doctor_decisions_json(fixture.repo_root, fixture.mission_dir_name, repair=True)
+
+    after = len(_store.load_index(fixture.root_mission_dir).entries)
+    assert before == after == 0, "a forked repair must never add OR drop index entries"
+    assert exit_code == 1, "a forked --repair must exit 1 (C-003: never silently claim success)"
+    assert payload["forked"] is True
+    assert "DECISION_LOG_FORKED" in payload["findings"]
+    assert any("forked" in step for step in payload["reconcile_steps"]), payload["reconcile_steps"]
+
+
+def test_doctor_reports_fork_from_refs_only(tmp_path: Path) -> None:
+    """R15: fixture (c) -- a fresh clone of (b), no coordination worktree.
+
+    Red at base: the ``forked``/``streams`` fields are absent from
+    ``doctor decisions --json`` entirely, so a fork is invisible from a
+    fresh clone. Fixed: the detector reads the coordination side from its
+    branch ref (no worktree created) and still reports the fork, with
+    per-surface decision ids.
+    """
+    fixture = make_fork_fixture(tmp_path, "fresh_clone", MissionTopology.COORD)
+    assert fixture.clone_root is not None
+
+    exit_code, payload = _invoke_doctor_decisions_json(fixture.clone_root, fixture.mission_dir_name, repair=False)
+
+    assert exit_code == 0, "read-only diagnose always exits 0 (report-only), forked or not"
+    assert payload["forked"] is True
+    status_stream = next(s for s in payload["streams"] if s["stream"] == "status.events.jsonl")
+    assert status_stream["state"] == "forked"
+    assert status_stream["coordination"]["source"] == "ref", "no coordination worktree exists in the fresh clone"
+    assert list(fixture.decision_ids_root) == status_stream["decisions_only_on_primary"]
+    assert list(fixture.decision_ids_coord) == status_stream["decisions_only_on_coordination"]
+    # Read-only (FR-016 US4.1 control): the detector never materializes a
+    # coordination worktree while answering this query.
+    assert not (fixture.clone_root / ".worktrees").exists()
+
+
+def test_doctor_reports_and_repairs_coord_only_ledger(tmp_path: Path) -> None:
+    """R16 (doctor half): fixture (d) -- the ledger committed only on the
+    coordination branch (the pre-fix #3928 placement).
+
+    Red at base: there is no ``ledger``/``DECISION_LEDGER_ONLY_ON_COORDINATION``
+    concept at all, so the doctor reports this Mission clean with an empty
+    ledger. Fixed: it is reported, and ``--repair`` copies the missing
+    ``DM-*.md`` file and index entry into the PRIMARY ledger dir additively,
+    with no new commit.
+    """
+    fixture = make_fork_fixture(tmp_path, "ledger_only_on_coordination", MissionTopology.COORD)
+
+    exit_code, payload = _invoke_doctor_decisions_json(fixture.repo_root, fixture.mission_dir_name, repair=False)
+    assert exit_code == 0
+    assert payload["ledger"]["state"] == "coordination_only"
+    assert "DECISION_LEDGER_ONLY_ON_COORDINATION" in payload["findings"]
+    assert payload["clean"] is False
+
+    import subprocess
+
+    before_sha = subprocess.run(["git", "-C", str(fixture.repo_root), "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+
+    exit_code, payload = _invoke_doctor_decisions_json(fixture.repo_root, fixture.mission_dir_name, repair=True)
+    assert exit_code == 0, "ledger-only repair (unforked, additive) succeeds"
+    assert payload["ledger_copied"] is True
+
+    after_sha = subprocess.run(["git", "-C", str(fixture.repo_root), "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+    assert before_sha == after_sha, "the repair must create NO commit (FR-009b)"
+
+    decisions_dir = fixture.root_mission_dir / "decisions"
+    index = _store.load_index(fixture.root_mission_dir)
+    assert {e.decision_id for e in index.entries} == set(fixture.decision_ids_coord)
+    dm_files = sorted(p.name for p in decisions_dir.glob("DM-*.md"))
+    assert dm_files == [f"DM-{did}.md" for did in fixture.decision_ids_coord]
