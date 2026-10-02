@@ -214,10 +214,17 @@ def test_wrap_refuses_when_write_dir_resolves_primary_under_coord_topology(tmp_p
         AttributeError here would be swallowed by the generic ``except
         Exception`` below and silently produce a DIFFERENT, GENERIC
         DecisionGitLogUnavailable, giving this test a false-positive pass
-        without ever exercising the surface check under test."""
+        without ever exercising the surface check under test.
 
-        def __init__(self, *args: object, **kwargs: object) -> None:
-            self._real = _real_placement_seam(*args, **kwargs)  # type: ignore[arg-type]
+        Typed to match ``placement_seam``'s own signature exactly (review
+        cycle 3 nit) rather than ``*args: object, **kwargs: object`` + a
+        suppression -- the real call site always passes ``(repo_root,
+        mission_slug)`` positionally with no ``owned`` kwarg on this arm, so
+        this is a precise, not a widened, signature.
+        """
+
+        def __init__(self, repo_root: Path, mission_slug: str) -> None:
+            self._real = _real_placement_seam(repo_root, mission_slug)
 
         def write_dir(self, _kind: object) -> WriteLocation:
             return fake_location
@@ -229,4 +236,28 @@ def test_wrap_refuses_when_write_dir_resolves_primary_under_coord_topology(tmp_p
     inner = MagicMock(spec=RuntimeEventEmitter)
 
     with pytest.raises(DecisionGitLogUnavailable, match="resolved a PRIMARY surface"):
+        _wrap_with_decision_git_log(inner, coord.mission_dir_name, coord.repo_root)
+
+
+def test_wrap_chains_coord_branch_undeclared_and_absent_code_through_the_refusal(tmp_path: Path) -> None:
+    """Review cycle 3 (C3-N1): a non-owned ``_wrap_with_decision_git_log``
+    call on a coordination-routed Mission whose ``coordination_branch`` is
+    undeclared AND whose deterministically-derived branch does not exist in
+    git either reaches ``write_dir``'s ``CoordBranchUndeclaredAndAbsent``
+    refusal. The bridge folds it (N2, cycle 1) into ``DecisionGitLogUnavailable``
+    -- this pins that the chained typed code survives the fold, matching
+    ``(COORD_BRANCH_UNDECLARED_AND_ABSENT)`` verbatim in the message so an
+    operator reading the fail-closed error still sees it.
+    """
+    import json
+
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, branch_deleted=True)
+    meta_path = coord.root_mission_dir / "meta.json"
+    meta = json.loads(meta_path.read_text())
+    assert meta.get("topology"), "fixture precondition: topology must survive the strip"
+    del meta["coordination_branch"]
+    meta_path.write_text(json.dumps(meta))
+    inner = MagicMock(spec=RuntimeEventEmitter)
+
+    with pytest.raises(DecisionGitLogUnavailable, match=r"\(COORD_BRANCH_UNDECLARED_AND_ABSENT\)"):
         _wrap_with_decision_git_log(inner, coord.mission_dir_name, coord.repo_root)
