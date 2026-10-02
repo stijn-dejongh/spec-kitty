@@ -1095,17 +1095,28 @@ def _merge_group_results(
 def _resolve_mission_target_branch(repo_root: Path, mission_slug: str) -> str:
     """Resolve the mission's PRIMARY ``target_branch`` ref.
 
-    This is the SAME ref ``resolve_placement_only`` returns for a primary kind
-    (it reads ``get_feature_target_branch`` internally), so comparing the
-    kind-aware ``placement.ref`` against it cleanly separates a primary commit
-    (``placement.ref == primary_target``) from a coordination one. Resolving it
-    here keeps ``use_coord`` derived from the ONE kind-aware placement authority
-    (NFR-004) rather than re-deriving the partition.
+    B1 fix (cycle 2 review, `plan.design.published-status-state-write`):
+    delegates to :func:`resolve_placement_only` with a guaranteed PRIMARY-
+    partition kind (:data:`_FALLBACK_PRIMARY_KIND`) instead of reading
+    ``get_feature_target_branch`` directly. Those two were byte-identical for
+    PRE_CONSOLIDATION/CONSOLIDATED phases (the common case, unaffected here),
+    but silently DIVERGED for a PUBLISHED (E2) mission: ``resolve_placement_
+    only`` redirects a PRIMARY kind to the resolved Primary Branch (D23), while
+    a raw ``get_feature_target_branch`` read kept returning the mission's OWN
+    (possibly long-deleted) ``target_branch`` literal. ``use_coord``'s own
+    ``placement.ref != primary_target`` comparison then spuriously fired TRUE
+    for a batch mixing a PRIMARY kind with a COORD kind BOTH redirected to the
+    SAME Primary Branch (e.g. retrospect's RETROSPECTIVE+STATUS_STATE batch,
+    #5513/#5501) — misrouting the whole group into coordination staging and
+    raising ``PrimaryKindReachedCoordStagingError``. Delegating closes the gap
+    by construction: this function is now LITERALLY the same authority
+    ``placement.ref`` itself came from, so the two can never disagree (no
+    split-brain), matching the ONE-shared-predicate requirement this ruling's
+    ``PlacementSeam.write_dir`` extension already holds for the write-location
+    accessor.
     """
-    from specify_cli.core.paths import get_feature_target_branch
-
-    primary_target: str = get_feature_target_branch(repo_root, mission_slug)
-    return primary_target
+    placement = resolve_placement_only(repo_root, mission_slug, kind=_FALLBACK_PRIMARY_KIND)
+    return placement.ref
 
 
 def _materialise_coord_worktree(
