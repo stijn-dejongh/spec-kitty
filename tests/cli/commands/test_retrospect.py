@@ -1025,13 +1025,16 @@ class TestAutoCommitFailureIsSurfaced:
     def test_create_warns_on_stderr_and_keeps_json_parseable_when_auto_commit_fails(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, break_git: Any) -> None:
         """WP14 (contracts/commit-outcome.md rule 6): the failed surface(s)
         render through the shared ``render_commit_outcome`` -- naming each
-        surface and its refused path(s) -- instead of a hand-formatted
-        diagnostic message naming git's own raw failure text.
+        surface and its refused path(s) -- in ADDITION to (B2 cycle 2 review:
+        never instead of) the original ``_warn_auto_commit_failed`` warning,
+        which carries two things the generic surface render does not: git's
+        own raw failure text, and the "commit it by hand" remediation. Both
+        warnings fire together for the SAME caller-surface failure.
         """
         repo = tmp_path / "repo"
         feature_dir = _seed_completed_mission_repo(repo)
         head_before = _git(repo, "rev-parse", "HEAD")
-        break_git(repo)
+        git_error = break_git(repo)
         monkeypatch.chdir(repo)
 
         with patch(_FANOUT_EDGE):
@@ -1047,6 +1050,10 @@ class TestAutoCommitFailureIsSurfaced:
         warning = strip_ansi(result.stderr)
         assert "refused" in warning
         assert "retrospective.yaml" in warning
+        # B2: restored -- git's own failure text and the hand-commit
+        # remediation must still reach the operator, additively.
+        assert git_error in warning
+        assert "commit it by hand" in warning
 
     def test_create_warns_and_exits_zero_when_the_commit_router_raises(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Injected: the router fails loud on a corrupt coordination state; no real flat fixture reaches it."""
