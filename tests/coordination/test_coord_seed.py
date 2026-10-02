@@ -19,6 +19,7 @@ import pytest
 from mission_runtime import ActionContextError, Establishment, MissionArtifactKind, MissionTopology, TopologySurface, placement_seam
 from specify_cli.coordination.coord_seed import (
     COORD_SEED_TRAILER,
+    CoordBranchUndeclaredAndAbsent,
     CoordSeedForkRefused,
     establish_coord_write_location,
 )
@@ -27,6 +28,7 @@ from specify_cli.coordination.workspace import CoordinationWorkspace
 from specify_cli.missions._read_path_resolver import CoordState, probe_coord_state
 from specify_cli.status.locking import FeatureStatusLockTimeoutError, feature_status_lock
 from tests._factories.coord_mission import (
+    COORD_TOPOLOGIES,
     CoordMission,
     event_ids,
     index_entry_ids,
@@ -967,3 +969,133 @@ def test_unmaterialized_to_materialized_without_seed_reports_worktree_materializ
     assert location.establishment is Establishment.WORKTREE_MATERIALIZED
     assert location.coord_state_before is CoordState.UNMATERIALIZED
     assert location.seed is None
+
+
+# ---------------------------------------------------------------------------
+# Review cycle 2 (B1-residual, Decision plan.design.undeclared-coord-branch):
+# an UNDECLARED coordination_branch on a coordination-routed STORED topology
+# must DERIVE the canonical branch (lanes.branch_naming) and proceed exactly
+# as if declared when it exists, or refuse when it does not -- NEVER degrade
+# to PRIMARY. A topology-less/legacy meta stays on the historical PRIMARY
+# control, unaffected.
+# ---------------------------------------------------------------------------
+
+
+def _strip_coordination_branch_keep_topology(meta_path: Path) -> None:
+    meta = json.loads(meta_path.read_text())
+    assert meta.get("topology"), "fixture precondition: topology must survive the strip"
+    del meta["coordination_branch"]
+    meta_path.write_text(json.dumps(meta))
+
+
+def _strip_topology_and_branch(meta_path: Path) -> None:
+    meta = json.loads(meta_path.read_text())
+    meta.pop("topology", None)
+    meta.pop("coordination_branch", None)
+    meta_path.write_text(json.dumps(meta))
+
+
+def _add_owned_worktree_on_target(coord: CoordMission, owned_root: Path) -> None:
+    subprocess.run(["git", "-C", str(coord.repo_root), "checkout", "--detach", "-q"], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(coord.repo_root), "worktree", "add", "-q", str(owned_root), coord.target_branch], check=True, capture_output=True)
+
+
+@pytest.mark.parametrize("topology", COORD_TOPOLOGIES)
+def test_undeclared_branch_derives_and_proceeds_non_owned(tmp_path: Path, topology: MissionTopology) -> None:
+    """Non-owned: stored topology routes through coordination, the declared
+    branch is absent, but the DERIVED canonical branch still exists in git --
+    proceed exactly as if it had been declared (never PRIMARY)."""
+    coord = make_prefix_coord_mission(tmp_path, topology, worktree="absent")
+    _strip_coordination_branch_keep_topology(coord.root_mission_dir / "meta.json")
+
+    location = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    assert location.surface is TopologySurface.COORD
+
+
+@pytest.mark.parametrize("topology", COORD_TOPOLOGIES)
+def test_undeclared_branch_refuses_when_derived_branch_absent_non_owned(tmp_path: Path, topology: MissionTopology) -> None:
+    """Non-owned: the derived branch does not exist in git either ->
+    CoordBranchUndeclaredAndAbsent, NEVER a silent PRIMARY degrade."""
+    coord = make_prefix_coord_mission(tmp_path, topology, branch_deleted=True)
+    _strip_coordination_branch_keep_topology(coord.root_mission_dir / "meta.json")
+
+    with pytest.raises(CoordBranchUndeclaredAndAbsent) as excinfo:
+        establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+    assert excinfo.value.code == "COORD_BRANCH_UNDECLARED_AND_ABSENT"
+    assert excinfo.value.derived_branch == coord.coordination_branch
+
+
+@pytest.mark.parametrize("topology", COORD_TOPOLOGIES)
+def test_undeclared_branch_derives_and_proceeds_owned(tmp_path: Path, topology: MissionTopology) -> None:
+    """Owned: BOTH the owned copy and the repository-root fallback lack
+    coordination_branch (a genuinely-undeclared Mission post-B1-fallback);
+    the derived branch exists -> proceed exactly as if declared."""
+    coord = make_prefix_coord_mission(tmp_path, topology, worktree="absent")
+    _strip_coordination_branch_keep_topology(coord.root_mission_dir / "meta.json")
+    owned_root = tmp_path / "owned-checkout"
+    _add_owned_worktree_on_target(coord, owned_root)
+    _strip_coordination_branch_keep_topology(owned_root / "kitty-specs" / coord.mission_dir_name / "meta.json")
+    owned = mint_test_fact(
+        repository_root=coord.repo_root,
+        owned_root=owned_root,
+        mission_dir=owned_root / "kitty-specs" / coord.mission_dir_name,
+        mission_slug=coord.mission_dir_name,
+        write_branch=coord.target_branch,
+        topology=topology,
+    )
+
+    location = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=owned)
+
+    assert location.surface is TopologySurface.COORD
+
+
+@pytest.mark.parametrize("topology", COORD_TOPOLOGIES)
+def test_undeclared_branch_refuses_when_derived_branch_absent_owned(tmp_path: Path, topology: MissionTopology) -> None:
+    coord = make_prefix_coord_mission(tmp_path, topology, branch_deleted=True)
+    _strip_coordination_branch_keep_topology(coord.root_mission_dir / "meta.json")
+    owned_root = tmp_path / "owned-checkout"
+    _add_owned_worktree_on_target(coord, owned_root)
+    _strip_coordination_branch_keep_topology(owned_root / "kitty-specs" / coord.mission_dir_name / "meta.json")
+    owned = mint_test_fact(
+        repository_root=coord.repo_root,
+        owned_root=owned_root,
+        mission_dir=owned_root / "kitty-specs" / coord.mission_dir_name,
+        mission_slug=coord.mission_dir_name,
+        write_branch=coord.target_branch,
+        topology=topology,
+    )
+
+    with pytest.raises(CoordBranchUndeclaredAndAbsent) as excinfo:
+        establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=owned)
+    assert excinfo.value.code == "COORD_BRANCH_UNDECLARED_AND_ABSENT"
+    assert excinfo.value.derived_branch == coord.coordination_branch
+
+
+def test_topology_less_legacy_meta_still_returns_primary_control(tmp_path: Path) -> None:
+    """Positive control: a legacy / un-backfilled meta (no ``topology``, no
+    ``coordination_branch``) is coord-LESS -- unaffected by the new gate;
+    PRIMARY stays the historical answer."""
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="absent")
+    _strip_topology_and_branch(coord.root_mission_dir / "meta.json")
+
+    location = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=None)
+
+    assert location.surface is TopologySurface.PRIMARY
+
+
+def test_undeclared_branch_refuses_when_mid8_unresolvable(tmp_path: Path) -> None:
+    """Edge case: topology routes through coordination, branch undeclared,
+    and no mid8 disambiguator can even be resolved (bare slug, no mid8/
+    mission_id in meta) -- still refuses, never degrades to PRIMARY."""
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="absent")
+    meta_path = coord.root_mission_dir / "meta.json"
+    meta = json.loads(meta_path.read_text())
+    del meta["coordination_branch"]
+    meta.pop("mid8", None)
+    meta.pop("mission_id", None)
+    meta_path.write_text(json.dumps(meta))
+
+    with pytest.raises(CoordBranchUndeclaredAndAbsent) as excinfo:
+        establish_coord_write_location(coord.repo_root, coord.mission_slug, MissionArtifactKind.STATUS_STATE, owned=None)
+    assert excinfo.value.derived_branch is None
