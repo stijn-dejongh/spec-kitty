@@ -1201,3 +1201,146 @@ def test_legacy_head_override_block_is_byte_unchanged() -> None:
         "charter directive; any change must go through an explicit, reviewed "
         "decision, not an incidental refactor."
     )
+
+
+# ---------------------------------------------------------------------------
+# WP09 (review cycle 3 follow-up to WP07's ``seed_committed_this_txn``):
+# a RESTORED_FROM_BRANCH establishment whose seed attempt produced NO new
+# coordination-branch commit must not be mistaken for "this acquire already
+# committed my content".
+# ---------------------------------------------------------------------------
+
+
+def _fake_write_location(
+    *, checkout_root: Path, establishment: Any, coord_commit: str | None
+) -> Any:
+    """Build a minimal ``WriteLocation`` double for ``placement_seam().write_dir()``.
+
+    ``seed`` is populated whenever ``establishment`` is ``SEEDED`` or
+    ``RESTORED_FROM_BRANCH`` (matching the real accessor's contract --
+    ``seed`` is ``None`` only for ``NONE``/``WORKTREE_MATERIALIZED``), so the
+    fake exercises exactly the ambiguity the WP07 regression hit: a non-``None``
+    ``seed`` whose own ``coord_commit`` may still be ``None``.
+    """
+    from mission_runtime import Establishment, SeedReport, WriteLocation
+    from mission_runtime.artifacts import TopologySurface
+
+    seed = None
+    if establishment in (Establishment.SEEDED, Establishment.RESTORED_FROM_BRANCH):
+        seed = SeedReport(coord_commit=coord_commit)
+    return WriteLocation(
+        path=checkout_root / "kitty-specs" / FEATURE_DIRNAME,
+        checkout_root=checkout_root,
+        surface=TopologySurface.COORD,
+        coord_state_before=None,
+        establishment=establishment,
+        seed=seed,
+    )
+
+
+def _patch_placement_seam(monkeypatch: pytest.MonkeyPatch, location: Any) -> None:
+    class _FakeSeam:
+        def write_dir(self, kind: Any) -> Any:  # noqa: ARG002 - kind unused by the fake
+            return location
+
+    monkeypatch.setattr(
+        transaction_module, "placement_seam", lambda *args, **kwargs: _FakeSeam()
+    )
+
+
+def test_restored_from_branch_with_no_coord_commit_is_not_treated_as_seeded(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """RED at WP07's tip ``7afabf4eff``.
+
+    Probe: a Mission whose coordination Mission dir gets deleted (state
+    regresses from MATERIALIZED to EMPTY on a post-fix branch) is restored by
+    ``_handle_empty_post_fix`` -- but when the restored content already
+    matches the coordination branch tip byte-for-byte, the follow-up seed
+    commit is a genuine git no-op (``SeedReport.coord_commit is None``): this
+    acquire committed NOTHING, so the coordination branch tip never moved.
+
+    Gating ``seed_committed_this_txn`` on ``establishment in (SEEDED,
+    RESTORED_FROM_BRANCH)`` alone (the WP07 shape) set the flag ``True``
+    anyway, so a caller that staged nothing got a silent no-op receipt from
+    :meth:`BookkeepingTransaction.commit_idempotent` instead of the genuinely
+    empty changeset :class:`BookkeepingCommitFailed`. The fix gates on
+    ``location.seed.coord_commit is not None`` instead.
+    """
+    from mission_runtime import Establishment
+
+    coord_worktree = tmp_path / "fake-coord-worktree"
+    coord_worktree.mkdir(parents=True)
+    location = _fake_write_location(
+        checkout_root=coord_worktree,
+        establishment=Establishment.RESTORED_FROM_BRANCH,
+        coord_commit=None,
+    )
+    _patch_placement_seam(monkeypatch, location)
+
+    _checkout_root, seed_committed_this_txn = (
+        transaction_module._resolve_coord_worktree_root_for_transaction(
+            repo_root=repo, mission_slug=MISSION_SLUG, mid8=MID8, owned=None
+        )
+    )
+
+    assert seed_committed_this_txn is False, (
+        "a RESTORED_FROM_BRANCH establishment whose own seed attempt produced "
+        "no coordination-branch commit (coord_commit=None) must not be "
+        "reported as 'this acquire committed my content'"
+    )
+
+
+def test_restored_from_branch_with_a_coord_commit_is_treated_as_seeded(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Companion green case: a RESTORED_FROM_BRANCH establishment whose seed
+    attempt DID produce a new coordination-branch commit (root-only records
+    were carried alongside the tip restore) still reports
+    ``seed_committed_this_txn=True`` -- unchanged from WP07's intent for the
+    case it actually committed something."""
+    from mission_runtime import Establishment
+
+    coord_worktree = tmp_path / "fake-coord-worktree"
+    coord_worktree.mkdir(parents=True)
+    location = _fake_write_location(
+        checkout_root=coord_worktree,
+        establishment=Establishment.RESTORED_FROM_BRANCH,
+        coord_commit="deadbeef" * 5,
+    )
+    _patch_placement_seam(monkeypatch, location)
+
+    _checkout_root, seed_committed_this_txn = (
+        transaction_module._resolve_coord_worktree_root_for_transaction(
+            repo_root=repo, mission_slug=MISSION_SLUG, mid8=MID8, owned=None
+        )
+    )
+
+    assert seed_committed_this_txn is True
+
+
+def test_seeded_establishment_still_gates_on_coord_commit(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The same correction applies uniformly to ``SEEDED`` (not just
+    ``RESTORED_FROM_BRANCH``): a ``SeedReport`` with no ``coord_commit`` means
+    this acquire's own seed attempt committed nothing, regardless of
+    ``establishment``."""
+    from mission_runtime import Establishment
+
+    coord_worktree = tmp_path / "fake-coord-worktree"
+    coord_worktree.mkdir(parents=True)
+    location = _fake_write_location(
+        checkout_root=coord_worktree,
+        establishment=Establishment.SEEDED,
+        coord_commit=None,
+    )
+    _patch_placement_seam(monkeypatch, location)
+
+    _checkout_root, seed_committed_this_txn = (
+        transaction_module._resolve_coord_worktree_root_for_transaction(
+            repo_root=repo, mission_slug=MISSION_SLUG, mid8=MID8, owned=None
+        )
+    )
+
+    assert seed_committed_this_txn is False
