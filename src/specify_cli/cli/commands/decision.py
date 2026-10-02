@@ -23,8 +23,19 @@ from specify_cli.missions._read_path_resolver import (
 import json
 import re as _re
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
+
+if TYPE_CHECKING:
+    # TYPE_CHECKING-only (``from __future__ import annotations`` above keeps
+    # these out of the runtime namespace): coord-artifact-single-home-01M3V4BE
+    # WP09's two new error-rendering helpers need the types for their
+    # signatures, but ``specify_cli.coordination.*`` / ``specify_cli.status.*``
+    # stay function-local imports at every actual call site (cold-import
+    # discipline this module already follows for similar seams).
+    from specify_cli.coordination.coord_seed import CoordSeedForkRefused
+    from specify_cli.status.locking import FeatureStatusLockTimeoutError
 
 from mission_runtime import ActionContextError
 
@@ -237,6 +248,53 @@ def _handle_status_read_path_error(exc: StatusReadPathNotFound) -> None:
     raise typer.Exit(1)
 
 
+def _handle_coord_seed_fork_refused(exc: CoordSeedForkRefused) -> None:
+    """Render a ``COORD_SEED_FORK_REFUSED`` write-location refusal.
+
+    coord-artifact-single-home-01M3V4BE WP09: ``open_decision`` /
+    ``_terminal_command`` now resolve the decision-event WRITE location
+    through ``write_dir`` (replacing the former direct
+    ``materialize_coord_surface_for_write`` call), which raises
+    :class:`CoordSeedForkRefused` -- an :class:`ActionContextError` subclass,
+    ``.code == "COORD_SEED_FORK_REFUSED"`` -- when the coordination
+    decision/status log has genuinely diverged from its root-checkout
+    counterpart (D3), BEFORE anything is written. The generic
+    :func:`_handle_action_context_error` renders ``.code`` with no recovery
+    guidance; a genuine fork needs an operator reconcile step, not a bare
+    retry, so this gets its own ``next_step``.
+    """
+    payload = {
+        "error": str(exc),
+        "code": exc.code,
+        "next_step": (
+            "The coordination decision/status log has diverged from the "
+            "repository-root checkout and cannot be auto-reconciled. Run "
+            "'spec-kitty doctor coordination --fix' or inspect both logs "
+            "manually, then retry this command."
+        ),
+    }
+    typer.echo(json.dumps(payload, sort_keys=True), err=True)
+    raise typer.Exit(1)
+
+
+def _handle_status_lock_timeout(exc: FeatureStatusLockTimeoutError) -> None:
+    """Render a ``STATUS_LOCK_HELD`` mission-status-lock timeout.
+
+    coord-artifact-single-home-01M3V4BE WP09: ``write_dir``'s seed path takes
+    the mission status lock (I-SEED-1); a contended lock surfaces as
+    :class:`FeatureStatusLockTimeoutError` (``error_code ==
+    "STATUS_LOCK_HELD"``) instead of a bare traceback. Transient by nature —
+    the recovery hint is "retry", unlike the genuine-fork refusal above.
+    """
+    payload = {
+        "error": str(exc),
+        "code": exc.error_code,
+        "next_step": ("Another process holds the mission status lock. Wait for it to finish and retry this command."),
+    }
+    typer.echo(json.dumps(payload, sort_keys=True), err=True)
+    raise typer.Exit(1)
+
+
 def _handle_index_read_error(exc: DecisionIndexReadError) -> None:
     """Render a corrupt ``decisions/index.json`` as a structured diagnostic.
 
@@ -350,6 +408,9 @@ def cmd_open(  # noqa: PLR0913
         _handle_action_context_error(exc)
         return  # unreachable — _handle_action_context_error raises
 
+    from specify_cli.coordination.coord_seed import CoordSeedForkRefused
+    from specify_cli.status.locking import FeatureStatusLockTimeoutError
+
     try:
         resp = open_decision(
             repo_root,
@@ -366,6 +427,16 @@ def cmd_open(  # noqa: PLR0913
     except DecisionError as exc:
         _handle_decision_error(exc)
         return
+    except CoordSeedForkRefused as exc:
+        # coord-artifact-single-home-01M3V4BE WP09: ``write_dir``'s pre-write
+        # placement resolution refused a genuine fork — before any ledger
+        # write. Before ``StatusReadPathNotFound`` below: not a subclass of
+        # it, but ordered to read alongside the other write-location refusals.
+        _handle_coord_seed_fork_refused(exc)
+        return  # unreachable — _handle_coord_seed_fork_refused raises
+    except FeatureStatusLockTimeoutError as exc:
+        _handle_status_lock_timeout(exc)
+        return  # unreachable — _handle_status_lock_timeout raises
     except DecisionIndexReadError as exc:
         _handle_index_read_error(exc)
         return  # unreachable — _handle_index_read_error raises
@@ -423,6 +494,9 @@ def cmd_resolve(  # noqa: PLR0913
         _handle_action_context_error(exc)
         return  # unreachable — _handle_action_context_error raises
 
+    from specify_cli.coordination.coord_seed import CoordSeedForkRefused
+    from specify_cli.status.locking import FeatureStatusLockTimeoutError
+
     try:
         resp = resolve_decision(
             repo_root,
@@ -438,6 +512,12 @@ def cmd_resolve(  # noqa: PLR0913
     except DecisionError as exc:
         _handle_decision_error(exc)
         return
+    except CoordSeedForkRefused as exc:
+        _handle_coord_seed_fork_refused(exc)
+        return  # unreachable — _handle_coord_seed_fork_refused raises
+    except FeatureStatusLockTimeoutError as exc:
+        _handle_status_lock_timeout(exc)
+        return  # unreachable — _handle_status_lock_timeout raises
     except DecisionIndexReadError as exc:
         _handle_index_read_error(exc)
         return  # unreachable — _handle_index_read_error raises
@@ -480,6 +560,9 @@ def cmd_defer(
         _handle_action_context_error(exc)
         return  # unreachable — _handle_action_context_error raises
 
+    from specify_cli.coordination.coord_seed import CoordSeedForkRefused
+    from specify_cli.status.locking import FeatureStatusLockTimeoutError
+
     try:
         resp = defer_decision(
             repo_root,
@@ -493,6 +576,12 @@ def cmd_defer(
     except DecisionError as exc:
         _handle_decision_error(exc)
         return
+    except CoordSeedForkRefused as exc:
+        _handle_coord_seed_fork_refused(exc)
+        return  # unreachable — _handle_coord_seed_fork_refused raises
+    except FeatureStatusLockTimeoutError as exc:
+        _handle_status_lock_timeout(exc)
+        return  # unreachable — _handle_status_lock_timeout raises
     except DecisionIndexReadError as exc:
         _handle_index_read_error(exc)
         return  # unreachable — _handle_index_read_error raises
@@ -535,6 +624,9 @@ def cmd_cancel(
         _handle_action_context_error(exc)
         return  # unreachable — _handle_action_context_error raises
 
+    from specify_cli.coordination.coord_seed import CoordSeedForkRefused
+    from specify_cli.status.locking import FeatureStatusLockTimeoutError
+
     try:
         resp = cancel_decision(
             repo_root,
@@ -548,6 +640,12 @@ def cmd_cancel(
     except DecisionError as exc:
         _handle_decision_error(exc)
         return
+    except CoordSeedForkRefused as exc:
+        _handle_coord_seed_fork_refused(exc)
+        return  # unreachable — _handle_coord_seed_fork_refused raises
+    except FeatureStatusLockTimeoutError as exc:
+        _handle_status_lock_timeout(exc)
+        return  # unreachable — _handle_status_lock_timeout raises
     except DecisionIndexReadError as exc:
         _handle_index_read_error(exc)
         return  # unreachable — _handle_index_read_error raises
