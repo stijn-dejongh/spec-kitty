@@ -1246,10 +1246,21 @@ def test_throttled_outcome_is_recorded_at_debug_without_a_second_warning(
 # ---------------------------------------------------------------------------
 
 
+class _FakeWriteLocation:
+    """Minimal ``WriteLocation`` double exposing only the ``.path`` attribute
+    ``_mission_dir`` consumes."""
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+
+
 class _DirectMissionDirSeam:
     """Stub placement seam mirroring tests/specify_cli/decisions/test_emit.py.
 
     These tests target the fan-out projection, not mission/topology lookup.
+    coord-artifact-single-home-01M3V4BE WP09 (T049, out-of-map blast-radius
+    fix): ``decisions/emit.py``'s writer now resolves through
+    ``write_dir(STATUS_STATE)`` instead of ``read_dir`` -- stub both.
     """
 
     def __init__(self, repo_root: Path, mission_slug: str) -> None:
@@ -1258,6 +1269,9 @@ class _DirectMissionDirSeam:
 
     def read_dir(self, kind: object) -> Path:
         return self._repo_root / "kitty-specs" / self._mission_slug
+
+    def write_dir(self, kind: object) -> _FakeWriteLocation:
+        return _FakeWriteLocation(self._repo_root / "kitty-specs" / self._mission_slug)
 
 
 @pytest.fixture(autouse=True)
