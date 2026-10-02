@@ -81,6 +81,7 @@ from tests._factories.coord_mission import (
     COORD_TOPOLOGIES,
     CoordMission,
     event_ids,
+    make_fork_fixture,
     make_prefix_coord_mission,
 )
 
@@ -168,8 +169,7 @@ def test_decision_tracer_decision_keeps_one_log_and_monotonic_clock(tmp_path: Pa
     # untouched, but no DecisionPointOpened landed there.
     post_root_event_ids = set(event_ids(root_log)) if root_log.exists() else set()
     assert post_root_event_ids == pre_root_event_ids, (
-        f"the root checkout's status log gained new events: "
-        f"{post_root_event_ids - pre_root_event_ids!r} (a decision event forked onto the root checkout)"
+        f"the root checkout's status log gained new events: {post_root_event_ids - pre_root_event_ids!r} (a decision event forked onto the root checkout)"
     )
     root_opened = _opened_rows(root_log)
     assert not root_opened, f"root checkout log unexpectedly holds DecisionPointOpened rows: {root_opened!r}"
@@ -205,3 +205,190 @@ def test_decision_tracer_decision_keeps_one_log_and_monotonic_clock(tmp_path: Pa
     assert first_positions, f"first decision's opened row not found by position in {coord_log}"
     assert second_positions, f"second decision's opened row not found by position in {coord_log}"
     assert max(first_positions) < min(second_positions), "the first decision's row does not precede the second's in the combined coordination log"
+
+
+# ---------------------------------------------------------------------------
+# T052 -- one test per writer family and per reachable coordination state
+# (FR-003: "one test per writer family; each fails if that family still uses
+# a read resolver"). Also checks the ledger control (FR-009a / US1.3): the
+# decision LEDGER (``decisions/DM-*.md`` / ``decisions/index.json``) is
+# PRIMARY-partition and must never land on the coordination Mission dir,
+# regardless of the event-stream state below.
+# ---------------------------------------------------------------------------
+
+
+def _decision_open_raw(mission_slug: str, repo_root: Path, *, slot_key: str, input_key: str, question: str) -> Any:
+    """Invoke ``decision open`` without asserting success (refusal-path tests)."""
+    return _invoke(
+        [
+            "decision",
+            "open",
+            "--mission",
+            mission_slug,
+            "--flow",
+            "specify",
+            "--slot-key",
+            slot_key,
+            "--input-key",
+            input_key,
+            "--question",
+            question,
+            "--actor",
+            "test-r4",
+        ],
+        repo_root,
+    )
+
+
+def _ledger_entries(coord: CoordMission) -> list[Path]:
+    ledger_dir = coord.root_mission_dir / "decisions"
+    if not ledger_dir.exists():
+        return []
+    return sorted(ledger_dir.glob("DM-*.md"))
+
+
+def _assert_no_ledger_and_no_event(coord: CoordMission, *, pre_root_event_ids: set[str]) -> None:
+    assert not _ledger_entries(coord), "a refused decision open must leave NO ledger entry (NFR-002: resolve the write location before any ledger write)"
+    index_path = coord.root_mission_dir / "decisions" / "index.json"
+    if index_path.exists():
+        assert _opened_rows(index_path) == [], f"index.json unexpectedly carries content after a refusal: {index_path}"
+    root_log = coord.root_mission_dir / _STATUS_LOG_FILENAME
+    post_ids = set(event_ids(root_log)) if root_log.exists() else set()
+    assert post_ids == pre_root_event_ids, "a refused decision open must write no event anywhere"
+
+
+@pytest.mark.parametrize("topology", COORD_TOPOLOGIES)
+def test_decision_open_unmaterialized_local_branch_materializes_and_writes_coord(tmp_path: Path, topology: MissionTopology) -> None:
+    """State: UNMATERIALIZED + local branch -> materialized, event on coord."""
+    coord = make_prefix_coord_mission(tmp_path, topology, worktree="absent")
+    assert not coord.coord_worktree_path.exists()
+
+    resp = _decision_open(coord.mission_slug, coord.repo_root, slot_key="s.a", input_key="a", question="A?")
+
+    assert coord.coord_worktree_path.exists(), "write_dir must materialize the UNMATERIALIZED coordination worktree"
+    coord_log = coord.coord_mission_dir / _STATUS_LOG_FILENAME
+    opened = _opened_rows(coord_log)
+    assert any(row["payload"]["decision_point_id"] == resp["decision_id"] for row in opened)
+    # Ledger stays PRIMARY (FR-009a / US1.3).
+    assert _ledger_entries(coord), "the ledger entry must exist on the PRIMARY checkout"
+    assert not (coord.coord_mission_dir / "decisions").exists(), "the ledger must never land on the coordination Mission dir"
+
+
+@pytest.mark.parametrize("topology", COORD_TOPOLOGIES)
+def test_decision_open_pre_fix_empty_seeds_once_and_appends_after_carried(tmp_path: Path, topology: MissionTopology) -> None:
+    """State: pre-fix EMPTY, no seed marker -> seeded once; event appended after the carried events."""
+    coord = make_prefix_coord_mission(tmp_path, topology, worktree="empty")
+    root_log = coord.root_mission_dir / _STATUS_LOG_FILENAME
+    carried_ids = event_ids(root_log)
+    assert carried_ids, "fixture must carry at least the scaffold events for this to be a meaningful seed"
+
+    resp = _decision_open(coord.mission_slug, coord.repo_root, slot_key="s.a", input_key="a", question="A?")
+
+    coord_log = coord.coord_mission_dir / _STATUS_LOG_FILENAME
+    coord_ids = event_ids(coord_log)
+    # The carried root events precede the new one, in order (one seed, not a fork).
+    assert coord_ids[: len(carried_ids)] == carried_ids
+    assert coord_ids[-1] not in carried_ids
+    opened = _opened_rows(coord_log)
+    assert any(row["payload"]["decision_point_id"] == resp["decision_id"] for row in opened)
+    # Exactly one seed commit landed on the coordination branch for this file
+    # (no retry/duplicate seed).
+    seed_commits = subprocess.run(
+        ["git", "-C", str(coord.repo_root), "log", "--format=%H", coord.coordination_branch, "--", f"kitty-specs/{coord.mission_dir_name}/{_STATUS_LOG_FILENAME}"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.splitlines()
+    assert len(seed_commits) == 1, f"expected exactly one seed commit for the status log, got {seed_commits!r}"
+
+
+def test_decision_open_materialized_forked_proceeds_without_lockout(tmp_path: Path) -> None:
+    """State: MATERIALIZED-forked -> writes proceed on coord with no lockout
+    (US2.6). ``"both_committed"`` (not ``"root_uncommitted_coord_untracked"``,
+    which IS a pending seed per ``contracts/write-location-accessor.md``'s
+    MATERIALIZED row -- the coordination tip there has no COMMITTED COORD
+    blob yet, so ``write_dir`` seeds it, runs the fork-check, and correctly
+    raises ``CoordSeedForkRefused``): BOTH copies are already COMMITTED on
+    their own branches, so the coordination tip already carries a COMMITTED
+    COORD blob -- no seed is pending, ``write_dir`` never re-runs the
+    fork-check, and the write proceeds directly against the (already
+    historically diverged) coordination copy. This is the "no lockout"
+    behaviour: a Mission whose logs diverged in the past must keep working
+    going forward, not jam on every subsequent write."""
+    fixture = make_fork_fixture(tmp_path, "both_committed", MissionTopology.COORD, stream="status_log")
+    coord_log = fixture.coord_mission_dir / _STATUS_LOG_FILENAME
+    pre_coord_ids = event_ids(coord_log)
+
+    resp = _decision_open(fixture.mission_slug, fixture.repo_root, slot_key="s.new", input_key="new", question="New?")
+
+    post_coord_ids = event_ids(coord_log)
+    assert post_coord_ids[: len(pre_coord_ids)] == pre_coord_ids, "the new write must append to the existing coord content, not replace/reset it"
+    opened = _opened_rows(coord_log)
+    assert any(row["payload"]["decision_point_id"] == resp["decision_id"] for row in opened)
+
+
+@pytest.mark.parametrize("topology", COORD_TOPOLOGIES)
+def test_decision_open_remote_only_refuses_no_ledger_no_event(tmp_path: Path, topology: MissionTopology) -> None:
+    """State: remote-only -> refused, no ledger and no event written."""
+    coord = make_prefix_coord_mission(tmp_path, topology, remote_only=True)
+    root_log = coord.root_mission_dir / _STATUS_LOG_FILENAME
+    pre_root_event_ids = set(event_ids(root_log)) if root_log.exists() else set()
+
+    result = _decision_open_raw(coord.mission_slug, coord.repo_root, slot_key="s.a", input_key="a", question="A?")
+
+    assert result.exit_code != 0
+    payload = json.loads(result.output.strip().splitlines()[-1])
+    assert payload.get("code") == "COORDINATION_WORKTREE_UNMATERIALIZED"
+    _assert_no_ledger_and_no_event(coord, pre_root_event_ids=pre_root_event_ids)
+
+
+@pytest.mark.parametrize("topology", COORD_TOPOLOGIES)
+def test_decision_open_branch_deleted_refuses_with_hint(tmp_path: Path, topology: MissionTopology) -> None:
+    """State: DELETED -> refused with hint, no ledger and no event written."""
+    coord = make_prefix_coord_mission(tmp_path, topology, branch_deleted=True)
+    root_log = coord.root_mission_dir / _STATUS_LOG_FILENAME
+    pre_root_event_ids = set(event_ids(root_log)) if root_log.exists() else set()
+
+    result = _decision_open_raw(coord.mission_slug, coord.repo_root, slot_key="s.a", input_key="a", question="A?")
+
+    assert result.exit_code != 0
+    payload = json.loads(result.output.strip().splitlines()[-1])
+    assert payload.get("code") == "COORDINATION_BRANCH_DELETED"
+    # ``CoordinationBranchDeleted`` carries its recovery hint inline in the
+    # message (no separate ``next_step`` attribute, unlike
+    # ``CoordinationWorktreeUnmaterialized``) -- the rendered ``error`` text
+    # is still operator-facing.
+    assert "doctor coordination" in payload.get("error", ""), "a refusal must carry an operator-facing recovery hint"
+    _assert_no_ledger_and_no_event(coord, pre_root_event_ids=pre_root_event_ids)
+
+
+@pytest.mark.parametrize("topology", [MissionTopology.LANES, MissionTopology.SINGLE_BRANCH])
+def test_decision_open_coord_less_topology_unchanged(tmp_path: Path, topology: MissionTopology) -> None:
+    """C-008: ``lanes``/``single_branch`` Missions behave as before -- the
+    event lands at the same (primary-checkout) path the old read-resolver
+    would have computed, never a coordination worktree."""
+    from specify_cli.core.mission_creation import create_mission_core
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", "-b", "topic"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.email", "t@example.com"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "commit.gpgsign", "false"], cwd=repo, check=True)
+    (repo / "README.md").write_text("seed\n", encoding="utf-8")
+    subprocess.run(["git", "add", "README.md"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "initial"], cwd=repo, check=True)
+    from tests._factories import provision_test_charter
+
+    provision_test_charter(repo)
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "charter"], cwd=repo, check=True)
+
+    result = create_mission_core(repo, "coord-less-demo", topology=topology, target_branch="topic", allow_worktree_context=True)
+
+    resp = _decision_open(result.meta["mission_slug"], repo, slot_key="s.a", input_key="a", question="A?")
+
+    coord_less_log = result.feature_dir / _STATUS_LOG_FILENAME
+    assert not (repo / ".worktrees").exists(), "a coord-less Mission must never materialize a coordination worktree"
+    opened = _opened_rows(coord_less_log)
+    assert any(row["payload"]["decision_point_id"] == resp["decision_id"] for row in opened)
