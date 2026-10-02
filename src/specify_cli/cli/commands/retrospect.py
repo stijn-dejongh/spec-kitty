@@ -15,20 +15,26 @@ from mission_runtime import MissionArtifactKind, resolve_topology
 from specify_cli.coordination.coherence import is_coord_residue_churn
 from specify_cli.coordination.commit_outcome import PROTECTED_BRANCH_REFUSED, SurfaceOutcome, render_commit_outcome
 from specify_cli.coordination.commit_router import CommitRouterResult, commit_for_mission
-from specify_cli.coordination.surface_resolver import resolve_status_surface
+from specify_cli.coordination.coord_seed import CoordSeedForkRefused
+from specify_cli.coordination.surface_resolver import (
+    CoordinationBranchDeleted,
+    CoordinationWorktreeUnmaterialized,
+    resolve_status_surface,
+)
 from specify_cli.core.constants import KITTIFY_DIR, KITTY_SPECS_DIR, RETROSPECTIVE_FILENAME
 from specify_cli.core.utils import safe_is_dir
 from specify_cli.mission_metadata import load_meta_or_empty
 from specify_cli.missions._read_path_resolver import (
     candidate_feature_dir_for_mission,
 )
+from specify_cli.status.locking import FeatureStatusLockTimeoutError
 import contextlib
 import json
 import subprocess
 from dataclasses import dataclass
 from kernel.clock import UTC, datetime, now_utc, parse_iso, parse_stamp, timedelta
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Literal, NoReturn
 
 import typer
 from specify_cli.cli.console import console as _console
@@ -145,6 +151,74 @@ def _canonical_events_write_path(repo_root: Path, mission_slug: str) -> Path:
     from mission_runtime import MissionArtifactKind, placement_seam
 
     return placement_seam(repo_root, mission_slug).write_dir(MissionArtifactKind.STATUS_STATE).path / "status.events.jsonl"
+
+
+# B1 (cycle 2 review): the four named ``write_dir`` refusals
+# (contracts/write-location-accessor.md "Errors" table) that
+# ``_canonical_events_write_path`` can raise. A PUBLISHED coordination
+# Mission's event-log append now resolves without raising these for the
+# torn-down-coordination-branch shape (the `plan.design.published-status-
+# state-write` ruling in ``mission_runtime.resolution``), but a genuine
+# refusal -- a non-PUBLISHED Mission whose coordination branch is deleted or
+# unmaterialized, a forked coordination log, or a contended status lock --
+# must still surface as the command's own actionable error, never a raw
+# traceback and never a silent fallback to the repository root checkout.
+_WRITE_LOCATION_REFUSALS: tuple[type[Exception], ...] = (
+    CoordinationBranchDeleted,
+    CoordinationWorktreeUnmaterialized,
+    CoordSeedForkRefused,
+    FeatureStatusLockTimeoutError,
+)
+
+
+def _write_location_refusal_code(exc: Exception) -> str:
+    """The refusal's own stable error code (``.error_code`` or ``ActionContextError.code``)."""
+    code = getattr(exc, "error_code", None) or getattr(exc, "code", None)
+    return str(code) if code else "WRITE_LOCATION_REFUSED"
+
+
+def _emit_write_location_refusal(exc: Exception, *, mission_slug: str, json_output: bool) -> NoReturn:
+    """Render a named ``write_dir`` refusal as the command's actionable error and exit 1 (B1).
+
+    Each refusal's own message already names the Mission, the coordination
+    branch and a recovery command (contracts/write-location-accessor.md
+    "Errors" table); this renders that message through the command's own
+    envelope instead of letting it escape as an uncaught traceback.
+    """
+    code = _write_location_refusal_code(exc)
+    reason = str(exc)
+    if json_output:
+        _console.print_json(
+            json.dumps(
+                {
+                    "result": "blocked",
+                    "code": code,
+                    "mission_slug": mission_slug,
+                    "blocked_reason": reason,
+                    "exit_code": 1,
+                }
+            )
+        )
+    else:
+        _err_console.print(f"[red]Error {escape(code)}:[/red] {escape(reason)}", soft_wrap=True)
+    raise typer.Exit(1) from exc
+
+
+def _warn_write_location_refusal(exc: Exception, *, mission_slug: str) -> None:
+    """Non-fatal counterpart of :func:`_emit_write_location_refusal` for the bulk backfill path (B1).
+
+    ``backfill`` processes many missions per invocation (#1771); one
+    mission's event-log write-location refusal must not abort the whole
+    batch. The retrospective record itself is written independently of the
+    event log, so the caller degrades to committing the record alone.
+    """
+    code = _write_location_refusal_code(exc)
+    _err_console.print(
+        f"[yellow]Warning:[/yellow] could not resolve the event-log write location for "
+        f"mission {escape(mission_slug)!r} ({escape(code)}): {escape(str(exc))}. "
+        f"The retrospective record is unaffected; its event log was not attached to this auto-commit.",
+        soft_wrap=True,
+    )
 
 
 def _resolve_handle(
@@ -397,9 +471,16 @@ def _maybe_auto_commit(
         # WP14 (contracts/commit-outcome.md rule 6): render every OTHER
         # surface's outcome too -- the top-level/caller-partition status alone
         # (checked below) masks a refused/errored surface that is not the
-        # caller's own (#5513, #5501). Falls back to the pre-WP14 generic
-        # warning only for the legacy empty-``surfaces`` shape.
-        if not _render_unexplained_surfaces(result, protected_target_warned=protected) and not protected and result.status in ("error", "no_op_wrong_surface"):
+        # caller's own (#5513, #5501).
+        # B2 (cycle 2 review): the two warnings are ADDITIVE, not mutually
+        # exclusive. ``_render_unexplained_surfaces`` prints only the terse
+        # "<surface>: refused -- <path>: <reason>" lines; it never carries
+        # git's own failure text (a hook rejection, index.lock) or the
+        # "commit it by hand" remediation `_warn_auto_commit_failed` gives --
+        # dropping the latter whenever the former printed anything lost both.
+        # Both now always fire together for a caller-surface failure.
+        _render_unexplained_surfaces(result, protected_target_warned=protected)
+        if not protected and result.status in ("error", "no_op_wrong_surface"):
             _warn_auto_commit_failed(files, RuntimeError(result.diagnostic or result.status))
     except Exception as exc:
         # Non-fatal (the record write already succeeded), but never silent.
@@ -574,7 +655,14 @@ def create_cmd(
 
     # FR-006 (#1735/#1771): the event is appended to, and committed from, the
     # ONE canonical status surface (coord-aware), never a primary-only copy.
-    events_path = _canonical_events_write_path(repo_root, persisted.mission_slug)
+    # B1 (cycle 2 review): a genuine write-location refusal -- the
+    # retrospective record is already written and on disk at this point --
+    # surfaces as this command's own actionable error, never a raw traceback
+    # and never a silent fallback to the repository root checkout.
+    try:
+        events_path = _canonical_events_write_path(repo_root, persisted.mission_slug)
+    except _WRITE_LOCATION_REFUSALS as exc:
+        _emit_write_location_refusal(exc, mission_slug=persisted.mission_slug, json_output=json_output)
 
     # Emit lifecycle event (non-fatal — record write already succeeded)
     with contextlib.suppress(Exception):
@@ -771,9 +859,17 @@ def _auto_commit_backfilled(repo_root: Path, created: list[dict[str, object]]) -
     """
     for entry in created:
         mslug = str(entry["mission_slug"])
-        events_path = _canonical_events_write_path(repo_root, mslug)
+        # B1 (cycle 2 review): one mission's write-location refusal must not
+        # abort the whole batch (#1771 "per-mission failures are NOT fatal").
+        # The record commits alone -- it does not need the coordination
+        # write location -- and the refusal is a warning, never silent.
+        try:
+            events_path: Path | None = _canonical_events_write_path(repo_root, mslug)
+        except _WRITE_LOCATION_REFUSALS as exc:
+            _warn_write_location_refusal(exc, mission_slug=mslug)
+            events_path = None
         files = [Path(str(entry["record_path"]))]
-        if events_path.exists():
+        if events_path is not None and events_path.exists():
             files.append(events_path)
         _maybe_auto_commit(
             repo_root,
@@ -975,6 +1071,39 @@ def backfill_cmd(  # noqa: C901
                         missing_artifacts=[str(exc)],
                         actor=_cli_actor(),
                         event_log_dir=_canonical_events_write_path(repo_root, mslug).parent,
+                    )
+        except _WRITE_LOCATION_REFUSALS as exc:
+            # B1 (cycle 2 review): this mission's retrospective record WAS
+            # generated and written to disk (``write_gen_record`` above
+            # already succeeded) -- only the event-log write-location
+            # resolution that follows it refused. Reporting this under the
+            # generic ``generator_exception`` category (the ``except
+            # Exception`` arm below) would mislabel a written record as a
+            # generator failure, sending an operator to debug the wrong
+            # thing. A distinct category names the real cause.
+            remediation = f"The retrospective record was written, but its event-log location could not be resolved: {exc}"
+            failed_entry = {
+                "mission_id": mid,
+                "mission_slug": mslug,
+                "failure_category": "event_log_write_location_refused",
+                "missing": [],
+                "remediation_hint": remediation,
+            }
+            failed.append(failed_entry)
+            if emit_failures:
+                with contextlib.suppress(Exception):
+                    emit_capture_failed(
+                        mid,
+                        mslug,
+                        repo_root,
+                        failure_category="event_log_write_location_refused",
+                        failure_message=str(exc),
+                        remediation_hint=remediation,
+                        policy_source={},
+                        attempted_provenance_kind="backfill",
+                        missing_artifacts=None,
+                        actor=_cli_actor(),
+                        event_log_dir=_canonical_record_path(repo_root, mslug, mid).parent,
                     )
         except Exception as exc:
             failed_entry = {
