@@ -171,10 +171,14 @@ def _refuse_owned_handle_mismatch(handle: str, owned: OwnedCheckout) -> None:
 # write kinds named by the ADR (ISSUE_MATRIX / TRACER_FILE /
 # ACCEPTANCE_MATRIX -- #3033 -- and REVIEW_CYCLE, ruled in below --
 # review-cycle-verdict-seam-rebuild-01KZ2W7W WP04, T016, ADR 2026-08-03-1).
-# ``STATUS_STATE`` and ``DECISION_LOG`` are DELIBERATELY excluded -- their
-# post-consolidation resolution stays unchanged (SC-005 / C-005
-# non-regression). This is resolver-INTERNAL kind selection (the resolver
-# already keys on ``MissionArtifactKind`` for the existing
+# ``STATUS_STATE`` and ``DECISION_LOG`` are DELIBERATELY excluded from THIS
+# frozenset -- their post-consolidation READ resolution stays unchanged
+# (SC-005 / C-005 non-regression). ``STATUS_STATE``'s WRITE side gains a
+# separate, narrower short-circuit below
+# (``_is_published_write_short_circuit_kind``, the
+# `plan.design.published-status-state-write` ruling); ``DECISION_LOG`` has
+# no such exception on either side. This is resolver-INTERNAL kind selection
+# (the resolver already keys on ``MissionArtifactKind`` for the existing
 # ``_PRIMARY_ARTIFACT_KINDS`` split), never call-site kind-conditioning
 # (C-006 preserved).
 #
@@ -204,6 +208,31 @@ _E2_CONSOLIDATED_ELIGIBLE_KINDS: frozenset[MissionArtifactKind] = frozenset(
         MissionArtifactKind.REVIEW_CYCLE,
     }
 )
+
+# Operator ruling (`plan.design.published-status-state-write`,
+# coord-artifact-single-home-01M3V4BE WP14 cycle 2, B1): ``STATUS_STATE`` is
+# DELIBERATELY excluded from ``_E2_CONSOLIDATED_ELIGIBLE_KINDS`` above
+# (SC-005 non-regression governs the READ side, ``resolve_artifact_surface``
+# / :meth:`PlacementSeam.read_dir` -- UNCHANGED by this ruling), but a
+# PUBLISHED coordination Mission's STATUS_STATE WRITE (the retrospect /
+# agent-retrospect event-log append, FR-003 -- the only STATUS_STATE writer
+# that can run post-consolidation) has no coordination surface left once
+# consolidation tears the coordination branch down: the unconditional
+# coordination probe inside :func:`~specify_cli.coordination.coord_seed.
+# establish_coord_write_location` raises ``CoordinationBranchDeleted`` for
+# every one of those Missions, an unconditional crash on the normal
+# post-merge retrospective path. This predicate is the ONE shared
+# WRITE-side-only extension of D23's PUBLISHED/E2 short-circuit -- consumed
+# by BOTH :func:`resolve_placement_only` (the ``write_target`` / commit-ref
+# probe) and :meth:`PlacementSeam.write_dir` (the write-location accessor) --
+# so the directory a STATUS_STATE append lands in and the ref the commit
+# router commits it to can never disagree (no split-brain). ``DECISION_LOG``
+# stays excluded (ADR 2026-07-30-1 Decision 1 §6's "in-mission and not an E2
+# write target by design" rationale is untouched).
+def _is_published_write_short_circuit_kind(kind: MissionArtifactKind) -> bool:
+    """WRITE-side-only PUBLISHED/E2 short-circuit membership (D23 + the STATUS_STATE ruling above)."""
+    return kind in _E2_CONSOLIDATED_ELIGIBLE_KINDS or kind is MissionArtifactKind.STATUS_STATE
+
 
 # The ``ActionContextError`` code raised when a PUBLISHED (E2) mission's
 # CONSOLIDATED content is not present on the current checkout (FR-006
@@ -1963,10 +1992,14 @@ def resolve_placement_only(
     # fully-retired E2 mission whose coordination branch has ALSO been
     # cleaned up (#3033 T007). PRE_CONSOLIDATION and CONSOLIDATED (E1) fall
     # through completely UNCHANGED (#3076 regression floor, T012) — including
-    # for ``STATUS_STATE`` / ``DECISION_LOG``, which are never in the E2
-    # in-scope set (SC-005 non-regression).
+    # for ``DECISION_LOG``, which is never in the E2 in-scope set (SC-005
+    # non-regression). ``STATUS_STATE`` is the ONE write-side-only exception
+    # (the `plan.design.published-status-state-write` ruling above
+    # ``_is_published_write_short_circuit_kind``): its WRITE ref now joins
+    # this short-circuit so the commit router never re-probes a torn-down
+    # coordination branch for a PUBLISHED Mission's event-log append.
     phase = resolve_lifecycle_phase(mission_slug, repo_root, resolver=resolver)
-    if phase is LifecyclePhase.PUBLISHED and kind in _E2_CONSOLIDATED_ELIGIBLE_KINDS:
+    if phase is LifecyclePhase.PUBLISHED and _is_published_write_short_circuit_kind(kind):
         return _resolve_consolidated_e2_target(repo_root, mission_slug, resolver=resolver)
 
     # FR-012 / C-CTX-3: ``target_branch`` is resolved exactly once here, exactly
@@ -2409,17 +2442,21 @@ class PlacementSeam:
           non-coordination topology (``lanes`` / ``single_branch``) —
           byte-identical to :meth:`read_dir` (C-008): no side effects, no
           coordination probe.
-        * **PUBLISHED / E2** (research D23) — a COORD-partition kind that is
-          E2-eligible (``REVIEW_CYCLE`` / ``TRACER_FILE`` / ``ISSUE_MATRIX`` /
-          ``ACCEPTANCE_MATRIX``) of a mission whose :class:`~mission_runtime.
-          lifecycle_phase.LifecyclePhase` is ``PUBLISHED`` — the PRIMARY
-          Mission dir on the repository-root checkout, composed WITHOUT any
-          coordination-state probe. Checked BEFORE delegating, so a
-          PUBLISHED mission whose coordination branch has since been torn
-          down by consolidation can never raise
-          :class:`~specify_cli.coordination.surface_resolver.
+        * **PUBLISHED / E2** (research D23, plus the ``STATUS_STATE`` write
+          ruling `plan.design.published-status-state-write` —
+          :func:`_is_published_write_short_circuit_kind`) — a COORD-partition
+          kind that is E2-eligible (``REVIEW_CYCLE`` / ``TRACER_FILE`` /
+          ``ISSUE_MATRIX`` / ``ACCEPTANCE_MATRIX``) **or** ``STATUS_STATE`` of
+          a mission whose :class:`~mission_runtime.lifecycle_phase.
+          LifecyclePhase` is ``PUBLISHED`` — the PRIMARY Mission dir on the
+          repository-root checkout, composed WITHOUT any coordination-state
+          probe. Checked BEFORE delegating, so a PUBLISHED mission whose
+          coordination branch has since been torn down by consolidation can
+          never raise :class:`~specify_cli.coordination.surface_resolver.
           CoordinationBranchDeleted` here and is never written into a
-          torn-down coordination worktree.
+          torn-down coordination worktree. ``DECISION_LOG`` is deliberately
+          NOT included (SC-005 non-regression; it is in-mission-only by
+          design, ADR 2026-07-30-1 Decision 1 §6).
         * **Every other COORD kind of a coordination-routed Mission** —
           delegates (lazy import over the existing ``coordination``
           outbound-ledger edge, same edge RETROSPECTIVE's
@@ -2447,7 +2484,7 @@ class PlacementSeam:
         declared = declared_read_surface(self.repo_root, self.mission_slug, kind, owned=self.owned)
         if declared is TopologySurface.PRIMARY:
             return self._declared_primary_write_dir(kind)
-        if kind in _E2_CONSOLIDATED_ELIGIBLE_KINDS:
+        if _is_published_write_short_circuit_kind(kind):
             phase = resolve_lifecycle_phase(self.mission_slug, self.repo_root, resolver=None)
             if phase is LifecyclePhase.PUBLISHED:
                 return self._published_e2_write_dir()

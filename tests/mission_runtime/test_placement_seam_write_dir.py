@@ -36,10 +36,7 @@ from mission_runtime import (
     placement_seam,
     resolve_placement_only,
 )
-from specify_cli.coordination.surface_resolver import (
-    CoordinationBranchDeleted,
-    coord_branch_has_committed_artifact,
-)
+from specify_cli.coordination.surface_resolver import coord_branch_has_committed_artifact
 from specify_cli.missions._read_path_resolver import StatusReadPathNotFound
 from tests._factories.coord_mission import CoordMission, make_coord_mission, make_prefix_coord_mission
 from tests._owned_fixtures import mint_test_fact
@@ -227,27 +224,34 @@ def test_write_dir_e2_eligible_kind_bypasses_deleted_coordination_branch(tmp_pat
     assert location.coord_state_before is None
 
 
-def test_write_dir_status_state_on_fully_retired_e2_coord_still_raises(tmp_path: Path) -> None:
-    """SC-005 guard mirrored onto the write side: ``STATUS_STATE`` is NOT
-    E2-eligible, so ``write_dir`` follows whatever ``write_target`` resolves
-    today for it -- a raised ``CoordinationBranchDeleted`` -- instead of
-    silently granting it the E2 short-circuit too (binding correction round
-    3: "STATUS_STATE follows whatever write_target resolves today")."""
+def test_write_dir_status_state_bypasses_deleted_coordination_branch(tmp_path: Path) -> None:
+    """Operator ruling `plan.design.published-status-state-write`
+    (coord-artifact-single-home-01M3V4BE WP14 cycle 2, B1) SUPERSEDES the
+    prior binding-correction-round-3 text this test used to pin ("STATUS_STATE
+    follows whatever write_target resolves today", i.e. a raised
+    ``CoordinationBranchDeleted``): ``STATUS_STATE``'s WRITE side now joins
+    the PUBLISHED/E2 short-circuit (``_is_published_write_short_circuit_kind``)
+    so a PUBLISHED mission's event-log append — the retrospect /
+    agent-retrospect auto-commit, the ONLY writer that can run
+    post-consolidation — can never raise against a coordination branch
+    consolidation has already torn down (the #5513/#5501 crash this ruling
+    closes). ``DECISION_LOG`` keeps the OLD (still-raises) behaviour; see
+    ``tests/mission_runtime/test_consolidated_resolution.py::
+    test_e2_decision_log_still_probes_coordination_and_is_unaffected``, which
+    pins that the short-circuit stays kind-scoped, not blanket. Shape-identical
+    to the E2-eligible-kind test above."""
     repo = tmp_path / "repo"
     _init_flat_repo(repo)
-    mission_slug, _feature_dir, _target_branch, _coordination_branch = _build_e2_mission_coord_fully_retired(repo, mid8="01KYT4BB", mission_number=402)
+    mission_slug, feature_dir, _target_branch, _coordination_branch = _build_e2_mission_coord_fully_retired(repo, mid8="01KYT4BB", mission_number=402)
     seam = placement_seam(repo, mission_slug)
 
-    with pytest.raises(CoordinationBranchDeleted):
-        seam.write_dir(MissionArtifactKind.STATUS_STATE)
+    location = seam.write_dir(MissionArtifactKind.STATUS_STATE)
 
-    with pytest.raises(ActionContextError):
-        # write_target's own (wrapped) raise for the same kind+fixture --
-        # write_dir's raise is the UNWRAPPED StatusReadPathNotFound subclass
-        # (contract: "write_dir propagates them unchanged"), so the two are
-        # deliberately different exception shapes for the same underlying
-        # condition.
-        seam.write_target(MissionArtifactKind.STATUS_STATE)
+    assert location.surface == TopologySurface.PRIMARY
+    assert location.path == feature_dir
+    assert location.establishment == Establishment.NONE
+    assert location.coord_state_before is None
+    assert seam.write_target(MissionArtifactKind.STATUS_STATE) == CommitTarget(ref="main")
 
 
 # ---------------------------------------------------------------------------

@@ -809,16 +809,42 @@ def test_review_cycle_e2_published_resolves_consolidated_surface(tmp_path: Path)
     assert resolved == CommitTarget(ref="main")
 
 
-def test_review_cycle_e2_ruling_does_not_affect_status_state_exclusion(
+def test_review_cycle_e2_ruling_does_not_affect_decision_log_exclusion(
     tmp_path: Path,
 ) -> None:
-    """T016 non-regression: STATUS_STATE / DECISION_LOG's existing exclusion
-    from the E2-eligible set is unaffected by REVIEW_CYCLE's inclusion --
-    STATUS_STATE still probes coordination (and raises) for the SAME
-    fully-retired-coord E2 fixture."""
+    """T016 non-regression: ``DECISION_LOG``'s exclusion from the
+    PUBLISHED/E2-eligible set is unaffected by REVIEW_CYCLE's inclusion --
+    it still probes coordination (and raises) for the SAME fully-retired-coord
+    E2 fixture. ``STATUS_STATE`` is a SEPARATE, narrower case: see
+    ``test_review_cycle_e2_ruling_does_not_widen_status_state_beyond_its_own_ruling``
+    below -- the `plan.design.published-status-state-write` operator ruling
+    (coord-artifact-single-home-01M3V4BE WP14 cycle 2, B1) moved STATUS_STATE's
+    WRITE side onto this same short-circuit, superseding this test's former
+    STATUS_STATE assertion."""
     from mission_runtime import ActionContextError
 
     repo, mission_slug = _build_e2_review_cycle_mission(tmp_path)
 
     with pytest.raises(ActionContextError):
-        resolve_placement_only(repo, mission_slug, kind=MissionArtifactKind.STATUS_STATE)
+        resolve_placement_only(repo, mission_slug, kind=MissionArtifactKind.DECISION_LOG)
+
+
+def test_review_cycle_e2_ruling_does_not_widen_status_state_beyond_its_own_ruling(
+    tmp_path: Path,
+) -> None:
+    """`plan.design.published-status-state-write` (WP14 cycle 2, B1):
+    ``STATUS_STATE``'s WRITE-side PUBLISHED/E2 short-circuit resolves the
+    CONSOLIDATED target directly for this SAME fully-retired-coord fixture --
+    the #5513/#5501 crash (``CoordinationBranchDeleted`` from
+    ``retrospect``/``agent-retrospect``'s event-log append) this ruling
+    exists to close. It is a SEPARATE grant from REVIEW_CYCLE's own T016
+    inclusion (REVIEW_CYCLE is E2-eligible via ``_E2_CONSOLIDATED_ELIGIBLE_KINDS``
+    membership; STATUS_STATE via the narrower
+    ``_is_published_write_short_circuit_kind`` predicate) -- this test proves
+    the two gates do not interact (REVIEW_CYCLE's own grant does not need to
+    exist for STATUS_STATE to resolve here, and vice versa)."""
+    repo, mission_slug = _build_e2_review_cycle_mission(tmp_path)
+
+    resolved = resolve_placement_only(repo, mission_slug, kind=MissionArtifactKind.STATUS_STATE)
+
+    assert resolved == CommitTarget(ref="main")
