@@ -855,21 +855,39 @@ def read_primary_meta(
     # MissionMetaReadError instead of a raw ValueError.
     meta = load_meta_fail_closed(primary_dir) or {}
     if not meta:
-        # Non-composed handle (bare ``mid8``, full ULID, numeric prefix): the raw
-        # handle does NOT name the on-disk ``<slug>-<mid8>`` directory, so the
-        # topology-blind compose above misses the primary meta. Canonicalize the
-        # handle to locate the real primary dir and re-read.  Without this, a
-        # coord-topology mission addressed by a non-composed ``--mission`` handle
-        # yields empty meta → ``coordination_branch`` is never learned → the
-        # caller's coord gates (the M5 fail-closed gate AND the DELETED hard-fail)
-        # are silently skipped and the leg leaks a STALE PRIMARY read of a mission
-        # whose coord branch is gone (#1848 data-loss DIVERGENCE from the surface
-        # leg, which canonicalizes first). Paid only on the raw-miss path, so the
+        # Non-composed handle: the raw handle does NOT name the on-disk
+        # ``<slug>-<mid8>`` directory, so the topology-blind compose above
+        # misses the primary meta. Canonicalize the handle to locate the real
+        # primary dir and re-read. Without this, a coord-topology mission
+        # addressed by a non-composed ``--mission`` handle yields empty meta →
+        # ``coordination_branch``/``topology`` is never learned → the caller's
+        # coord gates (the M5 fail-closed gate, the DELETED hard-fail, and the
+        # coord-artifact-single-home-01M3V4BE WP09 cycle-2 undeclared-branch
+        # topology gate) are silently skipped and the leg leaks a STALE
+        # PRIMARY read of a mission whose coord branch is gone, or never
+        # learns it is coord-routed at all (#1848 data-loss DIVERGENCE from
+        # the surface leg, which canonicalizes first).
+        #
+        # Review cycle 2 (same-family B1-residual fix, coord-artifact-single-
+        # home-01M3V4BE WP09): this previously called ONLY
+        # ``_canonicalize_handle`` (the identity-form cascade: bare ``mid8`` /
+        # full ULID / numeric prefix) — missing the BARE HUMAN SLUG fold
+        # ``_canonicalize_primary_read_handle`` already composes for the
+        # surface leg (``resolve_planning_read_dir``). A Mission addressed by
+        # its plain bare human slug (no identity form) therefore read EMPTY
+        # meta here while the surface leg correctly resolved the SAME
+        # Mission's real primary dir — a split-brain between the two
+        # canonicalizers. Routing through the ONE shared canonicalizer
+        # (``_canonicalize_primary_read_handle``, which itself tries the
+        # bare-modern fold FIRST, falling through to the identity-form
+        # cascade) closes the split: both legs now agree for every handle
+        # shape. ``MissionSelectorAmbiguous`` still propagates unchanged (no
+        # silent pick) -- the SAME contract the old ``_canonicalize_handle``
+        # call already had. Paid only on the raw-miss path, so the
         # composed-handle happy path keeps its pure-path cost.
-        canonical = _canonicalize_handle(repo_root, handle)
-        if canonical is not None:
-            _, _, canonical_dir = canonical
-            meta = load_meta_fail_closed(canonical_dir) or {}
+        canonical_name = _canonicalize_primary_read_handle(repo_root, handle)
+        if canonical_name != handle:
+            meta = load_meta_fail_closed(_compose_primary_feature_dir(repo_root, canonical_name)) or {}
     branch = meta.get("coordination_branch")
     declares_coordination = isinstance(branch, str) and bool(branch.strip())
     return meta, declares_coordination
