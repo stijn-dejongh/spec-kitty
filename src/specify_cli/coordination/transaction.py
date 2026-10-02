@@ -144,18 +144,26 @@ def _canonical_coord_mission_slug(
       not exist, so ``establish_coord_write_location`` silently classifies
       PRIMARY (no meta found) instead of the real COORD mission.
 
-    Tries the literal ``mission_slug`` first (``read_primary_meta`` already
-    does its own literal + backfill-canonicalization fallback); only when
-    that finds no declared coordination branch at all does it retry the
-    mid8-composed canonical name.
+    Checks the LITERAL ``mission_slug`` dir first -- genuinely literally, not
+    through ``read_primary_meta``'s own canonicalization fallback (review
+    cycle 2, coord-artifact-single-home-01M3V4BE WP09): that fallback now
+    folds a bare human slug to its composed ``<slug>-<mid8>`` dir internally
+    (the B1-residual same-family fix), so ``read_primary_meta(seam_repo_root,
+    mission_slug)`` can report ``declares=True`` for a BARE slug whose
+    on-disk dir is ITSELF the composed name -- exactly shape one below -- and
+    this function would then wrongly keep the bare slug as "already
+    canonical", handing the bare form to ``write_dir``/the seed mechanics
+    (which use it verbatim in git operations, not just meta resolution).
+    Only when the literal dir's OWN ``meta.json`` exists does this return
+    ``mission_slug`` unchanged; otherwise it retries the mid8-composed
+    canonical name exactly as before.
     """
     if owned is not None:
         # Zero I/O: the fact already carries its own canonical mission_slug.
         return owned.mission_slug
     from specify_cli.missions._read_path_resolver import read_primary_meta
 
-    _meta, declares = read_primary_meta(seam_repo_root, mission_slug)
-    if declares:
+    if (seam_repo_root / KITTY_SPECS_DIR / mission_slug / "meta.json").exists():
         return mission_slug
     composed = coord_mission_dir_name(mission_slug, mid8=mid8)
     if composed == mission_slug:
