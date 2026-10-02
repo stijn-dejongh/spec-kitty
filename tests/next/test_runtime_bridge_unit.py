@@ -2087,7 +2087,11 @@ class TestWrapWithDecisionGitLogOwnedCheckout:
         wrapped = runtime_bridge._wrap_with_decision_git_log(emitter, mission_slug, tmp_path, owned=owned)
 
         assert wrapped._worktree_root == worktree_root_candidate
-        assert wrapped._decisions_file == worktree_root_candidate / "kitty-specs" / mission_slug / "decisions.events.jsonl"
+        # N1 fold: composed via coord_mission_dir_name (verbatim mid8-append),
+        # not the raw mission_slug -- agrees with write_dir/the transaction.
+        from specify_cli.lanes.branch_naming import coord_mission_dir_name
+
+        assert wrapped._decisions_file == worktree_root_candidate / "kitty-specs" / coord_mission_dir_name(mission_slug, mid8=mission_id[:8]) / "decisions.events.jsonl"
 
     def test_unmaterialized_worktree_root_resolves_via_owned_retry_helper(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """When the coord worktree candidate does NOT yet exist, the owned
@@ -2131,7 +2135,9 @@ class TestWrapWithDecisionGitLogOwnedCheckout:
         wrapped = runtime_bridge._wrap_with_decision_git_log(emitter, mission_slug, tmp_path, owned=owned)
 
         assert wrapped._worktree_root == resolved_via_retry_helper
-        assert wrapped._decisions_file == resolved_via_retry_helper / "kitty-specs" / mission_slug / "decisions.events.jsonl"
+        from specify_cli.lanes.branch_naming import coord_mission_dir_name
+
+        assert wrapped._decisions_file == resolved_via_retry_helper / "kitty-specs" / coord_mission_dir_name(mission_slug, mid8=mission_id[:8]) / "decisions.events.jsonl"
 
     @staticmethod
     def _patch_placement_seam(monkeypatch: pytest.MonkeyPatch, location: object) -> None:
