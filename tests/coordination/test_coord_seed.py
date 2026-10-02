@@ -1099,3 +1099,74 @@ def test_undeclared_branch_refuses_when_mid8_unresolvable(tmp_path: Path) -> Non
     with pytest.raises(CoordBranchUndeclaredAndAbsent) as excinfo:
         establish_coord_write_location(coord.repo_root, coord.mission_slug, MissionArtifactKind.STATUS_STATE, owned=None)
     assert excinfo.value.derived_branch is None
+
+
+# ---------------------------------------------------------------------------
+# Review cycle 3 (C3-B2): mutant M2 on _stored_topology_routes_through_
+# coordination's owned clause (`return owned is not None and routes_through_
+# coordination(owned.topology)` -> `return False`) survived every existing
+# test, because every prior owned-arm test left the OWNED meta copy's own
+# `topology` field intact -- satisfying the function's FIRST clause
+# (`stored_topology_from_meta(meta)`) before the owned-specific clause is
+# ever reached. These two cases strip the owned copy down to where ONLY
+# `owned.topology` can save the Mission from degrading to PRIMARY -- the
+# exact fail-open Decision plan.design.undeclared-coord-branch forbids.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("case", ["owned_meta_missing", "owned_meta_topologyless"])
+@pytest.mark.parametrize("topology", COORD_TOPOLOGIES)
+def test_owned_topology_clause_resolves_coordination_when_meta_topology_is_unavailable(tmp_path: Path, topology: MissionTopology, case: str) -> None:
+    """``owned.topology`` alone (never the owned meta copy's own ``topology``
+    field, which this test strips/removes) must still route an owned
+    coordination-routed Mission to the coordination surface, not PRIMARY."""
+    coord = make_prefix_coord_mission(tmp_path, topology, worktree="absent")
+    _strip_coordination_branch_keep_topology(coord.root_mission_dir / "meta.json")
+    owned_root = tmp_path / "owned-checkout"
+    _add_owned_worktree_on_target(coord, owned_root)
+    owned_meta_path = owned_root / "kitty-specs" / coord.mission_dir_name / "meta.json"
+    if case == "owned_meta_missing":
+        owned_meta_path.unlink()
+    else:
+        assert case == "owned_meta_topologyless"
+        meta = json.loads(owned_meta_path.read_text())
+        meta.pop("coordination_branch", None)
+        meta.pop("topology", None)
+        owned_meta_path.write_text(json.dumps(meta))
+    owned = mint_test_fact(
+        repository_root=coord.repo_root,
+        owned_root=owned_root,
+        mission_dir=owned_root / "kitty-specs" / coord.mission_dir_name,
+        mission_slug=coord.mission_dir_name,
+        write_branch=coord.target_branch,
+        topology=topology,
+    )
+
+    location = establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=owned)
+
+    assert location.surface is TopologySurface.COORD
+
+
+@pytest.mark.parametrize("topology", COORD_TOPOLOGIES)
+def test_owned_topology_clause_refuses_when_meta_topology_and_derived_branch_are_both_absent(tmp_path: Path, topology: MissionTopology) -> None:
+    """The absent-branch twin of the test above: owned meta missing AND the
+    derived branch deleted from git -> CoordBranchUndeclaredAndAbsent, still
+    reached only because ``owned.topology`` (not the meta copy) carries the
+    coordination-routed verdict."""
+    coord = make_prefix_coord_mission(tmp_path, topology, branch_deleted=True)
+    _strip_coordination_branch_keep_topology(coord.root_mission_dir / "meta.json")
+    owned_root = tmp_path / "owned-checkout"
+    _add_owned_worktree_on_target(coord, owned_root)
+    (owned_root / "kitty-specs" / coord.mission_dir_name / "meta.json").unlink()
+    owned = mint_test_fact(
+        repository_root=coord.repo_root,
+        owned_root=owned_root,
+        mission_dir=owned_root / "kitty-specs" / coord.mission_dir_name,
+        mission_slug=coord.mission_dir_name,
+        write_branch=coord.target_branch,
+        topology=topology,
+    )
+
+    with pytest.raises(CoordBranchUndeclaredAndAbsent) as excinfo:
+        establish_coord_write_location(coord.repo_root, coord.mission_dir_name, MissionArtifactKind.STATUS_STATE, owned=owned)
+    assert excinfo.value.code == "COORD_BRANCH_UNDECLARED_AND_ABSENT"
