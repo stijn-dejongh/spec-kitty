@@ -23,6 +23,22 @@ Covers:
   resolution both canonicalize a handle before most callers reach this
   function, but nothing enforces that universally, so this pins the
   bare-slug shape too rather than only asserting it for free.
+- Review cycle 2 (same-family B1-residual fix, Decision ``plan.design.
+  undeclared-coord-branch``): a genuinely BARE mission_slug (no mid8 tail at
+  all, not just verbatim-preserved) driven through
+  ``_wrap_with_decision_git_log`` now lands on the coordination surface too
+  (``test_bare_slug_coord_routed_mission_lands_on_coordination_surface``) --
+  the previously-separate defect in ``read_primary_meta``'s canonicalization
+  fallback (identity forms only, missing the bare-human-slug fold
+  ``_canonicalize_primary_read_handle`` already applies for the read-dir
+  leg) is fixed at its source
+  (``specify_cli.missions._read_path_resolver.read_primary_meta``). A
+  defense-in-depth test
+  (``test_wrap_refuses_when_write_dir_resolves_primary_under_coord_topology``)
+  additionally pins that ``_wrap_with_decision_git_log``'s non-owned arm
+  never wraps a ``DecisionGitLog`` on a PRIMARY-surfaced ``write_dir`` answer
+  under a coordination-routed topology, regardless of how that mismatch
+  might arise.
 """
 
 from __future__ import annotations
@@ -33,12 +49,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from mission_runtime import MissionArtifactKind, MissionTopology, placement_seam
+from mission_runtime import MissionArtifactKind, MissionTopology, TopologySurface, placement_seam
 from runtime.next._internal_runtime.events import RuntimeEventEmitter
-from runtime.next.runtime_bridge import _wrap_with_decision_git_log
+from runtime.next.runtime_bridge import DecisionGitLogUnavailable, _wrap_with_decision_git_log
 from specify_cli.events.decision_log import DecisionGitLog
 from specify_cli.lanes.branch_naming import coord_mission_dir_name
-from tests._factories.coord_mission import make_prefix_coord_mission
+from tests._factories.coord_mission import COORD_TOPOLOGIES, make_prefix_coord_mission
 
 pytestmark = [pytest.mark.integration, pytest.mark.git_repo]
 
@@ -100,17 +116,15 @@ def test_decision_git_log_dir_name_agrees_for_a_bare_non_mid8_embedding_slug(tmp
     (mid8-embedding) slug here -- the shape production actually reaches it
     with (this WP09's own ``decision.py``/``runtime_bridge`` identity
     resolution both canonicalize a handle before most callers get here).
-    Driving it with the genuinely bare slug instead trips a SEPARATE,
-    pre-existing, unrelated defect in ``_mission_routes_through_coordination``
-    (its own ``placement_seam(...).read_dir(PRIMARY_METADATA)`` call does not
-    canonicalize a bare handle before reading ``meta.json`` for topology
-    classification, misclassifying a genuinely coord-routing bare-slug
-    Mission as coord-less) -- out of scope for this WP, not re-tested here.
-    This test instead pins the actual B3 claim directly: ``coord_mission_dir_
-    name``'s bare-vs-canonical equivalence, and that every NEW composer
-    (``DecisionGitLog``/``write_dir``/the transaction) agrees on the result,
-    never on the legacy bare-named dir a bare-slug caller's naming alone
-    would suggest.
+
+    (Review cycle 2 update: driving this SAME function with the genuinely
+    bare slug used to trip a separate defect in ``read_primary_meta`` (its
+    own canonicalization fallback covered only identity forms -- bare
+    ``mid8``/ULID/numeric prefix -- never the bare-HUMAN-SLUG fold), fixed in
+    cycle 2 and now pinned directly by
+    ``test_bare_slug_coord_routed_mission_lands_on_coordination_surface``
+    below -- this test keeps pinning the ``coord_mission_dir_name``
+    bare-vs-canonical equivalence claim on the CANONICAL-slug call shape.)
     """
     coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
     assert not coord.mission_slug.endswith(coord.mid8), "fixture precondition: mission_slug must be bare (not mid8-embedding)"
@@ -136,3 +150,71 @@ def test_decision_git_log_dir_name_agrees_for_a_bare_non_mid8_embedding_slug(tmp
     # directly -- is NEVER where the new design lands.
     legacy_bare_dir = coord.coord_worktree_path / "kitty-specs" / coord.mission_slug
     assert decision_git_log_dir != legacy_bare_dir
+
+
+@pytest.mark.parametrize("topology", COORD_TOPOLOGIES)
+def test_bare_slug_coord_routed_mission_lands_on_coordination_surface(tmp_path: Path, topology: MissionTopology) -> None:
+    """Review cycle 2 (same-family B1-residual fix): a genuinely BARE
+    ``mission_slug`` (the raw human slug, no mid8 tail at all -- unlike the
+    sibling test above, which drives the already-canonical slug) routed
+    through ``_wrap_with_decision_git_log`` now lands a ``DecisionGitLog`` on
+    the COORDINATION surface, never the primary checkout.
+
+    Before the cycle-2 fix, ``read_primary_meta``'s canonicalization fallback
+    covered only identity-form handles (bare ``mid8`` / full ULID / numeric
+    prefix) -- never the bare-HUMAN-SLUG fold ``_canonicalize_primary_read_
+    handle`` already applies for the read-dir leg -- so a bare-slug caller's
+    ``establish_coord_write_location`` read EMPTY meta, lost
+    ``coordination_branch``/``topology`` entirely, and silently degraded to
+    the PRIMARY write location even though ``_mission_routes_through_
+    coordination`` (a DIFFERENT, already-canonicalizing call path) correctly
+    classified the SAME Mission as coordination-routed.
+    """
+    coord = make_prefix_coord_mission(tmp_path, topology, worktree="empty")
+    assert not coord.mission_slug.endswith(coord.mid8), "fixture precondition: mission_slug must be bare (not mid8-embedding)"
+    inner = MagicMock(spec=RuntimeEventEmitter)
+
+    wrapped = _wrap_with_decision_git_log(inner, coord.mission_slug, coord.repo_root)
+
+    assert isinstance(wrapped, DecisionGitLog), "a bare-slug coord-routed Mission must still get a durable DecisionGitLog"
+    decision_git_log_dir = wrapped._decisions_file.parent
+    assert str(coord.coord_worktree_path) in str(decision_git_log_dir), f"bare-slug DecisionGitLog landed off the coordination worktree: {decision_git_log_dir!r}"
+    legacy_primary_dir = coord.repo_root / "kitty-specs" / coord.mission_dir_name
+    assert decision_git_log_dir != legacy_primary_dir, "must never land on the PRIMARY checkout for a coordination-routed topology"
+
+
+def test_wrap_refuses_when_write_dir_resolves_primary_under_coord_topology(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Defense in depth (review cycle 2, "same family" as B1-residual): when
+    ``_mission_routes_through_coordination`` says the STORED topology routes
+    through coordination but ``write_dir(DECISION_LOG)`` nonetheless hands
+    back a PRIMARY-surfaced location -- however that mismatch might arise --
+    ``_wrap_with_decision_git_log``'s non-owned arm refuses with
+    ``DecisionGitLogUnavailable`` rather than silently wrapping a
+    ``DecisionGitLog`` on the wrong surface.
+    """
+    import mission_runtime
+    from mission_runtime import Establishment, WriteLocation
+    from runtime.next import runtime_bridge
+
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    monkeypatch.setattr(runtime_bridge, "_mission_routes_through_coordination", lambda *_a, **_k: True)
+    fake_location = WriteLocation(
+        path=coord.repo_root / "kitty-specs" / coord.mission_dir_name,
+        checkout_root=coord.repo_root,
+        surface=TopologySurface.PRIMARY,
+        coord_state_before=None,
+        establishment=Establishment.NONE,
+    )
+
+    class _FakeSeam:
+        def __init__(self, *_a: object, **_k: object) -> None:
+            pass
+
+        def write_dir(self, _kind: object) -> WriteLocation:
+            return fake_location
+
+    monkeypatch.setattr(mission_runtime, "placement_seam", _FakeSeam)
+    inner = MagicMock(spec=RuntimeEventEmitter)
+
+    with pytest.raises(DecisionGitLogUnavailable):
+        _wrap_with_decision_git_log(inner, coord.mission_dir_name, coord.repo_root)

@@ -308,7 +308,7 @@ def _wrap_with_decision_git_log(
     # coordination worktree under R/.worktrees (correct by construction).
     anchor_root = owned.owned_root if owned is not None and not coord_routing_topology else repo_root
     try:
-        from mission_runtime import MissionArtifactKind, placement_seam
+        from mission_runtime import MissionArtifactKind, TopologySurface, placement_seam
         from specify_cli.coordination.workspace import CoordinationWorkspaceUnavailable
         from specify_cli.events.decision_log import DecisionGitLog
 
@@ -382,6 +382,27 @@ def _wrap_with_decision_git_log(
         # the #4867/T062 typed-refusal contract byte-for-byte.
         if coord_routing_topology and not is_owned_call:
             location = placement_seam(repo_root, mission_slug).write_dir(MissionArtifactKind.DECISION_LOG)
+            if location.surface is not TopologySurface.COORD:
+                # Defense in depth (review cycle 2, "same family" as B1-
+                # residual): ``coord_routing_topology`` is True (the STORED
+                # topology routes through coordination), so ``write_dir``
+                # must never hand back a PRIMARY-surfaced location here --
+                # that would silently land a coord-routed Mission's decision
+                # log on the primary checkout (the exact #5519-class fork
+                # this WP exists to close). A sanctioned write-side PRIMARY
+                # answer for a coord-routing topology does not exist
+                # (``write_dir`` materializes/seeds/restores or refuses --
+                # see its own docstring); reaching this arm means SOME
+                # upstream resolver (read_primary_meta's canonicalization,
+                # the topology gate, or a future caller) disagreed with
+                # ``_mission_routes_through_coordination``'s verdict. Refuse
+                # loudly rather than wrap a ``DecisionGitLog`` on the wrong
+                # surface.
+                raise DecisionGitLogUnavailable(
+                    f"write_dir(DECISION_LOG) resolved a PRIMARY surface for mission {mission_slug!r} "
+                    "under a coordination-routed topology; refusing to wrap a DecisionGitLog on the "
+                    "wrong surface."
+                )
             worktree_root = location.checkout_root
             mission_dir = location.path
         elif coord_routing_topology:
@@ -437,6 +458,13 @@ def _wrap_with_decision_git_log(
             f"topology mission {mission_slug!r}; refusing to continue "
             "without durable decision evidence."
         ) from None
+    except DecisionGitLogUnavailable:
+        # Defense-in-depth surface check above already raises the precisely-
+        # worded refusal; let it propagate UNWRAPPED rather than falling into
+        # the generic ``except Exception`` below, which would re-wrap it in a
+        # second, GENERIC ``DecisionGitLogUnavailable`` and discard the
+        # specific "resolved a PRIMARY surface" diagnostic.
+        raise
     except Exception as exc:
         if owned is not None and _is_owned_coordination_unavailable(exc):
             # WP04's typed ``ActionContextError(OWNED_COORDINATION_WORKSPACE_
