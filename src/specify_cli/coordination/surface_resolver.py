@@ -941,7 +941,13 @@ def _raise_unmaterialized(
     raise error
 
 
-def materialize_coord_surface_for_write(repo_root: Path, mission_slug: str) -> None:
+def materialize_coord_surface_for_write(
+    repo_root: Path,
+    mission_slug: str,
+    *,
+    coordination_branch: str | None = None,
+    mid8: str | None = None,
+) -> None:
     """Materialize an absent coordination worktree BEFORE a coordination write (FR-013).
 
     The ONE seam every coordination-routed write (``decision open`` / ``resolve``
@@ -971,14 +977,31 @@ def materialize_coord_surface_for_write(repo_root: Path, mission_slug: str) -> N
        still not materialized/empty.
 
     Never called on a read path (D2): reads must stay side-effect free.
-    """
-    meta, _ = read_primary_meta(repo_root, mission_slug)
-    raw_coordination_branch = meta.get("coordination_branch")
-    if not raw_coordination_branch:
-        return
-    coordination_branch = str(raw_coordination_branch)
 
-    mid8 = resolve_declared_mid8(meta, mission_slug)
+    ``coordination_branch`` / ``mid8`` (review cycle 2, coord-artifact-single-
+    home-01M3V4BE WP09, B1-residual / Decision ``plan.design.undeclared-coord-
+    branch``): an optional override for the AUTHORITATIVE identity the CALLER
+    already resolved -- declared, or deterministically DERIVED when
+    ``meta.json`` carries no ``coordination_branch`` key. Passing both bypasses
+    this function's own ``read_primary_meta`` re-derivation, which only ever
+    sees a DECLARED branch and would otherwise no-op (case 1 above) for a
+    genuinely coordination-routed Mission whose branch is merely undeclared --
+    silently leaving its worktree UNMATERIALIZED instead of proceeding exactly
+    as if the branch had been declared. ``None`` (every pre-existing caller,
+    including the coordination doctor's ``--fix``, which pre-filters to
+    missions that DO declare the field) preserves the historical meta-derived
+    behavior byte-for-byte. Passing one without the other is a caller error.
+    """
+    if coordination_branch is None:
+        meta, _ = read_primary_meta(repo_root, mission_slug)
+        raw_coordination_branch = meta.get("coordination_branch")
+        if not raw_coordination_branch:
+            return
+        coordination_branch = str(raw_coordination_branch)
+        mid8 = resolve_declared_mid8(meta, mission_slug)
+    if mid8 is None:
+        raise ValueError("materialize_coord_surface_for_write: mid8 must accompany an explicit coordination_branch override")
+
     state = probe_coord_state(repo_root, mission_slug, mid8, coordination_branch=coordination_branch)
     if state is not CoordState.UNMATERIALIZED:
         return
