@@ -1020,6 +1020,29 @@ def establish_coord_write_location(
         from specify_cli.core.paths import load_meta_fail_closed
 
         meta = load_meta_fail_closed(root_mission_dir) or {}
+        if not meta.get("coordination_branch"):
+            # Fallback (review cycle 1, B1): an owned fact's own PRIMARY dir
+            # may legitimately carry no ``meta.json`` yet, or one that has not
+            # been copied/kept in sync with the declaring repository-root
+            # checkout (a bootstrap window, or a caller/fixture that never
+            # populated the owned copy) -- while the REAL repository-root
+            # checkout already declares ``coordination_branch`` for this
+            # Mission. Silently treating the owned-aware miss as "this Mission
+            # is coord-less" (the regression the owned-aware read above fixed
+            # a different way introduced) is a fail-open the accessor's
+            # contract forbids: a caller whose coordination workspace is
+            # genuinely unavailable must see that refusal, not a quiet
+            # PRIMARY write. Trying the repository-root meta.json ONLY when
+            # the owned-aware read found nothing keeps the owned read
+            # authoritative (an owned copy that DOES declare the branch is
+            # never second-guessed) while still discovering a real
+            # coordination-routed Mission whose owned copy is merely stale/
+            # absent, so materialization (and its own failure propagation,
+            # `test_owned_arm_translates_workspace_failure`) is still
+            # attempted instead of degraded past.
+            fallback_meta, _ = read_primary_meta(owned.repository_root, mission_slug)
+            if fallback_meta.get("coordination_branch"):
+                meta = fallback_meta
     else:
         meta, _declares_coordination = read_primary_meta(repo_root, mission_slug)
     raw_branch = meta.get("coordination_branch")
