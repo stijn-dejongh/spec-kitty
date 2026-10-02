@@ -386,6 +386,7 @@ def _wrap_with_decision_git_log(
             mission_dir = location.path
         elif coord_routing_topology:
             from specify_cli.coordination.workspace import CoordinationWorkspace
+            from specify_cli.lanes.branch_naming import coord_mission_dir_name
 
             if worktree_root_candidate.exists():
                 worktree_root = worktree_root_candidate
@@ -396,7 +397,13 @@ def _wrap_with_decision_git_log(
                     mission_slug,
                     _mid8,
                 )
-            mission_dir = worktree_root / KITTY_SPECS_DIR / mission_slug
+            # Review cycle 1 (N1, fold): compose through the SAME canonical
+            # dir-name primitive ``write_dir``/the transaction use
+            # (``coord_mission_dir_name``, verbatim -- never strips a legacy
+            # ``NNN-`` prefix) instead of the raw ``mission_slug`` -- this
+            # owned stream can then never disagree with the canonical dir a
+            # non-owned caller of the SAME Mission would land on (B3's shape).
+            mission_dir = worktree_root / KITTY_SPECS_DIR / coord_mission_dir_name(mission_slug, mid8=_mid8)
         else:
             # Coord-less topology: decisions land on the primary checkout's
             # current branch (a lane/mission branch); landing == coordination ==
@@ -437,10 +444,19 @@ def _wrap_with_decision_git_log(
             # ``_dn_bootstrap`` to map to the same typed ``blocked`` Decision.
             raise
         if coord_routing_topology:
+            # Review cycle 1 (N2, fold): a non-owned ``write_dir(DECISION_LOG)``
+            # refusal such as ``CoordSeedForkRefused`` (``.code ==
+            # "COORD_SEED_FORK_REFUSED"``) is intentionally folded into this
+            # fail-closed ``DecisionGitLogUnavailable`` rather than propagated
+            # (no owned-style typed-code routing exists on this arm) -- but
+            # the typed code is still worth an operator's eyes, so it is
+            # chained into the message when the cause carries one.
+            typed_code = getattr(exc, "code", None) or getattr(exc, "error_code", None)
+            code_suffix = f" ({typed_code})" if typed_code else ""
             raise DecisionGitLogUnavailable(
                 "DecisionGitLog construction failed for declared coordination "
-                f"topology mission {mission_slug!r}; refusing to continue "
-                "without durable decision evidence."
+                f"topology mission {mission_slug!r}{code_suffix}; refusing to "
+                "continue without durable decision evidence."
             ) from exc
         logger.warning(
             "DecisionGitLog construction failed for mission %s; falling back to plain emitter.",
