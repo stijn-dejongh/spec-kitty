@@ -176,7 +176,7 @@ from runtime.next import runtime_bridge_retrospective as _retrospective_seam
 # at each call site below; the seam ``_rb.<name>`` round-trips were repointed to
 # the owning seam in the same change.
 
-from specify_cli.core.constants import MISSION_TYPE_SOFTWARE_DEV
+from specify_cli.core.constants import KITTY_SPECS_DIR, MISSION_TYPE_SOFTWARE_DEV
 from specify_cli.mission import get_mission_type
 from specify_cli.missions._read_path_resolver import MissionSelectorAmbiguous
 from specify_cli.status import CanonicalStatusNotFoundError
@@ -308,14 +308,15 @@ def _wrap_with_decision_git_log(
     # coordination worktree under R/.worktrees (correct by construction).
     anchor_root = owned.owned_root if owned is not None and not coord_routing_topology else repo_root
     try:
-        from specify_cli.coordination.workspace import CoordinationWorkspace, CoordinationWorkspaceUnavailable
+        from mission_runtime import MissionArtifactKind, placement_seam
+        from specify_cli.coordination.workspace import CoordinationWorkspaceUnavailable
         from specify_cli.events.decision_log import DecisionGitLog
 
         if not is_owned_call:
             coordination_branch = _resolve_coordination_branch(mission_slug, repo_root)
             mission_id = _resolve_mission_ulid(mission_slug, repo_root)  # str | None
         else:
-            from mission_runtime import MissionArtifactKind, mission_context_for
+            from mission_runtime import mission_context_for
             from specify_cli.mission_metadata import resolve_mission_identity
 
             mission_context = mission_context_for(
@@ -346,37 +347,40 @@ def _wrap_with_decision_git_log(
 
         # The decision-target topology SHAPE is READ from the WP02 stored topology
         # (FR-004 / SC-001) — never from ``_coord_path.exists()`` (the retired
-        # disk-``stat`` ladder, C-004). The on-disk worktree-materialization check
-        # (``_coord_path.exists()``) survives ONLY to choose the worktree_root for a
-        # coord-routing mission (C-006 transient discrimination: materialized →
-        # use it; not-yet-materialized → compose via ``CoordinationWorkspace.resolve``)
-        # — it is NOT the topology classifier.
+        # disk-``stat`` ladder, C-004).
+        #
+        # coord-artifact-single-home-01M3V4BE WP09 (T051, FR-003/FR-003a):
+        # the coord-routing arm's own materialization ladder (on-disk
+        # ``.exists()`` check -> ``CoordinationWorkspace.resolve`` ->
+        # ``_resolve_owned_coordination_workspace``) is replaced by the ONE
+        # write-location accessor: ``write_dir(DECISION_LOG)`` materializes,
+        # seeds, restores, or refuses loudly as the coordination state
+        # requires -- the ladder it replaces only materialized an
+        # UNMATERIALIZED worktree and was blind to a pre-fix EMPTY surface
+        # (the #5519 fork). ``worktree_root`` is taken from
+        # ``WriteLocation.checkout_root`` (never ``.parent.parent`` or a
+        # naming-convention guess) and ``mission_dir`` from ``.path`` --
+        # ``DecisionGitLog`` no longer composes its own dir.
         if coord_routing_topology:
-            # C-011 risk site: the worktree_root selection is preserved EXACTLY —
-            # keyed off the stored-topology coord-routing decision and the C-006
-            # transient on-disk materialization check, never ``.kind``.
-            if worktree_root_candidate.exists():
-                worktree_root = worktree_root_candidate
-            elif not is_owned_call:
-                worktree_root = CoordinationWorkspace.resolve(repo_root, mission_slug, _mid8)
-            else:
-                worktree_root = _resolve_owned_coordination_workspace(
-                    CoordinationWorkspace,
-                    repo_root,
-                    mission_slug,
-                    _mid8,
-                )
+            location = placement_seam(repo_root, mission_slug, owned=owned).write_dir(MissionArtifactKind.DECISION_LOG)
+            worktree_root = location.checkout_root
+            mission_dir = location.path
         else:
             # Coord-less topology: decisions land on the primary checkout's
             # current branch (a lane/mission branch); landing == coordination ==
-            # target. worktree_root is the repo_root (preserved exactly).
+            # target. worktree_root is the repo_root (preserved exactly); the
+            # Mission dir is composed the same way ``DecisionGitLog`` used to
+            # compose it itself, using the OWNED root for an owned coord-less
+            # Mission (C-008, ``anchor_root``).
             worktree_root = worktree_root_candidate
+            mission_dir = anchor_root / KITTY_SPECS_DIR / mission_slug
 
         return DecisionGitLog(
             repo_root=anchor_root,
             worktree_root=worktree_root,
             destination_ref=coordination_branch,
             mission_slug=mission_slug,
+            mission_dir=mission_dir,
             inner=emitter,
             mission_id=mission_id,
             target=decision_target,
