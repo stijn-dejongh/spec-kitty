@@ -161,9 +161,16 @@ def _canonical_coord_mission_slug(
     if owned is not None:
         # Zero I/O: the fact already carries its own canonical mission_slug.
         return owned.mission_slug
-    from specify_cli.missions._read_path_resolver import read_primary_meta
+    from specify_cli.missions._read_path_resolver import _compose_primary_feature_dir, read_primary_meta
 
-    if (seam_repo_root / KITTY_SPECS_DIR / mission_slug / "meta.json").exists():
+    # Review cycle 3 (C3-B1): composed through the SAME sanctioned handle-
+    # blind primitive ``read_primary_meta`` itself uses for this literal
+    # join (never a raw ``KITTY_SPECS_DIR`` join here -- that regressed
+    # ``test_single_mission_surface_resolver.py``'s FR-004 raw-bypass gate).
+    # Still genuinely LITERAL: this primitive folds nothing, so the check
+    # below still bypasses ``read_primary_meta``'s bare-slug fold exactly as
+    # before (M6 pins this is load-bearing).
+    if (_compose_primary_feature_dir(seam_repo_root, mission_slug) / "meta.json").exists():
         return mission_slug
     composed = coord_mission_dir_name(mission_slug, mid8=mid8)
     if composed == mission_slug:
