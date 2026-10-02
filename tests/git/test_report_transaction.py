@@ -140,7 +140,10 @@ def test_commit_report_returns_outcome_on_committed_status(tmp_path: Path, monke
         (CommitRouterResult(status="error", placement_ref="refs/heads/work", diagnostic="boom"), "boom"),
         (
             CommitRouterResult(status="committed", placement_ref="refs/heads/work", commit_hash=None),
-            "Report commit did not complete: committed",
+            # B4 (cycle 2 review): the OLD message here -- "Report commit did
+            # not complete: committed" -- was contradictory: ``status`` IS
+            # "committed". Named the real problem (missing hash) instead.
+            "Report commit did not complete: committed status without a resolved commit hash",
         ),
     ],
     ids=["unchanged", "no_op_wrong_surface", "error", "committed_without_hash"],
@@ -148,7 +151,7 @@ def test_commit_report_returns_outcome_on_committed_status(tmp_path: Path, monke
 def test_commit_report_raises_unless_cleanly_committed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, outcome: CommitRouterResult, expected_message: str) -> None:
     monkeypatch.setattr(report_transaction, "commit_for_mission", lambda **_kwargs: outcome)
 
-    with pytest.raises(ValueError, match=re.escape(expected_message)):
+    with pytest.raises(report_transaction.ReportCommitRefused, match=re.escape(expected_message)):
         report_transaction._commit_report(
             repo_root=tmp_path, feature_dir=tmp_path / "kitty-specs" / "m", report=tmp_path / "analysis-report.md", message="msg", target_branch="work"
         )
@@ -185,7 +188,13 @@ def test_commit_report_raises_when_a_non_caller_surface_is_refused_despite_commi
     )
     monkeypatch.setattr(report_transaction, "commit_for_mission", lambda **_kwargs: mixed)
 
-    with pytest.raises(ValueError, match=re.escape("Report commit did not complete: committed")):
+    expected = "Report committed on its own surface, but a sibling surface was refused or errored"
+    with pytest.raises(report_transaction.ReportCommitRefused, match=re.escape(expected)) as excinfo:
         report_transaction._commit_report(
             repo_root=tmp_path, feature_dir=tmp_path / "kitty-specs" / "m", report=tmp_path / "analysis-report.md", message="msg", target_branch="work"
         )
+
+    # B4 (cycle 2 review): the raised exception carries the router's own
+    # typed outcome -- the caller renders from THIS object, never a second,
+    # hand-rolled re-parse of a serialized dict.
+    assert excinfo.value.outcome is mixed

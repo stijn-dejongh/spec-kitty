@@ -204,6 +204,18 @@ def _emit_write_location_refusal(exc: Exception, *, mission_slug: str, json_outp
     raise typer.Exit(1) from exc
 
 
+def _canonical_events_write_path_or_exit(repo_root: Path, mission_slug: str, *, json_output: bool) -> Path:
+    """:func:`_canonical_events_write_path`, converting a named refusal into the command's exit (B1).
+
+    Extracted so ``create_cmd`` stays at or below the C901 ceiling (NFR-004) --
+    the try/except is one branch here, not inlined into the command body.
+    """
+    try:
+        return _canonical_events_write_path(repo_root, mission_slug)
+    except _WRITE_LOCATION_REFUSALS as exc:
+        _emit_write_location_refusal(exc, mission_slug=mission_slug, json_output=json_output)
+
+
 def _warn_write_location_refusal(exc: Exception, *, mission_slug: str) -> None:
     """Non-fatal counterpart of :func:`_emit_write_location_refusal` for the bulk backfill path (B1).
 
@@ -659,10 +671,7 @@ def create_cmd(
     # retrospective record is already written and on disk at this point --
     # surfaces as this command's own actionable error, never a raw traceback
     # and never a silent fallback to the repository root checkout.
-    try:
-        events_path = _canonical_events_write_path(repo_root, persisted.mission_slug)
-    except _WRITE_LOCATION_REFUSALS as exc:
-        _emit_write_location_refusal(exc, mission_slug=persisted.mission_slug, json_output=json_output)
+    events_path = _canonical_events_write_path_or_exit(repo_root, persisted.mission_slug, json_output=json_output)
 
     # Emit lifecycle event (non-fatal — record write already succeeded)
     with contextlib.suppress(Exception):

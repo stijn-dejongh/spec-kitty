@@ -209,6 +209,7 @@ _E2_CONSOLIDATED_ELIGIBLE_KINDS: frozenset[MissionArtifactKind] = frozenset(
     }
 )
 
+
 # Operator ruling (`plan.design.published-status-state-write`,
 # coord-artifact-single-home-01M3V4BE WP14 cycle 2, B1): ``STATUS_STATE`` is
 # DELIBERATELY excluded from ``_E2_CONSOLIDATED_ELIGIBLE_KINDS`` above
