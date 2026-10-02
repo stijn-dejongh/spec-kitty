@@ -2004,7 +2004,20 @@ class TestWrapWithDecisionGitLogOwnedCheckout:
     ``mission_context_for(owned=...)`` instead of the primary-folding
     helpers, and the coord ``worktree_root`` selection forks between the
     already-materialized ``.exists()`` fast path and the retry-guarded
-    ``_resolve_owned_coordination_workspace`` composition path."""
+    ``_resolve_owned_coordination_workspace`` composition path.
+
+    coord-artifact-single-home-01M3V4BE WP09 (binding correction, found
+    during implementation): the OWNED arm deliberately stays on this
+    historical materialization ladder rather than migrating to
+    ``write_dir`` -- ``write_dir``'s owned delegate
+    (``coord_seed.establish_coord_write_location``) requires ``meta.json``
+    to declare ``coordination_branch``, but a real, exercised owned
+    coordination-routing shape (``tests/integration/
+    test_owned_next_runtime.py``'s O8 suite) mints its coordination branch
+    via ``CoordinationWorkspace``'s deterministic naming WITHOUT ever
+    recording it in ``meta.json`` -- a pre-existing gap in ``write_dir``'s
+    owned-coordination support (WP04 scope), not this WP's #5519 fix. Only
+    the NON-owned arm (the sibling control test below) migrated."""
 
     @staticmethod
     def _install_owned_mission_context(
@@ -2074,6 +2087,7 @@ class TestWrapWithDecisionGitLogOwnedCheckout:
         wrapped = runtime_bridge._wrap_with_decision_git_log(emitter, mission_slug, tmp_path, owned=owned)
 
         assert wrapped._worktree_root == worktree_root_candidate
+        assert wrapped._decisions_file == worktree_root_candidate / "kitty-specs" / mission_slug / "decisions.events.jsonl"
 
     def test_unmaterialized_worktree_root_resolves_via_owned_retry_helper(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         """When the coord worktree candidate does NOT yet exist, the owned
@@ -2117,16 +2131,32 @@ class TestWrapWithDecisionGitLogOwnedCheckout:
         wrapped = runtime_bridge._wrap_with_decision_git_log(emitter, mission_slug, tmp_path, owned=owned)
 
         assert wrapped._worktree_root == resolved_via_retry_helper
+        assert wrapped._decisions_file == resolved_via_retry_helper / "kitty-specs" / mission_slug / "decisions.events.jsonl"
 
-    def test_non_owned_unmaterialized_worktree_root_uses_plain_resolve(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-        """Anti-vacuity / control: WITHOUT ``effective_root`` (the historical,
-        non-owned call shape), an unmaterialized coord candidate still goes
-        through the plain ``CoordinationWorkspace.resolve`` call -- never the
-        owned retry-guarded composer. Proves the two branches genuinely
-        diverge on ``effective_root``, not on ``coord_routing_topology``
-        alone."""
+    @staticmethod
+    def _patch_placement_seam(monkeypatch: pytest.MonkeyPatch, location: object) -> None:
+        from mission_runtime import placement_seam as _real_placement_seam
+
+        class _FakeSeam:
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
+                self._real = _real_placement_seam(*args, **kwargs)
+
+            def write_dir(self, kind: object) -> object:  # noqa: ARG002
+                return location
+
+            def __getattr__(self, name: str) -> object:
+                return getattr(self._real, name)
+
+        import mission_runtime
+
+        monkeypatch.setattr(mission_runtime, "placement_seam", _FakeSeam)
+
+    def test_non_owned_unmaterialized_worktree_root_comes_from_write_dir(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        """Control: the NON-owned call shape goes through ``write_dir`` (the
+        #5519 fix this WP ships), unlike the owned arm above."""
+        from mission_runtime import Establishment, WriteLocation
+        from mission_runtime.artifacts import TopologySurface
         from runtime.next import runtime_bridge
-        from specify_cli.coordination.workspace import CoordinationWorkspace
 
         monkeypatch.setattr(runtime_bridge, "_mission_routes_through_coordination", lambda *_a, **_k: True)
         mission_id = "01K3PW7QRSTVXYZ23456789ABC"
@@ -2137,22 +2167,22 @@ class TestWrapWithDecisionGitLogOwnedCheckout:
             lambda *_a, **_k: "kitty/mission-non-owned-unmaterialized",
         )
         monkeypatch.setattr(runtime_bridge, "_resolve_mission_ulid", lambda *_a, **_k: mission_id)
-
-        def _must_not_run(*_a: object, **_k: object) -> Path:
-            raise AssertionError("_resolve_owned_coordination_workspace must not run without effective_root -- that is the owned-checkout-only path")
-
-        monkeypatch.setattr(runtime_bridge, "_resolve_owned_coordination_workspace", _must_not_run)
-        resolved_via_plain_resolve = tmp_path / "resolved-via-plain-resolve"
-
-        def _fake_resolve(_cls: object, _root: Path, _slug: str, _mid8: str) -> Path:
-            return resolved_via_plain_resolve
-
-        monkeypatch.setattr(CoordinationWorkspace, "resolve", classmethod(_fake_resolve))
+        coord_root = tmp_path / "resolved-via-write-dir"
+        coord_mission_dir = coord_root / "kitty-specs" / mission_slug
+        location = WriteLocation(
+            path=coord_mission_dir,
+            checkout_root=coord_root,
+            surface=TopologySurface.COORD,
+            coord_state_before=None,
+            establishment=Establishment.NONE,
+            seed=None,
+        )
+        self._patch_placement_seam(monkeypatch, location)
 
         emitter = SimpleNamespace()
         wrapped = runtime_bridge._wrap_with_decision_git_log(emitter, mission_slug, tmp_path)
 
-        assert wrapped._worktree_root == resolved_via_plain_resolve
+        assert wrapped._worktree_root == coord_root
 
 
 class TestDecideNextViaRuntimeOwnedCheckout:
