@@ -194,22 +194,31 @@ def test_mission_status_load_unaffected_by_unmaterialized_seam(
 
 
 def test_decisions_emit_mission_dir_fails_loud_sanely(tmp_path: Path) -> None:
-    """``decisions/emit.py:88`` (``_mission_dir``): the seam call is a clean
-    pass-through — nothing between it and the return could replace the
-    well-formed sibling with something worse. Calling it directly on an
-    UNMATERIALIZED coord mission raises ``CoordinationWorktreeUnmaterialized``
-    itself, carrying an operator-facing ``next_step`` (not a bare/opaque
-    exception a raw traceback would leave undiagnosable)."""
+    """``decisions/emit.py`` (``_mission_dir``): re-pinned by
+    coord-artifact-single-home-01M3V4BE WP09 (FR-003/FR-003a, T049 — binding
+    correction, brownfield scout "L198 re-pin").
+
+    ``_mission_dir`` is now the WRITE-side resolver
+    (``write_dir(STATUS_STATE)``, not ``read_dir``). ``write_dir`` owns
+    materialize/seed/refuse: on an UNMATERIALIZED coordination surface with a
+    LOCAL branch (this fixture's shape), it MATERIALIZES the worktree and
+    SEEDS the Mission dir from the root checkout instead of raising
+    ``CoordinationWorktreeUnmaterialized`` — the #5519 fix this WP ships. The
+    pre-WP09 expectation (a raise) is stale; this pins the corrected
+    behaviour: no raise, and the resolved path is the MATERIALIZED
+    coordination Mission dir (not the primary checkout's), which now exists
+    on disk."""
+    from mission_runtime import MissionArtifactKind, placement_seam
     from specify_cli.decisions.emit import _mission_dir
 
     repo, result = _unmaterialized_coord_mission(tmp_path, "coord-emit-demo")
 
-    with pytest.raises(CoordinationWorktreeUnmaterialized) as excinfo:
-        _mission_dir(repo, result.mission_slug)
+    resolved = _mission_dir(repo, result.mission_slug)
 
-    assert excinfo.value.error_code == "COORDINATION_WORKTREE_UNMATERIALIZED"
-    assert "materializ" in excinfo.value.next_step.lower()
-    assert result.mission_slug in str(excinfo.value)
+    expected = placement_seam(repo, result.mission_slug).write_dir(MissionArtifactKind.STATUS_STATE).path
+    assert resolved.resolve() == expected.resolve()
+    assert resolved.resolve() != result.feature_dir.resolve(), "must resolve to the coordination Mission dir, not the primary checkout's"
+    assert resolved.exists(), "write_dir must materialize the coordination Mission dir, not merely compute its path"
 
 
 def test_agent_utils_status_build_kanban_fails_loud_sanely(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
