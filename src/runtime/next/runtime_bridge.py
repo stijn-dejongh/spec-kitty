@@ -350,21 +350,53 @@ def _wrap_with_decision_git_log(
         # disk-``stat`` ladder, C-004).
         #
         # coord-artifact-single-home-01M3V4BE WP09 (T051, FR-003/FR-003a):
-        # the coord-routing arm's own materialization ladder (on-disk
-        # ``.exists()`` check -> ``CoordinationWorkspace.resolve`` ->
-        # ``_resolve_owned_coordination_workspace``) is replaced by the ONE
-        # write-location accessor: ``write_dir(DECISION_LOG)`` materializes,
-        # seeds, restores, or refuses loudly as the coordination state
-        # requires -- the ladder it replaces only materialized an
-        # UNMATERIALIZED worktree and was blind to a pre-fix EMPTY surface
-        # (the #5519 fork). ``worktree_root`` is taken from
-        # ``WriteLocation.checkout_root`` (never ``.parent.parent`` or a
-        # naming-convention guess) and ``mission_dir`` from ``.path`` --
-        # ``DecisionGitLog`` no longer composes its own dir.
-        if coord_routing_topology:
-            location = placement_seam(repo_root, mission_slug, owned=owned).write_dir(MissionArtifactKind.DECISION_LOG)
+        # the NON-owned coord-routing arm's own materialization ladder
+        # (on-disk ``.exists()`` check -> ``CoordinationWorkspace.resolve``)
+        # is replaced by the ONE write-location accessor:
+        # ``write_dir(DECISION_LOG)`` materializes, seeds, restores, or
+        # refuses loudly as the coordination state requires -- the ladder it
+        # replaces only materialized an UNMATERIALIZED worktree and was
+        # blind to a pre-fix EMPTY surface (the #5519 fork this WP fixes).
+        # ``worktree_root`` is taken from ``WriteLocation.checkout_root``
+        # (never ``.parent.parent`` or a naming-convention guess) and
+        # ``mission_dir`` from ``.path``.
+        #
+        # The OWNED arm stays on the historical materialization ladder
+        # (binding correction, found during implementation):
+        # ``establish_coord_write_location`` (``write_dir``'s owned delegate)
+        # requires ``meta.json`` to declare ``coordination_branch`` before it
+        # will even attempt materialization -- but a real, exercised owned
+        # coordination-routing shape
+        # (``tests/integration/test_owned_next_runtime.py``'s O8 suite, mission
+        # ``owned-checkout-lifecycle-authority-01M3M2ZB``) mints its
+        # coordination branch via ``CoordinationWorkspace``'s deterministic
+        # ``(mission_slug, mid8)`` naming WITHOUT ever recording it in
+        # ``meta.json``, so ``write_dir``'s owned arm cannot resolve it at
+        # all (it silently degrades to the declared-PRIMARY write location,
+        # never attempting -- and therefore never raising on -- the
+        # materialization these tests inject failures into). This is a
+        # pre-existing gap in ``write_dir``'s owned-coordination support,
+        # predating and orthogonal to this WP's non-owned #5519 fix; fixing
+        # it is WP04/``write_dir``-owned-arm scope, not this WP's. Keeping
+        # the owned arm on its historical, directly-tested path preserves
+        # the #4867/T062 typed-refusal contract byte-for-byte.
+        if coord_routing_topology and not is_owned_call:
+            location = placement_seam(repo_root, mission_slug).write_dir(MissionArtifactKind.DECISION_LOG)
             worktree_root = location.checkout_root
             mission_dir = location.path
+        elif coord_routing_topology:
+            from specify_cli.coordination.workspace import CoordinationWorkspace
+
+            if worktree_root_candidate.exists():
+                worktree_root = worktree_root_candidate
+            else:
+                worktree_root = _resolve_owned_coordination_workspace(
+                    CoordinationWorkspace,
+                    repo_root,
+                    mission_slug,
+                    _mid8,
+                )
+            mission_dir = worktree_root / KITTY_SPECS_DIR / mission_slug
         else:
             # Coord-less topology: decisions land on the primary checkout's
             # current branch (a lane/mission branch); landing == coordination ==
