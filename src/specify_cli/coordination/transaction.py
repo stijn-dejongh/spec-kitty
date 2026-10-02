@@ -161,16 +161,19 @@ def _canonical_coord_mission_slug(
     if owned is not None:
         # Zero I/O: the fact already carries its own canonical mission_slug.
         return owned.mission_slug
-    from specify_cli.missions._read_path_resolver import _compose_primary_feature_dir, read_primary_meta
+    from specify_cli.missions._read_path_resolver import literal_primary_dir_has_meta, read_primary_meta
 
-    # Review cycle 3 (C3-B1): composed through the SAME sanctioned handle-
-    # blind primitive ``read_primary_meta`` itself uses for this literal
-    # join (never a raw ``KITTY_SPECS_DIR`` join here -- that regressed
-    # ``test_single_mission_surface_resolver.py``'s FR-004 raw-bypass gate).
-    # Still genuinely LITERAL: this primitive folds nothing, so the check
-    # below still bypasses ``read_primary_meta``'s bare-slug fold exactly as
-    # before (M6 pins this is load-bearing).
-    if (_compose_primary_feature_dir(seam_repo_root, mission_slug) / "meta.json").exists():
+    # Review cycle 3 (C3-B1): composed through ``literal_primary_dir_has_meta``
+    # -- a PUBLIC sibling of ``read_primary_meta`` living in the read-
+    # sanctioned module (never a raw ``KITTY_SPECS_DIR`` join here, which
+    # regressed ``test_single_mission_surface_resolver.py``'s FR-004
+    # raw-bypass gate; and never a direct call to the module-private
+    # ``_compose_primary_feature_dir`` leaf from this non-sanctioned module,
+    # which regresses ``test_no_read_side_bypass.py``'s FR-005/IC-06 gate).
+    # Still genuinely LITERAL: it folds nothing, so the check below still
+    # bypasses ``read_primary_meta``'s bare-slug fold exactly as before (M6
+    # pins this is load-bearing).
+    if literal_primary_dir_has_meta(seam_repo_root, mission_slug):
         return mission_slug
     composed = coord_mission_dir_name(mission_slug, mid8=mid8)
     if composed == mission_slug:

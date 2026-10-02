@@ -893,6 +893,30 @@ def read_primary_meta(
     return meta, declares_coordination
 
 
+def literal_primary_dir_has_meta(repo_root: Path, mission_slug: str) -> bool:
+    """Return whether the LITERAL (uncanonicalized) primary dir for *handle* carries its own ``meta.json``.
+
+    coord-artifact-single-home-01M3V4BE WP09 (review cycle 3, C3-B1). A
+    narrow, PUBLIC sibling of :func:`read_primary_meta` for callers that need
+    the genuinely-literal answer -- no bare-human-slug fold, no identity-form
+    cascade -- to distinguish "``mission_slug`` IS ALREADY the on-disk
+    canonical dir name" from "it needs composing" (the two-shape ambiguity
+    :func:`~specify_cli.coordination.transaction._canonical_coord_mission_slug`
+    resolves). Composes through the SAME sanctioned leaf
+    (:func:`_compose_primary_feature_dir`) ``read_primary_meta`` itself uses
+    for its own literal-first probe, so there is still only ONE join grammar
+    (FR-004) -- but as a function OF ITS OWN in this sanctioned module, a
+    cross-module caller imports THIS name rather than reaching past it to
+    call the module-private leaf directly (which
+    ``tests/architectural/test_no_read_side_bypass.py`` forbids outside the
+    read-sanctioned module set, FR-005/IC-06).
+
+    Pure: a single ``Path.exists()`` check, no coordination probing, no
+    topology awareness.
+    """
+    return (_compose_primary_feature_dir(repo_root, mission_slug) / "meta.json").exists()
+
+
 def resolve_handle_to_read_path(
     repo_root: Path,
     handle: str,
