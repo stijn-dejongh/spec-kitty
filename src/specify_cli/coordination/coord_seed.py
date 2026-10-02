@@ -46,6 +46,7 @@ from mission_runtime import (
     WriteLocation,
     is_primary_artifact_kind,
     kind_for_mission_file,
+    routes_through_coordination,
     placement_seam,
 )
 from specify_cli.core.constants import KITTY_SPECS_DIR
@@ -65,6 +66,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "COORD_SEED_TRAILER",
+    "CoordBranchUndeclaredAndAbsent",
     "CoordSeedForkRefused",
     "coord_branch_is_post_fix",
     "establish_coord_write_location",
@@ -80,6 +82,7 @@ _COORD_SEED_FORK_REFUSED_CODE = "COORD_SEED_FORK_REFUSED"
 _COORD_SEED_EVENT_LOG_MALFORMED_CODE = "COORD_SEED_EVENT_LOG_MALFORMED"
 _COORD_SEED_DUPLICATE_EVENT_ID_CODE = "COORD_SEED_DUPLICATE_EVENT_ID"
 _COORD_SEED_GIT_PROBE_FAILED_CODE = "COORD_SEED_GIT_PROBE_FAILED"
+_COORD_BRANCH_UNDECLARED_AND_ABSENT_CODE = "COORD_BRANCH_UNDECLARED_AND_ABSENT"
 _STATUS_LOG_FILENAME = "status.events.jsonl"
 _DECISION_LOG_FILENAME = "decisions.events.jsonl"
 _LOG_FILENAMES: tuple[str, ...] = (_STATUS_LOG_FILENAME, _DECISION_LOG_FILENAME)
@@ -120,6 +123,51 @@ class CoordSeedForkRefused(ActionContextError):
         self.first_divergence_root = first_divergence_root
         self.first_divergence_coord = first_divergence_coord
         self.reconcile_steps = reconcile_steps
+
+
+class CoordBranchUndeclaredAndAbsent(ActionContextError):
+    """A coordination-routed topology declares no branch, and the deterministically-derived one does not exist either.
+
+    Review cycle 2 (B1-residual, Decision ``plan.design.undeclared-coord-
+    branch`` -- supersedes the plain "refuse" half of the cycle-1 B1 ruling):
+    ``coordination_branch`` in ``meta.json`` is only a RECORD of the branch,
+    never its source of truth -- ``CoordinationWorkspace`` / mission create
+    mint it by ONE deterministic naming grammar
+    (``lanes.branch_naming.coord_reconstruct_branch``). When the record is
+    missing (a bootstrap window, a stale owned copy, or a caller/fixture that
+    never persisted it) on a STORED topology that routes through coordination
+    (``COORD`` / ``LANES_WITH_COORD``), silently degrading to the declared-
+    PRIMARY write location is the exact fail-open the accessor's contract
+    forbids -- so the name is derived and checked against git directly:
+
+    - the derived branch EXISTS → the caller proceeds EXACTLY as if it had
+      been declared (never raised, never reached here);
+    - the derived branch does NOT exist (or no mid8 could even be resolved
+      to derive one) → this refusal, BEFORE anything is written (I-SEED-4
+      precedent).
+
+    A coord-less / topology-less (legacy, un-backfilled) meta is UNCHANGED by
+    this gate -- it still returns the declared-PRIMARY location (the historical
+    control).
+    """
+
+    error_code = _COORD_BRANCH_UNDECLARED_AND_ABSENT_CODE
+
+    def __init__(self, *, mission_slug: str, derived_branch: str | None) -> None:
+        if derived_branch:
+            detail = f"the deterministically-derived branch {derived_branch!r} does not exist in git either"
+        else:
+            detail = "no mid8 disambiguator could be resolved to even derive a candidate branch name"
+        message = (
+            f"mission {mission_slug!r} has a coordination-routed topology with no declared "
+            f"'coordination_branch' in meta.json, and {detail}. Declare 'coordination_branch' "
+            "in meta.json if that branch should exist, or run "
+            "'spec-kitty migrate backfill-topology' to flatten this mission to a coord-less "
+            "topology if it never had one."
+        )
+        super().__init__(self.error_code, message)
+        self.mission_slug = mission_slug
+        self.derived_branch = derived_branch
 
 
 class _CoordGitProbeError(ActionContextError):
@@ -830,7 +878,14 @@ def _materialize_for_write(
     else:
         from specify_cli.coordination.surface_resolver import materialize_coord_surface_for_write
 
-        materialize_coord_surface_for_write(repo_root, mission_slug)
+        # Review cycle 2 (B1-residual): pass the ALREADY-resolved identity
+        # (declared OR deterministically derived, Decision plan.design.
+        # undeclared-coord-branch) explicitly rather than letting this call
+        # re-derive it from meta.json a second, narrower way -- a re-derivation
+        # that only sees a DECLARED branch would no-op for a genuinely
+        # coordination-routed Mission whose branch is merely undeclared,
+        # silently leaving the worktree UNMATERIALIZED.
+        materialize_coord_surface_for_write(repo_root, mission_slug, coordination_branch=coordination_branch, mid8=mid8)
     return probe_coord_state(repo_root, mission_slug, mid8, coordination_branch=coordination_branch)
 
 
@@ -974,6 +1029,81 @@ def _handle_unmaterialized(repo_root: Path, mission_slug: str, ctx: _EstablishCo
     raise AssertionError(f"unexpected coord state after materialization: {new_state!r}")
 
 
+def _stored_topology_routes_through_coordination(meta: dict[str, object], owned: OwnedCheckout | None) -> bool:
+    """Return whether this write should route through coordination, per the STORED topology.
+
+    Review cycle 2 (B1-residual, Decision ``plan.design.undeclared-coord-
+    branch``): the topology gate for an UNDECLARED ``coordination_branch`` is
+    keyed on the ONE canonical predicate (:func:`routes_through_coordination`)
+    over the STORED topology -- never on branch presence (SC-001, the retired
+    inference B1-residual's root cause restated). The owned arm additionally
+    consults ``owned.topology`` -- the fact's OWN minted topology, independent
+    of whatever an (possibly stale/absent) owned meta copy says -- because a
+    real owned coordination-routed Mission can mint its coordination branch
+    without ever recording it in meta.json (the O8 shape, cycle-1 N1 comment).
+    A topology-less / un-backfilled legacy meta (``stored_topology_from_meta``
+    returns ``None``) is coord-LESS here -- the historical "declare nothing ->
+    PRIMARY" control stays unchanged.
+    """
+    from specify_cli.missions._read_path_resolver import stored_topology_from_meta
+
+    stored_topology = stored_topology_from_meta(meta)
+    if stored_topology is not None and routes_through_coordination(stored_topology):
+        return True
+    return owned is not None and routes_through_coordination(owned.topology)
+
+
+def _derive_branch_for_undeclared(
+    repo_root: Path,
+    mission_slug: str,
+    meta: dict[str, object],
+    mid8: str,
+    owned: OwnedCheckout | None,
+) -> str | None:
+    """Resolve an UNDECLARED ``coordination_branch`` without ever degrading a coord-routed topology to PRIMARY.
+
+    Review cycle 2 (B1-residual, Decision ``plan.design.undeclared-coord-
+    branch`` -- supersedes the plain "refuse" half of the cycle-1 B1 ruling).
+    ``meta.json``'s ``coordination_branch`` is only a RECORD; the branch itself
+    is minted by the ONE deterministic naming grammar
+    (:func:`~specify_cli.lanes.branch_naming.coord_reconstruct_branch`, the
+    SAME naming :class:`~specify_cli.coordination.workspace.CoordinationWorkspace`
+    uses). When the record is missing this derives the name a second way and
+    checks git directly BEFORE ever falling back to PRIMARY.
+
+    Returns:
+        ``None`` when the stored topology is coord-LESS (legacy / topology-
+        less meta, or a genuinely coord-less stored shape) -- the caller takes
+        the historical "declare nothing -> PRIMARY" leg, UNCHANGED.
+
+        The derived branch name when the topology routes through coordination
+        AND that branch exists in git -- the caller proceeds EXACTLY as if it
+        had been declared.
+
+    Raises:
+        CoordBranchUndeclaredAndAbsent: when the topology routes through
+            coordination and the derived branch does not exist (or no mid8
+            could even be resolved to derive one) -- NEVER degrades to
+            PRIMARY for a coordination-routed topology.
+    """
+    if not _stored_topology_routes_through_coordination(meta, owned):
+        return None
+    if not mid8:
+        raise CoordBranchUndeclaredAndAbsent(mission_slug=mission_slug, derived_branch=None)
+    from specify_cli.coordination.surface_resolver import _coord_branch_exists
+    from specify_cli.lanes.branch_naming import coord_reconstruct_branch
+
+    # ``coord_reconstruct_branch`` is typed ``-> str`` but the
+    # ``follow_imports=skip`` boundary on ``specify_cli.*`` widens it to
+    # ``Any``; bind explicitly so the declared return narrows back (the same
+    # pattern ``resolution.py``'s ``primary_dir: Path = resolve_planning_
+    # read_dir(...)`` already uses for the same mypy-config artifact).
+    derived_branch: str = coord_reconstruct_branch(mission_slug, mid8=mid8)
+    if not _coord_branch_exists(repo_root, derived_branch):
+        raise CoordBranchUndeclaredAndAbsent(mission_slug=mission_slug, derived_branch=derived_branch)
+    return derived_branch
+
+
 def establish_coord_write_location(
     repo_root: Path,
     mission_slug: str,
@@ -1047,10 +1177,11 @@ def establish_coord_write_location(
         meta, _declares_coordination = read_primary_meta(repo_root, mission_slug)
     raw_branch = meta.get("coordination_branch")
     coordination_branch = str(raw_branch) if raw_branch else None
-    if coordination_branch is None:
-        return _primary_write_location(repo_root, mission_slug, kind, owned)
-
     mid8 = resolve_declared_mid8(meta, mission_slug)
+    if coordination_branch is None:
+        coordination_branch = _derive_branch_for_undeclared(repo_root, mission_slug, meta, mid8, owned)
+        if coordination_branch is None:
+            return _primary_write_location(repo_root, mission_slug, kind, owned)
     mission_id = str(meta.get("mission_id") or "")
     mission_dir_name = coord_feature_dir(repo_root, mission_slug, mid8).name
 
