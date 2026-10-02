@@ -103,6 +103,24 @@ def test_commit_to_branch_carries_router_surfaces_through(tmp_path: Path, monkey
     assert coordination_payload["refused"][0]["reason"] == "STATUS_LOCK_HELD"
 
 
+def test_commit_to_branch_unchanged_arm_carries_surfaces_through(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Coverage: the genuine-no-op ``unchanged`` arm also carries the router's ``surfaces`` through."""
+    _init_repo(tmp_path)
+    plan_file = tmp_path / "plan.md"
+    single = CommitRouterResult(
+        status="unchanged",
+        placement_ref=_TARGET_BRANCH,
+        reason="no_op_already_committed",
+        surfaces=(SurfaceOutcome(surface="primary", branch=_TARGET_BRANCH, status="unchanged", commit_hash=None),),
+    )
+    monkeypatch.setattr(commit_router_module, "commit_for_mission", lambda **_kwargs: single)
+
+    result = _commit_to_branch(plan_file, "demo", "plan", tmp_path, _TARGET_BRANCH, json_output=True)
+
+    assert result.status == "unchanged"
+    assert result.surfaces == single.surfaces
+
+
 # ---------------------------------------------------------------------------
 # B6 (cycle 2 review): a text-mode (json_output=False) test for the
 # render-every-arm guard (mission_setup_plan.py ~L283) -- every existing
@@ -322,6 +340,48 @@ def test_commit_analysis_report_carries_router_surfaces_through(tmp_path: Path, 
     assert coordination.refused[0].reason == "STATUS_LOCK_HELD"
 
 
+def test_commit_analysis_report_degrades_to_none_on_a_best_effort_commit_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """B3 coverage: the narrowed best-effort exception set degrades to ``None`` (the commit is never fatal)."""
+    import specify_cli.coordination.commit_router as commit_router_mod
+    from specify_cli.cli.commands.agent.mission_record_analysis import _commit_analysis_report
+
+    def _boom(**_kwargs: object) -> None:
+        raise RuntimeError("protected target ref")
+
+    monkeypatch.setattr(commit_router_mod, "commit_for_mission", _boom)
+
+    result = _commit_analysis_report(repo_root=tmp_path, mission_slug="demo", report_path=tmp_path / "analysis-report.md", target_branch=_TARGET_BRANCH)
+
+    assert result is None
+
+
+def test_record_analysis_warn_on_incomplete_surfaces_silent_in_json_mode(capsys: pytest.CaptureFixture[str]) -> None:
+    """B3 coverage: record-analysis's OWN ``_warn_on_incomplete_surfaces`` copy -- json_output short-circuit."""
+    import specify_cli.cli.commands.agent.mission_record_analysis as seam
+
+    mixed = _mixed_surfaces_result(primary_ref=_TARGET_BRANCH)
+
+    seam._warn_on_incomplete_surfaces(mixed, json_output=True)
+
+    assert capsys.readouterr().out == ""
+
+
+def test_record_analysis_warn_on_incomplete_surfaces_silent_on_an_all_success_batch(capsys: pytest.CaptureFixture[str]) -> None:
+    """B3 coverage: record-analysis's OWN ``_warn_on_incomplete_surfaces`` copy -- D8 all-success control."""
+    import specify_cli.cli.commands.agent.mission_record_analysis as seam
+
+    all_ok = CommitRouterResult(
+        status="committed",
+        placement_ref=_TARGET_BRANCH,
+        commit_hash="abc",
+        surfaces=(SurfaceOutcome(surface="primary", branch=_TARGET_BRANCH, status="committed", commit_hash="abc", committed=("a",)),),
+    )
+
+    seam._warn_on_incomplete_surfaces(all_ok, json_output=False)
+
+    assert capsys.readouterr().out == ""
+
+
 def test_record_analysis_json_carries_surfaces(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """B3: record-analysis's JSON envelope gains ``surfaces`` (the main, non-report-only path)."""
     import specify_cli.cli.commands.agent.mission_record_analysis as seam
@@ -392,5 +452,66 @@ def test_record_analysis_report_only_renders_surfaces_in_text_mode(tmp_path: Pat
     assert "commit_status" in out
     assert "committed" in out
     # PLUS the surface lines naming the refused surface and reason.
+    assert "coordination" in out
+    assert "STATUS_LOCK_HELD" in out
+
+
+# ---------------------------------------------------------------------------
+# Coverage: setup-plan's two discarded-result sites (T075) -- the gap-analysis
+# and generator-config commits, each calling _warn_on_incomplete_surfaces on a
+# surface that is neither committed nor unchanged.
+# ---------------------------------------------------------------------------
+
+
+def test_run_documentation_gap_analysis_warns_on_incomplete_surfaces(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    from kernel.clock import now_utc
+    from specify_cli.cli.commands.agent.mission_setup_plan import _run_documentation_gap_analysis
+
+    repo_root = tmp_path
+    (repo_root / "docs").mkdir()
+    feature_dir = repo_root / "kitty-specs" / "demo"
+    feature_dir.mkdir(parents=True)
+    meta_file = feature_dir / "meta.json"
+    meta_file.write_text('{"mission_type": "documentation", "documentation_state": {"iteration_mode": "gap_filling"}}', encoding="utf-8")
+
+    class _FakeCoverageMatrix:
+        def get_coverage_percentage(self) -> float:
+            return 0.5
+
+    class _FakeAnalysis:
+        analysis_date = now_utc()
+        coverage_matrix = _FakeCoverageMatrix()
+
+    monkeypatch.setattr("specify_cli.doc_analysis.gap_analysis.generate_gap_analysis_report", lambda *_a, **_k: _FakeAnalysis())
+    mixed = _mixed_surfaces_result(primary_ref=_TARGET_BRANCH)
+    monkeypatch.setattr(commit_router_module, "commit_for_mission", lambda **_kwargs: mixed)
+
+    result = _run_documentation_gap_analysis(feature_dir, "demo", repo_root, meta_file, target_branch=_TARGET_BRANCH, json_output=False)
+
+    assert result is not None
+    out = capsys.readouterr().out
+    assert "coordination" in out
+    assert "STATUS_LOCK_HELD" in out
+
+
+def test_detect_and_configure_generators_warns_on_incomplete_surfaces(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    from specify_cli.cli.commands.agent.mission_setup_plan import _detect_and_configure_generators
+
+    repo_root = tmp_path
+    feature_dir = repo_root / "kitty-specs" / "demo"
+    feature_dir.mkdir(parents=True)
+    meta_file = feature_dir / "meta.json"
+    meta_file.write_text('{"mission_type": "documentation", "documentation_state": {"iteration_mode": "gap_filling"}}', encoding="utf-8")
+
+    monkeypatch.setattr("specify_cli.doc_analysis.doc_generators.SphinxGenerator.detect", lambda self, _project_root: True)
+    monkeypatch.setattr("specify_cli.doc_analysis.doc_generators.JSDocGenerator.detect", lambda self, _project_root: False)
+    monkeypatch.setattr("specify_cli.doc_analysis.doc_generators.RustdocGenerator.detect", lambda self, _project_root: False)
+    mixed = _mixed_surfaces_result(primary_ref=_TARGET_BRANCH)
+    monkeypatch.setattr(commit_router_module, "commit_for_mission", lambda **_kwargs: mixed)
+
+    detected = _detect_and_configure_generators("demo", repo_root, meta_file, target_branch=_TARGET_BRANCH, json_output=False)
+
+    assert [entry["name"] for entry in detected] == ["sphinx"]
+    out = capsys.readouterr().out
     assert "coordination" in out
     assert "STATUS_LOCK_HELD" in out

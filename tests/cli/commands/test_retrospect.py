@@ -2768,7 +2768,10 @@ class TestCreateHarness:
 class TestBackfillHarness:
     """`retrospect backfill` on a real project: aggregate report, records, failure rows, git."""
 
-    def test_backfill_reports_event_log_write_location_refused(self, retrospect_project: RetrospectProject, monkeypatch: pytest.MonkeyPatch) -> None:
+    @pytest.mark.parametrize("emit_failures", [True, False], ids=["emit-failures", "no-emit"])
+    def test_backfill_reports_event_log_write_location_refused(
+        self, retrospect_project: RetrospectProject, monkeypatch: pytest.MonkeyPatch, emit_failures: bool
+    ) -> None:
         """B1: a genuine write-location refusal during backfill's main emit does NOT
         mislabel the already-written record as a ``generator_exception`` (cycle 2 review)."""
         from specify_cli.cli.commands import retrospect as retrospect_module
@@ -2782,7 +2785,7 @@ class TestBackfillHarness:
 
         monkeypatch.setattr(retrospect_module, "_canonical_events_write_path", _boom)
 
-        result = _backfill("--json")
+        result = _backfill(*(["--emit-failures"] if emit_failures else []), "--json")
 
         assert result.exit_code == 0, result.output
         report = json.loads(result.stdout)
