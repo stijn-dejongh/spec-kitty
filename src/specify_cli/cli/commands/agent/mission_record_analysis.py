@@ -233,9 +233,9 @@ def _warn_on_incomplete_surfaces(result: CommitRouterResult, *, json_output: boo
     """
     if json_output:
         return
-    from specify_cli.coordination.commit_outcome import render_commit_outcome
+    from specify_cli.coordination.commit_outcome import STATUS_COMMITTED, STATUS_UNCHANGED, render_commit_outcome
 
-    if not any(outcome.status not in ("committed", "unchanged") for outcome in result.surfaces):
+    if not any(outcome.status not in (STATUS_COMMITTED, STATUS_UNCHANGED) for outcome in result.surfaces):
         return
     for line in render_commit_outcome(result):
         # WP14 review correction (round 2 / WP13 precedent): a branch name,

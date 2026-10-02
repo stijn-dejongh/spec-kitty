@@ -3047,10 +3047,10 @@ def _record_analysis_commit_surfaces_payload(commit_result: CommitRouterResult |
     """
     if commit_result is None or not commit_result.surfaces:
         return {}
-    from specify_cli.coordination.commit_outcome import commit_outcome_payload, render_commit_outcome
+    from specify_cli.coordination.commit_outcome import STATUS_COMMITTED, STATUS_UNCHANGED, commit_outcome_payload, render_commit_outcome
 
     extra: dict[str, Any] = {"commit_surfaces": commit_outcome_payload(commit_result)["surfaces"]}
-    if any(outcome.status not in ("committed", "unchanged") for outcome in commit_result.surfaces):
+    if any(outcome.status not in (STATUS_COMMITTED, STATUS_UNCHANGED) for outcome in commit_result.surfaces):
         extra["warnings"] = render_commit_outcome(commit_result)
     return extra
 

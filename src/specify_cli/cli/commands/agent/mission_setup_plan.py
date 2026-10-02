@@ -44,7 +44,7 @@ from charter.activation.mission_type_profiles import resolve_mission_type_contex
 from charter.resolution import ResolutionResult
 from mission_runtime import MissionArtifactKind, OwnedCheckout, placement_seam
 from specify_cli.cli.commands._owned_checkout import OwnedCheckoutOption
-from specify_cli.coordination.commit_outcome import SurfaceOutcome, commit_outcome_payload, render_commit_outcome
+from specify_cli.coordination.commit_outcome import STATUS_COMMITTED, STATUS_UNCHANGED, SurfaceOutcome, commit_outcome_payload, render_commit_outcome
 from specify_cli.coordination.commit_router import CommitRouterResult
 from specify_cli.core.checkout_identity import CheckoutIdentity, Intent, resolve_checkout_identity
 from specify_cli.core.constants import MISSION_TYPE_DOCUMENTATION
@@ -132,7 +132,7 @@ def _warn_on_incomplete_surfaces(result: CommitRouterResult, *, json_output: boo
     """
     if json_output:
         return
-    if not any(outcome.status not in ("committed", "unchanged") for outcome in result.surfaces):
+    if not any(outcome.status not in (STATUS_COMMITTED, STATUS_UNCHANGED) for outcome in result.surfaces):
         return
     for line in render_commit_outcome(result):
         # WP14 review correction (round 2 / WP13 precedent): a branch name,

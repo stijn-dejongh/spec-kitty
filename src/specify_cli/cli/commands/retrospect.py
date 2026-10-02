@@ -13,7 +13,13 @@ from __future__ import annotations
 
 from mission_runtime import MissionArtifactKind, resolve_topology
 from specify_cli.coordination.coherence import is_coord_residue_churn
-from specify_cli.coordination.commit_outcome import PROTECTED_BRANCH_REFUSED, SurfaceOutcome, render_commit_outcome
+from specify_cli.coordination.commit_outcome import (
+    PROTECTED_BRANCH_REFUSED,
+    STATUS_COMMITTED,
+    STATUS_UNCHANGED,
+    SurfaceOutcome,
+    render_commit_outcome,
+)
 from specify_cli.coordination.commit_router import CommitRouterResult, commit_for_mission
 from specify_cli.coordination.coord_seed import CoordSeedForkRefused
 from specify_cli.coordination.surface_resolver import (
@@ -415,7 +421,7 @@ def _render_unexplained_surfaces(result: CommitRouterResult, *, protected_target
     Mission that never hits a refusal (C-008).
     """
     remaining = _surfaces_not_already_warned(result, protected_target_warned=protected_target_warned)
-    if not any(outcome.status not in ("committed", "unchanged") for outcome in remaining):
+    if not any(outcome.status not in (STATUS_COMMITTED, STATUS_UNCHANGED) for outcome in remaining):
         return False
     for line in render_commit_outcome(_SurfacesView(remaining)):
         # WP14 review correction (round 2 / WP13 precedent): a branch name,
