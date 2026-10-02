@@ -70,6 +70,14 @@ def test_explicit_coordination_branch_without_mid8_raises(tmp_path: Path) -> Non
         materialize_coord_surface_for_write(tmp_path, "whatever", coordination_branch="kitty/mission-whatever-01ABCDEF")
 
 
+def test_explicit_mid8_without_coordination_branch_raises(tmp_path: Path) -> None:
+    """Review cycle 3 nit: the symmetric caller-contract guard -- passing
+    ``mid8`` alone would otherwise silently fall into the meta re-derivation
+    branch and OVERWRITE that ``mid8``, contradicting the docstring."""
+    with pytest.raises(ValueError, match="coordination_branch must accompany an explicit mid8 override"):
+        materialize_coord_surface_for_write(tmp_path, "whatever", mid8="01ABCDEF")
+
+
 # ---------------------------------------------------------------------------
 # 2. MATERIALIZED -> no-op, no second worktree created
 # ---------------------------------------------------------------------------

@@ -993,6 +993,14 @@ def materialize_coord_surface_for_write(
     behavior byte-for-byte. Passing one without the other is a caller error.
     """
     if coordination_branch is None:
+        # Review cycle 3 nit: a caller passing ``mid8`` alone (no
+        # ``coordination_branch``) would otherwise fall straight into the
+        # re-derivation branch below, which silently OVERWRITES that ``mid8``
+        # with meta's own derivation -- contradicting the docstring's
+        # "passing one without the other is a caller error". Guarded
+        # symmetrically with the ``mid8 is None`` check below.
+        if mid8 is not None:
+            raise ValueError("materialize_coord_surface_for_write: coordination_branch must accompany an explicit mid8 override")
         meta, _ = read_primary_meta(repo_root, mission_slug)
         raw_coordination_branch = meta.get("coordination_branch")
         if not raw_coordination_branch:
