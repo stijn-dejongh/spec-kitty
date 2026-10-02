@@ -45,7 +45,7 @@ from specify_cli.coordination.types import (
     Refused,
 )
 from specify_cli.coordination.workspace import CoordinationWorkspace
-from mission_runtime import CommitTarget, Establishment, MissionArtifactKind, OwnedCheckout, placement_seam
+from mission_runtime import CommitTarget, MissionArtifactKind, OwnedCheckout, placement_seam
 from specify_cli.core.commit_guard import GuardCapability
 from specify_cli.coordination.coord_seed import CoordSeedForkRefused
 from specify_cli.coordination.surface_resolver import (
@@ -209,15 +209,23 @@ def _resolve_coord_worktree_root_for_transaction(
     materialization failure is wrapped into :class:`BookkeepingWorktreeMissing`,
     matching the exception this call site always raised for that case.
 
-    coord-artifact-single-home-01M3V4BE WP07 (review cycle 2 R1): also
-    returns whether THIS call's own ``write_dir`` resolution just seeded or
-    restored a genuinely ``EMPTY`` coordination surface
-    (``establishment in (SEEDED, RESTORED_FROM_BRANCH)``) -- the caller
-    (``_acquire_locked``) threads this onto the transaction as
-    ``seed_committed_this_txn`` so :meth:`BookkeepingTransaction.
-    commit_idempotent` can tell "this transaction's OWN seed just committed
-    content I never staged" apart from "this Mission merely has pre-existing
-    history" (``events_path.exists()`` alone cannot -- it is true for both).
+    coord-artifact-single-home-01M3V4BE WP07 (review cycle 2 R1), corrected by
+    WP09 (review cycle 3 follow-up): also returns whether THIS call's own
+    ``write_dir`` resolution just committed a genuine seed commit onto the
+    coordination branch (``location.seed is not None and
+    location.seed.coord_commit is not None``) -- the caller (``_acquire_locked``)
+    threads this onto the transaction as ``seed_committed_this_txn`` so
+    :meth:`BookkeepingTransaction.commit_idempotent` can tell "this
+    transaction's OWN seed just committed content I never staged" apart from
+    "this Mission merely has pre-existing history" (``events_path.exists()``
+    alone cannot -- it is true for both). Gating on ``establishment`` alone
+    (the WP07 shape) is WRONG: a ``RESTORED_FROM_BRANCH`` establishment can
+    restore COORD-kind paths from the tip without producing a new commit (the
+    restored content already matches the tip byte-for-byte, so the follow-up
+    seed-commit attempt is a genuine git no-op, ``coord_commit=None``) --
+    that acquire committed nothing, so the branch tip never moved and a
+    caller that staged nothing must still see the empty-changeset
+    :class:`BookkeepingCommitFailed`, not a silent no-op receipt.
     """
     seam_repo_root = owned.repository_root if owned is not None else repo_root
     canonical_mission_slug = _canonical_coord_mission_slug(seam_repo_root, mission_slug, mid8, owned=owned)
@@ -242,7 +250,22 @@ def _resolve_coord_worktree_root_for_transaction(
         raise BookkeepingWorktreeMissing(
             f"Failed to resolve coordination worktree for {identity}: {exc}"
         ) from exc
-    seed_committed_this_txn = location.establishment in (Establishment.SEEDED, Establishment.RESTORED_FROM_BRANCH)
+    # coord-artifact-single-home-01M3V4BE WP09 (review-cycle-3 follow-up on
+    # WP07): a RESTORED_FROM_BRANCH establishment does not, by itself, mean
+    # THIS acquire committed anything -- ``_handle_empty_post_fix`` restores
+    # the COORD-kind paths from the branch tip first (a worktree checkout,
+    # no commit) and only THEN seeds any root-only records; when the root
+    # checkout carries nothing new the resulting ``_commit_and_restore`` seed
+    # commit is a genuine git no-op (``coord_commit=None``) because the
+    # restored content already matches the coordination tip byte-for-byte.
+    # Gating on ``establishment`` alone made ``commit_idempotent`` treat that
+    # case as "this acquire's own seed already committed my content", so a
+    # caller that staged nothing got a silent no-op receipt pinned at a HEAD
+    # the branch tip never actually moved to, instead of the genuinely empty
+    # changeset ``BookkeepingCommitFailed`` base behaviour. Gate on the
+    # ``SeedReport`` itself: only a seed that actually produced a commit this
+    # call (``location.seed.coord_commit is not None``) counts.
+    seed_committed_this_txn = location.seed is not None and location.seed.coord_commit is not None
     return location.checkout_root, seed_committed_this_txn
 
 
@@ -933,12 +956,16 @@ class BookkeepingTransaction(AbstractContextManager["BookkeepingTransaction"]):
         empty/failed changeset as :class:`BookkeepingCommitFailed`.
 
         coord-artifact-single-home-01M3V4BE WP07 (review cycle 2 R1,
-        corrected): the no-op guard no longer requires ``self._staged_paths``
-        to be non-empty -- but ONLY when THIS transaction's OWN acquire just
-        seeded or restored a genuinely ``EMPTY`` coordination surface
-        (``self._seed_committed_this_txn``, set from the ``Establishment``
-        ``write_dir`` returned at acquire time -- ``SEEDED`` or
-        ``RESTORED_FROM_BRANCH``). Cycle 1's first attempt used
+        corrected again by WP09 review cycle 3): the no-op guard no longer
+        requires ``self._staged_paths`` to be non-empty -- but ONLY when THIS
+        transaction's OWN acquire just produced a genuine seed commit on the
+        coordination branch (``self._seed_committed_this_txn``, set from
+        ``location.seed.coord_commit is not None`` at acquire time -- NOT
+        merely from the ``Establishment`` being ``SEEDED`` or
+        ``RESTORED_FROM_BRANCH``, since a ``RESTORED_FROM_BRANCH`` establishment
+        can restore COORD-kind paths from the tip without committing anything
+        new, a genuine git no-op that must NOT be treated as "my content is
+        already on the branch"). Cycle 1's first attempt used
         ``self._pre_emit_events_existed`` (``events_path.exists()`` at
         acquire) instead, which is true for ANY Mission with existing status
         history -- not only one whose SEED just committed content THIS
