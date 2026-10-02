@@ -747,8 +747,42 @@ def cmd_verify(
         for f in result.findings
     ]
 
+    # WP17 (FR-010a, contract rule 5): a forked decision-event stream is a
+    # distinct, honest-verify finding from the marker/decision drift rules
+    # above. Resolved here (not in ``decisions.verify.verify``, whose
+    # ``mission_slug`` parameter stays reserved/unused per the module
+    # docstring) because ``cmd_verify`` already has ``repo_root`` in scope —
+    # see "Binding corrections" (WP17): adding a fork check here avoids
+    # widening ``verify()``'s public signature.
+    from specify_cli.decisions.fork import detect_decision_forks  # noqa: PLC0415 — cold-import discipline
+
+    fork_report = detect_decision_forks(repo_root, mission_slug)
+    if fork_report.forked:
+        forked_decision_ids = sorted(
+            {
+                decision_id
+                for finding in fork_report.streams
+                if finding.state == "forked"
+                for decision_id in (
+                    *finding.decisions_only_on_primary,
+                    *finding.decisions_only_on_coordination,
+                )
+            }
+        )
+        fork_detail = "A decision-event stream diverges between the PRIMARY and coordination surfaces (never auto-merged, C-003): " + "; ".join(
+            fork_report.reconcile_steps
+        )
+        findings_list.append(
+            {
+                "kind": "DECISION_LOG_FORKED",
+                "decision_id_or_ref": ", ".join(forked_decision_ids) or None,
+                "location": None,
+                "detail": fork_detail,
+            }
+        )
+
     payload = {
-        "status": result.status,
+        "status": "drift" if findings_list else "clean",
         "deferred_count": result.deferred_count,
         "marker_count": result.marker_count,
         "findings": findings_list,
@@ -756,6 +790,16 @@ def cmd_verify(
 
     typer.echo(json.dumps(payload, sort_keys=True))
 
+    # WP17 precedence decision (documented, per the binding-corrections
+    # instruction to decide and document ``--no-fail-on-stale`` vs a fork):
+    # a forked decision stream ALWAYS exits 1, independent of
+    # ``--fail-on-stale/--no-fail-on-stale`` -- that flag only governs the
+    # marker/decision drift rules in ``decisions.verify.verify`` (contract
+    # rule 5: "exits 1 by default", read here as "unconditionally", since a
+    # fork is a data-loss risk, not a staleness nit an operator can opt out
+    # of reporting as a failure).
+    if fork_report.forked:
+        raise typer.Exit(1)
     if result.findings and fail_on_stale:
         raise typer.Exit(1)
 

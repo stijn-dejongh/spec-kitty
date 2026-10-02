@@ -457,8 +457,8 @@ def test_repair_reads_log_fresh_inside_lock_not_stale_diagnose_snapshot(
     real_diagnose = _doctor_mod._diagnose
     concurrent_ids: list[str] = []
 
-    def _diagnose_then_concurrent_write(events_dir_arg: Path, ledger_dir_arg: Path, mission_slug_arg: str):  # type: ignore[no-untyped-def]
-        report, grouped = real_diagnose(events_dir_arg, ledger_dir_arg, mission_slug_arg)
+    def _diagnose_then_concurrent_write(events_dir_arg: Path, ledger_dir_arg: Path, mission_slug_arg: str, *, repo_root: Path | None = None):  # type: ignore[no-untyped-def]
+        report, grouped = real_diagnose(events_dir_arg, ledger_dir_arg, mission_slug_arg, repo_root=repo_root)
         # A writer landing AFTER this pre-lock read but BEFORE `_repair`
         # acquires the sidecar lock -- the exact window Fold B closes.
         resp = open_decision(

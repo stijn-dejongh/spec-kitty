@@ -2051,6 +2051,17 @@ def _phase_porcelain_invariant(run: _MergeRunState) -> None:
         console.print("\nThis may indicate a sparse-checkout or filter-driver issue. Run\n  spec-kitty doctor sparse-checkout --fix\nbefore retrying the merge.")
     else:
         console.print("\nUnexpected working-tree state after merge. Run `git status` to investigate before retrying.")
+    if any("/decisions/" in line for line in offending_lines):
+        # WP12 (#5023) reclassified the decision ledger to the PRIMARY
+        # partition, so this predicate no longer exempts uncommitted
+        # ``decisions/`` content as coord-residue churn (message-only
+        # change -- the predicate itself, ``is_toolchain_generated_churn``,
+        # is untouched here).
+        console.print(
+            f"\nUncommitted decision-ledger files under kitty-specs/{run.mission_slug}/decisions/ are real "
+            'content now (WP12) -- commit them with `spec-kitty accept` or `spec-kitty spec-commit -m "..." '
+            f"kitty-specs/{run.mission_slug}/decisions/` before retrying."
+        )
     _restore_and_guard_coord_coherence(run, run.final_bookkeeping_snapshots)
     raise typer.Exit(1)
 
@@ -3530,9 +3541,42 @@ def _pre_mutation_safety_preflight(
     if not teardown_coordination:
         return
 
+    # WP17 (FR-009c, #5023): refuse BEFORE any mutation (NFR-001) when the
+    # decisions ledger exists only on the coordination branch this merge is
+    # about to tear down -- the bookkeeping projection excludes PRIMARY
+    # kinds, so it would otherwise be silently lost.
+    _refuse_if_coordination_ledger_unrepaired(main_repo, mission_slug)
+
     coord_worktree = _resolve_coord_worktree_for_preflight(main_repo, mission_slug, primary_meta_dir)
     if coord_worktree is not None and coord_worktree.exists():
         assert_worktree_clean(coord_worktree, is_residue=is_residue, treat_untracked_as_dirty=True)
+
+
+def _refuse_if_coordination_ledger_unrepaired(main_repo: Path, mission_slug: str) -> None:
+    """WP17 preflight leg of :func:`_pre_mutation_safety_preflight` (FR-009c).
+
+    Raises :class:`DestructiveOpRefused` with ``error_code=
+    "COORDINATION_LEDGER_UNREPAIRED"`` -- the SAME code
+    ``coordination/teardown.py`` raises for the coupled discard/close/abort
+    paths (NFR-004 single authority over the detection; this is a distinct
+    refusal family/exception type for the consolidation preflight's own
+    established fail-closed mechanism). Late-imported so the heavy
+    ``decisions.fork`` dependency chain is paid only when this leg actually
+    runs (``teardown_coordination`` true).
+    """
+    from specify_cli.decisions.fork import coordination_only_ledger, ledger_is_coordination_only  # noqa: PLC0415
+
+    ledger = coordination_only_ledger(main_repo, mission_slug)
+    if not ledger_is_coordination_only(ledger):
+        return
+    raise DestructiveOpRefused(
+        error_code="COORDINATION_LEDGER_UNREPAIRED",
+        remediation=(
+            f"Mission {mission_slug!r}'s decisions ledger (decisions/index.json / DM-*.md) exists only "
+            f"on the coordination branch. Run `spec-kitty doctor decisions --mission {mission_slug} "
+            "--repair` to copy it into the PRIMARY ledger, then retry."
+        ),
+    )
 
 
 def _record_operator_attestations(
