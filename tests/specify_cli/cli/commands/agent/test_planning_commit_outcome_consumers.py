@@ -111,7 +111,9 @@ def test_commit_to_branch_carries_router_surfaces_through(tmp_path: Path, monkey
 # ---------------------------------------------------------------------------
 
 
-def test_commit_to_branch_renders_surface_lines_in_text_mode_on_committed_arm(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+def test_commit_to_branch_renders_surface_lines_in_text_mode_on_committed_arm(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     """Kills M2: with the render guard replaced by ``if False``, no surface
     line reaches stdout and this assertion fails."""
     _init_repo(tmp_path)
@@ -267,3 +269,128 @@ def test_setup_plan_json_omits_surfaces_when_commit_result_carries_none(tmp_path
     outcome = _build_setup_plan_result(**_base_build_kwargs(tmp_path, plan_commit_result=commit_result))
 
     assert "surfaces" not in outcome.payload
+
+
+# ---------------------------------------------------------------------------
+# B3 (cycle 2 review): record-analysis + report-transaction consumer tests,
+# each with a one-surface-refused fixture asserting the surface name, fate
+# and reason. Mutation-sensitive: kills M5-M8 from the review's mutation
+# table (orchestrator _record_analysis_commit_surfaces_payload always `{}`;
+# the deleted _print_report_transaction_payload always raw; record-analysis
+# payload drops `surfaces`; record-analysis drops the warning).
+# ---------------------------------------------------------------------------
+
+_ANALYSIS_BODY = (
+    "---\n"
+    "schema: analysis-findings/v1\n"
+    "findings: []\n"
+    "counts: {critical: 0, high: 0, medium: 0, low: 0, info: 0}\n"
+    "---\n\n"
+    "# Specification Analysis Report\n\nNo blocking findings.\n"
+)
+
+
+def _write_primary_mission(feature_dir: Path) -> None:
+    feature_dir.mkdir(parents=True)
+    (feature_dir / "spec.md").write_text("# Spec\n\nFR-001.\n", encoding="utf-8")
+    (feature_dir / "plan.md").write_text("# Plan\n", encoding="utf-8")
+    (feature_dir / "tasks.md").write_text("# Tasks\n", encoding="utf-8")
+
+
+def _patch_record_analysis_resolution(monkeypatch: pytest.MonkeyPatch, repo_root: Path, feature_dir: Path) -> None:
+    import specify_cli.cli.commands.agent.mission_record_analysis as seam
+
+    monkeypatch.setattr(seam, "locate_project_root", lambda: repo_root)
+    monkeypatch.setattr(seam, "get_main_repo_root", lambda path: path)
+    monkeypatch.setattr(seam, "_find_feature_directory", lambda *_args, **_kwargs: feature_dir)
+    monkeypatch.setattr(seam, "get_feature_target_branch", lambda *_args, **_kwargs: _TARGET_BRANCH)
+
+
+def test_commit_analysis_report_carries_router_surfaces_through(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """B3: ``_commit_analysis_report`` never discards the router's surfaces (T076 extraction)."""
+    import specify_cli.coordination.commit_router as commit_router_mod
+    from specify_cli.cli.commands.agent.mission_record_analysis import _commit_analysis_report
+
+    mixed = _mixed_surfaces_result(primary_ref=_TARGET_BRANCH)
+    monkeypatch.setattr(commit_router_mod, "commit_for_mission", lambda **_kwargs: mixed)
+
+    result = _commit_analysis_report(repo_root=tmp_path, mission_slug="demo", report_path=tmp_path / "analysis-report.md", target_branch=_TARGET_BRANCH)
+
+    assert result is not None
+    assert result.surfaces == mixed.surfaces
+    coordination = next(s for s in result.surfaces if s.surface == "coordination")
+    assert coordination.refused[0].reason == "STATUS_LOCK_HELD"
+
+
+def test_record_analysis_json_carries_surfaces(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """B3: record-analysis's JSON envelope gains ``surfaces`` (the main, non-report-only path)."""
+    import specify_cli.cli.commands.agent.mission_record_analysis as seam
+
+    slug = "demo-b3-json"
+    feature_dir = tmp_path / "kitty-specs" / slug
+    _write_primary_mission(feature_dir)
+    _patch_record_analysis_resolution(monkeypatch, tmp_path, feature_dir)
+    mixed = _mixed_surfaces_result(primary_ref=_TARGET_BRANCH)
+    monkeypatch.setattr(seam, "_commit_analysis_report", lambda **_kwargs: mixed)
+    input_file = tmp_path.parent / f"{tmp_path.name}-analysis.md"
+    input_file.write_text(_ANALYSIS_BODY, encoding="utf-8")
+    emitted: dict[str, object] = {}
+    monkeypatch.setattr(seam, "_emit_json", lambda payload: emitted.update(payload))
+
+    seam.record_analysis(feature=slug, input_file=str(input_file), analyzer_agent=None, json_output=True, report_only=False)
+
+    assert emitted["success"] is True
+    surfaces = emitted["surfaces"]
+    assert isinstance(surfaces, list)
+    surface_names = {entry["surface"] for entry in surfaces}
+    assert surface_names == {"primary", "coordination"}
+    coordination_payload = next(entry for entry in surfaces if entry["surface"] == "coordination")
+    assert coordination_payload["refused"][0]["reason"] == "STATUS_LOCK_HELD"
+
+
+def test_record_analysis_text_warns_on_incomplete_surfaces(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """B3: record-analysis's text-mode warning names the refused surface and reason."""
+    import specify_cli.cli.commands.agent.mission_record_analysis as seam
+
+    slug = "demo-b3-text"
+    feature_dir = tmp_path / "kitty-specs" / slug
+    _write_primary_mission(feature_dir)
+    _patch_record_analysis_resolution(monkeypatch, tmp_path, feature_dir)
+    mixed = _mixed_surfaces_result(primary_ref=_TARGET_BRANCH)
+    monkeypatch.setattr(seam, "_commit_analysis_report", lambda **_kwargs: mixed)
+    input_file = tmp_path.parent / f"{tmp_path.name}-analysis-2.md"
+    input_file.write_text(_ANALYSIS_BODY, encoding="utf-8")
+
+    seam.record_analysis(feature=slug, input_file=str(input_file), analyzer_agent=None, json_output=False, report_only=False)
+
+    out = capsys.readouterr().out
+    assert "coordination" in out
+    assert "STATUS_LOCK_HELD" in out
+
+
+def test_record_analysis_report_only_renders_surfaces_in_text_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """B3 / B4: the ``--report-only`` text render prints the payload AND the surface lines, additively."""
+    import specify_cli.cli.commands.agent.mission_record_analysis as seam
+    from specify_cli.git.report_transaction import ReportTransactionOutcome
+
+    slug = "demo-b3-report-only"
+    feature_dir = tmp_path / "kitty-specs" / slug
+    _write_primary_mission(feature_dir)
+    _patch_record_analysis_resolution(monkeypatch, tmp_path, feature_dir)
+    mixed = _mixed_surfaces_result(primary_ref=_TARGET_BRANCH)
+    stub_outcome = ReportTransactionOutcome({"success": True, "commit_status": "committed", "commit_hash": "abc1234567890"}, router_result=mixed)
+    import specify_cli.git.report_transaction as report_transaction_mod
+
+    monkeypatch.setattr(report_transaction_mod, "record_report_transaction", lambda **_kwargs: stub_outcome)
+    input_file = tmp_path.parent / f"{tmp_path.name}-analysis-3.md"
+    input_file.write_text(_ANALYSIS_BODY, encoding="utf-8")
+
+    seam.record_analysis(feature=slug, input_file=str(input_file), analyzer_agent=None, json_output=False, report_only=True)
+
+    out = capsys.readouterr().out
+    # The raw payload still prints (additive, never replaced -- B4).
+    assert "commit_status" in out
+    assert "committed" in out
+    # PLUS the surface lines naming the refused surface and reason.
+    assert "coordination" in out
+    assert "STATUS_LOCK_HELD" in out
