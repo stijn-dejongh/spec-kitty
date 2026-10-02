@@ -392,3 +392,65 @@ def test_decision_open_coord_less_topology_unchanged(tmp_path: Path, topology: M
     assert not (repo / ".worktrees").exists(), "a coord-less Mission must never materialize a coordination worktree"
     opened = _opened_rows(coord_less_log)
     assert any(row["payload"]["decision_point_id"] == resp["decision_id"] for row in opened)
+
+
+# ---------------------------------------------------------------------------
+# T052 step 5 (review cycle 1, B4) -- decisions/emit.py's own write-side
+# change (write_dir(STATUS_STATE), T049) pinned directly, bypassing
+# decisions/service.py entirely. Reverting emit._mission_dir to read_dir
+# keeps every OTHER WP09 test green because every production caller reaches
+# emit through service.py, which already pre-resolves write_dir first by the
+# time emit runs -- this test drives emit.emit_decision_opened DIRECTLY on a
+# pre-fix EMPTY Mission (no service.py pre-resolve ever runs), so emit's OWN
+# read_dir vs write_dir choice is the only thing that can make it pass.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("topology", COORD_TOPOLOGIES)
+def test_emit_decision_opened_seeds_pre_fix_empty_mission_directly(tmp_path: Path, topology: MissionTopology) -> None:
+    """``decisions/emit.py::emit_decision_opened`` called DIRECTLY (not via
+    ``service.py``) on a pre-fix EMPTY coordination Mission must itself
+    materialize+seed the coordination surface and append the event there --
+    never fall back to the root checkout's ``read_dir`` leniency. Mutation
+    check (manual, recorded): reverting ``emit.py::_mission_dir`` to
+    ``read_dir(STATUS_STATE)`` makes this specific test fail (the event lands
+    in the root checkout instead, and the coordination log never gets
+    seeded), proving THIS test -- not just the service.py-mediated ones --
+    pins emit's own write_dir choice."""
+    from kernel.clock import now_utc
+    from specify_cli.decisions.emit import emit_decision_opened
+    from specify_cli.decisions.models import DecisionStatus, IndexEntry, OriginFlow
+
+    coord = make_prefix_coord_mission(tmp_path, topology, worktree="empty")
+    root_log = coord.root_mission_dir / _STATUS_LOG_FILENAME
+    coord_log = coord.coord_mission_dir / _STATUS_LOG_FILENAME
+    carried_ids = event_ids(root_log)
+    assert carried_ids, "fixture must carry at least the scaffold events for a meaningful seed"
+
+    now = now_utc()
+    decision_id = "01EMITB4DIRECTTEST00000001"
+    entry = IndexEntry(
+        decision_id=decision_id,
+        origin_flow=OriginFlow.SPECIFY,
+        slot_key="s.emit-direct",
+        input_key="emit-direct",
+        question="Direct emit test?",
+        options=("a", "b"),
+        status=DecisionStatus.OPEN,
+        created_at=now,
+        mission_id=coord.mission_dir_name,
+        mission_slug=coord.mission_dir_name,
+    )
+
+    emit_decision_opened(coord.repo_root, coord.mission_dir_name, decision_id=decision_id, entry=entry, actor="test-b4")
+
+    # The coordination log was seeded (carried events precede the new one)
+    # and now holds the new DecisionPointOpened row.
+    coord_ids = event_ids(coord_log)
+    assert coord_ids[: len(carried_ids)] == carried_ids
+    opened = _opened_rows(coord_log)
+    assert any(row["payload"]["decision_point_id"] == decision_id for row in opened)
+
+    # The root checkout's log gained nothing: emit never fell back to read_dir.
+    assert event_ids(root_log) == carried_ids
+    assert not _opened_rows(root_log)
