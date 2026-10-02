@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     # signatures, but ``specify_cli.coordination.*`` / ``specify_cli.status.*``
     # stay function-local imports at every actual call site (cold-import
     # discipline this module already follows for similar seams).
-    from specify_cli.coordination.coord_seed import CoordSeedForkRefused
+    from specify_cli.coordination.coord_seed import CoordBranchUndeclaredAndAbsent, CoordSeedForkRefused
     from specify_cli.status.locking import FeatureStatusLockTimeoutError
 
 from mission_runtime import ActionContextError
@@ -304,6 +304,35 @@ def _handle_status_lock_timeout(exc: FeatureStatusLockTimeoutError) -> NoReturn:
     raise typer.Exit(1)
 
 
+def _handle_coord_branch_undeclared_and_absent(exc: CoordBranchUndeclaredAndAbsent) -> NoReturn:
+    """Render a ``COORD_BRANCH_UNDECLARED_AND_ABSENT`` write-location refusal.
+
+    Review cycle 2 (B1-residual, Decision ``plan.design.undeclared-coord-
+    branch``): ``write_dir``'s topology gate derives the canonical
+    coordination branch (``lanes.branch_naming``) when a coordination-routed
+    Mission's ``meta.json`` declares no ``coordination_branch`` -- and refuses
+    with :class:`CoordBranchUndeclaredAndAbsent` when that derived branch does
+    not exist in git either, rather than silently degrading to the PRIMARY
+    checkout. The generic :func:`_handle_action_context_error` renders
+    ``.code`` with no recovery guidance; this gets its own ``next_step``
+    naming the two concrete fixes (declare the branch, or flatten the
+    topology).
+    """
+    payload = {
+        "error": str(exc),
+        "code": exc.code,
+        "next_step": (
+            "No coordination_branch is declared in meta.json for this coordination-routed "
+            "mission, and the deterministically-derived branch does not exist in git either. "
+            "Declare 'coordination_branch' in meta.json if that branch should exist, or run "
+            "'spec-kitty migrate backfill-topology' to flatten this mission to a coord-less "
+            "topology if it never had one."
+        ),
+    }
+    typer.echo(json.dumps(payload, sort_keys=True), err=True)
+    raise typer.Exit(1)
+
+
 def _handle_index_read_error(exc: DecisionIndexReadError) -> None:
     """Render a corrupt ``decisions/index.json`` as a structured diagnostic.
 
@@ -417,7 +446,7 @@ def cmd_open(  # noqa: PLR0913
         _handle_action_context_error(exc)
         return  # unreachable — _handle_action_context_error raises
 
-    from specify_cli.coordination.coord_seed import CoordSeedForkRefused
+    from specify_cli.coordination.coord_seed import CoordBranchUndeclaredAndAbsent, CoordSeedForkRefused
     from specify_cli.status.locking import FeatureStatusLockTimeoutError
 
     try:
@@ -442,6 +471,8 @@ def cmd_open(  # noqa: PLR0913
         # write. Before ``StatusReadPathNotFound`` below: not a subclass of
         # it, but ordered to read alongside the other write-location refusals.
         _handle_coord_seed_fork_refused(exc)
+    except CoordBranchUndeclaredAndAbsent as exc:
+        _handle_coord_branch_undeclared_and_absent(exc)
     except FeatureStatusLockTimeoutError as exc:
         _handle_status_lock_timeout(exc)
     except DecisionIndexReadError as exc:
@@ -501,7 +532,7 @@ def cmd_resolve(  # noqa: PLR0913
         _handle_action_context_error(exc)
         return  # unreachable — _handle_action_context_error raises
 
-    from specify_cli.coordination.coord_seed import CoordSeedForkRefused
+    from specify_cli.coordination.coord_seed import CoordBranchUndeclaredAndAbsent, CoordSeedForkRefused
     from specify_cli.status.locking import FeatureStatusLockTimeoutError
 
     try:
@@ -521,6 +552,8 @@ def cmd_resolve(  # noqa: PLR0913
         return
     except CoordSeedForkRefused as exc:
         _handle_coord_seed_fork_refused(exc)
+    except CoordBranchUndeclaredAndAbsent as exc:
+        _handle_coord_branch_undeclared_and_absent(exc)
     except FeatureStatusLockTimeoutError as exc:
         _handle_status_lock_timeout(exc)
     except DecisionIndexReadError as exc:
@@ -565,7 +598,7 @@ def cmd_defer(
         _handle_action_context_error(exc)
         return  # unreachable — _handle_action_context_error raises
 
-    from specify_cli.coordination.coord_seed import CoordSeedForkRefused
+    from specify_cli.coordination.coord_seed import CoordBranchUndeclaredAndAbsent, CoordSeedForkRefused
     from specify_cli.status.locking import FeatureStatusLockTimeoutError
 
     try:
@@ -583,6 +616,8 @@ def cmd_defer(
         return
     except CoordSeedForkRefused as exc:
         _handle_coord_seed_fork_refused(exc)
+    except CoordBranchUndeclaredAndAbsent as exc:
+        _handle_coord_branch_undeclared_and_absent(exc)
     except FeatureStatusLockTimeoutError as exc:
         _handle_status_lock_timeout(exc)
     except DecisionIndexReadError as exc:
@@ -627,7 +662,7 @@ def cmd_cancel(
         _handle_action_context_error(exc)
         return  # unreachable — _handle_action_context_error raises
 
-    from specify_cli.coordination.coord_seed import CoordSeedForkRefused
+    from specify_cli.coordination.coord_seed import CoordBranchUndeclaredAndAbsent, CoordSeedForkRefused
     from specify_cli.status.locking import FeatureStatusLockTimeoutError
 
     try:
@@ -645,6 +680,8 @@ def cmd_cancel(
         return
     except CoordSeedForkRefused as exc:
         _handle_coord_seed_fork_refused(exc)
+    except CoordBranchUndeclaredAndAbsent as exc:
+        _handle_coord_branch_undeclared_and_absent(exc)
     except FeatureStatusLockTimeoutError as exc:
         _handle_status_lock_timeout(exc)
     except DecisionIndexReadError as exc:

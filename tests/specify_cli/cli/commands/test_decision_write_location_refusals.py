@@ -162,3 +162,45 @@ def test_decision_verb_renders_coord_seed_fork_refused(tmp_path: Path, monkeypat
     payload = _last_json(result.output)
     assert payload["code"] == "COORD_SEED_FORK_REFUSED"
     assert "doctor coordination" in payload["next_step"]
+
+
+# ---------------------------------------------------------------------------
+# COORD_BRANCH_UNDECLARED_AND_ABSENT -- review cycle 2 (B1-residual, Decision
+# plan.design.undeclared-coord-branch). Monkeypatched at the service boundary
+# (deterministic; the real-fixture reproduction lives in
+# tests/coordination/test_coord_seed.py).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("verb", "service_fn", "args"),
+    [
+        (
+            "open",
+            "open_decision",
+            ["decision", "open", "--mission", "m", "--flow", "specify", "--slot-key", "s.a", "--input-key", "a", "--question", "Q?", "--actor", "t"],
+        ),
+        ("resolve", "resolve_decision", ["decision", "resolve", "dec-1", "--mission", "m", "--final-answer", "a", "--actor", "t"]),
+        ("defer", "defer_decision", ["decision", "defer", "dec-1", "--mission", "m", "--rationale", "why", "--actor", "t"]),
+        ("cancel", "cancel_decision", ["decision", "cancel", "dec-1", "--mission", "m", "--rationale", "why", "--actor", "t"]),
+    ],
+)
+def test_decision_verb_renders_coord_branch_undeclared_and_absent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, verb: str, service_fn: str, args: list[str]
+) -> None:
+    from specify_cli.coordination.coord_seed import CoordBranchUndeclaredAndAbsent
+
+    coord = make_prefix_coord_mission(tmp_path, MissionTopology.COORD, worktree="empty")
+    cli_args = [a if a != "m" else coord.mission_slug for a in args]
+
+    def _raise(*_a: object, **_k: object) -> None:
+        raise CoordBranchUndeclaredAndAbsent(mission_slug=coord.mission_slug, derived_branch="kitty/mission-demo-01ABCDEF")
+
+    monkeypatch.setattr(f"specify_cli.cli.commands.decision.{service_fn}", _raise)
+
+    result = _invoke(cli_args, coord.repo_root)
+
+    assert result.exit_code != 0, f"{verb} must exit non-zero on an undeclared-and-absent coordination branch"
+    payload = _last_json(result.output)
+    assert payload["code"] == "COORD_BRANCH_UNDECLARED_AND_ABSENT"
+    assert "backfill-topology" in payload["next_step"]
